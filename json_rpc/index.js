@@ -13,6 +13,7 @@ const {
   NETWORK_ID,
 } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
+const ChainUtil = require('../common/chain-util');
 const PathUtil = require('../common/path-util');
 
 /**
@@ -47,7 +48,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     // Bloock API
     ain_getBlockList: function(args, done) {
-      const blocks = node.bc.getChainSection(args.from, args.to);
+      const blocks = node.bc.getBlockList(args.from, args.to);
       done(null, addProtocolVersion({result: blocks}));
     },
 
@@ -61,7 +62,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_getBlockHeadersList: function(args, done) {
-      const blocks = node.bc.getChainSection(args.from, args.to);
+      const blocks = node.bc.getBlockList(args.from, args.to);
       const blockHeaders = [];
       blocks.forEach((block) => {
         blockHeaders.push(block.header);
@@ -122,6 +123,12 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result: node.tp.transactions}));
     },
 
+    ain_getTransactionPoolSizeUtilization: function(args, done) {
+      const address = args.address;
+      const txPoolSizeUtil = node.getTxPoolSizeUtilization(address);
+      done(null, addProtocolVersion({result: txPoolSizeUtil}));
+    },
+
     // TODO(platfowner): Instantly reject requests with invalid signatures.
     ain_sendSignedTransaction: function(args, done) {
       if (sizeof(args) > TX_BYTES_LIMIT) {
@@ -155,7 +162,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_sendSignedTransactionBatch: function(args, done) {
-      if (!args.tx_list || !Array.isArray(args.tx_list)) {
+      if (!args.tx_list || !ChainUtil.isArray(args.tx_list)) {
         done(null, addProtocolVersion({
           result: {
             code: 1,
@@ -214,7 +221,9 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
           const block = node.bc.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
-          if (index >= 0) {
+          if (!block) {
+            // TODO(liayoo): Ask peers for the transaction / block
+          } else if (index >= 0) {
             transactionInfo.transaction = block.transactions[index];
           } else {
             transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === args.hash);
@@ -232,7 +241,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       if (args.block_hash && Number.isInteger(args.index)) {
         const index = Number(args.index);
         const block = node.bc.getBlockByHash(args.block_hash);
-        if (block.transactions.length > index && index >= 0) {
+        if (block && block.transactions.length > index && index >= 0) {
           result = {
             transaction: block.transactions[index],
             is_finalized: true
@@ -247,7 +256,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       if (Number.isInteger(args.block_number) && Number.isInteger(args.index)) {
         const index = Number(args.index);
         const block = node.bc.getBlockByNumber(args.block_number);
-        if (block.transactions.length > index && index >= 0) {
+        if (block && block.transactions.length > index && index >= 0) {
           result = {
             transaction: block.transactions[index],
             is_finalized: true
@@ -379,7 +388,8 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     net_syncing: function(args, done) {
-      // TODO(lia): return { starting, latest } with block numbers if the node is currently syncing.
+      // TODO(liayoo): Return { starting, latest } with block numbers
+      // if the node is currently syncing.
       done(null, addProtocolVersion(
           {result: p2pServer.node.state === BlockchainNodeStates.SYNCING}));
     },

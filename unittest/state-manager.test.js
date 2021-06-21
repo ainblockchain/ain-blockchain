@@ -14,7 +14,7 @@ describe("state-manager", () => {
 
   describe("Initialize", () => {
     it("finalVersion", () => {
-      expect(manager.finalVersion).to.equal(null);
+      expect(manager.getFinalVersion()).to.equal(null);
     });
 
     it("rootMap", () => {

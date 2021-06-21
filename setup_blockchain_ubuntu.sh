@@ -26,3 +26,10 @@ sudo apt install -y vim
 
 echo 'vim --version'
 vim --version
+
+echo 'Installing jq..'
+sudo apt update
+sudo apt install -y jq
+
+echo 'jq --version'
+jq --version

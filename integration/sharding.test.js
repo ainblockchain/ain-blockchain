@@ -4,7 +4,6 @@ const assert = chai.assert;
 const expect = chai.expect;
 const spawn = require("child_process").spawn;
 const ainUtil = require('@ainblockchain/ain-util');
-const sleep = require('sleep').msleep;
 const syncRequest = require('sync-request');
 const jayson = require('jayson/promise');
 const rimraf = require("rimraf")
@@ -40,38 +39,43 @@ const {
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true, ENABLE_DEV_CLIENT_API: true,
-    ENABLE_GAS_FEE_WORKAROUND: true,
+    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     // For shard chain tracker
-    PORT: 9090, P2P_PORT: 6000
+    PORT: 9090, P2P_PORT: 6000,
+    CONSOLE_LOG: false
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9091, P2P_PORT: 6001, ENABLE_GAS_FEE_WORKAROUND: true,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, ENABLE_DEV_CLIENT_API: true,
+    PORT: 9091, P2P_PORT: 6001,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9092, P2P_PORT: 6002, ENABLE_GAS_FEE_WORKAROUND: true,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, ENABLE_DEV_CLIENT_API: true,
+    PORT: 9092, P2P_PORT: 6002,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9093, P2P_PORT: 6003, ENABLE_GAS_FEE_WORKAROUND: true,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, ENABLE_DEV_CLIENT_API: true,
+    PORT: 9093, P2P_PORT: 6003,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9094, P2P_PORT: 6004, ENABLE_GAS_FEE_WORKAROUND: true,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, ENABLE_DEV_CLIENT_API: true,
+    PORT: 9094, P2P_PORT: 6004,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3,
+    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -103,17 +107,17 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 
 // Needed to make sure the shard initialization is finished
 // before other shard nodes start
-function waitUntilShardReporterStarts() {
+async function waitUntilShardReporterStarts() {
   let consensusState;
   while (true) {
     consensusState = parseOrLog(syncRequest('GET', server1 + '/get_consensus_state')
         .body.toString('utf-8')).result;
     if (consensusState && consensusState.state === ConsensusStatus.RUNNING) return;
-    sleep(1000);
+    await ChainUtil.sleep(1000);
   }
 }
 
-function setUp() {
+async function setUp() {
   let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
@@ -134,7 +138,12 @@ function setUp() {
           ref: '/test/test_function/some/path',
           value: {
             ".function": {
-              "fid": "some function config"
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             }
           }
         },
@@ -158,12 +167,12 @@ function setUp() {
     }
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(shardServerList, res.tx_hash)) {
+  if (!(await waitUntilTxFinalized(shardServerList, res.tx_hash))) {
     console.log(`Failed to check finalization of setUp() tx.`)
   }
 }
 
-function cleanUp() {
+async function cleanUp() {
   let res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
@@ -191,73 +200,12 @@ function cleanUp() {
     }
   }).body.toString('utf-8')).result;
   assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(shardServerList, res.tx_hash)) {
+  if (!(await waitUntilTxFinalized(shardServerList, res.tx_hash))) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
 }
 
-function setUpForSharding(shardingConfig) {
-  const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
-  const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
-    json: {
-      op_list: [
-        {
-          type: WriteDbOperations.SET_OWNER,
-          ref: sharding_path,
-          value: {
-            [OwnerProperties.OWNER]: {
-              [OwnerProperties.OWNERS]: {
-                [shard_owner]: buildOwnerPermissions(true ,true, true, true),
-                [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false)
-              }
-            }
-          }
-        },
-        {
-          type: WriteDbOperations.SET_RULE,
-          ref: sharding_path,
-          value: {
-            [RuleProperties.WRITE]: `auth.addr === '${shard_reporter}'`
-          }
-        },
-        {
-          type: WriteDbOperations.SET_RULE,
-          ref: `${sharding_path}/${ShardingProperties.LATEST}`,
-          value: {
-            [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
-          }
-        },
-        {
-          type: WriteDbOperations.SET_FUNCTION,
-          ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
-          value: {
-            [FunctionProperties.FUNCTION]: {
-              [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
-                [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-                [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
-              }
-            }
-          }
-        },
-        {
-          type: WriteDbOperations.SET_VALUE,
-          ref: ChainUtil.formatPath([
-            PredefinedDbPaths.SHARDING,
-            PredefinedDbPaths.SHARDING_SHARD,
-            ainUtil.encode(sharding_path)
-          ]),
-          value: shardingConfig
-        }
-      ],
-    }
-  }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
-  if (!waitUntilTxFinalized(parentServerList, res.tx_hash)) {
-    console.log(`Failed to check finalization of setUpForSharding() tx.`)
-  }
-}
-
-describe('Sharding', () => {
+describe('Sharding', async () => {
   const token =
       readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_token.json'));
   const parentAccounts =
@@ -273,13 +221,14 @@ describe('Sharding', () => {
   let parent_tracker_proc, parent_server_proc,
       tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
 
-  before(() => {
+  before(async () => {
     rimraf.sync(CHAINS_DIR)
 
-    parent_tracker_proc = startServer(TRACKER_SERVER, 'parent tracker server', {}, false);
-    sleep(2000);
-    parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], false);
-    sleep(15000);
+    parent_tracker_proc =
+        startServer(TRACKER_SERVER, 'parent tracker server', { CONSOLE_LOG: false }, true);
+    await ChainUtil.sleep(2000);
+    parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], true);
+    await ChainUtil.sleep(15000);
     // Give AIN to sharding owner and reporter
     const shardReportRes = parseOrLog(syncRequest(
       'POST', parentServer + '/set', { json: {
@@ -298,19 +247,42 @@ describe('Sharding', () => {
         nonce: -1
       } }).body.toString('utf-8')
     ).result;
-    waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+    await waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+    // Create app at the parent chain for the shard
+    const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+      json: {
+        ref: `/staking/afan/${parentServerAddr}/0/stake/${Date.now()}/value`,
+        value: 1
+      }
+    }).body.toString('utf-8')).result;
+    assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+    if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
+      console.log(`Failed to check finalization of app staking tx.`);
+    }
+    const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+      json: {
+        ref: `/manage_app/afan/create/${Date.now()}`,
+        value: {
+          admin: { [shardOwnerAddr]: true }
+        }
+      }
+    }).body.toString('utf-8')).result;
+    assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+    if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
+      console.log(`Failed to check finalization of create app tx.`);
+    }
     
-    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], false);
-    sleep(2000);
-    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], false);
-    sleep(2000);
-    waitUntilShardReporterStarts();
-    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3], false);
-    sleep(2000);
-    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], false);
-    sleep(2000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], false);
-    sleep(2000);
+    tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
+    await ChainUtil.sleep(2000);
+    server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], true);
+    await ChainUtil.sleep(2000);
+    await waitUntilShardReporterStarts();
+    server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3], true);
+    await ChainUtil.sleep(2000);
+    server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], true);
+    await ChainUtil.sleep(2000);
+    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], true);
+    await ChainUtil.sleep(2000);
   });
 
   after(() => {
@@ -467,8 +439,8 @@ describe('Sharding', () => {
   });
 
   describe('State proof hash reporting', () => {
-    before(() => {
-      waitForNewBlocks(server1, sharding.reporting_period * 3);
+    before(async () => {
+      await waitForNewBlocks(server1, sharding.reporting_period * 3);
     });
 
     describe('Periodic reports', () => {
@@ -502,18 +474,18 @@ describe('Sharding', () => {
     });
 
     describe('Shard reporter node restart', () => {
-      it('can resume reporting after missing some reports', () => {
+      it('can resume reporting after missing some reports', async () => {
         const reportsBefore = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
         console.log(`Shutting down server[0]...`);
         server1_proc.kill();
-        waitForNewBlocks(server2, sharding.reporting_period);
+        await waitForNewBlocks(server2, sharding.reporting_period);
         console.log(`Restarting server[0]...`);
         server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
-        waitForNewBlocks(server2, sharding.reporting_period * 2);
-        waitUntilNodeSyncs(server1);
-        waitForNewBlocks(server1, sharding.reporting_period);
+        await waitForNewBlocks(server2, sharding.reporting_period * 2);
+        await waitUntilNodeSyncs(server1);
+        await waitForNewBlocks(server1, sharding.reporting_period);
         const reportsAfter = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
@@ -531,12 +503,12 @@ describe('Sharding', () => {
 
   describe('API Tests', () => {
     describe('Get API', () => {
-      before(() => {
-        setUp();
+      before(async () => {
+        await setUp();
       })
 
-      after(() => {
-        cleanUp();
+      after(async () => {
+        await cleanUp();
       })
 
       describe('/get_value', () => {
@@ -573,7 +545,12 @@ describe('Sharding', () => {
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, {
             '.function': {
-              'fid': 'some function config'
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             }
           });
         })
@@ -585,7 +562,12 @@ describe('Sharding', () => {
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, {
             '.function': {
-              'fid': 'some function config'
+              "fid": {
+                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_id": "fid",
+                "function_type": "REST",
+                "service_name": "https://ainetwork.ai"
+              }
             }
           });
         })
@@ -662,7 +644,12 @@ describe('Sharding', () => {
             },
             "matched_config": {
               "config": {
-                "fid": "some function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               },
               "path": "/test/test_function/some/path"
             },
@@ -683,7 +670,12 @@ describe('Sharding', () => {
             },
             "matched_config": {
               "config": {
-                "fid": "some function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               },
               "path": "/apps/afan/test/test_function/some/path"
             },
@@ -877,7 +869,12 @@ describe('Sharding', () => {
               100,
               {
                 ".function": {
-                  "fid": "some function config"
+                  "fid": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 }
               },
               {
@@ -948,7 +945,12 @@ describe('Sharding', () => {
               100,
               {
                 ".function": {
-                  "fid": "some function config"
+                  "fid": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 }
               },
               {
@@ -1030,7 +1032,12 @@ describe('Sharding', () => {
               },
               "matched_config": {
                 "config": {
-                  "fid": "some function config"
+                  "fid": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 },
                 "path": "/test/test_function/some/path"
               },
@@ -1052,7 +1059,12 @@ describe('Sharding', () => {
               },
               "matched_config": {
                 "config": {
-                  "fid": "some function config"
+                  "fid": {
+                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_id": "fid",
+                    "function_type": "REST",
+                    "service_name": "https://ainetwork.ai"
+                  }
                 },
                 "path": "/apps/afan/test/test_function/some/path"
               },
@@ -1210,12 +1222,12 @@ describe('Sharding', () => {
     })
 
     describe('Set API', () => {
-      beforeEach(() => {
-        setUp();
+      beforeEach(async () => {
+        await setUp();
       })
 
-      afterEach(() => {
-        cleanUp();
+      afterEach(async () => {
+        await cleanUp();
       })
 
       describe('/set_value', () => {
@@ -1298,7 +1310,12 @@ describe('Sharding', () => {
             ref: "test/test_function/other/path",
             value: {
               ".function": {
-                "fid": "some other function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               }
             },
             nonce: -1
@@ -1314,7 +1331,12 @@ describe('Sharding', () => {
             ref: "apps/afan/test/test_function/other/path",
             value: {
               ".function": {
-                "fid": "some other function config"
+                "fid": {
+                  "event_listener": "https://events.ainetwork.ai/trigger3",  // Listener 3
+                  "function_id": "fid",
+                  "function_type": "REST",
+                  "service_name": "https://ainetwork.ai"
+                }
               }
             },
             is_global: true,
@@ -1363,7 +1385,16 @@ describe('Sharding', () => {
           const request = {
             ref: "test/test_owner/other/path",
             value: {
-              ".owner": "some other owner config"
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": true,
+                    "write_owner": true,
+                    "write_rule": true,
+                    "write_function": true
+                  }
+                }
+              }
             },
             nonce: -1
           };
@@ -1377,7 +1408,16 @@ describe('Sharding', () => {
           const request = {
             ref: "apps/afan/test/test_owner/other2/path",
             value: {
-              ".owner": "some other2 owner config"
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": true,
+                    "write_owner": true,
+                    "write_rule": true,
+                    "write_function": true
+                  }
+                }
+              }
             },
             is_global: true,
             nonce: -1,
@@ -1412,7 +1452,14 @@ describe('Sharding', () => {
                 type: 'SET_FUNCTION',
                 ref: "/test/test_function/other3/path",
                 value: {
-                  ".function": "some other3 function config"
+                  ".function": {
+                    "fid": {
+                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_id": "fid",
+                      "function_type": "REST",
+                      "service_name": "https://ainetwork.ai"
+                    }
+                  }
                 }
               },
               {
@@ -1426,7 +1473,16 @@ describe('Sharding', () => {
                 type: 'SET_OWNER',
                 ref: "/test/test_owner/other3/path",
                 value: {
-                  ".owner": "some other3 owner config"
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
                 }
               }
             ],
@@ -1461,7 +1517,10 @@ describe('Sharding', () => {
                 "gas_amount": 1
               },
             ],
-            "gas_amount_total": 6,
+            "gas_amount_total": {
+              "app": {},
+              "service": 6
+            },
             "gas_cost_total": 0
           });
           assert.deepEqual(body.code, 0);
@@ -1492,7 +1551,14 @@ describe('Sharding', () => {
                 type: 'SET_FUNCTION',
                 ref: "/test/test_function/other4/path",
                 value: {
-                  ".function": "some other4 function config"
+                  ".function": {
+                    "fid": {
+                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_id": "fid",
+                      "function_type": "REST",
+                      "service_name": "https://ainetwork.ai"
+                    }
+                  }
                 },
                 is_global: true,
               },
@@ -1508,7 +1574,16 @@ describe('Sharding', () => {
                 type: 'SET_OWNER',
                 ref: "/test/test_owner/other4/path",
                 value: {
-                  ".owner": "some other4 owner config"
+                  ".owner": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": true,
+                        "write_owner": true,
+                        "write_rule": true,
+                        "write_function": true
+                      }
+                    }
+                  }
                 },
                 is_global: true,
               }
@@ -1544,7 +1619,10 @@ describe('Sharding', () => {
                 "gas_amount": 0
               },
             ],
-            "gas_amount_total": 0,
+            "gas_amount_total": {
+              "app": {},
+              "service": 0
+            },
             "gas_cost_total": 0
           });
           assert.deepEqual(body.code, 0);
@@ -1577,7 +1655,10 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas_amount: 1,
-                    gas_amount_total: 1,
+                    gas_amount_total: {
+                      app: {},
+                      service: 1
+                    },
                     gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1612,7 +1693,10 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas_amount: 1,
-                    gas_amount_total: 1,
+                    gas_amount_total: {
+                      app: {},
+                      service: 1
+                    },
                     gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1647,7 +1731,12 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas_amount: 1,
-                    gas_amount_total: 1,
+                    gas_amount_total: {
+                      app: {
+                        afan: 1
+                      },
+                      service: 0
+                    },
                     gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1683,7 +1772,7 @@ describe('Sharding', () => {
             protoVer: CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
-            expect(Array.isArray(resultList)).to.equal(true);
+            expect(ChainUtil.isArray(resultList)).to.equal(true);
             assert.deepEqual(res.result, {
               protoVer: CURRENT_PROTOCOL_VERSION,
               result: [
@@ -1691,7 +1780,10 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas_amount: 1,
-                    gas_amount_total: 1,
+                    gas_amount_total: {
+                      app: {},
+                      service: 1
+                    },
                     gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1727,7 +1819,7 @@ describe('Sharding', () => {
             protoVer: CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
-            expect(Array.isArray(resultList)).to.equal(true);
+            expect(ChainUtil.isArray(resultList)).to.equal(true);
             for (let i = 0; i < resultList.length; i++) {
               const result = resultList[i];
             }
@@ -1738,7 +1830,10 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas_amount: 1,
-                    gas_amount_total: 1,
+                    gas_amount_total: {
+                      app: {},
+                      service: 1
+                    },
                     gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1774,7 +1869,7 @@ describe('Sharding', () => {
             protoVer: CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
-            expect(Array.isArray(resultList)).to.equal(true);
+            expect(ChainUtil.isArray(resultList)).to.equal(true);
             for (let i = 0; i < resultList.length; i++) {
               const result = resultList[i];
             }
@@ -1785,7 +1880,12 @@ describe('Sharding', () => {
                   result: {
                     code: 0,
                     gas_amount: 1,
-                    gas_amount_total: 1,
+                    gas_amount_total: {
+                      app: {
+                        afan: 1
+                      },
+                      service: 0,
+                    },
                     gas_cost_total: 0
                   },
                   tx_hash: ChainUtil.hashSignature(signature),
@@ -1821,20 +1921,107 @@ describe('Sharding', () => {
     })
 
     describe('_updateLatestShardReport', () => {
-      before(() => {
-        setUpForSharding(shardingConfig);
+      before(async () => {
+        const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
+        const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+          json: {
+            ref: `/staking/a_dapp/${shard_owner}/0/stake/${Date.now()}/value`,
+            value: 1
+          }
+        }).body.toString('utf-8')).result;
+        assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+        if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
+          console.log(`Failed to check finalization of app staking tx.`)
+        }
+        const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+          json: {
+            ref: `/manage_app/a_dapp/create/${Date.now()}`,
+            value: {
+              admin: { [shard_owner]: true }
+            }
+          }
+        }).body.toString('utf-8')).result;
+        assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+        if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
+          console.log(`Failed to check finalization of create app tx.`)
+        }
+        const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
+          json: {
+            op_list: [
+              {
+                type: WriteDbOperations.SET_RULE,
+                ref: `${sharding_path}/${ShardingProperties.LATEST}`,
+                value: {
+                  [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
+                }
+              },
+              {
+                type: WriteDbOperations.SET_FUNCTION,
+                ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
+                value: {
+                  [FunctionProperties.FUNCTION]: {
+                    [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
+                      [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                      [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                    }
+                  }
+                }
+              },
+              {
+                type: WriteDbOperations.SET_VALUE,
+                ref: ChainUtil.formatPath([
+                  PredefinedDbPaths.SHARDING,
+                  PredefinedDbPaths.SHARDING_SHARD,
+                  ainUtil.encode(sharding_path)
+                ]),
+                value: shardingConfig
+              }
+            ],
+          }
+        }).body.toString('utf-8')).result;
+        assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+        if (!(await waitUntilTxFinalized(parentServerList, res.tx_hash))) {
+          console.log(`Failed to check finalization of sharding setup tx.`)
+        }
       });
 
-      it('update latest shard report', () => {
+      it('update latest shard report', async () => {
         const reportVal = {
           ref: `${shardingPath}/5/proof_hash`,
           value: "0xPROOF_HASH_5",
           nonce: -1,
         }
-        const shardReportRes = parseOrLog(syncRequest(
+        const shardReportBody = parseOrLog(syncRequest(
             'POST', parentServer + '/set_value', { json: reportVal }).body.toString('utf-8')
-        ).result;
-        waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+        );
+        assert.deepEqual(_.get(shardReportBody, 'result.result'), {
+          "code": 0,
+          "func_results": {
+            "_updateLatestShardReport": {
+              "code": "SUCCESS",
+              "gas_amount": 0,
+              "op_results": [
+                {
+                  "path": "/apps/a_dapp/latest",
+                  "result": {
+                    "code": 0,
+                    "gas_amount": 1,
+                  }
+                }
+              ]
+            }
+          },
+          "gas_amount": 1,
+          "gas_amount_total": {
+            "app": {
+              "a_dapp": 2
+            },
+            "service": 0
+          },
+          "gas_cost_total": 0,
+        });
+        expect(shardReportBody.code).to.equal(0);
+        await waitUntilTxFinalized(parentServerList, _.get(shardReportBody, 'result.tx_hash'));
         const shardingPathRes = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
@@ -1846,7 +2033,7 @@ describe('Sharding', () => {
         });
       });
 
-      it('update latest shard report - can handle reports that are out of order', () => {
+      it('update latest shard report - can handle reports that are out of order', async () => {
         const multipleReportVal = {
           op_list: [
             {
@@ -1860,10 +2047,51 @@ describe('Sharding', () => {
           ],
           nonce: -1,
         }
-        const shardReportRes = parseOrLog(syncRequest(
+        const shardReportBody = parseOrLog(syncRequest(
             'POST', parentServer + '/set', { json: multipleReportVal }).body.toString('utf-8')
-        ).result;
-        waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
+        );
+        assert.deepEqual(_.get(shardReportBody, 'result.result'), {
+          "result_list": [
+            {
+              "code": 0,
+              "func_results": {
+                "_updateLatestShardReport": {
+                  "code": "SUCCESS",
+                  "gas_amount": 0,
+                  "op_results": [
+                    {
+                      "path": "/apps/a_dapp/latest",
+                      "result": {
+                        "code": 0,
+                        "gas_amount": 1,
+                      }
+                    }
+                  ]
+                }
+              },
+              "gas_amount": 1,
+            },
+            {
+              "code": 0,
+              "func_results": {
+                "_updateLatestShardReport": {
+                  "code": "SUCCESS",
+                  "gas_amount": 0,
+                }
+              },
+              "gas_amount": 1
+            }
+          ],
+          "gas_amount_total": {
+            "app": {
+              "a_dapp": 3
+            },
+            "service": 0
+          },
+          "gas_cost_total": 0,
+        });
+        expect(shardReportBody.code).to.equal(0);
+        await waitUntilTxFinalized(parentServerList, _.get(shardReportBody, 'result.tx_hash'));
         const shardingPathRes = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;

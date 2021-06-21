@@ -1,3 +1,4 @@
+# This setup is for local run.
 name: AIN-blockchain CI/CD
 
 on:
@@ -13,26 +14,32 @@ on:
       - 'master'
 jobs:
   build_and_test:
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' }}
-    runs-on: macos-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      # Setup node environment for testing
       - uses: actions/setup-node@v2
         with:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
+      - name: Install Yarn
+        run: sudo npm install -g yarn
+      - name: install pip
+        run: |
+          sudo apt-get install software-properties-common
+          sudo apt-add-repository universe
+          sudo apt-get update
+          sudo apt-get -y install python-pip
+          pip install ast
       - name: yarn install
         run: yarn install
-      - name: run unittest
-        run: yarn run test_unit
-      - name: run integration test
-        if: github.event.pull_request.base.ref == 'master'   # integration test only run when master merging
+      # - name: yarn unittest
+      #   run: yarn run test_unit
+      - name: yarn integration test
         run: yarn run test_integration
   check_protocol_version:
     if: ${{ github.event_name == 'push' }}
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: test

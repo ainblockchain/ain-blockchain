@@ -145,7 +145,10 @@ describe("Functions", () => {
             ChainUtil.parsePath(refPathRest),
             null, null, null, transaction);
         assert.deepEqual(func_results, {
-          "gas_amount": 10
+          "0x11111": {
+            "code": "SUCCESS",
+            "gas_amount": 10,
+          }
         });
         promise_results.then((resp) => {
           assert.deepEqual(resp, {
@@ -396,7 +399,7 @@ describe("Functions", () => {
             tx);
         assert.deepEqual(func_results, {
           "_transfer": {
-            ".op_results": [
+            "op_results": [
              {
                 "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
                 "result": {
@@ -420,7 +423,7 @@ describe("Functions", () => {
               }
             ],
             "code": "SUCCESS",
-            "gas_amount": 1000,
+            "gas_amount": 1000
           }
         });
         promise_results.then((resp) => {
@@ -451,7 +454,7 @@ describe("Functions", () => {
             tx);
         assert.deepEqual(func_results, {
           "_transfer": {
-            ".op_results": [
+            "op_results": [
               {
                 "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
                 "result": {
@@ -508,7 +511,10 @@ describe("Functions", () => {
             ChainUtil.parsePath(refPathRest),
             null, null, null, transaction);
         assert.deepEqual(func_results, {
-          "gas_amount": 10
+          "0x11111": {
+            "code": "SUCCESS",
+            "gas_amount": 10,
+          }
         });
         promise_results.then((resp) => {
           assert.deepEqual(resp, {
@@ -535,134 +541,5 @@ describe("Functions", () => {
       }
       assert.deepEqual(Functions.convertPathVars2Params(pathVars), params);
     })
-  });
-
-  describe("applyFunctionChange()", () => {
-    const curFunction = {
-      ".function": {
-        "0x111": {
-          "function_type": "NATIVE",
-          "function_id": "0x111"
-        },
-        "0x222": {
-          "function_type": "NATIVE",
-          "function_id": "0x222"
-        },
-        "0x333": {
-          "function_type": "NATIVE",
-          "function_id": "0x333"
-        }
-      }
-    };
-
-    it("add / delete / modify non-existing function", () => {
-      assert.deepEqual(Functions.applyFunctionChange(null, {
-        ".function": {  // function
-          "0x111": null,
-          "0x222": {
-            "function_type": "REST",
-            "function_id": "0x222"
-          },
-        },
-        "deeper": {
-          ".function": {  // deeper function
-            "0x999": {
-              "function_type": "REST",
-              "function_id": "0x999"
-            }
-          }
-        }
-      }), {  // the same as the given function change.
-        ".function": {
-          "0x111": null,
-          "0x222": {
-            "function_type": "REST",
-            "function_id": "0x222"
-          },
-        },
-        "deeper": {
-          ".function": {
-            "0x999": {
-              "function_type": "REST",
-              "function_id": "0x999"
-            }
-          }
-        }
-      });
-    });
-
-    it("add / delete / modify existing function", () => {
-      assert.deepEqual(Functions.applyFunctionChange(curFunction, {
-        ".function": {
-          "0x111": null,  // delete
-          "0x222": {  // modify
-            "function_type": "REST",
-            "function_id": "0x222"
-          },
-          "0x444": {  // add
-            "function_type": "REST",
-            "function_id": "0x444"
-          }
-        }
-      }), {
-        ".function": {
-          "0x222": {  // modified
-            "function_type": "REST",
-            "function_id": "0x222"
-          },
-          "0x333": {  // untouched
-            "function_type": "NATIVE",
-            "function_id": "0x333"
-          },
-          "0x444": {  // added
-            "function_type": "REST",
-            "function_id": "0x444"
-          }
-        }
-      });
-    });
-
-    it("add / delete / modify existing function with deeper function", () => {
-      assert.deepEqual(Functions.applyFunctionChange(curFunction, {
-        ".function": {
-          "0x111": null,  // delete
-          "0x222": {  // modify
-            "function_type": "REST",
-            "function_id": "0x222"
-          },
-          "0x444": {  // add
-            "function_type": "REST",
-            "function_id": "0x444"
-          }
-        },
-        "deeper": {
-          ".function": {  // deeper function
-            "0x999": {
-              "function_type": "REST",
-              "function_id": "0x999"
-            }
-          }
-        }
-      }), {
-        ".function": {  // deeper function has no effect
-          "0x222": {  // modified
-            "function_type": "REST",
-            "function_id": "0x222"
-          },
-          "0x333": {  // untouched
-            "function_type": "NATIVE",
-            "function_id": "0x333"
-          },
-          "0x444": {  // added
-            "function_type": "REST",
-            "function_id": "0x444"
-          }
-        }
-      });
-    });
-
-    it("with null function change", () => {
-      assert.deepEqual(Functions.applyFunctionChange(curFunction, null), null);
-    });
   });
 })

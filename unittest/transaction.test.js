@@ -10,7 +10,6 @@ const Transaction = require('../tx-pool/transaction');
 const BlockchainNode = require('../node/');
 const { setNodeForTesting, getTransaction } = require('./test-util');
 const ChainUtil = require('../common/chain-util');
-const { msleep } = require('sleep');
 
 describe('Transaction', () => {
   let node;
@@ -20,6 +19,8 @@ describe('Transaction', () => {
   let txCustomAddress;
   let txBodyParentHash;
   let txParentHash;
+  let txBodyBilling;
+  let txBilling;
   let txBodyForNode;
   let txForNode;
 
@@ -66,6 +67,19 @@ describe('Transaction', () => {
       parent_tx_hash: '0xd96c7966aa6e6155af3b0ac69ec180a905958919566e86c88aef12c94d936b5e',
     };
     txParentHash = Transaction.fromTxBody(txBodyParentHash, node.account.private_key);
+
+    txBodyBilling = {
+      operation: {
+        type: 'SET_VALUE',
+        ref: '/apps/app_a/path',
+        value: 'val',
+      },
+      timestampe: 1568798344000,
+      nonce: 10,
+      gas_price: 1,
+      billing: 'app_a|0'
+    };
+    txBilling = Transaction.fromTxBody(txBodyBilling, node.account.private_key);
 
     txBodyForNode = {
       operation: {
@@ -135,20 +149,38 @@ describe('Transaction', () => {
       assert.deepEqual(tx2, null);
     });
 
-    it('fail with missing gas_price', () => {
+    it('succeed with absent gas_price', () => {
       delete txBody.gas_price;
       const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
-      assert.deepEqual(tx2, null);
+      expect(tx2).to.not.equal(null);
+    });
+
+    it('succeed with zero gas_price', () => {
+      txBody.gas_price = 0;
+      tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      expect(tx2).to.not.equal(null);
     });
 
     it('fail with invalid gas_price', () => {
       txBody.gas_price = -1;
       let tx3 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx3, null);
+    });
 
-      txBody.gas_price = 0;
-      tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+    it('succeed with absent billing', () => {
+      delete txBody.billing;
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
+      expect(tx2).to.not.equal(null);
+    });
+
+    it('fail with invalid billing', () => {
+      txBody.billing = 'app_a';
+      const tx2 = Transaction.fromTxBody(txBody, node.account.private_key);
       assert.deepEqual(tx2, null);
+
+      txBody.billing = 'app_a|0|1';
+      const tx3 = Transaction.fromTxBody(txBody, node.account.private_key);
+      assert.deepEqual(tx3, null);
     });
   });
 
@@ -174,14 +206,38 @@ describe('Transaction', () => {
       tx.extra.created_at = 'erased';
       assert.deepEqual(executable, tx);
     });
-
-    it('setExecutedAt', () => {
-      const executable = Transaction.toExecutable(Transaction.toJsObject(tx));
-      assert.deepEqual(executable.extra.executed_at, null);
-      executable.setExecutedAt(123456789);
-      assert.deepEqual(executable.extra.executed_at, 123456789);
-    });
   });
+
+  describe('extra', () => {
+    const gas = {
+      gas_amount: {
+        service: 100,
+        app: {
+          app1: 50,
+          app2: 20
+        }
+      }
+    };
+
+    it('setExtraField', () => {
+      // executed_at
+      assert.deepEqual(tx.extra.executed_at, null);
+      tx.setExtraField('executed_at', 123456789);
+      assert.deepEqual(tx.extra.executed_at, 123456789);
+      
+      // gas
+      assert.deepEqual(tx.extra.gas, undefined);
+      tx.setExtraField('gas', gas);
+      assert.deepEqual(tx.extra.gas, gas);
+    });
+
+    it('setExtraField (null)', () => {
+      tx.setExtraField('gas', gas);
+      assert.deepEqual(tx.extra.gas, gas);
+      tx.setExtraField('gas', null);
+      assert.deepEqual(tx.extra.gas, undefined);
+    });
+  })
 
   describe('getTransaction', () => {
     it('construction', () => {
@@ -193,14 +249,14 @@ describe('Transaction', () => {
       expect(txForNode.address).to.equal(node.account.address);
     });
 
-    it('assigns nonces correctly', () => {
+    it('assigns nonces correctly', async () => {
       let tx2;
       let currentNonce;
       for (currentNonce = node.nonce - 1; currentNonce < 50; currentNonce++) {
         delete txBodyForNode.nonce;
         tx2 = getTransaction(node, txBodyForNode);
         node.db.executeTransaction(tx2, node.bc.lastBlockNumber() + 1);
-        msleep(1);
+        await ChainUtil.sleep(1);
       }
       expect(tx2).to.not.equal(null);
       expect(tx2.tx_body.nonce).to.equal(currentNonce);
@@ -250,6 +306,11 @@ describe('Transaction', () => {
 
     it('fail to verify an invalid transaction with altered parent_tx_hash', () => {
       txParentHash.tx_body.parent_tx_hash = '';
+      expect(Transaction.verifyTransaction(txParentHash)).to.equal(false);
+    });
+
+    it('fail to verify an invalid transaction with altered billing', () => {
+      txParentHash.tx_body.billing = 'app_b|0';
       expect(Transaction.verifyTransaction(txParentHash)).to.equal(false);
     });
   });

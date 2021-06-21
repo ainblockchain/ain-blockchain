@@ -81,8 +81,12 @@ class Transaction {
     };
   }
 
-  setExecutedAt(executedAt) {
-    ChainUtil.setJsObject(this, ['extra', 'executed_at'], executedAt);
+  setExtraField(name, value) {
+    if (value === null) {
+      delete this.extra[name];
+    } else {
+      ChainUtil.setJsObject(this, ['extra', name], value);
+    }
   }
 
   toString() {
@@ -94,7 +98,7 @@ class Transaction {
    */
   static sanitizeSetOperation(setOp) {
     const opList = [];
-    if (Array.isArray(setOp.op_list)) {
+    if (ChainUtil.isArray(setOp.op_list)) {
       for (const op of setOp.op_list) {
         opList.push(this.sanitizeSimpleOperation(op));
       }
@@ -166,6 +170,9 @@ class Transaction {
     if (txBody.gas_price !== undefined) {
       sanitized.gas_price = ChainUtil.numberOrZero(txBody.gas_price);
     }
+    if (txBody.billing !== undefined) {
+      sanitized.billing = ChainUtil.stringOrEmpty(txBody.billing);
+    }
     // A devel method for bypassing the transaction verification.
     if (txBody.address !== undefined) {
       sanitized.address = ChainUtil.stringOrEmpty(txBody.address);
@@ -201,6 +208,11 @@ class Transaction {
           `Transaction body has invalid gas price: ${JSON.stringify(txBody, null, 2)}`);
       return false;
     }
+    if (!Transaction.isValidBilling(txBody.billing)) {
+      logger.info(
+          `Transaction body has invalid billing: ${JSON.stringify(txBody, null, 2)}`);
+      return false;
+    }
     return Transaction.isInStandardFormat(txBody);
   }
 
@@ -218,6 +230,10 @@ class Transaction {
     return gasPrice > 0 || ENABLE_GAS_FEE_WORKAROUND && (gasPrice === undefined || gasPrice === 0);
   }
 
+  static isValidBilling(billing) {
+    return billing === undefined || (ChainUtil.isString(billing) && billing.split('|').length === 2);
+  }
+
   static isInStandardFormat(txBody) {
     const sanitized = Transaction.sanitizeTxBody(txBody);
     const isIdentical = _.isEqual(JSON.parse(JSON.stringify(sanitized)), txBody, { strict: true });
@@ -232,11 +248,11 @@ class Transaction {
   }
 
   static isBatchTxBody(txBody) {
-    return txBody && Array.isArray(txBody.tx_body_list);
+    return txBody && ChainUtil.isArray(txBody.tx_body_list);
   }
 
   static isBatchTransaction(tx) {
-    return tx && Array.isArray(tx.tx_list);
+    return tx && ChainUtil.isArray(tx.tx_list);
   }
 }
 

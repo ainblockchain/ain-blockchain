@@ -3,7 +3,7 @@ const path = require('path');
 const semver = require('semver');
 const ChainUtil = require('./chain-util');
 
-// Genesis configs.
+// ** Genesis configs **
 const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/base';
 const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
     process.env.GENESIS_CONFIGS_DIR : null;
@@ -11,7 +11,7 @@ const GenesisParams = getGenesisConfig('genesis_params.json');
 const GenesisToken = getGenesisConfig('genesis_token.json');
 const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 
-// Feature flags.
+// ** Feature flags **
 // NOTE(platfowner): If there is a corresponding env variable (e.g. force... flags),
 //                   the flag value will be OR-ed to the value.
 const FeatureFlags = {
@@ -25,24 +25,27 @@ const FeatureFlags = {
   enableRichTransactionLogging: false,
   // Enables rich logging for p2p communication.
   enableRichP2pCommunicationLogging: false,
+  // Enables rich logging for tx selection in tx pool.
+  enableRichTxSelectionLogging: false,
 };
 
-// Environment variables.
+// ** Environment variables **
 const DEBUG = ChainUtil.convertEnvVarInputToBool(process.env.DEBUG);
 const CONSOLE_LOG = ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
-const ENABLE_DEV_CLIENT_API = ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_API);
+const ENABLE_DEV_SET_CLIENT_API = ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_SET_CLIENT_API);
 const ENABLE_TX_SIG_VERIF_WORKAROUND =
     ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
 const ENABLE_GAS_FEE_WORKAROUND =
-    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND);
+    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
 const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
     process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
 const LIGHTWEIGHT = ChainUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
+const SYNC_MODE = process.env.SYNC_MODE || 'full';
 
-// Constants
+// ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
@@ -52,7 +55,7 @@ if (!fs.existsSync(PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + PROTOCOL_VERSIONS);
 }
 const PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(PROTOCOL_VERSIONS));
-const DATA_PROTOCOL_VERSION = "1.2.0";
+const DATA_PROTOCOL_VERSION = "1.0.0";
 if (!semver.valid(DATA_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for DATA_PROTOCOL_VERSION');
 }
@@ -61,28 +64,24 @@ if (!semver.valid(CONSENSUS_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for CONSENSUS_PROTOCOL_VERSION');
 }
 const LOGS_DIR = path.resolve(__dirname, '../logs');
-const CHAINS_DIR = path.resolve(__dirname, '../chains');
-const CHAINS_N2B_DIR_NAME = 'n2b'; // Note: Block number to block
-const CHAINS_H2N_DIR_NAME = 'h2n'; // Note: Block hash to block number
+const BLOCKCHAIN_DATA_DIR = process.env.BLOCKCHAIN_DATA_DIR || path.resolve(__dirname, '../ain_blockchain_data');
+if (!fs.existsSync(BLOCKCHAIN_DATA_DIR)) {
+  fs.mkdirSync(BLOCKCHAIN_DATA_DIR, { recursive: true });
+}
+const CHAINS_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'chains');
+const CHAINS_N2B_DIR_NAME = 'n2b'; // NOTE: Block number to block.
+const CHAINS_H2N_DIR_NAME = 'h2n'; // NOTE: Block hash to block number.
+const SNAPSHOTS_ROOT_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'snapshots');
+const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // NOTE: Block number to snapshot.
+const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // NOTE: How often the snapshot is made
+const MAX_NUM_SNAPSHOTS = 10; // NOTE: max number of snapshots to keep
 const HASH_DELIMITER = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
 const MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
 const MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
-const NATIVE_SERVICE_TYPES = [
-  'checkin',
-  'consensus',
-  'escrow',
-  'gas_fee',
-  'manage_app',
-  'payments',
-  'sharding',
-  'staking',
-  'test',  // NOTE(platfowner): A temporary solution for tests.
-  'transfer',
-];
 
-// Enums
+// ** Enums **
 /**
  * Message types for communication between nodes.
  *
@@ -134,6 +133,7 @@ const PredefinedDbPaths = {
   // Gas fee
   GAS_FEE: 'gas_fee',
   COLLECT: 'collect',
+  BILLING: 'billing',
   // Token
   TOKEN: 'token',
   TOKEN_NAME: 'name',
@@ -233,6 +233,7 @@ const AccountProperties = {
 const OwnerProperties = {
   ANYONE: '*',
   BRANCH_OWNER: 'branch_owner',
+  FID_PREFIX: 'fid:',
   OWNER: '.owner',
   OWNERS: 'owners',
   WRITE_FUNCTION: 'write_function',
@@ -308,11 +309,17 @@ const NativeFunctionIds = {
   PAY: '_pay',
   RELEASE: '_release',
   SAVE_LAST_TX: '_saveLastTx',
+  SET_OWNER_CONFIG: '_setOwnerConfig',
   STAKE: '_stake',
   TRANSFER: '_transfer',
   UNSTAKE: '_unstake',
   UPDATE_LATEST_SHARD_REPORT: '_updateLatestShardReport',
 };
+
+function isNativeFunctionId(fid) {
+  const fidList = Object.values(NativeFunctionIds);
+  return fidList.includes(fid);
+}
 
 /**
  * Properties of sharding configs.
@@ -399,19 +406,9 @@ const FunctionResultCode = {
   IN_LOCKUP_PERIOD: 'IN_LOCKUP_PERIOD',
   INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
   INTERNAL_ERROR: 'INTERNAL_ERROR',  // Something went wrong but don't know why
+  INVALID_ACCOUNT_NAME: 'INVALID_ACCOUNT_NAME',
+  INVALID_SERVICE_NAME: 'INVALID_SERVICE_NAME',
   SUCCESS: 'SUCCESS',
-};
-
-/**
- * Properties of execution results.
- *
- * @enum {string}
- */
-const ExecResultProperties = {
-  FUNC_RESULTS: '.func_results',
-  OP_RESULTS: '.op_results',
-  PATH: 'path',
-  RESULT: 'result',
 };
 
 /**
@@ -443,6 +440,7 @@ const StateVersions = {
   SEGMENT: 'SEGMENT',
   SNAP: 'SNAP',
   START: 'START',
+  TX_POOL: 'TX_POOL',
 };
 
 /**
@@ -454,6 +452,67 @@ const GasFeeConstants = {
   ACCOUNT_REGISTRATION_GAS_AMOUNT: 1000,
   REST_FUNCTION_CALL_GAS_AMOUNT: 10,
 };
+
+// ** Lists **
+
+/**
+ * Root labels of service paths.
+ */
+const SERVICE_TYPES = [
+  PredefinedDbPaths.ACCOUNTS,
+  PredefinedDbPaths.CHECKIN,
+  PredefinedDbPaths.ESCROW,
+  PredefinedDbPaths.GAS_FEE,
+  PredefinedDbPaths.MANAGE_APP,
+  PredefinedDbPaths.PAYMENTS,
+  PredefinedDbPaths.SERVICE_ACCOUNTS,
+  PredefinedDbPaths.SHARDING,
+  PredefinedDbPaths.STAKING,
+  PredefinedDbPaths.TRANSFER,
+  'test',  // NOTE(platfowner): A temporary solution for tests.
+];
+
+function isServiceType(type) {
+  return SERVICE_TYPES.includes(type);
+}
+
+/**
+ * Service types allowed to create service accounts.
+ */
+const SERVICE_ACCOUNT_SERVICE_TYPES = [
+  PredefinedDbPaths.BILLING,
+  PredefinedDbPaths.ESCROW,
+  PredefinedDbPaths.GAS_FEE,
+  PredefinedDbPaths.PAYMENTS,
+  PredefinedDbPaths.STAKING,
+];
+
+function isServiceAccountServiceType(type) {
+  return SERVICE_ACCOUNT_SERVICE_TYPES.includes(type);
+}
+
+/**
+ * Service types that are app-dependent.
+ */
+const APP_DEPENDENT_SERVICE_TYPES = [
+  PredefinedDbPaths.MANAGE_APP,
+  PredefinedDbPaths.PAYMENTS,
+  PredefinedDbPaths.STAKING,
+];
+
+function isAppDependentServiceType(type) {
+  return APP_DEPENDENT_SERVICE_TYPES.includes(type);
+}
+
+/**
+ * Sync mode options.
+ *
+ * @enum {string}
+ */
+const SyncModeOptions = {
+  FULL: 'full',
+  FAST: 'fast',
+}
 
 /**
  * Overwriting environment variables.
@@ -487,15 +546,15 @@ function overwriteGenesisParams(overwritingParams, type) {
 overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
 overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
-// Note(minsu): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
+// NOTE(minsulee2): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
 // The minimum network connections are set based on the MIN_NUM_VALIDATORS otherwise.
 function initializeNetworkEnvronments() {
   if (process.env.NETWORK_OPTIMIZATION) {
     return GenesisParams.network;
   } else {
     return {
-      // Note(minsu): Need a discussion that MIN_NUM_VALIDATORS and MAX_INBOUND_LIMIT should not be
-      // related to one another.
+      // NOTE(minsulee2): Need a discussion that MIN_NUM_VALIDATORS and MAX_INBOUND_LIMIT
+      // should not be related to one another.
       P2P_MESSAGE_TIMEOUT_MS: 600000,
       MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
       MAX_INBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
@@ -652,6 +711,10 @@ function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule
   };
 }
 
+function buildRulePermission(rule) {
+  return { [RuleProperties.WRITE]: rule };
+}
+
 module.exports = {
   FeatureFlags,
   CURRENT_PROTOCOL_VERSION,
@@ -662,9 +725,13 @@ module.exports = {
   CHAINS_DIR,
   CHAINS_N2B_DIR_NAME,
   CHAINS_H2N_DIR_NAME,
+  SNAPSHOTS_ROOT_DIR,
+  SNAPSHOTS_N2S_DIR_NAME,
+  SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
+  MAX_NUM_SNAPSHOTS,
   DEBUG,
   CONSOLE_LOG,
-  ENABLE_DEV_CLIENT_API,
+  ENABLE_DEV_SET_CLIENT_API,
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
   COMCOM_HOST_EXTERNAL_IP,
@@ -672,12 +739,12 @@ module.exports = {
   PORT,
   P2P_PORT,
   LIGHTWEIGHT,
+  SYNC_MODE,
   HASH_DELIMITER,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
   MICRO_AIN,
   MILLI_AIN,
-  NATIVE_SERVICE_TYPES,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
@@ -691,13 +758,13 @@ module.exports = {
   ProofProperties,
   StateInfoProperties,
   NativeFunctionIds,
+  isNativeFunctionId,
   ShardingProperties,
   ShardingProtocols,
   TokenExchangeSchemes,
   ReadDbOperations,
   WriteDbOperations,
   TransactionStatus,
-  ExecResultProperties,
   StateVersions,
   GenesisToken,
   GenesisAccounts,
@@ -707,7 +774,12 @@ module.exports = {
   GenesisRules,
   GenesisOwners,
   GasFeeConstants,
+  SyncModeOptions,
+  isServiceType,
+  isServiceAccountServiceType,
+  isAppDependentServiceType,
   buildOwnerPermissions,
+  buildRulePermission,
   ...GenesisParams.blockchain,
   ...GenesisParams.consensus,
   ...GenesisParams.resource,

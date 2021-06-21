@@ -1,5 +1,3 @@
-const EC = require('elliptic').ec;
-const ec = new EC('secp256k1');
 const stringify = require('fast-json-stable-stringify');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
@@ -67,21 +65,9 @@ class ChainUtil {
           ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
     } catch (err) {
       logger.error(
-          `[${LOG_HEADER}] Failed to extract address with error: ${JSON.stringify(err)}.`);
+          `[${LOG_HEADER}] Failed to extract address with error: ${err} ${err.stack}.`);
     }
     return address;
-  }
-
-  // TODO(lia): remove this function
-  static genKeyPair() {
-    let keyPair;
-    if (PRIVATE_KEY) {
-      keyPair = ec.keyFromPrivate(PRIVATE_KEY, 'hex');
-      keyPair.getPublic();
-    } else {
-      keyPair = ec.genKeyPair();
-    }
-    return keyPair;
   }
 
   static isBool(value) {
@@ -162,6 +148,12 @@ class ChainUtil {
 
   static toServiceAccountName(serviceType, serviceName, key) {
     return ruleUtil.toServiceAccountName(serviceType, serviceName, key);
+  }
+
+  // NOTE(liayoo): billing is in the form <app name>|<billing id>
+  static toBillingAccountName(billing) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    return `${PredefinedDbPaths.BILLING}|${billing}`;
   }
 
   static toEscrowAccountName(source, target, escrowKey) {
@@ -289,40 +281,117 @@ class ChainUtil {
   /**
    * Returns true if the given result is from failed transaction or transaction list.
    */
-  // TODO(seo): Check the function results as well.
   static isFailedTx(result) {
     if (!result) {
       return true;
     }
-    if (result.result_list && ChainUtil.isArray(result.result_list)) {
-      for (const elem of result.result_list) {
-        if (ChainUtil.isFailedTxResultCode(elem.code)) {
+    if (ChainUtil.isArray(result.result_list)) {
+      for (const subResult of result.result_list) {
+        if (ChainUtil.isFailedTxResultCode(subResult.code)) {
           return true;
+        }
+        if (subResult.func_results) {
+          if (ChainUtil.isFailedFuncTrigger(subResult.func_results)) {
+            return true;
+          }
         }
       }
       return false;
     }
-    return ChainUtil.isFailedTxResultCode(result.code);
+    if (ChainUtil.isFailedTxResultCode(result.code)) {
+      return true;
+    }
+    if (result.func_results) {
+      if (ChainUtil.isFailedFuncTrigger(result.func_results)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   static isFailedTxResultCode(code) {
     return code !== 0;
   }
 
+  /**
+   * Returns true if the given result is from a failed function trigger.
+   */
+  static isFailedFuncTrigger(result) {
+    if (ChainUtil.isDict(result)) {
+      for (const fid in result) {
+        const funcResult = result[fid];
+        if (ChainUtil.isFailedFuncResultCode(funcResult.code)) {
+          return true;
+        }
+        if (ChainUtil.isArray(funcResult.op_results)) {
+          for (const opResult of funcResult.op_results) {
+            if (ChainUtil.isFailedTx(opResult.result)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  // TODO(platfowner): Consider some code (e.g. IN_LOCKUP_PERIOD, INSUFFICIENT_BALANCE) no failure 
+  // so that their transactions are not reverted.
+  static isFailedFuncResultCode(code) {
+    const { FunctionResultCode } = require('../common/constants');
+
+    return code !== FunctionResultCode.SUCCESS;
+  }
+
   static isAppPath(parsedPath) {
     const { PredefinedDbPaths } = require('../common/constants');
+
     return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
   }
 
-  // TODO(lia): fix testing paths (writing at the root) and update isServicePath().
+  // TODO(liayoo): Fix testing paths (writing at the root) and update isServicePath().
   static isServicePath(parsedPath) {
-    const { NATIVE_SERVICE_TYPES } = require('../common/constants');
-    return NATIVE_SERVICE_TYPES.includes(_.get(parsedPath, 0));
+    const { isServiceType } = require('../common/constants');
+
+    return isServiceType(_.get(parsedPath, 0));
   }
 
-  static getGasAmountObj(path, value) {
-    const parsedPath = ChainUtil.parsePath(path);
-    const gasAmount = {};
+  static getDependentAppNameFromRef(ref) {
+    const { isAppDependentServiceType } = require('../common/constants');
+    const parsedPath = ChainUtil.parsePath(ref);
+    const type = _.get(parsedPath, 0);
+    if (!type || !isAppDependentServiceType(type)) {
+      return null;
+    }
+    return _.get(parsedPath, 1, null);
+  }
+
+  static getServiceDependentAppNameList(op) {
+    if (!op) {
+      return [];
+    }
+    if (op.op_list) {
+      const appNames = new Set();
+      for (const innerOp of op.op_list) {
+        const name = ChainUtil.getDependentAppNameFromRef(innerOp.ref);
+        if (name) {
+          appNames.add(name);
+        }
+      }
+      return [...appNames];
+    }
+    const name = ChainUtil.getDependentAppNameFromRef(op.ref);
+    return name ? [name] : [];
+  }
+
+  static getSingleOpGasAmount(parsedPath, value) {
+    const gasAmount = {
+      service: 0,
+      app: {}
+    };
+    if (!value) {
+      return gasAmount;
+    }
     if (ChainUtil.isServicePath(parsedPath)) {
       ChainUtil.setJsObject(gasAmount, ['service'], value);
     } else if (ChainUtil.isAppPath(parsedPath)) {
@@ -333,39 +402,68 @@ class ChainUtil {
     return gasAmount;
   }
 
-  static getSingleOpGasAmount(result) {
-    let sum = 0;
-    if (!result) {
-      return sum;
-    }
-    if (ChainUtil.isArray(result)) {
-      for (const elem of result) {
-        sum += ChainUtil.getSingleOpGasAmount(elem);
+  static getTotalGasAmountInternal(triggeringPath, resultObj) {
+    const gasAmount = {
+      service: 0,
+      app: {}
+    };
+    if (!resultObj) return gasAmount;
+    if (resultObj.result_list) return gasAmount; // NOTE: Assume nested SET is not allowed
+
+    if (resultObj.func_results) {
+      for (const funcRes of Object.values(resultObj.func_results)) {
+        if (ChainUtil.isArray(funcRes.op_results)) {
+          for (const opRes of funcRes.op_results) {
+            ChainUtil.mergeNumericJsObjects(
+              gasAmount,
+              ChainUtil.getTotalGasAmountInternal(ChainUtil.parsePath(opRes.path), opRes.result)
+            );
+          }
+        }
+        // Follow the tx type of the triggering tx.
+        ChainUtil.mergeNumericJsObjects(gasAmount, ChainUtil.getSingleOpGasAmount(triggeringPath, funcRes.gas_amount));
       }
-      return sum;
     }
-    if (ChainUtil.isDict(result)) {
-      for (const key in result) {
-        sum += ChainUtil.getSingleOpGasAmount(result[key]);
-      }
+
+    if (resultObj.gas_amount) {
+      ChainUtil.mergeNumericJsObjects(
+        gasAmount,
+        ChainUtil.getSingleOpGasAmount(triggeringPath, resultObj.gas_amount)
+      );
     }
-    sum += _.get(result, 'gas_amount', 0);
-    return sum;
+
+    return gasAmount;
   }
 
   /**
-   * Returns the total gas amount of the result (esp. multi-operation result).
+   * Returns the total gas amount of the result, separated by the types of operations (service / app)
+   * (esp. multi-operation result).
    */
-  static getTotalGasAmount(result) {
-    if (ChainUtil.isArray(result)) {
-      let gasAmount = 0;
-      for (const elem of result) {
-        gasAmount += ChainUtil.getSingleOpGasAmount(elem);
+  static getTotalGasAmount(op, result) {
+    const gasAmount = {
+      service: 0,
+      app: {}
+    };
+    if (!op || !result) return gasAmount;
+    if (result.result_list) {
+      for (let i = 0, len = result.result_list.length; i < len; i++) {
+        const elem = result.result_list[i];
+        ChainUtil.mergeNumericJsObjects(
+          gasAmount,
+          ChainUtil.getTotalGasAmountInternal(ChainUtil.parsePath(op.op_list[i].ref), elem)
+        );
       }
-      return gasAmount;
+    } else {
+      const triggeringPath = ChainUtil.parsePath(op.ref);
+      ChainUtil.mergeNumericJsObjects(
+        gasAmount,
+        ChainUtil.getTotalGasAmountInternal(triggeringPath, result)
+      );
     }
-    return ChainUtil.getSingleOpGasAmount(result);
+
+    return gasAmount;
   }
+
   /**
    * Calculate the gas cost (unit = ain).
    * Only the service bandwidth gas amount is counted toward gas cost.
@@ -386,23 +484,23 @@ class ChainUtil {
   }
 
   static getServiceGasCostTotalFromTxList(txList, resList) {
-    let gasAmountTotal = 0;
-    const gasCostTotal = resList.reduce((acc, cur, index) => {
-      const gasAmount = ChainUtil.getTotalGasAmount(cur);
-      gasAmountTotal += gasAmount;
-      return acc + ChainUtil.getTotalGasCost(txList[index].tx_body.gas_price, gasAmount);
-    }, 0);
-    return { gasAmountTotal, gasCostTotal };
+    return resList.reduce((acc, cur, index) => {
+      const tx = txList[index];
+      const totalGasAmount = ChainUtil.getTotalGasAmount(tx.tx_body.operation, cur);
+      return ChainUtil.mergeNumericJsObjects(acc, {
+        gasAmountTotal: totalGasAmount.service,
+        gasCostTotal: ChainUtil.getTotalGasCost(tx.tx_body.gas_price, totalGasAmount.service)
+      });
+    }, { gasAmountTotal: 0, gasCostTotal: 0 });
   }
 
   static returnTxResult(code, message = null, gasAmount = 0, funcResults = null) {
-    const { ExecResultProperties } = require('../common/constants');
     const result = {};
     if (message) {
       result.error_message = message;
     }
     if (!ChainUtil.isEmpty(funcResults)) {
-      result[ExecResultProperties.FUNC_RESULTS] = funcResults;
+      result.func_results = funcResults;
     }
     result.code = code;
     result.gas_amount = gasAmount;
@@ -482,8 +580,8 @@ class ChainUtil {
     });
   };
 
-  static convertEnvVarInputToBool = (input) => {
-    return input ? input.toLowerCase().startsWith('t') : false;
+  static convertEnvVarInputToBool = (input, defaultValue = false) => {
+    return input ? input.toLowerCase().startsWith('t') : defaultValue;
   }
 }
 

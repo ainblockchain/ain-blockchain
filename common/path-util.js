@@ -8,6 +8,14 @@ class PathUtil {
     return ChainUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.BALANCE]);
   }
 
+  static getAccountNoncePath(address) {
+    return ChainUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_NONCE]);
+  }
+
+  static getAccountTimestampPath(address) {
+    return ChainUtil.formatPath([PredefinedDbPaths.ACCOUNTS, address, PredefinedDbPaths.ACCOUNTS_TIMESTAMP]);
+  }
+
   static getServiceAccountPath(serviceType, serviceName, accountKey) {
     return ChainUtil.formatPath([PredefinedDbPaths.SERVICE_ACCOUNTS, serviceType, serviceName, accountKey]);
   }
@@ -44,6 +52,10 @@ class PathUtil {
 
   static getManageAppConfigPath(appName) {
     return ChainUtil.formatPath([PredefinedDbPaths.MANAGE_APP, appName, PredefinedDbPaths.MANAGE_APP_CONFIG]);
+  }
+
+  static getAppPath(appName) {
+    return ChainUtil.formatPath([PredefinedDbPaths.APPS, appName]);
   }
 
   static getAppAdminPathFromServiceAccountName(accountName) {
@@ -131,7 +143,7 @@ class PathUtil {
   }
 
   static getLatestShardReportPath(branchPath) {
-    return ChainUtil.formatPath([branchPath, ShardingProperties.LATEST]);
+    return ChainUtil.appendPath(branchPath, ShardingProperties.LATEST);
   }
 
   static getLatestShardReportPathFromValuePath(valuePath) {
@@ -172,6 +184,11 @@ class PathUtil {
 
   static getConsensusStakingAccountPath(address) {
     return PathUtil.getServiceAccountPath(PredefinedDbPaths.STAKING, PredefinedDbPaths.CONSENSUS, `${address}|0`);
+  }
+
+  static getConsensusStakingAccountBalancePath(address) {
+    const accountPath =  PathUtil.getServiceAccountPath(PredefinedDbPaths.STAKING, PredefinedDbPaths.CONSENSUS, `${address}|0`);
+    return ChainUtil.appendPath(accountPath, PredefinedDbPaths.BALANCE)
   }
 
   static getConsensusProposePath(blockNumber) {

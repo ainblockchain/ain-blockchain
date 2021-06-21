@@ -3,9 +3,18 @@ const {
   isWritablePathWithSharding,
   hasReservedChar,
   hasAllowedPattern,
+  isValidServiceName,
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  isValidRuleConfig,
+  isValidRuleTree,
+  isValidFunctionConfig,
+  isValidFunctionTree,
+  isValidOwnerConfig,
+  isValidOwnerTree,
+  applyFunctionChange,
+  applyOwnerChange,
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
@@ -16,6 +25,9 @@ const {
   updateProofHashForAllRootPaths,
   verifyProofHashForStateTree
 } = require('../db/state-util');
+const {
+  STATE_LABEL_LENGTH_LIMIT,
+} = require('../common/constants');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
 const expect = chai.expect;
@@ -187,15 +199,21 @@ describe("state-util", () => {
       expect(hasReservedChar('/abc')).to.equal(true);
       expect(hasReservedChar('a/bc')).to.equal(true);
       expect(hasReservedChar('abc/')).to.equal(true);
-      expect(hasReservedChar('\u2000/\u2E00')).to.equal(true);
       expect(hasReservedChar('.')).to.equal(true);
-      expect(hasReservedChar('*')).to.equal(true);
       expect(hasReservedChar('$')).to.equal(true);
+      expect(hasReservedChar('*')).to.equal(true);
       expect(hasReservedChar('#')).to.equal(true);
       expect(hasReservedChar('{')).to.equal(true);
       expect(hasReservedChar('}')).to.equal(true);
       expect(hasReservedChar('[')).to.equal(true);
       expect(hasReservedChar(']')).to.equal(true);
+      expect(hasReservedChar('<')).to.equal(true);
+      expect(hasReservedChar('>')).to.equal(true);
+      expect(hasReservedChar("'")).to.equal(true);
+      expect(hasReservedChar('"')).to.equal(true);
+      expect(hasReservedChar('`')).to.equal(true);
+      expect(hasReservedChar(' ')).to.equal(true);
+      expect(hasReservedChar('\u2000/\u2E00')).to.equal(true);
       expect(hasReservedChar('\x00')).to.equal(true);
       expect(hasReservedChar('\x01')).to.equal(true);
       expect(hasReservedChar('\x02')).to.equal(true);
@@ -244,26 +262,104 @@ describe("state-util", () => {
     })
 
     it("when string input returning false", () => {
+      expect(hasAllowedPattern('/')).to.equal(false);
+      expect(hasAllowedPattern('/abc')).to.equal(false);
+      expect(hasAllowedPattern('a/bc')).to.equal(false);
+      expect(hasAllowedPattern('abc/')).to.equal(false);
       expect(hasAllowedPattern('.')).to.equal(false);
-      expect(hasAllowedPattern('$')).to.equal(false);
       expect(hasAllowedPattern('./')).to.equal(false);
-      expect(hasAllowedPattern('$/')).to.equal(false);
       expect(hasAllowedPattern('a.')).to.equal(false);
-      expect(hasAllowedPattern('a$')).to.equal(false);
       expect(hasAllowedPattern('a.b')).to.equal(false);
-      expect(hasAllowedPattern('a$b')).to.equal(false);
       expect(hasAllowedPattern('..')).to.equal(false);
-      expect(hasAllowedPattern('$$')).to.equal(false);
       expect(hasAllowedPattern('.$')).to.equal(false);
       expect(hasAllowedPattern('$.')).to.equal(false);
+      expect(hasAllowedPattern('$')).to.equal(false);
+      expect(hasAllowedPattern('$/')).to.equal(false);
+      expect(hasAllowedPattern('a$')).to.equal(false);
+      expect(hasAllowedPattern('a$b')).to.equal(false);
+      expect(hasAllowedPattern('$$')).to.equal(false);
       expect(hasAllowedPattern('*a')).to.equal(false);
       expect(hasAllowedPattern('a*')).to.equal(false);
+      expect(hasAllowedPattern('#')).to.equal(false);
+      expect(hasAllowedPattern('{')).to.equal(false);
+      expect(hasAllowedPattern('}')).to.equal(false);
+      expect(hasAllowedPattern('[')).to.equal(false);
+      expect(hasAllowedPattern(']')).to.equal(false);
+      expect(hasAllowedPattern('<')).to.equal(false);
+      expect(hasAllowedPattern('>')).to.equal(false);
+      expect(hasAllowedPattern("'")).to.equal(false);
+      expect(hasAllowedPattern('"')).to.equal(false);
+      expect(hasAllowedPattern('`')).to.equal(false);
+      expect(hasAllowedPattern(' ')).to.equal(false);
     })
 
     it("when string input returning true", () => {
       expect(hasAllowedPattern('.a')).to.equal(true);
       expect(hasAllowedPattern('$a')).to.equal(true);
       expect(hasAllowedPattern('*')).to.equal(true);
+    })
+  })
+
+  describe("isValidServiceName", () => {
+    it("when non-string input", () => {
+      expect(isValidServiceName(null)).to.equal(false);
+      expect(isValidServiceName(undefined)).to.equal(false);
+      expect(isValidServiceName(true)).to.equal(false);
+      expect(isValidServiceName(false)).to.equal(false);
+      expect(isValidServiceName(0)).to.equal(false);
+      expect(isValidServiceName([])).to.equal(false);
+      expect(isValidServiceName({})).to.equal(false);
+    })
+
+    it("when string input returning false", () => {
+      expect(isValidServiceName('')).to.equal(false);
+      expect(isValidServiceName('.')).to.equal(false);
+      expect(isValidServiceName('.a')).to.equal(false);
+      expect(isValidServiceName('$')).to.equal(false);
+      expect(isValidServiceName('$a')).to.equal(false);
+      expect(isValidServiceName('*')).to.equal(false);
+      expect(isValidServiceName('~')).to.equal(false);
+      expect(isValidServiceName('!')).to.equal(false);
+      expect(isValidServiceName('@')).to.equal(false);
+      expect(isValidServiceName('%')).to.equal(false);
+      expect(isValidServiceName('^')).to.equal(false);
+      expect(isValidServiceName('&')).to.equal(false);
+      expect(isValidServiceName('-')).to.equal(false);
+      expect(isValidServiceName('=')).to.equal(false);
+      expect(isValidServiceName('+')).to.equal(false);
+      expect(isValidServiceName('|')).to.equal(false);
+      expect(isValidServiceName(';')).to.equal(false);
+      expect(isValidServiceName(',')).to.equal(false);
+      expect(isValidServiceName('?')).to.equal(false);
+      expect(isValidServiceName('/')).to.equal(false);
+      expect(isValidServiceName("'")).to.equal(false);
+      expect(isValidServiceName('"')).to.equal(false);
+      expect(isValidServiceName('`')).to.equal(false);
+      expect(isValidServiceName('\x00')).to.equal(false);
+      expect(isValidServiceName('\x7F')).to.equal(false);
+    })
+
+    it("when string input without alphabetic prefix returning false", () => {
+      expect(isValidServiceName('0')).to.equal(false);
+      expect(isValidServiceName('0a')).to.equal(false);
+      expect(isValidServiceName('0a0')).to.equal(false);
+      expect(isValidServiceName('0_')).to.equal(false);
+      expect(isValidServiceName('0_0')).to.equal(false);
+    })
+
+    it("when string input returning true", () => {
+      expect(isValidServiceName('a')).to.equal(true);
+      expect(isValidServiceName('aa')).to.equal(true);
+      expect(isValidServiceName('a_')).to.equal(true);
+      expect(isValidServiceName('a0')).to.equal(true);
+      expect(isValidServiceName('a0a')).to.equal(true);
+      expect(isValidServiceName('_')).to.equal(true);
+      expect(isValidServiceName('_0')).to.equal(true);
+      expect(isValidServiceName('_0_')).to.equal(true);
+      expect(isValidServiceName('consensus')).to.equal(true);
+      expect(isValidServiceName('afan')).to.equal(true);
+      expect(isValidServiceName('collaborative_ai')).to.equal(true);
+      expect(isValidServiceName('_a_dapp')).to.equal(true);
     })
   })
 
@@ -283,13 +379,38 @@ describe("state-util", () => {
       expect(isValidStateLabel('.')).to.equal(false);
       expect(isValidStateLabel('$')).to.equal(false);
       expect(isValidStateLabel('/')).to.equal(false);
+      expect(isValidStateLabel("'")).to.equal(false);
+      expect(isValidStateLabel('"')).to.equal(false);
+      expect(isValidStateLabel('`')).to.equal(false);
     })
 
     it("when string input returning true", () => {
       expect(isValidStateLabel('a')).to.equal(true);
+      expect(isValidStateLabel('0')).to.equal(true);
       expect(isValidStateLabel('.a')).to.equal(true);
       expect(isValidStateLabel('$a')).to.equal(true);
       expect(isValidStateLabel('*')).to.equal(true);
+      expect(isValidStateLabel('~')).to.equal(true);
+      expect(isValidStateLabel('!')).to.equal(true);
+      expect(isValidStateLabel('@')).to.equal(true);
+      expect(isValidStateLabel('%')).to.equal(true);
+      expect(isValidStateLabel('^')).to.equal(true);
+      expect(isValidStateLabel('&')).to.equal(true);
+      expect(isValidStateLabel('-')).to.equal(true);
+      expect(isValidStateLabel('_')).to.equal(true);
+      expect(isValidStateLabel('=')).to.equal(true);
+      expect(isValidStateLabel('+')).to.equal(true);
+      expect(isValidStateLabel('|')).to.equal(true);
+      expect(isValidStateLabel(';')).to.equal(true);
+      expect(isValidStateLabel(',')).to.equal(true);
+      expect(isValidStateLabel('?')).to.equal(true);
+    })
+
+    it("when long string input", () => {
+      const labelLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      expect(isValidStateLabel(labelLong)).to.equal(true);
+      const labelTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      expect(isValidStateLabel(labelTooLong)).to.equal(false);
     })
   })
 
@@ -335,6 +456,19 @@ describe("state-util", () => {
       assert.deepEqual(isValidPathForStates(['a', '.b']), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidPathForStates(['a', '$b']), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidPathForStates(['a', '*']), {isValid: true, invalidPath: ''});
+    })
+
+    it("when input with long labels", () => {
+      const labelLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      const labelTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      assert.deepEqual(
+          isValidPathForStates([labelLong, labelLong]), {isValid: true, invalidPath: ''});
+      assert.deepEqual(
+          isValidPathForStates([labelTooLong, labelLong]),
+          {isValid: false, invalidPath: `/${labelTooLong}`});
+      assert.deepEqual(
+          isValidPathForStates([labelLong, labelTooLong]),
+          {isValid: false, invalidPath: `/${labelLong}/${labelTooLong}`});
     })
   })
 
@@ -482,7 +616,1073 @@ describe("state-util", () => {
           }
       }), {isValid: true, invalidPath: ''});
     })
+
+    it("when input with long labels", () => {
+      const textLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      const textTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          [textLong]: {
+            [textLong]: textTooLong
+          }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          [textTooLong]: {
+            [textLong]: textTooLong
+          }
+      }), {isValid: false, invalidPath: `/${textTooLong}`});
+      assert.deepEqual(
+        isValidJsObjectForStates({
+          [textLong]: {
+            [textTooLong]: textTooLong
+          }
+      }), {isValid: false, invalidPath: `/${textLong}/${textTooLong}`});
+    })
   })
+
+  describe("isValidRuleConfig", () => {
+    it("when invalid input", () => {
+      assert.deepEqual(isValidRuleConfig(null), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig(undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(
+          isValidRuleConfig(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        undef: undefined 
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        empty_obj: {}
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        array: []
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        array: [1, 2, 3]
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        array: ['a', 'b', 'c']
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        'a': {
+          '.': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        'a': {
+          '$': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        'a': {
+          '*b': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        'a': {
+          'b*': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+    })
+
+    it("when valid input", () => {
+      assert.deepEqual(isValidRuleConfig(true), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig(false), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig("auth.addr === 'abcd'"), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig(
+          "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"),
+          {isValid: true, invalidPath: ''});
+    })
+  })
+
+  describe("isValidRuleTree", () => {
+    it("when invalid input", () => {
+      assert.deepEqual(isValidRuleTree(undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree({}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree([]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(
+          isValidRuleTree(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree({
+        undef: undefined 
+      }), {isValid: false, invalidPath: '/undef'});
+      assert.deepEqual(isValidRuleTree({
+        empty_obj: {}
+      }), {isValid: false, invalidPath: '/empty_obj'});
+      assert.deepEqual(isValidRuleTree({
+        array: []
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidRuleTree({
+        array: [1, 2, 3]
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidRuleTree({
+        array: ['a', 'b', 'c']
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidRuleTree({
+        some_key: {}
+      }), {isValid: false, invalidPath: '/some_key'});
+      assert.deepEqual(isValidRuleTree({
+        some_key: null
+      }), {isValid: false, invalidPath: '/some_key'});
+      assert.deepEqual(isValidRuleTree({
+        some_key: undefined
+      }), {isValid: false, invalidPath: '/some_key'});
+    })
+
+    it("when invalid input with invalid owner config", () => {
+      assert.deepEqual(isValidRuleTree({
+        some_path: {
+          '.write': {
+          }
+        }
+      }), {isValid: false, invalidPath: '/some_path/.write'});
+      assert.deepEqual(isValidRuleTree({
+        some_path: {
+          '.write': null 
+        }
+      }), {isValid: false, invalidPath: '/some_path/.write'});
+      assert.deepEqual(isValidRuleTree({
+        some_path: {
+          '.write': undefined
+        }
+      }), {isValid: false, invalidPath: '/some_path/.write'});
+    })
+
+    it("when valid input", () => {
+      assert.deepEqual(isValidRuleTree(null), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleTree({
+        '.write': true 
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleTree({
+        some_path1: {
+          '.write': true
+        },
+        some_path2: {
+          '.write': "auth.addr === 'abcd'"
+        }
+      }), {isValid: true, invalidPath: ''});
+    })
+  })
+
+  describe("isValidFunctionConfig", () => {
+    it("when invalid input", () => {
+      assert.deepEqual(isValidFunctionConfig(null), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig(undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig({}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig([]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(
+          isValidFunctionConfig(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig({
+        undef: undefined 
+      }), {isValid: false, invalidPath: '/undef'});
+      assert.deepEqual(isValidFunctionConfig({
+        empty_obj: {}
+      }), {isValid: false, invalidPath: '/empty_obj'});
+      assert.deepEqual(isValidFunctionConfig({
+        array: []
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidFunctionConfig({
+        array: [1, 2, 3]
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidFunctionConfig({
+        array: ['a', 'b', 'c']
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidFunctionConfig({
+        'a': {
+          '.': 'x'
+        }
+      }), {isValid: false, invalidPath: '/a'});
+      assert.deepEqual(isValidFunctionConfig({
+        'a': {
+          '$': 'x'
+        }
+      }), {isValid: false, invalidPath: '/a'});
+      assert.deepEqual(isValidFunctionConfig({
+        'a': {
+          '*b': 'x'
+        }
+      }), {isValid: false, invalidPath: '/a'});
+      assert.deepEqual(isValidFunctionConfig({
+        'a': {
+          'b*': 'x'
+        }
+      }), {isValid: false, invalidPath: '/a'});
+    })
+
+    it("when invalid input with deeper path", () => {
+      assert.deepEqual(isValidFunctionConfig({
+        a_fid: {}
+      }), {isValid: false, invalidPath: '/a_fid'});
+      assert.deepEqual(isValidFunctionConfig({
+        a_fid: 'some string'
+      }), {isValid: false, invalidPath: '/a_fid'});
+    })
+
+    it("when invalid input with NATIVE type", () => {
+      assert.deepEqual(isValidFunctionConfig({
+        "_transfer": {
+          // Missing function_type
+          "function_id": "_transfer"
+        }
+      }), {isValid: false, invalidPath: '/_transfer'});
+      assert.deepEqual(isValidFunctionConfig({
+        "_transfer": {
+          "function_type": "NATIVE",
+          // Missing function_id
+        }
+      }), {isValid: false, invalidPath: '/_transfer'});
+      assert.deepEqual(isValidFunctionConfig({
+        "_transfer": {
+          "function_type": "NATIVE",
+          "function_id": "_transfer",
+          "unknown_property": "some value"  // Unknown property
+        }
+      }), {isValid: false, invalidPath: '/_transfer'});
+      assert.deepEqual(isValidFunctionConfig({
+        "_transfer": {
+          "function_type": "unknown type",  // Unknown function_type
+          "function_id": "_transfer"
+        }
+      }), {isValid: false, invalidPath: '/_transfer'});
+      assert.deepEqual(isValidFunctionConfig({
+        "_transfer": {
+          "function_type": "NATIVE",
+          "function_id": "some other fid"  // Wrong function_id
+        }
+      }), {isValid: false, invalidPath: '/_transfer/function_id'});
+    })
+
+    it("when invalid input with REST type", () => {
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          // Missing function_type
+          "function_id": "0x11111",
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          "service_name": "https://ainetwork.ai",
+        }
+      }), {isValid: false, invalidPath: '/0x11111'});
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          "function_type": "REST",
+          // Missing function_id
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          "service_name": "https://ainetwork.ai",
+        }
+      }), {isValid: false, invalidPath: '/0x11111'});
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          "function_type": "REST",
+          "function_id": "0x11111",
+          // Missing event_listener
+          "service_name": "https://ainetwork.ai",
+        }
+      }), {isValid: false, invalidPath: '/0x11111'});
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          "function_type": "REST",
+          "function_id": "0x11111",
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          // Missing service_name
+        }
+      }), {isValid: false, invalidPath: '/0x11111'});
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          "function_type": "REST",
+          "function_id": "0x11111",
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          "service_name": "https://ainetwork.ai",
+          "unknown_property": "some value"  // Unknown property
+        }
+      }), {isValid: false, invalidPath: '/0x11111'});
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          "function_type": "REST",
+          "function_id": "some other fid",  // Wrong function_id
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          "service_name": "https://ainetwork.ai",
+        }
+      }), {isValid: false, invalidPath: '/0x11111/function_id'});
+      assert.deepEqual(isValidFunctionConfig({
+        "0x11111": {
+          "function_type": "REST",
+          "function_id": "0x11111",
+          "event_listener": "some non-url value",  // Invalid url
+          "service_name": "https://ainetwork.ai",
+        }
+      }), {isValid: false, invalidPath: '/0x11111'});
+    })
+
+    it("when valid input", () => {
+      assert.deepEqual(isValidFunctionConfig({
+        "_transfer": {
+          "function_type": "NATIVE",
+          "function_id": "_transfer",
+        },
+        "0x11111": {
+          "function_type": "REST",
+          "function_id": "0x11111",
+          "event_listener": "https://events.ainetwork.ai/trigger",
+          "service_name": "https://ainetwork.ai",
+        },
+        "fid_to_delete": null  // To be deleted
+      }), {isValid: true, invalidPath: ''});
+    })
+  })
+
+  describe("isValidFunctionTree", () => {
+    it("when invalid input", () => {
+      assert.deepEqual(isValidFunctionTree(undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionTree({}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionTree([]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionTree([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(
+          isValidFunctionTree(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionTree({
+        undef: undefined 
+      }), {isValid: false, invalidPath: '/undef'});
+      assert.deepEqual(isValidFunctionTree({
+        empty_obj: {}
+      }), {isValid: false, invalidPath: '/empty_obj'});
+      assert.deepEqual(isValidFunctionTree({
+        array: []
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidFunctionTree({
+        array: [1, 2, 3]
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidFunctionTree({
+        array: ['a', 'b', 'c']
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidFunctionTree({
+        some_key: {}
+      }), {isValid: false, invalidPath: '/some_key'});
+      assert.deepEqual(isValidFunctionTree({
+        some_key: null
+      }), {isValid: false, invalidPath: '/some_key'});
+      assert.deepEqual(isValidFunctionTree({
+        some_key: undefined
+      }), {isValid: false, invalidPath: '/some_key'});
+    })
+
+    it("when invalid input with invalid owner config", () => {
+      assert.deepEqual(isValidFunctionTree({
+        some_path: {
+          '.function': {
+          }
+        }
+      }), {isValid: false, invalidPath: '/some_path/.function'});
+      assert.deepEqual(isValidFunctionTree({
+        some_path: {
+          '.function': null 
+        }
+      }), {isValid: false, invalidPath: '/some_path/.function'});
+      assert.deepEqual(isValidFunctionTree({
+        some_path: {
+          '.function': undefined
+        }
+      }), {isValid: false, invalidPath: '/some_path/.function'});
+    })
+
+    it("when valid input", () => {
+      assert.deepEqual(isValidFunctionTree(null), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidFunctionTree({
+        '.function': {
+          "_transfer": {
+            "function_type": "NATIVE",
+            "function_id": "_transfer",
+          },
+          "0x11111": {
+            "function_type": "REST",
+            "function_id": "0x11111",
+            "event_listener": "https://events.ainetwork.ai/trigger",
+            "service_name": "https://ainetwork.ai",
+          }
+        }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidFunctionTree({
+        some_path1: {
+          '.function': {
+            "_transfer": {
+              "function_type": "NATIVE",
+              "function_id": "_transfer",
+            },
+            "0x11111": {
+              "function_type": "REST",
+              "function_id": "0x11111",
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "service_name": "https://ainetwork.ai",
+            }
+          }
+        },
+        some_path2: {
+          '.function': {
+            "_transfer": {
+              "function_type": "NATIVE",
+              "function_id": "_transfer",
+            },
+            "0x11111": {
+              "function_type": "REST",
+              "function_id": "0x11111",
+              "event_listener": "https://events.ainetwork.ai/trigger",
+              "service_name": "https://ainetwork.ai",
+            }
+          }
+        }
+      }), {isValid: true, invalidPath: ''});
+    })
+  })
+
+  describe("isValidOwnerConfig", () => {
+    it("when invalid input", () => {
+      assert.deepEqual(isValidOwnerConfig(null), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig(undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig([]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(
+          isValidOwnerConfig(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({
+        undef: undefined 
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({
+        empty_obj: {}
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({
+        array: []
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({
+        array: [1, 2, 3]
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({
+        array: ['a', 'b', 'c']
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({
+        'a': {
+          '.': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({
+        'a': {
+          '$': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({
+        'a': {
+          '*b': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({
+        'a': {
+          'b*': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+    })
+
+    it("when invalid input with deeper path", () => {
+      assert.deepEqual(isValidOwnerConfig({
+        some_key: {}
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({
+        'owners': null
+      }), {isValid: false, invalidPath: '/owners'});
+      assert.deepEqual(isValidOwnerConfig({
+        'owners': {}
+      }), {isValid: false, invalidPath: '/owners'});
+    })
+
+    it("when invalid input with invalid owner (address or fid)", () => {
+      assert.deepEqual(isValidOwnerConfig({
+        'owners': {
+          '0x0': {  // Invalid address
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          }
+        }
+      }), {isValid: false, invalidPath: '/owners/0x0'});
+      assert.deepEqual(isValidOwnerConfig({
+        'owners': {
+          '0x09a0d53fdf1c36a131938eb379b98910e55eefe1': {  // Non-checksum address
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          }
+        }
+      }), {isValid: false, invalidPath: '/owners/0x09a0d53fdf1c36a131938eb379b98910e55eefe1'});
+      assert.deepEqual(isValidOwnerConfig({
+        'owners': {
+          'fid:_invalidFid': {  // Invalid fid
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          }
+        }
+      }), {isValid: false, invalidPath: '/owners/fid:_invalidFid'});
+    })
+
+    it("when invalid input with invalid owner permissions", () => {
+      assert.deepEqual(isValidOwnerConfig({
+        'owners': {
+          '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            // Missing write_rule
+          },
+        }
+      }), {isValid: false, invalidPath: '/owners/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'});
+      assert.deepEqual(isValidOwnerConfig({
+        'owners': {
+          '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+            "do_something_else": true,  // Unknown permission
+          },
+        }
+      }), {isValid: false, invalidPath: '/owners/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'});
+      assert.deepEqual(isValidOwnerConfig({
+        'owners': {
+          '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": 'true',  // Non-boolean value
+          },
+        }
+      }), {isValid: false, invalidPath: '/owners/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'});
+    })
+
+    it("when valid input", () => {
+      assert.deepEqual(isValidOwnerConfig({
+        'owners': {
+          '*': {
+            "branch_owner": true,
+            "write_function": false,
+            "write_owner": false,
+            "write_rule": false,
+          },
+          '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+            "branch_owner": false,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          },
+          'fid:_createApp': {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          },
+        }
+      }), {isValid: true, invalidPath: ''});
+    })
+  })
+
+  describe("isValidOwnerTree", () => {
+    it("when invalid input", () => {
+      assert.deepEqual(isValidOwnerTree(undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerTree({}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerTree([]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerTree([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(
+          isValidOwnerTree(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerTree({
+        undef: undefined 
+      }), {isValid: false, invalidPath: '/undef'});
+      assert.deepEqual(isValidOwnerTree({
+        empty_obj: {}
+      }), {isValid: false, invalidPath: '/empty_obj'});
+      assert.deepEqual(isValidOwnerTree({
+        array: []
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidOwnerTree({
+        array: [1, 2, 3]
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidOwnerTree({
+        array: ['a', 'b', 'c']
+      }), {isValid: false, invalidPath: '/array'});
+      assert.deepEqual(isValidOwnerTree({
+        some_key: {}
+      }), {isValid: false, invalidPath: '/some_key'});
+      assert.deepEqual(isValidOwnerTree({
+        some_key: null
+      }), {isValid: false, invalidPath: '/some_key'});
+      assert.deepEqual(isValidOwnerTree({
+        some_key: undefined
+      }), {isValid: false, invalidPath: '/some_key'});
+    })
+
+    it("when invalid input with invalid owner config", () => {
+      assert.deepEqual(isValidOwnerTree({
+        some_path: {
+          '.owner': {
+          }
+        }
+      }), {isValid: false, invalidPath: '/some_path/.owner'});
+      assert.deepEqual(isValidOwnerTree({
+        some_path: {
+          '.owner': null 
+        }
+      }), {isValid: false, invalidPath: '/some_path/.owner'});
+      assert.deepEqual(isValidOwnerTree({
+        some_path: {
+          '.owner': undefined
+        }
+      }), {isValid: false, invalidPath: '/some_path/.owner'});
+    })
+
+    it("when valid input", () => {
+      assert.deepEqual(isValidOwnerTree(null), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidOwnerTree({
+        '.owner': {
+          'owners': {
+            '*': {
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            'fid:_createApp': {
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
+          }
+        }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidOwnerTree({
+        some_path1: {
+          '.owner': {
+            'owners': {
+              '*': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              'fid:_createApp': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
+            }
+          }
+        },
+        some_path2: {
+          '.owner': {
+            'owners': {
+              '*': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              'fid:_createApp': {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
+            }
+          }
+        }
+      }), {isValid: true, invalidPath: ''});
+    })
+  })
+
+  describe("applyFunctionChange()", () => {
+    const curFunction = {
+      ".function": {
+        "0x111": {
+          "function_type": "REST",
+          "function_id": "0x111"
+        },
+        "0x222": {
+          "function_type": "REST",
+          "function_id": "0x222"
+        },
+        "0x333": {
+          "function_type": "REST",
+          "function_id": "0x333"
+        }
+      },
+      "deeper": {
+        ".function": {  // deeper function
+          "0x999": {
+            "function_type": "REST",
+            "function_id": "0x999"
+          }
+        }
+      }
+    };
+
+    it("add / delete / modify non-existing function", () => {
+      assert.deepEqual(applyFunctionChange(null, {
+        ".function": {  // function
+          "0x111": null,
+          "0x222": {
+            "function_type": "REST",
+            "function_id": "0x222"
+          },
+        },
+        "deeper": {
+          ".function": {  // deeper function
+            "0x888": {
+              "function_type": "REST",
+              "function_id": "0x888"
+            }
+          }
+        }
+      }), {  // the same as the given function change.
+        ".function": {
+          "0x111": null,
+          "0x222": {
+            "function_type": "REST",
+            "function_id": "0x222"
+          },
+        },
+        "deeper": {
+          ".function": {
+            "0x888": {
+              "function_type": "REST",
+              "function_id": "0x888"
+            }
+          }
+        }
+      });
+    });
+
+    it("add / delete / modify existing function", () => {
+      assert.deepEqual(applyFunctionChange(curFunction, {
+        ".function": {
+          "0x111": null,  // delete
+          "0x222": {  // modify
+            "function_type": "REST",
+            "function_id": "0x222",
+            "service_name": "https://ainetwork.ai",
+          },
+          "0x444": {  // add
+            "function_type": "REST",
+            "function_id": "0x444"
+          }
+        }
+      }), {
+        ".function": {
+          "0x222": {  // modified
+            "function_type": "REST",
+            "function_id": "0x222",
+            "service_name": "https://ainetwork.ai",
+          },
+          "0x333": {  // untouched
+            "function_type": "REST",
+            "function_id": "0x333"
+          },
+          "0x444": {  // added
+            "function_type": "REST",
+            "function_id": "0x444"
+          }
+        },
+        "deeper": {
+          ".function": {  // deeper function
+            "0x999": {
+              "function_type": "REST",
+              "function_id": "0x999"
+            }
+          }
+        }
+      });
+    });
+
+    it("replace existing function with deeper function", () => {
+      assert.deepEqual(applyFunctionChange(curFunction, {
+        ".function": {
+          "0x222": {  // modify
+            "function_type": "REST",
+            "function_id": "0x222",
+            "service_name": "https://ainetwork.ai",
+          },
+          "0x444": {  // add
+            "function_type": "REST",
+            "function_id": "0x444"
+          }
+        },
+        "deeper": {
+          ".function": {  // deeper function
+            "0x888": {
+              "function_type": "REST",
+              "function_id": "0x888"
+            }
+          }
+        }
+      }), {
+        ".function": {  // replaced
+          "0x222": {
+            "function_type": "REST",
+            "function_id": "0x222",
+            "service_name": "https://ainetwork.ai",
+          },
+          "0x444": {
+            "function_type": "REST",
+            "function_id": "0x444"
+          }
+        },
+        "deeper": {  // replaced
+          ".function": {
+            "0x888": {
+              "function_type": "REST",
+              "function_id": "0x888"
+            }
+          }
+        }
+      });
+    });
+
+    it("with null function change", () => {
+      assert.deepEqual(applyFunctionChange(curFunction, null), null);
+    });
+  });
+
+  describe("applyOwnerChange()", () => {
+    const curOwner = {
+      ".owner": {
+        "owners": {
+          "*": {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          },
+          "aaaa": {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          },
+          "bbbb": {
+            "branch_owner": true,
+            "write_function": true,
+            "write_owner": true,
+            "write_rule": true,
+          }
+        }
+      },
+      "deeper": {
+        ".owner": {  // deeper owner
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+          }
+        }
+      }
+    };
+
+    it("add / delete / modify non-existing owner", () => {
+      assert.deepEqual(applyOwnerChange(null, {
+        ".owner": {  // owner
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              },
+            }
+          }
+        }
+      }), {  // the same as the given owner change.
+        ".owner": {  // owner
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              },
+            }
+          }
+        }
+      });
+    });
+
+    it("add / delete / modify existing owner", () => {
+      assert.deepEqual(applyOwnerChange(curOwner, {
+        ".owner": {
+          "owners": {
+            "*": {  // modify
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            "aaaa": null,  // delete
+            "cccc": {  // add
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        }
+      }), {
+        ".owner": {
+          "owners": {
+            "*": {  // modified
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            "bbbb": {  // untouched
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            },
+            "cccc": {  // added
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              },
+            }
+          }
+        }
+      });
+    });
+
+    it("replace existing owner with deeper owner", () => {
+      assert.deepEqual(applyOwnerChange(curOwner, {
+        ".owner": {
+          "owners": {
+            "*": {  // modify
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            "cccc": {  // add
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
+            "owners": {
+              "CCCC": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          }
+        }
+      }), {
+        ".owner": {  // replaced
+          "owners": {
+            "*": {  // modify
+              "branch_owner": true,
+              "write_function": false,
+              "write_owner": false,
+              "write_rule": false,
+            },
+            "cccc": {  // add
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        },
+        "deeper": {  // replaced
+          ".owner": {
+            "owners": {
+              "CCCC": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          }
+        }
+      });
+    });
+
+    it("with null owner change", () => {
+      assert.deepEqual(applyOwnerChange(curOwner, null), null);
+    });
+  });
 
   describe("setStateTreeVersion", () => {
     it("leaf node", () => {
