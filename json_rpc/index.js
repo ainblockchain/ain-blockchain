@@ -276,7 +276,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
           return;
         case ReadDbOperations.GET_RULE:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getRule(args.ref, args.is_global)
+            result: p2pServer.node.db.getRule(args.ref, args.is_global, args.is_shallow)
           }));
           return;
         case ReadDbOperations.GET_FUNCTION:
