@@ -13,7 +13,7 @@ const {
   GenesisSharding,
   GenesisAccounts,
   ShardingProperties,
-  TransactionStatus,
+  TransactionStates,
   WriteDbOperations,
   AccountProperties,
   StateVersions,
@@ -60,7 +60,7 @@ class TransactionPool {
     }
     this.transactions[tx.address].push(tx);
     this.transactionTracker[tx.hash] = {
-      status: TransactionStatus.POOL_STATUS,
+      status: TransactionStates.IN_POOL,
       address: tx.address,
       index: this.transactions[tx.address].length - 1,
       timestamp: tx.tx_body.timestamp,
@@ -388,8 +388,8 @@ class TransactionPool {
       }
       addrToTxSet[address].add(hash);
       const tracked = this.transactionTracker[hash];
-      if (tracked && tracked.status !== TransactionStatus.BLOCK_STATUS) {
-        this.transactionTracker[hash].status = TransactionStatus.FAIL_STATUS;
+      if (tracked && tracked.status !== TransactionStates.IN_BLOCK) {
+        this.transactionTracker[hash].status = TransactionStates.FAILED;
       }
     });
     for (const address in addrToTxSet) {
@@ -414,7 +414,7 @@ class TransactionPool {
       const txTimestamp = voteTx.tx_body.timestamp;
       // voting txs with ordered nonces.
       this.transactionTracker[voteTx.hash] = {
-        status: TransactionStatus.BLOCK_STATUS,
+        status: TransactionStates.IN_BLOCK,
         number: block.number,
         index: -1,
         address: voteTx.address,
@@ -431,7 +431,7 @@ class TransactionPool {
       const txTimestamp = tx.tx_body.timestamp;
       // Update transaction tracker.
       this.transactionTracker[tx.hash] = {
-        status: TransactionStatus.BLOCK_STATUS,
+        status: TransactionStates.IN_BLOCK,
         number: block.number,
         index: i,
         address: tx.address,
@@ -517,8 +517,8 @@ class TransactionPool {
             `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
             `with result: ${JSON.stringify(result, null, 2)}`);
         if (result && (result.is_finalized ||
-            result.status === TransactionStatus.FAIL_STATUS ||
-            result.status === TransactionStatus.TIMEOUT_STATUS)) {
+            result.status === TransactionStates.FAILED ||
+            result.status === TransactionStates.TIMED_OUT)) {
           this.doAction(trackingInfo.action, result.is_finalized);
           delete this.remoteTransactionTracker[txHash];
         }
