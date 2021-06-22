@@ -393,6 +393,10 @@ describe("DB operations", () => {
           }
         });
       })
+
+      it("when retrieving existing owner config with is_shallow", () => {
+        assert.deepEqual(node.db.getOwner("test/test_owner", false, true), Object.keys(dbOwners))
+      })
     })
 
     describe("matchFunction()", () => {
