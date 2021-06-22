@@ -412,8 +412,7 @@ class DB {
       const childLabels = stateNode.getChildLabels();
       return childLabels.length > 0 ? childLabels : null;
     } else {
-      const stateObj = stateNode.toJsObject();
-      return stateObj;
+      return stateNode.toJsObject();
     }
   }
 
