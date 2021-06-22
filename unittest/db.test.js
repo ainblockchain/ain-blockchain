@@ -270,7 +270,7 @@ describe("DB operations", () => {
       })
 
       it("when retrieving high value near top of database with is_shallow", () => {
-        assert.deepEqual(node.db.getValue("test", true, false), Object.keys(dbValues))
+        assert.deepEqual(Object.keys(node.db.getValue("test", true, false)), Object.keys(dbValues))
       })
 
       it("when retrieving shallow nested value", () => {
@@ -322,7 +322,7 @@ describe("DB operations", () => {
       })
 
       it("when retrieving existing function config with is_shallow", () => {
-        assert.deepEqual(node.db.getFunction("test/test_function", true, false), Object.keys(dbFuncs));
+        assert.deepEqual(Object.keys(node.db.getFunction("test/test_function", true, false)), Object.keys(dbFuncs));
       })
     })
 
@@ -344,7 +344,7 @@ describe("DB operations", () => {
       })
 
       it("when retrieving existing rule config with is_shallow", () => {
-        assert.deepEqual(node.db.getRule("test/test_rule", true, false), Object.keys(dbRules));
+        assert.deepEqual(Object.keys(node.db.getRule("test/test_rule", true, false)), Object.keys(dbRules));
       })
     })
 
@@ -395,7 +395,7 @@ describe("DB operations", () => {
       })
 
       it("when retrieving existing owner config with is_shallow", () => {
-        assert.deepEqual(node.db.getOwner("test/test_owner", true, false), Object.keys(dbOwners))
+        assert.deepEqual(Object.keys(node.db.getOwner("test/test_owner", true, false)), Object.keys(dbOwners))
       })
     })
 
