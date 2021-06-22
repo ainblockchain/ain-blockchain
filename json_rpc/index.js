@@ -218,7 +218,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     ain_getTransactionByHash: function(args, done) {
       const transactionInfo = node.tp.transactionTracker[args.hash];
       if (transactionInfo) {
-        if (transactionInfo.status === TransactionStates.IN_BLOCK) {
+        if (transactionInfo.state === TransactionStates.IN_BLOCK) {
           const block = node.bc.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
           if (!block) {
@@ -228,7 +228,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
           } else {
             transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === args.hash);
           }
-        } else if (transactionInfo.status === TransactionStates.IN_POOL) {
+        } else if (transactionInfo.state === TransactionStates.IN_POOL) {
           const address = transactionInfo.address;
           transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === args.hash);
         }
