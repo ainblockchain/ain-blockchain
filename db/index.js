@@ -408,9 +408,8 @@ class DB {
     if (stateNode === null) {
       return null;
     }
-    if (isShallow === true) {
-      const childLabels = stateNode.getChildLabels();
-      return childLabels.length > 0 ? childLabels : null;
+    if (isShallow) {
+      return stateNode.toJsObjectShallow();
     } else {
       return stateNode.toJsObject();
     }

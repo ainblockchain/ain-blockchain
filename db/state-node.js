@@ -99,6 +99,13 @@ class StateNode {
     return obj;
   }
 
+  toJsObjectShallow() {
+    if (this.getIsLeaf()) {
+      return null;
+    }
+    return this.getChildLabels();
+  }
+
   getIsLeaf() {
     return this.isLeaf;
   }
