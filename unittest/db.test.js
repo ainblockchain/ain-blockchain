@@ -111,7 +111,7 @@ describe("DB initialization", () => {
 })
 
 describe("DB operations", () => {
-  let node, dbValues, dbRules, dbOwners;
+  let node, dbValues, dbFuncs, dbRules, dbOwners;
 
   beforeEach(() => {
     let result;
@@ -319,6 +319,10 @@ describe("DB operations", () => {
             }
           }
         });
+      })
+
+      it("when retrieving existing function config with is_shallow", () => {
+        assert.deepEqual(node.db.getFunction("test/test_function", false, true), Object.keys(dbFuncs));
       })
     })
 
