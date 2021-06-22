@@ -50,7 +50,6 @@ class Consensus {
     this.node = node;
     this.state = null;
     this.stateChangedBlockNumber = null;
-    this.setter = '';
     this.setState(ConsensusStates.STARTING);
     this.consensusProtocolVersion = CONSENSUS_PROTOCOL_VERSION;
     this.majorConsensusProtocolVersion = VersionUtil.toMajorVersion(CONSENSUS_PROTOCOL_VERSION);
@@ -94,13 +93,13 @@ class Consensus {
         this.server.executeAndBroadcastTransaction(stakeTx);
       }
       this.blockPool = new BlockPool(this.node, lastBlockWithoutProposal);
-      this.setState(ConsensusStates.RUNNING, 'init');
+      this.setState(ConsensusStates.RUNNING);
       this.startEpochTransition();
       logger.info(`[${LOG_HEADER}] Initialized to number ${finalizedNumber} and ` +
           `epoch ${this.proposerStatus.epoch}`);
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Init error: ${err} ${err.stack}`);
-      this.setState(ConsensusStates.STARTING, 'init');
+      this.setState(ConsensusStates.STARTING);
     }
   }
 
@@ -160,7 +159,7 @@ class Consensus {
 
   stop() {
     logger.info(`Stop epochInterval.`);
-    this.setState(ConsensusStates.STOPPED, 'stop');
+    this.setState(ConsensusStates.STOPPED);
     if (this.epochInterval) {
       clearInterval(this.epochInterval);
       this.epochInterval = null;
@@ -1122,13 +1121,11 @@ class Consensus {
     return this.state === ConsensusStates.RUNNING;
   }
 
-  setState(status, setter = '') {
+  setState(state) {
     const LOG_HEADER = 'setState';
-    logger.info(`[${LOG_HEADER}] setting consensus status from ${this.state} to ` +
-        `${status} (setter = ${setter})`);
-    this.state = status;
+    logger.info(`[${LOG_HEADER}] Setting consensus state from ${this.state} to ${state}`);
+    this.state = state;
     this.stateChangedBlockNumber = this.node.bc.lastBlockNumber();
-    this.setter = setter;
   }
 
   /**
