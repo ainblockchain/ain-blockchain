@@ -390,7 +390,7 @@ app.get('/tx_pool_size_util', (req, res) => {
 app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.tp.transactionTracker[req.query.hash];
   if (transactionInfo) {
-    if (transactionInfo.status === TransactionStates.IN_BLOCK) {
+    if (transactionInfo.state === TransactionStates.IN_BLOCK) {
       const block = node.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
       if (!block) {
@@ -400,7 +400,7 @@ app.get('/get_transaction', (req, res, next) => {
       } else {
         transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === req.query.hash);
       }
-    } else if (transactionInfo.status === TransactionStates.IN_POOL) {
+    } else if (transactionInfo.state === TransactionStates.IN_POOL) {
       const address = transactionInfo.address;
       transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === req.query.hash);
     }
