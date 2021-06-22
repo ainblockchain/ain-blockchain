@@ -342,6 +342,10 @@ describe("DB operations", () => {
           }
         });
       })
+
+      it("when retrieving existing rule config with is_shallow", () => {
+        assert.deepEqual(node.db.getRule("test/test_rule", false, true), Object.keys(dbRules));
+      })
     })
 
     describe("getOwner()", () => {
