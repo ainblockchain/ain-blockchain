@@ -101,9 +101,12 @@ class StateNode {
 
   toJsObjectShallow() {
     if (this.getIsLeaf()) {
-      return null;
+      return this.getValue();
     }
-    return this.getChildLabels();
+    return this.getChildLabels().reduce((shallowTable, label) => {
+      shallowTable[label] = true;
+      return shallowTable;
+    }, {});
   }
 
   getIsLeaf() {
