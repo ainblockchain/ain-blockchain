@@ -3,7 +3,7 @@ const _ = require('lodash');
 const P2pServer = require('./server');
 const Websocket = require('ws');
 const logger = require('../logger')('P2P_CLIENT');
-const { ConsensusStatus } = require('../consensus/constants');
+const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const {
   PORT,
@@ -333,7 +333,7 @@ class P2pClient {
               `${JSON.stringify(chainSegment, null, 2)}`);
           // Check catchup info is behind or equal to me
           if (number <= this.server.node.bc.lastBlockNumber()) {
-            if (this.server.consensus.status === ConsensusStatus.STARTING) {
+            if (this.server.consensus.state === ConsensusStates.STARTING) {
               if ((!chainSegment && !catchUpInfo) ||
                   number === this.server.node.bc.lastBlockNumber()) {
                 // Regard this situation as if you're synced.
@@ -359,7 +359,7 @@ class P2pClient {
                 logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
                 this.server.node.state = BlockchainNodeStates.SERVING;
               }
-              if (this.server.consensus.status === ConsensusStatus.STARTING) {
+              if (this.server.consensus.state === ConsensusStates.STARTING) {
                 this.server.consensus.init();
               }
             } else {
@@ -384,7 +384,7 @@ class P2pClient {
             if (number <= this.server.node.bc.lastBlockNumber()) {
               logger.info(`[${LOG_HEADER}] I am ahead ` +
                   `(${number} > ${this.server.node.bc.lastBlockNumber()}).`);
-              if (this.server.consensus.status === ConsensusStatus.STARTING) {
+              if (this.server.consensus.state === ConsensusStates.STARTING) {
                 this.server.consensus.init();
                 if (this.server.consensus.isRunning()) {
                   this.server.consensus.catchUp(catchUpInfo);

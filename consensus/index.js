@@ -29,7 +29,7 @@ const {
 const {
   ConsensusMessageTypes,
   ConsensusConsts,
-  ConsensusStatus,
+  ConsensusStates,
 } = require('./constants');
 const {
   signAndSendTx,
@@ -48,10 +48,10 @@ class Consensus {
   constructor(server, node) {
     this.server = server;
     this.node = node;
-    this.status = null;
-    this.statusChangedBlockNumber = null;
+    this.state = null;
+    this.stateChangedBlockNumber = null;
     this.setter = '';
-    this.setStatus(ConsensusStatus.STARTING);
+    this.setState(ConsensusStates.STARTING);
     this.consensusProtocolVersion = CONSENSUS_PROTOCOL_VERSION;
     this.majorConsensusProtocolVersion = VersionUtil.toMajorVersion(CONSENSUS_PROTOCOL_VERSION);
     this.epochInterval = null;
@@ -59,7 +59,7 @@ class Consensus {
     this.timeAdjustment = 0;
     this.isReporting = false;
     this.isInEpochTransition = false;
-    this.state = {
+    this.proposerStatus = {
       // epoch increases by 1 every EPOCH_MS,
       // and at each epoch a new proposer is pseudo-randomly selected.
       epoch: 1,
@@ -94,13 +94,13 @@ class Consensus {
         this.server.executeAndBroadcastTransaction(stakeTx);
       }
       this.blockPool = new BlockPool(this.node, lastBlockWithoutProposal);
-      this.setStatus(ConsensusStatus.RUNNING, 'init');
+      this.setState(ConsensusStates.RUNNING, 'init');
       this.startEpochTransition();
       logger.info(`[${LOG_HEADER}] Initialized to number ${finalizedNumber} and ` +
-          `epoch ${this.state.epoch}`);
+          `epoch ${this.proposerStatus.epoch}`);
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Init error: ${err} ${err.stack}`);
-      this.setStatus(ConsensusStatus.STARTING, 'init');
+      this.setState(ConsensusStates.STARTING, 'init');
     }
   }
 
@@ -108,8 +108,8 @@ class Consensus {
     const LOG_HEADER = 'startEpochTransition';
     const genesisBlock = Block.genesis();
     this.startingTime = genesisBlock.timestamp;
-    this.state.epoch = Math.ceil((Date.now() - this.startingTime) / EPOCH_MS);
-    logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.state.epoch}`);
+    this.proposerStatus.epoch = Math.ceil((Date.now() - this.startingTime) / EPOCH_MS);
+    logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.proposerStatus.epoch}`);
 
     this.setEpochTransition();
   }
@@ -126,7 +126,7 @@ class Consensus {
       this.isInEpochTransition = true;
       this.tryFinalize();
       let currentTime = Date.now();
-      if (this.state.epoch % 100 === 0) {
+      if (this.proposerStatus.epoch % 100 === 0) {
         // adjust time
         try {
           const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
@@ -138,16 +138,19 @@ class Consensus {
       }
       currentTime -= this.timeAdjustment;
       const absEpoch = Math.floor((currentTime - this.startingTime) / EPOCH_MS);
-      if (this.state.epoch + 1 < absEpoch) {
-        logger.debug(`[${LOG_HEADER}] Epoch is too low: ${this.state.epoch} / ${absEpoch}`);
-      } else if (this.state.epoch + 1 > absEpoch) {
-        logger.debug(`[${LOG_HEADER}] Epoch is too high: ${this.state.epoch} / ${absEpoch}`);
+      if (this.proposerStatus.epoch + 1 < absEpoch) {
+        logger.debug(
+            `[${LOG_HEADER}] Epoch is too low: ${this.proposerStatus.epoch} / ${absEpoch}`);
+      } else if (this.proposerStatus.epoch + 1 > absEpoch) {
+        logger.debug(
+            `[${LOG_HEADER}] Epoch is too high: ${this.proposerStatus.epoch} / ${absEpoch}`);
       }
-      logger.debug(`[${LOG_HEADER}] Updating epoch at ${currentTime}: ${this.state.epoch} ` +
+      logger.debug(
+          `[${LOG_HEADER}] Updating epoch at ${currentTime}: ${this.proposerStatus.epoch} ` +
           `=> ${absEpoch}`);
       // re-adjust and update epoch
-      this.state.epoch = absEpoch;
-      if (this.state.epoch > 1) {
+      this.proposerStatus.epoch = absEpoch;
+      if (this.proposerStatus.epoch > 1) {
         this.updateProposer();
         this.tryPropose();
       }
@@ -157,7 +160,7 @@ class Consensus {
 
   stop() {
     logger.info(`Stop epochInterval.`);
-    this.setStatus(ConsensusStatus.STOPPED, 'stop');
+    this.setState(ConsensusStates.STOPPED, 'stop');
     if (this.epochInterval) {
       clearInterval(this.epochInterval);
       this.epochInterval = null;
@@ -169,17 +172,19 @@ class Consensus {
     const LOG_HEADER = 'updateProposer';
     const lastNotarizedBlock = this.getLastNotarizedBlock();
     if (!lastNotarizedBlock) {
-      logger.error(`[${LOG_HEADER}] Empty lastNotarizedBlock (${this.state.epoch})`);
+      logger.error(`[${LOG_HEADER}] Empty lastNotarizedBlock (${this.proposerStatus.epoch})`);
     }
     // Need the block#1 to be finalized to have the stakes reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastNotarizedBlock.validators
         : this.getValidators(lastNotarizedBlock.hash, lastNotarizedBlock.number);
 
     // FIXME(liayoo): Make the seeds more secure and unpredictable.
-    // const seed = '' + this.genesisHash + this.state.epoch;
-    const seed = '' + lastNotarizedBlock.last_votes_hash + this.state.epoch;
-    this.state.proposer = Consensus.selectProposer(seed, validators);
-    logger.debug(`[${LOG_HEADER}] proposer for epoch ${this.state.epoch}: ${this.state.proposer}`);
+    // const seed = '' + this.genesisHash + this.proposerStatus.epoch;
+    const seed = '' + lastNotarizedBlock.last_votes_hash + this.proposerStatus.epoch;
+    this.proposerStatus.proposer = Consensus.selectProposer(seed, validators);
+    logger.debug(
+        `[${LOG_HEADER}] proposer for epoch ${this.proposerStatus.epoch}: ` +
+        `${this.proposerStatus.proposer}`);
   }
 
   checkConsensusProtocolVersion(msg) {
@@ -216,9 +221,9 @@ class Consensus {
           `Discard the consensus message.`);
       return;
     }
-    if (this.status !== ConsensusStatus.RUNNING) {
-      logger.debug(`[${LOG_HEADER}] Consensus status (${this.status}) is not RUNNING ` +
-          `(${ConsensusStatus.RUNNING})`);
+    if (this.state !== ConsensusStates.RUNNING) {
+      logger.debug(`[${LOG_HEADER}] Consensus status (${this.state}) is not RUNNING ` +
+          `(${ConsensusStates.RUNNING})`);
       return;
     }
     if (msg.type !== ConsensusMessageTypes.PROPOSE && msg.type !== ConsensusMessageTypes.VOTE) {
@@ -230,7 +235,7 @@ class Consensus {
       return;
     }
     logger.debug(`[${LOG_HEADER}] Consensus state - Finalized block: ` +
-        `${this.node.bc.lastBlockNumber()} / ${this.state.epoch}`);
+        `${this.node.bc.lastBlockNumber()} / ${this.proposerStatus.epoch}`);
     logger.debug(`Message: ${JSON.stringify(msg.value, null, 2)}`);
     if (msg.type === ConsensusMessageTypes.PROPOSE) {
       const lastNotarizedBlock = this.getLastNotarizedBlock();
@@ -284,7 +289,8 @@ class Consensus {
     }
   }
 
-  executeOrRollbackTransactionForBlock(db, tx, blockNumber, validTransactions, invalidTransactions, resList) {
+  executeOrRollbackTransactionForBlock(
+      db, tx, blockNumber, validTransactions, invalidTransactions, resList) {
     const LOG_HEADER = 'executeOrRollbackTransactionForBlock';
     if (!db.backupDb()) {
       logger.error(
@@ -370,7 +376,8 @@ class Consensus {
         return null;
       }
     }
-    const { gasAmountTotal, gasCostTotal } = ChainUtil.getServiceGasCostTotalFromTxList(validTransactions, resList);
+    const { gasAmountTotal, gasCostTotal } =
+        ChainUtil.getServiceGasCostTotalFromTxList(validTransactions, resList);
 
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
@@ -404,7 +411,7 @@ class Consensus {
     }, 0);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.create(
-        lastBlock.hash, lastVotes, validTransactions, blockNumber, this.state.epoch,
+        lastBlock.hash, lastVotes, validTransactions, blockNumber, this.proposerStatus.epoch,
         stateProofHash, myAddr, validators, gasAmountTotal, gasCostTotal);
 
     let proposalTx;
@@ -413,7 +420,7 @@ class Consensus {
       ref: PathUtil.getConsensusProposePath(blockNumber),
       value: {
         number: blockNumber,
-        epoch: this.state.epoch,
+        epoch: this.proposerStatus.epoch,
         validators,
         total_at_stake: totalAtStake,
         proposer: myAddr,
@@ -507,7 +514,9 @@ class Consensus {
 
     // Make sure we have at least MIN_NUM_VALIDATORS validators.
     if (Object.keys(validators).length < MIN_NUM_VALIDATORS) {
-      logger.error(`[${LOG_HEADER}] Validator set smaller than MIN_NUM_VALIDATORS: ${JSON.stringify(validators)}`);
+      logger.error(
+          `[${LOG_HEADER}] Validator set smaller than MIN_NUM_VALIDATORS: ` +
+          `${JSON.stringify(validators)}`);
       return false;
     }
 
@@ -630,7 +639,8 @@ class Consensus {
       this.node.destroyDb(newDb);
       return false;
     }
-    const { gasAmountTotal, gasCostTotal } = ChainUtil.getServiceGasCostTotalFromTxList(transactions, txsRes);
+    const { gasAmountTotal, gasCostTotal } =
+        ChainUtil.getServiceGasCostTotalFromTxList(transactions, txsRes);
     if (gasAmountTotal !== gas_amount_total) {
       logger.error(`[${LOG_HEADER}] Invalid gas_amount_total`);
       this.node.destroyDb(newDb);
@@ -659,7 +669,9 @@ class Consensus {
     }
     const proposalTxExecRes = tempDb.executeTransaction(executableTx);
     if (ChainUtil.isFailedTx(proposalTxExecRes)) {
-      logger.error(`[${LOG_HEADER}] Failed to execute the proposal tx: ${JSON.stringify(proposalTxExecRes)}`);
+      logger.error(
+          `[${LOG_HEADER}] Failed to execute the proposal tx: ` +
+          `${JSON.stringify(proposalTxExecRes)}`);
       this.node.destroyDb(tempDb);
       this.node.destroyDb(newDb);
       return false;
@@ -725,21 +737,22 @@ class Consensus {
       return false;
     }
     this.node.tp.addTransaction(executableTx);
-    this.blockPool.addSeenVote(voteTx, this.state.epoch);
+    this.blockPool.addSeenVote(voteTx, this.proposerStatus.epoch);
     return true;
   }
 
   tryPropose() {
     const LOG_HEADER = 'tryPropose';
 
-    if (this.votedForEpoch(this.state.epoch)) {
-      logger.info(`[${LOG_HEADER}] Already voted for ` +
-          `${this.blockPool.epochToBlock[this.state.epoch]} at epoch ${this.state.epoch} ` +
-          'but trying to propose at the same epoch');
+    if (this.votedForEpoch(this.proposerStatus.epoch)) {
+      logger.info(
+          `[${LOG_HEADER}] Already voted for ` +
+          `${this.blockPool.epochToBlock[this.proposerStatus.epoch]} ` +
+          `at epoch ${this.proposerStatus.epoch} but trying to propose at the same epoch`);
       return;
     }
-    if (this.state.proposer &&
-        ChainUtil.areSameAddrs(this.state.proposer, this.node.account.address)) {
+    if (this.proposerStatus.proposer &&
+        ChainUtil.areSameAddrs(this.proposerStatus.proposer, this.node.account.address)) {
       logger.info(`[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
       try {
         const proposal = this.createProposal();
@@ -764,9 +777,9 @@ class Consensus {
       logger.info(`[${LOG_HEADER}] Already voted for epoch ${proposalBlock.epoch}`);
       return;
     }
-    if (proposalBlock.epoch < this.state.epoch) {
+    if (proposalBlock.epoch < this.proposerStatus.epoch) {
       logger.info(`[${LOG_HEADER}] Possibly a stale proposal (${proposalBlock.epoch} / ` +
-          `${this.state.epoch})`);
+          `${this.proposerStatus.epoch})`);
       // FIXME
     }
     this.vote(proposalBlock);
@@ -944,7 +957,8 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] No validators voted`);
       throw Error('No validators voted');
     }
-    logger.debug(`[${LOG_HEADER}] current epoch: ${this.state.epoch}\nblock hash: ${blockHash}` +
+    logger.debug(
+        `[${LOG_HEADER}] current epoch: ${this.proposerStatus.epoch}\nblock hash: ${blockHash}` +
         `\nvotes: ${JSON.stringify(blockInfo.votes, null, 2)}`);
     const validators = {};
     blockInfo.votes.forEach((voteTx) => {
@@ -1105,15 +1119,15 @@ class Consensus {
   }
 
   isRunning() {
-    return this.status === ConsensusStatus.RUNNING;
+    return this.state === ConsensusStates.RUNNING;
   }
 
-  setStatus(status, setter = '') {
-    const LOG_HEADER = 'setStatus';
-    logger.info(`[${LOG_HEADER}] setting consensus status from ${this.status} to ` +
+  setState(status, setter = '') {
+    const LOG_HEADER = 'setState';
+    logger.info(`[${LOG_HEADER}] setting consensus status from ${this.state} to ` +
         `${status} (setter = ${setter})`);
-    this.status = status;
-    this.statusChangedBlockNumber = this.node.bc.lastBlockNumber();
+    this.state = status;
+    this.stateChangedBlockNumber = this.node.bc.lastBlockNumber();
     this.setter = setter;
   }
 
@@ -1136,7 +1150,7 @@ class Consensus {
    */
   getRawState() {
     const result = {};
-    result.consensus = Object.assign({}, this.state, {status: this.status});
+    result.consensus = Object.assign({}, this.proposerStatus, {state: this.state});
     if (this.blockPool) {
       result.block_pool = {
         hashToBlockInfo: this.blockPool.hashToBlockInfo,
@@ -1168,13 +1182,14 @@ class Consensus {
       health = false;
     } else {
       health =
-          (this.state.epoch - lastFinalizedBlock.epoch) < ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
+          (this.proposerStatus.epoch - lastFinalizedBlock.epoch) <
+          ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
     }
     return {
       health,
-      state: this.status,
-      stateNumeric: Object.keys(ConsensusStatus).indexOf(this.status),
-      epoch: this.state.epoch
+      state: this.state,
+      stateNumeric: Object.keys(ConsensusStates).indexOf(this.state),
+      epoch: this.proposerStatus.epoch
     };
   }
 
@@ -1241,8 +1256,9 @@ class Consensus {
   static filterStakeTxs(txs) {
     return txs.filter((tx) => {
       const ref = _.get(tx, 'tx_body.operation.ref');
-      return ref && ref.startsWith(`/${PredefinedDbPaths.STAKING}/${PredefinedDbPaths.CONSENSUS}`) &&
-        _.get(tx, 'tx_body.operation.type') === WriteDbOperations.SET_VALUE;
+      return ref &&
+          ref.startsWith(`/${PredefinedDbPaths.STAKING}/${PredefinedDbPaths.CONSENSUS}`) &&
+          _.get(tx, 'tx_body.operation.type') === WriteDbOperations.SET_VALUE;
     });
   }
 }

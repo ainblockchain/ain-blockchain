@@ -17,7 +17,7 @@ const {
   WriteDbOperations,
   TransactionStatus,
 } = require('../common/constants');
-const { ConsensusStatus } = require('../consensus/constants');
+const { ConsensusStates } = require('../consensus/constants');
 
 const MAX_BLOCKS = 20;
 
@@ -59,7 +59,7 @@ app.get('/health_check', (req, res, next) => {
   const nodeStatus = p2pServer.getNodeStatus();
   const consensusState = p2pServer.consensus.getState();
   const result = nodeStatus.state === BlockchainNodeStates.SERVING &&
-      consensusState.state === ConsensusStatus.RUNNING &&
+      consensusState.state === ConsensusStates.RUNNING &&
       consensusState.health === true;
   res.status(200)
     .set('Content-Type', 'text/plain')
