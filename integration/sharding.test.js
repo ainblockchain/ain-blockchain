@@ -17,16 +17,14 @@ const {
   CHAINS_DIR,
   PredefinedDbPaths,
   WriteDbOperations,
-  OwnerProperties,
   RuleProperties,
   ShardingProperties,
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
-  buildOwnerPermissions
 } = require('../common/constants');
 const {
-  ConsensusStatus
+  ConsensusStates
 } = require('../consensus/constants');
 const ChainUtil = require('../common/chain-util');
 const {
@@ -112,7 +110,7 @@ async function waitUntilShardReporterStarts() {
   while (true) {
     consensusState = parseOrLog(syncRequest('GET', server1 + '/get_consensus_state')
         .body.toString('utf-8')).result;
-    if (consensusState && consensusState.state === ConsensusStatus.RUNNING) return;
+    if (consensusState && consensusState.state === ConsensusStates.RUNNING) return;
     await ChainUtil.sleep(1000);
   }
 }
