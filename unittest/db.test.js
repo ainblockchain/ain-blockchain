@@ -269,6 +269,10 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getValue("test"), dbValues)
       })
 
+      it("when retrieving high value near top of database with is_shallow", () => {
+        assert.deepEqual(node.db.getValue("test", false, true), Object.keys(dbValues))
+      })
+
       it("when retrieving shallow nested value", () => {
         assert.deepEqual(node.db.getValue("test/ai/comcom"), dbValues["ai"]["comcom"])
       })
@@ -279,6 +283,10 @@ describe("DB operations", () => {
 
       it("by failing when value is not present", () => {
         expect(node.db.getValue("test/nested/far/down/to/nowhere")).to.equal(null)
+      })
+
+      it("by failing when value is not present with is_shallow", () => {
+        expect(node.db.getValue("test/nested/far/down/to/nowhere", false, true)).to.equal(null)
       })
     })
 
