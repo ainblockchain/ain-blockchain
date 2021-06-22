@@ -77,8 +77,8 @@ app.get('/metrics', (req, res, next) => {
 });
 
 app.get('/get_value', (req, res, next) => {
-  const result = node.db.getValue(req.query.ref, ChainUtil.toBool(req.query.is_global),
-      ChainUtil.toBool(req.query.is_shallow));
+  const result = node.db.getValue(req.query.ref, ChainUtil.toBool(req.query.is_shallow),
+      ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -86,8 +86,8 @@ app.get('/get_value', (req, res, next) => {
 });
 
 app.get('/get_function', (req, res, next) => {
-  const result = node.db.getFunction(req.query.ref, ChainUtil.toBool(req.query.is_global),
-      ChainUtil.toBool(req.query.is_shallow));
+  const result = node.db.getFunction(req.query.ref, ChainUtil.toBool(req.query.is_shallow),
+      ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -95,8 +95,8 @@ app.get('/get_function', (req, res, next) => {
 });
 
 app.get('/get_rule', (req, res, next) => {
-  const result = node.db.getRule(req.query.ref, ChainUtil.toBool(req.query.is_global),
-      ChainUtil.toBool(req.query.is_shallow));
+  const result = node.db.getRule(req.query.ref, ChainUtil.toBool(req.query.is_shallow),
+      ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -104,8 +104,8 @@ app.get('/get_rule', (req, res, next) => {
 });
 
 app.get('/get_owner', (req, res, next) => {
-  const result = node.db.getOwner(req.query.ref, ChainUtil.toBool(req.query.is_global),
-      ChainUtil.toBool(req.query.is_shallow));
+  const result = node.db.getOwner(req.query.ref, ChainUtil.toBool(req.query.is_shallow),
+      ChainUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})

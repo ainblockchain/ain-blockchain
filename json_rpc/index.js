@@ -271,22 +271,22 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       switch (args.type) {
         case ReadDbOperations.GET_VALUE:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getValue(args.ref, args.is_global, args.is_shallow)
+            result: p2pServer.node.db.getValue(args.ref, args.is_shallow, args.is_global)
           }));
           return;
         case ReadDbOperations.GET_RULE:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getRule(args.ref, args.is_global, args.is_shallow)
+            result: p2pServer.node.db.getRule(args.ref, args.is_shallow, args.is_global)
           }));
           return;
         case ReadDbOperations.GET_FUNCTION:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getFunction(args.ref, args.is_global, args.is_shallow)
+            result: p2pServer.node.db.getFunction(args.ref, args.is_shallow, args.is_global)
           }));
           return;
         case ReadDbOperations.GET_OWNER:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getOwner(args.ref, args.is_global, args.is_shallow)
+            result: p2pServer.node.db.getOwner(args.ref, args.is_shallow, args.is_global)
           }));
           return;
         case ReadDbOperations.GET:
