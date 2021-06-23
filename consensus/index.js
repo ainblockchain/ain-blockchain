@@ -58,12 +58,10 @@ class Consensus {
     this.timeAdjustment = 0;
     this.isReporting = false;
     this.isInEpochTransition = false;
-    this.proposerStatus = {
-      // epoch increases by 1 every EPOCH_MS,
-      // and at each epoch a new proposer is pseudo-randomly selected.
-      epoch: 1,
-      proposer: null
-    }
+    // epoch increases by 1 every EPOCH_MS,
+    // and at each epoch a new proposer is pseudo-randomly selected.
+    this.epoch = 1;
+    this.proposer = null;
     // This feature is only used when LIGHTWEIGHT=true.
     this.cache = {};
     this.lastReportedBlockNumberSent = -1;
@@ -95,8 +93,8 @@ class Consensus {
       this.blockPool = new BlockPool(this.node, lastBlockWithoutProposal);
       this.setState(ConsensusStates.RUNNING);
       this.startEpochTransition();
-      logger.info(`[${LOG_HEADER}] Initialized to number ${finalizedNumber} and ` +
-          `epoch ${this.proposerStatus.epoch}`);
+      logger.info(
+          `[${LOG_HEADER}] Initialized to number ${finalizedNumber} and epoch ${this.epoch}`);
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Init error: ${err} ${err.stack}`);
       this.setState(ConsensusStates.STARTING);
@@ -107,8 +105,8 @@ class Consensus {
     const LOG_HEADER = 'startEpochTransition';
     const genesisBlock = Block.genesis();
     this.startingTime = genesisBlock.timestamp;
-    this.proposerStatus.epoch = Math.ceil((Date.now() - this.startingTime) / EPOCH_MS);
-    logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.proposerStatus.epoch}`);
+    this.epoch = Math.ceil((Date.now() - this.startingTime) / EPOCH_MS);
+    logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.epoch}`);
 
     this.setEpochTransition();
   }
@@ -125,7 +123,7 @@ class Consensus {
       this.isInEpochTransition = true;
       this.tryFinalize();
       let currentTime = Date.now();
-      if (this.proposerStatus.epoch % 100 === 0) {
+      if (this.epoch % 100 === 0) {
         // adjust time
         try {
           const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
@@ -137,19 +135,16 @@ class Consensus {
       }
       currentTime -= this.timeAdjustment;
       const absEpoch = Math.floor((currentTime - this.startingTime) / EPOCH_MS);
-      if (this.proposerStatus.epoch + 1 < absEpoch) {
-        logger.debug(
-            `[${LOG_HEADER}] Epoch is too low: ${this.proposerStatus.epoch} / ${absEpoch}`);
-      } else if (this.proposerStatus.epoch + 1 > absEpoch) {
-        logger.debug(
-            `[${LOG_HEADER}] Epoch is too high: ${this.proposerStatus.epoch} / ${absEpoch}`);
+      if (this.epoch + 1 < absEpoch) {
+        logger.debug(`[${LOG_HEADER}] Epoch is too low: ${this.epoch} / ${absEpoch}`);
+      } else if (this.epoch + 1 > absEpoch) {
+        logger.debug(`[${LOG_HEADER}] Epoch is too high: ${this.epoch} / ${absEpoch}`);
       }
       logger.debug(
-          `[${LOG_HEADER}] Updating epoch at ${currentTime}: ${this.proposerStatus.epoch} ` +
-          `=> ${absEpoch}`);
+          `[${LOG_HEADER}] Updating epoch at ${currentTime}: ${this.epoch} => ${absEpoch}`);
       // re-adjust and update epoch
-      this.proposerStatus.epoch = absEpoch;
-      if (this.proposerStatus.epoch > 1) {
+      this.epoch = absEpoch;
+      if (this.epoch > 1) {
         this.updateProposer();
         this.tryPropose();
       }
@@ -171,19 +166,17 @@ class Consensus {
     const LOG_HEADER = 'updateProposer';
     const lastNotarizedBlock = this.getLastNotarizedBlock();
     if (!lastNotarizedBlock) {
-      logger.error(`[${LOG_HEADER}] Empty lastNotarizedBlock (${this.proposerStatus.epoch})`);
+      logger.error(`[${LOG_HEADER}] Empty lastNotarizedBlock (${this.epoch})`);
     }
     // Need the block#1 to be finalized to have the stakes reflected in the state
     const validators = this.node.bc.lastBlockNumber() < 1 ? lastNotarizedBlock.validators
         : this.getValidators(lastNotarizedBlock.hash, lastNotarizedBlock.number);
 
     // FIXME(liayoo): Make the seeds more secure and unpredictable.
-    // const seed = '' + this.genesisHash + this.proposerStatus.epoch;
-    const seed = '' + lastNotarizedBlock.last_votes_hash + this.proposerStatus.epoch;
-    this.proposerStatus.proposer = Consensus.selectProposer(seed, validators);
-    logger.debug(
-        `[${LOG_HEADER}] proposer for epoch ${this.proposerStatus.epoch}: ` +
-        `${this.proposerStatus.proposer}`);
+    // const seed = '' + this.genesisHash + this.epoch;
+    const seed = '' + lastNotarizedBlock.last_votes_hash + this.epoch;
+    this.proposer = Consensus.selectProposer(seed, validators);
+    logger.debug(`[${LOG_HEADER}] proposer for epoch ${this.epoch}: ${this.proposer}`);
   }
 
   checkConsensusProtocolVersion(msg) {
@@ -233,8 +226,9 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Invalid message value: ${msg.value}`);
       return;
     }
-    logger.debug(`[${LOG_HEADER}] Consensus state - Finalized block: ` +
-        `${this.node.bc.lastBlockNumber()} / ${this.proposerStatus.epoch}`);
+    logger.debug(
+        `[${LOG_HEADER}] Consensus state - Finalized block: ` +
+        `${this.node.bc.lastBlockNumber()} / ${this.epoch}`);
     logger.debug(`Message: ${JSON.stringify(msg.value, null, 2)}`);
     if (msg.type === ConsensusMessageTypes.PROPOSE) {
       const lastNotarizedBlock = this.getLastNotarizedBlock();
@@ -410,7 +404,7 @@ class Consensus {
     }, 0);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.create(
-        lastBlock.hash, lastVotes, validTransactions, blockNumber, this.proposerStatus.epoch,
+        lastBlock.hash, lastVotes, validTransactions, blockNumber, this.epoch,
         stateProofHash, myAddr, validators, gasAmountTotal, gasCostTotal);
 
     let proposalTx;
@@ -419,7 +413,7 @@ class Consensus {
       ref: PathUtil.getConsensusProposePath(blockNumber),
       value: {
         number: blockNumber,
-        epoch: this.proposerStatus.epoch,
+        epoch: this.epoch,
         validators,
         total_at_stake: totalAtStake,
         proposer: myAddr,
@@ -736,22 +730,20 @@ class Consensus {
       return false;
     }
     this.node.tp.addTransaction(executableTx);
-    this.blockPool.addSeenVote(voteTx, this.proposerStatus.epoch);
+    this.blockPool.addSeenVote(voteTx, this.epoch);
     return true;
   }
 
   tryPropose() {
     const LOG_HEADER = 'tryPropose';
 
-    if (this.votedForEpoch(this.proposerStatus.epoch)) {
+    if (this.votedForEpoch(this.epoch)) {
       logger.info(
-          `[${LOG_HEADER}] Already voted for ` +
-          `${this.blockPool.epochToBlock[this.proposerStatus.epoch]} ` +
-          `at epoch ${this.proposerStatus.epoch} but trying to propose at the same epoch`);
+          `[${LOG_HEADER}] Already voted for ${this.blockPool.epochToBlock[this.epoch]} ` +
+          `at epoch ${this.epoch} but trying to propose at the same epoch`);
       return;
     }
-    if (this.proposerStatus.proposer &&
-        ChainUtil.areSameAddrs(this.proposerStatus.proposer, this.node.account.address)) {
+    if (this.proposer && ChainUtil.areSameAddrs(this.proposer, this.node.account.address)) {
       logger.info(`[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
       try {
         const proposal = this.createProposal();
@@ -776,9 +768,9 @@ class Consensus {
       logger.info(`[${LOG_HEADER}] Already voted for epoch ${proposalBlock.epoch}`);
       return;
     }
-    if (proposalBlock.epoch < this.proposerStatus.epoch) {
-      logger.info(`[${LOG_HEADER}] Possibly a stale proposal (${proposalBlock.epoch} / ` +
-          `${this.proposerStatus.epoch})`);
+    if (proposalBlock.epoch < this.epoch) {
+      logger.info(
+          `[${LOG_HEADER}] Possibly a stale proposal (${proposalBlock.epoch} / ${this.epoch})`);
       // FIXME
     }
     this.vote(proposalBlock);
@@ -957,7 +949,7 @@ class Consensus {
       throw Error('No validators voted');
     }
     logger.debug(
-        `[${LOG_HEADER}] current epoch: ${this.proposerStatus.epoch}\nblock hash: ${blockHash}` +
+        `[${LOG_HEADER}] current epoch: ${this.epoch}\nblock hash: ${blockHash}` +
         `\nvotes: ${JSON.stringify(blockInfo.votes, null, 2)}`);
     const validators = {};
     blockInfo.votes.forEach((voteTx) => {
@@ -1147,7 +1139,8 @@ class Consensus {
    */
   getRawState() {
     const result = {};
-    result.consensus = Object.assign({}, this.proposerStatus, {state: this.state});
+    result.consensus =
+        Object.assign({}, { epoch: this.epoch, proposer: this.proposer }, { state: this.state });
     if (this.blockPool) {
       result.block_pool = {
         hashToBlockInfo: this.blockPool.hashToBlockInfo,
@@ -1178,15 +1171,13 @@ class Consensus {
     if (!lastFinalizedBlock) {
       health = false;
     } else {
-      health =
-          (this.proposerStatus.epoch - lastFinalizedBlock.epoch) <
-          ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
+      health = (this.epoch - lastFinalizedBlock.epoch) < ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
     }
     return {
       health,
       state: this.state,
       stateNumeric: Object.keys(ConsensusStates).indexOf(this.state),
-      epoch: this.proposerStatus.epoch
+      epoch: this.epoch
     };
   }
 
