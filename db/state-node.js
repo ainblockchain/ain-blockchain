@@ -103,9 +103,9 @@ class StateNode {
     if (this.getIsLeaf()) {
       return this.getValue();
     }
-    return this.getChildLabels().reduce((shallowTable, label) => {
-      shallowTable[label] = true;
-      return shallowTable;
+    return this.getChildLabels().reduce((shallowCopy, label) => {
+      shallowCopy[label] = true;
+      return shallowCopy;
     }, {});
   }
 
