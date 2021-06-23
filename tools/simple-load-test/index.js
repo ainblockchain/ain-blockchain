@@ -7,7 +7,7 @@ const _ = require('lodash');
 const axios = require('axios');
 const commandLineArgs = require('command-line-args');
 const getUsage = require('command-line-usage');
-const ChainUtil = require('../../common/chain-util');
+const CommonUtil = require('../../common/common-util');
 const {signTx} = require('../util');
 const delay = (time) => new Promise((resolve) => setTimeout(resolve, time));
 const testPath = '/apps/loadtest';
@@ -112,9 +112,9 @@ async function initPermission(targetUrl) {
     timestamp: Date.now(),
     nonce: -1,
   };
-  const {signedTx: signedSetOwnerTx} = ChainUtil.signTransaction(setOwnerTx, ainPrivateKey);
-  const {signedTx: signedSetRuleTx} = ChainUtil.signTransaction(setRuleTx, ainPrivateKey);
-  const {signedTx: signedSetValueTx} = ChainUtil.signTransaction(setValueTx, ainPrivateKey);
+  const {signedTx: signedSetOwnerTx} = CommonUtil.signTransaction(setOwnerTx, ainPrivateKey);
+  const {signedTx: signedSetRuleTx} = CommonUtil.signTransaction(setRuleTx, ainPrivateKey);
+  const {signedTx: signedSetValueTx} = CommonUtil.signTransaction(setValueTx, ainPrivateKey);
   const promiseList = [];
   promiseList.push(sendTx(targetUrl, signedSetOwnerTx));
   promiseList.push(sendTx(targetUrl, signedSetRuleTx));
@@ -154,7 +154,7 @@ async function sendTxs(targetUrl, duration, numberOfTransactions) {
         new Promise((resolve, reject) => {
           setTimeout((txTimestamp) => {
             baseTx.timestamp = txTimestamp;
-            const {signedTx} = ChainUtil.signTransaction(baseTx, ainPrivateKey);
+            const {signedTx} = CommonUtil.signTransaction(baseTx, ainPrivateKey);
             sendTx(targetUrl, signedTx).then((result) => {
               if (result === true) {
                 sendCnt++;

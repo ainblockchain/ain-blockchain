@@ -8,7 +8,7 @@ const { Block } = require('../blockchain/block');
 const BlockPool = require('./block-pool');
 const Transaction = require('../tx-pool/transaction');
 const PushId = require('../db/push-id');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const {
   WriteDbOperations,
   ReadDbOperations,
@@ -222,7 +222,7 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Invalid message type: ${msg.type}`);
       return;
     }
-    if (ChainUtil.isEmpty(msg.value)) {
+    if (CommonUtil.isEmpty(msg.value)) {
       logger.error(`[${LOG_HEADER}] Invalid message value: ${msg.value}`);
       return;
     }
@@ -273,7 +273,7 @@ class Consensus {
   executeLastVoteOrAbort(db, tx) {
     const LOG_HEADER = 'executeLastVoteOrAbort';
     const txRes = db.executeTransaction(Transaction.toExecutable(tx));
-    if (!ChainUtil.isFailedTx(txRes)) {
+    if (!CommonUtil.isFailedTx(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       return txRes;
     } else {
@@ -292,7 +292,7 @@ class Consensus {
     }
     logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
     const txRes = db.executeTransaction(Transaction.toExecutable(tx), blockNumber);
-    if (!ChainUtil.isFailedTx(txRes)) {
+    if (!CommonUtil.isFailedTx(txRes)) {
       logger.debug(`[${LOG_HEADER}] tx: success`);
       validTransactions.push(tx);
       resList.push(txRes);
@@ -370,7 +370,7 @@ class Consensus {
       }
     }
     const { gasAmountTotal, gasCostTotal } =
-        ChainUtil.getServiceGasCostTotalFromTxList(validTransactions, resList);
+        CommonUtil.getServiceGasCostTotalFromTxList(validTransactions, resList);
 
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
@@ -434,7 +434,7 @@ class Consensus {
           proposeOp,
           {
             type: WriteDbOperations.SET_VALUE,
-            ref: ChainUtil.formatPath([
+            ref: CommonUtil.formatPath([
               PredefinedDbPaths.CONSENSUS,
               PredefinedDbPaths.NUMBER,
               blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB
@@ -560,7 +560,7 @@ class Consensus {
       for (const voteTx of last_votes) {
         if (voteTx.hash === prevBlockProposal.hash) continue;
         if (!Consensus.isValidConsensusTx(voteTx) ||
-            ChainUtil.isFailedTx(
+            CommonUtil.isFailedTx(
                 tempDb.executeTransaction(Transaction.toExecutable(voteTx)))) {
           logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
           hasInvalidLastVote = true;
@@ -633,7 +633,7 @@ class Consensus {
       return false;
     }
     const { gasAmountTotal, gasCostTotal } =
-        ChainUtil.getServiceGasCostTotalFromTxList(transactions, txsRes);
+        CommonUtil.getServiceGasCostTotalFromTxList(transactions, txsRes);
     if (gasAmountTotal !== gas_amount_total) {
       logger.error(`[${LOG_HEADER}] Invalid gas_amount_total`);
       this.node.destroyDb(newDb);
@@ -661,7 +661,7 @@ class Consensus {
       return null;
     }
     const proposalTxExecRes = tempDb.executeTransaction(executableTx);
-    if (ChainUtil.isFailedTx(proposalTxExecRes)) {
+    if (CommonUtil.isFailedTx(proposalTxExecRes)) {
       logger.error(
           `[${LOG_HEADER}] Failed to execute the proposal tx: ` +
           `${JSON.stringify(proposalTxExecRes)}`);
@@ -725,7 +725,7 @@ class Consensus {
     }
     const voteTxRes = tempDb.executeTransaction(executableTx);
     this.node.destroyDb(tempDb);
-    if (ChainUtil.isFailedTx(voteTxRes)) {
+    if (CommonUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);
       return false;
     }
@@ -743,7 +743,7 @@ class Consensus {
           `at epoch ${this.epoch} but trying to propose at the same epoch`);
       return;
     }
-    if (this.proposer && ChainUtil.areSameAddrs(this.proposer, this.node.account.address)) {
+    if (this.proposer && CommonUtil.areSameAddrs(this.proposer, this.node.account.address)) {
       logger.info(`[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
       try {
         const proposal = this.createProposal();
@@ -1223,7 +1223,7 @@ class Consensus {
 
   static isValidConsensusTx(tx) {
     if (!tx.tx_body.operation) return false;
-    const consensusTxPrefix = ChainUtil.formatPath(
+    const consensusTxPrefix = CommonUtil.formatPath(
         [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.NUMBER]);
     if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
       return tx.tx_body.operation.ref.startsWith(consensusTxPrefix);
