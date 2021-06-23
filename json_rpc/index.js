@@ -398,13 +398,13 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result: NETWORK_ID}));
     },
 
-    net_consensusState: function(args, done) {
-      const result = p2pServer.consensus.getState();
+    net_consensusStatus: function(args, done) {
+      const result = p2pServer.consensus.getStatus();
       done(null, addProtocolVersion({result}));
     },
 
-    net_rawConsensusState: function(args, done) {
-      const result = p2pServer.consensus.getRawState();
+    net_rawConsensusStatus: function(args, done) {
+      const result = p2pServer.consensus.getRawStatus();
       done(null, addProtocolVersion({result}));
     }
   };
