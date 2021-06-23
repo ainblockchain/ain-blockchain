@@ -99,6 +99,16 @@ class StateNode {
     return obj;
   }
 
+  toJsObjectShallow() {
+    if (this.getIsLeaf()) {
+      return this.getValue();
+    }
+    return this.getChildLabels().reduce((shallowCopy, label) => {
+      shallowCopy[label] = true;
+      return shallowCopy;
+    }, {});
+  }
+
   getIsLeaf() {
     return this.isLeaf;
   }
