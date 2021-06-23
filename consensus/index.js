@@ -214,7 +214,7 @@ class Consensus {
       return;
     }
     if (this.state !== ConsensusStates.RUNNING) {
-      logger.debug(`[${LOG_HEADER}] Consensus status (${this.state}) is not RUNNING ` +
+      logger.debug(`[${LOG_HEADER}] Consensus state (${this.state}) is not RUNNING ` +
           `(${ConsensusStates.RUNNING})`);
       return;
     }
