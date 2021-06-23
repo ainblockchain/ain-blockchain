@@ -395,7 +395,7 @@ class DB {
     return DB.removeEmptyNodesRecursive(fullPath, 0, stateRoot);
   }
 
-  static readFromStateRoot(stateRoot, rootLabel, refPath, isGlobal, shardingPath) {
+  static readFromStateRoot(stateRoot, rootLabel, refPath, isShallow, isGlobal, shardingPath) {
     if (!stateRoot) return null;
     const parsedPath = ChainUtil.parsePath(refPath);
     const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
@@ -405,28 +405,35 @@ class DB {
     }
     const fullPath = DB.getFullPath(localPath, rootLabel);
     const stateNode = DB.getRefForReadingFromStateRoot(stateRoot, fullPath);
-    return stateNode !== null ? stateNode.toJsObject() : null;
+    if (stateNode === null) {
+      return null;
+    }
+    if (isShallow) {
+      return stateNode.toJsObjectShallow();
+    } else {
+      return stateNode.toJsObject();
+    }
   }
 
-  readDatabase(refPath, rootLabel, isGlobal) {
-    return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, isGlobal, this.shardingPath);
+  readDatabase(refPath, rootLabel, isShallow, isGlobal) {
+    return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, isShallow, isGlobal, this.shardingPath);
   }
 
   // TODO(platfowner): Support lookups on the final version.
-  getValue(valuePath, isGlobal) {
-    return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, isGlobal);
+  getValue(valuePath, isShallow, isGlobal) {
+    return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, isShallow, isGlobal);
   }
 
-  getFunction(functionPath, isGlobal) {
-    return this.readDatabase(functionPath, PredefinedDbPaths.FUNCTIONS_ROOT, isGlobal);
+  getFunction(functionPath, isShallow, isGlobal) {
+    return this.readDatabase(functionPath, PredefinedDbPaths.FUNCTIONS_ROOT, isShallow, isGlobal);
   }
 
-  getRule(rulePath, isGlobal) {
-    return this.readDatabase(rulePath, PredefinedDbPaths.RULES_ROOT, isGlobal);
+  getRule(rulePath, isShallow, isGlobal) {
+    return this.readDatabase(rulePath, PredefinedDbPaths.RULES_ROOT, isShallow, isGlobal);
   }
 
-  getOwner(ownerPath, isGlobal) {
-    return this.readDatabase(ownerPath, PredefinedDbPaths.OWNERS_ROOT, isGlobal);
+  getOwner(ownerPath, isShallow, isGlobal) {
+    return this.readDatabase(ownerPath, PredefinedDbPaths.OWNERS_ROOT, isShallow, isGlobal);
   }
 
   /**
@@ -456,7 +463,7 @@ class DB {
 
   static getValueFromStateRoot(stateRoot, statePath) {
     return DB.readFromStateRoot(
-        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, false, []);
+        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, false, [], false);
   }
 
   /**
@@ -531,13 +538,13 @@ class DB {
     const resultList = [];
     opList.forEach((op) => {
       if (op.type === undefined || op.type === ReadDbOperations.GET_VALUE) {
-        resultList.push(this.getValue(op.ref, op.is_global));
+        resultList.push(this.getValue(op.ref, op.is_shallow, op.is_global));
       } else if (op.type === ReadDbOperations.GET_RULE) {
-        resultList.push(this.getRule(op.ref, op.is_global));
+        resultList.push(this.getRule(op.ref, op.is_shallow, op.is_global));
       } else if (op.type === ReadDbOperations.GET_FUNCTION) {
-        resultList.push(this.getFunction(op.ref, op.is_global));
+        resultList.push(this.getFunction(op.ref, op.is_shallow, op.is_global));
       } else if (op.type === ReadDbOperations.GET_OWNER) {
-        resultList.push(this.getOwner(op.ref, op.is_global));
+        resultList.push(this.getOwner(op.ref, op.is_shallow, op.is_global));
       } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
         resultList.push(this.matchFunction(op.ref, op.is_global));
       } else if (op.type === ReadDbOperations.MATCH_RULE) {
@@ -680,7 +687,7 @@ class DB {
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
-    const valueBefore = this.getValue(valuePath, isGlobal);
+    const valueBefore = this.getValue(valuePath, false, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return ChainUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`);
@@ -690,7 +697,7 @@ class DB {
   }
 
   decValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
-    const valueBefore = this.getValue(valuePath, isGlobal);
+    const valueBefore = this.getValue(valuePath, false, isGlobal);
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return ChainUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`);
@@ -729,7 +736,7 @@ class DB {
     if (!this.getPermissionForFunction(localPath, auth)) {
       return ChainUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`);
     }
-    const curFunction = this.getFunction(functionPath, isGlobal);
+    const curFunction = this.getFunction(functionPath, false, isGlobal);
     const newFunction = applyFunctionChange(curFunction, func);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
@@ -789,7 +796,7 @@ class DB {
       return ChainUtil.returnTxResult(
           603, `No write_owner or branch_owner permission on: ${ownerPath}`);
     }
-    const curOwner = this.getOwner(ownerPath, isGlobal);
+    const curOwner = this.getOwner(ownerPath, false, isGlobal);
     const newOwner = applyOwnerChange(curOwner, owner);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     this.writeDatabase(fullPath, newOwner);
