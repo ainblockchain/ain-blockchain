@@ -138,11 +138,11 @@ EOF
 
 while :
 do
-    consensusState=$(curl -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'net_consensusState')" "http://localhost:8080/json-rpc" | jq -r '.result.result.state')
+    consensusStatus=$(curl -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'net_consensusStatus')" "http://localhost:8080/json-rpc" | jq -r '.result.result.state')
     lastBlockNumber=$(curl -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'ain_getRecentBlockNumber')" "http://localhost:8080/json-rpc" | jq -r '.result.result')
-    printf "\nconsensusState = ${consensusState}"
+    printf "\nconsensusStatus = ${consensusStatus}"
     printf "\nlastBlockNumber = ${lastBlockNumber}"
-    if [ "$consensusState" == "RUNNING" ]; then
+    if [ "$consensusStatus" == "RUNNING" ]; then
         printf "\nNode is synced & running!"
         printf "Time it took to sync in seconds: $SECONDS\n\n"
         break

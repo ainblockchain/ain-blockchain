@@ -412,15 +412,15 @@ const FunctionResultCode = {
 };
 
 /**
- * Constant values for transactionTracker.
+ * Transaction states.
  *
  * @enum {string}
  */
-const TransactionStatus = {
-  BLOCK_STATUS: 'BLOCK',
-  POOL_STATUS: 'POOL',
-  TIMEOUT_STATUS: 'TIMEOUT',
-  FAIL_STATUS: 'FAIL'
+const TransactionStates = {
+  IN_BLOCK: 'IN_BLOCK',
+  IN_POOL: 'IN_POOL',
+  TIMED_OUT: 'TIMED_OUT',
+  FAILED: 'FAILED'
 };
 
 /**
@@ -764,7 +764,7 @@ module.exports = {
   TokenExchangeSchemes,
   ReadDbOperations,
   WriteDbOperations,
-  TransactionStatus,
+  TransactionStates,
   StateVersions,
   GenesisToken,
   GenesisAccounts,

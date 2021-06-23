@@ -7,7 +7,7 @@ const {
   CURRENT_PROTOCOL_VERSION,
   BlockchainNodeStates,
   ReadDbOperations,
-  TransactionStatus,
+  TransactionStates,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
   NETWORK_ID,
@@ -218,7 +218,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     ain_getTransactionByHash: function(args, done) {
       const transactionInfo = node.tp.transactionTracker[args.hash];
       if (transactionInfo) {
-        if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
+        if (transactionInfo.state === TransactionStates.IN_BLOCK) {
           const block = node.bc.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
           if (!block) {
@@ -228,7 +228,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
           } else {
             transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === args.hash);
           }
-        } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
+        } else if (transactionInfo.state === TransactionStates.IN_POOL) {
           const address = transactionInfo.address;
           transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === args.hash);
         }
@@ -398,13 +398,13 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result: NETWORK_ID}));
     },
 
-    net_consensusState: function(args, done) {
-      const result = p2pServer.consensus.getState();
+    net_consensusStatus: function(args, done) {
+      const result = p2pServer.consensus.getStatus();
       done(null, addProtocolVersion({result}));
     },
 
-    net_rawConsensusState: function(args, done) {
-      const result = p2pServer.consensus.getRawState();
+    net_rawConsensusStatus: function(args, done) {
+      const result = p2pServer.consensus.getRawStatus();
       done(null, addProtocolVersion({result}));
     }
   };

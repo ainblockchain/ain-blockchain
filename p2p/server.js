@@ -141,7 +141,7 @@ class P2pServer {
   getConsensusStatus() {
     return Object.assign(
       {},
-      this.consensus.getState(),
+      this.consensus.getStatus(),
       {
         longestNotarizedChainTipsSize: this.consensus.blockPool ?
             this.consensus.blockPool.longestNotarizedChainTips.length : 0
