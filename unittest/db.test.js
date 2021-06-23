@@ -328,7 +328,9 @@ describe("DB operations", () => {
       })
 
       it("when retrieving existing function config with is_shallow", () => {
-        assert.deepEqual(Object.keys(node.db.getFunction("test/test_function", true, false)), Object.keys(dbFuncs));
+        assert.deepEqual(node.db.getFunction('test/test_function', true, false), {
+          some: true,
+        });
       })
     })
 
@@ -349,9 +351,11 @@ describe("DB operations", () => {
         });
       })
 
-      it("when retrieving existing rule config with is_shallow", () => {
-        assert.deepEqual(Object.keys(node.db.getRule("test/test_rule", true, false)), Object.keys(dbRules));
-      })
+      it('when retrieving existing rule config with is_shallow', () => {
+        assert.deepEqual(node.db.getRule('test/test_rule', true, false), {
+          some: true,
+        });
+      });
     })
 
     describe("getOwner()", () => {
@@ -401,7 +405,9 @@ describe("DB operations", () => {
       })
 
       it("when retrieving existing owner config with is_shallow", () => {
-        assert.deepEqual(Object.keys(node.db.getOwner("test/test_owner", true, false)), Object.keys(dbOwners))
+        assert.deepEqual(node.db.getOwner("test/test_owner", true, false), {
+          some: true,
+        })
       })
     })
 
