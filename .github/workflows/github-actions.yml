@@ -54,3 +54,16 @@ jobs:
             "channel": "blockchain-testnet-deploy",
             "text": "New PR has just been merged(${{ github.ref }}, ${{ github.sha }}).\nCurrent version: '"$VERSION"', compatible with min('"$MIN_VERSION"'), max('"$MAX_VERSION"')",
             "icon_emoji": ":gem:"}'
+  performance_test:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged && github.event.pull_request.base.ref == 'develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/setup-gcloud@master
+        with:
+          service_account_key: ${{ secrets.PERF_TEST_PIPELINE_GCP_SA_KEY }}
+          project_id: ${{ secrets.PERF_TEST_PIPELINE_GCP_PROJECT_ID }}
+      - name: send test start message to gcp
+        run: |-
+          gcloud compute ssh "${{ secrets.PERF_TEST_PIPELINE_GCE_INSTANCE }}" --zone "${{ secrets.PERF_TEST_PIPELINE_GCE_INSTANCE_ZONE }}" -- "cd ~/../workspace/testnet-performance-test-pipeline && nohup node start_performance_test.js ${{ github.event.pull_request.head.ref }} >> test_log.txt 2>&1 &" &
+          sleep 60
+
