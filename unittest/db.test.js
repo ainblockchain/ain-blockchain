@@ -269,9 +269,15 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getValue("test"), dbValues)
       })
 
-      it("when retrieving value near top of database with is_shallow", () => {
-        assert.deepEqual(Object.keys(node.db.getValue("test", true, false)), Object.keys(dbValues))
-      })
+      it('when retrieving value near top of database with is_shallow', () => {
+        assert.deepEqual(node.db.getValue('test', true, false), {
+          'ai': true,
+          'increment': true,
+          'decrement': true,
+          'nested': true,
+          'shards': true,
+        })
+      });
 
       it("when retrieving shallow nested value", () => {
         assert.deepEqual(node.db.getValue("test/ai/comcom"), dbValues["ai"]["comcom"])
