@@ -1137,7 +1137,7 @@ class Consensus {
    *   }
    * }
    */
-  getRawState() {
+  getRawStatus() {
     const result = {};
     result.consensus =
         Object.assign({}, { epoch: this.epoch, proposer: this.proposer }, { state: this.state });
@@ -1165,7 +1165,7 @@ class Consensus {
    *   epoch
    * }
    */
-  getState() {
+  getStatus() {
     const lastFinalizedBlock = this.node.bc.lastBlock();
     let health;
     if (!lastFinalizedBlock) {

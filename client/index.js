@@ -57,10 +57,10 @@ app.get('/', (req, res, next) => {
 
 app.get('/health_check', (req, res, next) => {
   const nodeStatus = p2pServer.getNodeStatus();
-  const consensusState = p2pServer.consensus.getState();
+  const consensusStatus = p2pServer.consensus.getStatus();
   const result = nodeStatus.state === BlockchainNodeStates.SERVING &&
-      consensusState.state === ConsensusStates.RUNNING &&
-      consensusState.health === true;
+      consensusStatus.state === ConsensusStates.RUNNING &&
+      consensusStatus.health === true;
   res.status(200)
     .set('Content-Type', 'text/plain')
     .send(result)
@@ -435,16 +435,16 @@ app.get('/get_sharding', (req, res, next) => {
     .end();
 });
 
-app.get('/get_raw_consensus_state', (req, res) => {
-  const result = p2pServer.consensus.getRawState();
+app.get('/get_raw_consensus_status', (req, res) => {
+  const result = p2pServer.consensus.getRawStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
     .end();
 });
 
-app.get('/get_consensus_state', (req, res) => {
-  const result = p2pServer.consensus.getState();
+app.get('/get_consensus_status', (req, res) => {
+  const result = p2pServer.consensus.getStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
