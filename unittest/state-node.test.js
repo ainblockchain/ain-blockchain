@@ -468,6 +468,35 @@ describe("state-node", () => {
     })
   })
 
+  describe("fromJsObject with version / toJsObjectShallow", () => {
+    it("leaf node", () => {
+      const ver = 'test_version';
+      expect(StateNode.fromJsObject(true, ver).toJsObjectShallow()).to.equal(true);
+      expect(StateNode.fromJsObject(false, ver).toJsObjectShallow()).to.equal(false);
+      expect(StateNode.fromJsObject(10, ver).toJsObjectShallow()).to.equal(10);
+      expect(StateNode.fromJsObject('str', ver).toJsObjectShallow()).to.equal('str');
+      expect(StateNode.fromJsObject(null, ver).toJsObjectShallow()).to.equal(null);
+    })
+
+    it("internal node", () => {
+      const ver = 'test_version';
+      assert.deepEqual(StateNode.fromJsObject({ a: 1, b: 2, c: 3 }, ver).toJsObjectShallow(),
+          {
+            a: true,
+            b: true,
+            c: true,
+          },
+      );
+      assert.deepEqual(StateNode.fromJsObject({ a: { aa: 11 }, b: 2 }, ver).toJsObjectShallow(),
+          {
+            a: true,
+            b: true,
+          },
+      );
+    })
+
+  })
+
   describe("isLeaf", () => {
     it("get / set", () => {
       expect(node.getIsLeaf()).to.equal(true);
