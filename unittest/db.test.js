@@ -269,7 +269,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getValue("test"), dbValues)
       })
 
-      it("when retrieving high value near top of database with is_shallow", () => {
+      it("when retrieving value near top of database with is_shallow", () => {
         assert.deepEqual(Object.keys(node.db.getValue("test", true, false)), Object.keys(dbValues))
       })
 
