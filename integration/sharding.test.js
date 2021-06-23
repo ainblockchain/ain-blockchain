@@ -26,7 +26,7 @@ const {
 const {
   ConsensusStates
 } = require('../consensus/constants');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const {
   readConfigFile,
   waitForNewBlocks,
@@ -111,7 +111,7 @@ async function waitUntilShardReporterStarts() {
     consensusStatus = parseOrLog(syncRequest('GET', server1 + '/get_consensus_status')
         .body.toString('utf-8')).result;
     if (consensusStatus && consensusStatus.state === ConsensusStates.RUNNING) return;
-    await ChainUtil.sleep(1000);
+    await CommonUtil.sleep(1000);
   }
 }
 
@@ -164,7 +164,7 @@ async function setUp() {
       ],
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+  assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
   if (!(await waitUntilTxFinalized(shardServerList, res.tx_hash))) {
     console.log(`Failed to check finalization of setUp() tx.`)
   }
@@ -197,7 +197,7 @@ async function cleanUp() {
       ],
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+  assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
   if (!(await waitUntilTxFinalized(shardServerList, res.tx_hash))) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
@@ -224,9 +224,9 @@ describe('Sharding', async () => {
 
     parent_tracker_proc =
         startServer(TRACKER_SERVER, 'parent tracker server', { CONSOLE_LOG: false }, true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], true);
-    await ChainUtil.sleep(15000);
+    await CommonUtil.sleep(15000);
     // Give AIN to sharding owner and reporter
     const shardReportRes = parseOrLog(syncRequest(
       'POST', parentServer + '/set', { json: {
@@ -253,7 +253,7 @@ describe('Sharding', async () => {
         value: 1
       }
     }).body.toString('utf-8')).result;
-    assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+    assert.deepEqual(CommonUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
     if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
       console.log(`Failed to check finalization of app staking tx.`);
     }
@@ -265,22 +265,22 @@ describe('Sharding', async () => {
         }
       }
     }).body.toString('utf-8')).result;
-    assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+    assert.deepEqual(CommonUtil.isFailedTx(_.get(createAppRes, 'result')), false);
     if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
       console.log(`Failed to check finalization of create app tx.`);
     }
     
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     await waitUntilShardReporterStarts();
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
   });
 
   after(() => {
@@ -1659,7 +1659,7 @@ describe('Sharding', async () => {
                     },
                     gas_cost_total: 0
                   },
-                  tx_hash: ChainUtil.hashSignature(signature),
+                  tx_hash: CommonUtil.hashSignature(signature),
                 }
               });
             })
@@ -1697,7 +1697,7 @@ describe('Sharding', async () => {
                     },
                     gas_cost_total: 0
                   },
-                  tx_hash: ChainUtil.hashSignature(signature),
+                  tx_hash: CommonUtil.hashSignature(signature),
                 }
               });
             })
@@ -1737,7 +1737,7 @@ describe('Sharding', async () => {
                     },
                     gas_cost_total: 0
                   },
-                  tx_hash: ChainUtil.hashSignature(signature),
+                  tx_hash: CommonUtil.hashSignature(signature),
                 }
               });
             })
@@ -1770,7 +1770,7 @@ describe('Sharding', async () => {
             protoVer: CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
-            expect(ChainUtil.isArray(resultList)).to.equal(true);
+            expect(CommonUtil.isArray(resultList)).to.equal(true);
             assert.deepEqual(res.result, {
               protoVer: CURRENT_PROTOCOL_VERSION,
               result: [
@@ -1784,7 +1784,7 @@ describe('Sharding', async () => {
                     },
                     gas_cost_total: 0
                   },
-                  tx_hash: ChainUtil.hashSignature(signature),
+                  tx_hash: CommonUtil.hashSignature(signature),
                 },
               ]
             });
@@ -1817,7 +1817,7 @@ describe('Sharding', async () => {
             protoVer: CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
-            expect(ChainUtil.isArray(resultList)).to.equal(true);
+            expect(CommonUtil.isArray(resultList)).to.equal(true);
             for (let i = 0; i < resultList.length; i++) {
               const result = resultList[i];
             }
@@ -1834,7 +1834,7 @@ describe('Sharding', async () => {
                     },
                     gas_cost_total: 0
                   },
-                  tx_hash: ChainUtil.hashSignature(signature),
+                  tx_hash: CommonUtil.hashSignature(signature),
                 },
               ]
             });
@@ -1867,7 +1867,7 @@ describe('Sharding', async () => {
             protoVer: CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
-            expect(ChainUtil.isArray(resultList)).to.equal(true);
+            expect(CommonUtil.isArray(resultList)).to.equal(true);
             for (let i = 0; i < resultList.length; i++) {
               const result = resultList[i];
             }
@@ -1886,7 +1886,7 @@ describe('Sharding', async () => {
                     },
                     gas_cost_total: 0
                   },
-                  tx_hash: ChainUtil.hashSignature(signature),
+                  tx_hash: CommonUtil.hashSignature(signature),
                 },
               ]
             });
@@ -1927,7 +1927,7 @@ describe('Sharding', async () => {
             value: 1
           }
         }).body.toString('utf-8')).result;
-        assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+        assert.deepEqual(CommonUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
         if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
           console.log(`Failed to check finalization of app staking tx.`)
         }
@@ -1939,7 +1939,7 @@ describe('Sharding', async () => {
             }
           }
         }).body.toString('utf-8')).result;
-        assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+        assert.deepEqual(CommonUtil.isFailedTx(_.get(createAppRes, 'result')), false);
         if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
           console.log(`Failed to check finalization of create app tx.`)
         }
@@ -1967,7 +1967,7 @@ describe('Sharding', async () => {
               },
               {
                 type: WriteDbOperations.SET_VALUE,
-                ref: ChainUtil.formatPath([
+                ref: CommonUtil.formatPath([
                   PredefinedDbPaths.SHARDING,
                   PredefinedDbPaths.SHARDING_SHARD,
                   ainUtil.encode(sharding_path)
@@ -1977,7 +1977,7 @@ describe('Sharding', async () => {
             ],
           }
         }).body.toString('utf-8')).result;
-        assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+        assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
         if (!(await waitUntilTxFinalized(parentServerList, res.tx_hash))) {
           console.log(`Failed to check finalization of sharding setup tx.`)
         }

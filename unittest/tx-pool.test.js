@@ -2,7 +2,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const {Block} = require('../blockchain/block');
 const BlockchainNode = require('../node');
 const {setNodeForTesting, getTransaction} = require('./test-util');
@@ -24,7 +24,7 @@ describe('TransactionPool', async () => {
       gas_price: 1
     });
     node.tp.addTransaction(transaction);
-    await ChainUtil.sleep(1);
+    await CommonUtil.sleep(1);
   });
 
   describe('Transaction addition', () => {
@@ -49,7 +49,7 @@ describe('TransactionPool', async () => {
           gas_price: 1
         });
         node.tp.addTransaction(tx);
-        await ChainUtil.sleep(1);
+        await CommonUtil.sleep(1);
       }
       // NOTE: Shuffle transactions and see if the transaction-pool can re-sort them according to
       // their proper ordering
@@ -75,7 +75,7 @@ describe('TransactionPool', async () => {
             gas_price: 1
           });
           node.tp.addTransaction(tx);
-          await ChainUtil.sleep(1);
+          await CommonUtil.sleep(1);
         }
         // NOTE: Shuffle transactions and see if the transaction-pool can re-sort them according to
         // their proper ordering
@@ -88,28 +88,28 @@ describe('TransactionPool', async () => {
       it('transactions are correctly ordered by nonces', () => {
         const validTransactions = node.tp.getValidTransactions();
         const sortedNonces1 = validTransactions.filter((tx) => {
-          if (ChainUtil.areSameAddrs(tx.address, node.account.address)) {
+          if (CommonUtil.areSameAddrs(tx.address, node.account.address)) {
             return tx;
           }
         }).map((tx) => {
           return tx.tx_body.nonce;
         });
         const sortedNonces2 = validTransactions.filter((tx) => {
-          if (ChainUtil.areSameAddrs(tx.address, node2.account.address)) {
+          if (CommonUtil.areSameAddrs(tx.address, node2.account.address)) {
             return tx;
           }
         }).map((tx) => {
           return tx.tx_body.nonce;
         });
         const sortedNonces3 = validTransactions.filter((tx) => {
-          if (ChainUtil.areSameAddrs(tx.address, node3.account.address)) {
+          if (CommonUtil.areSameAddrs(tx.address, node3.account.address)) {
             return tx;
           }
         }).map((tx) => {
           return tx.tx_body.nonce;
         });
         const sortedNonces4 = validTransactions.filter((tx) => {
-          if (ChainUtil.areSameAddrs(tx.address, node4.account.address)) {
+          if (CommonUtil.areSameAddrs(tx.address, node4.account.address)) {
             return tx;
           }
         }).map((tx) => {

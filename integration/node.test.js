@@ -22,7 +22,7 @@ const {
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
   MICRO_AIN,
 } = require('../common/constants');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
 
 const ENV_VARIABLES = [
@@ -135,7 +135,7 @@ async function setUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+  assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
   if (!(await waitUntilTxFinalized(serverList, _.get(res, 'tx_hash')))) {
     console.error(`Failed to check finalization of setUp() tx.`);
   }
@@ -169,7 +169,7 @@ async function cleanUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+  assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
   if (!(await waitUntilTxFinalized(serverList, _.get(res, 'tx_hash')))) {
     console.error(`Failed to check finalization of cleanUp() tx.`);
   }
@@ -182,15 +182,15 @@ describe('Blockchain Node', () => {
     rimraf.sync(CHAINS_DIR)
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
   });
 
   after(() => {
@@ -482,7 +482,7 @@ describe('Blockchain Node', () => {
             `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
             `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
             `functions${HASH_DELIMITER}${functionProof}`;
-        const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
+        const proofHash = CommonUtil.hashString(CommonUtil.toString(preimage));
         assert.deepEqual(body, { code: 0, result: { '.proof_hash': proofHash } });
       });
     });
@@ -646,7 +646,7 @@ describe('Blockchain Node', () => {
             `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
             `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
             `functions${HASH_DELIMITER}${functionProof}`;
-        const proofHash = ChainUtil.hashString(ChainUtil.toString(preimage));
+        const proofHash = CommonUtil.hashString(CommonUtil.toString(preimage));
 
         const ref = '/';
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -1604,7 +1604,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/batch', {json: request})
             .body.toString('utf-8'));
         expect(body).to.not.equal(null);
-        expect(ChainUtil.isArray(body.result)).to.equal(true);
+        expect(CommonUtil.isArray(body.result)).to.equal(true);
         for (let i = 0; i < body.result.length; i++) {
           const result = body.result[i];
           result.tx_hash = 'erased';
@@ -1722,7 +1722,7 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
-        await ChainUtil.sleep(6);
+        await CommonUtil.sleep(6);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some200/path')
             .body.toString('utf-8')).result;
@@ -1901,7 +1901,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/batch', {json: request})
             .body.toString('utf-8'));
         expect(body).to.not.equal(null);
-        expect(ChainUtil.isArray(body.result)).to.equal(true);
+        expect(CommonUtil.isArray(body.result)).to.equal(true);
         for (let i = 0; i < body.result.length; i++) {
           const result = body.result[i];
           result.tx_hash = 'erased';
@@ -2032,7 +2032,7 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
-        await ChainUtil.sleep(6);
+        await CommonUtil.sleep(6);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=test/test_value/some202/path')
             .body.toString('utf-8')).result;
@@ -2083,7 +2083,7 @@ describe('Blockchain Node', () => {
                 },
                 gas_cost_total: 0
               },
-              tx_hash: ChainUtil.hashSignature(signature),
+              tx_hash: CommonUtil.hashSignature(signature),
             }
           });
         })
@@ -2129,7 +2129,7 @@ describe('Blockchain Node', () => {
                   },
                   gas_cost_total: 0,
                 },
-                tx_hash: ChainUtil.hashSignature(signature),
+                tx_hash: CommonUtil.hashSignature(signature),
               }
             });
           });
@@ -2415,9 +2415,9 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
-          expect(ChainUtil.isArray(resultList)).to.equal(true);
+          expect(CommonUtil.isArray(resultList)).to.equal(true);
           for (let i = 0; i < resultList.length; i++) {
-            expect(ChainUtil.isFailedTx(resultList[i].result)).to.equal(false);
+            expect(CommonUtil.isFailedTx(resultList[i].result)).to.equal(false);
           }
         })
       })
@@ -2479,10 +2479,10 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
-          expect(ChainUtil.isArray(resultList)).to.equal(true);
+          expect(CommonUtil.isArray(resultList)).to.equal(true);
           expect(resultList.length).to.equal(BATCH_TX_LIST_SIZE_LIMIT);
           for (let i = 0; i < resultList.length; i++) {
-            expect(ChainUtil.isFailedTx(resultList[i].result)).to.equal(false);
+            expect(CommonUtil.isFailedTx(resultList[i].result)).to.equal(false);
           }
         })
       })
@@ -2561,9 +2561,9 @@ describe('Blockchain Node', () => {
           });
           const resultList1 = _.get(res1, 'result.result', null);
           // Accepts transactions.
-          expect(ChainUtil.isArray(resultList1)).to.equal(true);
+          expect(CommonUtil.isArray(resultList1)).to.equal(true);
           for (let i = 0; i < resultList1.length; i++) {
-            expect(ChainUtil.isFailedTx(resultList1[i].result)).to.equal(false);
+            expect(CommonUtil.isFailedTx(resultList1[i].result)).to.equal(false);
           }
 
           txCount += batchTxSize;
@@ -2585,7 +2585,7 @@ describe('Blockchain Node', () => {
         });
         const resultList2 = _.get(res2, 'result.result', null);
         // Rejects transactions.
-        expect(ChainUtil.isArray(resultList2)).to.equal(true);
+        expect(CommonUtil.isArray(resultList2)).to.equal(true);
         expect(resultList2.length).to.equal(1);
         resultList2[0].tx_hash = 'erased';
         assert.deepEqual(resultList2, [
@@ -2632,7 +2632,7 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result');
-          expect(ChainUtil.isArray(resultList)).to.equal(false);
+          expect(CommonUtil.isArray(resultList)).to.equal(false);
           assert.deepEqual(res.result, {
             result: {
               code: 3,
@@ -2985,7 +2985,7 @@ describe('Blockchain Node', () => {
           nonce: -1,
         }
       }).body.toString('utf-8')).result;
-      assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+      assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
       if (!(await waitUntilTxFinalized(serverList, _.get(res, 'tx_hash')))) {
         console.error(`Failed to check finalization of function triggering setup tx.`);
       }
@@ -3069,7 +3069,7 @@ describe('Blockchain Node', () => {
           nonce: -1,
         }
       }).body.toString('utf-8')).result;
-      assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+      assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
       if (!(await waitUntilTxFinalized(serverList, _.get(res, 'tx_hash')))) {
         console.error(`Failed to check finalization of function triggering cleanup tx.`);
       }
@@ -3455,7 +3455,7 @@ describe('Blockchain Node', () => {
             ],
             nonce: -1,
           }}).body.toString('utf-8')).result;
-          assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+          assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
           if (!(await waitUntilTxFinalized(serverList, _.get(res, 'tx_hash')))) {
             console.error(`Failed to check finalization of function triggering setup tx.`);
           }
@@ -3528,7 +3528,7 @@ describe('Blockchain Node', () => {
             ],
             nonce: -1,
           }}).body.toString('utf-8')).result;
-          assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+          assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
           if (!(await waitUntilTxFinalized(serverList, _.get(res, 'tx_hash')))) {
             console.error(`Failed to check finalization of function triggering setup tx.`);
           }
@@ -3602,7 +3602,7 @@ describe('Blockchain Node', () => {
             ],
             nonce: -1,
           }}).body.toString('utf-8')).result;
-          assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+          assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
           if (!(await waitUntilTxFinalized(serverList, _.get(res, 'tx_hash')))) {
             console.error(`Failed to check finalization of function triggering setup tx.`);
           }
@@ -3685,7 +3685,7 @@ describe('Blockchain Node', () => {
             ],
             nonce: -1,
           }}).body.toString('utf-8')).result;
-          assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+          assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
           if (!(await waitUntilTxFinalized(serverList, _.get(res, 'tx_hash')))) {
             console.error(`Failed to check finalization of function triggering setup tx.`);
           }

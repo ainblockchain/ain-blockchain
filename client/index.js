@@ -6,7 +6,7 @@ const _ = require('lodash');
 const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
 const {
   ENABLE_DEV_SET_CLIENT_API,
@@ -69,7 +69,7 @@ app.get('/health_check', (req, res, next) => {
 
 // Exports metrics for Prometheus.
 app.get('/metrics', (req, res, next) => {
-  const result = ChainUtil.objToMetrics(p2pClient.getStatus());
+  const result = CommonUtil.objToMetrics(p2pClient.getStatus());
   res.status(200)
     .set('Content-Type', 'text/plain')
     .send(result)
@@ -77,8 +77,8 @@ app.get('/metrics', (req, res, next) => {
 });
 
 app.get('/get_value', (req, res, next) => {
-  const result = node.db.getValue(req.query.ref, ChainUtil.toBool(req.query.is_shallow),
-      ChainUtil.toBool(req.query.is_global));
+  const result = node.db.getValue(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
+      CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -86,8 +86,8 @@ app.get('/get_value', (req, res, next) => {
 });
 
 app.get('/get_function', (req, res, next) => {
-  const result = node.db.getFunction(req.query.ref, ChainUtil.toBool(req.query.is_shallow),
-      ChainUtil.toBool(req.query.is_global));
+  const result = node.db.getFunction(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
+      CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -95,8 +95,8 @@ app.get('/get_function', (req, res, next) => {
 });
 
 app.get('/get_rule', (req, res, next) => {
-  const result = node.db.getRule(req.query.ref, ChainUtil.toBool(req.query.is_shallow),
-      ChainUtil.toBool(req.query.is_global));
+  const result = node.db.getRule(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
+      CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -104,8 +104,8 @@ app.get('/get_rule', (req, res, next) => {
 });
 
 app.get('/get_owner', (req, res, next) => {
-  const result = node.db.getOwner(req.query.ref, ChainUtil.toBool(req.query.is_shallow),
-      ChainUtil.toBool(req.query.is_global));
+  const result = node.db.getOwner(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
+      CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -135,7 +135,7 @@ app.get('/get_state_info', (req, res, next) => {
 });
 
 app.get('/match_function', (req, res, next) => {
-  const result = node.db.matchFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
+  const result = node.db.matchFunction(req.query.ref, CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -143,7 +143,7 @@ app.get('/match_function', (req, res, next) => {
 });
 
 app.get('/match_rule', (req, res, next) => {
-  const result = node.db.matchRule(req.query.ref, ChainUtil.toBool(req.query.is_global));
+  const result = node.db.matchRule(req.query.ref, CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -151,7 +151,7 @@ app.get('/match_rule', (req, res, next) => {
 });
 
 app.get('/match_owner', (req, res, next) => {
-  const result = node.db.matchOwner(req.query.ref, ChainUtil.toBool(req.query.is_global));
+  const result = node.db.matchOwner(req.query.ref, CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -169,7 +169,7 @@ app.post('/eval_rule', (req, res, next) => {
   }
   const result = node.db.evalRule(
       body.ref, body.value, auth, body.timestamp || Date.now(),
-      ChainUtil.toBool(body.is_global));
+      CommonUtil.toBool(body.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -186,7 +186,7 @@ app.post('/eval_owner', (req, res, next) => {
     auth.fid = body.fid;
   }
   const result = node.db.evalOwner(
-      body.ref, body.permission, auth, ChainUtil.toBool(body.is_global));
+      body.ref, body.permission, auth, CommonUtil.toBool(body.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -207,7 +207,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.SET_VALUE));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -216,7 +216,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.INC_VALUE));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -225,7 +225,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.DEC_VALUE));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -234,7 +234,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.SET_FUNCTION));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -243,7 +243,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.SET_RULE));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -252,7 +252,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.SET_OWNER));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -262,7 +262,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
     const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 

@@ -7,7 +7,7 @@ const {
   CHAINS_H2N_DIR_NAME,
   SNAPSHOTS_N2S_DIR_NAME,
 } = require('./constants');
-const ChainUtil = require('./chain-util');
+const CommonUtil = require('./common-util');
 const JSON_GZIP_FILE_EXTENSION = 'json.gz';
 const logger = require('../logger')('FILE-UTIL');
 
@@ -128,7 +128,7 @@ class FileUtil {
   }
 
   static writeHashToNumber(chainPath, blockHash, blockNumber) {
-    if (!blockHash || !ChainUtil.isNumber(blockNumber) || blockNumber < 0) {
+    if (!blockHash || !CommonUtil.isNumber(blockNumber) || blockNumber < 0) {
       logger.error(`Invalid writeHashToNumber parameters (${blockHash}, ${blockNumber})`);
       return;
     }

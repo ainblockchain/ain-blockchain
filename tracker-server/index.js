@@ -9,7 +9,7 @@ const disk = require('diskusage');
 const os = require('os');
 const v8 = require('v8');
 const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const logger = require('../logger')('TRACKER_SERVER');
 
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
@@ -42,7 +42,7 @@ app.get('/status', (req, res, next) => {
 // Exports metrics for Prometheus.
 app.get('/metrics', (req, res, next) => {
   const status = getStatus();
-  const result = ChainUtil.objToMetrics(status);
+  const result = CommonUtil.objToMetrics(status);
   res.status(200)
     .set('Content-Type', 'text/plain')
     .send(result)
