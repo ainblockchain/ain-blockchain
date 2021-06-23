@@ -19,7 +19,7 @@ const {
 } = require('./test-util');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 
 describe("DB initialization", () => {
   let node;
@@ -81,7 +81,7 @@ describe("DB initialization", () => {
   describe("Rules", () => {
     it("loading rules properly on initialization", () => {
       const genesisRuleWithConsensusApp = JSON.parse(JSON.stringify(GenesisRules));
-      ChainUtil.setJsObject(
+      CommonUtil.setJsObject(
         genesisRuleWithConsensusApp,
         ['apps', 'consensus'],
         {".write": "auth.addr === '0xAAAf6f50A0304F12119D218b94bea8082642515B'"}
@@ -93,7 +93,7 @@ describe("DB initialization", () => {
   describe("Owners", () => {
     it("loading owners properly on initialization", () => {
       const genesisOwnerWithConsensusApp = JSON.parse(JSON.stringify(GenesisOwners));
-      ChainUtil.setJsObject(genesisOwnerWithConsensusApp, ['apps', 'consensus'], {
+      CommonUtil.setJsObject(genesisOwnerWithConsensusApp, ['apps', 'consensus'], {
         ".owner": {
           owners: {
             "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
@@ -1639,7 +1639,7 @@ describe("DB operations", () => {
             }
           },
         ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }});
-        expect(ChainUtil.isFailedTx(result)).to.equal(false);
+        expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
           operation: {
@@ -1739,7 +1739,7 @@ describe("DB operations", () => {
             }
           },
         ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }});
-        expect(ChainUtil.isFailedTx(result)).to.equal(false);
+        expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
           operation: {
@@ -2027,7 +2027,7 @@ describe("DB operations", () => {
             }
           },
         ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }});
-        expect(ChainUtil.isFailedTx(result)).to.equal(false);
+        expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
           operation: {
@@ -2146,7 +2146,7 @@ describe("DB operations", () => {
             }
           },
         ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }});
-        expect(ChainUtil.isFailedTx(result)).to.equal(false);
+        expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
           operation: {

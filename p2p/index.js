@@ -16,7 +16,7 @@ const {
   MAX_OUTBOUND_LIMIT,
   MAX_INBOUND_LIMIT
 } = require('../common/constants');
-const { sleep } = require('../common/chain-util');
+const { sleep } = require('../common/common-util');
 const {
   getAddressFromSocket,
   removeSocketConnectionIfExists,

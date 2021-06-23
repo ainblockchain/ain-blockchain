@@ -1,12 +1,12 @@
 const _ = require('lodash');
 const axios = require('axios');
 const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 
 // FIXME(minsulee2): this is duplicated function see: ./common/network-util.js
 function signAndSendTx(endpointUrl, txBody, privateKey) {
   console.log('\n*** signAndSendTx():');
-  const {txHash, signedTx} = ChainUtil.signTransaction(txBody, privateKey);
+  const {txHash, signedTx} = CommonUtil.signTransaction(txBody, privateKey);
   console.log(`signedTx: ${JSON.stringify(signedTx, null, 2)}`);
   console.log(`txHash: ${txHash}`);
   console.log('Sending transaction...');
@@ -23,7 +23,7 @@ function signAndSendTx(endpointUrl, txBody, privateKey) {
     console.log(`resp:`, _.get(resp, 'data'));
     const result = _.get(resp, 'data.result.result.result', {});
     console.log(`result: ${JSON.stringify(result, null, 2)}`);
-    const success = !ChainUtil.isFailedTx(result);
+    const success = !CommonUtil.isFailedTx(result);
     return { txHash, signedTx, success, errMsg: result.error_message };
   }).catch((err) => {
     console.log(`Failed to send transaction: ${err}`);
@@ -56,7 +56,7 @@ async function confirmTransaction(endpointUrl, timestamp, txHash) {
   while (true) {
     iteration++;
     result = await sendGetTxByHashRequest(endpointUrl, txHash);
-    await ChainUtil.sleep(1000);
+    await CommonUtil.sleep(1000);
     if (_.get(result, 'is_finalized')) {
       break;
     }

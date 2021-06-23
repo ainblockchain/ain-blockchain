@@ -12,7 +12,7 @@ const BlockchainNode = require('../node')
 const {
   setNodeForTesting,
 } = require('./test-util');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const { expect } = require('chai');
 
 describe("Functions", () => {
@@ -142,7 +142,7 @@ describe("Functions", () => {
           }
         }
         const { func_results, promise_results } = functions.triggerFunctions(
-            ChainUtil.parsePath(refPathRest),
+            CommonUtil.parsePath(refPathRest),
             null, null, null, transaction);
         assert.deepEqual(func_results, {
           "0x11111": {
@@ -201,7 +201,7 @@ describe("Functions", () => {
           }
         }
         const { promise_results } = functions.triggerFunctions(
-            ChainUtil.parsePath(refPathRestMulti),
+            CommonUtil.parsePath(refPathRestMulti),
             null, null, null, transaction);
         promise_results.then((resp) => {
           assert.deepEqual(resp, {
@@ -278,7 +278,7 @@ describe("Functions", () => {
           }
         }
         const { promise_results } = functions.triggerFunctions(
-            ChainUtil.parsePath(refPathRestWithoutListener),
+            CommonUtil.parsePath(refPathRestWithoutListener),
             null, null, null, transaction);
         promise_results.then((resp) => {
           assert.deepEqual(resp, {
@@ -307,7 +307,7 @@ describe("Functions", () => {
           }
         }
         const { promise_results } = functions.triggerFunctions(
-            ChainUtil.parsePath(refPathRestNotWhitelisted),
+            CommonUtil.parsePath(refPathRestNotWhitelisted),
             null, null, null, transaction);
         promise_results.then((resp) => {
           assert.deepEqual(resp, {
@@ -336,7 +336,7 @@ describe("Functions", () => {
           }
         }
         const { promise_results } = functions.triggerFunctions(
-            ChainUtil.parsePath(refPathNull),
+            CommonUtil.parsePath(refPathNull),
             null, null, null, transaction);
         promise_results.then((resp) => {
           assert.deepEqual(resp, {
@@ -394,7 +394,7 @@ describe("Functions", () => {
         }
         const tx = Transaction.fromTxBody(txBody, null);
         const { func_results, promise_results } = functions.triggerFunctions(
-            ChainUtil.parsePath(refPathTransfer), 10,
+            CommonUtil.parsePath(refPathTransfer), 10,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
             tx);
         assert.deepEqual(func_results, {
@@ -449,7 +449,7 @@ describe("Functions", () => {
         }
         const tx = Transaction.fromTxBody(txBody, null);
         const { func_results, promise_results } = functions.triggerFunctions(
-            ChainUtil.parsePath(refPathTransfer), 10,
+            CommonUtil.parsePath(refPathTransfer), 10,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
             tx);
         assert.deepEqual(func_results, {
@@ -508,7 +508,7 @@ describe("Functions", () => {
           }
         }
         const { func_results, promise_results } = functions.triggerFunctions(
-            ChainUtil.parsePath(refPathRest),
+            CommonUtil.parsePath(refPathRest),
             null, null, null, transaction);
         assert.deepEqual(func_results, {
           "0x11111": {

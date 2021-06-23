@@ -1,5 +1,5 @@
 const path = require('path');
-const ChainUtil = require('../../common/chain-util');
+const CommonUtil = require('../../common/common-util');
 const { signAndSendTx, confirmTransaction } = require('../util');
 let config = {};
 
@@ -37,7 +37,7 @@ async function sendTransaction() {
   const payloadTxBody = buildPayloadTxBody(
       config.userAddr, config.shardOwnerAddr, config.parentTokenAmount, timestamp);
   console.log(`payloadTxBody: ${JSON.stringify(payloadTxBody, null, 2)}`);
-  const signedPayloadTx = ChainUtil.signTransaction(payloadTxBody, config.userPrivateKey);
+  const signedPayloadTx = CommonUtil.signTransaction(payloadTxBody, config.userPrivateKey);
   console.log(`signedPayloadTx: ${JSON.stringify(signedPayloadTx, null, 2)}`);
   console.log(`payloadTxHash: ${signedPayloadTx.txHash}`);
 
