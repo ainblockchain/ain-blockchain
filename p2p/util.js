@@ -12,11 +12,11 @@ const {
   DATA_PROTOCOL_VERSION,
   P2P_MESSAGE_TIMEOUT_MS,
 } = require('../common/constants');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 
 function _isValidMessage(message) {
   const body = _.get(message, 'data.body');
-  if (!body || !ChainUtil.isDict(body)) {
+  if (!body || !CommonUtil.isDict(body)) {
     logger.error('Data body is not included in the message.');
     return false;
   }
@@ -46,7 +46,7 @@ function closeSocketSafe(connections, socket) {
 }
 
 function signMessage(messageBody, privateKey) {
-  if (!ChainUtil.isDict(messageBody)) {
+  if (!CommonUtil.isDict(messageBody)) {
     logger.error('The message body must be the object type.');
     return null;
   }
@@ -69,7 +69,7 @@ function getAddressFromMessage(message) {
     return null;
   } else {
     const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.data.body));
-    return ChainUtil.getAddressFromSignature(hashedMessage, message.data.signature);
+    return CommonUtil.getAddressFromSignature(hashedMessage, message.data.signature);
   }
 }
 
@@ -82,11 +82,11 @@ function verifySignedMessage(message, address) {
 }
 
 function encapsulateMessage(type, dataObj) {
-  if (!type || !ChainUtil.isString(type)) {
+  if (!type || !CommonUtil.isString(type)) {
     logger.error('Type must be specified.');
     return null;
   };
-  if (!dataObj || !ChainUtil.isDict(dataObj)) {
+  if (!dataObj || !CommonUtil.isDict(dataObj)) {
     logger.error('dataObj cannot be null or undefined.');
     return null;
   }
@@ -101,7 +101,7 @@ function encapsulateMessage(type, dataObj) {
 }
 
 function checkTimestamp(timestamp) {
-  if (!timestamp || !ChainUtil.isNumber(timestamp)) {
+  if (!timestamp || !CommonUtil.isNumber(timestamp)) {
     return false;
   } else {
     const now = Date.now();

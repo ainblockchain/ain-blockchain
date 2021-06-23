@@ -6,7 +6,7 @@ const spawn = require('child_process').spawn;
 const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
 const { CHAINS_DIR } = require('../common/constants');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
@@ -68,7 +68,7 @@ async function setUp() {
       value: 1
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+  assert.deepEqual(CommonUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
   if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
     console.log(`setUp(): Failed to check finalization of app staking tx.`);
   }
@@ -86,7 +86,7 @@ async function setUp() {
       }
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+  assert.deepEqual(CommonUtil.isFailedTx(_.get(createAppRes, 'result')), false);
   if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
     console.log(`setUp(): Failed to check finalization of create app tx.`)
   }
@@ -110,7 +110,7 @@ async function cleanUp() {
       nonce: -1,
     }
   }).body.toString('utf-8')).result;
-  assert.deepEqual(ChainUtil.isFailedTx(_.get(res, 'result')), false);
+  assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
   if (!(await waitUntilTxFinalized(serverList, res.tx_hash))) {
     console.log(`Failed to check finalization of cleanUp() tx.`)
   }
@@ -122,15 +122,15 @@ describe('DApp Test', async () => {
   before(async () => {
     rimraf.sync(CHAINS_DIR);
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    await ChainUtil.sleep(2000);
+    await CommonUtil.sleep(2000);
   });
 
   after(() => {
@@ -213,7 +213,7 @@ describe('DApp Test', async () => {
 
       it('two fans', async () => {
         const afanClient = new AfanClient(server2);
-        await ChainUtil.sleep(200);
+        await CommonUtil.sleep(200);
         return set_value('/apps/afan/balance/uid0', 30)
           .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))
           .then(() => set_value('/apps/afan/balance/uid1', 10))

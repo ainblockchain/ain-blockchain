@@ -27,13 +27,12 @@ const {
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
 const StateManager = require('../db/state-manager');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
-const { isValAddr, toCksumAddr } = require('../common/chain-util');
 
 // TODO(platfowner): Migrate nonce to getAccountNonceAndTimestamp() and
 // updateAccountNonceAndTimestamp().
@@ -48,7 +47,7 @@ class BlockchainNode {
     this.isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
     this.isShardReporter =
         this.isShardChain &&
-        ChainUtil.areSameAddrs(
+        CommonUtil.areSameAddrs(
             GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
     this.ipAddrInternal = null;
     this.ipAddrExternal = null;
@@ -232,8 +231,8 @@ class BlockchainNode {
   }
 
   getNonceForAddr(address, fromPending, fromDb = false) {
-    if (!isValAddr(address)) return -1;
-    const cksumAddr = toCksumAddr(address);
+    if (!CommonUtil.isValAddr(address)) return -1;
+    const cksumAddr = CommonUtil.toCksumAddr(address);
     if (fromPending) {
       const { nonce } = this.db.getAccountNonceAndTimestamp(cksumAddr);
       return nonce;
@@ -249,14 +248,14 @@ class BlockchainNode {
   getSharding() {
     const shardingInfo = {};
     if (this.db && this.db.stateRoot) {
-      const shards = this.db.getValue(ChainUtil.formatPath(
+      const shards = this.db.getValue(CommonUtil.formatPath(
           [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_SHARD]));
       for (const encodedPath in shards) {
         const shardPath = ainUtil.decode(encodedPath);
         shardingInfo[encodedPath] = {
-          [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(ChainUtil.appendPath(
+          [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(CommonUtil.appendPath(
               shardPath, ShardingProperties.SHARD, ShardingProperties.SHARDING_ENABLED)),
-          [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(ChainUtil.appendPath(
+          [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(CommonUtil.appendPath(
               shardPath, ShardingProperties.SHARD, ShardingProperties.PROOF_HASH_MAP,
               ShardingProperties.LATEST)),
         };
@@ -332,12 +331,12 @@ class BlockchainNode {
   executeOrRollbackTransaction(tx) {
     const LOG_HEADER = 'executeOrRollbackTransaction';
     if (!this.db.backupDb()) {
-      return ChainUtil.logAndReturnTxResult(
+      return CommonUtil.logAndReturnTxResult(
           logger, 3,
           `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
     }
     const result = this.db.executeTransaction(tx, this.bc.lastBlockNumber() + 1);
-    if (ChainUtil.isFailedTx(result)) {
+    if (CommonUtil.isFailedTx(result)) {
       if (!this.db.restoreDb()) {
         logger.error(
           `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
@@ -356,29 +355,29 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
     }
     if (!this.tp.hasRoomForNewTransaction()) {
-      return ChainUtil.logAndReturnTxResult(
+      return CommonUtil.logAndReturnTxResult(
           logger, 3,
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${this.tp.getPoolSize()}).`);
     }
     if (this.tp.isNotEligibleTransaction(tx)) {
-      return ChainUtil.logAndReturnTxResult(
+      return CommonUtil.logAndReturnTxResult(
           logger, 1,
           `[${LOG_HEADER}] Already received transaction: ${JSON.stringify(tx, null, 2)}`);
     }
     if (this.state !== BlockchainNodeStates.SERVING) {
-      return ChainUtil.logAndReturnTxResult(
+      return CommonUtil.logAndReturnTxResult(
           logger, 2, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
     const executableTx = Transaction.toExecutable(tx);
     if (!this.tp.hasPerAccountRoomForNewTransaction(executableTx.address)) {
       const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
-      return ChainUtil.logAndReturnTxResult(
+      return CommonUtil.logAndReturnTxResult(
           logger, 4,
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
           `for account: ${executableTx.address}`);
     }
     const result = this.executeOrRollbackTransaction(executableTx);
-    if (ChainUtil.isFailedTx(result)) {
+    if (CommonUtil.isFailedTx(result)) {
       if (FeatureFlags.enableRichTransactionLogging) {
         logger.error(
             `[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(executableTx, null, 2)}\n ` +

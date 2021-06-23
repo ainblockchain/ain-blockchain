@@ -18,7 +18,7 @@ const {
   AccountProperties,
   StateVersions,
 } = require('../common/constants');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const {
   sendGetRequest,
   signAndSendTx
@@ -266,10 +266,10 @@ class TransactionPool {
             discardedTxList.push(tx);
             break;
           }
-          ChainUtil.setJsObject(tempAppBandwidthSum, [appName], bandwidth);
+          CommonUtil.setJsObject(tempAppBandwidthSum, [appName], bandwidth);
         }
         if (!isSkipped) {
-          ChainUtil.mergeNumericJsObjects(appBandwidthSum, appBandwidth);
+          CommonUtil.mergeNumericJsObjects(appBandwidthSum, appBandwidth);
         }
       }
       if (!isSkipped) {
@@ -555,7 +555,7 @@ class TransactionPool {
       nonce: -1
     };
     logger.info(`  =>> Doing action with actionTxBody: ${JSON.stringify(actionTxBody, null, 2)}`);
-    const ownerPrivateKey = ChainUtil.getJsObject(
+    const ownerPrivateKey = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const endpoint = `${this.node.urlInternal}/json-rpc`;
     signAndSendTx(endpoint, actionTxBody, ownerPrivateKey);

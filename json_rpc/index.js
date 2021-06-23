@@ -13,7 +13,7 @@ const {
   NETWORK_ID,
 } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 
 /**
@@ -162,7 +162,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_sendSignedTransactionBatch: function(args, done) {
-      if (!args.tx_list || !ChainUtil.isArray(args.tx_list)) {
+      if (!args.tx_list || !CommonUtil.isArray(args.tx_list)) {
         done(null, addProtocolVersion({
           result: {
             code: 1,

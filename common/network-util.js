@@ -4,7 +4,7 @@ const logger = require('../logger')('NETWORK-UTIL');
 const {
   CURRENT_PROTOCOL_VERSION
 } = require('../common/constants');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 
 
 async function _waitUntilTxFinalize(endpoint, txHash) {
@@ -24,7 +24,7 @@ async function _waitUntilTxFinalize(endpoint, txHash) {
     if (confirmed) {
       return true;
     }
-    await ChainUtil.sleep(1000);
+    await CommonUtil.sleep(1000);
   }
 }
 
@@ -50,7 +50,7 @@ async function sendSignedTx(endpoint, params) {
     }
   ).then((resp) => {
     const result = _.get(resp, 'data.result.result.result', {});
-    const success = !ChainUtil.isFailedTx(result);
+    const success = !CommonUtil.isFailedTx(result);
     return { success, errMsg: result.error_message };
   }).catch((err) => {
     logger.error(`Failed to send transaction: ${err}`);
@@ -60,7 +60,7 @@ async function sendSignedTx(endpoint, params) {
 
 // FIXME(minsulee2): this is duplicated function see: ./tools/util.js
 async function signAndSendTx(endpoint, tx, privateKey) {
-  const { txHash, signedTx } = ChainUtil.signTransaction(tx, privateKey);
+  const { txHash, signedTx } = CommonUtil.signTransaction(tx, privateKey);
   const result = await sendSignedTx(endpoint, signedTx);
   return Object.assign(result, { txHash });
 }

@@ -4,12 +4,11 @@ const assert = chai.assert;
 const expect = chai.expect;
 const {
   CHAINS_DIR,
-  FeatureFlags,
 } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
 const BlockchainNode = require('../node/');
 const { setNodeForTesting, getTransaction } = require('./test-util');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 
 describe('Transaction', () => {
   let node;
@@ -102,14 +101,14 @@ describe('Transaction', () => {
       expect(tx.tx_body.nonce).to.equal(txBody.nonce);
       expect(tx.tx_body.timestamp).to.equal(txBody.timestamp);
       expect(tx.tx_body.gas_price).to.equal(txBody.gas_price);
-      expect(tx.hash).to.equal(ChainUtil.hashTxBody(txBody));
+      expect(tx.hash).to.equal(CommonUtil.hashTxBody(txBody));
       expect(tx.address).to.equal(node.account.address);
       expect(tx.extra.created_at).to.not.equal(undefined);
       expect(tx.extra.skip_verif).to.equal(undefined);
 
       expect(txParentHash).to.not.equal(null);
       expect(txParentHash.tx_body.parent_tx_hash).to.equal(txBodyParentHash.parent_tx_hash);
-      expect(txParentHash.hash).to.equal(ChainUtil.hashTxBody(txBodyParentHash));
+      expect(txParentHash.hash).to.equal(CommonUtil.hashTxBody(txBodyParentHash));
       expect(txParentHash.address).to.equal(node.account.address);
       expect(txParentHash.extra.created_at).to.not.equal(undefined);
       expect(txParentHash.extra.skip_verif).to.equal(undefined);
@@ -245,7 +244,7 @@ describe('Transaction', () => {
       expect(txForNode.tx_body.operation.type).to.equal(txBodyForNode.operation.type);
       expect(txForNode.tx_body.operation.ref).to.equal(txBodyForNode.operation.ref);
       expect(txForNode.tx_body.operation.value).to.equal(txBodyForNode.operation.value);
-      expect(txForNode.hash).to.equal(ChainUtil.hashTxBody(txForNode.tx_body));
+      expect(txForNode.hash).to.equal(CommonUtil.hashTxBody(txForNode.tx_body));
       expect(txForNode.address).to.equal(node.account.address);
     });
 
@@ -256,7 +255,7 @@ describe('Transaction', () => {
         delete txBodyForNode.nonce;
         tx2 = getTransaction(node, txBodyForNode);
         node.db.executeTransaction(tx2, node.bc.lastBlockNumber() + 1);
-        await ChainUtil.sleep(1);
+        await CommonUtil.sleep(1);
       }
       expect(tx2).to.not.equal(null);
       expect(tx2.tx_body.nonce).to.equal(currentNonce);

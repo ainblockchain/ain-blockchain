@@ -36,7 +36,7 @@ const {
   LIGHTWEIGHT,
   FeatureFlags
 } = require('../common/constants');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const {
   sendGetRequest,
   sendTxAndWaitForFinalization,
@@ -573,7 +573,7 @@ class P2pServer {
           tx_hash: subTx.hash,
           result
         });
-        if (!ChainUtil.isFailedTx(result)) {
+        if (!CommonUtil.isFailedTx(result)) {
           txListSucceeded.push(subTx);
         }
       }
@@ -586,7 +586,7 @@ class P2pServer {
     } else {
       const result = this.node.executeTransactionAndAddToPool(tx);
       logger.debug(`\n TX RESULT: ` + JSON.stringify(result));
-      if (!ChainUtil.isFailedTx(result)) {
+      if (!CommonUtil.isFailedTx(result)) {
         this.client.broadcastTransaction(tx);
       }
 
@@ -607,11 +607,11 @@ class P2pServer {
   // TODO(platfowner): Set .shard config for functions, rules, and owners as well.
   async setUpDbForSharding() {
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
-    const ownerPrivateKey = ChainUtil.getJsObject(
+    const ownerPrivateKey = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
-    const appName = _.get(ChainUtil.parsePath(shardingPath), 1, null);
+    const appName = _.get(CommonUtil.parsePath(shardingPath), 1, null);
     if (!appName) {
       throw Error(`Invalid appName given for a shard (${shardingPath})`);
     }
@@ -674,7 +674,7 @@ class P2pServer {
         op_list: [
           {
             type: WriteDbOperations.SET_RULE,
-            ref: ChainUtil.appendPath(
+            ref: CommonUtil.appendPath(
                 shardingPath,
                 ShardingProperties.SHARD,
                 ShardingProperties.PROOF_HASH_MAP,
@@ -686,7 +686,7 @@ class P2pServer {
           },
           {
             type: WriteDbOperations.SET_RULE,
-            ref: ChainUtil.appendPath(
+            ref: CommonUtil.appendPath(
                 shardingPath,
                 ShardingProperties.SHARD,
                 ShardingProperties.PROOF_HASH_MAP,
@@ -697,7 +697,7 @@ class P2pServer {
           },
           {
             type: WriteDbOperations.SET_FUNCTION,
-            ref: ChainUtil.appendPath(
+            ref: CommonUtil.appendPath(
                 shardingPath,
                 ShardingProperties.SHARD,
                 ShardingProperties.PROOF_HASH_MAP,
@@ -726,7 +726,7 @@ class P2pServer {
           },
           {
             type: WriteDbOperations.SET_VALUE,
-            ref: ChainUtil.formatPath([
+            ref: CommonUtil.formatPath([
               PredefinedDbPaths.SHARDING,
               PredefinedDbPaths.SHARDING_SHARD,
               ainUtil.encode(shardingPath)
