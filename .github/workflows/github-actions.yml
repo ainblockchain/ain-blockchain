@@ -11,6 +11,7 @@ on:
       - 'develop'
       - 'release/*'
       - 'master'
+    types: [opened, synchronize, reopened, closed]
 jobs:
   build_and_test:
     if: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' }}
