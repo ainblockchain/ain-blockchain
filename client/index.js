@@ -15,9 +15,9 @@ const {
   PORT,
   BlockchainNodeStates,
   WriteDbOperations,
-  TransactionStatus,
+  TransactionStates,
 } = require('../common/constants');
-const { ConsensusStatus } = require('../consensus/constants');
+const { ConsensusStates } = require('../consensus/constants');
 
 const MAX_BLOCKS = 20;
 
@@ -57,10 +57,10 @@ app.get('/', (req, res, next) => {
 
 app.get('/health_check', (req, res, next) => {
   const nodeStatus = p2pServer.getNodeStatus();
-  const consensusState = p2pServer.consensus.getState();
+  const consensusStatus = p2pServer.consensus.getStatus();
   const result = nodeStatus.state === BlockchainNodeStates.SERVING &&
-      consensusState.state === ConsensusStatus.RUNNING &&
-      consensusState.health === true;
+      consensusStatus.state === ConsensusStates.RUNNING &&
+      consensusStatus.health === true;
   res.status(200)
     .set('Content-Type', 'text/plain')
     .send(result)
@@ -390,7 +390,7 @@ app.get('/tx_pool_size_util', (req, res) => {
 app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.tp.transactionTracker[req.query.hash];
   if (transactionInfo) {
-    if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
+    if (transactionInfo.state === TransactionStates.IN_BLOCK) {
       const block = node.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
       if (!block) {
@@ -400,7 +400,7 @@ app.get('/get_transaction', (req, res, next) => {
       } else {
         transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === req.query.hash);
       }
-    } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
+    } else if (transactionInfo.state === TransactionStates.IN_POOL) {
       const address = transactionInfo.address;
       transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === req.query.hash);
     }
@@ -435,16 +435,16 @@ app.get('/get_sharding', (req, res, next) => {
     .end();
 });
 
-app.get('/get_raw_consensus_state', (req, res) => {
-  const result = p2pServer.consensus.getRawState();
+app.get('/get_raw_consensus_status', (req, res) => {
+  const result = p2pServer.consensus.getRawStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
     .end();
 });
 
-app.get('/get_consensus_state', (req, res) => {
-  const result = p2pServer.consensus.getState();
+app.get('/get_consensus_status', (req, res) => {
+  const result = p2pServer.consensus.getStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})

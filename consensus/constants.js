@@ -10,7 +10,7 @@ const ConsensusMessageTypes = {
   VOTE: 'vote'
 };
 
-const ConsensusStatus = {
+const ConsensusStates = {
   STARTING: 'STARTING',
   RUNNING: 'RUNNING',
   STOPPED: 'STOPPED',
@@ -19,5 +19,5 @@ const ConsensusStatus = {
 module.exports = {
   ConsensusMessageTypes,
   ConsensusConsts,
-  ConsensusStatus,
+  ConsensusStates,
 }
