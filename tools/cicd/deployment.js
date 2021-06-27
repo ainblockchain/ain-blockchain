@@ -1,5 +1,7 @@
 require('dotenv').config();
 const { GoogleSpreadsheet } = require('google-spreadsheet');
+const{ execSync } = require('child_process');
+const path = require('path');
 
 const envId = process.env.ENV_ID;
 const envClientEmail = process.env.CLIENT_EMAIL;
@@ -19,6 +21,24 @@ const auth = async () => {
   });
 }
 
+const resolvePath = (morePath) => {
+  return path.resolve(__dirname, morePath);
+}
+
+const cloneGitRepo = (git) => {
+  execSync(`git clone ${git}`, {
+    cwd: resolvePath('')
+  });
+}
+
+const getAinJsVersion = () => {
+  const path = resolvePath('ain-js/src');
+  const stdoutBuffer = execSync(`cat ${path}/constants.ts | grep BLOCKCHAIN_PROTOCOL_VERSION`);
+  const stdout = stdoutBuffer.toString();
+  const version = stdout.split(' ')[4];
+  return version.replace(/[^0-9.]/g, '');
+}
+
 const main = async () => {
   await auth();
   await doc.loadInfo();
@@ -30,11 +50,15 @@ const main = async () => {
   const minVersion = protocolVersion[currentVersion].min;
   const maxVersion =
       protocolVersion[currentVersion].max ? protocolVersion[currentVersion].max : null;
+
+  // cloneGitRepo('git@github.com:ainblockchain/ain-js.git');   // ain-js
+  const version = getAinJsVersion();
   sheet.addRow({
     date: today.toISOString().slice(0, 10),
     cur: currentVersion,
     min: minVersion,
-    max: maxVersion
+    max: maxVersion,
+    'ain-js': version
   });
 }
 
