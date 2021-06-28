@@ -2,6 +2,7 @@ require('dotenv').config();
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const{ execSync } = require('child_process');
 const path = require('path');
+const semver = require('semver');
 
 const envId = process.env.ENV_ID;
 const envClientEmail = process.env.CLIENT_EMAIL;
@@ -18,6 +19,17 @@ const AINJS = 'ainJs';
 const GPT2 = 'gpt2';
 const INSIGHT = 'insight';
 const PIPELINE = 'pipeline';
+
+const CELL_DICTIONARY = {
+  'ain-js': 'E',
+  'ain-connect': 'F',
+  'Teachable-NLP': 'G',
+  'ain-insight': 'H',
+  'ain-faucet': 'I',
+  'insight-pipeline': 'J',
+  'blockchain-data': 'K',
+  'GPT2-exporter': 'L'
+}
 
 const auth = async () => {
   await doc.useServiceAccountAuth({
@@ -56,10 +68,10 @@ const main = async () => {
   const maxVersion =
       protocolVersion[currentVersion].max ? protocolVersion[currentVersion].max : null;
 
-  // cloneGitRepo('git@github.com:ainblockchain/ain-js.git', AINJS);
-  // cloneGitRepo(`${process.env.GPT2} --config core.sshCommand="ssh -i ./id_rsa"`, GPT2);
-  // cloneGitRepo(`${process.env.INSIGHT} -b develop --single-branch --config core.sshCommand="ssh -i ./id_rsa"`, INSIGHT);
-  // cloneGitRepo(`${process.env.PIPELINE} -b develop --single-branch --config core.sshCommand="ssh -i ./id_rsa"`, PIPELINE);
+  cloneGitRepo('git@github.com:ainblockchain/ain-js.git', AINJS);
+  cloneGitRepo(`${process.env.GPT2} --config core.sshCommand="ssh -i ./id_rsa"`, GPT2);
+  cloneGitRepo(`${process.env.INSIGHT} -b develop --single-branch --config core.sshCommand="ssh -i ./id_rsa"`, INSIGHT);
+  cloneGitRepo(`${process.env.PIPELINE} -b develop --single-branch --config core.sshCommand="ssh -i ./id_rsa"`, PIPELINE);
   const ainJsVersion = getVersion(`${AINJS}/src`, 'constants.ts', 'BLOCKCHAIN_PROTOCOL_VERSION', 4);
   const GPT2Version = getVersion(`${GPT2}/functions`, 'util.js', 'CURRENT_PROTOCOL_VERSION', 3);
   const insightVersion = getVersion(`${INSIGHT}/src/data/constants`, 'const.js', 'VERSION', 1);
@@ -68,20 +80,37 @@ const main = async () => {
   const pipelineVersion = getVersion(`${PIPELINE}/constants`, 'const.js', 'AIN_PROTOCOL_VERSION', 1);
   const dataVersion = ainJsVersion;
   const exporterVersion = GPT2Version;
-  await sheet.addRow({
+  // Set versions
+  const row = {
     date: today.toISOString().slice(0, 10),
     cur: currentVersion,
     min: minVersion,
     max: maxVersion,
     'ain-js': ainJsVersion,
+    'ain-connect': connectVersion,
     'Teachable-NLP': GPT2Version,
     'ain-insight': insightVersion,
     'ain-faucet': faucetVersion,
-    'ain-connect': connectVersion,
     'insight-pipeline': pipelineVersion,
     'blockchain-data': dataVersion,
     'GPT2-exporter': exporterVersion
+  }
+  await sheet.addRow(row);
+  // Compare versions
+  const currentRowNumber = (await sheet.getRows()).length + 1;
+  await sheet.loadCells(`E${currentRowNumber}:L${currentRowNumber}`);
+  Object.keys(CELL_DICTIONARY).forEach(repo => {
+    const isLower = semver.lt(row[repo], row.min);
+    if (isLower) {
+      const latestAinJsCell = sheet.getCellByA1(`${CELL_DICTIONARY[repo]}${currentRowNumber}`);
+      latestAinJsCell.backgroundColor = {
+        red: 1,
+        green: 0,
+        blue: 0
+      };
+    }
   });
+  await sheet.saveUpdatedCells();
 }
 
 main();
