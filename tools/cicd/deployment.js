@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const{ execSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 const semver = require('semver');
 
@@ -18,7 +19,9 @@ const doc = new GoogleSpreadsheet(envId);
 const AINJS = 'ainJs';
 const GPT2 = 'gpt2';
 const INSIGHT = 'insight';
+const FAUCET = 'faucet';
 const PIPELINE = 'pipeline';
+const DATA = 'data';
 
 const CELL_DICTIONARY = {
   'ain-js': 'E',
@@ -43,6 +46,9 @@ const resolvePath = (morePath) => {
 }
 
 const cloneGitRepo = (git, appName) => {
+  if (fs.existsSync(resolvePath(`${appName}`))) {
+    return;
+  }
   execSync(`git clone ${git} ${appName}`, {
     cwd: resolvePath('')
   });
@@ -54,6 +60,18 @@ const getVersion = (pathName, fileName, varName, versionPosition) => {
   const stdout = stdoutBuffer.toString();
   const version = stdout.split(' ').filter(e => e)[versionPosition];
   return version.replace(/[^0-9.]/g, '');
+}
+
+const getVersionFromAinJs = (ainJsVersion, repoName) => {
+  const currentAinJsRepoVersion = getVersion(`${AINJS}/`, 'package.json', 'version', 1);
+  const ainJsVersionInOtherRepo = getVersion(`${repoName}/`, 'package.json', 'ain-js', 1);
+  if (semver.lt(ainJsVersionInOtherRepo, currentAinJsRepoVersion)) {
+    cloneGitRepo(`'git@github.com:ainblockchain/ain-js.git' --branch v${ainJsVersionInOtherRepo}`,
+        `${AINJS}-${ainJsVersionInOtherRepo}`);
+    return getVersion(`${AINJS}-${ainJsVersionInOtherRepo}/src`,'constants.ts',
+        'BLOCKCHAIN_PROTOCOL_VERSION', 4);
+  }
+  return ainJsVersion;
 }
 
 const main = async () => {
@@ -68,18 +86,24 @@ const main = async () => {
   const maxVersion =
       protocolVersion[currentVersion].max ? protocolVersion[currentVersion].max : null;
 
+  // Clone repos
   cloneGitRepo('git@github.com:ainblockchain/ain-js.git', AINJS);
   cloneGitRepo(`${process.env.GPT2} --config core.sshCommand="ssh -i ./id_rsa"`, GPT2);
   cloneGitRepo(`${process.env.INSIGHT} -b develop --single-branch --config core.sshCommand="ssh -i ./id_rsa"`, INSIGHT);
+  cloneGitRepo(`${process.env.FAUCET} --config core.sshCommand="ssh -i ./id_rsa"`, FAUCET);
   cloneGitRepo(`${process.env.PIPELINE} -b develop --single-branch --config core.sshCommand="ssh -i ./id_rsa"`, PIPELINE);
+  cloneGitRepo(`${process.env.DATA} --config core.sshCommand="ssh -i ./id_rsa"`, DATA);
+
+  // Get versions
   const ainJsVersion = getVersion(`${AINJS}/src`, 'constants.ts', 'BLOCKCHAIN_PROTOCOL_VERSION', 4);
   const GPT2Version = getVersion(`${GPT2}/functions`, 'util.js', 'CURRENT_PROTOCOL_VERSION', 3);
   const insightVersion = getVersion(`${INSIGHT}/src/data/constants`, 'const.js', 'VERSION', 1);
-  const faucetVersion = ainJsVersion;
+  const faucetVersion = getVersionFromAinJs(ainJsVersion, FAUCET);
   const connectVersion = faucetVersion;
   const pipelineVersion = getVersion(`${PIPELINE}/constants`, 'const.js', 'AIN_PROTOCOL_VERSION', 1);
-  const dataVersion = ainJsVersion;
+  const dataVersion = getVersionFromAinJs(ainJsVersion, DATA);
   const exporterVersion = GPT2Version;
+
   // Set versions
   const row = {
     date: today.toISOString().slice(0, 10),
@@ -96,7 +120,8 @@ const main = async () => {
     'GPT2-exporter': exporterVersion
   }
   await sheet.addRow(row);
-  // Compare versions
+
+  // Compare versions and set color
   const currentRowNumber = (await sheet.getRows()).length + 1;
   await sheet.loadCells(`E${currentRowNumber}:L${currentRowNumber}`);
   Object.keys(CELL_DICTIONARY).forEach(repo => {
