@@ -89,5 +89,7 @@ export LIGHTWEIGHT=false
 export STAKE=100000
 export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
 
-echo 'Starting up Node server..'
+echo 'Starting up Blockchain Node server..'
 nohup node --async-stack-traces client/index.js >/dev/null 2>error_logs.txt &
+
+echo "Blockchain Node server is now up!"
