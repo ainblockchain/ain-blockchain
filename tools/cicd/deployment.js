@@ -14,6 +14,9 @@ if (!envId || !envClientEmail || !envPrivateKey) {
 
 const doc = new GoogleSpreadsheet(envId);
 
+const AINJS = 'ainJs';
+const GPT2 = 'gpt2';
+
 const auth = async () => {
   await doc.useServiceAccountAuth({
     client_email: envClientEmail,
@@ -25,17 +28,17 @@ const resolvePath = (morePath) => {
   return path.resolve(__dirname, morePath);
 }
 
-const cloneGitRepo = (git) => {
-  execSync(`git clone ${git}`, {
+const cloneGitRepo = (git, appName) => {
+  execSync(`git clone ${git} ${appName}`, {
     cwd: resolvePath('')
   });
 }
 
-const getAinJsVersion = () => {
-  const path = resolvePath('ain-js/src');
-  const stdoutBuffer = execSync(`cat ${path}/constants.ts | grep BLOCKCHAIN_PROTOCOL_VERSION`);
+const getVersion = (pathName, fileName, varName, versionPosition) => {
+  const path = resolvePath(pathName);
+  const stdoutBuffer = execSync(`cat ${path}/${fileName} | grep ${varName} -m 1`);
   const stdout = stdoutBuffer.toString();
-  const version = stdout.split(' ')[4];
+  const version = stdout.split(' ')[versionPosition];
   return version.replace(/[^0-9.]/g, '');
 }
 
@@ -51,14 +54,17 @@ const main = async () => {
   const maxVersion =
       protocolVersion[currentVersion].max ? protocolVersion[currentVersion].max : null;
 
-  // cloneGitRepo('git@github.com:ainblockchain/ain-js.git');   // ain-js
-  const version = getAinJsVersion();
+  cloneGitRepo('git@github.com:ainblockchain/ain-js.git', AINJS);
+  cloneGitRepo(`${process.env.GPT2} --config core.sshCommand="ssh -i ./id_rsa"`, GPT2);
+  const ainJsVersion = getVersion(`${AINJS}/src`, 'constants.ts', 'BLOCKCHAIN_PROTOCOL_VERSION', 4);
+  const GPT2Version = getVersion(`${GPT2}/functions`, 'util.js', 'CURRENT_PROTOCOL_VERSION', 3);
   sheet.addRow({
     date: today.toISOString().slice(0, 10),
     cur: currentVersion,
     min: minVersion,
     max: maxVersion,
-    'ain-js': version
+    'ain-js': ainJsVersion,
+    'Teachable-NLP': GPT2Version
   });
 }
 
