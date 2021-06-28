@@ -641,8 +641,6 @@ class DB {
   }
 
   // TODO(platfowner): Define error code explicitly.
-  // TODO(platfowner): Consider making set operation and native function run tightly bound, i.e.,
-  //                   revert the former if the latter fails.
   // TODO(platfowner): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
   //                   and setOwner() as well.
   setValue(valuePath, value, auth, timestamp, transaction, isGlobal) {
