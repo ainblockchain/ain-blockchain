@@ -122,7 +122,7 @@ cd $NEW_DIR_PATH
 npm install
 
 # 6. Start a new node process
-printf "Starting up Node server.."
+printf "Starting up Blockchain Node server.."
 nohup node --async-stack-traces client/index.js >/dev/null 2>error_logs.txt &
 
 # 7. Wait until the new node catches up
@@ -143,7 +143,7 @@ do
     printf "\nconsensusStatus = ${consensusStatus}"
     printf "\nlastBlockNumber = ${lastBlockNumber}"
     if [ "$consensusStatus" == "RUNNING" ]; then
-        printf "\nNode is synced & running!"
+        printf "\nBlockchain Node server is synced & running!"
         printf "Time it took to sync in seconds: $SECONDS\n\n"
         break
     fi
