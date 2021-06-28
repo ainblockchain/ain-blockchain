@@ -16,6 +16,8 @@ const doc = new GoogleSpreadsheet(envId);
 
 const AINJS = 'ainJs';
 const GPT2 = 'gpt2';
+const INSIGHT = 'insight';
+const PIPELINE = 'pipeline';
 
 const auth = async () => {
   await doc.useServiceAccountAuth({
@@ -38,7 +40,7 @@ const getVersion = (pathName, fileName, varName, versionPosition) => {
   const path = resolvePath(pathName);
   const stdoutBuffer = execSync(`cat ${path}/${fileName} | grep ${varName} -m 1`);
   const stdout = stdoutBuffer.toString();
-  const version = stdout.split(' ')[versionPosition];
+  const version = stdout.split(' ').filter(e => e)[versionPosition];
   return version.replace(/[^0-9.]/g, '');
 }
 
@@ -54,17 +56,31 @@ const main = async () => {
   const maxVersion =
       protocolVersion[currentVersion].max ? protocolVersion[currentVersion].max : null;
 
-  cloneGitRepo('git@github.com:ainblockchain/ain-js.git', AINJS);
-  cloneGitRepo(`${process.env.GPT2} --config core.sshCommand="ssh -i ./id_rsa"`, GPT2);
+  // cloneGitRepo('git@github.com:ainblockchain/ain-js.git', AINJS);
+  // cloneGitRepo(`${process.env.GPT2} --config core.sshCommand="ssh -i ./id_rsa"`, GPT2);
+  // cloneGitRepo(`${process.env.INSIGHT} -b develop --single-branch --config core.sshCommand="ssh -i ./id_rsa"`, INSIGHT);
+  // cloneGitRepo(`${process.env.PIPELINE} -b develop --single-branch --config core.sshCommand="ssh -i ./id_rsa"`, PIPELINE);
   const ainJsVersion = getVersion(`${AINJS}/src`, 'constants.ts', 'BLOCKCHAIN_PROTOCOL_VERSION', 4);
   const GPT2Version = getVersion(`${GPT2}/functions`, 'util.js', 'CURRENT_PROTOCOL_VERSION', 3);
-  sheet.addRow({
+  const insightVersion = getVersion(`${INSIGHT}/src/data/constants`, 'const.js', 'VERSION', 1);
+  const faucetVersion = ainJsVersion;
+  const connectVersion = faucetVersion;
+  const pipelineVersion = getVersion(`${PIPELINE}/constants`, 'const.js', 'AIN_PROTOCOL_VERSION', 1);
+  const dataVersion = ainJsVersion;
+  const exporterVersion = GPT2Version;
+  await sheet.addRow({
     date: today.toISOString().slice(0, 10),
     cur: currentVersion,
     min: minVersion,
     max: maxVersion,
     'ain-js': ainJsVersion,
-    'Teachable-NLP': GPT2Version
+    'Teachable-NLP': GPT2Version,
+    'ain-insight': insightVersion,
+    'ain-faucet': faucetVersion,
+    'ain-connect': connectVersion,
+    'insight-pipeline': pipelineVersion,
+    'blockchain-data': dataVersion,
+    'GPT2-exporter': exporterVersion
   });
 }
 
