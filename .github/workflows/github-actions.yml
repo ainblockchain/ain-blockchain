@@ -92,4 +92,5 @@ jobs:
           PIPELINE: ${{ secrets.DEPLOYMENT_PIPELINE }}
           DATA: ${{ secrets.DEPLOYMENT_DATA }}
         run: |
+          yarn add dotenv google-spreadsheet semver
           node tools/cicd/deployment.js
