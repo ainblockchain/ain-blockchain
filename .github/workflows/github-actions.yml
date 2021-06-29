@@ -80,7 +80,7 @@ jobs:
           PRIV_KEY_FOR_DOWNLOAD: ${{ secrets.DEPLOYMENT_PRIV_KEY_FOR_DOWNLOAD }}
           KNOWN_HOSTS: ${{ secrets.DEPLOYMENT_KNOWN_HOSTS }}
         run: |
-          echo $PRIV_KEY_FOR_DOWNLOAD >> ./tools/cicd/id_rsa
+          echo "$PRIV_KEY_FOR_DOWNLOAD" > ./tools/cicd/id_rsa
           chmod 600 ./tools/cicd/id_rsa
           echo $KNOWN_HOSTS >> ~/.ssh/known_hosts
       - name: check apps
