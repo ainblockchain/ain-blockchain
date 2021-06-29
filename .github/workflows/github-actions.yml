@@ -96,3 +96,11 @@ jobs:
         run: |
           yarn add dotenv google-spreadsheet semver
           node tools/cicd/deployment.js
+      - name: send slack message
+        run: |
+          curl -X POST https://hooks.slack.com/services/$SLACK_WEBHOOK_TOKEN \
+            -H "Content-Type: application/json" \
+            -d '{"username": "ain-blockchain",
+            "channel": "blockchain-testnet-deploy",
+            "text": "New blockchain version has just been released. Please check compatibility of app versions below:\n ${{ secrets.DEPLOYMENT_SHEET_URL }}",
+            "icon_emoji": ":bomb:"}'
