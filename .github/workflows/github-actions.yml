@@ -97,6 +97,8 @@ jobs:
           yarn add dotenv google-spreadsheet semver
           node tools/cicd/deployment.js
       - name: send slack message
+        env:
+            SLACK_WEBHOOK_TOKEN: ${{ secrets.SLACK_WEBHOOK_TOKEN }}
         run: |
           curl -X POST https://hooks.slack.com/services/$SLACK_WEBHOOK_TOKEN \
             -H "Content-Type: application/json" \
