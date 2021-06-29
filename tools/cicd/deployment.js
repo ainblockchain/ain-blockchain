@@ -16,6 +16,7 @@ if (!envId || !envClientEmail || !envPrivateKey) {
 
 const doc = new GoogleSpreadsheet(envId);
 
+const AINJS_GITHUB = 'https://github.com/ainblockchain/ain-js.git';
 const AINJS = 'ainJs';
 const GPT2 = 'gpt2';
 const INSIGHT = 'insight';
@@ -66,7 +67,7 @@ const getVersionFromAinJs = (ainJsVersion, repoName) => {
   const currentAinJsRepoVersion = getVersion(`${AINJS}/`, 'package.json', 'version', 1);
   const ainJsVersionInOtherRepo = getVersion(`${repoName}/`, 'package.json', 'ain-js', 1);
   if (semver.lt(ainJsVersionInOtherRepo, currentAinJsRepoVersion)) {
-    cloneGitRepo(`'git@github.com:ainblockchain/ain-js.git' --branch v${ainJsVersionInOtherRepo}`,
+    cloneGitRepo(`${AINJS_GITHUB} --branch v${ainJsVersionInOtherRepo}`,
         `${AINJS}-${ainJsVersionInOtherRepo}`);
     return getVersion(`${AINJS}-${ainJsVersionInOtherRepo}/src`,'constants.ts',
         'BLOCKCHAIN_PROTOCOL_VERSION', 4);
@@ -87,7 +88,7 @@ const main = async () => {
       protocolVersion[currentVersion].max ? protocolVersion[currentVersion].max : null;
 
   // Clone repos
-  cloneGitRepo('git@github.com:ainblockchain/ain-js.git', AINJS);
+  cloneGitRepo(`${AINJS_GITHUB}`, AINJS);
   cloneGitRepo(`${process.env.GPT2} --config core.sshCommand="ssh -i ./id_rsa"`, GPT2);
   cloneGitRepo(`${process.env.INSIGHT} -b develop --single-branch --config core.sshCommand="ssh -i ./id_rsa"`, INSIGHT);
   cloneGitRepo(`${process.env.FAUCET} --config core.sshCommand="ssh -i ./id_rsa"`, FAUCET);
