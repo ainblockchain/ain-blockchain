@@ -79,18 +79,19 @@ jobs:
         env:
           PRIV_KEY_FOR_DOWNLOAD: ${{ secrets.DEPLOYMENT_PRIV_KEY_FOR_DOWNLOAD }}
         run: |
-          echo $PRIV_KEY_FOR_DOWNLOAD >> ./tools/cicd/id_rsa
-          chmod 400 ./tools/cicd/id_rsa
-      - name: check apps
-        env:
-          ENV_ID: ${{ secrets.DEPLOYMENT_ENV_ID }}
-          CLIENT_EMAIL: ${{ secrets.DEPLOYMENT_CLIENT_EMAIL }}
-          PRIVATE_KEY: ${{ secrets.DEPLOYMENT_PRIVATE_KEY}}
-          GPT2: ${{ secrets.DEPLOYMENT_GPT2 }}
-          INSIGHT: ${{ secrets.DEPLOYMENT_INSIGHT }}
-          FAUCET: ${{ secrets.DEPLOYMENT_FAUCET }}
-          PIPELINE: ${{ secrets.DEPLOYMENT_PIPELINE }}
-          DATA: ${{ secrets.DEPLOYMENT_DATA }}
-        run: |
-          yarn add dotenv google-spreadsheet semver
-          node tools/cicd/deployment.js
+          # echo $PRIV_KEY_FOR_DOWNLOAD > ./tools/cicd/id_rsa
+          # chmod 400 ./tools/cicd/id_rsa
+          ls
+      # - name: check apps
+      #   env:
+      #     ENV_ID: ${{ secrets.DEPLOYMENT_ENV_ID }}
+      #     CLIENT_EMAIL: ${{ secrets.DEPLOYMENT_CLIENT_EMAIL }}
+      #     PRIVATE_KEY: ${{ secrets.DEPLOYMENT_PRIVATE_KEY}}
+      #     GPT2: ${{ secrets.DEPLOYMENT_GPT2 }}
+      #     INSIGHT: ${{ secrets.DEPLOYMENT_INSIGHT }}
+      #     FAUCET: ${{ secrets.DEPLOYMENT_FAUCET }}
+      #     PIPELINE: ${{ secrets.DEPLOYMENT_PIPELINE }}
+      #     DATA: ${{ secrets.DEPLOYMENT_DATA }}
+      #   run: |
+      #     yarn add dotenv google-spreadsheet semver
+      #     node tools/cicd/deployment.js
