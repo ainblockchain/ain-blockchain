@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const semver = require('semver');
-const ChainUtil = require('./chain-util');
+const CommonUtil = require('./common-util');
 
 // ** Genesis configs **
 const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/base';
@@ -30,19 +30,19 @@ const FeatureFlags = {
 };
 
 // ** Environment variables **
-const DEBUG = ChainUtil.convertEnvVarInputToBool(process.env.DEBUG);
-const CONSOLE_LOG = ChainUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
-const ENABLE_DEV_SET_CLIENT_API = ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_SET_CLIENT_API);
+const DEBUG = CommonUtil.convertEnvVarInputToBool(process.env.DEBUG);
+const CONSOLE_LOG = CommonUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
+const ENABLE_DEV_SET_CLIENT_API = CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_SET_CLIENT_API);
 const ENABLE_TX_SIG_VERIF_WORKAROUND =
-    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
 const ENABLE_GAS_FEE_WORKAROUND =
-    ChainUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
 const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
     process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
-const LIGHTWEIGHT = ChainUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
+const LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
 const SYNC_MODE = process.env.SYNC_MODE || 'full';
 
 // ** Constants **
@@ -412,15 +412,15 @@ const FunctionResultCode = {
 };
 
 /**
- * Constant values for transactionTracker.
+ * Transaction states.
  *
  * @enum {string}
  */
-const TransactionStatus = {
-  BLOCK_STATUS: 'BLOCK',
-  POOL_STATUS: 'POOL',
-  TIMEOUT_STATUS: 'TIMEOUT',
-  FAIL_STATUS: 'FAIL'
+const TransactionStates = {
+  IN_BLOCK: 'IN_BLOCK',
+  IN_POOL: 'IN_POOL',
+  TIMED_OUT: 'TIMED_OUT',
+  FAILED: 'FAILED'
 };
 
 /**
@@ -535,8 +535,8 @@ function overwriteGenesisParams(overwritingParams, type) {
     const validators = {};
     for (let i = 0; i < GenesisParams.consensus.MIN_NUM_VALIDATORS; i++) {
       const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
-      ChainUtil.setJsObject(whitelist, [addr], true);
-      ChainUtil.setJsObject(validators, [addr], GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR);
+      CommonUtil.setJsObject(whitelist, [addr], true);
+      CommonUtil.setJsObject(validators, [addr], GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR);
     }
     GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
     GenesisParams.consensus.GENESIS_VALIDATORS = validators;
@@ -609,7 +609,7 @@ function getGenesisConfig(filename, additionalEnv) {
     const additionalFilePath = path.resolve(__dirname, '..', parts[1])
     if (fs.existsSync(additionalFilePath)) {
       const additionalConfig = JSON.parse(fs.readFileSync(additionalFilePath));
-      ChainUtil.setJsObject(config, [dbPath], additionalConfig);
+      CommonUtil.setJsObject(config, [dbPath], additionalConfig);
     } else {
       throw Error(`Missing additional genesis config file: ${additionalFilePath}`);
     }
@@ -620,28 +620,28 @@ function getGenesisConfig(filename, additionalEnv) {
 function getGenesisSharding() {
   const config = getGenesisConfig('genesis_sharding.json');
   if (config[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.POA) {
-    const ownerAddress = ChainUtil.getJsObject(
+    const ownerAddress = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const reporterAddress =
         GenesisAccounts[AccountProperties.OTHERS][0][AccountProperties.ADDRESS];
-    ChainUtil.setJsObject(config, [ShardingProperties.SHARD_OWNER], ownerAddress);
-    ChainUtil.setJsObject(config, [ShardingProperties.SHARD_REPORTER], reporterAddress);
+    CommonUtil.setJsObject(config, [ShardingProperties.SHARD_OWNER], ownerAddress);
+    CommonUtil.setJsObject(config, [ShardingProperties.SHARD_REPORTER], reporterAddress);
   }
   return config;
 }
 
 function getGenesisValues() {
   const values = {};
-  ChainUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], GenesisToken);
-  const ownerAddress = ChainUtil.getJsObject(
+  CommonUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], GenesisToken);
+  const ownerAddress = CommonUtil.getJsObject(
       GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-  ChainUtil.setJsObject(
+  CommonUtil.setJsObject(
       values,
       [PredefinedDbPaths.ACCOUNTS, ownerAddress, PredefinedDbPaths.BALANCE],
       GenesisToken[TokenProperties.TOTAL_SUPPLY]);
-  ChainUtil.setJsObject(
+  CommonUtil.setJsObject(
       values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
-  ChainUtil.setJsObject(
+  CommonUtil.setJsObject(
       values, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
   return values;
 }
@@ -654,7 +654,7 @@ function getGenesisFunctions() {
 function getGenesisRules() {
   const rules = getGenesisConfig('genesis_rules.json', process.env.ADDITIONAL_RULES);
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
-    ChainUtil.setJsObject(
+    CommonUtil.setJsObject(
         rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
   }
   return rules;
@@ -663,18 +663,18 @@ function getGenesisRules() {
 function getGenesisOwners() {
   const owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
-    ChainUtil.setJsObject(
+    CommonUtil.setJsObject(
         owners, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
         getShardingOwner());
   }
-  ChainUtil.setJsObject(
+  CommonUtil.setJsObject(
       owners, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST], getWhitelistOwner());
   return owners;
 }
 
 function getShardingRule() {
   const ownerAddress =
-      ChainUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+      CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
     [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
   };
@@ -764,7 +764,7 @@ module.exports = {
   TokenExchangeSchemes,
   ReadDbOperations,
   WriteDbOperations,
-  TransactionStatus,
+  TransactionStates,
   StateVersions,
   GenesisToken,
   GenesisAccounts,

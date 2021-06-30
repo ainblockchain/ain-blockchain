@@ -6,7 +6,7 @@ const _ = require('lodash');
 const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
 const {
   ENABLE_DEV_SET_CLIENT_API,
@@ -15,9 +15,9 @@ const {
   PORT,
   BlockchainNodeStates,
   WriteDbOperations,
-  TransactionStatus,
+  TransactionStates,
 } = require('../common/constants');
-const { ConsensusStatus } = require('../consensus/constants');
+const { ConsensusStates } = require('../consensus/constants');
 
 const MAX_BLOCKS = 20;
 
@@ -57,10 +57,10 @@ app.get('/', (req, res, next) => {
 
 app.get('/health_check', (req, res, next) => {
   const nodeStatus = p2pServer.getNodeStatus();
-  const consensusState = p2pServer.consensus.getState();
+  const consensusStatus = p2pServer.consensus.getStatus();
   const result = nodeStatus.state === BlockchainNodeStates.SERVING &&
-      consensusState.state === ConsensusStatus.RUNNING &&
-      consensusState.health === true;
+      consensusStatus.state === ConsensusStates.RUNNING &&
+      consensusStatus.health === true;
   res.status(200)
     .set('Content-Type', 'text/plain')
     .send(result)
@@ -69,7 +69,7 @@ app.get('/health_check', (req, res, next) => {
 
 // Exports metrics for Prometheus.
 app.get('/metrics', (req, res, next) => {
-  const result = ChainUtil.objToMetrics(p2pClient.getStatus());
+  const result = CommonUtil.objToMetrics(p2pClient.getStatus());
   res.status(200)
     .set('Content-Type', 'text/plain')
     .send(result)
@@ -77,7 +77,8 @@ app.get('/metrics', (req, res, next) => {
 });
 
 app.get('/get_value', (req, res, next) => {
-  const result = node.db.getValue(req.query.ref, ChainUtil.toBool(req.query.is_global));
+  const result = node.db.getValue(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
+      CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -85,7 +86,8 @@ app.get('/get_value', (req, res, next) => {
 });
 
 app.get('/get_function', (req, res, next) => {
-  const result = node.db.getFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
+  const result = node.db.getFunction(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
+      CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -93,7 +95,8 @@ app.get('/get_function', (req, res, next) => {
 });
 
 app.get('/get_rule', (req, res, next) => {
-  const result = node.db.getRule(req.query.ref, ChainUtil.toBool(req.query.is_global));
+  const result = node.db.getRule(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
+      CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -101,7 +104,8 @@ app.get('/get_rule', (req, res, next) => {
 });
 
 app.get('/get_owner', (req, res, next) => {
-  const result = node.db.getOwner(req.query.ref, ChainUtil.toBool(req.query.is_global));
+  const result = node.db.getOwner(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
+      CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -131,7 +135,7 @@ app.get('/get_state_info', (req, res, next) => {
 });
 
 app.get('/match_function', (req, res, next) => {
-  const result = node.db.matchFunction(req.query.ref, ChainUtil.toBool(req.query.is_global));
+  const result = node.db.matchFunction(req.query.ref, CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -139,7 +143,7 @@ app.get('/match_function', (req, res, next) => {
 });
 
 app.get('/match_rule', (req, res, next) => {
-  const result = node.db.matchRule(req.query.ref, ChainUtil.toBool(req.query.is_global));
+  const result = node.db.matchRule(req.query.ref, CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -147,7 +151,7 @@ app.get('/match_rule', (req, res, next) => {
 });
 
 app.get('/match_owner', (req, res, next) => {
-  const result = node.db.matchOwner(req.query.ref, ChainUtil.toBool(req.query.is_global));
+  const result = node.db.matchOwner(req.query.ref, CommonUtil.toBool(req.query.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -165,7 +169,7 @@ app.post('/eval_rule', (req, res, next) => {
   }
   const result = node.db.evalRule(
       body.ref, body.value, auth, body.timestamp || Date.now(),
-      ChainUtil.toBool(body.is_global));
+      CommonUtil.toBool(body.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -182,7 +186,7 @@ app.post('/eval_owner', (req, res, next) => {
     auth.fid = body.fid;
   }
   const result = node.db.evalOwner(
-      body.ref, body.permission, auth, ChainUtil.toBool(body.is_global));
+      body.ref, body.permission, auth, CommonUtil.toBool(body.is_global));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -203,7 +207,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.SET_VALUE));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -212,7 +216,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.INC_VALUE));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -221,7 +225,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.DEC_VALUE));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -230,7 +234,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.SET_FUNCTION));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -239,7 +243,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.SET_RULE));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -248,7 +252,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.SET_OWNER));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -258,7 +262,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
     const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: ChainUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
       .end();
   });
 
@@ -378,10 +382,19 @@ app.get('/dump_final_version', (req, res) => {
     .end();
 });
 
+app.get('/tx_pool_size_util', (req, res) => {
+  const address = req.query.address;
+  const txPoolSizeUtil = node.getTxPoolSizeUtilization(address);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result: txPoolSizeUtil})
+    .end();
+});
+
 app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.tp.transactionTracker[req.query.hash];
   if (transactionInfo) {
-    if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
+    if (transactionInfo.state === TransactionStates.IN_BLOCK) {
       const block = node.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
       if (!block) {
@@ -391,7 +404,7 @@ app.get('/get_transaction', (req, res, next) => {
       } else {
         transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === req.query.hash);
       }
-    } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
+    } else if (transactionInfo.state === TransactionStates.IN_POOL) {
       const address = transactionInfo.address;
       transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === req.query.hash);
     }
@@ -426,16 +439,16 @@ app.get('/get_sharding', (req, res, next) => {
     .end();
 });
 
-app.get('/get_raw_consensus_state', (req, res) => {
-  const result = p2pServer.consensus.getRawState();
+app.get('/get_raw_consensus_status', (req, res) => {
+  const result = p2pServer.consensus.getRawStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
     .end();
 });
 
-app.get('/get_consensus_state', (req, res) => {
-  const result = p2pServer.consensus.getState();
+app.get('/get_consensus_status', (req, res) => {
+  const result = p2pServer.consensus.getStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})

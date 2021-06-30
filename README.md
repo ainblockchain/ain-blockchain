@@ -115,7 +115,7 @@ The genesis configs directory used is `genesis-configs/base` by default and it c
 GENESIS_CONFIGS_DIR=genesis-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDEX=0 DEBUG=false STAKE=250 CONSOLE_LOG=true ENABLE_DEV_SET_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 
-#### On Google Coud Platform (GCP)
+#### On Google Cloud Platform (GCP)
 
 - Deploy code (in common with Tracker server) 
   Set <NUMBER_OF_SHARDS> to 0 if you only want to run a parent chain, or set it to the specific number of shard chains you want to run in addition to the parent chain.

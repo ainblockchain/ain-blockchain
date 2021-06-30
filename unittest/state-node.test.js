@@ -3,7 +3,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const { HASH_DELIMITER } = require('../common/constants');
 
 describe("state-node", () => {
@@ -466,6 +466,35 @@ describe("state-node", () => {
         }
       });
     })
+  })
+
+  describe("fromJsObject with version / toJsObjectShallow", () => {
+    it("leaf node", () => {
+      const ver = 'test_version';
+      expect(StateNode.fromJsObject(true, ver).toJsObjectShallow()).to.equal(true);
+      expect(StateNode.fromJsObject(false, ver).toJsObjectShallow()).to.equal(false);
+      expect(StateNode.fromJsObject(10, ver).toJsObjectShallow()).to.equal(10);
+      expect(StateNode.fromJsObject('str', ver).toJsObjectShallow()).to.equal('str');
+      expect(StateNode.fromJsObject(null, ver).toJsObjectShallow()).to.equal(null);
+    })
+
+    it("internal node", () => {
+      const ver = 'test_version';
+      assert.deepEqual(StateNode.fromJsObject({ a: 1, b: 2, c: 3 }, ver).toJsObjectShallow(),
+          {
+            a: true,
+            b: true,
+            c: true,
+          },
+      );
+      assert.deepEqual(StateNode.fromJsObject({ a: { aa: 11 }, b: 2 }, ver).toJsObjectShallow(),
+          {
+            a: true,
+            b: true,
+          },
+      );
+    })
+
   })
 
   describe("isLeaf", () => {
@@ -964,19 +993,19 @@ describe("state-node", () => {
   describe("buildProofHash", () => {
     it("leaf node", () => {
       node.setValue(true);
-      expect(node.buildProofHash()).to.equal(ChainUtil.hashString(ChainUtil.toString(true)));
+      expect(node.buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString(true)));
       node.setValue(10);
-      expect(node.buildProofHash()).to.equal(ChainUtil.hashString(ChainUtil.toString(10)));
+      expect(node.buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString(10)));
       node.setValue(-200);
-      expect(node.buildProofHash()).to.equal(ChainUtil.hashString(ChainUtil.toString(-200)));
+      expect(node.buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString(-200)));
       node.setValue('');
-      expect(node.buildProofHash()).to.equal(ChainUtil.hashString(ChainUtil.toString('')));
+      expect(node.buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString('')));
       node.setValue('unittest');
-      expect(node.buildProofHash()).to.equal(ChainUtil.hashString(ChainUtil.toString('unittest')));
+      expect(node.buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString('unittest')));
       node.setValue(null);
-      expect(node.buildProofHash()).to.equal(ChainUtil.hashString(ChainUtil.toString(null)));
+      expect(node.buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString(null)));
       node.setValue(undefined);
-      expect(node.buildProofHash()).to.equal(ChainUtil.hashString(ChainUtil.toString(undefined)));
+      expect(node.buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString(undefined)));
     });
 
     it("internal node", () => {
@@ -988,7 +1017,7 @@ describe("state-node", () => {
           `${label2}${HASH_DELIMITER}${child2.getProofHash()}${HASH_DELIMITER}` +
           `${label3}${HASH_DELIMITER}${child3.getProofHash()}`;
       expect(stateTree.buildProofHash()).to.equal(
-          ChainUtil.hashString(ChainUtil.toString(preimage)));
+          CommonUtil.hashString(CommonUtil.toString(preimage)));
     });
   });
 

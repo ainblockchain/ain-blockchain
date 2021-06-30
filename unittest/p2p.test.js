@@ -96,7 +96,7 @@ describe("p2p", () => {
     });
 
     describe("getConsensusStatus", () => {
-      it("gets initial consensus status", () => {
+      it("gets initial consensus state", () => {
         const actual = {
           health: false,
           state: 'STARTING',

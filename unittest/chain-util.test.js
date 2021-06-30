@@ -1,48 +1,48 @@
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 
-describe("ChainUtil", () => {
+describe("CommonUtil", () => {
   describe("numberOfZero", () => {
     it("when non-numeric input", () => {
-      expect(ChainUtil.numberOrZero(null)).to.equal(0);
-      expect(ChainUtil.numberOrZero(undefined)).to.equal(0);
-      expect(ChainUtil.numberOrZero(Infinity)).to.equal(0);
-      expect(ChainUtil.numberOrZero(NaN)).to.equal(0);
-      expect(ChainUtil.numberOrZero(true)).to.equal(0);
-      expect(ChainUtil.numberOrZero(false)).to.equal(0);
-      expect(ChainUtil.numberOrZero('')).to.equal(0);
-      expect(ChainUtil.numberOrZero('abc')).to.equal(0);
-      expect(ChainUtil.numberOrZero({})).to.equal(0);
-      expect(ChainUtil.numberOrZero({a: 'A'})).to.equal(0);
-      expect(ChainUtil.numberOrZero([])).to.equal(0);
-      expect(ChainUtil.numberOrZero([10])).to.equal(0);
+      expect(CommonUtil.numberOrZero(null)).to.equal(0);
+      expect(CommonUtil.numberOrZero(undefined)).to.equal(0);
+      expect(CommonUtil.numberOrZero(Infinity)).to.equal(0);
+      expect(CommonUtil.numberOrZero(NaN)).to.equal(0);
+      expect(CommonUtil.numberOrZero(true)).to.equal(0);
+      expect(CommonUtil.numberOrZero(false)).to.equal(0);
+      expect(CommonUtil.numberOrZero('')).to.equal(0);
+      expect(CommonUtil.numberOrZero('abc')).to.equal(0);
+      expect(CommonUtil.numberOrZero({})).to.equal(0);
+      expect(CommonUtil.numberOrZero({a: 'A'})).to.equal(0);
+      expect(CommonUtil.numberOrZero([])).to.equal(0);
+      expect(CommonUtil.numberOrZero([10])).to.equal(0);
     })
 
     it("when numeric input", () => {
-      expect(ChainUtil.numberOrZero(0)).to.equal(0);
-      expect(ChainUtil.numberOrZero(10)).to.equal(10);
-      expect(ChainUtil.numberOrZero(-1)).to.equal(-1);
-      expect(ChainUtil.numberOrZero(15.5)).to.equal(15.5);
+      expect(CommonUtil.numberOrZero(0)).to.equal(0);
+      expect(CommonUtil.numberOrZero(10)).to.equal(10);
+      expect(CommonUtil.numberOrZero(-1)).to.equal(-1);
+      expect(CommonUtil.numberOrZero(15.5)).to.equal(15.5);
     })
   })
 
   describe("toString", () => {
     it("when normal input", () => {
-      expect(ChainUtil.toString(true)).to.equal('true');
-      expect(ChainUtil.toString(false)).to.equal('false');
-      expect(ChainUtil.toString(0)).to.equal('0');
-      expect(ChainUtil.toString(100)).to.equal('100');
-      expect(ChainUtil.toString(-100)).to.equal('-100');
-      expect(ChainUtil.toString(10.19)).to.equal('10.19');
-      expect(ChainUtil.toString(-10.19)).to.equal('-10.19');
-      expect(ChainUtil.toString('')).to.equal('');
-      expect(ChainUtil.toString('!@#$%^&*()_+')).to.equal('!@#$%^&*()_+');
-      expect(ChainUtil.toString([])).to.equal('[]');
-      expect(ChainUtil.toString([true, 10, 'abc'])).to.equal('[true,10,"abc"]');
-      expect(ChainUtil.toString({})).to.equal('{}');
-      expect(ChainUtil.toString({
+      expect(CommonUtil.toString(true)).to.equal('true');
+      expect(CommonUtil.toString(false)).to.equal('false');
+      expect(CommonUtil.toString(0)).to.equal('0');
+      expect(CommonUtil.toString(100)).to.equal('100');
+      expect(CommonUtil.toString(-100)).to.equal('-100');
+      expect(CommonUtil.toString(10.19)).to.equal('10.19');
+      expect(CommonUtil.toString(-10.19)).to.equal('-10.19');
+      expect(CommonUtil.toString('')).to.equal('');
+      expect(CommonUtil.toString('!@#$%^&*()_+')).to.equal('!@#$%^&*()_+');
+      expect(CommonUtil.toString([])).to.equal('[]');
+      expect(CommonUtil.toString([true, 10, 'abc'])).to.equal('[true,10,"abc"]');
+      expect(CommonUtil.toString({})).to.equal('{}');
+      expect(CommonUtil.toString({
         bool: true,
         num: 10,
         str: 'abc',
@@ -53,93 +53,93 @@ describe("ChainUtil", () => {
           nan: NaN,
         }
       })).to.equal('{"bool":true,"num":10,"str":"abc","obj":{"nil":null,"inf":null,"nan":null}}');
-      expect(ChainUtil.toString(null)).to.equal('null');
-      expect(ChainUtil.toString(undefined)).to.equal('');
-      expect(ChainUtil.toString(Infinity)).to.equal('null');
-      expect(ChainUtil.toString(NaN)).to.equal('null');
+      expect(CommonUtil.toString(null)).to.equal('null');
+      expect(CommonUtil.toString(undefined)).to.equal('');
+      expect(CommonUtil.toString(Infinity)).to.equal('null');
+      expect(CommonUtil.toString(NaN)).to.equal('null');
     })
   })
 
   describe("parseJsonOrNull", () => {
     it("when abnormal input", () => {
-      assert.deepEqual(ChainUtil.parseJsonOrNull(''), null);
-      assert.deepEqual(ChainUtil.parseJsonOrNull('<!DOCTYPE html>'), null);
+      assert.deepEqual(CommonUtil.parseJsonOrNull(''), null);
+      assert.deepEqual(CommonUtil.parseJsonOrNull('<!DOCTYPE html>'), null);
     })
 
     it("when normal input", () => {
-      assert.deepEqual(ChainUtil.parseJsonOrNull('{}'), {});
-      assert.deepEqual(ChainUtil.parseJsonOrNull(
+      assert.deepEqual(CommonUtil.parseJsonOrNull('{}'), {});
+      assert.deepEqual(CommonUtil.parseJsonOrNull(
           '{ "a": true, "b": { "c": 10 }, "d": "d" }'), { a: true, b: { c: 10 }, d: "d" });
     })
   })
 
   describe("isJson", () => {
     it("when abnormal input", () => {
-      assert.deepEqual(ChainUtil.isJson(''), false);
-      assert.deepEqual(ChainUtil.isJson('<!DOCTYPE html>'), false);
+      assert.deepEqual(CommonUtil.isJson(''), false);
+      assert.deepEqual(CommonUtil.isJson('<!DOCTYPE html>'), false);
     })
 
     it("when normal input", () => {
-      assert.deepEqual(ChainUtil.isJson('{}'), true);
-      assert.deepEqual(ChainUtil.isJson('{ "a": true, "b": { "c": 10 }, "d": "d" }'), true);
+      assert.deepEqual(CommonUtil.isJson('{}'), true);
+      assert.deepEqual(CommonUtil.isJson('{ "a": true, "b": { "c": 10 }, "d": "d" }'), true);
     })
   })
 
   describe("parsePath", () => {
     it("when abnormal input", () => {
-      assert.deepEqual(ChainUtil.parsePath('//a/b/c'), ['a', 'b', 'c']);
-      assert.deepEqual(ChainUtil.parsePath('/a//b/c'), ['a', 'b', 'c']);
-      assert.deepEqual(ChainUtil.parsePath('/a/b/c//'), ['a', 'b', 'c']);
+      assert.deepEqual(CommonUtil.parsePath('//a/b/c'), ['a', 'b', 'c']);
+      assert.deepEqual(CommonUtil.parsePath('/a//b/c'), ['a', 'b', 'c']);
+      assert.deepEqual(CommonUtil.parsePath('/a/b/c//'), ['a', 'b', 'c']);
     })
 
     it("when normal input", () => {
-      assert.deepEqual(ChainUtil.parsePath('/a/b/c'), ['a', 'b', 'c']);
-      assert.deepEqual(ChainUtil.parsePath('a/b/c'), ['a', 'b', 'c']);
-      assert.deepEqual(ChainUtil.parsePath('a/b/c/'), ['a', 'b', 'c']);
+      assert.deepEqual(CommonUtil.parsePath('/a/b/c'), ['a', 'b', 'c']);
+      assert.deepEqual(CommonUtil.parsePath('a/b/c'), ['a', 'b', 'c']);
+      assert.deepEqual(CommonUtil.parsePath('a/b/c/'), ['a', 'b', 'c']);
     })
   })
 
   describe("formatPath", () => {
     it("when abnormal input", () => {
-      assert.deepEqual(ChainUtil.formatPath([null]), '/null');
-      assert.deepEqual(ChainUtil.formatPath([undefined]), '/undefined');
-      assert.deepEqual(ChainUtil.formatPath([Infinity]), '/null');
-      assert.deepEqual(ChainUtil.formatPath([NaN]), '/null');
-      assert.deepEqual(ChainUtil.formatPath([true]), '/true');
-      assert.deepEqual(ChainUtil.formatPath([false]), '/false');
-      assert.deepEqual(ChainUtil.formatPath([0]), '/0');
-      assert.deepEqual(ChainUtil.formatPath(['']), '/');
-      assert.deepEqual(ChainUtil.formatPath(['', '', '']), '///');
-      assert.deepEqual(ChainUtil.formatPath([{}]), '/{}');
-      assert.deepEqual(ChainUtil.formatPath([{a: 'A'}]), '/{"a":"A"}');
-      assert.deepEqual(ChainUtil.formatPath([[]]), '/[]');
-      assert.deepEqual(ChainUtil.formatPath([['a']]), '/["a"]');
+      assert.deepEqual(CommonUtil.formatPath([null]), '/null');
+      assert.deepEqual(CommonUtil.formatPath([undefined]), '/undefined');
+      assert.deepEqual(CommonUtil.formatPath([Infinity]), '/null');
+      assert.deepEqual(CommonUtil.formatPath([NaN]), '/null');
+      assert.deepEqual(CommonUtil.formatPath([true]), '/true');
+      assert.deepEqual(CommonUtil.formatPath([false]), '/false');
+      assert.deepEqual(CommonUtil.formatPath([0]), '/0');
+      assert.deepEqual(CommonUtil.formatPath(['']), '/');
+      assert.deepEqual(CommonUtil.formatPath(['', '', '']), '///');
+      assert.deepEqual(CommonUtil.formatPath([{}]), '/{}');
+      assert.deepEqual(CommonUtil.formatPath([{a: 'A'}]), '/{"a":"A"}');
+      assert.deepEqual(CommonUtil.formatPath([[]]), '/[]');
+      assert.deepEqual(CommonUtil.formatPath([['a']]), '/["a"]');
     })
 
     it("when normal input", () => {
-      assert.deepEqual(ChainUtil.formatPath(['a', 'b', 'c']), '/a/b/c');
+      assert.deepEqual(CommonUtil.formatPath(['a', 'b', 'c']), '/a/b/c');
     })
   })
 
   describe("appendPath", () => {
     it("when one input", () => {
-      assert.deepEqual(ChainUtil.appendPath('/a/b/c'), '/a/b/c');
+      assert.deepEqual(CommonUtil.appendPath('/a/b/c'), '/a/b/c');
     })
 
     it("when two inputs", () => {
-      assert.deepEqual(ChainUtil.appendPath('/a/b/c', '/d/e/f'), '/a/b/c/d/e/f');
-      assert.deepEqual(ChainUtil.appendPath('a/b/c', '/d/e/f'), '/a/b/c/d/e/f');
-      assert.deepEqual(ChainUtil.appendPath('/a/b/c', 'd/e/f'), '/a/b/c/d/e/f');
-      assert.deepEqual(ChainUtil.appendPath('a/b/c', 'd/e/f'), '/a/b/c/d/e/f');
-      assert.deepEqual(ChainUtil.appendPath('/a/b/c', '/'), '/a/b/c');
-      assert.deepEqual(ChainUtil.appendPath('/a/b/c', '//'), '/a/b/c');
-      assert.deepEqual(ChainUtil.appendPath('/a/b/c/', '/d/e/f'), '/a/b/c/d/e/f');
-      assert.deepEqual(ChainUtil.appendPath('/a/b/c//', '/d/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(CommonUtil.appendPath('/a/b/c', '/d/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(CommonUtil.appendPath('a/b/c', '/d/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(CommonUtil.appendPath('/a/b/c', 'd/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(CommonUtil.appendPath('a/b/c', 'd/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(CommonUtil.appendPath('/a/b/c', '/'), '/a/b/c');
+      assert.deepEqual(CommonUtil.appendPath('/a/b/c', '//'), '/a/b/c');
+      assert.deepEqual(CommonUtil.appendPath('/a/b/c/', '/d/e/f'), '/a/b/c/d/e/f');
+      assert.deepEqual(CommonUtil.appendPath('/a/b/c//', '/d/e/f'), '/a/b/c/d/e/f');
     })
 
     it("when more than two inputs", () => {
-      assert.deepEqual(ChainUtil.appendPath('/a/b/c', '/d/e/f', '/g/h/i'), '/a/b/c/d/e/f/g/h/i');
-      assert.deepEqual(ChainUtil.appendPath('a/b', 'c/d', 'e/f', 'g/h'), '/a/b/c/d/e/f/g/h');
+      assert.deepEqual(CommonUtil.appendPath('/a/b/c', '/d/e/f', '/g/h/i'), '/a/b/c/d/e/f/g/h/i');
+      assert.deepEqual(CommonUtil.appendPath('a/b', 'c/d', 'e/f', 'g/h'), '/a/b/c/d/e/f/g/h');
     })
   })
 
@@ -161,34 +161,34 @@ describe("ChainUtil", () => {
     })
 
     it("when abnormal path", () => {
-      assert.deepEqual(ChainUtil.getJsObject(obj, null), null);
-      assert.deepEqual(ChainUtil.getJsObject(obj, undefined), null);
-      assert.deepEqual(ChainUtil.getJsObject(obj, true), null);
-      assert.deepEqual(ChainUtil.getJsObject(obj, 0), null);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ''), null);
-      assert.deepEqual(ChainUtil.getJsObject(obj, {}), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, null), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, undefined), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, true), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, 0), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ''), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, {}), null);
     })
 
     it("when non-existing path", () => {
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['z']), null);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'az']), null);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'aa', 'aaz']), null);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'ab', 'abz']), null);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'ac', 'acz']), null);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'ad', 'adz']), null);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['b', 'bz']), null);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['b', 'ba', 'baz']), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['z']), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['a', 'az']), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['a', 'aa', 'aaz']), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['a', 'ab', 'abz']), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['a', 'ac', 'acz']), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['a', 'ad', 'adz']), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['b', 'bz']), null);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['b', 'ba', 'baz']), null);
     })
 
     it("when existing path", () => {
-      assert.deepEqual(ChainUtil.getJsObject(obj, []), obj);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['a']), obj.a);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'aa']), obj.a.aa);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'ab']), obj.a.ab);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'ac']), obj.a.ac);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['a', 'ad']), obj.a.ad);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['b']), obj.b);
-      assert.deepEqual(ChainUtil.getJsObject(obj, ['b', 'ba']), obj.b.ba);
+      assert.deepEqual(CommonUtil.getJsObject(obj, []), obj);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['a']), obj.a);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['a', 'aa']), obj.a.aa);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['a', 'ab']), obj.a.ab);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['a', 'ac']), obj.a.ac);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['a', 'ad']), obj.a.ad);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['b']), obj.b);
+      assert.deepEqual(CommonUtil.getJsObject(obj, ['b', 'ba']), obj.b.ba);
     })
   })
 
@@ -214,65 +214,65 @@ describe("ChainUtil", () => {
     })
 
     it("when abnormal path", () => {
-      expect(ChainUtil.setJsObject(obj, null, null)).to.equal(false);
+      expect(CommonUtil.setJsObject(obj, null, null)).to.equal(false);
       assert.deepEqual(obj, org);
-      expect(ChainUtil.setJsObject(obj, undefined, null)).to.equal(false);
+      expect(CommonUtil.setJsObject(obj, undefined, null)).to.equal(false);
       assert.deepEqual(obj, org);
-      expect(ChainUtil.setJsObject(obj, true, null)).to.equal(false);
+      expect(CommonUtil.setJsObject(obj, true, null)).to.equal(false);
       assert.deepEqual(obj, org);
-      expect(ChainUtil.setJsObject(obj, 0, null)).to.equal(false);
+      expect(CommonUtil.setJsObject(obj, 0, null)).to.equal(false);
       assert.deepEqual(obj, org);
-      expect(ChainUtil.setJsObject(obj, '', null)).to.equal(false);
+      expect(CommonUtil.setJsObject(obj, '', null)).to.equal(false);
       assert.deepEqual(obj, org);
-      expect(ChainUtil.setJsObject(obj, {}, null)).to.equal(false);
+      expect(CommonUtil.setJsObject(obj, {}, null)).to.equal(false);
       assert.deepEqual(obj, org);
     })
 
     it("when non-existing path", () => {
-      expect(ChainUtil.setJsObject(obj, ['z'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['z'], value)).to.equal(true);
       assert.deepEqual(obj.z, value);
-      expect(ChainUtil.setJsObject(obj, ['a', 'az'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['a', 'az'], value)).to.equal(true);
       assert.deepEqual(obj.a.az, value);
-      expect(ChainUtil.setJsObject(obj, ['a', 'aa', 'aaz'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['a', 'aa', 'aaz'], value)).to.equal(true);
       assert.deepEqual(obj.a.aa.aaz, value);
-      expect(ChainUtil.setJsObject(obj, ['a', 'ab', 'abz'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['a', 'ab', 'abz'], value)).to.equal(true);
       assert.deepEqual(obj.a.ab.abz, value);
-      expect(ChainUtil.setJsObject(obj, ['a', 'ac', 'acz'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['a', 'ac', 'acz'], value)).to.equal(true);
       assert.deepEqual(obj.a.ac.acz, value);
-      expect(ChainUtil.setJsObject(obj, ['a', 'ad', 'adz'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['a', 'ad', 'adz'], value)).to.equal(true);
       assert.deepEqual(obj.a.ad.adz, value);
-      expect(ChainUtil.setJsObject(obj, ['b', 'bz'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['b', 'bz'], value)).to.equal(true);
       assert.deepEqual(obj.b.bz, value);
-      expect(ChainUtil.setJsObject(obj, ['b', 'ba', 'baz'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['b', 'ba', 'baz'], value)).to.equal(true);
       assert.deepEqual(obj.b.ba.baz, value);
     })
 
     it("when empty path", () => {
-      expect(ChainUtil.setJsObject(obj, [], value)).to.equal(false);
+      expect(CommonUtil.setJsObject(obj, [], value)).to.equal(false);
       assert.deepEqual(obj, org);  // No change.
     })
 
     it("when existing path", () => {
-      expect(ChainUtil.setJsObject(obj, ['a'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['a'], value)).to.equal(true);
       assert.deepEqual(obj.a, value);
-      expect(ChainUtil.setJsObject(obj, ['a', 'aa'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['a', 'aa'], value)).to.equal(true);
       assert.deepEqual(obj.a.aa, value);
-      expect(ChainUtil.setJsObject(obj, ['a', 'ab'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['a', 'ab'], value)).to.equal(true);
       assert.deepEqual(obj.a.ab, value);
-      expect(ChainUtil.setJsObject(obj, ['a', 'ac'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['a', 'ac'], value)).to.equal(true);
       assert.deepEqual(obj.a.ac, value);
-      expect(ChainUtil.setJsObject(obj, ['a', 'ad'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['a', 'ad'], value)).to.equal(true);
       assert.deepEqual(obj.a.ad, value);
-      expect(ChainUtil.setJsObject(obj, ['b'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['b'], value)).to.equal(true);
       assert.deepEqual(obj.b, value);
-      expect(ChainUtil.setJsObject(obj, ['b', 'ba'], value)).to.equal(true);
+      expect(CommonUtil.setJsObject(obj, ['b', 'ba'], value)).to.equal(true);
       assert.deepEqual(obj.b.ba, value);
     })
   })
 
   describe("mergeNumericJsObjects", () => {
     it("when normal input", () => {
-      assert.deepEqual(ChainUtil.mergeNumericJsObjects({
+      assert.deepEqual(CommonUtil.mergeNumericJsObjects({
         "node1": {
           "node11": {
             "node111": 1,
@@ -313,7 +313,7 @@ describe("ChainUtil", () => {
     });
 
     it("when normal input with null values", () => {
-      assert.deepEqual(ChainUtil.mergeNumericJsObjects({
+      assert.deepEqual(CommonUtil.mergeNumericJsObjects({
         "node1": {
           "node11": {
             "node111": 1,
@@ -357,36 +357,36 @@ describe("ChainUtil", () => {
 
   describe("isFailedTx", () => {
     it("when abnormal input", () => {
-      expect(ChainUtil.isFailedTx(null)).to.equal(true);
-      expect(ChainUtil.isFailedTx(undefined)).to.equal(true);
-      expect(ChainUtil.isFailedTx(true)).to.equal(true);
-      expect(ChainUtil.isFailedTx(false)).to.equal(true);
-      expect(ChainUtil.isFailedTx('true')).to.equal(true);
-      expect(ChainUtil.isFailedTx({})).to.equal(true);
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx(null)).to.equal(true);
+      expect(CommonUtil.isFailedTx(undefined)).to.equal(true);
+      expect(CommonUtil.isFailedTx(true)).to.equal(true);
+      expect(CommonUtil.isFailedTx(false)).to.equal(true);
+      expect(CommonUtil.isFailedTx('true')).to.equal(true);
+      expect(CommonUtil.isFailedTx({})).to.equal(true);
+      expect(CommonUtil.isFailedTx({
         error_message: 'some message'
       })).to.equal(true);
     })
 
     it("when single set operation without function triggering", () => {
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         code: 0,
         error_message: null
       })).to.equal(false);
 
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         code: 1,
         error_message: null
       })).to.equal(true);
 
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         code: 100,
         error_message: 'some message'
       })).to.equal(true);
     });
 
     it("when single set operation with native function triggering", () => {
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         "func_results": {
           "_saveLastTx": {
             "op_results": [
@@ -421,7 +421,7 @@ describe("ChainUtil", () => {
         "gas_amount": 1
       })).to.equal(false);
 
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         "func_results": {
           "_saveLastTx": {
             "op_results": [
@@ -457,7 +457,7 @@ describe("ChainUtil", () => {
         "gas_amount": 1
       })).to.equal(true);
 
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         "func_results": {
           "_saveLastTx": {
             "op_results": [
@@ -493,7 +493,7 @@ describe("ChainUtil", () => {
         "gas_amount": 1
       })).to.equal(true);
 
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         "func_results": {
           "_saveLastTx": {
             "op_results": [
@@ -530,7 +530,7 @@ describe("ChainUtil", () => {
     });
 
     it("when single set operation with REST function triggering", () => {
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         "code": 0,
         "func_results": {
           "0x11111": {
@@ -545,7 +545,7 @@ describe("ChainUtil", () => {
     });
 
     it("when multi-set operation without function triggering", () => {
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         "result_list": [
           {
             "code": 0,
@@ -562,7 +562,7 @@ describe("ChainUtil", () => {
         ],
       })).to.equal(false);
 
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         "result_list": [
           {
             "code": 0,
@@ -582,7 +582,7 @@ describe("ChainUtil", () => {
     })
 
     it("when multi-set operation with native function triggering", () => {
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         "result_list": [
           {
             "code": 0,
@@ -629,7 +629,7 @@ describe("ChainUtil", () => {
         ]
       })).to.equal(false);
 
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         "result_list": [
           {
             "code": 0,
@@ -677,7 +677,7 @@ describe("ChainUtil", () => {
         ]
       })).to.equal(true);
 
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         "result_list": [
           {
             "code": 0,
@@ -725,7 +725,7 @@ describe("ChainUtil", () => {
         ]
       })).to.equal(true);
 
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         "result_list": [
           {
             "code": 0,
@@ -774,7 +774,7 @@ describe("ChainUtil", () => {
     })
 
     it("when multi-set operation with REST function triggering", () => {
-      expect(ChainUtil.isFailedTx({
+      expect(CommonUtil.isFailedTx({
         "result_list": [
           {
             "code": 0,
@@ -819,15 +819,15 @@ describe("ChainUtil", () => {
 
     it("when abnormal input", () => {
       const emptyVal = { app: {}, service: 0 };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(op, null), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(op, undefined), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(op, {}), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(op, { gas: 'gas' }), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(op, { gas: {} }), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(op, true), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(op, 'result'), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(op, 0), emptyVal);
-      assert.deepEqual(ChainUtil.getTotalGasAmount(op, 1), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(op, null), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(op, undefined), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(op, {}), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(op, { gas: 'gas' }), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(op, { gas: {} }), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(op, true), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(op, 'result'), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(op, 0), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(op, 1), emptyVal);
     })
 
     it("when single operation result input (service)", () => {
@@ -865,7 +865,7 @@ describe("ChainUtil", () => {
         "code": 0,
         "gas_amount": 30
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(op, result), {
+      assert.deepEqual(CommonUtil.getTotalGasAmount(op, result), {
         app: {},
         service: 62
       });
@@ -906,7 +906,7 @@ describe("ChainUtil", () => {
         "code": 0,
         "gas_amount": 30
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(appOp, result), {
+      assert.deepEqual(CommonUtil.getTotalGasAmount(appOp, result), {
         app: {
           test: 62
         },
@@ -949,7 +949,7 @@ describe("ChainUtil", () => {
         "code": 0,
         "gas_amount": 30
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(appOp, result), {
+      assert.deepEqual(CommonUtil.getTotalGasAmount(appOp, result), {
         app: {
           test: 61
         },
@@ -1001,7 +1001,7 @@ describe("ChainUtil", () => {
           },
         ]
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(setTxOp, result), {
+      assert.deepEqual(CommonUtil.getTotalGasAmount(setTxOp, result), {
         app: {},
         service: 63
       });
@@ -1051,7 +1051,7 @@ describe("ChainUtil", () => {
           },
         ]
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(setTxOp, result), {
+      assert.deepEqual(CommonUtil.getTotalGasAmount(setTxOp, result), {
         app: {
           test: 63
         },
@@ -1103,7 +1103,7 @@ describe("ChainUtil", () => {
           },
         ]
       };
-      assert.deepEqual(ChainUtil.getTotalGasAmount(setTxOp, result), {
+      assert.deepEqual(CommonUtil.getTotalGasAmount(setTxOp, result), {
         app: {
           test: 50
         },
@@ -1114,77 +1114,77 @@ describe("ChainUtil", () => {
 
   describe("getTotalGasCost", () => {
     it("when abnormal input", () => {
-      assert.deepEqual(ChainUtil.getTotalGasCost(1, null), 0);
-      assert.deepEqual(ChainUtil.getTotalGasCost(1, undefined), 0);
-      assert.deepEqual(ChainUtil.getTotalGasCost(1, {}), 0);
-      assert.deepEqual(ChainUtil.getTotalGasCost(1, { gas: 'gas' }), 0);
-      assert.deepEqual(ChainUtil.getTotalGasCost(1, { gas: {} }), 0);
-      assert.deepEqual(ChainUtil.getTotalGasCost(1, true), 0);
-      assert.deepEqual(ChainUtil.getTotalGasCost(1, 'result'), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, null), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, undefined), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, {}), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, { gas: 'gas' }), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, { gas: {} }), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, true), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, 'result'), 0);
     })
 
     it("when normal input", () => {
-      assert.deepEqual(ChainUtil.getTotalGasCost(1, 0), 0);
-      assert.deepEqual(ChainUtil.getTotalGasCost(1, 1), 0.000001);
-      assert.deepEqual(ChainUtil.getTotalGasCost(0, 1), 0);
-      assert.deepEqual(ChainUtil.getTotalGasCost(1000000, 1), 1);
-      assert.deepEqual(ChainUtil.getTotalGasCost(undefined, 1), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, 0), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, 1), 0.000001);
+      assert.deepEqual(CommonUtil.getTotalGasCost(0, 1), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1000000, 1), 1);
+      assert.deepEqual(CommonUtil.getTotalGasCost(undefined, 1), 0);
     })
   })
 
   describe('getDependentAppNameFromRef', () => {
     it("when abnormal input", () => {
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef(), null);
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef(null), null);
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef(undefined), null);
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef(''), null);
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/'), null);
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef(), null);
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef(null), null);
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef(undefined), null);
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef(''), null);
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef('/'), null);
     });
 
     it("when normal input (app-dependent service path)", () => {
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/manage_app/app_a'), 'app_a');
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/payments/app_a'), 'app_a');
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/staking/app_a'), 'app_a');
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/staking/app_a/some/nested/path'), 'app_a');
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef('/manage_app/app_a'), 'app_a');
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef('/payments/app_a'), 'app_a');
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef('/staking/app_a'), 'app_a');
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef('/staking/app_a/some/nested/path'), 'app_a');
     });
     
     it("when normal input (app-independent service path)", () => {
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/accounts/0xabcd/value'), null);
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/service_accounts/staking'), null);
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/gas_fee/gas_fee'), null);
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/escrow/source/target/id/key/value'), null);
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/sharding/config'), null);
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/transfer'), null);
-      assert.deepEqual(ChainUtil.getDependentAppNameFromRef('/transfer/from/to/key/value'), null);
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef('/accounts/0xabcd/value'), null);
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef('/service_accounts/staking'), null);
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef('/gas_fee/gas_fee'), null);
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef('/escrow/source/target/id/key/value'), null);
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef('/sharding/config'), null);
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef('/transfer'), null);
+      assert.deepEqual(CommonUtil.getDependentAppNameFromRef('/transfer/from/to/key/value'), null);
     });
   })
 
   describe('getServiceDependentAppNameList', () => { 
     it("when abnormal input", () => {
-      assert.deepEqual(ChainUtil.getServiceDependentAppNameList(), []);
-      assert.deepEqual(ChainUtil.getServiceDependentAppNameList(null), []);
-      assert.deepEqual(ChainUtil.getServiceDependentAppNameList(undefined), []);
-      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({}), []);
+      assert.deepEqual(CommonUtil.getServiceDependentAppNameList(), []);
+      assert.deepEqual(CommonUtil.getServiceDependentAppNameList(null), []);
+      assert.deepEqual(CommonUtil.getServiceDependentAppNameList(undefined), []);
+      assert.deepEqual(CommonUtil.getServiceDependentAppNameList({}), []);
     });
 
     it("when normal input", () => {
-      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+      assert.deepEqual(CommonUtil.getServiceDependentAppNameList({
         ref: '/'
       }), []);
-      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+      assert.deepEqual(CommonUtil.getServiceDependentAppNameList({
         ref: '/transfer/from/to/key/value'
       }), []);
-      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+      assert.deepEqual(CommonUtil.getServiceDependentAppNameList({
         ref: '/manage_app/app_a/create/key'
       }), ['app_a']);
-      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+      assert.deepEqual(CommonUtil.getServiceDependentAppNameList({
         op_list: [
           {
             ref: '/'
           }
         ]
       }), []);
-      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+      assert.deepEqual(CommonUtil.getServiceDependentAppNameList({
         op_list: [
           {
             ref: '/transfer/from/to/key/value'
@@ -1194,7 +1194,7 @@ describe("ChainUtil", () => {
           }
         ]
       }), ['app_a']);
-      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+      assert.deepEqual(CommonUtil.getServiceDependentAppNameList({
         op_list: [
           {
             ref: '/transfer/from/to/key/value'
@@ -1207,7 +1207,7 @@ describe("ChainUtil", () => {
           }
         ]
       }), ['app_a']);
-      assert.deepEqual(ChainUtil.getServiceDependentAppNameList({
+      assert.deepEqual(CommonUtil.getServiceDependentAppNameList({
         op_list: [
           {
             ref: '/transfer/from/to/key/value'
