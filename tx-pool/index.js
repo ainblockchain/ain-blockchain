@@ -13,12 +13,12 @@ const {
   GenesisSharding,
   GenesisAccounts,
   ShardingProperties,
-  TransactionStatus,
+  TransactionStates,
   WriteDbOperations,
   AccountProperties,
   StateVersions,
 } = require('../common/constants');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const {
   sendGetRequest,
   signAndSendTx
@@ -60,7 +60,7 @@ class TransactionPool {
     }
     this.transactions[tx.address].push(tx);
     this.transactionTracker[tx.hash] = {
-      status: TransactionStatus.POOL_STATUS,
+      state: TransactionStates.IN_POOL,
       address: tx.address,
       index: this.transactions[tx.address].length - 1,
       timestamp: tx.tx_body.timestamp,
@@ -266,10 +266,10 @@ class TransactionPool {
             discardedTxList.push(tx);
             break;
           }
-          ChainUtil.setJsObject(tempAppBandwidthSum, [appName], bandwidth);
+          CommonUtil.setJsObject(tempAppBandwidthSum, [appName], bandwidth);
         }
         if (!isSkipped) {
-          ChainUtil.mergeNumericJsObjects(appBandwidthSum, appBandwidth);
+          CommonUtil.mergeNumericJsObjects(appBandwidthSum, appBandwidth);
         }
       }
       if (!isSkipped) {
@@ -388,8 +388,8 @@ class TransactionPool {
       }
       addrToTxSet[address].add(hash);
       const tracked = this.transactionTracker[hash];
-      if (tracked && tracked.status !== TransactionStatus.BLOCK_STATUS) {
-        this.transactionTracker[hash].status = TransactionStatus.FAIL_STATUS;
+      if (tracked && tracked.state !== TransactionStates.IN_BLOCK) {
+        this.transactionTracker[hash].state = TransactionStates.FAILED;
       }
     });
     for (const address in addrToTxSet) {
@@ -414,7 +414,7 @@ class TransactionPool {
       const txTimestamp = voteTx.tx_body.timestamp;
       // voting txs with ordered nonces.
       this.transactionTracker[voteTx.hash] = {
-        status: TransactionStatus.BLOCK_STATUS,
+        state: TransactionStates.IN_BLOCK,
         number: block.number,
         index: -1,
         address: voteTx.address,
@@ -431,7 +431,7 @@ class TransactionPool {
       const txTimestamp = tx.tx_body.timestamp;
       // Update transaction tracker.
       this.transactionTracker[tx.hash] = {
-        status: TransactionStatus.BLOCK_STATUS,
+        state: TransactionStates.IN_BLOCK,
         number: block.number,
         index: i,
         address: tx.address,
@@ -517,8 +517,8 @@ class TransactionPool {
             `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
             `with result: ${JSON.stringify(result, null, 2)}`);
         if (result && (result.is_finalized ||
-            result.status === TransactionStatus.FAIL_STATUS ||
-            result.status === TransactionStatus.TIMEOUT_STATUS)) {
+            result.state === TransactionStates.FAILED ||
+            result.state === TransactionStates.TIMED_OUT)) {
           this.doAction(trackingInfo.action, result.is_finalized);
           delete this.remoteTransactionTracker[txHash];
         }
@@ -555,7 +555,7 @@ class TransactionPool {
       nonce: -1
     };
     logger.info(`  =>> Doing action with actionTxBody: ${JSON.stringify(actionTxBody, null, 2)}`);
-    const ownerPrivateKey = ChainUtil.getJsObject(
+    const ownerPrivateKey = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
     const endpoint = `${this.node.urlInternal}/json-rpc`;
     signAndSendTx(endpoint, actionTxBody, ownerPrivateKey);

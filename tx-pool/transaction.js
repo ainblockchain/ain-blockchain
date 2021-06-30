@@ -6,7 +6,7 @@ const {
   ENABLE_GAS_FEE_WORKAROUND,
   WriteDbOperations,
 } = require('../common/constants');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 
 class Transaction {
   constructor(txBody, signature, hash, address, skipVerif, createdAt) {
@@ -30,7 +30,7 @@ class Transaction {
       return null;
     }
 
-    const hash = signature ? ChainUtil.hashSignature(signature) : ChainUtil.hashTxBody(txBody);
+    const hash = signature ? CommonUtil.hashSignature(signature) : CommonUtil.hashTxBody(txBody);
     let address = null;
     let skipVerif = false;
     // A devel method for bypassing the signature verification.
@@ -38,7 +38,7 @@ class Transaction {
       address = txBody.address;
       skipVerif = true;
     } else {
-      address = ChainUtil.getAddressFromSignature(hash.slice(2), signature);
+      address = CommonUtil.getAddressFromSignature(hash.slice(2), signature);
     }
     const createdAt = Date.now();
     return new Transaction(txBody, signature, hash, address, skipVerif, createdAt);
@@ -51,7 +51,7 @@ class Transaction {
     // A devel method for bypassing the transaction verification.
     let signature = '';
     if (!txBody.address) {
-      const signed = ChainUtil.signTransaction(txBody, privateKey);
+      const signed = CommonUtil.signTransaction(txBody, privateKey);
       const sig = _.get(signed, 'signedTx.signature', null);
       if (!sig) {
         return null;
@@ -85,7 +85,7 @@ class Transaction {
     if (value === null) {
       delete this.extra[name];
     } else {
-      ChainUtil.setJsObject(this, ['extra', name], value);
+      CommonUtil.setJsObject(this, ['extra', name], value);
     }
   }
 
@@ -98,7 +98,7 @@ class Transaction {
    */
   static sanitizeSetOperation(setOp) {
     const opList = [];
-    if (ChainUtil.isArray(setOp.op_list)) {
+    if (CommonUtil.isArray(setOp.op_list)) {
       for (const op of setOp.op_list) {
         opList.push(this.sanitizeSimpleOperation(op));
       }
@@ -121,7 +121,7 @@ class Transaction {
       case WriteDbOperations.SET_FUNCTION:
       case WriteDbOperations.SET_OWNER:
         if (op.ref) {
-          sanitized.ref = ChainUtil.stringOrEmpty(op.ref);
+          sanitized.ref = CommonUtil.stringOrEmpty(op.ref);
         }
         if (op.value !== undefined) {
           sanitized.value = op.value;
@@ -130,19 +130,19 @@ class Transaction {
       case WriteDbOperations.INC_VALUE:
       case WriteDbOperations.DEC_VALUE:
         if (op.ref) {
-          sanitized.ref = ChainUtil.stringOrEmpty(op.ref);
+          sanitized.ref = CommonUtil.stringOrEmpty(op.ref);
         }
         if (op.value !== undefined) {
-          sanitized.value = ChainUtil.numberOrZero(op.value);
+          sanitized.value = CommonUtil.numberOrZero(op.value);
         }
         break;
       default:
     }
     if (op.type) {
-      sanitized.type = ChainUtil.stringOrEmpty(op.type);
+      sanitized.type = CommonUtil.stringOrEmpty(op.type);
     }
     if (op.is_global !== undefined) {
-      sanitized.is_global = ChainUtil.boolOrFalse(op.is_global);
+      sanitized.is_global = CommonUtil.boolOrFalse(op.is_global);
     }
     return sanitized;
   }
@@ -161,21 +161,21 @@ class Transaction {
   static sanitizeTxBody(txBody) {
     const sanitized = {
       operation: Transaction.sanitizeOperation(txBody.operation),
-      nonce: ChainUtil.numberOrZero(txBody.nonce),
-      timestamp: ChainUtil.numberOrZero(txBody.timestamp),
+      nonce: CommonUtil.numberOrZero(txBody.nonce),
+      timestamp: CommonUtil.numberOrZero(txBody.timestamp),
     };
     if (txBody.parent_tx_hash !== undefined) {
-      sanitized.parent_tx_hash = ChainUtil.stringOrEmpty(txBody.parent_tx_hash);
+      sanitized.parent_tx_hash = CommonUtil.stringOrEmpty(txBody.parent_tx_hash);
     }
     if (txBody.gas_price !== undefined) {
-      sanitized.gas_price = ChainUtil.numberOrZero(txBody.gas_price);
+      sanitized.gas_price = CommonUtil.numberOrZero(txBody.gas_price);
     }
     if (txBody.billing !== undefined) {
-      sanitized.billing = ChainUtil.stringOrEmpty(txBody.billing);
+      sanitized.billing = CommonUtil.stringOrEmpty(txBody.billing);
     }
     // A devel method for bypassing the transaction verification.
     if (txBody.address !== undefined) {
-      sanitized.address = ChainUtil.stringOrEmpty(txBody.address);
+      sanitized.address = CommonUtil.stringOrEmpty(txBody.address);
     }
     return sanitized;
   }
@@ -222,7 +222,7 @@ class Transaction {
   }
 
   static isValidNonce(nonce) {
-    return ChainUtil.isInteger(nonce) && nonce >= -2;
+    return CommonUtil.isInteger(nonce) && nonce >= -2;
   }
 
   static isValidGasPrice(gasPrice) {
@@ -231,7 +231,7 @@ class Transaction {
   }
 
   static isValidBilling(billing) {
-    return billing === undefined || (ChainUtil.isString(billing) && billing.split('|').length === 2);
+    return billing === undefined || (CommonUtil.isString(billing) && billing.split('|').length === 2);
   }
 
   static isInStandardFormat(txBody) {
@@ -248,11 +248,11 @@ class Transaction {
   }
 
   static isBatchTxBody(txBody) {
-    return txBody && ChainUtil.isArray(txBody.tx_body_list);
+    return txBody && CommonUtil.isArray(txBody.tx_body_list);
   }
 
   static isBatchTransaction(tx) {
-    return tx && ChainUtil.isArray(tx.tx_list);
+    return tx && CommonUtil.isArray(tx.tx_list);
   }
 }
 

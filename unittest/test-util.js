@@ -1,10 +1,9 @@
 const path = require('path');
 const fs = require("fs");
 const syncRequest = require('sync-request');
-const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const { CURRENT_PROTOCOL_VERSION, StateVersions } = require('../common/constants');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 
 function readConfigFile(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -88,7 +87,7 @@ async function waitUntilTxFinalized(servers, txHash) {
         unchecked.delete(server);
       }
     }
-    await ChainUtil.sleep(200);
+    await CommonUtil.sleep(200);
     iterCount++;
   }
 }
@@ -99,7 +98,7 @@ async function waitForNewBlocks(server, waitFor = 1) {
         .body.toString('utf-8'))['result'];
   let updatedLastBlockNumber = initialLastBlockNumber;
   while (updatedLastBlockNumber < initialLastBlockNumber + waitFor) {
-    await ChainUtil.sleep(1000);
+    await CommonUtil.sleep(1000);
     updatedLastBlockNumber = parseOrLog(syncRequest('GET', server + '/last_block_number')
       .body.toString('utf-8'))['result'];
   }
@@ -112,12 +111,12 @@ async function waitUntilNodeSyncs(server) {
         {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
                 params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
         .body.toString('utf-8')).result.result;
-    await ChainUtil.sleep(1000);
+    await CommonUtil.sleep(1000);
   }
 }
 
 function parseOrLog(resp) {
-  const parsed = ChainUtil.parseJsonOrNull(resp);
+  const parsed = CommonUtil.parseJsonOrNull(resp);
   if (parsed === null) {
     console.log(`Not in JSON format: ${resp}`);
   }

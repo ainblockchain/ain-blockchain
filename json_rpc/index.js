@@ -7,13 +7,13 @@ const {
   CURRENT_PROTOCOL_VERSION,
   BlockchainNodeStates,
   ReadDbOperations,
-  TransactionStatus,
+  TransactionStates,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
   NETWORK_ID,
 } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 
 /**
@@ -123,6 +123,12 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result: node.tp.transactions}));
     },
 
+    ain_getTransactionPoolSizeUtilization: function(args, done) {
+      const address = args.address;
+      const txPoolSizeUtil = node.getTxPoolSizeUtilization(address);
+      done(null, addProtocolVersion({result: txPoolSizeUtil}));
+    },
+
     // TODO(platfowner): Instantly reject requests with invalid signatures.
     ain_sendSignedTransaction: function(args, done) {
       if (sizeof(args) > TX_BYTES_LIMIT) {
@@ -156,7 +162,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_sendSignedTransactionBatch: function(args, done) {
-      if (!args.tx_list || !ChainUtil.isArray(args.tx_list)) {
+      if (!args.tx_list || !CommonUtil.isArray(args.tx_list)) {
         done(null, addProtocolVersion({
           result: {
             code: 1,
@@ -212,7 +218,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     ain_getTransactionByHash: function(args, done) {
       const transactionInfo = node.tp.transactionTracker[args.hash];
       if (transactionInfo) {
-        if (transactionInfo.status === TransactionStatus.BLOCK_STATUS) {
+        if (transactionInfo.state === TransactionStates.IN_BLOCK) {
           const block = node.bc.getBlockByNumber(transactionInfo.number);
           const index = transactionInfo.index;
           if (!block) {
@@ -222,7 +228,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
           } else {
             transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === args.hash);
           }
-        } else if (transactionInfo.status === TransactionStatus.POOL_STATUS) {
+        } else if (transactionInfo.state === TransactionStates.IN_POOL) {
           const address = transactionInfo.address;
           transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === args.hash);
         }
@@ -265,22 +271,22 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       switch (args.type) {
         case ReadDbOperations.GET_VALUE:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getValue(args.ref, args.is_global)
+            result: p2pServer.node.db.getValue(args.ref, args.is_shallow, args.is_global)
           }));
           return;
         case ReadDbOperations.GET_RULE:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getRule(args.ref, args.is_global)
+            result: p2pServer.node.db.getRule(args.ref, args.is_shallow, args.is_global)
           }));
           return;
         case ReadDbOperations.GET_FUNCTION:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getFunction(args.ref, args.is_global)
+            result: p2pServer.node.db.getFunction(args.ref, args.is_shallow, args.is_global)
           }));
           return;
         case ReadDbOperations.GET_OWNER:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getOwner(args.ref, args.is_global)
+            result: p2pServer.node.db.getOwner(args.ref, args.is_shallow, args.is_global)
           }));
           return;
         case ReadDbOperations.GET:
@@ -392,13 +398,13 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result: NETWORK_ID}));
     },
 
-    net_consensusState: function(args, done) {
-      const result = p2pServer.consensus.getState();
+    net_consensusStatus: function(args, done) {
+      const result = p2pServer.consensus.getStatus();
       done(null, addProtocolVersion({result}));
     },
 
-    net_rawConsensusState: function(args, done) {
-      const result = p2pServer.consensus.getRawState();
+    net_rawConsensusStatus: function(args, done) {
+      const result = p2pServer.consensus.getRawStatus();
       done(null, addProtocolVersion({result}));
     }
   };

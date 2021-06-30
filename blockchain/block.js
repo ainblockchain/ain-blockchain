@@ -3,7 +3,7 @@ const sizeof = require('object-sizeof');
 const moment = require('moment');
 const _ = require('lodash');
 const logger = require('../logger')('BLOCK');
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('../db/state-node');
 const DB = require('../db');
@@ -28,8 +28,8 @@ class Block {
     this.transactions = Block.sanitizeTransactions(transactions);
     // Block's header
     this.last_hash = lastHash;
-    this.last_votes_hash = ChainUtil.hashString(stringify(lastVotes));
-    this.transactions_hash = ChainUtil.hashString(stringify(this.transactions));
+    this.last_votes_hash = CommonUtil.hashString(stringify(lastVotes));
+    this.transactions_hash = CommonUtil.hashString(stringify(this.transactions));
     this.number = number;
     this.epoch = epoch;
     this.timestamp = timestamp;
@@ -80,7 +80,7 @@ class Block {
 
   static hash(block) {
     if (!(block instanceof Block)) block = Block.parse(block);
-    return ChainUtil.hashString(stringify(block.header));
+    return CommonUtil.hashString(stringify(block.header));
   }
 
   static getSize(block) {
@@ -119,12 +119,12 @@ class Block {
       logger.error(`[${LOG_HEADER}] Block hash is incorrect for block ${block.hash}`);
       return false;
     }
-    if (block.transactions_hash !== ChainUtil.hashString(stringify(block.transactions))) {
+    if (block.transactions_hash !== CommonUtil.hashString(stringify(block.transactions))) {
       logger.error(
           `[${LOG_HEADER}] Transactions or transactions_hash is incorrect for block ${block.hash}`);
       return false;
     }
-    if (block.last_votes_hash !== ChainUtil.hashString(stringify(block.last_votes))) {
+    if (block.last_votes_hash !== CommonUtil.hashString(stringify(block.last_votes))) {
       logger.error(
           `[${LOG_HEADER}] Last votes or last_votes_hash is incorrect for block ${block.hash}`);
       return false;
@@ -209,7 +209,7 @@ class Block {
   static buildAccountsSetupTx(timestamp, privateKey, ownerAddress) {
     const transferOps = [];
     const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
-    if (otherAccounts && ChainUtil.isArray(otherAccounts) && otherAccounts.length > 0 &&
+    if (otherAccounts && CommonUtil.isArray(otherAccounts) && otherAccounts.length > 0 &&
         GenesisAccounts[AccountProperties.SHARES] > 0) {
       for (let i = 0; i < otherAccounts.length; i++) {
         const accountAddress = otherAccounts[i][AccountProperties.ADDRESS];
@@ -283,9 +283,9 @@ class Block {
   }
 
   static getGenesisBlockTxs(genesisTime) {
-    const ownerAddress = ChainUtil.getJsObject(
+    const ownerAddress = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-    const ownerPrivateKey = ChainUtil.getJsObject(
+    const ownerPrivateKey = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
 
     const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
@@ -304,14 +304,14 @@ class Block {
     const resList = [];
     for (const tx of genesisTxs) {
       const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx));
-      if (ChainUtil.isFailedTx(res)) {
+      if (CommonUtil.isFailedTx(res)) {
         logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
             `\nRESULT: ${JSON.stringify(res)}`)
         return null;
       }
       resList.push(res);
     }
-    const { gasAmountTotal, gasCostTotal } = ChainUtil.getServiceGasCostTotalFromTxList(genesisTxs, resList);
+    const { gasAmountTotal, gasCostTotal } = CommonUtil.getServiceGasCostTotalFromTxList(genesisTxs, resList);
     return {
       stateProofHash: tempGenesisDb.getStateProof('/')[ProofProperties.PROOF_HASH],
       gasAmountTotal,
@@ -322,7 +322,7 @@ class Block {
   static genesis() {
     // This is a temporary fix for the genesis block. Code should be modified after
     // genesis block broadcasting feature is implemented.
-    const ownerAddress = ChainUtil.getJsObject(
+    const ownerAddress = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
     const lastHash = '';

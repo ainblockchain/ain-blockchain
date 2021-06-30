@@ -1,6 +1,6 @@
 const logger = require('../logger')('STATE_NODE');
 
-const ChainUtil = require('../common/chain-util');
+const CommonUtil = require('../common/common-util');
 const { HASH_DELIMITER } = require('../common/constants');
 
 class StateNode {
@@ -57,8 +57,8 @@ class StateNode {
 
   static fromJsObject(obj, version) {
     const node = new StateNode(version);
-    if (ChainUtil.isDict(obj)) {
-      if (!ChainUtil.isEmpty(obj)) {
+    if (CommonUtil.isDict(obj)) {
+      if (!CommonUtil.isEmpty(obj)) {
         for (const key in obj) {
           const childObj = obj[key];
           node.setChild(key, StateNode.fromJsObject(childObj, version));
@@ -97,6 +97,16 @@ class StateNode {
     }
 
     return obj;
+  }
+
+  toJsObjectShallow() {
+    if (this.getIsLeaf()) {
+      return this.getValue();
+    }
+    return this.getChildLabels().reduce((shallowCopy, label) => {
+      shallowCopy[label] = true;
+      return shallowCopy;
+    }, {});
   }
 
   getIsLeaf() {
@@ -258,7 +268,7 @@ class StateNode {
         return `${label}${HASH_DELIMITER}${this.getChild(label).getProofHash()}`;
       }, '').join(HASH_DELIMITER);
     }
-    return ChainUtil.hashString(ChainUtil.toString(preimage));
+    return CommonUtil.hashString(CommonUtil.toString(preimage));
   }
 
   verifyProofHash() {
@@ -270,7 +280,7 @@ class StateNode {
       return 0;
     } else {
       return this.getChildNodes().reduce(
-          (max, cur) => Math.max(max, ChainUtil.numberOrZero(cur.getTreeHeight()) + 1), 0);
+          (max, cur) => Math.max(max, CommonUtil.numberOrZero(cur.getTreeHeight()) + 1), 0);
     }
   }
 
@@ -279,7 +289,7 @@ class StateNode {
       return 1;
     } else {
       return this.getChildNodes().reduce(
-          (acc, cur) => acc + ChainUtil.numberOrZero(cur.getTreeSize()), 1);
+          (acc, cur) => acc + CommonUtil.numberOrZero(cur.getTreeSize()), 1);
     }
   }
 
