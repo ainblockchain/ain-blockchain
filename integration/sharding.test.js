@@ -249,28 +249,6 @@ describe('Sharding', async () => {
     ).result;
     await waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
     // Create app at the parent chain for the shard
-    // const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
-    //   json: {
-    //     ref: `/staking/afan/${parentServerAddr}/0/stake/${Date.now()}/value`,
-    //     value: 1
-    //   }
-    // }).body.toString('utf-8')).result;
-    // assert.deepEqual(CommonUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
-    // if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
-    //   console.log(`Failed to check finalization of app staking tx.`);
-    // }
-    // const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
-    //   json: {
-    //     ref: `/manage_app/afan/create/${Date.now()}`,
-    //     value: {
-    //       admin: { [shardOwnerAddr]: true }
-    //     }
-    //   }
-    // }).body.toString('utf-8')).result;
-    // assert.deepEqual(CommonUtil.isFailedTx(_.get(createAppRes, 'result')), false);
-    // if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
-    //   console.log(`Failed to check finalization of create app tx.`);
-    // }
     await setUpApp('afan', parentServerList, { admin: { [shardOwnerAddr]: true } });
     
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
@@ -1933,29 +1911,7 @@ describe('Sharding', async () => {
 
     describe('_updateLatestShardReport', () => {
       before(async () => {
-        const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
-        // const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
-        //   json: {
-        //     ref: `/staking/a_dapp/${shard_owner}/0/stake/${Date.now()}/value`,
-        //     value: 1
-        //   }
-        // }).body.toString('utf-8')).result;
-        // assert.deepEqual(CommonUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
-        // if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
-        //   console.log(`Failed to check finalization of app staking tx.`)
-        // }
-        // const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
-        //   json: {
-        //     ref: `/manage_app/a_dapp/create/${Date.now()}`,
-        //     value: {
-        //       admin: { [shard_owner]: true }
-        //     }
-        //   }
-        // }).body.toString('utf-8')).result;
-        // assert.deepEqual(CommonUtil.isFailedTx(_.get(createAppRes, 'result')), false);
-        // if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
-        //   console.log(`Failed to check finalization of create app tx.`)
-        // }
+        const { shard_owner, sharding_path } = shardingConfig;
         await setUpApp('a_dapp', parentServerList, { admin: { [shard_owner]: true } });
 
         const res = parseOrLog(syncRequest('POST', parentServer + '/set', {

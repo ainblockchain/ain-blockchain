@@ -270,34 +270,6 @@ describe('Blockchain Cluster', () => {
         'GET', server3 + '/get_address').body.toString('utf-8')).result;
     const server4Addr = parseOrLog(syncRequest(
         'GET', server4 + '/get_address').body.toString('utf-8')).result;
-    // const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {
-    //   json: {
-    //     ref: `/staking/test/${server1Addr}/0/stake/${Date.now()}/value`,
-    //     value: 1
-    //   }
-    // }).body.toString('utf-8')).result;
-    // assert.deepEqual(CommonUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
-    // if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
-    //   console.log(`setUp(): Failed to check finalization of app staking tx.`);
-    // }
-  
-    // const createAppRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {
-    //   json: {
-    //     ref: `/manage_app/test/create/${Date.now()}`,
-    //     value: {
-    //       admin: {
-    //         [server1Addr]: true,
-    //         [server2Addr]: true,
-    //         [server3Addr]: true,
-    //         [server4Addr]: true,
-    //       }
-    //     }
-    //   }
-    // }).body.toString('utf-8')).result;
-    // assert.deepEqual(CommonUtil.isFailedTx(_.get(createAppRes, 'result')), false);
-    // if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
-    //   console.log(`setUp(): Failed to check finalization of create app tx.`)
-    // }
 
     await setUpApp('test', serverList, {
       admin: {
