@@ -483,7 +483,21 @@ describe('Sharding', async () => {
   describe('API Tests', () => {
     describe('Get API', () => {
       before(async () => {
-        await setUpApp('test', shardServerList, { admin: { [account.address]: true } });
+        const server1Addr = parseOrLog(syncRequest(
+            'GET', server1 + '/get_address').body.toString('utf-8')).result;
+        const server2Addr = parseOrLog(syncRequest(
+            'GET', server2 + '/get_address').body.toString('utf-8')).result;
+        const server3Addr = parseOrLog(syncRequest(
+            'GET', server3 + '/get_address').body.toString('utf-8')).result;
+        const server4Addr = parseOrLog(syncRequest(
+            'GET', server4 + '/get_address').body.toString('utf-8')).result;
+        await setUpApp('test', shardServerList, { admin: {
+          [account.address]: true,
+          [server1Addr]: true,
+          [server2Addr]: true,
+          [server3Addr]: true,
+          [server4Addr]: true
+        } });
         await setUp();
       })
 
