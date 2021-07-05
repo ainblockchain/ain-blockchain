@@ -32,6 +32,7 @@ const {
   waitForNewBlocks,
   waitUntilNodeSyncs,
   waitUntilTxFinalized,
+  setUpApp,
 } = require('../unittest/test-util');
 
 const ENV_VARIABLES = [
@@ -86,6 +87,7 @@ const server2 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[3].ACCO
 const server3 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[4].ACCOUNT_INDEX))
 const server4 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[5].ACCOUNT_INDEX))
 const shardServerList = [ server1, server2, server3, server4 ];
+const account = ainUtil.createAccount();
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -116,24 +118,24 @@ async function waitUntilShardReporterStarts() {
 }
 
 async function setUp() {
-  let res = parseOrLog(syncRequest('POST', server2 + '/set', {
+  const res = parseOrLog(syncRequest('POST', server2 + '/set', {
     json: {
       op_list: [
         {
           type: 'SET_VALUE',
-          ref: 'test/test_value/some/path',
+          ref: '/apps/test/test_value/some/path',
           value: 100
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_rule/some/path',
+          ref: '/apps/test/test_rule/some/path',
           value: {
             ".write": "auth.addr === 'abcd'"
           }
         },
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_function/some/path',
+          ref: '/apps/test/test_function/some/path',
           value: {
             ".function": {
               "fid": {
@@ -147,7 +149,7 @@ async function setUp() {
         },
         {
           type: 'SET_OWNER',
-          ref: '/test/test_owner/some/path',
+          ref: '/apps/test/test_owner/some/path',
           value: {
             ".owner": {
               "owners": {
@@ -176,22 +178,22 @@ async function cleanUp() {
       op_list: [
         {
           type: 'SET_VALUE',
-          ref: 'test/test_value/some/path',
+          ref: '/apps/test/test_value/some/path',
           value: null
         },
         {
           type: 'SET_RULE',
-          ref: '/test/test_rule/some/path',
+          ref: '/apps/test/test_rule/some/path',
           value: null
         },
         {
           type: 'SET_FUNCTION',
-          ref: '/test/test_function/some/path',
+          ref: '/apps/test/test_function/some/path',
           value: null
         },
         {
           type: 'SET_OWNER',
-          ref: '/test/test_owner/some/path',
+          ref: '/apps/test/test_owner/some/path',
           value: null
         },
       ],
@@ -247,28 +249,29 @@ describe('Sharding', async () => {
     ).result;
     await waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
     // Create app at the parent chain for the shard
-    const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
-      json: {
-        ref: `/staking/afan/${parentServerAddr}/0/stake/${Date.now()}/value`,
-        value: 1
-      }
-    }).body.toString('utf-8')).result;
-    assert.deepEqual(CommonUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
-    if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
-      console.log(`Failed to check finalization of app staking tx.`);
-    }
-    const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
-      json: {
-        ref: `/manage_app/afan/create/${Date.now()}`,
-        value: {
-          admin: { [shardOwnerAddr]: true }
-        }
-      }
-    }).body.toString('utf-8')).result;
-    assert.deepEqual(CommonUtil.isFailedTx(_.get(createAppRes, 'result')), false);
-    if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
-      console.log(`Failed to check finalization of create app tx.`);
-    }
+    // const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+    //   json: {
+    //     ref: `/staking/afan/${parentServerAddr}/0/stake/${Date.now()}/value`,
+    //     value: 1
+    //   }
+    // }).body.toString('utf-8')).result;
+    // assert.deepEqual(CommonUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+    // if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
+    //   console.log(`Failed to check finalization of app staking tx.`);
+    // }
+    // const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+    //   json: {
+    //     ref: `/manage_app/afan/create/${Date.now()}`,
+    //     value: {
+    //       admin: { [shardOwnerAddr]: true }
+    //     }
+    //   }
+    // }).body.toString('utf-8')).result;
+    // assert.deepEqual(CommonUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+    // if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
+    //   console.log(`Failed to check finalization of create app tx.`);
+    // }
+    await setUpApp('afan', parentServerList, { admin: { [shardOwnerAddr]: true } });
     
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
     await CommonUtil.sleep(2000);
@@ -502,6 +505,7 @@ describe('Sharding', async () => {
   describe('API Tests', () => {
     describe('Get API', () => {
       before(async () => {
+        await setUpApp('test', shardServerList, { admin: { [account.address]: true } });
         await setUp();
       })
 
@@ -512,7 +516,7 @@ describe('Sharding', async () => {
       describe('/get_value', () => {
         it('/get_value with is_global = false', () => {
           const body = parseOrLog(
-              syncRequest('GET', server1 + '/get_value?ref=/test/test_value/some/path')
+              syncRequest('GET', server1 + '/get_value?ref=/apps/test/test_value/some/path')
             .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, 100);
@@ -520,7 +524,7 @@ describe('Sharding', async () => {
 
         it('/get_value with is_global = false (explicit)', () => {
           const body = parseOrLog(syncRequest(
-              'GET', server1 + '/get_value?ref=/test/test_value/some/path&is_global=false')
+              'GET', server1 + '/get_value?ref=/apps/test/test_value/some/path&is_global=false')
             .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, 100);
@@ -528,7 +532,7 @@ describe('Sharding', async () => {
 
         it('/get_value with is_global = true', () => {
           const body = parseOrLog(syncRequest(
-              'GET', server1 + '/get_value?ref=/apps/afan/test/test_value/some/path&is_global=true')
+              'GET', server1 + '/get_value?ref=/apps/afan/apps/test/test_value/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, 100);
@@ -538,7 +542,7 @@ describe('Sharding', async () => {
       describe('/get_function', () => {
         it('/get_function with is_global = false', () => {
           const body = parseOrLog(
-              syncRequest('GET', server1 + '/get_function?ref=/test/test_function/some/path')
+              syncRequest('GET', server1 + '/get_function?ref=/apps/test/test_function/some/path')
             .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, {
@@ -555,7 +559,7 @@ describe('Sharding', async () => {
 
         it('/get_function with is_global = true', () => {
           const body = parseOrLog(syncRequest(
-              'GET', server1 + '/get_function?ref=/apps/afan/test/test_function/some/path&is_global=true')
+              'GET', server1 + '/get_function?ref=/apps/afan/apps/test/test_function/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, {
@@ -574,7 +578,7 @@ describe('Sharding', async () => {
       describe('/get_rule', () => {
         it('/get_rule with is_global = false', () => {
           const body = parseOrLog(
-              syncRequest('GET', server1 + '/get_rule?ref=/test/test_rule/some/path')
+              syncRequest('GET', server1 + '/get_rule?ref=/apps/test/test_rule/some/path')
             .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, { '.write': 'auth.addr === \'abcd\'' });
@@ -582,7 +586,7 @@ describe('Sharding', async () => {
 
         it('/get_rule with is_global = true', () => {
           const body = parseOrLog(syncRequest(
-              'GET', server1 + '/get_rule?ref=/apps/afan/test/test_rule/some/path&is_global=true')
+              'GET', server1 + '/get_rule?ref=/apps/afan/apps/test/test_rule/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, { '.write': 'auth.addr === \'abcd\'' });
@@ -592,7 +596,7 @@ describe('Sharding', async () => {
       describe('/get_owner', () => {
         it('/get_owner with is_global = false', () => {
           const body = parseOrLog(
-              syncRequest('GET', server1 + '/get_owner?ref=/test/test_owner/some/path')
+              syncRequest('GET', server1 + '/get_owner?ref=/apps/test/test_owner/some/path')
             .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, {
@@ -611,7 +615,7 @@ describe('Sharding', async () => {
 
         it('/get_owner with is_global = true', () => {
           const body = parseOrLog(syncRequest(
-              'GET', server1 + '/get_owner?ref=/apps/afan/test/test_owner/some/path&is_global=true')
+              'GET', server1 + '/get_owner?ref=/apps/afan/apps/test/test_owner/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
           assert.deepEqual(body.result, {
@@ -631,13 +635,13 @@ describe('Sharding', async () => {
 
       describe('/match_function', () => {
         it('/match_function with is_global = false', () => {
-          const ref = "/test/test_function/some/path";
+          const ref = "/apps/test/test_function/some/path";
           const body = parseOrLog(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
             .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
-              "target_path": "/test/test_function/some/path",
-              "ref_path": "/test/test_function/some/path",
+              "target_path": "/apps/test/test_function/some/path",
+              "ref_path": "/apps/test/test_function/some/path",
               "path_vars": {},
             },
             "matched_config": {
@@ -649,21 +653,21 @@ describe('Sharding', async () => {
                   "service_name": "https://ainetwork.ai"
                 }
               },
-              "path": "/test/test_function/some/path"
+              "path": "/apps/test/test_function/some/path"
             },
             "subtree_configs": []
           }});
         })
 
         it('/match_function with is_global = true', () => {
-          const ref = "/apps/afan/test/test_function/some/path";
+          const ref = "/apps/afan/apps/test/test_function/some/path";
           const body =
               parseOrLog(syncRequest('GET', `${server1}/match_function?ref=${ref}&is_global=true`)
             .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
-              "target_path": "/apps/afan/test/test_function/some/path",
-              "ref_path": "/apps/afan/test/test_function/some/path",
+              "target_path": "/apps/afan/apps/test/test_function/some/path",
+              "ref_path": "/apps/afan/apps/test/test_function/some/path",
               "path_vars": {},
             },
             "matched_config": {
@@ -675,7 +679,7 @@ describe('Sharding', async () => {
                   "service_name": "https://ainetwork.ai"
                 }
               },
-              "path": "/apps/afan/test/test_function/some/path"
+              "path": "/apps/afan/apps/test/test_function/some/path"
             },
             "subtree_configs": []
           }});
@@ -684,37 +688,37 @@ describe('Sharding', async () => {
 
       describe('/match_rule', () => {
         it('/match_rule with is_global = false', () => {
-          const ref = "/test/test_rule/some/path";
+          const ref = "/apps/test/test_rule/some/path";
           const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
             .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
-              "target_path": "/test/test_rule/some/path",
-              "ref_path": "/test/test_rule/some/path",
+              "target_path": "/apps/test/test_rule/some/path",
+              "ref_path": "/apps/test/test_rule/some/path",
               "path_vars": {},
             },
             "matched_config": {
               "config": "auth.addr === 'abcd'",
-              "path": "/test/test_rule/some/path"
+              "path": "/apps/test/test_rule/some/path"
             },
             "subtree_configs": []
           }});
         })
 
         it('/match_rule with is_global = true', () => {
-          const ref = "/apps/afan/test/test_rule/some/path";
+          const ref = "/apps/afan/apps/test/test_rule/some/path";
           const body =
               parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}&is_global=true`)
             .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
-              "target_path": "/apps/afan/test/test_rule/some/path",
-              "ref_path": "/apps/afan/test/test_rule/some/path",
+              "target_path": "/apps/afan/apps/test/test_rule/some/path",
+              "ref_path": "/apps/afan/apps/test/test_rule/some/path",
               "path_vars": {},
             },
             "matched_config": {
               "config": "auth.addr === 'abcd'",
-              "path": "/apps/afan/test/test_rule/some/path"
+              "path": "/apps/afan/apps/test/test_rule/some/path"
             },
             "subtree_configs": []
           }});
@@ -723,12 +727,12 @@ describe('Sharding', async () => {
 
       describe('/match_owner', () => {
         it('/match_owner with is_global = false', () => {
-          const ref = "/test/test_owner/some/path";
+          const ref = "/apps/test/test_owner/some/path";
           const body = parseOrLog(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
               .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
-              "target_path": "/test/test_owner/some/path"
+              "target_path": "/apps/test/test_owner/some/path"
             },
             "matched_config": {
               "config": {
@@ -741,19 +745,19 @@ describe('Sharding', async () => {
                   }
                 }
               },
-              "path": "/test/test_owner/some/path"
+              "path": "/apps/test/test_owner/some/path"
             }
           }});
         })
 
         it('/match_owner with is_global = true', () => {
-          const ref = "/apps/afan/test/test_owner/some/path";
+          const ref = "/apps/afan/apps/test/test_owner/some/path";
           const body =
               parseOrLog(syncRequest('GET', `${server1}/match_owner?ref=${ref}&is_global=true`)
               .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
             "matched_path": {
-              "target_path": "/apps/afan/test/test_owner/some/path"
+              "target_path": "/apps/afan/apps/test/test_owner/some/path"
             },
             "matched_config": {
               "config": {
@@ -766,7 +770,7 @@ describe('Sharding', async () => {
                   }
                 }
               },
-              "path": "/apps/afan/test/test_owner/some/path"
+              "path": "/apps/afan/apps/test/test_owner/some/path"
             }
           }});
         })
@@ -774,7 +778,7 @@ describe('Sharding', async () => {
 
       describe('/eval_rule', () => {
         it('/eval_rule with is_global = false', () => {
-          const ref = "/test/test_rule/some/path";
+          const ref = "/apps/test/test_rule/some/path";
           const value = "value";
           const address = "abcd";
           const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -784,7 +788,7 @@ describe('Sharding', async () => {
         })
 
         it('/eval_rule with is_global = true', () => {
-          const ref = "/apps/afan/test/test_rule/some/path";
+          const ref = "/apps/afan/apps/test/test_rule/some/path";
           const value = "value";
           const address = "abcd";
           const is_global = true;
@@ -797,7 +801,7 @@ describe('Sharding', async () => {
 
       describe('/eval_owner', () => {
         it('/eval_owner with is_global = false', () => {
-          const ref = "/test/test_owner/some/path";
+          const ref = "/apps/test/test_owner/some/path";
           const address = "abcd";
           const permission = "write_owner";
           const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -810,7 +814,7 @@ describe('Sharding', async () => {
         })
 
         it('/eval_owner with is_global = true', () => {
-          const ref = "/apps/afan/test/test_owner/some/path";
+          const ref = "/apps/afan/apps/test/test_owner/some/path";
           const address = "abcd";
           const permission = "write_owner";
           const is_global = true;
@@ -831,29 +835,29 @@ describe('Sharding', async () => {
             op_list: [
               {
                 type: "GET_VALUE",
-                ref: "/test/test_value/some/path",
+                ref: "/apps/test/test_value/some/path",
               },
               {
                 type: 'GET_FUNCTION',
-                ref: "/test/test_function/some/path",
+                ref: "/apps/test/test_function/some/path",
               },
               {
                 type: 'GET_RULE',
-                ref: "/test/test_rule/some/path",
+                ref: "/apps/test/test_rule/some/path",
               },
               {
                 type: 'GET_OWNER',
-                ref: "/test/test_owner/some/path",
+                ref: "/apps/test/test_owner/some/path",
               },
               {
                 type: 'EVAL_RULE',
-                ref: "/test/test_rule/some/path",
+                ref: "/apps/test/test_rule/some/path",
                 value: "value",
                 address: "abcd"
               },
               {
                 type: 'EVAL_OWNER',
-                ref: "/test/test_owner/some/path",
+                ref: "/apps/test/test_owner/some/path",
                 permission: "write_owner",
                 address: "abcd"
               }
@@ -901,34 +905,34 @@ describe('Sharding', async () => {
             op_list: [
               {
                 type: "GET_VALUE",
-                ref: "/apps/afan/test/test_value/some/path",
+                ref: "/apps/afan/apps/test/test_value/some/path",
                 is_global: true,
               },
               {
                 type: 'GET_FUNCTION',
-                ref: "/apps/afan/test/test_function/some/path",
+                ref: "/apps/afan/apps/test/test_function/some/path",
                 is_global: true,
               },
               {
                 type: 'GET_RULE',
-                ref: "/apps/afan/test/test_rule/some/path",
+                ref: "/apps/afan/apps/test/test_rule/some/path",
                 is_global: true,
               },
               {
                 type: 'GET_OWNER',
-                ref: "/apps/afan/test/test_owner/some/path",
+                ref: "/apps/afan/apps/test/test_owner/some/path",
                 is_global: true,
               },
               {
                 type: 'EVAL_RULE',
-                ref: "/apps/afan/test/test_rule/some/path",
+                ref: "/apps/afan/apps/test/test_rule/some/path",
                 value: "value",
                 address: "abcd",
                 is_global: true,
               },
               {
                 type: 'EVAL_OWNER',
-                ref: "/apps/afan/test/test_owner/some/path",
+                ref: "/apps/afan/apps/test/test_owner/some/path",
                 permission: "write_owner",
                 address: "abcd",
                 is_global: true,
@@ -980,7 +984,7 @@ describe('Sharding', async () => {
           return jsonRpcClient.request('ain_get', {
             protoVer: CURRENT_PROTOCOL_VERSION,
             type: 'GET_VALUE',
-            ref: "/test/test_value/some/path"
+            ref: "/apps/test/test_value/some/path"
           })
           .then(res => {
             expect(res.result.result).to.equal(expected);
@@ -993,7 +997,7 @@ describe('Sharding', async () => {
           return jsonRpcClient.request('ain_get', {
             protoVer: CURRENT_PROTOCOL_VERSION,
             type: 'GET_VALUE',
-            ref: "/test/test_value/some/path",
+            ref: "/apps/test/test_value/some/path",
             is_global: false,
           })
           .then(res => {
@@ -1007,7 +1011,7 @@ describe('Sharding', async () => {
           return jsonRpcClient.request('ain_get', {
             protoVer: CURRENT_PROTOCOL_VERSION,
             type: 'GET_VALUE',
-            ref: "/apps/afan/test/test_value/some/path",
+            ref: "/apps/afan/apps/test/test_value/some/path",
             is_global: true,
           })
           .then(res => {
@@ -1018,14 +1022,14 @@ describe('Sharding', async () => {
 
       describe('ain_matchFunction', () => {
         it('ain_matchFunction with is_global = false', () => {
-          const ref = "/test/test_function/some/path";
+          const ref = "/apps/test/test_function/some/path";
           const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "matched_path": {
-                "target_path": "/test/test_function/some/path",
-                "ref_path": "/test/test_function/some/path",
+                "target_path": "/apps/test/test_function/some/path",
+                "ref_path": "/apps/test/test_function/some/path",
                 "path_vars": {},
               },
               "matched_config": {
@@ -1037,7 +1041,7 @@ describe('Sharding', async () => {
                     "service_name": "https://ainetwork.ai"
                   }
                 },
-                "path": "/test/test_function/some/path"
+                "path": "/apps/test/test_function/some/path"
               },
               "subtree_configs": []
             });
@@ -1045,14 +1049,14 @@ describe('Sharding', async () => {
         })
 
         it('ain_matchFunction with is_global = true', () => {
-          const ref = "/apps/afan/test/test_function/some/path";
+          const ref = "/apps/afan/apps/test/test_function/some/path";
           const request = { ref, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "matched_path": {
-                "target_path": "/apps/afan/test/test_function/some/path",
-                "ref_path": "/apps/afan/test/test_function/some/path",
+                "target_path": "/apps/afan/apps/test/test_function/some/path",
+                "ref_path": "/apps/afan/apps/test/test_function/some/path",
                 "path_vars": {},
               },
               "matched_config": {
@@ -1064,7 +1068,7 @@ describe('Sharding', async () => {
                     "service_name": "https://ainetwork.ai"
                   }
                 },
-                "path": "/apps/afan/test/test_function/some/path"
+                "path": "/apps/afan/apps/test/test_function/some/path"
               },
               "subtree_configs": []
             });
@@ -1074,19 +1078,19 @@ describe('Sharding', async () => {
 
       describe('ain_matchRule', () => {
         it('ain_matchRule with is_global = false', () => {
-          const ref = "/test/test_rule/some/path";
+          const ref = "/apps/test/test_rule/some/path";
           const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "matched_path": {
-                "target_path": "/test/test_rule/some/path",
-                "ref_path": "/test/test_rule/some/path",
+                "target_path": "/apps/test/test_rule/some/path",
+                "ref_path": "/apps/test/test_rule/some/path",
                 "path_vars": {},
               },
               "matched_config": {
                 "config": "auth.addr === 'abcd'",
-                "path": "/test/test_rule/some/path"
+                "path": "/apps/test/test_rule/some/path"
               },
               "subtree_configs": []
             });
@@ -1094,19 +1098,19 @@ describe('Sharding', async () => {
         })
 
         it('ain_matchRule with is_global = true', () => {
-          const ref = "/apps/afan/test/test_rule/some/path";
+          const ref = "/apps/afan/apps/test/test_rule/some/path";
           const request = { ref, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "matched_path": {
-                "target_path": "/apps/afan/test/test_rule/some/path",
-                "ref_path": "/apps/afan/test/test_rule/some/path",
+                "target_path": "/apps/afan/apps/test/test_rule/some/path",
+                "ref_path": "/apps/afan/apps/test/test_rule/some/path",
                 "path_vars": {},
               },
               "matched_config": {
                 "config": "auth.addr === 'abcd'",
-                "path": "/apps/afan/test/test_rule/some/path"
+                "path": "/apps/afan/apps/test/test_rule/some/path"
               },
               "subtree_configs": []
             });
@@ -1116,13 +1120,13 @@ describe('Sharding', async () => {
 
       describe('ain_matchOwner', () => {
         it('ain_matchOwner with is_global = false', () => {
-          const ref = "/test/test_owner/some/path";
+          const ref = "/apps/test/test_owner/some/path";
           const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "matched_path": {
-                "target_path": "/test/test_owner/some/path"
+                "target_path": "/apps/test/test_owner/some/path"
               },
               "matched_config": {
                 "config": {
@@ -1135,20 +1139,20 @@ describe('Sharding', async () => {
                     }
                   }
                 },
-                "path": "/test/test_owner/some/path"
+                "path": "/apps/test/test_owner/some/path"
               }
             });
           })
         })
 
         it('ain_matchOwner with is_global = true', () => {
-          const ref = "/apps/afan/test/test_owner/some/path";
+          const ref = "/apps/afan/apps/test/test_owner/some/path";
           const request = { ref, is_global: true, protoVer: CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
               "matched_path": {
-                "target_path": "/apps/afan/test/test_owner/some/path"
+                "target_path": "/apps/afan/apps/test/test_owner/some/path"
               },
               "matched_config": {
                 "config": {
@@ -1161,7 +1165,7 @@ describe('Sharding', async () => {
                     }
                   }
                 },
-                "path": "/apps/afan/test/test_owner/some/path"
+                "path": "/apps/afan/apps/test/test_owner/some/path"
               }
             });
           })
@@ -1170,7 +1174,7 @@ describe('Sharding', async () => {
 
       describe('ain_evalRule', () => {
         it('ain_evalRule with is_global = false', () => {
-          const ref = "/test/test_rule/some/path";
+          const ref = "/apps/test/test_rule/some/path";
           const value = "value";
           const address = "abcd";
           const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -1181,7 +1185,7 @@ describe('Sharding', async () => {
         })
 
         it('ain_evalRule with is_global = true', () => {
-          const ref = "/apps/afan/test/test_rule/some/path";
+          const ref = "/apps/afan/apps/test/test_rule/some/path";
           const value = "value";
           const address = "abcd";
           const request =
@@ -1195,7 +1199,7 @@ describe('Sharding', async () => {
 
       describe('ain_evalOwner', () => {
         it('ain_evalOwner with is_global = false', () => {
-          const ref = "/test/test_owner/some/path";
+          const ref = "/apps/test/test_owner/some/path";
           const address = "abcd";
           const permission = "write_owner";
           const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -1206,7 +1210,7 @@ describe('Sharding', async () => {
         })
 
         it('ain_evalOwner with is_global = true', () => {
-          const ref = "/apps/afan/test/test_owner/some/path";
+          const ref = "/apps/afan/apps/test/test_owner/some/path";
           const address = "abcd";
           const permission = "write_owner";
           const request =
@@ -1232,11 +1236,11 @@ describe('Sharding', async () => {
         it('/set_value with is_global = false', () => {
           // Check the original value.
           const resultBefore = parseOrLog(syncRequest(
-              'GET', server1 + '/get_value?ref=test/test_value/some/path')
+              'GET', server1 + '/get_value?ref=/apps/test/test_value/some/path')
               .body.toString('utf-8')).result;
           assert.deepEqual(resultBefore, 100);
 
-          const request = {ref: 'test/test_value/some/path', value: "some value", nonce: -1};
+          const request = {ref: '/apps/test/test_value/some/path', value: "some value", nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result.code'), 0);
@@ -1244,7 +1248,7 @@ describe('Sharding', async () => {
         })
 
         it('/set_value with is_global = false (explicit)', () => {
-          const request = {ref: 'test/test_value/some/path', value: "some value", is_global: false, nonce: -1};
+          const request = {ref: '/apps/test/test_value/some/path', value: "some value", is_global: false, nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result.code'), 0);
@@ -1253,7 +1257,7 @@ describe('Sharding', async () => {
 
         it('/set_value with is_global = true', () => {
           const request = {
-            ref: 'apps/afan/test/test_value/some/path', value: "some value", is_global: true, nonce: -1
+            ref: 'apps/afan/apps/test/test_value/some/path', value: "some value", is_global: true, nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
               .body.toString('utf-8'));
@@ -1264,7 +1268,7 @@ describe('Sharding', async () => {
 
       describe('/inc_value', () => {
         it('/inc_value with is_global = false', () => {
-          const request = {ref: 'test/test_value/some/path', value: 10, nonce: -1};
+          const request = {ref: '/apps/test/test_value/some/path', value: 10, nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result.code'), 0);
@@ -1273,7 +1277,7 @@ describe('Sharding', async () => {
 
         it('/inc_value with is_global = true', () => {
           const request = {
-            ref: 'apps/afan/test/test_value/some/path', value: 10, is_global: true, nonce: -1
+            ref: 'apps/afan/apps/test/test_value/some/path', value: 10, is_global: true, nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
               .body.toString('utf-8'));
@@ -1284,7 +1288,7 @@ describe('Sharding', async () => {
 
       describe('/dec_value', () => {
         it('/dec_value with is_global = false', () => {
-          const request = {ref: 'test/test_value/some/path', value: 10, nonce: -1};
+          const request = {ref: '/apps/test/test_value/some/path', value: 10, nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result.code'), 0);
@@ -1293,7 +1297,7 @@ describe('Sharding', async () => {
 
         it('/dec_value with is_global = true', () => {
           const request = {
-            ref: 'apps/afan/test/test_value/some/path', value: 10, is_global: true, nonce: -1
+            ref: 'apps/afan/apps/test/test_value/some/path', value: 10, is_global: true, nonce: -1
           };
           const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
               .body.toString('utf-8'));
@@ -1305,7 +1309,7 @@ describe('Sharding', async () => {
       describe('/set_function', () => {
         it('/set_function with is_global = false', () => {
           const request = {
-            ref: "test/test_function/other/path",
+            ref: "/apps/test/test_function/other/path",
             value: {
               ".function": {
                 "fid": {
@@ -1326,7 +1330,7 @@ describe('Sharding', async () => {
 
         it('/set_function with is_global = true', () => {
           const request = {
-            ref: "apps/afan/test/test_function/other/path",
+            ref: "apps/afan/apps/test/test_function/other/path",
             value: {
               ".function": {
                 "fid": {
@@ -1350,7 +1354,7 @@ describe('Sharding', async () => {
       describe('/set_rule', () => {
         it('/set_rule with is_global = false', () => {
           const request = {
-            ref: "test/test_rule/other/path",
+            ref: "/apps/test/test_rule/other/path",
             value: {
               ".write": "some other rule config"
             },
@@ -1364,7 +1368,7 @@ describe('Sharding', async () => {
 
         it('/set_rule with is_global = true', () => {
           const request = {
-            ref: "apps/afan/test/test_rule/other/path",
+            ref: "apps/afan/apps/test/test_rule/other/path",
             value: {
               ".write": "some other rule config"
             },
@@ -1381,7 +1385,7 @@ describe('Sharding', async () => {
       describe('/set_owner', () => {
         it('/set_owner with is_global = false', () => {
           const request = {
-            ref: "test/test_owner/other/path",
+            ref: "/apps/test/test_owner/other/path",
             value: {
               ".owner": {
                 "owners": {
@@ -1404,7 +1408,7 @@ describe('Sharding', async () => {
 
         it('/set_owner with is_global = true', () => {
           const request = {
-            ref: "apps/afan/test/test_owner/other2/path",
+            ref: "apps/afan/apps/test/test_owner/other2/path",
             value: {
               ".owner": {
                 "owners": {
@@ -1433,22 +1437,22 @@ describe('Sharding', async () => {
             op_list: [
               {
                 // Default type: SET_VALUE
-                ref: "test/test_value/other3/path",
+                ref: "/apps/test/test_value/other3/path",
                 value: "some other3 value",
               },
               {
                 type: 'INC_VALUE',
-                ref: "test/test_value/some/path",
+                ref: "/apps/test/test_value/some/path",
                 value: 10
               },
               {
                 type: 'DEC_VALUE',
-                ref: "test/test_value/some/path2",
+                ref: "/apps/test/test_value/some/path2",
                 value: 10
               },
               {
                 type: 'SET_FUNCTION',
-                ref: "/test/test_function/other3/path",
+                ref: "/apps/test/test_function/other3/path",
                 value: {
                   ".function": {
                     "fid": {
@@ -1462,14 +1466,14 @@ describe('Sharding', async () => {
               },
               {
                 type: 'SET_RULE',
-                ref: "/test/test_rule/other3/path",
+                ref: "/apps/test/test_rule/other3/path",
                 value: {
                   ".write": "some other3 rule config"
                 }
               },
               {
                 type: 'SET_OWNER',
-                ref: "/test/test_owner/other3/path",
+                ref: "/apps/test/test_owner/other3/path",
                 value: {
                   ".owner": {
                     "owners": {
@@ -1516,8 +1520,10 @@ describe('Sharding', async () => {
               },
             ],
             "gas_amount_total": {
-              "app": {},
-              "service": 6
+              "app": {
+                "test": 6
+              },
+              "service": 0
             },
             "gas_cost_total": 0
           });
@@ -1529,25 +1535,25 @@ describe('Sharding', async () => {
             op_list: [
               {
                 // Default type: SET_VALUE
-                ref: "test/test_value/other4/path",
+                ref: "/apps/test/test_value/other4/path",
                 value: "some other4 value",
                 is_global: true,
               },
               {
                 type: 'INC_VALUE',
-                ref: "test/test_value/some/path",
+                ref: "/apps/test/test_value/some/path",
                 value: 10,
                 is_global: true,
               },
               {
                 type: 'DEC_VALUE',
-                ref: "test/test_value/some/path4",
+                ref: "/apps/test/test_value/some/path4",
                 value: 10,
                 is_global: true,
               },
               {
                 type: 'SET_FUNCTION',
-                ref: "/test/test_function/other4/path",
+                ref: "/apps/test/test_function/other4/path",
                 value: {
                   ".function": {
                     "fid": {
@@ -1562,7 +1568,7 @@ describe('Sharding', async () => {
               },
               {
                 type: 'SET_RULE',
-                ref: "/test/test_rule/other4/path",
+                ref: "/apps/test/test_rule/other4/path",
                 value: {
                   ".write": "some other4 rule config"
                 },
@@ -1570,7 +1576,7 @@ describe('Sharding', async () => {
               },
               {
                 type: 'SET_OWNER',
-                ref: "/test/test_owner/other4/path",
+                ref: "/apps/test/test_owner/other4/path",
                 value: {
                   ".owner": {
                     "owners": {
@@ -1629,13 +1635,12 @@ describe('Sharding', async () => {
 
       describe('ain_sendSignedTransaction', () => {
         it('ain_sendSignedTransaction with is_global = false', () => {
-          const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
               type: 'SET_VALUE',
               value: 'some other value',
-              ref: `test/test_value/some/path`
+              ref: `/apps/test/test_value/some/path`
             },
             timestamp: Date.now(),
             nonce: -1
@@ -1654,8 +1659,10 @@ describe('Sharding', async () => {
                     code: 0,
                     gas_amount: 1,
                     gas_amount_total: {
-                      app: {},
-                      service: 1
+                      app: {
+                        test: 1,
+                      },
+                      service: 0
                     },
                     gas_cost_total: 0
                   },
@@ -1666,13 +1673,13 @@ describe('Sharding', async () => {
         })
 
         it('ain_sendSignedTransaction with is_global = false (explicit)', () => {
-          const account = ainUtil.createAccount();
+          // const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
               type: 'SET_VALUE',
               value: 'some other value',
-              ref: `test/test_value/some/path`,
+              ref: `/apps/test/test_value/some/path`,
               is_global: false,
             },
             timestamp: Date.now(),
@@ -1692,8 +1699,10 @@ describe('Sharding', async () => {
                     code: 0,
                     gas_amount: 1,
                     gas_amount_total: {
-                      app: {},
-                      service: 1
+                      app: {
+                        test: 1
+                      },
+                      service: 0
                     },
                     gas_cost_total: 0
                   },
@@ -1704,13 +1713,13 @@ describe('Sharding', async () => {
         })
 
         it('ain_sendSignedTransaction with is_global = true', () => {
-          const account = ainUtil.createAccount();
+          // const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
               type: 'SET_VALUE',
               value: 'some other value',
-              ref: `apps/afan/test/test_value/some/path`,
+              ref: `apps/afan/apps/test/test_value/some/path`,
               is_global: true,
             },
             timestamp: Date.now(),
@@ -1746,13 +1755,13 @@ describe('Sharding', async () => {
 
       describe('ain_sendSignedTransactionBatch', () => {
         it('ain_sendSignedTransactionBatch with is_global = false', () => {
-          const account = ainUtil.createAccount();
+          // const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
               type: 'SET_VALUE',
               value: 'some other value',
-              ref: `test/test_value/some/path`
+              ref: `/apps/test/test_value/some/path`
             },
             timestamp: Date.now(),
             nonce: -1
@@ -1779,8 +1788,10 @@ describe('Sharding', async () => {
                     code: 0,
                     gas_amount: 1,
                     gas_amount_total: {
-                      app: {},
-                      service: 1
+                      app: {
+                        test: 1
+                      },
+                      service: 0
                     },
                     gas_cost_total: 0
                   },
@@ -1792,13 +1803,13 @@ describe('Sharding', async () => {
         })
 
         it('ain_sendSignedTransactionBatch with is_global = false (explicit)', () => {
-          const account = ainUtil.createAccount();
+          // const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
               type: 'SET_VALUE',
               value: 'some other value',
-              ref: `test/test_value/some/path`,
+              ref: `/apps/test/test_value/some/path`,
               is_global: false,
             },
             timestamp: Date.now(),
@@ -1829,8 +1840,10 @@ describe('Sharding', async () => {
                     code: 0,
                     gas_amount: 1,
                     gas_amount_total: {
-                      app: {},
-                      service: 1
+                      app: {
+                        test: 1
+                      },
+                      service: 0
                     },
                     gas_cost_total: 0
                   },
@@ -1842,13 +1855,13 @@ describe('Sharding', async () => {
         })
 
         it('ain_sendSignedTransactionBatch with is_global = true', () => {
-          const account = ainUtil.createAccount();
+          // const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
               type: 'SET_VALUE',
               value: 'some other value',
-              ref: `apps/afan/test/test_value/some/path`,
+              ref: `apps/afan/apps/test/test_value/some/path`,
               is_global: true,
             },
             timestamp: Date.now(),
@@ -1921,28 +1934,30 @@ describe('Sharding', async () => {
     describe('_updateLatestShardReport', () => {
       before(async () => {
         const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
-        const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
-          json: {
-            ref: `/staking/a_dapp/${shard_owner}/0/stake/${Date.now()}/value`,
-            value: 1
-          }
-        }).body.toString('utf-8')).result;
-        assert.deepEqual(CommonUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
-        if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
-          console.log(`Failed to check finalization of app staking tx.`)
-        }
-        const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
-          json: {
-            ref: `/manage_app/a_dapp/create/${Date.now()}`,
-            value: {
-              admin: { [shard_owner]: true }
-            }
-          }
-        }).body.toString('utf-8')).result;
-        assert.deepEqual(CommonUtil.isFailedTx(_.get(createAppRes, 'result')), false);
-        if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
-          console.log(`Failed to check finalization of create app tx.`)
-        }
+        // const appStakingRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+        //   json: {
+        //     ref: `/staking/a_dapp/${shard_owner}/0/stake/${Date.now()}/value`,
+        //     value: 1
+        //   }
+        // }).body.toString('utf-8')).result;
+        // assert.deepEqual(CommonUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
+        // if (!(await waitUntilTxFinalized(parentServerList, appStakingRes.tx_hash))) {
+        //   console.log(`Failed to check finalization of app staking tx.`)
+        // }
+        // const createAppRes = parseOrLog(syncRequest('POST', parentServer + '/set_value', {
+        //   json: {
+        //     ref: `/manage_app/a_dapp/create/${Date.now()}`,
+        //     value: {
+        //       admin: { [shard_owner]: true }
+        //     }
+        //   }
+        // }).body.toString('utf-8')).result;
+        // assert.deepEqual(CommonUtil.isFailedTx(_.get(createAppRes, 'result')), false);
+        // if (!(await waitUntilTxFinalized(parentServerList, createAppRes.tx_hash))) {
+        //   console.log(`Failed to check finalization of create app tx.`)
+        // }
+        await setUpApp('a_dapp', parentServerList, { admin: { [shard_owner]: true } });
+
         const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
           json: {
             op_list: [

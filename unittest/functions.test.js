@@ -33,11 +33,11 @@ describe("Functions", () => {
     });
 
     describe("Function triggering", () => {
-      const refPathRest = "/test/test_function/some/path/rest";
-      const refPathRestMulti = "/test/test_function/some/path/rest_multi";
-      const refPathRestWithoutListener = "/test/test_function/some/path/rest_without_listener";
-      const refPathRestNotWhitelisted = "/test/test_function/some/path/rest_not_whitelisted";
-      const refPathNull = "/test/test_function/some/path/null";
+      const refPathRest = "/apps/test/test_function/some/path/rest";
+      const refPathRestMulti = "/apps/test/test_function/some/path/rest_multi";
+      const refPathRestWithoutListener = "/apps/test/test_function/some/path/rest_without_listener";
+      const refPathRestNotWhitelisted = "/apps/test/test_function/some/path/rest_not_whitelisted";
+      const refPathNull = "/apps/test/test_function/some/path/null";
       let requestBody1 = null, requestBody2 = null;
 
       before(() => {
@@ -349,7 +349,7 @@ describe("Functions", () => {
     })
 
     describe("Gas fee", () => {
-      const refPathRest = "/test/test_function/some/path/rest";
+      const refPathRest = "/apps/test/test_function/some/path/rest";
       const refPathTransfer =
           "/transfer/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/0/value";
 
