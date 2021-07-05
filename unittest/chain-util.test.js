@@ -391,13 +391,13 @@ describe("CommonUtil", () => {
           "_saveLastTx": {
             "op_results": [
               {
-                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
                       "op_results": [
                         {
-                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
                             "gas_amount": 1
@@ -426,13 +426,13 @@ describe("CommonUtil", () => {
           "_saveLastTx": {
             "op_results": [
               {
-                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
                       "op_results": [
                         {
-                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
                             "gas_amount": 1
@@ -462,13 +462,13 @@ describe("CommonUtil", () => {
           "_saveLastTx": {
             "op_results": [
               {
-                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
                       "op_results": [
                         {
-                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 201,  // A sub-operation failed
                             "error_message": "Not a number type: bar or 10",
@@ -498,13 +498,13 @@ describe("CommonUtil", () => {
           "_saveLastTx": {
             "op_results": [
               {
-                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
                       "op_results": [
                         {
-                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
                             "gas_amount": 1
@@ -593,13 +593,13 @@ describe("CommonUtil", () => {
               "_saveLastTx": {
                 "op_results": [
                   {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
                           "op_results": [
                             {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
                                 "gas_amount": 1
@@ -640,13 +640,13 @@ describe("CommonUtil", () => {
               "_saveLastTx": {
                 "op_results": [
                   {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
                           "op_results": [
                             {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
                                 "gas_amount": 1
@@ -688,13 +688,13 @@ describe("CommonUtil", () => {
               "_saveLastTx": {
                 "op_results": [
                   {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
                           "op_results": [
                             {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 201,  // A sub-operation failed.
                                 "error_message": "Not a number type: bar or 10",
@@ -736,13 +736,13 @@ describe("CommonUtil", () => {
               "_saveLastTx": {
                 "op_results": [
                   {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
                           "op_results": [
                             {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
                                 "gas_amount": 1
@@ -814,20 +814,20 @@ describe("CommonUtil", () => {
   })
 
   describe("getTotalGasAmount", () => {
-    const op = { ref: '/test', value: null, type: 'SET_VALUE' };
+    const serviceOp = { ref: '/transfer/test', value: null, type: 'SET_VALUE' };
     const appOp = { ref: '/apps/test', value: null, type: 'SET_VALUE' };
 
     it("when abnormal input", () => {
       const emptyVal = { app: {}, service: 0 };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, null), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, undefined), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, {}), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, { gas: 'gas' }), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, { gas: {} }), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, true), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, 'result'), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, 0), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, 1), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, null), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, undefined), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, {}), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, { gas: 'gas' }), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, { gas: {} }), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, true), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, 'result'), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, 0), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, 1), emptyVal);
     })
 
     it("when single operation result input (service)", () => {
@@ -836,13 +836,13 @@ describe("CommonUtil", () => {
           "_saveLastTx": {
             "op_results": [
               {
-                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
                       "op_results": [
                         {
-                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
                             "gas_amount": 1
@@ -865,7 +865,7 @@ describe("CommonUtil", () => {
         "code": 0,
         "gas_amount": 30
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, result), {
+      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, result), {
         app: {},
         service: 62
       });
@@ -926,7 +926,7 @@ describe("CommonUtil", () => {
                     "_eraseValue": {
                       "op_results": [
                         {
-                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
                             "gas_amount": 1
@@ -958,7 +958,7 @@ describe("CommonUtil", () => {
     })
 
     it("when multiple operation result input (service)", () => {
-      const setTxOp = { type: 'SET', op_list: [{...op}, {...op}] };
+      const setTxOp = { type: 'SET', op_list: [{...serviceOp}, {...serviceOp}] };
       const result = {
         "result_list": [
           {
@@ -966,13 +966,13 @@ describe("CommonUtil", () => {
               "_saveLastTx": {
                 "op_results": [
                   {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
                           "op_results": [
                             {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
                                 "gas_amount": 1
@@ -1060,7 +1060,7 @@ describe("CommonUtil", () => {
     })
 
     it("when multiple operation result input (service & app)", () => {
-      const setTxOp = { type: 'SET', op_list: [{...appOp}, {...op}] };
+      const setTxOp = { type: 'SET', op_list: [{...appOp}, {...serviceOp}] };
       const result = {
         "result_list": [
           {
@@ -1068,13 +1068,13 @@ describe("CommonUtil", () => {
               "_saveLastTx": {
                 "op_results": [
                   {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
                           "op_results": [
                             {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
                                 "gas_amount": 1
@@ -1105,9 +1105,9 @@ describe("CommonUtil", () => {
       };
       assert.deepEqual(CommonUtil.getTotalGasAmount(setTxOp, result), {
         app: {
-          test: 50
+          test: 62
         },
-        service: 13
+        service: 1
       });
     })
   })
