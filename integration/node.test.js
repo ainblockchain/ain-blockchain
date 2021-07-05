@@ -3943,25 +3943,6 @@ describe('Blockchain Node', () => {
     describe('Gas fee', () => {
       before(async () => {
         await setUpApp('test_service_gas_fee', serverList, { admin: { [serviceAdmin]: true } });
-        // const appStakingPath =
-        //     `/staking/test_service_gas_fee/${serviceAdmin}/0/stake/${Date.now()}/value`;
-        // const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-        //   ref: appStakingPath,
-        //   value: 1
-        // }}).body.toString('utf-8')).result;
-        // if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
-        //   console.error(`Failed to check finalization of tx.`);
-        // }
-        // const manageAppPath = '/manage_app/test_service_gas_fee/create/1';
-        // const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-        //   ref: manageAppPath,
-        //   value: {
-        //     admin: { [serviceAdmin]: true },
-        //   },
-        // }}).body.toString('utf-8')).result;
-        // if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
-        //   console.error(`Failed to check finalization of tx.`);
-        // }
       });
 
       it("native function (_transfer) with individual account registration", () => {
@@ -4478,28 +4459,6 @@ describe('Blockchain Node', () => {
 
     describe('Staking: _stake, _unstake', () => {
       before(async () => {
-        // const appStakingPath = `/staking/test_service_staking/${serviceAdmin}/0/stake/${Date.now()}/value`
-        // const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-        //   ref: appStakingPath,
-        //   value: 1
-        // }}).body.toString('utf-8')).result;
-        // if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
-        //   console.error(`Failed to check finalization of tx.`);
-        // }
-        // const manageAppPath = '/manage_app/test_service_staking/create/1'
-        // const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-        //   ref: manageAppPath,
-        //   value: {
-        //     admin: { [serviceAdmin]: true },
-        //     service: {
-        //       staking: { lockup_duration: 1000 }
-        //     }
-        //   }
-        // }}).body.toString('utf-8'));
-        // expect(body.code).to.equals(0);
-        // if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
-        //   console.error(`Failed to check finalization of tx.`);
-        // }
         await setUpApp('test_service_staking', serverList, {
           admin: { [serviceAdmin]: true },
           service: {
@@ -4912,26 +4871,6 @@ describe('Blockchain Node', () => {
 
     describe('Payments: _pay, _claim', () => {
       before(async () => {
-        // const appStakingPath = `/staking/test_service_payment/${serviceAdmin}/0/stake/${Date.now()}/value`
-        // const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-        //   ref: appStakingPath,
-        //   value: 1
-        // }}).body.toString('utf-8')).result;
-        // if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
-        //   console.error(`Failed to check finalization of tx.`);
-        // }
-        // const manageAppPath = '/manage_app/test_service_payment/create/1'
-        // const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-        //   ref: manageAppPath,
-        //   value: {
-        //     admin: { [serviceAdmin]: true },
-        //   },
-        // }}).body.toString('utf-8'));
-        // expect(body.code).to.equals(0);
-        // if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
-        //   console.error(`Failed to check finalization of tx.`);
-        // }
-
         await setUpApp('test_service_payment', serverList, { admin: { [serviceAdmin]: true } });
       });
 
@@ -5328,25 +5267,6 @@ describe('Blockchain Node', () => {
 
     describe('Escrow: _hold, _release', () => {
       before(async () => {
-        // const appStakingPath = `/staking/test_service_escrow/${serviceAdmin}/0/stake/${Date.now()}/value`
-        // const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-        //   ref: appStakingPath,
-        //   value: 1
-        // }}).body.toString('utf-8')).result;
-        // if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
-        //   console.error(`Failed to check finalization of tx.`);
-        // }
-        // const manageAppPath = '/manage_app/test_service_escrow/create/1'
-        // const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-        //   ref: manageAppPath,
-        //   value: {
-        //     admin: { [serviceAdmin]: true },
-        //   },
-        // }}).body.toString('utf-8'));
-        // expect(body.code).to.equals(0);
-        // if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
-        //   console.error(`Failed to check finalization of tx.`);
-        // }
         await setUpApp('test_service_escrow', serverList, { admin: { [serviceAdmin]: true } });
       });
 
@@ -5957,28 +5877,6 @@ describe('Blockchain Node', () => {
           parseOrLog(syncRequest('GET', server3 + '/get_address').body.toString('utf-8')).result;
       userBalancePathA = `/get_value?ref=/accounts/${billingUserA}/balance`;
       userBalancePathB = `/get_value?ref=/accounts/${billingUserB}/balance`;
-
-      // const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-      //   ref: `/staking/test_billing/${serviceAdmin}/0/stake/${Date.now()}/value`,
-      //   value: 1
-      // }}).body.toString('utf-8')).result;
-      // if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
-      //   console.error(`Failed to check finalization of app staking tx.`);
-      // }
-
-      // const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-      //   ref: '/manage_app/test_billing/create/0',
-      //   value: {
-      //     admin: ,
-      //     billing: 
-      //   },
-      //   nonce: -1,
-      //   timestamp: Date.now(),
-      // }}).body.toString('utf-8')).result;
-      // if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
-      //   console.error(`Failed to check finalization of create app tx.`);
-      // }
-
       const adminConfig = {
         [serviceAdmin]: true,
         [billingUserA]: true,
