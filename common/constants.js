@@ -469,7 +469,6 @@ const SERVICE_TYPES = [
   PredefinedDbPaths.SHARDING,
   PredefinedDbPaths.STAKING,
   PredefinedDbPaths.TRANSFER,
-  'test',  // NOTE(platfowner): A temporary solution for tests.
 ];
 
 function isServiceType(type) {

@@ -83,7 +83,7 @@ describe('Transaction', () => {
     txBodyForNode = {
       operation: {
         type: 'SET_VALUE',
-        ref: 'test/comcom',
+        ref: '/apps/test/comcom',
         value: 'val'
       },
       gas_price: 1
