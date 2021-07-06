@@ -1,13 +1,13 @@
 #!/bin/sh
 
-if [ "$#" -lt 3 ]; then
+if [[ "$#" -lt 3 ]]; then
     echo "Usage: sh reset_blockchain_gcp.sh dev lia 0"
     exit
 fi
 
-if [ "$1" = 'spring' ] || [ "$1" = 'summer' ] || [ "$1" = 'dev' ] || [ "$1" = 'staging' ]; then
+if [[ "$1" == 'spring' ]] || [[ "$1" == 'summer' ]] || [[ "$1" == 'dev' ]] || [[ "$1" == 'staging' ]]; then
     SEASON="$1"
-    if [ "$1" = 'spring' ] || [ "$1" = 'summer' ]; then
+    if [[ "$1" == 'spring' ]] || [[ "$1" == 'summer' ]]; then
         PROJECT_ID="testnet-prod-ground"
     else
         PROJECT_ID="testnet-$1-ground"
@@ -45,7 +45,7 @@ gcloud compute ssh $NODE_3_TARGET_ADDR --command "killall node" --project $PROJE
 gcloud compute ssh $NODE_4_TARGET_ADDR --command "killall node" --project $PROJECT_ID --zone $NODE_4_ZONE
 
 printf "\nStopping shard blockchains..."
-if [ "$3" -gt 0 ]; then
+if [[ "$3" -gt 0 ]]; then
     for i in $(seq $3)
         do
             echo "shard #$i"
@@ -79,7 +79,7 @@ gcloud compute ssh $NODE_4_TARGET_ADDR --command "cd ../ain-blockchain && sudo r
 
 sleep 10
 
-if [ "$3" -gt 0 ]; then
+if [[ "$3" -gt 0 ]]; then
     for i in $(seq $3)
         do
             echo "shard #$i"
