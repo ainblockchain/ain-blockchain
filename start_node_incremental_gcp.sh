@@ -7,6 +7,8 @@ if [ "$#" -lt 2 ]; then
 fi
 
 # 1. Configure env vars (GENESIS_CONFIGS_DIR, TRACKER_WS_ADDR, ACCOUNT_INDEX, ...)
+printf "\n\n#### [Step 1] Configure env vars.. ####\n"
+
 export GENESIS_CONFIGS_DIR=genesis-configs/testnet
 if [ "$1" = 'spring' ]; then
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
@@ -103,29 +105,40 @@ NEW_DIR_PATH="../ain-blockchain-$date"
 echo "NEW_DIR_PATH=$NEW_DIR_PATH"
 
 # 2. Get currently used directory
+printf "\n\n#### [Step 2] Get currently used directory.. ####\n"
+
 OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
 echo "OLD_DIR_PATH=$OLD_DIR_PATH"
 
-# 3. Kill old node & remove old directory (but keep the chain data)
-sudo killall node
-sudo rm -rf ../ain-blockchain*
+# 3. Create a new directory
+printf "\n\n#### [Step 3] Create a new directory.. ####\n"
 
-# 4. Create a new directory
 sudo mkdir $NEW_DIR_PATH
 sudo chmod 777 $NEW_DIR_PATH
 mv * $NEW_DIR_PATH
 sudo mkdir -p $BLOCKCHAIN_DATA_DIR
 sudo chmod 777 $BLOCKCHAIN_DATA_DIR
 
-# 5. Install dependencies
+# 4. Install dependencies
+printf "\n\n#### [Step 4] Install dependencies.. ####\n"
+
 cd $NEW_DIR_PATH
 npm install
 
+# 5. Kill old node process & remove old directory (but keep the chain data)
+printf "\n\n#### [Step 5] Kill old node process & remove old directory.. ####\n"
+
+sudo killall node
+sudo rm -rf $OLD_DIR_PATH
+
 # 6. Start a new node process
-printf "Starting up Blockchain Node server.."
+printf "\n\n#### [Step 6] Start a new node process.. ####\n"
+
 nohup node --async-stack-traces client/index.js >/dev/null 2>error_logs.txt &
 
-# 7. Wait until the new node catches up
+# 7. Wait until the new node process catches up
+printf "\n\n#### [Step 7] Wait until the new node process catches up.. ####\n"
+
 SECONDS=0
 loopCount=0
 
