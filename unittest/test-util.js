@@ -133,7 +133,7 @@ async function setUpApp(appName, serverList, appConfig) {
     }
   }).body.toString('utf-8')).result;
   if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
-    console.log(`setUpTestApp(): Failed to check finalization of app staking tx.`);
+    console.log(`setUpApp(): Failed to check finalization of app staking tx.`);
   }
 
   const createAppRes = parseOrLog(syncRequest('POST', serverList[0] + '/set_value', {
@@ -143,7 +143,7 @@ async function setUpApp(appName, serverList, appConfig) {
     }
   }).body.toString('utf-8')).result;
   if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
-    console.log(`setUpTestApp(): Failed to check finalization of create app tx.`)
+    console.log(`setUpApp(): Failed to check finalization of create app tx.`)
   }
 }
 
