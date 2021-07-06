@@ -1,14 +1,14 @@
 #!/bin/sh
 
-if [ "$#" -lt 2 ]; then
+if [[ "$#" -lt 2 ]]; then
     echo "Usage: sh deploy_monitoring_gcp.sh [dev|staging|spring|summer] <GCP Username>"
     echo "Example: sh deploy_monitoring_gcp.sh dev seo"
     exit
 fi
 
-if [ "$1" = 'spring' ] || [ "$1" = 'summer' ] || [ "$1" = 'dev' ] || [ "$1" = 'staging' ]; then
+if [[ "$1" == 'spring' ]] || [[ "$1" == 'summer' ]] || [[ "$1" == 'dev' ]] || [[ "$1" == 'staging' ]]; then
     SEASON="$1"
-    if [ "$1" = 'spring' ] || [ "$1" = 'summer' ]; then
+    if [[ "$1" == 'spring' ]] || [[ "$1" == 'summer' ]]; then
         PROJECT_ID="testnet-prod-ground"
     else
         PROJECT_ID="testnet-$1-ground"
