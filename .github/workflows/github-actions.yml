@@ -19,12 +19,13 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
       # Setup node environment for testing
       - uses: actions/setup-node@v2
         with:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
-          ref: ${{ github.event.pull_request.head.sha }}
       - name: yarn install
         run: yarn install
       - name: run unittest
