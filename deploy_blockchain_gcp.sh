@@ -133,7 +133,7 @@ if [ "$NUM_SHARDS" -gt 0 ]; then
             echo "shard #$i"
 
             # generate genesis config files in ./blockchain/shard_$i
-            if [ "$4" == "--setup" ]; then
+            if [ $OPTIONS == "--setup" ]; then
                 node ./tools/generateShardGenesisFiles.js $SEASON 10 $i
             fi
 
@@ -152,8 +152,8 @@ if [ "$NUM_SHARDS" -gt 0 ]; then
             printf "\nDeploying files to ${SHARD_NODE_2_TARGET_ADDR}..."
             gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_2_TARGET_ADDR}:~/  --project $PROJECT_ID --zone $NODE_2_ZONE
 
-             # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-             if [ "$4" == "--setup" ]; then
+            # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
+            if [ $OPTIONS == "--setup" ]; then
                 printf "\n\n###########################\n# Setting up shard_$i tracker #\n###########################\n\n"
                 gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
                 printf "\n\n##########################\n# Setting up  shard_$i node 0 #\n##########################\n\n"
