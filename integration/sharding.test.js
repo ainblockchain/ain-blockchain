@@ -1665,7 +1665,6 @@ describe('Sharding', async () => {
         })
 
         it('ain_sendSignedTransaction with is_global = false (explicit)', () => {
-          // const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -1705,7 +1704,6 @@ describe('Sharding', async () => {
         })
 
         it('ain_sendSignedTransaction with is_global = true', () => {
-          // const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -1747,7 +1745,6 @@ describe('Sharding', async () => {
 
       describe('ain_sendSignedTransactionBatch', () => {
         it('ain_sendSignedTransactionBatch with is_global = false', () => {
-          // const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -1795,7 +1792,6 @@ describe('Sharding', async () => {
         })
 
         it('ain_sendSignedTransactionBatch with is_global = false (explicit)', () => {
-          // const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
@@ -1847,7 +1843,6 @@ describe('Sharding', async () => {
         })
 
         it('ain_sendSignedTransactionBatch with is_global = true', () => {
-          // const account = ainUtil.createAccount();
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
             operation: {
