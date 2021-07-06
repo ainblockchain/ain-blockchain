@@ -6,9 +6,9 @@ if [[ "$#" -lt 4 ]]; then
     exit
 fi
 
-if [[ "$1" == 'spring' ]] || [[ "$1" == 'summer' ]] || [[ "$1" == 'dev' ]] || [[ "$1" == 'staging' ]]; then
+if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]]; then
     SEASON="$1"
-    if [[ "$1" == 'spring' ]] || [[ "$1" == 'summer' ]]; then
+    if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
         PROJECT_ID="testnet-prod-ground"
     else
         PROJECT_ID="testnet-$1-ground"
@@ -26,7 +26,7 @@ echo "GCP_USER=$GCP_USER"
 NUM_SHARDS=$3
 echo "NUM_SHARDS=$NUM_SHARDS"
 
-if [[ "$4" == 'canary' ]] || [[ "$4" == 'full' ]]; then
+if [[ "$4" = 'canary' ]] || [[ "$4" = 'full' ]]; then
     RUN_MODE="$4"
 else
     echo "Invalid run mode argument: $4"
@@ -43,7 +43,7 @@ read -p "Do you want to proceed? >> (y/N) " -n 1 -r
 echo
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    [[ "$0" == "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
+    [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
 FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ package.json setup_tracker_gcp.sh setup_blockchain_ubuntu.sh start_tracker_gcp.sh"
@@ -65,7 +65,7 @@ NODE_4_ZONE="europe-west4-a"
 
 # 1. Copy files to gcp
 printf "\nDeploying parent blockchain...\n"
-if [[ $RUN_MODE == "canary" ]]; then
+if [[ $RUN_MODE = "canary" ]]; then
     printf "\nCopying files to parent node 0 (${NODE_0_TARGET_ADDR})...\n\n"
     gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_0_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_0_ZONE
 else
@@ -84,8 +84,8 @@ else
 fi
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-if [[ $OPTIONS == "--setup" ]]; then
-    if [[ $RUN_MODE == "canary" ]]; then
+if [[ $OPTIONS = "--setup" ]]; then
+    if [[ $RUN_MODE = "canary" ]]; then
         printf "\n\n##########################\n# Setting up parent node 0 #\n##########################\n\n"
         gcloud compute ssh $NODE_0_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_0_ZONE
     else
@@ -105,7 +105,7 @@ if [[ $OPTIONS == "--setup" ]]; then
 fi
 
 # 2. Set up parent chain
-if [[ $RUN_MODE == "canary" ]]; then
+if [[ $RUN_MODE = "canary" ]]; then
     printf "\n\n###########################\n# Running parent node 0 #\n###########################\n\n"
     gcloud compute ssh $NODE_0_TARGET_ADDR --command ". start_node_incremental_gcp.sh $SEASON 0 0" --project $PROJECT_ID --zone $NODE_0_ZONE
 else
@@ -131,7 +131,7 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             echo "shard #$i"
 
             # generate genesis config files in ./blockchain/shard_$i
-            if [[ $OPTIONS == "--setup" ]]; then
+            if [[ $OPTIONS = "--setup" ]]; then
                 node ./tools/generateShardGenesisFiles.js $SEASON 10 $i
             fi
 
@@ -141,7 +141,7 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             SHARD_NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore"
 
             # deploy files to GCP instances
-            if [[ $RUN_MODE == "canary" ]]; then
+            if [[ $RUN_MODE = "canary" ]]; then
                 printf "\nDeploying files to shard_$i node 0 ${SHARD_NODE_0_TARGET_ADDR}..."
                 gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_0_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_0_ZONE
             else
@@ -156,8 +156,8 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             fi
 
             # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-            if [[ $OPTIONS == "--setup" ]]; then
-                if [[ $RUN_MODE == "canary" ]]; then
+            if [[ $OPTIONS = "--setup" ]]; then
+                if [[ $RUN_MODE = "canary" ]]; then
                     printf "\n\n##########################\n# Setting up  shard_$i node 0 #\n##########################\n\n"
                     gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_0_ZONE
                 else
@@ -173,7 +173,7 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             fi
 
             # ssh into each instance, install packages and start up the server
-            if [[ $RUN_MODE == "canary" ]]; then
+            if [[ $RUN_MODE = "canary" ]]; then
                 printf "\n\n##########################\n# Running shard_$i node 0 #\n##########################\n\n"
                 gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command ". start_node_incremental_gcp.sh $SEASON $i 0" --project $PROJECT_ID --zone $NODE_0_ZONE
             else

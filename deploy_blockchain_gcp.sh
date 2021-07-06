@@ -6,9 +6,9 @@ if [[ "$#" -lt 3 ]]; then
     exit
 fi
 
-if [[ "$1" == 'spring' ]] || [[ "$1" == 'summer' ]] || [[ "$1" == 'dev' ]] || [[ "$1" == 'staging' ]]; then
+if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]]; then
     SEASON="$1"
-    if [[ "$1" == 'spring' ]] || [[ "$1" == 'summer' ]]; then
+    if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
         PROJECT_ID="testnet-prod-ground"
     else
         PROJECT_ID="testnet-$1-ground"
@@ -97,7 +97,7 @@ printf "\nDeploying files to ${NODE_4_TARGET_ADDR}..."
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_4_ZONE
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-if [[ $OPTIONS == "--setup" ]]; then
+if [[ $OPTIONS = "--setup" ]]; then
     printf "\n\n##########################\n# Setting up parent tracker #\n###########################\n\n"
     gcloud compute ssh $TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
     printf "\n\n##########################\n# Setting up parent node 0 #\n##########################\n\n"
@@ -133,7 +133,7 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             echo "shard #$i"
 
             # generate genesis config files in ./blockchain/shard_$i
-            if [[ $OPTIONS == "--setup" ]]; then
+            if [[ $OPTIONS = "--setup" ]]; then
                 node ./tools/generateShardGenesisFiles.js $SEASON 10 $i
             fi
 
@@ -153,7 +153,7 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_2_TARGET_ADDR}:~/  --project $PROJECT_ID --zone $NODE_2_ZONE
 
             # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-            if [[ $OPTIONS == "--setup" ]]; then
+            if [[ $OPTIONS = "--setup" ]]; then
                 printf "\n\n###########################\n# Setting up shard_$i tracker #\n###########################\n\n"
                 gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
                 printf "\n\n##########################\n# Setting up  shard_$i node 0 #\n##########################\n\n"
