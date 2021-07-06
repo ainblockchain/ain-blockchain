@@ -10,13 +10,13 @@ fi
 printf "\n\n#### [Step 1] Configure env vars ####\n\n"
 
 export GENESIS_CONFIGS_DIR=genesis-configs/testnet
-if [[ "$1" == 'spring' ]]; then
+if [[ "$1" = 'spring' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
-elif [[ "$1" == 'summer' ]]; then
+elif [[ "$1" = 'summer' ]]; then
     export TRACKER_WS_ADDR=ws://35.194.172.106:5000
-elif [[ "$1" == 'staging' ]]; then
+elif [[ "$1" = 'staging' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.150.73:5000
-elif [[ "$1" == 'dev' ]]; then
+elif [[ "$1" = 'dev' ]]; then
     if [[ "$2" = 0 ]]; then
         export TRACKER_WS_ADDR=ws://34.80.184.73:5000  # dev-tracker-ip
     elif [[ "$2" = 1 ]]; then
@@ -154,7 +154,7 @@ do
     lastBlockNumber=$(curl -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'ain_getRecentBlockNumber')" "http://localhost:8080/json-rpc" | jq -r '.result.result')
     printf "\nconsensusStatus = ${consensusStatus}"
     printf "\nlastBlockNumber = ${lastBlockNumber}"
-    if [[ "$consensusStatus" == "RUNNING" ]]; then
+    if [[ "$consensusStatus" = "RUNNING" ]]; then
         printf "\nBlockchain Node server is synced & running!\n"
         printf "Time it took to sync in seconds: $SECONDS\n\n"
         break
