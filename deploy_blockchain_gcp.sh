@@ -26,6 +26,9 @@ echo "GCP_USER=$GCP_USER"
 NUM_SHARDS=$3
 echo "NUM_SHARDS=$NUM_SHARDS"
 
+OPTIONS="$4"
+echo "OPTIONS=$OPTIONS"
+
 # Get confirmation.
 echo
 read -p "Do you want to proceed? >> (y/N) " -n 1 -r
@@ -94,7 +97,7 @@ printf "\nDeploying files to ${NODE_4_TARGET_ADDR}..."
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_4_ZONE
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-if [ "$4" == "--setup" ]; then
+if [ $OPTIONS == "--setup" ]; then
     printf "\n\n##########################\n# Setting up parent tracker #\n###########################\n\n"
     gcloud compute ssh $TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
     printf "\n\n##########################\n# Setting up parent node 0 #\n##########################\n\n"
@@ -130,7 +133,7 @@ if [ "$NUM_SHARDS" -gt 0 ]; then
             echo "shard #$i"
 
             # generate genesis config files in ./blockchain/shard_$i
-            if [ "$4" == "--setup" ]; then
+            if [ $OPTIONS == "--setup" ]; then
                 node ./tools/generateShardGenesisFiles.js $SEASON 10 $i
             fi
 
@@ -149,8 +152,8 @@ if [ "$NUM_SHARDS" -gt 0 ]; then
             printf "\nDeploying files to ${SHARD_NODE_2_TARGET_ADDR}..."
             gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_2_TARGET_ADDR}:~/  --project $PROJECT_ID --zone $NODE_2_ZONE
 
-             # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-             if [ "$4" == "--setup" ]; then
+            # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
+            if [ $OPTIONS == "--setup" ]; then
                 printf "\n\n###########################\n# Setting up shard_$i tracker #\n###########################\n\n"
                 gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
                 printf "\n\n##########################\n# Setting up  shard_$i node 0 #\n##########################\n\n"
