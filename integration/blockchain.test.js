@@ -25,7 +25,8 @@ const {
   waitUntilTxFinalized,
   waitForNewBlocks,
   waitUntilNodeSyncs,
-  parseOrLog
+  parseOrLog,
+  setUpApp
 } = require('../unittest/test-util');
 
 const ENV_VARIABLES = [
@@ -80,23 +81,23 @@ const LAST_BLOCK_NUMBER_ENDPOINT = '/last_block_number'
 
 // Data options
 RANDOM_OPERATION = [
-  ['set_value', {ref: 'test/comeonnnnnnn', value: 'testme'}],
-  ['set_value', {ref: 'test/comeonnnnnnn', value: 'no meeeee'}],
-  ['set_value', {ref: 'test/comeon/nnnnnn', value: 'through'}],
-  ['set_value', {ref: 'test/comeonnnnnnn/new', value: {'new': 'path'}}],
-  ['set_value', {ref: 'test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}],
-  ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: 'very nested'}],
-  ['set_value', {ref: 'test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}],
-  ['set_value', {ref: 'test/new/final/path', value: {'more': {'now': 12, 'hellloooo': 123}}}],
-  ['inc_value', {ref: 'test/balance/user1', value: 10}],
-  ['inc_value', {ref: 'test/balance/user1', value: 20}],
-  ['inc_value', {ref: 'test/balance/user2', value: 1}],
-  ['inc_value', {ref: 'test/balance/user2', value: 1}],
-  ['dec_value', {ref: 'test/balance/user1', value: 10000}],
-  ['dec_value', {ref: 'test/balance/user1', value: 10000}],
-  ['dec_value', {ref: 'test/balance/user2', value: 100002}],
-  ['set_rule', {ref: 'test/test_rule/', value: { ".write": "some rule config"}}],
-  ['set_function', {ref: 'test/test_function/', value: {
+  ['set_value', {ref: '/apps/test/comeonnnnnnn', value: 'testme'}],
+  ['set_value', {ref: '/apps/test/comeonnnnnnn', value: 'no meeeee'}],
+  ['set_value', {ref: '/apps/test/comeon/nnnnnn', value: 'through'}],
+  ['set_value', {ref: '/apps/test/comeonnnnnnn/new', value: {'new': 'path'}}],
+  ['set_value', {ref: '/apps/test/builed/some/deep', value: {'place': {'next': 1, 'level': 'down'}}}],
+  ['set_value', {ref: '/apps/test/b/u/i/l/e/d/hel', value: 'very nested'}],
+  ['set_value', {ref: '/apps/test/b/u/i/l/e/d/hel', value: {1: 2, 3: 4, 5: 6}}],
+  ['set_value', {ref: '/apps/test/new/final/path', value: {'more': {'now': 12, 'hellloooo': 123}}}],
+  ['inc_value', {ref: '/apps/test/balance/user1', value: 10}],
+  ['inc_value', {ref: '/apps/test/balance/user1', value: 20}],
+  ['inc_value', {ref: '/apps/test/balance/user2', value: 1}],
+  ['inc_value', {ref: '/apps/test/balance/user2', value: 1}],
+  ['dec_value', {ref: '/apps/test/balance/user1', value: 10000}],
+  ['dec_value', {ref: '/apps/test/balance/user1', value: 10000}],
+  ['dec_value', {ref: '/apps/test/balance/user2', value: 100002}],
+  ['set_rule', {ref: '/apps/test/test_rule/', value: { ".write": "some rule config"}}],
+  ['set_function', {ref: '/apps/test/test_function/', value: {
     ".function": {
       "fid": {
         "function_type": "REST",
@@ -106,7 +107,7 @@ RANDOM_OPERATION = [
       },
     }
   }}],
-  ['set_owner', {ref: 'test/test_owner/', value: {
+  ['set_owner', {ref: '/apps/test/test_owner/', value: {
     ".owner": {
       "owners": {
         "*": {
@@ -118,28 +119,28 @@ RANDOM_OPERATION = [
       }
     }
   }}],
-  ['set', {op_list: [{ref: 'test/increase/first/level', value: 10},
-      {ref: 'test/increase/first/level2', value: 20}]}],
-  ['set', {op_list: [{ref: 'test/increase/second/level/deeper', value: 20},
-      {ref: 'test/increase/second/level/deeper', value: 1000}]}],
-  ['set', {op_list: [{ref: 'test/increase', value: 1}]}],
-  ['set', {op_list: [{ref: 'test/new', value: 1}]}],
-  ['set', {op_list: [{ref: 'test/increase', value: 10000}]}],
-  ['set', {op_list: [{ref: 'test/b/u', value: 10000}]}],
-  ['set', {op_list: [{ref: 'test/builed/some/deep/place/next', value: 100002}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeonnnnnnn',
+  ['set', {op_list: [{ref: '/apps/test/increase/first/level', value: 10},
+      {ref: '/apps/test/increase/first/level2', value: 20}]}],
+  ['set', {op_list: [{ref: '/apps/test/increase/second/level/deeper', value: 20},
+      {ref: '/apps/test/increase/second/level/deeper', value: 1000}]}],
+  ['set', {op_list: [{ref: '/apps/test/increase', value: 1}]}],
+  ['set', {op_list: [{ref: '/apps/test/new', value: 1}]}],
+  ['set', {op_list: [{ref: '/apps/test/increase', value: 10000}]}],
+  ['set', {op_list: [{ref: '/apps/test/b/u', value: 10000}]}],
+  ['set', {op_list: [{ref: '/apps/test/builed/some/deep/place/next', value: 100002}]}],
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: '/apps/test/comeonnnnnnn',
       value: 'no meeeee'}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeon/nnnnnn',
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: '/apps/test/comeon/nnnnnn',
       value: 'through'}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/comeonnnnnnn/new',
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: '/apps/test/comeonnnnnnn/new',
       value: {'new': 'path'}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/builed/some/deep',
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: '/apps/test/builed/some/deep',
       value: {'place': {'next': 1, 'level': 'down'}}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: '/apps/test/b/u/i/l/e/d/hel',
       value: {'range': 1, 'another': 2}}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: '/apps/test/b/u/i/l/e/d/hel',
       value: 'very nested'}}]}],
-  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: 'test/b/u/i/l/e/d/hel',
+  ['batch', {tx_list: [{operation: {type: 'SET_VALUE', ref: '/apps/test/b/u/i/l/e/d/hel',
       value: {1: 2, 3: 4, 5: 6}}}]}],
 ];
 
@@ -259,7 +260,25 @@ describe('Blockchain Cluster', () => {
         resolve();
       });
     }));
-    return Promise.all(promises);
+    await Promise.all(promises);
+
+    const server1Addr = parseOrLog(syncRequest(
+        'GET', server1 + '/get_address').body.toString('utf-8')).result;
+    const server2Addr = parseOrLog(syncRequest(
+        'GET', server2 + '/get_address').body.toString('utf-8')).result;
+    const server3Addr = parseOrLog(syncRequest(
+        'GET', server3 + '/get_address').body.toString('utf-8')).result;
+    const server4Addr = parseOrLog(syncRequest(
+        'GET', server4 + '/get_address').body.toString('utf-8')).result;
+
+    await setUpApp('test', serverList, {
+      admin: {
+        [server1Addr]: true,
+        [server2Addr]: true,
+        [server3Addr]: true,
+        [server4Addr]: true,
+      }
+    });
   });
 
   after(() => {
@@ -502,9 +521,9 @@ describe('Blockchain Cluster', () => {
       for (let i = 1; i < serverList.length; i++) {
         await sendTransactions(sentOperations);
         await waitForNewBlocks(serverList[i]);
-        body1 = parseOrLog(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=test')
+        body1 = parseOrLog(syncRequest('GET', server1 + GET_VALUE_ENDPOINT + '?ref=/apps/test')
             .body.toString('utf-8'));
-        body2 = parseOrLog(syncRequest('GET', serverList[i] + GET_VALUE_ENDPOINT + '?ref=test')
+        body2 = parseOrLog(syncRequest('GET', serverList[i] + GET_VALUE_ENDPOINT + '?ref=/apps/test')
             .body.toString('utf-8'));
         assert.deepEqual(body1.result, body2.result);
       }
@@ -574,7 +593,7 @@ describe('Blockchain Cluster', () => {
           const txHash = parseOrLog(syncRequest('POST', server2 + '/' + 'set_value',
                 {
                   json: {
-                    ref: '/test/nonce_test',
+                    ref: '/apps/test/nonce_test',
                     value: 'testing...'
                   }
                 }).body.toString('utf-8')).result.tx_hash;

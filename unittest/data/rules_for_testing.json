@@ -6,21 +6,6 @@
   "comcom": {
     ".write": true
   },
-  "consensus": {
-    "number": {
-      "$number": {
-        ".write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))",
-        "propose": {
-          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && (newData.number === 1 || getValue('/consensus/number/' + (newData.number - 1) + '/propose/validators/' + auth.addr) > 0)"
-        },
-        "vote": {
-          "$user_addr": {
-            ".write": "auth.addr === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/service_accounts/staking/consensus/' + $user_addr + '|0/value') >= newData.stake"
-          }
-        }
-      }
-    }
-  },
   "billing_keys": {
     "update_billing": {
       ".write": true
@@ -42,7 +27,7 @@
         ".write": "data !== null"
       },
       "balance_info": {
-        ".write": "getValue('test/billing_keys/update_billing/' + $uid) !== null"
+        ".write": "getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null"
       },
       "next_counter": {
         ".write": "typeof newData === 'number' && newData === data + 1"
