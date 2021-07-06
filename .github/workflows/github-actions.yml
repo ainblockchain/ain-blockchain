@@ -24,6 +24,7 @@ jobs:
         with:
           node-version: '12.x'
           registry-url: 'https://registry.npmjs.org'
+          ref: ${{ github.event.pull_request.head.sha }}
       - name: yarn install
         run: yarn install
       - name: run unittest
