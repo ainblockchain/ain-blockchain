@@ -68,7 +68,7 @@ class Consensus {
   }
 
   init(lastBlockWithoutProposal) {
-    const LOG_HEADER = 'init';
+    const LOG_HEADER = 'Consensus.init';
     const finalizedNumber = this.node.bc.lastBlockNumber();
     const genesisBlock = this.node.bc.getBlockByNumber(0);
     if (!genesisBlock) {
