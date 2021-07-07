@@ -7,7 +7,7 @@ if [[ "$#" -lt 2 ]]; then
 fi
 
 # 1. Configure env vars (GENESIS_CONFIGS_DIR, TRACKER_WS_ADDR, ACCOUNT_INDEX, ...)
-printf "\n\n#### [Step 1] Configure env vars ####\n\n"
+printf "\n#### [Step 1] Configure env vars ####\n\n"
 
 export GENESIS_CONFIGS_DIR=genesis-configs/testnet
 if [[ "$1" = 'spring' ]]; then
@@ -79,16 +79,18 @@ else
     exit
 fi
 
+echo "TRACKER_WS_ADDR=$TRACKER_WS_ADDR"
+echo "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR"
+
 if [[ "$3" -lt 0 ]] || [[ "$3" -gt 4 ]]; then
     echo "Invalid account_index argument: $2"
     exit
 fi
 
-echo "TRACKER_WS_ADDR=$TRACKER_WS_ADDR"
-echo "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR"
-
 export ACCOUNT_INDEX="$3"
 echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
+
+#export SYNC_MODE="fast"
 
 export DEBUG=false
 export CONSOLE_LOG=false
@@ -105,38 +107,46 @@ NEW_DIR_PATH="../ain-blockchain-$date"
 echo "NEW_DIR_PATH=$NEW_DIR_PATH"
 
 # 2. Get currently used directory
-printf "\n\n#### [Step 2] Get currently used directory ####\n\n"
+printf "\n#### [Step 2] Get currently used directory ####\n\n"
 
 OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
 echo "OLD_DIR_PATH=$OLD_DIR_PATH"
 
 # 3. Create a new directory
-printf "\n\n#### [Step 3] Create a new directory ####\n\n"
+printf "\n#### [Step 3] Create a new directory ####\n\n"
 
-sudo mkdir $NEW_DIR_PATH
+MKDIR_CMD="sudo mkdir $NEW_DIR_PATH"
+echo "MKDIR_CMD=$MKDIR_CMD"
+eval $MKDIR_CMD
+
 sudo chmod 777 $NEW_DIR_PATH
 mv * $NEW_DIR_PATH
 sudo mkdir -p $BLOCKCHAIN_DATA_DIR
 sudo chmod 777 $BLOCKCHAIN_DATA_DIR
 
 # 4. Install dependencies
-printf "\n\n#### [Step 4] Install dependencies ####\n\n"
+printf "\n#### [Step 4] Install dependencies ####\n\n"
 
 cd $NEW_DIR_PATH
 npm install
 
 # 5. Kill old node process 
-printf "\n\n#### [Step 5] Kill old node process ####\n\n"
+printf "\n#### [Step 5] Kill old node process ####\n\n"
 
-sudo killall node
+KILL_CMD='sudo killall node'
+printf "KILL_CMD=$KILL_CMD\n\n"
+eval $KILL_CMD
 
 # 6. Start a new node process
-printf "\n\n#### [Step 6] Start a new node process ####\n\n"
+sleep 20
+printf "\n#### [Step 6] Start a new node process ####\n\n"
 
-nohup node --async-stack-traces --max-old-space-size=4000 client/index.js >/dev/null 2>error_logs.txt &
+START_CMD='nohup node --async-stack-traces --max-old-space-size=4000 client/index.js >/dev/null 2>error_logs.txt &'
+printf "START_CMD=$START_CMD\n"
+eval $START_CMD
 
 # 7. Wait until the new node process catches up
-printf "\n\n#### [Step 7] Wait until the new node process catches up ####\n\n"
+printf "\n#### [Step 7] Wait until the new node process catches up ####\n\n"
 
 SECONDS=0
 loopCount=0
@@ -151,12 +161,12 @@ EOF
 while :
 do
     consensusStatus=$(curl -m 20 -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'net_consensusStatus')" "http://localhost:8080/json-rpc" | jq -r '.result.result.state')
+    printf "\nconsensusStatus = ${consensusStatus}\n"
     lastBlockNumber=$(curl -m 20 -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'ain_getRecentBlockNumber')" "http://localhost:8080/json-rpc" | jq -r '.result.result')
-    printf "\nconsensusStatus = ${consensusStatus}"
-    printf "\nlastBlockNumber = ${lastBlockNumber}"
+    printf "\nlastBlockNumber = ${lastBlockNumber}\n"
     if [[ "$consensusStatus" = "RUNNING" ]]; then
         printf "\nBlockchain Node server is synced & running!\n"
-        printf "Time it took to sync in seconds: $SECONDS\n\n"
+        printf "\nTime it took to sync in seconds: $SECONDS\n"
         break
     fi
     ((loopCount++))
@@ -165,6 +175,6 @@ do
 done
 
 # 8. Remove old directory keeping the chain data
-printf "\n\n#### [Step 8] Remove old directory keeping the chain data ####\n\n"
+printf "\n#### [Step 8] Remove old directory keeping the chain data ####\n\n"
 
 sudo rm -rf $OLD_DIR_PATH

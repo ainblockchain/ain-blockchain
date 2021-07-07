@@ -89,7 +89,10 @@ export LIGHTWEIGHT=false
 export STAKE=100000
 export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
 
-echo 'Starting up Blockchain Node server..'
-nohup node --async-stack-traces client/index.js >/dev/null 2>error_logs.txt &
+printf "\nStarting up Blockchain Node server..\n\n"
+START_CMD='nohup node --async-stack-traces --max-old-space-size=4000 client/index.js >/dev/null 2>error_logs.txt &'
+printf "START_CMD=$START_CMD\n"
+eval $START_CMD
 
-echo "Blockchain Node server is now up!"
+
+printf "\nBlockchain Node server is now up!\n\n"

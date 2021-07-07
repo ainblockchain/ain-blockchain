@@ -82,18 +82,18 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
 fi
 
 # deploy files to GCP instances
-printf "\nDeploying parent blockchain..."
-printf "\nDeploying files to ${TRACKER_TARGET_ADDR}..."
+printf "\nDeploying parent blockchain...\n\n"
+printf "\nDeploying files to parent tracker (${TRACKER_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE
-printf "\nDeploying files to ${NODE_0_TARGET_ADDR}..."
+printf "\nDeploying files to parent node 0 (${NODE_0_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_0_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_0_ZONE
-printf "\nDeploying files to ${NODE_1_TARGET_ADDR}..."
+printf "\nDeploying files to parent node 1 (${NODE_1_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_1_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_1_ZONE
-printf "\nDeploying files to ${NODE_2_TARGET_ADDR}..."
+printf "\nDeploying files to parent node 2 (${NODE_2_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_2_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_2_ZONE
-printf "\nDeploying files to ${NODE_3_TARGET_ADDR}..."
+printf "\nDeploying files to parent node 3 (${NODE_3_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_3_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_3_ZONE
-printf "\nDeploying files to ${NODE_4_TARGET_ADDR}..."
+printf "\nDeploying files to parent node 4 (${NODE_4_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_4_ZONE
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
@@ -143,13 +143,13 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             SHARD_NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore"
 
             # deploy files to GCP instances
-            printf "\nDeploying files to ${SHARD_TRACKER_TARGET_ADDR}..."
+            printf "\nDeploying files to shard_$i tracker (${SHARD_TRACKER_TARGET_ADDR})...\n\n"
             gcloud compute scp --recurse $FILES_FOR_TRACKER ${SHARD_TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE
-            printf "\nDeploying files to ${SHARD_NODE_0_TARGET_ADDR}..."
+            printf "\nDeploying files to shard_$i node 0 (${SHARD_NODE_0_TARGET_ADDR})...\n\n"
             gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_0_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_0_ZONE
-            printf "\nDeploying files to ${SHARD_NODE_1_TARGET_ADDR}..."
+            printf "\nDeploying files to shard_$i node 1 (${SHARD_NODE_1_TARGET_ADDR})...\n\n"
             gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_1_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_1_ZONE
-            printf "\nDeploying files to ${SHARD_NODE_2_TARGET_ADDR}..."
+            printf "\nDeploying files to shard_$i node 2 (${SHARD_NODE_2_TARGET_ADDR})...\n\n"
             gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_2_TARGET_ADDR}:~/  --project $PROJECT_ID --zone $NODE_2_ZONE
 
             # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
