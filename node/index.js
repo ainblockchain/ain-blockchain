@@ -60,6 +60,7 @@ class BlockchainNode {
     this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
     this.nonce = null;  // nonce from current final version
     this.state = BlockchainNodeStates.STARTING;
+    logger.info(`Now node in STARTING state!`);
     this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
     FileUtil.createSnapshotDir(this.snapshotDir);
   }
@@ -85,14 +86,15 @@ class BlockchainNode {
   }
 
   init(isFirstNode) {
-    const LOG_HEADER = 'init';
-    logger.info(`[${LOG_HEADER}] Initializing node..`);
+    const LOG_HEADER = 'BlockchainNode.init';
+
     let latestSnapshot = null;
     let latestSnapshotPath = null;
     let latestSnapshotBlockNumber = -1;
 
     // 1. Get the latest snapshot if in the "fast" sync mode.
     if (SYNC_MODE === SyncModeOptions.FAST) {
+      logger.info(`[${LOG_HEADER}] Initializing node in 'fast' mode..`);
       const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
       latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
       latestSnapshotBlockNumber = latestSnapshotInfo.latestSnapshotBlockNumber;
@@ -103,28 +105,36 @@ class BlockchainNode {
           logger.error(`[${LOG_HEADER}] ${err.stack}`);
         }
       }
+      logger.info(`[${LOG_HEADER}] Fast mode sync done!`);
+    } else {
+      logger.info(`[${LOG_HEADER}] Initializing node in 'full' mode..`);
     }
 
     // 2. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
+    logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
     const lastBlockWithoutProposal = this.bc.init(isFirstNode, latestSnapshotBlockNumber);
 
     // 3. Initialize DB (with the latest snapshot, if it exists)
+    logger.info(`[${LOG_HEADER}] Initializing DB..`);
     const startingDb =
         this.createDb(StateVersions.EMPTY, StateVersions.START, this.bc, this.tp, true);
     startingDb.initDbStates(latestSnapshot);
 
     // 4. Execute the chain on the DB and finalize it.
+    logger.info(`[${LOG_HEADER}] Executing chains on DB..`);
     this.executeChainOnDb(startingDb);
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
     this.nonce = this.getNonceForAddr(this.account.address, false, true);
 
     // 5. Execute transactions from the pool.
+    logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
     this.db.executeTransactionList(
         this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()),
         this.bc.lastBlockNumber() + 1);
 
     // 6. Node status changed: STARTING -> SYNCING.
     this.state = BlockchainNodeStates.SYNCING;
+    logger.info(`[${LOG_HEADER}] Now node in SYNCING state!`);
 
     return lastBlockWithoutProposal;
   }
@@ -144,7 +154,7 @@ class BlockchainNode {
   createDb(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot) {
     const LOG_HEADER = 'createDb';
 
-    logger.info(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
+    logger.debug(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
         `${baseVersion} -> ${newVersion}`);
     const newRoot = this.stateManager.cloneVersion(baseVersion, newVersion);
     if (!newRoot) {
@@ -161,7 +171,7 @@ class BlockchainNode {
   destroyDb(db) {
     const LOG_HEADER = 'destroyDb';
 
-    logger.info(`[${LOG_HEADER}] Destroying DB with state version: ${db.stateVersion}`);
+    logger.debug(`[${LOG_HEADER}] Destroying DB with state version: ${db.stateVersion}`);
     db.deleteStateVersion();
     db.deleteBackupStateVersion();
   }
@@ -438,6 +448,7 @@ class BlockchainNode {
         // TODO(liayoo): Ask the tracker server for another peer.
         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
         this.state = BlockchainNodeStates.SERVING;
+        logger.info(`[${LOG_HEADER}] Now node in SERVING state.`);
       }
       return false;
     }
@@ -453,6 +464,7 @@ class BlockchainNode {
         // TODO(liayoo): Ask the tracker server for another peer.
         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
         this.state = BlockchainNodeStates.SERVING;
+        logger.info(`[${LOG_HEADER}] Now node in SERVING state!`);
       }
       return false;
     }

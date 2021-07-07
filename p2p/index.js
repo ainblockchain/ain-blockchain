@@ -148,7 +148,6 @@ class P2pClient {
   }
 
   async setTrackerEventHandlers() {
-    const node = this.server.node;
     this.trackerWebSocket.on('message', async (message) => {
       const parsedMsg = JSON.parse(message);
       logger.info(`\n<< Message from [TRACKER]: ${JSON.stringify(parsedMsg, null, 2)}`);
@@ -156,16 +155,8 @@ class P2pClient {
         logger.debug(`Updated MANAGED peers info: ` +
           `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
       }
-      if (node.state === BlockchainNodeStates.STARTING) {
-        if (parsedMsg.numLivePeers === 0) {
-          const lastBlockWithoutProposal = node.init(true);
-          await this.server.tryInitializeShard();
-          node.state = BlockchainNodeStates.SERVING;
-          this.server.consensus.init(lastBlockWithoutProposal);
-        } else {
-          // Consensus will be initialized after syncing with peers
-          node.init(false);
-        }
+      if (this.server.node.state === BlockchainNodeStates.STARTING) {
+        await this.startNode(parsedMsg.numLivePeers);
       }
     });
     this.trackerWebSocket.on('close', (code) => {
@@ -173,6 +164,32 @@ class P2pClient {
       this.clearIntervalForTrackerUpdate();
       this.setIntervalForTrackerConnection();
     });
+  }
+
+  async startNode(numLivePeers) {
+    const LOG_HEADER = 'startNode';
+
+    if (numLivePeers === 0) {
+      logger.info(`[${LOG_HEADER}] Starting node without peers..`);
+      const lastBlockWithoutProposal = this.server.node.init(true);
+      logger.info(`[${LOG_HEADER}] lastBlockWithoutProposal=${lastBlockWithoutProposal}`);
+      logger.info(`[${LOG_HEADER}] Trying to initializing shard..`);
+      if (await this.server.tryInitializeShard()) {
+        logger.info(`[${LOG_HEADER}] Shard initialization done!`);
+      } else {
+        logger.info(`[${LOG_HEADER}] No need to initialize shard.`);
+      }
+      this.server.node.state = BlockchainNodeStates.SERVING;
+      logger.info(`[${LOG_HEADER}] Now node in SERVING state!`);
+      logger.info(`[${LOG_HEADER}] Initializing consensus process..`);
+      this.server.consensus.init(lastBlockWithoutProposal);
+      logger.info(`[${LOG_HEADER}] Consensus process initialized!`);
+    } else {
+      // Consensus will be initialized after syncing with peers
+      logger.info(`[${LOG_HEADER}] Starting node with ${numLivePeers} peers..`);
+      this.server.node.init(false);
+      logger.info(`[${LOG_HEADER}] Node initialized!`);
+    }
   }
 
   connectToTracker() {
@@ -250,8 +267,8 @@ class P2pClient {
     socket.send(JSON.stringify(payload));
   }
 
-  setPeerEventHandlers(socket) {
-    const LOG_HEADER = 'setPeerEventHandlers';
+  setClientSidePeerEventHandlers(socket) {
+    const LOG_HEADER = 'setClientSidePeerEventHandlers';
     socket.on('message', (message) => {
       const parsedMessage = JSON.parse(message);
       const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
@@ -442,7 +459,7 @@ class P2pClient {
         const socket = new Websocket(peerInfo.url);
         socket.on('open', async () => {
           logger.info(`Connected to peer(${peerInfo.url}),`);
-          this.setPeerEventHandlers(socket);
+          this.setClientSidePeerEventHandlers(socket);
           this.sendAddress(socket);
           await this.waitForAddress(socket);
           this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());

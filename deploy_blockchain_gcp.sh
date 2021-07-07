@@ -1,14 +1,14 @@
 #!/bin/sh
 
-if [ "$#" -lt 3 ]; then
+if [[ "$#" -lt 3 ]]; then
     echo "Usage: sh deploy_blockchain_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup]"
     echo "Example: sh deploy_blockchain_gcp.sh dev lia 0 --setup"
     exit
 fi
 
-if [ "$1" = 'spring' ] || [ "$1" = 'summer' ] || [ "$1" = 'dev' ] || [ "$1" = 'staging' ]; then
+if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]]; then
     SEASON="$1"
-    if [ "$1" = 'spring' ] || [ "$1" = 'summer' ]; then
+    if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
         PROJECT_ID="testnet-prod-ground"
     else
         PROJECT_ID="testnet-$1-ground"
@@ -64,7 +64,7 @@ gcloud compute ssh $NODE_2_TARGET_ADDR --command "sudo killall node" --project $
 gcloud compute ssh $NODE_3_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_3_ZONE
 gcloud compute ssh $NODE_4_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_4_ZONE
 
-if [ "$NUM_SHARDS" -gt 0 ]; then
+if [[ "$NUM_SHARDS" -gt 0 ]]; then
     for i in $(seq $NUM_SHARDS)
         do
             echo "shard #$i"
@@ -82,22 +82,22 @@ if [ "$NUM_SHARDS" -gt 0 ]; then
 fi
 
 # deploy files to GCP instances
-printf "\nDeploying parent blockchain..."
-printf "\nDeploying files to ${TRACKER_TARGET_ADDR}..."
+printf "\nDeploying parent blockchain...\n\n"
+printf "\nDeploying files to parent tracker (${TRACKER_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE
-printf "\nDeploying files to ${NODE_0_TARGET_ADDR}..."
+printf "\nDeploying files to parent node 0 (${NODE_0_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_0_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_0_ZONE
-printf "\nDeploying files to ${NODE_1_TARGET_ADDR}..."
+printf "\nDeploying files to parent node 1 (${NODE_1_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_1_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_1_ZONE
-printf "\nDeploying files to ${NODE_2_TARGET_ADDR}..."
+printf "\nDeploying files to parent node 2 (${NODE_2_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_2_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_2_ZONE
-printf "\nDeploying files to ${NODE_3_TARGET_ADDR}..."
+printf "\nDeploying files to parent node 3 (${NODE_3_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_3_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_3_ZONE
-printf "\nDeploying files to ${NODE_4_TARGET_ADDR}..."
+printf "\nDeploying files to parent node 4 (${NODE_4_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_4_ZONE
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-if [ $OPTIONS == "--setup" ]; then
+if [[ $OPTIONS = "--setup" ]]; then
     printf "\n\n##########################\n# Setting up parent tracker #\n###########################\n\n"
     gcloud compute ssh $TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
     printf "\n\n##########################\n# Setting up parent node 0 #\n##########################\n\n"
@@ -126,14 +126,14 @@ gcloud compute ssh $NODE_3_TARGET_ADDR --command ". setup_node_gcp.sh && . start
 printf "\n\n#########################\n# Running parent node 4 #\n#########################\n\n"
 gcloud compute ssh $NODE_4_TARGET_ADDR --command ". setup_node_gcp.sh && . start_node_gcp.sh $SEASON 0 4" --project $PROJECT_ID --zone $NODE_4_ZONE
 
-if [ "$NUM_SHARDS" -gt 0 ]; then
+if [[ "$NUM_SHARDS" -gt 0 ]]; then
     printf "\nDeploying shard blockchains..."
     for i in $(seq $NUM_SHARDS)
         do
             echo "shard #$i"
 
             # generate genesis config files in ./blockchain/shard_$i
-            if [ $OPTIONS == "--setup" ]; then
+            if [[ $OPTIONS = "--setup" ]]; then
                 node ./tools/generateShardGenesisFiles.js $SEASON 10 $i
             fi
 
@@ -143,17 +143,17 @@ if [ "$NUM_SHARDS" -gt 0 ]; then
             SHARD_NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore"
 
             # deploy files to GCP instances
-            printf "\nDeploying files to ${SHARD_TRACKER_TARGET_ADDR}..."
+            printf "\nDeploying files to shard_$i tracker (${SHARD_TRACKER_TARGET_ADDR})...\n\n"
             gcloud compute scp --recurse $FILES_FOR_TRACKER ${SHARD_TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE
-            printf "\nDeploying files to ${SHARD_NODE_0_TARGET_ADDR}..."
+            printf "\nDeploying files to shard_$i node 0 (${SHARD_NODE_0_TARGET_ADDR})...\n\n"
             gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_0_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_0_ZONE
-            printf "\nDeploying files to ${SHARD_NODE_1_TARGET_ADDR}..."
+            printf "\nDeploying files to shard_$i node 1 (${SHARD_NODE_1_TARGET_ADDR})...\n\n"
             gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_1_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_1_ZONE
-            printf "\nDeploying files to ${SHARD_NODE_2_TARGET_ADDR}..."
+            printf "\nDeploying files to shard_$i node 2 (${SHARD_NODE_2_TARGET_ADDR})...\n\n"
             gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_2_TARGET_ADDR}:~/  --project $PROJECT_ID --zone $NODE_2_ZONE
 
             # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-            if [ $OPTIONS == "--setup" ]; then
+            if [[ $OPTIONS = "--setup" ]]; then
                 printf "\n\n###########################\n# Setting up shard_$i tracker #\n###########################\n\n"
                 gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
                 printf "\n\n##########################\n# Setting up  shard_$i node 0 #\n##########################\n\n"
