@@ -142,16 +142,16 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
 
             # deploy files to GCP instances
             if [[ $RUN_MODE = "canary" ]]; then
-                printf "\nDeploying files to shard_$i node 0 ${SHARD_NODE_0_TARGET_ADDR}..."
+                printf "\nDeploying files to shard_$i node 0 (${SHARD_NODE_0_TARGET_ADDR})..."
                 gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_0_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_0_ZONE
             else
-                printf "\nDeploying files to shard_$i tracker ${SHARD_TRACKER_TARGET_ADDR}..."
+                printf "\nDeploying files to shard_$i tracker (${SHARD_TRACKER_TARGET_ADDR})..."
                 gcloud compute scp --recurse $FILES_FOR_TRACKER ${SHARD_TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE
-                printf "\nDeploying files to shard_$i node 0 ${SHARD_NODE_0_TARGET_ADDR}..."
+                printf "\nDeploying files to shard_$i node 0 (${SHARD_NODE_0_TARGET_ADDR})..."
                 gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_0_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_0_ZONE
-                printf "\nDeploying files to shard_$i node 1 ${SHARD_NODE_1_TARGET_ADDR}..."
+                printf "\nDeploying files to shard_$i node 1 (${SHARD_NODE_1_TARGET_ADDR})..."
                 gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_1_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_1_ZONE
-                printf "\nDeploying files to shard_$i node 2 ${SHARD_NODE_2_TARGET_ADDR}..."
+                printf "\nDeploying files to shard_$i node 2 (${SHARD_NODE_2_TARGET_ADDR})..."
                 gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_2_TARGET_ADDR}:~/  --project $PROJECT_ID --zone $NODE_2_ZONE
             fi
 
