@@ -133,7 +133,7 @@ sudo killall node
 # 6. Start a new node process
 printf "\n\n#### [Step 6] Start a new node process ####\n\n"
 
-nohup node --async-stack-traces client/index.js >/dev/null 2>error_logs.txt &
+nohup node --async-stack-traces --max-old-space-size=4000 client/index.js >/dev/null 2>error_logs.txt &
 
 # 7. Wait until the new node process catches up
 printf "\n\n#### [Step 7] Wait until the new node process catches up ####\n\n"
@@ -150,8 +150,8 @@ EOF
 
 while :
 do
-    consensusStatus=$(curl -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'net_consensusStatus')" "http://localhost:8080/json-rpc" | jq -r '.result.result.state')
-    lastBlockNumber=$(curl -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'ain_getRecentBlockNumber')" "http://localhost:8080/json-rpc" | jq -r '.result.result')
+    consensusStatus=$(curl -m 20 -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'net_consensusStatus')" "http://localhost:8080/json-rpc" | jq -r '.result.result.state')
+    lastBlockNumber=$(curl -m 20 -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'ain_getRecentBlockNumber')" "http://localhost:8080/json-rpc" | jq -r '.result.result')
     printf "\nconsensusStatus = ${consensusStatus}"
     printf "\nlastBlockNumber = ${lastBlockNumber}"
     if [[ "$consensusStatus" = "RUNNING" ]]; then
@@ -161,7 +161,7 @@ do
     fi
     ((loopCount++))
     printf "\nLoop count: ${loopCount}\n"
-    sleep 30
+    sleep 20
 done
 
 # 8. Remove old directory keeping the chain data
