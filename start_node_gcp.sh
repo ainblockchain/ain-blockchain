@@ -7,13 +7,13 @@ if [[ "$#" -lt 2 ]]; then
 fi
 
 export GENESIS_CONFIGS_DIR=genesis-configs/testnet
-if [[ "$1" == 'spring' ]]; then
+if [[ "$1" = 'spring' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
-elif [[ "$1" == 'summer' ]]; then
+elif [[ "$1" = 'summer' ]]; then
     export TRACKER_WS_ADDR=ws://35.194.172.106:5000
-elif [[ "$1" == 'staging' ]]; then
+elif [[ "$1" = 'staging' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.150.73:5000
-elif [[ "$1" == 'dev' ]]; then
+elif [[ "$1" = 'dev' ]]; then
   if [[ "$2" -gt 0 ]]; then
     export GENESIS_CONFIGS_DIR=genesis-configs/sim-shard
   fi
