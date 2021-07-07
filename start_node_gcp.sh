@@ -69,13 +69,13 @@ else
     exit
 fi
 
+echo "TRACKER_WS_ADDR=$TRACKER_WS_ADDR"
+echo "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR"
+
 if [[ "$3" -lt 0 ]] || [[ "$3" -gt 4 ]]; then
     echo "Invalid account_index argument: $2"
     exit
 fi
-
-echo "TRACKER_WS_ADDR=$TRACKER_WS_ADDR"
-echo "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR"
 
 export ACCOUNT_INDEX="$3"
 echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
@@ -91,7 +91,7 @@ export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
 
 printf "\nStarting up Blockchain Node server..\n\n"
 START_CMD='nohup node --async-stack-traces --max-old-space-size=4000 client/index.js >/dev/null 2>error_logs.txt &'
-printf "START_CMD=$START_CMD\n"
+printf "START_CMD='$START_CMD'\n"
 eval $START_CMD
 
 

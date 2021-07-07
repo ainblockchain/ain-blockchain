@@ -1,8 +1,8 @@
 #!/bin/sh
 
-if [[ "$#" -lt 2 ]]; then
-    echo "Usage: sh start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index>"
-    echo "Example: sh start_node_incremental_gcp.sh spring 0 0"
+if [[ "$#" -lt 4 ]] || [[ "$#" -gt 4 ]]; then
+    printf "Usage: sh start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full]\n"
+    printf "Example: sh start_node_incremental_gcp.sh spring 0 0 fast\n"
     exit
 fi
 
@@ -60,7 +60,7 @@ elif [[ "$1" = 'dev' ]]; then
     elif [[ "$2" = 20 ]]; then
         export TRACKER_WS_ADDR=ws://35.201.248.92:5000  # dev-shard-20-tracker-ip
     else
-        echo "Invalid shard ID argument: $2"
+        printf "Invalid <Shard Index> argument: $2\n"
         exit
     fi
     if [[ "$2" -gt 0 ]]; then
@@ -75,22 +75,28 @@ elif [[ "$1" = 'dev' ]]; then
 EOF
     fi
 else
-    echo "Invalid season argument: $1"
+    printf "Invalid <Project/Season> argument: $1\n"
     exit
 fi
 
-echo "TRACKER_WS_ADDR=$TRACKER_WS_ADDR"
-echo "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR"
+printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
+printf "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR\n"
 
 if [[ "$3" -lt 0 ]] || [[ "$3" -gt 4 ]]; then
-    echo "Invalid account_index argument: $2"
+    printf "Invalid <Node Index> argument: $3\n"
     exit
 fi
 
 export ACCOUNT_INDEX="$3"
-echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
+printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
 
-#export SYNC_MODE="fast"
+if [[ "$4" != 'fast' ]] && [[ "$4" != 'full' ]]; then
+    printf "Invalid <Sync Mode> argument: $2\n"
+    exit
+fi
+
+export SYNC_MODE="$4"
+printf "SYNC_MODE=$SYNC_MODE\n"
 
 export DEBUG=false
 export CONSOLE_LOG=false
@@ -102,21 +108,21 @@ export STAKE=100000
 export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
 
 date=$(date '+%Y-%m-%dT%H:%M')
-echo "date=$date"
+printf "date=$date\n"
 NEW_DIR_PATH="../ain-blockchain-$date"
-echo "NEW_DIR_PATH=$NEW_DIR_PATH"
+printf "NEW_DIR_PATH=$NEW_DIR_PATH\n"
 
 # 2. Get currently used directory
 printf "\n#### [Step 2] Get currently used directory ####\n\n"
 
 OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
-echo "OLD_DIR_PATH=$OLD_DIR_PATH"
+printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
 
 # 3. Create a new directory
 printf "\n#### [Step 3] Create a new directory ####\n\n"
 
 MKDIR_CMD="sudo mkdir $NEW_DIR_PATH"
-echo "MKDIR_CMD=$MKDIR_CMD"
+printf "MKDIR_CMD=$MKDIR_CMD\n"
 eval $MKDIR_CMD
 
 sudo chmod 777 $NEW_DIR_PATH
@@ -133,16 +139,16 @@ npm install
 # 5. Kill old node process 
 printf "\n#### [Step 5] Kill old node process ####\n\n"
 
-KILL_CMD='sudo killall node'
-printf "KILL_CMD=$KILL_CMD\n\n"
+KILL_CMD="sudo killall node"
+printf "KILL_CMD='$KILL_CMD'\n\n"
 eval $KILL_CMD
 
 # 6. Start a new node process
-sleep 20
 printf "\n#### [Step 6] Start a new node process ####\n\n"
 
-START_CMD='nohup node --async-stack-traces --max-old-space-size=4000 client/index.js >/dev/null 2>error_logs.txt &'
-printf "START_CMD=$START_CMD\n"
+sleep 10
+START_CMD="nohup node --async-stack-traces --max-old-space-size=4000 client/index.js >/dev/null 2>error_logs.txt &"
+printf "START_CMD='$START_CMD'\n"
 eval $START_CMD
 
 # 7. Wait until the new node process catches up
@@ -177,4 +183,6 @@ done
 # 8. Remove old directory keeping the chain data
 printf "\n#### [Step 8] Remove old directory keeping the chain data ####\n\n"
 
-sudo rm -rf $OLD_DIR_PATH
+RM_CMD="sudo rm -rf $OLD_DIR_PATH"
+printf "RM_CMD='$RM_CMD'\n"
+eval $RM_CMD
