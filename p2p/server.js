@@ -102,7 +102,7 @@ class P2pServer {
     // Set the number of maximum clients.
     this.wsServer.setMaxListeners(this.maxInbound);
     this.wsServer.on('connection', (socket) => {
-      this.setPeerEventHandlers(socket);
+      this.setServerSidePeerEventHandlers(socket);
     });
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     await this.setUpIpAddresses();
@@ -345,8 +345,8 @@ class P2pServer {
     return 0;
   }
 
-  setPeerEventHandlers(socket) {
-    const LOG_HEADER = 'setPeerEventHandlers';
+  setServerSidePeerEventHandlers(socket) {
+    const LOG_HEADER = 'setServerSidePeerEventHandlers';
     socket.on('message', (message) => {
       try {
         const parsedMessage = JSON.parse(message);
@@ -601,7 +601,9 @@ class P2pServer {
     if (this.node.isShardReporter && this.node.bc.lastBlockNumber() === 0) {
       logger.info(`Setting up sharding..`);
       await this.setUpDbForSharding();
+      return true;
     }
+    return false;
   }
 
   // TODO(platfowner): Set .shard config for functions, rules, and owners as well.
