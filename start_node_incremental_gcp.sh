@@ -136,14 +136,14 @@ printf "\n#### [Step 4] Install dependencies ####\n\n"
 cd $NEW_DIR_PATH
 npm install
 
-# 5. Kill old node process 
+# 5. Kill old node server 
 printf "\n#### [Step 5] Kill old node server ####\n\n"
 
 KILL_CMD="sudo killall node"
 printf "KILL_CMD='$KILL_CMD'\n\n"
 eval $KILL_CMD
 
-# 6. Start a new node process
+# 6. Start a new node server
 printf "\n#### [Step 6] Start new node server ####\n\n"
 
 sleep 10
@@ -153,8 +153,8 @@ START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_S
 printf "START_CMD='$START_CMD'\n"
 eval $START_CMD
 
-# 7. Wait until the new node process catches up
-printf "\n#### [Step 7] Wait until the new node process catches up ####\n\n"
+# 7. Wait until the new node server catches up
+printf "\n#### [Step 7] Wait until the new node server catches up ####\n\n"
 
 SECONDS=0
 loopCount=0
@@ -162,7 +162,7 @@ loopCount=0
 generate_post_data()
 {
   cat <<EOF
-  {"method":"$1","params":{"protoVer":"0.7.1"},"jsonrpc":"2.0","id":"1"}
+  {"method":"$1","params":{"protoVer":"0.8.0"},"jsonrpc":"2.0","id":"1"}
 EOF
 }
 
@@ -172,7 +172,7 @@ do
     printf "\nconsensusStatus = ${consensusStatus}\n"
     lastBlockNumber=$(curl -m 20 -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'ain_getRecentBlockNumber')" "http://localhost:8080/json-rpc" | jq -r '.result.result')
     printf "\nlastBlockNumber = ${lastBlockNumber}\n"
-    if [[ "$consensusStatus" = "RUNNING" ]]; then
+    if [[ "$consensusStatus" = "RUNNING" ]] && [[ "$lastBlockNumber" -gt 0 ]]; then
         printf "\nBlockchain Node server is synced & running!\n"
         printf "\nTime it took to sync in seconds: $SECONDS\n"
         break
@@ -188,3 +188,5 @@ printf "\n#### [Step 8] Remove old directory keeping the chain data ####\n\n"
 RM_CMD="sudo rm -rf $OLD_DIR_PATH"
 printf "RM_CMD='$RM_CMD'\n"
 eval $RM_CMD
+
+printf "\n* << Node server successfully deployed! ***************************************\n\n"

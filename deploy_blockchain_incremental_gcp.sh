@@ -53,7 +53,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
-FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ package.json setup_tracker_gcp.sh setup_blockchain_ubuntu.sh start_tracker_gcp.sh"
+FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ package.json setup_blockchain_ubuntu.sh start_tracker_incremental_gcp.sh"
 FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ json_rpc/ genesis-configs/ logger/ node/ tx-pool/ p2p/ package.json setup_blockchain_ubuntu.sh start_node_incremental_gcp.sh"
 
 NUM_PARENT_NODES=5
@@ -68,9 +68,9 @@ NODE_ZONE_LIST=(
     "europe-west4-a")
 
 function deploy_tracker() {
-    printf "*******************************************************************************\n"
-    printf "* Deploying tracker *\n"
-    printf "*******************************************************************************\n\n"
+    local num_nodes="$1"
+
+    printf "\n* >> Deploying tracker ********************************************************\n\n"
 
     printf "TRACKER_TARGET_ADDR='$TRACKER_TARGET_ADDR'\n"
     printf "TRACKER_ZONE='$TRACKER_ZONE'\n"
@@ -91,7 +91,7 @@ function deploy_tracker() {
 
     # 2. Start tracker
     printf "\n\n[[[[ Starting tracker ]]]]\n\n"
-    START_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '. setup_tracker_gcp.sh && . start_tracker_gcp.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
+    START_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '. start_tracker_incremental_gcp.sh $num_nodes' --project $PROJECT_ID --zone $TRACKER_ZONE"
     printf "START_CMD='$START_CMD'\n\n"
     eval $START_CMD
 }
@@ -101,9 +101,7 @@ function deploy_node() {
     local node_target_addr=${NODE_TARGET_ADDR_LIST[${node_index}]}
     local node_zone=${NODE_ZONE_LIST[${node_index}]}
 
-    printf "*******************************************************************************\n"
-    printf "* Deploying node $node_index *\n"
-    printf "*******************************************************************************\n\n"
+    printf "\n* >> Deploying node $node_index *********************************************************\n\n"
 
     printf "node_target_addr='$node_target_addr'\n"
     printf "node_zone='$node_zone'\n"
@@ -144,7 +142,7 @@ NODE_TARGET_ADDR_LIST=(
 if [[ $RUN_MODE = "canary" ]]; then
     deploy_node "0"
 else
-    deploy_tracker
+    deploy_tracker "$NUM_PARENT_NODES"
     for j in `seq 0 $(( ${NUM_PARENT_NODES} - 1 ))`
         do
             deploy_node "$j"
@@ -167,7 +165,7 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             if [[ $RUN_MODE = "canary" ]]; then
                 deploy_node "0"
             else
-                deploy_tracker
+                deploy_tracker "$NUM_SHARD_NODES"
                 for j in `seq 0 $(( ${NUM_SHARD_NODES} - 1 ))`
                     do
                         deploy_node "$j"
