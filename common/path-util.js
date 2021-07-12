@@ -68,6 +68,10 @@ class PathUtil {
         PredefinedDbPaths.STAKING, PredefinedDbPaths.STAKING_LOCKUP_DURATION]);
   }
 
+  static getStakingServicePath(serviceName) {
+    return CommonUtil.formatPath([PredefinedDbPaths.STAKING, serviceName]);
+  }
+
   static getStakingExpirationPath(serviceName, user, stakingKey) {
     return CommonUtil.formatPath([PredefinedDbPaths.STAKING, serviceName, user, stakingKey,
         PredefinedDbPaths.STAKING_EXPIRE_AT]);
@@ -187,7 +191,7 @@ class PathUtil {
   }
 
   static getConsensusStakingAccountBalancePath(address) {
-    const accountPath =  PathUtil.getServiceAccountPath(PredefinedDbPaths.STAKING, PredefinedDbPaths.CONSENSUS, `${address}|0`);
+    const accountPath = PathUtil.getServiceAccountPath(PredefinedDbPaths.STAKING, PredefinedDbPaths.CONSENSUS, `${address}|0`);
     return CommonUtil.appendPath(accountPath, PredefinedDbPaths.BALANCE)
   }
 

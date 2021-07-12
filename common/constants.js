@@ -520,7 +520,7 @@ const SyncModeOptions = {
  * (priority: base params < genesis_params.json in GENESIS_CONFIGS_DIR < env var)
  */
 const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'HOSTING_ENV'];
-const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'EPOCH_MS'];
+const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'MAX_NUM_VALIDATORS', 'EPOCH_MS'];
 
 function overwriteGenesisParams(overwritingParams, type) {
   for (const key of overwritingParams) {
@@ -535,7 +535,7 @@ function overwriteGenesisParams(overwritingParams, type) {
     for (let i = 0; i < GenesisParams.consensus.MIN_NUM_VALIDATORS; i++) {
       const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
       CommonUtil.setJsObject(whitelist, [addr], true);
-      CommonUtil.setJsObject(validators, [addr], GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR);
+      CommonUtil.setJsObject(validators, [addr], { stake: GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR, producing_right: true });
     }
     GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
     GenesisParams.consensus.GENESIS_VALIDATORS = validators;
@@ -546,19 +546,19 @@ overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
 overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
 // NOTE(minsulee2): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
-// The minimum network connections are set based on the MIN_NUM_VALIDATORS otherwise.
+// The minimum network connections are set based on the MAX_NUM_VALIDATORS otherwise.
 function initializeNetworkEnvronments() {
   if (process.env.NETWORK_OPTIMIZATION) {
     return GenesisParams.network;
   } else {
     return {
-      // NOTE(minsulee2): Need a discussion that MIN_NUM_VALIDATORS and MAX_INBOUND_LIMIT
+      // NOTE(minsulee2): Need a discussion that MAX_NUM_VALIDATORS and MAX_INBOUND_LIMIT
       // should not be related to one another.
       P2P_MESSAGE_TIMEOUT_MS: 600000,
-      MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
-      MAX_INBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
-      DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
-      DEFAULT_MAX_INBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1
+      MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      MAX_INBOUND_LIMIT: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      DEFAULT_MAX_INBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1
     }
   }
 }

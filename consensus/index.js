@@ -22,7 +22,9 @@ const {
   GENESIS_WHITELIST,
   LIGHTWEIGHT,
   MIN_NUM_VALIDATORS,
+  MAX_NUM_VALIDATORS,
   MIN_STAKE_PER_VALIDATOR,
+  MAX_STAKE_PER_VALIDATOR,
   EPOCH_MS,
   CONSENSUS_PROTOCOL_VERSION
 } = require('../common/constants');
@@ -80,7 +82,7 @@ class Consensus {
     try {
       const targetStake = process.env.STAKE ? Number(process.env.STAKE) : 0;
       const currentStake =
-          this.getValidConsensusStake(this.node.stateManager.getFinalVersion(), myAddr);
+          this.getConsensusStakeFromAddr(this.node.stateManager.getFinalVersion(), myAddr);
       logger.info(`[${LOG_HEADER}] Current stake: ${currentStake} / Target stake: ${targetStake}`);
       if (!targetStake && !currentStake) {
         logger.info(`[${LOG_HEADER}] Node doesn't have any stakes. ` +
@@ -382,11 +384,10 @@ class Consensus {
     if (this.node.bc.lastBlockNumber() < 1) {
       const whitelist = GENESIS_WHITELIST;
       for (const address in whitelist) {
-        if (Object.prototype.hasOwnProperty.call(whitelist, address)) {
-          const stakingAccount = tempDb.getValue(PathUtil.getConsensusStakingAccountPath(address));
-          if (whitelist[address] === true && stakingAccount &&
-              stakingAccount.balance >= MIN_STAKE_PER_VALIDATOR) {
-            validators[address] = stakingAccount.balance;
+        if (whitelist[address] === true) {
+          const stake = tempDb.getValue(PathUtil.getConsensusStakingAccountBalancePath(address));
+          if (stake && MIN_STAKE_PER_VALIDATOR <= stake && stake <= MAX_STAKE_PER_VALIDATOR) {
+            validators[address] = { stake, producing_right: true };
           }
         }
       }
@@ -399,8 +400,8 @@ class Consensus {
     if (numValidators < MIN_NUM_VALIDATORS) {
       throw Error(`Not enough validators: ${JSON.stringify(validators)}`);
     }
-    const totalAtStake = Object.values(validators).reduce(function(a, b) {
-      return a + b;
+    const totalAtStake = Object.values(validators).reduce((acc, cur) => {
+      return acc + cur.stake;
     }, 0);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.create(
@@ -506,10 +507,10 @@ class Consensus {
     const prevBlock = number > 1 ? prevBlockInfo.block : prevBlockInfo;
 
     // Make sure we have at least MIN_NUM_VALIDATORS validators.
-    if (Object.keys(validators).length < MIN_NUM_VALIDATORS) {
+    if (Object.keys(validators).length < MIN_NUM_VALIDATORS || Object.keys(validators).length > MAX_NUM_VALIDATORS) {
       logger.error(
-          `[${LOG_HEADER}] Validator set smaller than MIN_NUM_VALIDATORS: ` +
-          `${JSON.stringify(validators)}`);
+          `[${LOG_HEADER}] Invalid validator set size (${JSON.stringify(validators)})\n` +
+          `MIN_NUM_VALIDATORS: ${MIN_NUM_VALIDATORS}, MAX_NUM_VALIDATORS: ${MAX_NUM_VALIDATORS}`);
       return false;
     }
 
@@ -778,8 +779,8 @@ class Consensus {
 
   vote(block) {
     const myAddr = this.node.account.address;
-    const myStake = block.validators[myAddr];
-    if (!myStake) {
+    const isValidator = block.validators[myAddr];
+    if (!isValidator) {
       return;
     }
     const operation = {
@@ -787,7 +788,7 @@ class Consensus {
       ref: PathUtil.getConsensusVotePath(block.number, myAddr),
       value: {
         [PredefinedDbPaths.BLOCK_HASH]: block.hash,
-        [PredefinedDbPaths.STAKE]: myStake
+        [PredefinedDbPaths.STAKE]: isValidator.stake
       }
     };
     const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
@@ -977,20 +978,42 @@ class Consensus {
       logger.error(err);
       throw Error(err);
     }
-    const whitelist = this.getWhitelist(stateVersion);
+    let candidates = [];
     const validators = {};
-    Object.keys(whitelist).forEach((address) => {
-      const stake = this.getValidConsensusStake(stateVersion, address);
-      if (whitelist[address] === true && stake >= MIN_STAKE_PER_VALIDATOR) {
-        validators[address] = stake;
+    const whitelist = this.getWhitelist(stateVersion);
+    const stateRoot = this.node.stateManager.getRoot(stateVersion);
+    const allStakeInfo = DB.getValueFromStateRoot(
+        stateRoot, PathUtil.getStakingServicePath(PredefinedDbPaths.CONSENSUS)) || {};
+    for (const [address, stakeInfo] of Object.entries(allStakeInfo)) {
+      const stake = this.getConsensusStakeFromAddr(stateVersion, address);
+      if (stake) {
+        if (whitelist[address] === true) {
+          if (MIN_STAKE_PER_VALIDATOR <= stake && stake <= MAX_STAKE_PER_VALIDATOR) {
+            validators[address] = { stake, producing_right: true };
+          }
+        } else {
+          candidates.push({
+            address,
+            stake,
+            expireAt: _.get(stakeInfo, `0.${PredefinedDbPaths.STAKING_EXPIRE_AT}`, 0)
+          });
+        }
       }
-    });
+    }
+    candidates = _.orderBy(candidates, ['stake', 'expireAt'], ['desc', 'desc']); // TODO(liayoo): How to do tie-breaking?
+    for (const candidate of candidates) {
+      if (Object.keys(validators).length < MAX_NUM_VALIDATORS) {
+        validators[candidate.address] = { stake: candidate.stake, producing_right: false };
+      } else {
+        break;
+      }
+    }
     logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators, null, 2)}, ` +
         `whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return validators;
   }
 
-  getValidConsensusStake(stateVersion, address) {
+  getConsensusStakeFromAddr(stateVersion, address) {
     const stateRoot = this.node.stateManager.getRoot(stateVersion);
     return DB.getValueFromStateRoot(
         stateRoot, PathUtil.getConsensusStakingAccountBalancePath(address)) || 0;
@@ -1201,22 +1224,25 @@ class Consensus {
   static selectProposer(seed, validators) {
     const LOG_HEADER = 'selectProposer';
     logger.debug(`[${LOG_HEADER}] seed: ${seed}, validators: ${JSON.stringify(validators)}`);
-    const alphabeticallyOrderedValidators = Object.keys(validators).sort();
-    const totalAtStake = Object.values(validators).reduce((a, b) => {
-      return a + b;
+    const validatorsWithProducingRights = _.pickBy(validators, (x) => _.get(x, 'producing_right') === true);
+    const alphabeticallyOrderedValidators = Object.keys(validatorsWithProducingRights).sort();
+    const totalAtStake = Object.values(validatorsWithProducingRights).reduce((acc, cur) => {
+      return acc + cur.stake;
     }, 0);
     const randomNumGenerator = seedrandom(seed);
     const targetValue = randomNumGenerator() * totalAtStake;
     let cumulative = 0;
     for (let i = 0; i < alphabeticallyOrderedValidators.length; i++) {
-      cumulative += validators[alphabeticallyOrderedValidators[i]];
+      const addr = alphabeticallyOrderedValidators[i];
+      cumulative += validatorsWithProducingRights[addr].stake;
       if (cumulative > targetValue) {
-        logger.info(`Proposer is ${alphabeticallyOrderedValidators[i]}`);
-        return alphabeticallyOrderedValidators[i];
+        logger.info(`Proposer is ${addr}`);
+        return addr;
       }
     }
-    logger.error(`[${LOG_HEADER}] Failed to get the proposer.\nvalidators: ` +
-        `${alphabeticallyOrderedValidators}\n` +
+    logger.error(
+        `[${LOG_HEADER}] Failed to get the proposer.\n` +
+        `alphabeticallyOrderedValidators: ${alphabeticallyOrderedValidators}\n` +
         `totalAtStake: ${totalAtStake}\nseed: ${seed}\ntargetValue: ${targetValue}`);
     return null;
   }
