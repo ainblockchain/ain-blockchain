@@ -212,6 +212,7 @@ describe("p2p", () => {
             NETWORK_OPTIMIZATION: undefined,
             GENESIS_CONFIGS_DIR: undefined,
             MIN_NUM_VALIDATORS: undefined,
+            MAX_NUM_VALIDATORS: undefined,
             ACCOUNT_INDEX: undefined,
             P2P_PORT: undefined,
             PORT: undefined,
