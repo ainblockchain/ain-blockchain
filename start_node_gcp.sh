@@ -6,6 +6,25 @@ if [[ "$#" -lt 2 ]]; then
     exit
 fi
 
+
+echo 'Killing old jobs..'
+sudo killall node
+
+
+echo 'Setting up working directory..'
+cd
+sudo rm -rf /home/ain_blockchain_data
+sudo mkdir /home/ain_blockchain_data
+sudo chmod 777 /home/ain_blockchain_data
+sudo rm -rf ../ain-blockchain*
+sudo mkdir ../ain-blockchain
+sudo chmod 777 ../ain-blockchain
+mv * ../ain-blockchain
+cd ../ain-blockchain
+
+
+echo 'Installing node modules..'
+npm install
 export GENESIS_CONFIGS_DIR=genesis-configs/testnet
 if [[ "$1" = 'spring' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
