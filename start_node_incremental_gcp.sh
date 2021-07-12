@@ -137,14 +137,14 @@ cd $NEW_DIR_PATH
 npm install
 
 # 5. Kill old node process 
-printf "\n#### [Step 5] Kill old node process ####\n\n"
+printf "\n#### [Step 5] Kill old node server ####\n\n"
 
 KILL_CMD="sudo killall node"
 printf "KILL_CMD='$KILL_CMD'\n\n"
 eval $KILL_CMD
 
 # 6. Start a new node process
-printf "\n#### [Step 6] Start a new node process ####\n\n"
+printf "\n#### [Step 6] Start new node server ####\n\n"
 
 sleep 10
 MAX_OLD_SPACE_SIZE_MB=4000
