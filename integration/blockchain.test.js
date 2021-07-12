@@ -398,18 +398,18 @@ describe('Blockchain Cluster', () => {
         for (let j = 2; j < len; j++) { // voting starts with block#1 (included in block#2's last_votes)
           let voteSum = 0;
           const validators = Object.assign({}, blocks[j - 1].validators);
-          let totalStakedAmount = Object.values(validators).reduce((a, b) => { return a + b; }, 0);
+          let totalStakedAmount = Object.values(validators).reduce((acc, cur) => { return acc + cur.stake; }, 0);
           let majority = Math.floor(totalStakedAmount * ConsensusConsts.MAJORITY);
           for (let k = 0; k < blocks[j].last_votes.length; k++) {
             const vote = blocks[j].last_votes[k];
-            if (!blocks[j - 1].validators[vote.address]) {
+            if (!blocks[j - 1].validators[vote.address].stake) {
               assert.fail(`Invalid validator (${vote.address}) is validating block ${blocks[j - 1]}`);
             }
             if (vote.tx_body.operation.value.block_hash !== blocks[j - 1].hash) {
               assert.fail('Invalid vote included in last_votes');
             }
             if (vote.tx_body.operation.type === 'SET_VALUE' && vote.tx_body.operation.value.stake &&
-                blocks[j - 1].validators[vote.address]) {
+                blocks[j - 1].validators[vote.address].stake) {
               voteSum += vote.tx_body.operation.value.stake;
             }
           }
