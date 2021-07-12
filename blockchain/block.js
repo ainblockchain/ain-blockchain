@@ -134,6 +134,20 @@ class Block {
     return true;
   }
 
+  static validateValidators(validators) {
+    if (!CommonUtil.isDict(validators)) return false;
+    for (const [address, info] of Object.entries(validators)) {
+      if (!CommonUtil.isCksumAddr(address)) {
+        return false;
+      }
+      if (!CommonUtil.isDict(info) || !CommonUtil.isNumber(info.stake) ||
+          !CommonUtil.isBool(info.producing_right)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   static validateProposedBlock(block) {
     const LOG_HEADER = 'validateProposedBlock';
 
@@ -157,14 +171,11 @@ class Block {
       }
       nonceTracker[tx.address] = tx.tx_body.nonce;
     }
-
-    for (const validator of block.validators) {
-      if (!Block.validValidatorObject(validator)) {
-        logger.error(
-            `[${LOG_HEADER}] Invalid validators format: ${JSON.stringify(block.validators)} ` +
-            `(${block.number} / ${block.epoch})`);
-        return false;
-      }
+    if (!Block.validateValidators(block.validators)) {
+      logger.error(
+          `[${LOG_HEADER}] Invalid validators format: ${JSON.stringify(block.validators)} ` +
+          `(${block.number} / ${block.epoch})`);
+      return false;
     }
 
     logger.info(`[${LOG_HEADER}] Validated block: ${block.number} / ${block.epoch}`);
