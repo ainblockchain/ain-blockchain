@@ -158,6 +158,15 @@ class Block {
       nonceTracker[tx.address] = tx.tx_body.nonce;
     }
 
+    for (const validator of block.validators) {
+      if (!Block.validValidatorObject(validator)) {
+        logger.error(
+            `[${LOG_HEADER}] Invalid validators format: ${JSON.stringify(block.validators)} ` +
+            `(${block.number} / ${block.epoch})`);
+        return false;
+      }
+    }
+
     logger.info(`[${LOG_HEADER}] Validated block: ${block.number} / ${block.epoch}`);
     return true;
   }
@@ -261,7 +270,7 @@ class Block {
 
   static buildGenesisStakingTxs(timestamp) {
     const txs = [];
-    Object.entries(GENESIS_VALIDATORS).forEach(([address, amount], index) => {
+    Object.entries(GENESIS_VALIDATORS).forEach(([address, info], index) => {
       const privateKey = _.get(GenesisAccounts,
           `${AccountProperties.OTHERS}.${index}.${AccountProperties.PRIVATE_KEY}`);
       if (!privateKey) {
@@ -274,7 +283,7 @@ class Block {
         operation: {
           type: 'SET_VALUE',
           ref: PathUtil.getStakingStakeRecordValuePath(PredefinedDbPaths.CONSENSUS, address, 0, timestamp),
-          value: amount
+          value: info.stake
         }
       };
       txs.push(Transaction.fromTxBody(txBody, privateKey));
