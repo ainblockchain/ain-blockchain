@@ -147,6 +147,10 @@ async function setUpApp(appName, serverList, appConfig) {
   }
 }
 
+function getLastBlock(server) {
+  return parseOrLog(syncRequest('GET', server + '/last_block').body.toString('utf-8')).result;
+}
+
 module.exports = {
   readConfigFile,
   setNodeForTesting,
@@ -157,4 +161,5 @@ module.exports = {
   waitUntilNodeSyncs,
   parseOrLog,
   setUpApp,
+  getLastBlock,
 };
