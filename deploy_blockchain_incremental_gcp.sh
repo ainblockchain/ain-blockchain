@@ -56,6 +56,9 @@ fi
 FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ package.json setup_tracker_gcp.sh setup_blockchain_ubuntu.sh start_tracker_gcp.sh"
 FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ json_rpc/ genesis-configs/ logger/ node/ tx-pool/ p2p/ package.json setup_blockchain_ubuntu.sh start_node_incremental_gcp.sh"
 
+NUM_PARENT_NODES=5
+NUM_SHARD_NODES=3
+
 TRACKER_ZONE="asia-east1-b"
 NODE_ZONE_LIST=(
     "asia-east1-b" \
@@ -64,17 +67,43 @@ NODE_ZONE_LIST=(
     "us-central1-a" \
     "europe-west4-a")
 
-NUM_PARENT_NODES=5
-NUM_SHARD_NODES=3
+function deploy_tracker() {
+    printf "*******************************************************************************\n"
+    printf "* Deploying tracker *\n"
+    printf "*******************************************************************************\n\n"
+
+    printf "TRACKER_TARGET_ADDR='$TRACKER_TARGET_ADDR'\n"
+    printf "TRACKER_ZONE='$TRACKER_ZONE'\n"
+
+    # 1. Copy files to gcp
+    printf "\n\n[[[[ Copying files for tracker ]]]]\n\n"
+    SCP_CMD="gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE"
+    printf "SCP_CMD='$SCP_CMD'\n\n"
+    eval $SCP_CMD
+
+    # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
+    if [[ $OPTIONS = "--setup" ]]; then
+        printf "\n\n[[[[ Setting up tracker ]]]]\n\n"
+        SETUP_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
+        printf "SETUP_CMD='$SETUP_CMD'\n\n"
+        eval $SETUP_CMD
+    fi
+
+    # 2. Start tracker
+    printf "\n\n[[[[ Starting tracker ]]]]\n\n"
+    START_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '. setup_tracker_gcp.sh && . start_tracker_gcp.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
+    printf "START_CMD='$START_CMD'\n\n"
+    eval $START_CMD
+}
 
 function deploy_node() {
     local node_index="$1"
     local node_target_addr=${NODE_TARGET_ADDR_LIST[${node_index}]}
     local node_zone=${NODE_ZONE_LIST[${node_index}]}
 
-    printf "//////////////////////////\n"
-    printf "/ Deploying node $node_index /\n"
-    printf "//////////////////////////\n\n"
+    printf "*******************************************************************************\n"
+    printf "* Deploying node $node_index *\n"
+    printf "*******************************************************************************\n\n"
 
     printf "node_target_addr='$node_target_addr'\n"
     printf "node_zone='$node_zone'\n"
@@ -100,10 +129,11 @@ function deploy_node() {
     eval $START_CMD
 }
 
-printf "#################################\n"
+printf "###############################################################################\n"
 printf "# Deploying parent blockchain #\n"
-printf "########################################################################################\n\n"
+printf "###############################################################################\n\n"
 
+TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_TARGET_ADDR_LIST=(
     "${GCP_USER}@${SEASON}-node-0-taiwan" \
     "${GCP_USER}@${SEASON}-node-1-oregon" \
@@ -114,6 +144,7 @@ NODE_TARGET_ADDR_LIST=(
 if [[ $RUN_MODE = "canary" ]]; then
     deploy_node "0"
 else
+    deploy_tracker
     for j in `seq 0 $(( ${NUM_PARENT_NODES} - 1 ))`
         do
             deploy_node "$j"
@@ -123,10 +154,11 @@ fi
 if [[ "$NUM_SHARDS" -gt 0 ]]; then
     for i in $(seq $NUM_SHARDS)
         do
-            printf "###################################\n"
+            printf "###############################################################################\n"
             printf "# Deploying shard $i blockchain #\n"
-            printf "########################################################################################\n\n"
+            printf "###############################################################################\n\n"
 
+            TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
             NODE_TARGET_ADDR_LIST=( \
                 "${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan" \
                 "${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon" \
@@ -135,6 +167,7 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             if [[ $RUN_MODE = "canary" ]]; then
                 deploy_node "0"
             else
+                deploy_tracker
                 for j in `seq 0 $(( ${NUM_SHARD_NODES} - 1 ))`
                     do
                         deploy_node "$j"
