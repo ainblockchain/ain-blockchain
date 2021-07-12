@@ -1,7 +1,12 @@
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
-const { CHAINS_DIR, MIN_STAKE_PER_VALIDATOR, MAX_STAKE_PER_VALIDATOR } = require('../common/constants');
+const {
+  CHAINS_DIR,
+  MIN_STAKE_PER_VALIDATOR,
+  MAX_STAKE_PER_VALIDATOR,
+  PredefinedDbPaths,
+} = require('../common/constants');
 const BlockchainNode = require('../node');
 const { setNodeForTesting, getTransaction, addBlock } = require('./test-util')
 
@@ -108,13 +113,20 @@ describe("Consensus", () => {
   it('Whitelisted validators must stake within MIN_STAKE_PER_VALIDATOR & MAX_STAKE_PER_VALIDATOR to have the producing rights', () => {
     let lastBlock = node1.bc.lastBlock();
     const addr = node2.account.address;
+    // Bypass whitelist rule check (need owner's private key)
+    const tempDb = node1.createTempDb(node1.db.stateVersion, 'CONSENSUS_UNIT_TEST', lastBlock.number);
+    tempDb.writeDatabase(
+        [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST, addr],
+        true);
+    node1.cloneAndFinalizeVersion(tempDb.stateVersion, -1); // Bypass already existing final state version
     
     // Staking less than MIN_STAKE_PER_VALIDATOR
+    let stakeAmount = MIN_STAKE_PER_VALIDATOR - 1;
     const stakeLessThanMin = getTransaction(node2, {
         operation: { 
           type: 'SET_VALUE', 
           ref: `/staking/consensus/${addr}/0/stake/key1/value`, 
-          value: MIN_STAKE_PER_VALIDATOR - 1
+          value: stakeAmount
         },
         nonce: -1,
         gas_price: 1
@@ -124,9 +136,13 @@ describe("Consensus", () => {
     lastBlock = node1.bc.lastBlock();
     const voteWithStakeLessThanMin = getTransaction(node2, {
         operation: {
-          type: 'SET_VALUE', 
-          ref: `/consensus/number/${lastBlock.number}/vote/${addr}`,
-          value: { block_hash: lastBlock.hash, stake: 100000 }
+          type: 'SET_VALUE',
+          ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
+          value: {
+            number: lastBlock.number + 1,
+            proposer: addr,
+            gas_cost_total: 0
+          }
         },
         nonce: -1,
         gas_price: 1
@@ -150,8 +166,12 @@ describe("Consensus", () => {
     const voteWithStakeEqualMin = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE', 
-          ref: `/consensus/number/${lastBlock.number}/vote/${addr}`,
-          value: { block_hash: lastBlock.hash, stake: 100000 }
+          ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
+          value: {
+            number: lastBlock.number + 1,
+            proposer: addr,
+            gas_cost_total: 0
+          }
         },
         nonce: -1,
         gas_price: 1
@@ -175,8 +195,12 @@ describe("Consensus", () => {
     const voteWithStakeMoreThanMax = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE', 
-          ref: `/consensus/number/${lastBlock.number}/vote/${addr}`,
-          value: { block_hash: lastBlock.hash, stake: 100000 }
+          ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
+          value: {
+            number: lastBlock.number + 1,
+            proposer: addr,
+            gas_cost_total: 0
+          }
         },
         nonce: -1,
         gas_price: 1
