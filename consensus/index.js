@@ -387,7 +387,10 @@ class Consensus {
         if (whitelist[address] === true) {
           const stake = tempDb.getValue(PathUtil.getConsensusStakingAccountBalancePath(address));
           if (stake && MIN_STAKE_PER_VALIDATOR <= stake && stake <= MAX_STAKE_PER_VALIDATOR) {
-            validators[address] = { stake, producing_right: true };
+            validators[address] = {
+              [PredefinedDbPaths.STAKE]: stake,
+              [PredefinedDbPaths.PROPOSAL_RIGHT]: true
+            };
           }
         }
       }
@@ -401,7 +404,7 @@ class Consensus {
       throw Error(`Not enough validators: ${JSON.stringify(validators)}`);
     }
     const totalAtStake = Object.values(validators).reduce((acc, cur) => {
-      return acc + cur.stake;
+      return acc + cur[PredefinedDbPaths.STAKE];
     }, 0);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.create(
@@ -989,7 +992,10 @@ class Consensus {
       if (stake) {
         if (whitelist[address] === true) {
           if (MIN_STAKE_PER_VALIDATOR <= stake && stake <= MAX_STAKE_PER_VALIDATOR) {
-            validators[address] = { stake, producing_right: true };
+            validators[address] = {
+              [PredefinedDbPaths.STAKE]: stake,
+              [PredefinedDbPaths.PROPOSAL_RIGHT]: true
+            };
           }
         } else {
           candidates.push({
@@ -1004,7 +1010,10 @@ class Consensus {
     candidates = _.orderBy(candidates, ['stake', 'expireAt', 'address'], ['desc', 'desc', 'asc']);
     for (const candidate of candidates) {
       if (Object.keys(validators).length < MAX_NUM_VALIDATORS) {
-        validators[candidate.address] = { stake: candidate.stake, producing_right: false };
+        validators[candidate.address] = {
+          [PredefinedDbPaths.STAKE]: candidate.stake,
+          [PredefinedDbPaths.PROPOSAL_RIGHT]: false
+        };
       } else {
         break;
       }
@@ -1225,17 +1234,19 @@ class Consensus {
   static selectProposer(seed, validators) {
     const LOG_HEADER = 'selectProposer';
     logger.debug(`[${LOG_HEADER}] seed: ${seed}, validators: ${JSON.stringify(validators)}`);
-    const validatorsWithProducingRights = _.pickBy(validators, (x) => _.get(x, 'producing_right') === true);
+    const validatorsWithProducingRights = _.pickBy(validators, (x) => {
+      return _.get(x, PredefinedDbPaths.PROPOSAL_RIGHT) === true;
+    });
     const alphabeticallyOrderedValidators = Object.keys(validatorsWithProducingRights).sort();
     const totalAtStake = Object.values(validatorsWithProducingRights).reduce((acc, cur) => {
-      return acc + cur.stake;
+      return acc + cur[PredefinedDbPaths.STAKE];
     }, 0);
     const randomNumGenerator = seedrandom(seed);
     const targetValue = randomNumGenerator() * totalAtStake;
     let cumulative = 0;
     for (let i = 0; i < alphabeticallyOrderedValidators.length; i++) {
       const addr = alphabeticallyOrderedValidators[i];
-      cumulative += validatorsWithProducingRights[addr].stake;
+      cumulative += validatorsWithProducingRights[addr][PredefinedDbPaths.STAKE];
       if (cumulative > targetValue) {
         logger.info(`Proposer is ${addr}`);
         return addr;

@@ -130,6 +130,7 @@ const PredefinedDbPaths = {
   VOTE: 'vote',
   BLOCK_HASH: 'block_hash',
   STAKE: 'stake',
+  PROPOSAL_RIGHT: 'proposal_right',
   // Gas fee
   GAS_FEE: 'gas_fee',
   COLLECT: 'collect',
@@ -535,7 +536,10 @@ function overwriteGenesisParams(overwritingParams, type) {
     for (let i = 0; i < GenesisParams.consensus.MIN_NUM_VALIDATORS; i++) {
       const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
       CommonUtil.setJsObject(whitelist, [addr], true);
-      CommonUtil.setJsObject(validators, [addr], { stake: GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR, producing_right: true });
+      CommonUtil.setJsObject(validators, [addr], {
+          [PredefinedDbPaths.STAKE]: GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR,
+          [PredefinedDbPaths.PROPOSAL_RIGHT]: true
+        });
     }
     GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
     GenesisParams.consensus.GENESIS_VALIDATORS = validators;
