@@ -574,13 +574,13 @@ class CommonUtil {
     return CommonUtil.metricsToText(metrics);
   }
 
-  static sleep = (ms) => {
+  static sleep(ms) {
     return new Promise((resolve) => {
       setTimeout(resolve, ms);
     });
   };
 
-  static convertEnvVarInputToBool = (input, defaultValue = false) => {
+  static convertEnvVarInputToBool(input, defaultValue = false) {
     return input ? input.toLowerCase().startsWith('t') : defaultValue;
   }
 }
