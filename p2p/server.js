@@ -684,7 +684,9 @@ class P2pServer {
                 '$block_number',
                 ShardingProperties.PROOF_HASH),
             value: {
-              [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
+              [RuleProperties.RULE]: {
+                [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
+              }
             }
           },
           {
@@ -695,7 +697,9 @@ class P2pServer {
                 ShardingProperties.PROOF_HASH_MAP,
                 ShardingProperties.LATEST),
             value: {
-              [RuleProperties.WRITE]: latestBlockNumberRules
+              [RuleProperties.RULE]: {
+                [RuleProperties.WRITE]: latestBlockNumberRules
+              }
             }
           },
           {
