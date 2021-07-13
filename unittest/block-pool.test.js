@@ -2,7 +2,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
-const { CHAINS_DIR } = require('../common/constants');
+const { CHAINS_DIR, PredefinedDbPaths } = require('../common/constants');
 const BlockPool = require('../consensus/block-pool');
 const BlockchainNode = require('../node');
 const { Block } = require('../blockchain/block');
@@ -25,7 +25,7 @@ describe("BlockPool", () => {
   function createAndAddBlock(node, blockPool, lastBlock, number, epoch) {
     const block = Block.create(
         lastBlock.hash, [], [], number, epoch, '', node.account.address,
-        {[node.account.address]: 100000}, 0, 0);
+        {[node.account.address]: { [PredefinedDbPaths.STAKE]: 100000, [PredefinedDbPaths.PROPOSAL_RIGHT]: true } }, 0, 0);
     const proposal = getTransaction(node, {
         operation: {
           type: 'SET_VALUE',
@@ -33,7 +33,7 @@ describe("BlockPool", () => {
           value: {
             number: block.number,
             epoch: block.epoch,
-            validators: {[node.account.address]: 100000},
+            validators: { [node.account.address]: { [PredefinedDbPaths.STAKE]: 100000, [PredefinedDbPaths.PROPOSAL_RIGHT]: true } },
             total_at_stake: 100000,
             proposer: node.account.address,
             block_hash: block.hash
@@ -65,7 +65,8 @@ describe("BlockPool", () => {
     const lastBlock = node1.bc.lastBlock();
     const addr = node1.account.address;
     const block = Block.create(
-        lastBlock.hash, [], [], lastBlock.number + 1, lastBlock.epoch + 1, '', addr, {[addr]: 100000}, 0, 0);
+        lastBlock.hash, [], [], lastBlock.number + 1, lastBlock.epoch + 1, '', addr,
+        {[addr]: { [PredefinedDbPaths.STAKE]: 100000, [PredefinedDbPaths.PROPOSAL_RIGHT]: true }}, 0, 0);
     const proposalTx = getTransaction(node1, {
         operation: {
           type: 'SET_VALUE',
@@ -73,7 +74,7 @@ describe("BlockPool", () => {
           value: {
             number: block.number,
             epoch: block.epoch,
-            validators: {[addr]: 100000},
+            validators: {[addr]: { [PredefinedDbPaths.STAKE]: 100000, [PredefinedDbPaths.PROPOSAL_RIGHT]: true } },
             total_at_stake: 100000,
             proposer: addr,
             block_hash: block.hash
@@ -93,7 +94,8 @@ describe("BlockPool", () => {
     const addr = node1.account.address;
     const lastBlock = node1.bc.lastBlock();
     const block = Block.create(
-        lastBlock.hash, [], [], lastBlock.number + 1, lastBlock.epoch + 1, '', addr, {[addr]: 100000}, 0, 0);
+        lastBlock.hash, [], [], lastBlock.number + 1, lastBlock.epoch + 1, '', addr,
+        {[addr]: { [PredefinedDbPaths.STAKE]: 100000, [PredefinedDbPaths.PROPOSAL_RIGHT]: true }}, 0, 0);
     const proposalTx = getTransaction(node1, {
         operation: {
           type: 'SET_VALUE',
@@ -101,7 +103,7 @@ describe("BlockPool", () => {
           value: {
             number: block.number,
             epoch: block.epoch,
-            validators: {[addr]: 100000},
+            validators: {[addr]: { [PredefinedDbPaths.STAKE]: 100000, [PredefinedDbPaths.PROPOSAL_RIGHT]: true } },
             total_at_stake: 100000,
             proposer: addr,
             block_hash: block.hash

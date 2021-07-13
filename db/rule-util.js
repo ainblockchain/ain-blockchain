@@ -130,10 +130,11 @@ class RuleUtil {
     return parsed[1];
   }
 
-  getAppAdminPath(accountName) {
+  isAppAdmin(accountName, address, getValue) {
     const { PredefinedDbPaths } = require('../common/constants');
     const appName = this.getServiceNameFromServAcntName(accountName);
-    return `/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/${PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN}`;
+    return getValue(`/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
+        `${PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN}/${address}`) === true;
   }
 
   getBalancePath(addrOrServAcnt) {
@@ -146,14 +147,26 @@ class RuleUtil {
     }
   }
 
-  getBillingUserPath(billingServAcntName, userAddr) {
+  getBalance(addrOrServAcnt, getValue) {
+    return getValue(this.getBalancePath(addrOrServAcnt)) || 0;
+  }
+
+  isBillingUser(billingServAcntName, userAddr, getValue) {
     const { PredefinedDbPaths } = require('../common/constants');
     const parsed = this.parseServAcntName(billingServAcntName);
     const appName = parsed[1];
     const billingId = parsed[2];
-    return `/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
+    return getValue(
+        `/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
         `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING}/${billingId}/` +
-        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}/${userAddr}`;
+        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}/${userAddr}`) === true;
+  }
+
+  getConsensusStakeBalance(address, getValue) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    return getValue(
+        `/${PredefinedDbPaths.SERVICE_ACCOUNTS}/${PredefinedDbPaths.STAKING}/` +
+        `${PredefinedDbPaths.CONSENSUS}/${address}|0/${PredefinedDbPaths.BALANCE}`) || 0;
   }
 
   getOwnerAddr() {
@@ -164,6 +177,11 @@ class RuleUtil {
   getMinStakeAmount() {
     const { MIN_STAKE_PER_VALIDATOR } = require('../common/constants');
     return MIN_STAKE_PER_VALIDATOR;
+  }
+
+  getMaxStakeAmount() {
+    const { MAX_STAKE_PER_VALIDATOR } = require('../common/constants');
+    return MAX_STAKE_PER_VALIDATOR;
   }
 
   getMinNumValidators() {
