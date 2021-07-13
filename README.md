@@ -49,7 +49,7 @@ source setup_tracker_gcp.sh
 - Start tracker server job
 ```
 cd ain-blockchain/
-sh start_tracker_gcp.sh
+sh start_tracker_genesis_gcp.sh
 ```
 
 <!--
@@ -136,7 +136,7 @@ source setup_node_gcp.sh
 ```
 - Start Node server job (set shard index to 0 if you're running a root chain node)
 ```
-sh start_node_gcp.sh {dev|spring|summer} <SHARD_INDEX> <SERVER_INDEX>
+sh start_node_genesis_gcp.sh {dev|spring|summer} <SHARD_INDEX> <SERVER_INDEX>
 ```
 
 <!--
