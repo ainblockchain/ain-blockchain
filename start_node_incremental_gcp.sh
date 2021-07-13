@@ -168,11 +168,11 @@ EOF
 
 while :
 do
-    consensusStatus=$(curl -m 20 -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'net_consensusStatus')" "http://localhost:8080/json-rpc" | jq -r '.result.result.state')
-    printf "\nconsensusStatus = ${consensusStatus}\n"
+    healthCheck=$(curl -m 20 -X GET -H "Content-Type: application/json" "http://localhost:8080/health_check")
+    printf "\nhealthCheck = ${healthCheck}\n"
     lastBlockNumber=$(curl -m 20 -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'ain_getRecentBlockNumber')" "http://localhost:8080/json-rpc" | jq -r '.result.result')
     printf "\nlastBlockNumber = ${lastBlockNumber}\n"
-    if [[ "$consensusStatus" = "RUNNING" ]] && [[ "$lastBlockNumber" -gt 0 ]]; then
+    if [[ "$healthCheck" = "true" ]]; then
         printf "\nBlockchain Node server is synced & running!\n"
         printf "\nTime it took to sync in seconds: $SECONDS\n"
         break
