@@ -1000,7 +1000,8 @@ class Consensus {
         }
       }
     }
-    candidates = _.orderBy(candidates, ['stake', 'expireAt'], ['desc', 'desc']); // TODO(liayoo): How to do tie-breaking?
+    // NOTE(liayoo): tie-breaking by addresses as a temporary solution.
+    candidates = _.orderBy(candidates, ['stake', 'expireAt', 'address'], ['desc', 'desc', 'asc']);
     for (const candidate of candidates) {
       if (Object.keys(validators).length < MAX_NUM_VALIDATORS) {
         validators[candidate.address] = { stake: candidate.stake, producing_right: false };
