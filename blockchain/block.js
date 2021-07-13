@@ -140,8 +140,8 @@ class Block {
       if (!CommonUtil.isCksumAddr(address)) {
         return false;
       }
-      if (!CommonUtil.isDict(info) || !CommonUtil.isNumber(info.stake) ||
-          !CommonUtil.isBool(info.producing_right)) {
+      if (!CommonUtil.isDict(info) || !CommonUtil.isNumber(info[PredefinedDbPaths.STAKE]) ||
+          !CommonUtil.isBool(info[PredefinedDbPaths.PROPOSAL_RIGHT])) {
         return false;
       }
     }
@@ -294,7 +294,7 @@ class Block {
         operation: {
           type: 'SET_VALUE',
           ref: PathUtil.getStakingStakeRecordValuePath(PredefinedDbPaths.CONSENSUS, address, 0, timestamp),
-          value: info.stake
+          value: info[PredefinedDbPaths.STAKE]
         }
       };
       txs.push(Transaction.fromTxBody(txBody, privateKey));

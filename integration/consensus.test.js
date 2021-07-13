@@ -11,6 +11,7 @@ const syncRequest = require('sync-request');
 const {
   CURRENT_PROTOCOL_VERSION,
   CHAINS_DIR,
+  PredefinedDbPaths,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const MAX_ITERATION = 200;
@@ -187,13 +188,13 @@ describe('Consensus', () => {
         iterCount++;
         await CommonUtil.sleep(200);
       }
-      assert.deepEqual(lastBlock.validators[server4Addr].producing_right, false);
+      assert.deepEqual(lastBlock.validators[server4Addr][PredefinedDbPaths.PROPOSAL_RIGHT], false);
       await waitForNewBlocks(server1, 1);
       const server4Voted = parseOrLog(syncRequest(
         'GET',
         `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote/${server4Addr}`
       ).body.toString('utf-8')).result;
-      assert.deepEqual(server4Voted.stake, 100000);
+      assert.deepEqual(server4Voted[PredefinedDbPaths.STAKE], 100000);
       // 3. server5 stakes 100000
       const server5StakeRes = parseOrLog(syncRequest('POST', server5 + '/set_value', {json: {
         ref: `/staking/consensus/${server5Addr}/0/stake/${Date.now()}/value`,
@@ -216,14 +217,14 @@ describe('Consensus', () => {
         iterCount++;
         await CommonUtil.sleep(200);
       }
-      assert.deepEqual(lastBlock.validators[server5Addr].producing_right, false);
+      assert.deepEqual(lastBlock.validators[server5Addr][PredefinedDbPaths.PROPOSAL_RIGHT], false);
       await waitForNewBlocks(server1, 1);
       const votes = parseOrLog(syncRequest(
         'GET',
         `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote`
       ).body.toString('utf-8')).result;
       assert.deepEqual(votes[server4Addr], undefined);
-      assert.deepEqual(votes[server5Addr].stake, 100000);
+      assert.deepEqual(votes[server5Addr][PredefinedDbPaths.STAKE], 100000);
     });
 
     it('When more than MAX_NUM_VALIDATORS validators exist, validatators with bigger stakes get prioritized', async () => {
@@ -254,7 +255,7 @@ describe('Consensus', () => {
         `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote`
       ).body.toString('utf-8')).result;
       assert.deepEqual(votes[server5Addr], undefined);
-      assert.deepEqual(votes[server4Addr].stake, 100010);
+      assert.deepEqual(votes[server4Addr][PredefinedDbPaths.STAKE], 100010);
       // 3. server5 stakes 20 more AIN
       const server5StakeRes = parseOrLog(syncRequest('POST', server5 + '/set_value', {json: {
         ref: `/staking/consensus/${server5Addr}/0/stake/${Date.now()}/value`,
@@ -283,7 +284,7 @@ describe('Consensus', () => {
         `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote`
       ).body.toString('utf-8')).result;
       assert.deepEqual(votes[server4Addr], undefined);
-      assert.deepEqual(votes[server5Addr].stake, 100020);
+      assert.deepEqual(votes[server5Addr][PredefinedDbPaths.STAKE], 100020);
     });
   })
 });
