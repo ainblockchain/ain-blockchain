@@ -44,11 +44,11 @@ function getFunctionConfig(funcNode) {
 }
 
 function hasRuleConfig(ruleNode) {
-  return hasConfig(ruleNode, RuleProperties.WRITE);
+  return hasConfig(ruleNode, RuleProperties.RULE);
 }
 
 function getRuleConfig(ruleNode) {
-  return getConfig(ruleNode, RuleProperties.WRITE);
+  return getConfig(ruleNode, RuleProperties.RULE);
 }
 
 function hasOwnerConfig(ownerNode) {
@@ -169,8 +169,12 @@ function isValidJsObjectForStates(obj) {
  * Checks the validity of the given rule configuration.
  */
  function isValidRuleConfig(ruleConfigObj) {
-  if (!CommonUtil.isBool(ruleConfigObj) && !CommonUtil.isString(ruleConfigObj)) {
+  if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
+  }
+  const writeConfigObj = ruleConfigObj[RuleProperties.WRITE];
+  if (!CommonUtil.isBool(writeConfigObj) && !CommonUtil.isString(writeConfigObj)) {
+    return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
   }
 
   return { isValid: true, invalidPath: '' };
@@ -357,7 +361,7 @@ function isValidRuleTree(ruleTreeObj) {
     return { isValid: true, invalidPath: '' };
   }
 
-  return isValidConfigTreeRecursive(ruleTreeObj, [], RuleProperties.WRITE, isValidRuleConfig);
+  return isValidConfigTreeRecursive(ruleTreeObj, [], RuleProperties.RULE, isValidRuleConfig);
 }
 
 /**

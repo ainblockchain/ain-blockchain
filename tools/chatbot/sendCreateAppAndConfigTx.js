@@ -42,7 +42,9 @@ function buildChatbotConfigTxBody(timestamp) {
           type: "SET_RULE",
           ref: "/apps/chatbots/common/message/$key",
           value: {
-            ".write": true
+            ".rule": {
+              ".write": true
+            }
           }
         },
         {
