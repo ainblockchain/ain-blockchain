@@ -64,18 +64,18 @@ fi
 
 # ssh into each instance, clean up, and start running the nodes
 printf "\n\n############################\n# Running parent tracker #\n############################\n\n"
-gcloud compute ssh $TRACKER_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_tracker_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
+gcloud compute ssh $TRACKER_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_tracker_genesis_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
 printf "\n\n###########################\n# Running parent node 0 #\n###########################\n\n"
-gcloud compute ssh $NODE_0_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_gcp.sh $SEASON 0 0" --project $PROJECT_ID --zone $NODE_0_ZONE
+gcloud compute ssh $NODE_0_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 0" --project $PROJECT_ID --zone $NODE_0_ZONE
 sleep 3
 printf "\n\n#########################\n# Running parent node 1 #\n#########################\n\n"
-gcloud compute ssh $NODE_1_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_gcp.sh $SEASON 0 1" --project $PROJECT_ID --zone $NODE_1_ZONE
+gcloud compute ssh $NODE_1_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 1" --project $PROJECT_ID --zone $NODE_1_ZONE
 printf "\n\n#########################\n# Running parent node 2 #\n#########################\n\n"
-gcloud compute ssh $NODE_2_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_gcp.sh $SEASON 0 2" --project $PROJECT_ID --zone $NODE_2_ZONE
+gcloud compute ssh $NODE_2_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 2" --project $PROJECT_ID --zone $NODE_2_ZONE
 printf "\n\n#########################\n# Running parent node 3 #\n#########################\n\n"
-gcloud compute ssh $NODE_3_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_gcp.sh $SEASON 0 3" --project $PROJECT_ID --zone $NODE_3_ZONE
+gcloud compute ssh $NODE_3_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 3" --project $PROJECT_ID --zone $NODE_3_ZONE
 printf "\n\n#########################\n# Running parent node 4 #\n#########################\n\n"
-gcloud compute ssh $NODE_4_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_gcp.sh $SEASON 0 4" --project $PROJECT_ID --zone $NODE_4_ZONE
+gcloud compute ssh $NODE_4_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 4" --project $PROJECT_ID --zone $NODE_4_ZONE
 
 sleep 10
 
@@ -92,13 +92,13 @@ if [[ "$3" -gt 0 ]]; then
 
             # ssh into each instance, clean up, and start running the nodes
             printf "\n\n###########################\n# Running shard_$i tracker #\n###########################\n\n"
-            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_tracker_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
+            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_tracker_genesis_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
             printf "\n\n##########################\n# Running shard_$i node 0 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_gcp.sh $SEASON $i 0" --project $PROJECT_ID --zone $NODE_0_ZONE
+            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON $i 0" --project $PROJECT_ID --zone $NODE_0_ZONE
             sleep 3
             printf "\n\n##########################\n# Running shard_$i node 1 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_gcp.sh $SEASON $i 1" --project $PROJECT_ID --zone $NODE_1_ZONE
+            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON $i 1" --project $PROJECT_ID --zone $NODE_1_ZONE
             printf "\n\n##########################\n# Running shard_$i node 2 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_gcp.sh $SEASON $i 2" --project $PROJECT_ID --zone $NODE_2_ZONE
+            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON $i 2" --project $PROJECT_ID --zone $NODE_2_ZONE
         done
 fi
