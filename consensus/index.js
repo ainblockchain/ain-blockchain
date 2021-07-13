@@ -506,7 +506,7 @@ class Consensus {
     }
     const prevBlock = number > 1 ? prevBlockInfo.block : prevBlockInfo;
 
-    // Make sure we have at least MIN_NUM_VALIDATORS validators.
+    // Make sure we have validators within MIN_NUM_VALIDATORS and MAX_NUM_VALIDATORS.
     if (Object.keys(validators).length < MIN_NUM_VALIDATORS || Object.keys(validators).length > MAX_NUM_VALIDATORS) {
       logger.error(
           `[${LOG_HEADER}] Invalid validator set size (${JSON.stringify(validators)})\n` +
