@@ -19,6 +19,7 @@ cd ../ain-blockchain
 echo 'Installing node modules..'
 npm install
 
+
 export CONSOLE_LOG=false 
 
 echo 'Starting up Blockchain Tracker server..'
