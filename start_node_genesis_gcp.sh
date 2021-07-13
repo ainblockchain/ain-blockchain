@@ -1,11 +1,30 @@
 #!/bin/sh
 
 if [[ "$#" -lt 2 ]]; then
-    echo "Usage: sh start_node_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index>"
-    echo "Example: sh start_node_gcp.sh spring 0 0"
+    echo "Usage: sh start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index>"
+    echo "Example: sh start_node_genesis_gcp.sh spring 0 0"
     exit
 fi
 
+
+echo 'Killing old jobs..'
+sudo killall node
+
+
+echo 'Setting up working directory..'
+cd
+sudo rm -rf /home/ain_blockchain_data
+sudo mkdir /home/ain_blockchain_data
+sudo chmod 777 /home/ain_blockchain_data
+sudo rm -rf ../ain-blockchain*
+sudo mkdir ../ain-blockchain
+sudo chmod 777 ../ain-blockchain
+mv * ../ain-blockchain
+cd ../ain-blockchain
+
+
+echo 'Installing node modules..'
+npm install
 export GENESIS_CONFIGS_DIR=genesis-configs/testnet
 if [[ "$1" = 'spring' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
