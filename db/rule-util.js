@@ -134,7 +134,7 @@ class RuleUtil {
     const { PredefinedDbPaths } = require('../common/constants');
     const appName = this.getServiceNameFromServAcntName(accountName);
     return getValue(`/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
-        `${PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN}/${address}`);
+        `${PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN}/${address}`) === true;
   }
 
   getBalancePath(addrOrServAcnt) {
@@ -148,7 +148,7 @@ class RuleUtil {
   }
 
   getBalance(addrOrServAcnt, getValue) {
-    return getValue(this.getBalancePath(addrOrServAcnt));
+    return getValue(this.getBalancePath(addrOrServAcnt)) || 0;
   }
 
   isBillingUser(billingServAcntName, userAddr, getValue) {
@@ -159,14 +159,14 @@ class RuleUtil {
     return getValue(
         `/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
         `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING}/${billingId}/` +
-        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}/${userAddr}`);
+        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}/${userAddr}`) === true;
   }
 
   getConsensusStakeBalance(address, getValue) {
     const { PredefinedDbPaths } = require('../common/constants');
     return getValue(
         `/${PredefinedDbPaths.SERVICE_ACCOUNTS}/${PredefinedDbPaths.STAKING}/` +
-        `${PredefinedDbPaths.CONSENSUS}/${address}|0/${PredefinedDbPaths.BALANCE}`);
+        `${PredefinedDbPaths.CONSENSUS}/${address}|0/${PredefinedDbPaths.BALANCE}`) || 0;
   }
 
   getOwnerAddr() {
