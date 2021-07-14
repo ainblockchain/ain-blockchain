@@ -160,6 +160,7 @@ const PredefinedDbPaths = {
   MANAGE_APP_CONFIG_ADMIN: 'admin',
   MANAGE_APP_CONFIG_BILLING: 'billing',
   MANAGE_APP_CONFIG_BILLING_USERS: 'users',
+  MANAGE_APP_CONFIG_IS_PUBLIC: 'is_public',
   MANAGE_APP_CONFIG_SERVICE: 'service',
   MANAGE_APP_CREATE: 'create',
   MANAGE_APP_RESULT: 'result',
