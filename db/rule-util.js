@@ -130,11 +130,15 @@ class RuleUtil {
     return parsed[1];
   }
 
-  isAppAdmin(accountName, address, getValue) {
+  isAppAdmin(appName, address, getValue) {
     const { PredefinedDbPaths } = require('../common/constants');
-    const appName = this.getServiceNameFromServAcntName(accountName);
     return getValue(`/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
         `${PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN}/${address}`) === true;
+  }
+
+  isAppAdminFromServAcntName(accountName, address, getValue) {
+    const appName = this.getServiceNameFromServAcntName(accountName);
+    return this.isAppAdmin(appName, address, getValue);
   }
 
   getBalancePath(addrOrServAcnt) {

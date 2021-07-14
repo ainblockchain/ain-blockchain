@@ -543,9 +543,10 @@ class Functions {
     const recordId = context.params.record_id;
     const resultPath = PathUtil.getCreateAppResultPath(appName, recordId);
     const sanitizedVal = {};
-    const adminConfig = value[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN];
+    const adminConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN);
     const billingConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING);
     const serviceConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
+    const isPublic = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_IS_PUBLIC);
     if (!isValidServiceName(appName)) {
       return this.saveAndReturnFuncResult(
           context, resultPath, FunctionResultCode.INVALID_SERVICE_NAME);
@@ -553,21 +554,27 @@ class Functions {
     if (!CommonUtil.isDict(adminConfig)) {
       return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
     }
-    if (adminConfig) {
-      sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
-      const appPath = PathUtil.getAppPath(appName);
-      const owner = {};
-      let rule = '';
-      const adminAddrList = Object.keys(adminConfig);
-      for (let i = 0; i < adminAddrList.length; i++) {
-        const addr = adminAddrList[i];
-        CommonUtil.setJsObject(owner, [OwnerProperties.OWNER, OwnerProperties.OWNERS, addr],
-            buildOwnerPermissions(true, true, true, true));
-        rule += `auth.addr === '${addr}'` + (i < adminAddrList.length - 1 ? ' || ' : '');
-      }
-      this.setRuleOrLog(appPath, buildRulePermission(rule), context);
-      this.setOwnerOrLog(appPath, owner, context);
+    sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
+    const appPath = PathUtil.getAppPath(appName);
+    const owner = {};
+    let rule = '';
+    const adminAddrList = Object.keys(adminConfig);
+    for (let i = 0; i < adminAddrList.length; i++) {
+      const addr = adminAddrList[i];
+      CommonUtil.setJsObject(owner, [OwnerProperties.OWNER, OwnerProperties.OWNERS, addr],
+          buildOwnerPermissions(true, true, true, true));
+      rule += `auth.addr === '${addr}'` + (i < adminAddrList.length - 1 ? ' || ' : '');
     }
+    if (isPublic) {
+      sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_IS_PUBLIC] = true;
+      // Additionally set anyone to have owner permissions, except for the write_owner permission.
+      CommonUtil.setJsObject(owner, [OwnerProperties.OWNER, OwnerProperties.OWNERS, OwnerProperties.ANYONE],
+          buildOwnerPermissions(true, true, false, true));
+      this.setRuleOrLog(appPath, buildRulePermission('true'), context);
+    } else {
+      this.setRuleOrLog(appPath, buildRulePermission(rule), context);
+    }
+    this.setOwnerOrLog(appPath, owner, context);
     if (billingConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING] = billingConfig;
     }

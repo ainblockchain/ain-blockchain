@@ -262,6 +262,7 @@ describe('Sharding', async () => {
     await CommonUtil.sleep(2000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], true);
     await CommonUtil.sleep(2000);
+    await setUpApp('afan', shardServerList, { admin: { [shardOwnerAddr]: true } });
   });
 
   after(() => {

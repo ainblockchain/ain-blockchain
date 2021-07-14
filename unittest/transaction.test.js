@@ -4,6 +4,7 @@ const assert = chai.assert;
 const expect = chai.expect;
 const {
   CHAINS_DIR,
+  PredefinedDbPaths,
 } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
 const BlockchainNode = require('../node/');
@@ -28,6 +29,14 @@ describe('Transaction', () => {
 
     node = new BlockchainNode();
     setNodeForTesting(node);
+    node.db.writeDatabase(
+      [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.STAKING, 'app_a', PredefinedDbPaths.STAKING_BALANCE_TOTAL],
+      1
+    );
+    node.db.writeDatabase(
+      [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.STAKING, 'test', PredefinedDbPaths.STAKING_BALANCE_TOTAL],
+      1
+    );
 
     txBody = {
       operation: {
