@@ -98,7 +98,9 @@ async function setUp() {
           type: 'SET_RULE',
           ref: '/apps/test/test_rule/some/path',
           value: {
-            ".write": "auth.addr === 'abcd'"
+            ".rule": {
+              ".write": "auth.addr === 'abcd'"
+            }
           }
         },
         {
@@ -268,7 +270,9 @@ describe('Blockchain Node', () => {
         assert.deepEqual(body, {
           code: 0,
           result: {
-            ".write": "auth.addr === 'abcd'"
+            ".rule": {
+              ".write": "auth.addr === 'abcd'"
+            }
           }
         });
       })
@@ -336,7 +340,9 @@ describe('Blockchain Node', () => {
             "path_vars": {},
           },
           "matched_config": {
-            "config": "auth.addr === 'abcd'",
+            "config": {
+              ".write": "auth.addr === 'abcd'"
+            },
             "path": "/apps/test/test_rule/some/path"
           },
           "subtree_configs": []
@@ -458,7 +464,9 @@ describe('Blockchain Node', () => {
               }
             },
             {
-              ".write": "auth.addr === 'abcd'"
+              ".rule": {
+                ".write": "auth.addr === 'abcd'"
+              }
             },
             {
               ".owner": {
@@ -571,7 +579,9 @@ describe('Blockchain Node', () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "auth.addr === 'abcd'",
+              "config": {
+                ".write": "auth.addr === 'abcd'"
+              },
               "path": "/apps/test/test_rule/some/path"
             },
             "subtree_configs": []
@@ -1086,13 +1096,17 @@ describe('Blockchain Node', () => {
             'GET', server1 + '/get_rule?ref=/apps/test/test_rule/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, {
-          ".write": "auth.addr === 'abcd'"
+          ".rule": {
+            ".write": "auth.addr === 'abcd'"
+          }
         });
 
         const request = {
           ref: "/apps/test/test_rule/some/path",
           value: {
-            ".write": "some other rule config"
+            ".rule": {
+              ".write": "some other rule config"
+            }
           }
         };
         const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
@@ -1109,7 +1123,9 @@ describe('Blockchain Node', () => {
             'GET', server1 + '/get_rule?ref=/apps/test/test_rule/some/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, {
-          ".write": "some other rule config"
+          ".rule": {
+            ".write": "some other rule config"
+          }
         });
       })
 
@@ -1123,7 +1139,9 @@ describe('Blockchain Node', () => {
         const request = {
           ref: "/apps/some/wrong/path",
           value: {
-            ".write": "some other rule config"
+            ".rule": {
+              ".write": "some other rule config"
+            }
           }
         };
         const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
@@ -1296,7 +1314,9 @@ describe('Blockchain Node', () => {
               type: 'SET_RULE',
               ref: "/apps/test/test_rule/other100/path",
               value: {
-                ".write": "some other100 rule config"
+                ".rule": {
+                  ".write": "some other100 rule config"
+                }
               }
             },
             {
@@ -1414,7 +1434,9 @@ describe('Blockchain Node', () => {
               type: 'SET_RULE',
               ref: "/apps/test/test_rule/other101/path",
               value: {
-                ".write": "some other101 rule config"
+                ".rule": {
+                  ".write": "some other101 rule config"
+                }
               }
             },
             {
@@ -1534,7 +1556,9 @@ describe('Blockchain Node', () => {
                 type: 'SET_RULE',
                 ref: "/apps/test/test_rule/other200/path",
                 value: {
-                  ".write": "some other200 rule config"
+                  ".rule": {
+                    ".write": "some other200 rule config"
+                  }
                 }
               },
               timestamp: Date.now(),
@@ -1597,7 +1621,9 @@ describe('Blockchain Node', () => {
                     type: 'SET_RULE',
                     ref: "/apps/test/test_rule/other201/path",
                     value: {
-                      ".write": "some other201 rule config"
+                      ".rule": {
+                        ".write": "some other201 rule config"
+                      }
                     }
                   },
                   {
@@ -1845,7 +1871,9 @@ describe('Blockchain Node', () => {
                 type: 'SET_RULE',
                 ref: "/apps/test/test_rule/other202/path",
                 value: {
-                  ".write": "some other202 rule config"
+                  ".rule": {
+                    ".write": "some other202 rule config"
+                  }
                 }
               },
               timestamp: Date.now(),
@@ -1908,7 +1936,9 @@ describe('Blockchain Node', () => {
                     type: 'SET_RULE',
                     ref: "/apps/test/test_rule/other203/path",
                     value: {
-                      ".write": "some other203 rule config"
+                      ".rule": {
+                        ".write": "some other203 rule config"
+                      }
                     }
                   },
                   {
@@ -2103,7 +2133,7 @@ describe('Blockchain Node', () => {
 
       before(async () => {
         const currentRule = parseOrLog(syncRequest('GET', server1 + '/get_rule?ref=/apps/test')
-          .body.toString('utf-8')).result[".write"];
+          .body.toString('utf-8')).result[".rule"][".write"];
         const newOwners = parseOrLog(syncRequest('GET', server1 + '/get_owner?ref=/apps/test')
           .body.toString('utf-8')).result[".owner"];
         const newRule = `${currentRule} || auth.addr === '${account.address}'`;
@@ -2119,7 +2149,9 @@ describe('Blockchain Node', () => {
                 type: 'SET_RULE',
                 ref: '/apps/test',
                 value: {
-                  ".write": newRule
+                  ".rule": {
+                    ".write": newRule
+                  }
                 }
               },
               {
@@ -2406,7 +2438,9 @@ describe('Blockchain Node', () => {
               type: 'SET_RULE',
               ref: "/apps/test/test_rule/other300/path",
               value: {
-                ".write": "some other300 rule config"
+                ".rule": {
+                  ".write": "some other300 rule config"
+                }
               }
             },
             timestamp: Date.now(),
@@ -2469,7 +2503,9 @@ describe('Blockchain Node', () => {
                   type: 'SET_RULE',
                   ref: "/apps/test/test_rule/other301/path",
                   value: {
-                    ".write": "some other301 rule config"
+                    ".rule": {
+                      ".write": "some other301 rule config"
+                    }
                   }
                 },
                 {
@@ -2897,14 +2933,18 @@ describe('Blockchain Node', () => {
               type: 'SET_RULE',
               ref: '/apps/test/test_function_triggering/allowed_path_with_fid/value',
               value: {
-                ".write": true,
+                ".rule": {
+                  ".write": true
+                }
               }
             },
             {
               type: 'SET_RULE',
               ref: '/apps/test/test_function_triggering/allowed_path_with_fid/.last_tx/value',
               value: {
-                ".write": "auth.fid === '_saveLastTx'",
+                ".rule": {
+                  ".write": "auth.fid === '_saveLastTx'"
+                }
               }
             },
             {
@@ -2923,14 +2963,18 @@ describe('Blockchain Node', () => {
               type: 'SET_RULE',
               ref: '/apps/test/test_function_triggering/not_allowed_path_with_fid/value',
               value: {
-                ".write": true,
+                ".rule": {
+                  ".write": true
+                }
               }
             },
             {
               type: 'SET_RULE',
               ref: '/apps/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value',
               value: {
-                ".write": "auth.fid === 'some function id'",
+                ".rule": {
+                  ".write": "auth.fid === 'some function id'"
+                }
               }
             },
             {
@@ -2949,14 +2993,18 @@ describe('Blockchain Node', () => {
               type: 'SET_RULE',
               ref: '/apps/test/test_function_triggering/allowed_path_with_fids/value',
               value: {
-                ".write": true,
+                ".rule": {
+                  ".write": true
+                }
               }
             },
             {
               type: 'SET_RULE',
               ref: '/apps/test/test_function_triggering/allowed_path_with_fids/.last_tx/value',
               value: {
-                ".write": "util.includes(auth.fids, '_saveLastTx')",
+                ".rule": {
+                  ".write": "util.includes(auth.fids, '_saveLastTx')"
+                }
               }
             },
             {
@@ -2975,14 +3023,18 @@ describe('Blockchain Node', () => {
               type: 'SET_RULE',
               ref: '/apps/test/test_function_triggering/not_allowed_path_with_fids/value',
               value: {
-                ".write": true,
+                ".rule": {
+                  ".write": true
+                }
               }
             },
             {
               type: 'SET_RULE',
               ref: '/apps/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value',
               value: {
-                ".write": "util.includes(auth.fids, 'some function id')",
+                ".rule": {
+                  ".write": "util.includes(auth.fids, 'some function id')"
+                }
               }
             },
             {
@@ -3071,7 +3123,9 @@ describe('Blockchain Node', () => {
               type: 'SET_RULE',
               ref: '/apps/test/test_function_triggering/rest_function_path',
               value: {
-                ".write": true,
+                ".rule": {
+                  ".write": true
+                }
               }
             },
           ],
@@ -3535,14 +3589,18 @@ describe('Blockchain Node', () => {
                 type: 'SET_RULE',
                 ref: valuePath,
                 value: {
-                  ".write": true,
+                  ".rule": {
+                    ".write": true
+                  }
                 }
               },
               {
                 type: 'SET_RULE',
                 ref: functionResultPath,
                 value: {
-                  ".write": true,  // Allow all.
+                  ".rule": {
+                    ".write": true  // Allow all.
+                  }
                 }
               },
               {
@@ -3608,14 +3666,18 @@ describe('Blockchain Node', () => {
                 type: 'SET_RULE',
                 ref: valuePath,
                 value: {
-                  ".write": true,
+                  ".rule": {
+                    ".write": true
+                  }
                 }
               },
               {
                 type: 'SET_RULE',
                 ref: functionResultPath,
                 value: {
-                  ".write": "auth.fid !== '_eraseValue'",  // Do NOT allow writes by the last function.
+                  ".rule": {
+                    ".write": "auth.fid !== '_eraseValue'"  // Do NOT allow writes by the last function.
+                  }
                 }
               },
               {
@@ -3682,14 +3744,18 @@ describe('Blockchain Node', () => {
                 type: 'SET_RULE',
                 ref: valuePath,
                 value: {
-                  ".write": true,
+                  ".rule": {
+                    ".write": true
+                  }
                 }
               },
               {
                 type: 'SET_RULE',
                 ref: functionResultPath,
                 value: {
-                  ".write": true,  // Allow all.
+                  ".rule": {
+                    ".write": true  // Allow all.
+                  }
                 }
               },
               {
@@ -3765,14 +3831,18 @@ describe('Blockchain Node', () => {
                 type: 'SET_RULE',
                 ref: valuePath,
                 value: {
-                  ".write": true,
+                  ".rule": {
+                    ".write": true
+                  }
                 }
               },
               {
                 type: 'SET_RULE',
                 ref: functionResultPath,
                 value: {
-                  ".write": "auth.fid !== '_eraseValue'",  // Do NOT allow writes by the last function.
+                  ".rule": {
+                    ".write": "auth.fid !== '_eraseValue'"  // Do NOT allow writes by the last function.
+                  }
                 }
               },
               {
