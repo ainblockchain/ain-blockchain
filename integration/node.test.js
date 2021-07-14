@@ -3828,7 +3828,7 @@ describe('Blockchain Node', () => {
     describe('App creation', () => {
       before(async () => {
         const appStakingPath =
-            `/staking/test_service_create_app/${serviceAdmin}/0/stake/${Date.now()}/value`;
+            `/staking/test_service_create_app0/${serviceAdmin}/0/stake/${Date.now()}/value`;
         const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: appStakingPath,
           value: 1
@@ -3837,6 +3837,28 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
       });
+
+      /*
+      it('cannot create app without staking some AIN for the app', async () => {
+        const manageAppPath = '/manage_app/test_service_create_app0/create/0';
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: { [serviceAdmin]: true },
+          },
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8')).result;
+        assert.deepEqual(createAppRes, {
+          "result": {
+            "code": 25,
+            "error_message": "Insufficient app stakes for test_service_create_app0",
+            "gas_amount": 0
+          },
+          "tx_hash": "0x9d0332ec49eb12a580dae47c1eaf19778773eaf22ebef6f7a90c29482e8e9cbb"
+        });
+      });
+      */
 
       it("when successful with valid app name", async () => {
         const manageAppPath = '/manage_app/test_service_create_app0/create/1';
@@ -4030,6 +4052,12 @@ describe('Blockchain Node', () => {
                 "branch_owner": true,
                 "write_function": true,
                 "write_owner": false,
+                "write_rule": true
+              },
+              "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
                 "write_rule": true
               }
             }
