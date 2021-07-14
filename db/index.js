@@ -80,7 +80,9 @@ class DB {
       });
       // Initialize DB rules.
       this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
-        [RuleProperties.WRITE]: true
+        [RuleProperties.RULE]: {
+          [RuleProperties.WRITE]: true
+        }
       });
     }
   }
@@ -659,7 +661,7 @@ class DB {
       return CommonUtil.returnTxResult(0);
     }
     if (!this.getPermissionForValue(localPath, value, auth, timestamp)) {
-      return CommonUtil.returnTxResult(103, `No .write permission on: ${valuePath}`);
+      return CommonUtil.returnTxResult(103, `No write permission on: ${valuePath}`);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);
@@ -1041,7 +1043,7 @@ class DB {
         this.addPathToValue(newValue, matched.matchedValuePath, matched.closestRule.path.length);
     let evalRuleRes = false;
     try {
-      evalRuleRes = !!this.evalRuleString(
+      evalRuleRes = !!this.evalRuleConfig(
         matched.closestRule.config, matched.pathVars, data, newData, auth, timestamp);
       if (!evalRuleRes) {
         logger.debug(`[${LOG_HEADER}] evalRuleRes ${evalRuleRes}, ` +
@@ -1369,7 +1371,11 @@ class DB {
   }
 
   // TODO(platfowner): Extend function for auth.fid.
-  evalRuleString(ruleString, pathVars, data, newData, auth, timestamp) {
+  evalRuleConfig(ruleConfig, pathVars, data, newData, auth, timestamp) {
+    if (!CommonUtil.isDict(ruleConfig)) {
+      return false;
+    }
+    const ruleString = ruleConfig[RuleProperties.WRITE];
     if (typeof ruleString === 'boolean') {
       return ruleString;
     } else if (typeof ruleString !== 'string') {
