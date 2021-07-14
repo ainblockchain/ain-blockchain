@@ -99,7 +99,7 @@ async function setUp() {
           ref: '/apps/test/test_rule/some/path',
           value: {
             ".rule": {
-              ".write": "auth.addr === 'abcd'"
+              "write": "auth.addr === 'abcd'"
             }
           }
         },
@@ -271,7 +271,7 @@ describe('Blockchain Node', () => {
           code: 0,
           result: {
             ".rule": {
-              ".write": "auth.addr === 'abcd'"
+              "write": "auth.addr === 'abcd'"
             }
           }
         });
@@ -341,7 +341,7 @@ describe('Blockchain Node', () => {
           },
           "matched_config": {
             "config": {
-              ".write": "auth.addr === 'abcd'"
+              "write": "auth.addr === 'abcd'"
             },
             "path": "/apps/test/test_rule/some/path"
           },
@@ -465,7 +465,7 @@ describe('Blockchain Node', () => {
             },
             {
               ".rule": {
-                ".write": "auth.addr === 'abcd'"
+                "write": "auth.addr === 'abcd'"
               }
             },
             {
@@ -580,7 +580,7 @@ describe('Blockchain Node', () => {
             },
             "matched_config": {
               "config": {
-                ".write": "auth.addr === 'abcd'"
+                "write": "auth.addr === 'abcd'"
               },
               "path": "/apps/test/test_rule/some/path"
             },
@@ -862,7 +862,7 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 103,
-          "error_message": "No .write permission on: /apps/some/wrong/path",
+          "error_message": "No write permission on: /apps/some/wrong/path",
           "gas_amount": 0,
           "gas_amount_total": {
             "app": {},
@@ -917,7 +917,7 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 103,
-          "error_message": "No .write permission on: /apps/some/wrong/path2",
+          "error_message": "No write permission on: /apps/some/wrong/path2",
           "gas_amount": 0,
           "gas_amount_total": {
             "app": {},
@@ -972,7 +972,7 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
           "code": 103,
-          "error_message": "No .write permission on: /apps/some/wrong/path3",
+          "error_message": "No write permission on: /apps/some/wrong/path3",
           "gas_amount": 0,
           "gas_amount_total": {
             "app": {},
@@ -1097,7 +1097,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, {
           ".rule": {
-            ".write": "auth.addr === 'abcd'"
+            "write": "auth.addr === 'abcd'"
           }
         });
 
@@ -1105,7 +1105,7 @@ describe('Blockchain Node', () => {
           ref: "/apps/test/test_rule/some/path",
           value: {
             ".rule": {
-              ".write": "some other rule config"
+              "write": "some other rule config"
             }
           }
         };
@@ -1124,7 +1124,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, {
           ".rule": {
-            ".write": "some other rule config"
+            "write": "some other rule config"
           }
         });
       })
@@ -1140,7 +1140,7 @@ describe('Blockchain Node', () => {
           ref: "/apps/some/wrong/path",
           value: {
             ".rule": {
-              ".write": "some other rule config"
+              "write": "some other rule config"
             }
           }
         };
@@ -1315,7 +1315,7 @@ describe('Blockchain Node', () => {
               ref: "/apps/test/test_rule/other100/path",
               value: {
                 ".rule": {
-                  ".write": "some other100 rule config"
+                  "write": "some other100 rule config"
                 }
               }
             },
@@ -1435,7 +1435,7 @@ describe('Blockchain Node', () => {
               ref: "/apps/test/test_rule/other101/path",
               value: {
                 ".rule": {
-                  ".write": "some other101 rule config"
+                  "write": "some other101 rule config"
                 }
               }
             },
@@ -1466,7 +1466,7 @@ describe('Blockchain Node', () => {
             },
             {
               "code": 103,
-              "error_message": "No .write permission on: /apps/some/wrong/path",
+              "error_message": "No write permission on: /apps/some/wrong/path",
               "gas_amount": 0
             }
           ],
@@ -1557,7 +1557,7 @@ describe('Blockchain Node', () => {
                 ref: "/apps/test/test_rule/other200/path",
                 value: {
                   ".rule": {
-                    ".write": "some other200 rule config"
+                    "write": "some other200 rule config"
                   }
                 }
               },
@@ -1622,7 +1622,7 @@ describe('Blockchain Node', () => {
                     ref: "/apps/test/test_rule/other201/path",
                     value: {
                       ".rule": {
-                        ".write": "some other201 rule config"
+                        "write": "some other201 rule config"
                       }
                     }
                   },
@@ -1872,7 +1872,7 @@ describe('Blockchain Node', () => {
                 ref: "/apps/test/test_rule/other202/path",
                 value: {
                   ".rule": {
-                    ".write": "some other202 rule config"
+                    "write": "some other202 rule config"
                   }
                 }
               },
@@ -1937,7 +1937,7 @@ describe('Blockchain Node', () => {
                     ref: "/apps/test/test_rule/other203/path",
                     value: {
                       ".rule": {
-                        ".write": "some other203 rule config"
+                        "write": "some other203 rule config"
                       }
                     }
                   },
@@ -2018,7 +2018,7 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 103,
-              "error_message": "No .write permission on: /apps/some/wrong/path",
+              "error_message": "No write permission on: /apps/some/wrong/path",
               "gas_amount": 0,
               "gas_amount_total": {
                 "app": {},
@@ -2133,7 +2133,7 @@ describe('Blockchain Node', () => {
 
       before(async () => {
         const currentRule = parseOrLog(syncRequest('GET', server1 + '/get_rule?ref=/apps/test')
-          .body.toString('utf-8')).result[".rule"][".write"];
+          .body.toString('utf-8')).result[".rule"]["write"];
         const newOwners = parseOrLog(syncRequest('GET', server1 + '/get_owner?ref=/apps/test')
           .body.toString('utf-8')).result[".owner"];
         const newRule = `${currentRule} || auth.addr === '${account.address}'`;
@@ -2150,7 +2150,7 @@ describe('Blockchain Node', () => {
                 ref: '/apps/test',
                 value: {
                   ".rule": {
-                    ".write": newRule
+                    "write": newRule
                   }
                 }
               },
@@ -2439,7 +2439,7 @@ describe('Blockchain Node', () => {
               ref: "/apps/test/test_rule/other300/path",
               value: {
                 ".rule": {
-                  ".write": "some other300 rule config"
+                  "write": "some other300 rule config"
                 }
               }
             },
@@ -2504,7 +2504,7 @@ describe('Blockchain Node', () => {
                   ref: "/apps/test/test_rule/other301/path",
                   value: {
                     ".rule": {
-                      ".write": "some other301 rule config"
+                      "write": "some other301 rule config"
                     }
                   }
                 },
@@ -2934,7 +2934,7 @@ describe('Blockchain Node', () => {
               ref: '/apps/test/test_function_triggering/allowed_path_with_fid/value',
               value: {
                 ".rule": {
-                  ".write": true
+                  "write": true
                 }
               }
             },
@@ -2943,7 +2943,7 @@ describe('Blockchain Node', () => {
               ref: '/apps/test/test_function_triggering/allowed_path_with_fid/.last_tx/value',
               value: {
                 ".rule": {
-                  ".write": "auth.fid === '_saveLastTx'"
+                  "write": "auth.fid === '_saveLastTx'"
                 }
               }
             },
@@ -2964,7 +2964,7 @@ describe('Blockchain Node', () => {
               ref: '/apps/test/test_function_triggering/not_allowed_path_with_fid/value',
               value: {
                 ".rule": {
-                  ".write": true
+                  "write": true
                 }
               }
             },
@@ -2973,7 +2973,7 @@ describe('Blockchain Node', () => {
               ref: '/apps/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value',
               value: {
                 ".rule": {
-                  ".write": "auth.fid === 'some function id'"
+                  "write": "auth.fid === 'some function id'"
                 }
               }
             },
@@ -2994,7 +2994,7 @@ describe('Blockchain Node', () => {
               ref: '/apps/test/test_function_triggering/allowed_path_with_fids/value',
               value: {
                 ".rule": {
-                  ".write": true
+                  "write": true
                 }
               }
             },
@@ -3003,7 +3003,7 @@ describe('Blockchain Node', () => {
               ref: '/apps/test/test_function_triggering/allowed_path_with_fids/.last_tx/value',
               value: {
                 ".rule": {
-                  ".write": "util.includes(auth.fids, '_saveLastTx')"
+                  "write": "util.includes(auth.fids, '_saveLastTx')"
                 }
               }
             },
@@ -3024,7 +3024,7 @@ describe('Blockchain Node', () => {
               ref: '/apps/test/test_function_triggering/not_allowed_path_with_fids/value',
               value: {
                 ".rule": {
-                  ".write": true
+                  "write": true
                 }
               }
             },
@@ -3033,7 +3033,7 @@ describe('Blockchain Node', () => {
               ref: '/apps/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value',
               value: {
                 ".rule": {
-                  ".write": "util.includes(auth.fids, 'some function id')"
+                  "write": "util.includes(auth.fids, 'some function id')"
                 }
               }
             },
@@ -3124,7 +3124,7 @@ describe('Blockchain Node', () => {
               ref: '/apps/test/test_function_triggering/rest_function_path',
               value: {
                 ".rule": {
-                  ".write": true
+                  "write": true
                 }
               }
             },
@@ -3316,7 +3316,7 @@ describe('Blockchain Node', () => {
                     "path": "/apps/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value",
                     "result": {
                       "code": 103,
-                      "error_message": "No .write permission on: /apps/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value",
+                      "error_message": "No write permission on: /apps/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value",
                       "gas_amount": 0,
                     }
                   }
@@ -3404,7 +3404,7 @@ describe('Blockchain Node', () => {
                     "path": "/apps/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value",
                     "result": {
                       "code": 103,
-                      "error_message": "No .write permission on: /apps/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value",
+                      "error_message": "No write permission on: /apps/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value",
                       "gas_amount": 0,
                     }
                   }
@@ -3590,7 +3590,7 @@ describe('Blockchain Node', () => {
                 ref: valuePath,
                 value: {
                   ".rule": {
-                    ".write": true
+                    "write": true
                   }
                 }
               },
@@ -3599,7 +3599,7 @@ describe('Blockchain Node', () => {
                 ref: functionResultPath,
                 value: {
                   ".rule": {
-                    ".write": true  // Allow all.
+                    "write": true  // Allow all.
                   }
                 }
               },
@@ -3667,7 +3667,7 @@ describe('Blockchain Node', () => {
                 ref: valuePath,
                 value: {
                   ".rule": {
-                    ".write": true
+                    "write": true
                   }
                 }
               },
@@ -3676,7 +3676,7 @@ describe('Blockchain Node', () => {
                 ref: functionResultPath,
                 value: {
                   ".rule": {
-                    ".write": "auth.fid !== '_eraseValue'"  // Do NOT allow writes by the last function.
+                    "write": "auth.fid !== '_eraseValue'"  // Do NOT allow writes by the last function.
                   }
                 }
               },
@@ -3745,7 +3745,7 @@ describe('Blockchain Node', () => {
                 ref: valuePath,
                 value: {
                   ".rule": {
-                    ".write": true
+                    "write": true
                   }
                 }
               },
@@ -3754,7 +3754,7 @@ describe('Blockchain Node', () => {
                 ref: functionResultPath,
                 value: {
                   ".rule": {
-                    ".write": true  // Allow all.
+                    "write": true  // Allow all.
                   }
                 }
               },
@@ -3832,7 +3832,7 @@ describe('Blockchain Node', () => {
                 ref: valuePath,
                 value: {
                   ".rule": {
-                    ".write": true
+                    "write": true
                   }
                 }
               },
@@ -3841,7 +3841,7 @@ describe('Blockchain Node', () => {
                 ref: functionResultPath,
                 value: {
                   ".rule": {
-                    ".write": "auth.fid !== '_eraseValue'"  // Do NOT allow writes by the last function.
+                    "write": "auth.fid !== '_eraseValue'"  // Do NOT allow writes by the last function.
                   }
                 }
               },
@@ -4510,7 +4510,7 @@ describe('Blockchain Node', () => {
           "result": {
             "result": {
               "code": 103,
-              "error_message": "No .write permission on: /transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/invalid_service_type|test_service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1/value",
+              "error_message": "No write permission on: /transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/invalid_service_type|test_service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1/value",
               "gas_amount": 0,
               "gas_amount_total": {
                 "app": {},
@@ -6074,7 +6074,7 @@ describe('Blockchain Node', () => {
       }).body.toString('utf-8'));
       expect(txResBody.code).to.equals(1);
       expect(txResBody.result.result.code, 18);
-      expect(txResBody.result.result.error_message.includes('No .write permission on: /gas_fee/collect/billing|test_billing|B'), true);
+      expect(txResBody.result.result.error_message.includes('No write permission on: /gas_fee/collect/billing|test_billing|B'), true);
     });
 
     it('app-dependent service tx: billing account', async () => {

@@ -86,7 +86,7 @@ describe("DB initialization", () => {
         ['apps', 'consensus'],
         {
           ".rule": {
-            ".write": "auth.addr === '0xAAAf6f50A0304F12119D218b94bea8082642515B'"
+            "write": "auth.addr === '0xAAAf6f50A0304F12119D218b94bea8082642515B'"
           }
         }
       );
@@ -203,17 +203,17 @@ describe("DB operations", () => {
       "some": {
         "$var_path": {
           ".rule": {
-            ".write": "auth.addr !== 'abcd'"
+            "write": "auth.addr !== 'abcd'"
           }
         },
         "path": {
           ".rule": {
-            ".write": "auth.addr === 'abcd'",
+            "write": "auth.addr === 'abcd'",
           },
           "deeper": {
             "path": {
               ".rule": {
-                ".write": "auth.addr === 'ijkl'"
+                "write": "auth.addr === 'ijkl'"
               }
             }
           }
@@ -353,12 +353,12 @@ describe("DB operations", () => {
       it("when retrieving existing rule config", () => {
         assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
           ".rule": {
-            ".write": "auth.addr === 'abcd'"
+            "write": "auth.addr === 'abcd'"
           },
           "deeper": {
             "path": {
               ".rule": {
-                ".write": "auth.addr === 'ijkl'"
+                "write": "auth.addr === 'ijkl'"
               }
             }
           }
@@ -543,7 +543,7 @@ describe("DB operations", () => {
           },
           "matched_config": {
             "config": {
-              ".write": "auth.addr !== 'abcd'"
+              "write": "auth.addr !== 'abcd'"
             },
             "path": "/apps/test/test_rule/some/$var_path"
           },
@@ -560,14 +560,14 @@ describe("DB operations", () => {
           },
           "matched_config": {
             "config": {
-              ".write": "auth.addr === 'abcd'"
+              "write": "auth.addr === 'abcd'"
             },
             "path": "/apps/test/test_rule/some/path"
           },
           "subtree_configs": [
             {
               "config": {
-                ".write": "auth.addr === 'ijkl'"
+                "write": "auth.addr === 'ijkl'"
               },
               "path": "/deeper/path"
             }
@@ -581,7 +581,7 @@ describe("DB operations", () => {
           },
           "matched_config": {
             "config": {
-              ".write": "auth.addr === 'ijkl'"
+              "write": "auth.addr === 'ijkl'"
             },
             "path": "/apps/test/test_rule/some/path/deeper/path"
           },
@@ -598,14 +598,14 @@ describe("DB operations", () => {
           },
           "matched_config": {
             "config": {
-              ".write": "auth.addr === 'abcd'"
+              "write": "auth.addr === 'abcd'"
             },
             "path": "/apps/test/test_rule/some/path"
           },
           "subtree_configs": [
             {
               "config": {
-                ".write": "auth.addr === 'ijkl'"
+                "write": "auth.addr === 'ijkl'"
               },
               "path": "/path"
             }
@@ -909,14 +909,14 @@ describe("DB operations", () => {
             },
             "matched_config": {
               "config": {
-                ".write": "auth.addr === 'abcd'"
+                "write": "auth.addr === 'abcd'"
               },
               "path": "/apps/test/test_rule/some/path"
             },
             "subtree_configs": [
               {
                 "config": {
-                  ".write": "auth.addr === 'ijkl'"
+                  "write": "auth.addr === 'ijkl'"
                 },
                 "path": "/path"
               }
@@ -999,12 +999,12 @@ describe("DB operations", () => {
           456,
           {
             ".rule": {
-              ".write": "auth.addr === 'abcd'"
+              "write": "auth.addr === 'abcd'"
             },
             "deeper": {
               "path": {
                 ".rule": {
-                  ".write": "auth.addr === 'ijkl'"
+                  "write": "auth.addr === 'ijkl'"
                 }
               }
             }
@@ -1108,14 +1108,14 @@ describe("DB operations", () => {
             },
             "matched_config": {
               "config": {
-                ".write": "auth.addr === 'abcd'"
+                "write": "auth.addr === 'abcd'"
               },
               "path": "/apps/test/test_rule/some/path"
             },
             "subtree_configs": [
               {
                 "config": {
-                  ".write": "auth.addr === 'ijkl'"
+                  "write": "auth.addr === 'ijkl'"
                 },
                 "path": "/deeper/path"
               }
@@ -1462,7 +1462,7 @@ describe("DB operations", () => {
       it("when overwriting existing rule config with simple path", () => {
         const ruleConfig = {
           ".rule": {
-            ".write": "other rule config"
+            "write": "other rule config"
           }
         };
         expect(node.db.setRule("/apps/test/test_rule/some/path", ruleConfig).code).to.equal(0);
@@ -1472,7 +1472,7 @@ describe("DB operations", () => {
       it("when writing with variable path", () => {
         const ruleConfig = {
           ".rule": {
-            ".write": "other rule config"
+            "write": "other rule config"
           }
         };
         expect(node.db.setRule("/apps/test/test_rule/some/$variable/path", ruleConfig).code)
@@ -1502,11 +1502,11 @@ describe("DB operations", () => {
             "/apps/test/test_rule/some/path",
             {
               ".rule": {
-                ".write": null
+                "write": null
               }
             }), {
           "code": 504,
-          "error_message": "Invalid rule tree: /.rule/.write",
+          "error_message": "Invalid rule tree: /.rule/write",
           "gas_amount": 0
         });
         assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleTreeBefore);
@@ -1516,7 +1516,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setRule("/apps/test/test_rule/some/path/.",
             {
               ".rule": {
-                ".write": "some rule config"
+                "write": "some rule config"
               }
             }), {
           "code": 502,
@@ -1672,7 +1672,7 @@ describe("DB operations", () => {
             ref: valuePath,
             value: {
               ".rule": {
-                ".write": true
+                "write": true
               }
             }
           },
@@ -1681,7 +1681,7 @@ describe("DB operations", () => {
             ref: functionResultPath,
             value: {
               ".rule": {
-                ".write": true  // Allow all.
+                "write": true  // Allow all.
               }
             }
           },
@@ -1776,7 +1776,7 @@ describe("DB operations", () => {
             ref: valuePath,
             value: {
               ".rule": {
-                ".write": true
+                "write": true
               }
             }
           },
@@ -1785,7 +1785,7 @@ describe("DB operations", () => {
             ref: functionResultPath,
             value: {
               ".rule": {
-                ".write": "auth.fid !== '_eraseValue'"  // Do NOT allow writes by the last function.
+                "write": "auth.fid !== '_eraseValue'"  // Do NOT allow writes by the last function.
               }
             }
           },
@@ -1833,7 +1833,7 @@ describe("DB operations", () => {
                             "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                             "result": {
                               "code": 103,
-                              "error_message": "No .write permission on: /apps/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "error_message": "No write permission on: /apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "gas_amount": 0
                             }
                           }
@@ -1897,7 +1897,7 @@ describe("DB operations", () => {
             ref: "/apps/test/test_rule/some/path",
             value: {
               ".rule": {
-                ".write": "other rule config"
+                "write": "other rule config"
               }
             }
           },
@@ -1984,7 +1984,7 @@ describe("DB operations", () => {
         });
         assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
           ".rule": {
-            ".write": "other rule config"
+            "write": "other rule config"
           }
         });
         assert.deepEqual(
@@ -2073,7 +2073,7 @@ describe("DB operations", () => {
             ref: valuePath,
             value: {
               ".rule": {
-                ".write": true
+                "write": true
               }
             }
           },
@@ -2082,7 +2082,7 @@ describe("DB operations", () => {
             ref: functionResultPath,
             value: {
               ".rule": {
-                ".write": true  // Allow all.
+                "write": true  // Allow all.
               }
             }
           },
@@ -2196,7 +2196,7 @@ describe("DB operations", () => {
             ref: valuePath,
             value: {
               ".rule": {
-                ".write": true
+                "write": true
               }
             }
           },
@@ -2205,7 +2205,7 @@ describe("DB operations", () => {
             ref: functionResultPath,
             value: {
               ".rule": {
-                ".write": "auth.fid !== '_eraseValue'"  // Do NOT allow writes by the last function.
+                "write": "auth.fid !== '_eraseValue'"  // Do NOT allow writes by the last function.
               }
             }
           },
@@ -2267,7 +2267,7 @@ describe("DB operations", () => {
                                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                                 "result": {
                                   "code": 103,
-                                  "error_message": "No .write permission on: /apps/test/test_function_triggering/allowed_path/.last_tx/value",
+                                  "error_message": "No write permission on: /apps/test/test_function_triggering/allowed_path/.last_tx/value",
                                   "gas_amount": 0,
                                 }
                               }
@@ -2446,7 +2446,7 @@ describe("DB operations", () => {
           "node_2a": {
             "node_3a": {
               ".rule": {
-                ".write": "some rule a"
+                "write": "some rule a"
               }
             }
           }
@@ -2455,7 +2455,7 @@ describe("DB operations", () => {
           "node_2b": {
             "node_3b": {
               ".rule": {
-                ".write": "some rule b"
+                "write": "some rule b"
               }
             }
           }
@@ -2546,7 +2546,7 @@ describe("DB operations", () => {
     it("when setRule() with non-empty rule", () => {
       expect(node.db.setRule("/apps/test/empty_rules/node_0/node_1a/node_2a/node_3a", {
         ".rule": {
-          ".write": "some other rule"
+          "write": "some other rule"
         }
       }).code).to.equal(0)
       assert.deepEqual(node.db.getRule("/apps/test/empty_rules/node_0"), {
@@ -2554,7 +2554,7 @@ describe("DB operations", () => {
           "node_2a": {
             "node_3a": {
               ".rule": {
-                ".write": "some other rule"
+                "write": "some other rule"
               }
             }
           }
@@ -2563,7 +2563,7 @@ describe("DB operations", () => {
           "node_2b": {
             "node_3b": {
               ".rule": {
-                ".write": "some rule b"
+                "write": "some rule b"
               }
             }
           }
@@ -2579,7 +2579,7 @@ describe("DB operations", () => {
           "node_2b": {
             "node_3b": {
               ".rule": {
-                ".write": "some rule b"
+                "write": "some rule b"
               }
             }
           }
@@ -3182,15 +3182,15 @@ describe("DB sharding config", () => {
       "some": {
         "path": {
           ".rule": {
-            ".write": "false"
+            "write": "false"
           },
           "to": {
             ".rule": {
-              ".write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
+              "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
             },
             "deeper": {
               ".rule": {
-                ".write": "some deeper rule config"
+                "write": "some deeper rule config"
               }
             }
           }
@@ -3612,17 +3612,17 @@ describe("DB sharding config", () => {
   describe("Rule operations", () => {
     const rule = {
       ".rule": {
-        ".write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
+        "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
       },
       "deeper": {
         ".rule": {
-          ".write": "some deeper rule config"
+          "write": "some deeper rule config"
         }
       }
     };
     const newRule = {
       ".rule": {
-        ".write": "another rule"
+        "write": "another rule"
       }
     };
     const newValue = "that";
@@ -3671,14 +3671,14 @@ describe("DB sharding config", () => {
         },
         "matched_config": {
           "config": {
-            ".write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
+            "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
           },
           "path": "/apps/test/test_sharding/some/path/to"
         },
         "subtree_configs": [
           {
             "config": {
-              ".write": "some deeper rule config"
+              "write": "some deeper rule config"
             },
             "path": "/deeper",
           }
@@ -3695,14 +3695,14 @@ describe("DB sharding config", () => {
         },
         "matched_config": {
           "config": {
-            ".write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
+            "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
           },
           "path": "/apps/afan/apps/test/test_sharding/some/path/to"
         },
         "subtree_configs": [
           {
             "config": {
-              ".write": "some deeper rule config"
+              "write": "some deeper rule config"
             },
             "path": "/deeper",
           }
@@ -3967,17 +3967,17 @@ describe("Proof hash", () => {
         "nested": {
           "$var_path": {
             ".rule": {
-              ".write": "auth.addr !== 'abcd'"
+              "write": "auth.addr !== 'abcd'"
             }
           },
           "path": {
             ".rule": {
-              ".write": "auth.addr === 'abcd'"
+              "write": "auth.addr === 'abcd'"
             },
             "deeper": {
               "path": {
                 ".rule": {
-                  ".write": "auth.addr === 'ijkl'"
+                  "write": "auth.addr === 'ijkl'"
                 }
               }
             }

@@ -98,7 +98,7 @@ async function initPermission(targetUrl) {
       ref: testPath,
       value: {
         '.rule': {
-          '.write': true,
+          'write': true,
         }
       },
     },

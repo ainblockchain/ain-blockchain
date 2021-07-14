@@ -1,57 +1,57 @@
 {
   ".rule": {
-    ".write": true
+    "write": true
   },
   "ai": {
     ".rule": {
-      ".write": true
+      "write": true
     }
   },
   "comcom": {
     ".rule": {
-      ".write": true
+      "write": true
     }
   },
   "billing_keys": {
     "update_billing": {
       ".rule": {
-        ".write": true
+        "write": true
       }
     }
   },
   "nested":{
     ".rule": {
-      ".write": true
+      "write": true
     }
   },
   "new":{
     ".rule": {
-      ".write": true
+      "write": true
     }
   },
   "users":{
     "$uid": {
       ".rule": {
-        ".write": "auth.addr === $uid"
+        "write": "auth.addr === $uid"
       },
       "balance": {
         ".rule": {
-          ".write": "typeof newData === 'number' && newData >= 0"
+          "write": "typeof newData === 'number' && newData >= 0"
         }
       },
       "info": {
         ".rule": {
-          ".write": "data !== null"
+          "write": "data !== null"
         }
       },
       "balance_info": {
         ".rule": {
-          ".write": "getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null"
+          "write": "getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null"
         }
       },
       "next_counter": {
         ".rule": {
-          ".write": "typeof newData === 'number' && newData === data + 1"
+          "write": "typeof newData === 'number' && newData === data + 1"
         }
       }
     }
@@ -60,7 +60,7 @@
     "$wcard1":{
       "$wcard2": {
         ".rule": {
-          ".write": "$wcard1 == $wcard2"
+          "write": "$wcard1 == $wcard2"
         }
       }
     }
@@ -69,7 +69,7 @@
     "$key1": {
       "$key2": {
         ".rule": {
-          ".write": true
+          "write": true
         }
       }
     }
@@ -78,7 +78,7 @@
     "$key1": {
       "$key1": {
         ".rule": {
-          ".write": true
+          "write": true
         }
       }
     }
