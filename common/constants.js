@@ -249,7 +249,7 @@ const OwnerProperties = {
  */
 const RuleProperties = {
   RULE: '.rule',
-  WRITE: '.write',
+  WRITE: 'write',
 };
 
 /**

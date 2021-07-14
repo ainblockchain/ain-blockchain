@@ -595,7 +595,7 @@ describe("state-util", () => {
         },
         "rules": {
           ".rule": {
-            ".write": true
+            "write": true
           }
         }
       }), {isValid: true, invalidPath: ''});
@@ -690,11 +690,11 @@ describe("state-util", () => {
     })
 
     it("when valid input", () => {
-      assert.deepEqual(isValidRuleConfig({ ".write": true }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig({ ".write": false }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig({ ".write": "auth.addr === 'abcd'" }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({ "write": true }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({ "write": false }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({ "write": "auth.addr === 'abcd'" }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig({
-        ".write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
+        "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
       }), {isValid: true, invalidPath: ''});
     })
   })
@@ -737,42 +737,42 @@ describe("state-util", () => {
       assert.deepEqual(isValidRuleTree({
         some_path: {
           '.rule': {
-            '.write': {}
+            'write': {}
           }
         }
-      }), {isValid: false, invalidPath: '/some_path/.rule/.write'});
+      }), {isValid: false, invalidPath: '/some_path/.rule/write'});
       assert.deepEqual(isValidRuleTree({
         some_path: {
           '.rule': {
-            '.write': null 
+            'write': null 
           }
         }
-      }), {isValid: false, invalidPath: '/some_path/.rule/.write'});
+      }), {isValid: false, invalidPath: '/some_path/.rule/write'});
       assert.deepEqual(isValidRuleTree({
         some_path: {
           '.rule': {
-            '.write': undefined
+            'write': undefined
           }
         }
-      }), {isValid: false, invalidPath: '/some_path/.rule/.write'});
+      }), {isValid: false, invalidPath: '/some_path/.rule/write'});
     })
 
     it("when valid input", () => {
       assert.deepEqual(isValidRuleTree(null), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleTree({
         '.rule': {
-          '.write': true 
+          'write': true 
         }
       }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleTree({
         some_path1: {
           '.rule': {
-            '.write': true
+            'write': true
           }
         },
         some_path2: {
           '.rule': {
-            '.write': "auth.addr === 'abcd'"
+            'write': "auth.addr === 'abcd'"
           }
         }
       }), {isValid: true, invalidPath: ''});

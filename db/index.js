@@ -661,7 +661,7 @@ class DB {
       return CommonUtil.returnTxResult(0);
     }
     if (!this.getPermissionForValue(localPath, value, auth, timestamp)) {
-      return CommonUtil.returnTxResult(103, `No .write permission on: ${valuePath}`);
+      return CommonUtil.returnTxResult(103, `No write permission on: ${valuePath}`);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);

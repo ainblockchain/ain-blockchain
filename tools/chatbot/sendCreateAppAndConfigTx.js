@@ -43,7 +43,7 @@ function buildChatbotConfigTxBody(timestamp) {
           ref: "/apps/chatbots/common/message/$key",
           value: {
             ".rule": {
-              ".write": true
+              "write": true
             }
           }
         },
