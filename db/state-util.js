@@ -172,6 +172,9 @@ function isValidJsObjectForStates(obj) {
   if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
+  if (!ruleConfigObj.hasOwnProperty(RuleProperties.WRITE)) {
+    return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
+  }
   const writeConfigObj = ruleConfigObj[RuleProperties.WRITE];
   if (!CommonUtil.isBool(writeConfigObj) && !CommonUtil.isString(writeConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
@@ -288,10 +291,10 @@ function isValidOwnerConfig(ownerConfigObj) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
   const path = [];
-  const ownersProp = ownerConfigObj[OwnerProperties.OWNERS];
-  if (ownersProp === undefined) {
+  if (!ownerConfigObj.hasOwnProperty(OwnerProperties.OWNERS)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath(path) };
   }
+  const ownersProp = ownerConfigObj[OwnerProperties.OWNERS];
   path.push(OwnerProperties.OWNERS);
   if (!CommonUtil.isDict(ownersProp)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath(path) };
