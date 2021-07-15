@@ -130,7 +130,9 @@ async function setUp() {
           type: 'SET_RULE',
           ref: '/apps/test/test_rule/some/path',
           value: {
-            ".write": "auth.addr === 'abcd'"
+            ".rule": {
+              "write": "auth.addr === 'abcd'"
+            }
           }
         },
         {
@@ -344,7 +346,7 @@ describe('Sharding', async () => {
             `.shard/proof_hash_map/$block_number/proof_hash`)
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        expect(body.result['.write']).to.have.string(shardReporterAddr);
+        expect(body.result['.rule']['write']).to.have.string(shardReporterAddr);
       });
     });
 
@@ -404,7 +406,7 @@ describe('Sharding', async () => {
         const body = parseOrLog(syncRequest('GET', server3 + '/get_rule?ref=/sharding/config')
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        expect(body.result['.write']).to.have.string(shardOwnerAddr);
+        expect(body.result['.rule']['write']).to.have.string(shardOwnerAddr);
       })
     })
 
@@ -574,7 +576,11 @@ describe('Sharding', async () => {
               syncRequest('GET', server1 + '/get_rule?ref=/apps/test/test_rule/some/path')
             .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
-          assert.deepEqual(body.result, { '.write': 'auth.addr === \'abcd\'' });
+          assert.deepEqual(body.result, {
+            '.rule': {
+              'write': 'auth.addr === \'abcd\''
+            }
+          });
         })
 
         it('/get_rule with is_global = true', () => {
@@ -582,7 +588,11 @@ describe('Sharding', async () => {
               'GET', server1 + '/get_rule?ref=/apps/afan/apps/test/test_rule/some/path&is_global=true')
             .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
-          assert.deepEqual(body.result, { '.write': 'auth.addr === \'abcd\'' });
+          assert.deepEqual(body.result, {
+            '.rule': {
+              'write': 'auth.addr === \'abcd\''
+            }
+          });
         })
       })
 
@@ -691,7 +701,9 @@ describe('Sharding', async () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "auth.addr === 'abcd'",
+              "config": {
+                "write": "auth.addr === 'abcd'"
+              },
               "path": "/apps/test/test_rule/some/path"
             },
             "subtree_configs": []
@@ -710,7 +722,9 @@ describe('Sharding', async () => {
               "path_vars": {},
             },
             "matched_config": {
-              "config": "auth.addr === 'abcd'",
+              "config": {
+                "write": "auth.addr === 'abcd'"
+              },
               "path": "/apps/afan/apps/test/test_rule/some/path"
             },
             "subtree_configs": []
@@ -873,7 +887,9 @@ describe('Sharding', async () => {
                 }
               },
               {
-                ".write": "auth.addr === 'abcd'"
+                ".rule": {
+                  "write": "auth.addr === 'abcd'"
+                }
               },
               {
                 ".owner": {
@@ -949,7 +965,9 @@ describe('Sharding', async () => {
                 }
               },
               {
-                ".write": "auth.addr === 'abcd'"
+                ".rule": {
+                  "write": "auth.addr === 'abcd'"
+                }
               },
               {
                 ".owner": {
@@ -1082,7 +1100,9 @@ describe('Sharding', async () => {
                 "path_vars": {},
               },
               "matched_config": {
-                "config": "auth.addr === 'abcd'",
+                "config": {
+                  "write": "auth.addr === 'abcd'"
+                },
                 "path": "/apps/test/test_rule/some/path"
               },
               "subtree_configs": []
@@ -1102,7 +1122,9 @@ describe('Sharding', async () => {
                 "path_vars": {},
               },
               "matched_config": {
-                "config": "auth.addr === 'abcd'",
+                "config": {
+                  "write": "auth.addr === 'abcd'"
+                },
                 "path": "/apps/afan/apps/test/test_rule/some/path"
               },
               "subtree_configs": []
@@ -1349,7 +1371,9 @@ describe('Sharding', async () => {
           const request = {
             ref: "/apps/test/test_rule/other/path",
             value: {
-              ".write": "some other rule config"
+              ".rule": {
+                "write": "some other rule config"
+              }
             },
             nonce: -1
           };
@@ -1363,7 +1387,9 @@ describe('Sharding', async () => {
           const request = {
             ref: "apps/afan/apps/test/test_rule/other/path",
             value: {
-              ".write": "some other rule config"
+              ".rule": {
+                "write": "some other rule config"
+              }
             },
             is_global: true,
             nonce: -1
@@ -1461,7 +1487,9 @@ describe('Sharding', async () => {
                 type: 'SET_RULE',
                 ref: "/apps/test/test_rule/other3/path",
                 value: {
-                  ".write": "some other3 rule config"
+                  ".rule": {
+                    "write": "some other3 rule config"
+                  }
                 }
               },
               {
@@ -1563,7 +1591,9 @@ describe('Sharding', async () => {
                 type: 'SET_RULE',
                 ref: "/apps/test/test_rule/other4/path",
                 value: {
-                  ".write": "some other4 rule config"
+                  ".rule": {
+                    "write": "some other4 rule config"
+                  }
                 },
                 is_global: true,
               },
@@ -1931,7 +1961,9 @@ describe('Sharding', async () => {
                 type: WriteDbOperations.SET_RULE,
                 ref: `${sharding_path}/${ShardingProperties.LATEST}`,
                 value: {
-                  [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
+                  [RuleProperties.RULE]: {
+                    [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
+                  }
                 }
               },
               {
