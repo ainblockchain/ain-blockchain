@@ -5,6 +5,7 @@ const _ = require('lodash');
 const validUrl = require('valid-url');
 const CommonUtil = require('../common/common-util');
 const {
+  PredefinedDbPaths,
   FunctionProperties,
   FunctionTypes,
   isNativeFunctionId,
@@ -28,35 +29,35 @@ function getConfig(node, label) {
 }
 
 function hasShardConfig(valueNode) {
-  return hasConfig(valueNode, ShardingProperties.SHARD);
+  return hasConfig(valueNode, PredefinedDbPaths.DOT_SHARD);
 }
 
 function getShardConfig(valueNode) {
-  return getConfig(valueNode, ShardingProperties.SHARD);
+  return getConfig(valueNode, PredefinedDbPaths.DOT_SHARD);
 }
 
 function hasFunctionConfig(funcNode) {
-  return hasConfig(funcNode, FunctionProperties.FUNCTION);
+  return hasConfig(funcNode, PredefinedDbPaths.DOT_FUNCTION);
 }
 
 function getFunctionConfig(funcNode) {
-  return getConfig(funcNode, FunctionProperties.FUNCTION);
+  return getConfig(funcNode, PredefinedDbPaths.DOT_FUNCTION);
 }
 
 function hasRuleConfig(ruleNode) {
-  return hasConfig(ruleNode, RuleProperties.RULE);
+  return hasConfig(ruleNode, PredefinedDbPaths.DOT_RULE);
 }
 
 function getRuleConfig(ruleNode) {
-  return getConfig(ruleNode, RuleProperties.RULE);
+  return getConfig(ruleNode, PredefinedDbPaths.DOT_RULE);
 }
 
 function hasOwnerConfig(ownerNode) {
-  return hasConfig(ownerNode, OwnerProperties.OWNER);
+  return hasConfig(ownerNode, PredefinedDbPaths.DOT_OWNER);
 }
 
 function getOwnerConfig(ownerNode) {
-  return getConfig(ownerNode, OwnerProperties.OWNER);
+  return getConfig(ownerNode, PredefinedDbPaths.DOT_OWNER);
 }
 
 function hasEnabledShardConfig(node) {
@@ -73,7 +74,7 @@ function isWritablePathWithSharding(fullPath, root) {
   const path = [];
   let curNode = root;
   for (const label of fullPath) {
-    if (label !== ShardingProperties.SHARD && hasEnabledShardConfig(curNode)) {
+    if (label !== PredefinedDbPaths.DOT_SHARD && hasEnabledShardConfig(curNode)) {
       isValid = false;
       break;
     }
@@ -364,7 +365,7 @@ function isValidRuleTree(ruleTreeObj) {
     return { isValid: true, invalidPath: '' };
   }
 
-  return isValidConfigTreeRecursive(ruleTreeObj, [], RuleProperties.RULE, isValidRuleConfig);
+  return isValidConfigTreeRecursive(ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig);
 }
 
 /**
@@ -376,7 +377,7 @@ function isValidFunctionTree(functionTreeObj) {
   }
 
   return isValidConfigTreeRecursive(
-      functionTreeObj, [], FunctionProperties.FUNCTION, isValidFunctionConfig);
+      functionTreeObj, [], PredefinedDbPaths.DOT_FUNCTION, isValidFunctionConfig);
 }
 
 /**
@@ -387,7 +388,8 @@ function isValidOwnerTree(ownerTreeObj) {
     return { isValid: true, invalidPath: '' };
   }
 
-  return isValidConfigTreeRecursive(ownerTreeObj, [], OwnerProperties.OWNER, isValidOwnerConfig);
+  return isValidConfigTreeRecursive(
+      ownerTreeObj, [], PredefinedDbPaths.DOT_OWNER, isValidOwnerConfig);
 }
 
 /**
@@ -427,22 +429,22 @@ function hasConfigLabelOnly(stateTreeObj, configLabel) {
 function applyFunctionChange(curFuncTree, functionChange) {
   // NOTE(platfowner): Partial set is applied only when the current function tree has
   // .function property and the function change has .function property as the only property.
-  if (!hasConfigLabel(curFuncTree, FunctionProperties.FUNCTION) ||
-      !hasConfigLabelOnly(functionChange, FunctionProperties.FUNCTION)) {
+  if (!hasConfigLabel(curFuncTree, PredefinedDbPaths.DOT_FUNCTION) ||
+      !hasConfigLabelOnly(functionChange, PredefinedDbPaths.DOT_FUNCTION)) {
     return CommonUtil.isDict(functionChange) ?
         JSON.parse(JSON.stringify(functionChange)) : functionChange;
   }
-  const funcChangeMap = CommonUtil.getJsObject(functionChange, [FunctionProperties.FUNCTION]);
+  const funcChangeMap = CommonUtil.getJsObject(functionChange, [PredefinedDbPaths.DOT_FUNCTION]);
   if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
     return curFuncTree;
   }
   const newFuncConfig =
       CommonUtil.isDict(curFuncTree) ? JSON.parse(JSON.stringify(curFuncTree)) : {};
-  let newFuncMap = CommonUtil.getJsObject(newFuncConfig, [FunctionProperties.FUNCTION]);
+  let newFuncMap = CommonUtil.getJsObject(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION]);
   if (!CommonUtil.isDict(newFuncMap)) {
     // Add a place holder.
-    CommonUtil.setJsObject(newFuncConfig, [FunctionProperties.FUNCTION], {});
-    newFuncMap = CommonUtil.getJsObject(newFuncConfig, [FunctionProperties.FUNCTION]);
+    CommonUtil.setJsObject(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION], {});
+    newFuncMap = CommonUtil.getJsObject(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION]);
   }
   for (const functionKey in funcChangeMap) {
     const functionInfo = funcChangeMap[functionKey];
@@ -465,12 +467,12 @@ function applyFunctionChange(curFuncTree, functionChange) {
 function applyOwnerChange(curOwnerTree, ownerChange) {
   // NOTE(platfowner): Partial set is applied only when the current owner tree has
   // .owner property and the owner change has .owner property as the only property.
-  if (!hasConfigLabel(curOwnerTree, OwnerProperties.OWNER) ||
-      !hasConfigLabelOnly(ownerChange, OwnerProperties.OWNER)) {
+  if (!hasConfigLabel(curOwnerTree, PredefinedDbPaths.DOT_OWNER) ||
+      !hasConfigLabelOnly(ownerChange, PredefinedDbPaths.DOT_OWNER)) {
     return CommonUtil.isDict(ownerChange) ?
         JSON.parse(JSON.stringify(ownerChange)) : ownerChange;
   }
-  const ownerMapPath = [OwnerProperties.OWNER, OwnerProperties.OWNERS];
+  const ownerMapPath = [PredefinedDbPaths.DOT_OWNER, OwnerProperties.OWNERS];
   const ownerChangeMap = CommonUtil.getJsObject(ownerChange, ownerMapPath);
   if (!ownerChangeMap || Object.keys(ownerChangeMap).length === 0) {
     return curOwnerTree;
