@@ -1,57 +1,85 @@
 {
-  ".write": true,
+  ".rule": {
+    "write": true
+  },
   "ai": {
-    ".write": true
+    ".rule": {
+      "write": true
+    }
   },
   "comcom": {
-    ".write": true
+    ".rule": {
+      "write": true
+    }
   },
   "billing_keys": {
     "update_billing": {
-      ".write": true
+      ".rule": {
+        "write": true
+      }
     }
   },
   "nested":{
-    ".write": true
+    ".rule": {
+      "write": true
+    }
   },
   "new":{
-    ".write": true
+    ".rule": {
+      "write": true
+    }
   },
   "users":{
     "$uid": {
-      ".write": "auth.addr === $uid",
+      ".rule": {
+        "write": "auth.addr === $uid"
+      },
       "balance": {
-        ".write": "typeof newData === 'number' && newData >= 0"
+        ".rule": {
+          "write": "typeof newData === 'number' && newData >= 0"
+        }
       },
       "info": {
-        ".write": "data !== null"
+        ".rule": {
+          "write": "data !== null"
+        }
       },
       "balance_info": {
-        ".write": "getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null"
+        ".rule": {
+          "write": "getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null"
+        }
       },
       "next_counter": {
-        ".write": "typeof newData === 'number' && newData === data + 1"
+        ".rule": {
+          "write": "typeof newData === 'number' && newData === data + 1"
+        }
       }
     }
   },
   "second_users": {
     "$wcard1":{
       "$wcard2": {
-        ".write": "$wcard1 == $wcard2"
+        ".rule": {
+          "write": "$wcard1 == $wcard2"
+        }
       }
     }
   },
   "no_dup_key": {
     "$key1": {
       "$key2": {
-        ".write": true
+        ".rule": {
+          "write": true
+        }
       }
     }
   },
   "dup_key": {
     "$key1": {
       "$key1": {
-        ".write": true
+        ".rule": {
+          "write": true
+        }
       }
     }
   }
