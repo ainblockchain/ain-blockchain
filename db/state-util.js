@@ -175,8 +175,8 @@ function isValidJsObjectForStates(obj) {
   if (!ruleConfigObj.hasOwnProperty(RuleProperties.WRITE)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
-  const writeConfigObj = ruleConfigObj[RuleProperties.WRITE];
-  if (!CommonUtil.isBool(writeConfigObj) && !CommonUtil.isString(writeConfigObj)) {
+  const writeProp = ruleConfigObj[RuleProperties.WRITE];
+  if (!CommonUtil.isBool(writeProp) && !CommonUtil.isString(writeProp)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
   }
 
