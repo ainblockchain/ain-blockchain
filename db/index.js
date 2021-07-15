@@ -72,7 +72,7 @@ class DB {
     } else {
       // Initialize DB owners.
       this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
-        [OwnerProperties.OWNER]: {
+        [PredefinedDbPaths.DOT_OWNER]: {
           [OwnerProperties.OWNERS]: {
             [OwnerProperties.ANYONE]: buildOwnerPermissions(true, true, true, true),
           }
@@ -80,7 +80,7 @@ class DB {
       });
       // Initialize DB rules.
       this.writeDatabase([PredefinedDbPaths.RULES_ROOT], {
-        [RuleProperties.RULE]: {
+        [PredefinedDbPaths.DOT_RULE]: {
           [RuleProperties.WRITE]: true
         }
       });
