@@ -4090,7 +4090,11 @@ describe('Blockchain Node', () => {
         });
         const appWriteRule = parseOrLog(syncRequest('GET', 
             server2 + `/get_rule?ref=/apps/test_service_create_app1`).body.toString('utf-8')).result;
-        assert.deepEqual(appWriteRule, { ".write": "true" });
+        assert.deepEqual(appWriteRule, {
+          ".rule": {
+            "write": true
+          }
+        });
         const appOwnerRule = parseOrLog(syncRequest('GET', 
             server2 + `/get_owner?ref=/apps/test_service_create_app1`).body.toString('utf-8')).result;
         assert.deepEqual(appOwnerRule, {
