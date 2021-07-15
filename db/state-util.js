@@ -44,11 +44,11 @@ function getFunctionConfig(funcNode) {
 }
 
 function hasRuleConfig(ruleNode) {
-  return hasConfig(ruleNode, RuleProperties.WRITE);
+  return hasConfig(ruleNode, RuleProperties.RULE);
 }
 
 function getRuleConfig(ruleNode) {
-  return getConfig(ruleNode, RuleProperties.WRITE);
+  return getConfig(ruleNode, RuleProperties.RULE);
 }
 
 function hasOwnerConfig(ownerNode) {
@@ -169,8 +169,15 @@ function isValidJsObjectForStates(obj) {
  * Checks the validity of the given rule configuration.
  */
  function isValidRuleConfig(ruleConfigObj) {
-  if (!CommonUtil.isBool(ruleConfigObj) && !CommonUtil.isString(ruleConfigObj)) {
+  if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
+  }
+  if (!ruleConfigObj.hasOwnProperty(RuleProperties.WRITE)) {
+    return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
+  }
+  const writeProp = ruleConfigObj[RuleProperties.WRITE];
+  if (!CommonUtil.isBool(writeProp) && !CommonUtil.isString(writeProp)) {
+    return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
   }
 
   return { isValid: true, invalidPath: '' };
@@ -284,10 +291,10 @@ function isValidOwnerConfig(ownerConfigObj) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
   const path = [];
-  const ownersProp = ownerConfigObj[OwnerProperties.OWNERS];
-  if (ownersProp === undefined) {
+  if (!ownerConfigObj.hasOwnProperty(OwnerProperties.OWNERS)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath(path) };
   }
+  const ownersProp = ownerConfigObj[OwnerProperties.OWNERS];
   path.push(OwnerProperties.OWNERS);
   if (!CommonUtil.isDict(ownersProp)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath(path) };
@@ -357,7 +364,7 @@ function isValidRuleTree(ruleTreeObj) {
     return { isValid: true, invalidPath: '' };
   }
 
-  return isValidConfigTreeRecursive(ruleTreeObj, [], RuleProperties.WRITE, isValidRuleConfig);
+  return isValidConfigTreeRecursive(ruleTreeObj, [], RuleProperties.RULE, isValidRuleConfig);
 }
 
 /**

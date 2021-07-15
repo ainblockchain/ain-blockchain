@@ -249,7 +249,8 @@ const OwnerProperties = {
  * @enum {string}
  */
 const RuleProperties = {
-  WRITE: '.write',
+  RULE: '.rule',
+  WRITE: 'write',
 };
 
 /**
@@ -680,7 +681,9 @@ function getShardingRule() {
   const ownerAddress =
       CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
-    [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
+    [RuleProperties.RULE]: {
+      [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
+    }
   };
 }
 
@@ -716,7 +719,11 @@ function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule
 }
 
 function buildRulePermission(rule) {
-  return { [RuleProperties.WRITE]: rule };
+  return {
+    [RuleProperties.RULE]: {
+      [RuleProperties.WRITE]: rule
+    }
+  };
 }
 
 module.exports = {
