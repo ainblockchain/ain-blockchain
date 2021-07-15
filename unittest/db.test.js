@@ -13,6 +13,7 @@ const {
   GenesisRules,
   GenesisOwners,
   ProofProperties,
+  PredefinedDbPaths,
 } = require('../common/constants')
 const {
   setNodeForTesting,
@@ -2305,6 +2306,10 @@ describe("DB operations", () => {
 
       node = new BlockchainNode();
       setNodeForTesting(node);
+      node.db.writeDatabase(
+        [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.STAKING, 'test', PredefinedDbPaths.STAKING_BALANCE_TOTAL],
+        1
+      );
 
       txBody = {
         operation: {
@@ -2415,7 +2420,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
           code: 24,
-          error_message: "Out of tree size limit (1001555 > 1000000)",
+          error_message: "Out of tree size limit (1001557 > 1000000)",
           gas_amount: 0,
         });
       })

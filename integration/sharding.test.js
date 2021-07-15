@@ -361,6 +361,10 @@ describe('Sharding', async () => {
   });
 
   describe('Child chain initialization', () => {
+    before(async () => {
+      await setUpApp('afan', shardServerList, { admin: { [shardOwnerAddr]: true } });
+    });
+    
     describe('DB values', () => {
       it('token', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/token')

@@ -54,7 +54,7 @@
     "whitelist": {
       "$user_addr": {
         ".rule": {
-          "write": "getValue('/manage_app/consensus/config/admin/' + auth.addr) === true && (newData === true || (newData === null && util.length(util.values(getValue('/consensus/whitelist')).filter(x => x === true)) > util.getMinNumValidators()))"
+          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.length(util.values(getValue('/consensus/whitelist')).filter(x => x === true)) > util.getMinNumValidators()))"
         }
       }
     }
@@ -71,7 +71,7 @@
           "hold": {
             "$record_id": {
               ".rule": {
-                "write": "((util.isServAcntName($source_account) && util.isAppAdmin($source_account, auth.addr, getValue) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config') !== null && data === null && util.isDict(newData)"
+                "write": "((util.isServAcntName($source_account) && util.isAppAdminFromServAcntName($source_account, auth.addr, getValue) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config') !== null && data === null && util.isDict(newData)"
               },
               "result": {
                 ".rule": {
@@ -113,7 +113,7 @@
     "$app_name": {
       "config": {
         ".rule": {
-          "write": "auth.fid === '_createApp' || getValue('/manage_app/' + $app_name + '/config/admin/' + auth.addr) === true"
+          "write": "auth.fid === '_createApp' || util.isAppAdmin($app_name, auth.addr, getValue) === true"
         }
       },
       "create": {
@@ -137,7 +137,7 @@
           "claim": {
             "$record_id": {
               ".rule": {
-                "write": "getValue('/manage_app/' + $service_name + '/config/admin/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))"
+                "write": "util.isAppAdmin($service_name, auth.addr, getValue) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))"
               },
               "result": {
                 ".rule": {
@@ -149,7 +149,7 @@
           "pay": {
             "$record_id": {
               ".rule": {
-                "write": "getValue('/manage_app/' + $service_name + '/config/admin/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0"
+                "write": "util.isAppAdmin($service_name, auth.addr, getValue) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0"
               },
               "result": {
                 ".rule": {

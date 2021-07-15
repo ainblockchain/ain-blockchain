@@ -536,37 +536,26 @@ class Functions {
         context, resultPath, FunctionResultCode.SUCCESS, extraGasAmount);
   }
 
-  _createApp(value, context) {
-    const { isValidServiceName } = require('./state-util');
-
-    const appName = context.params.app_name;
-    const recordId = context.params.record_id;
-    const resultPath = PathUtil.getCreateAppResultPath(appName, recordId);
+  sanitizeCreateAppConfig(rawVal) {
     const sanitizedVal = {};
-    const adminConfig = value[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN];
-    const billingConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING);
-    const serviceConfig = _.get(value, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
-    if (!isValidServiceName(appName)) {
-      return this.saveAndReturnFuncResult(
-          context, resultPath, FunctionResultCode.INVALID_SERVICE_NAME);
-    }
+    const adminConfig = _.get(rawVal, PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN);
+    const billingConfig = _.get(rawVal, PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING);
+    const serviceConfig = _.get(rawVal, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE);
+    const isPublic = _.get(rawVal, PredefinedDbPaths.MANAGE_APP_CONFIG_IS_PUBLIC);
     if (!CommonUtil.isDict(adminConfig)) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
+      return { errorCode: FunctionResultCode.FAILURE };
     }
-    if (adminConfig) {
-      sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
-      const appPath = PathUtil.getAppPath(appName);
-      const owner = {};
-      let rule = '';
-      const adminAddrList = Object.keys(adminConfig);
-      for (let i = 0; i < adminAddrList.length; i++) {
-        const addr = adminAddrList[i];
-        CommonUtil.setJsObject(owner, [PredefinedDbPaths.DOT_OWNER, OwnerProperties.OWNERS, addr],
-            buildOwnerPermissions(true, true, true, true));
-        rule += `auth.addr === '${addr}'` + (i < adminAddrList.length - 1 ? ' || ' : '');
+    for (const [addr, val] of Object.entries(adminConfig)) {
+      if (!CommonUtil.isCksumAddr(addr) || !CommonUtil.isBool(val)) {
+        return { errorCode: FunctionResultCode.FAILURE };
       }
-      this.setRuleOrLog(appPath, buildRulePermission(rule), context);
-      this.setOwnerOrLog(appPath, owner, context);
+    }
+    sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN] = adminConfig;
+    if (!CommonUtil.isBool(isPublic) && isPublic !== undefined) {
+      return { errorCode: FunctionResultCode.FAILURE };
+    }
+    if (isPublic) {
+      sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_IS_PUBLIC] = true;
     }
     if (billingConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING] = billingConfig;
@@ -574,6 +563,44 @@ class Functions {
     if (serviceConfig) {
       sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE] = serviceConfig;
     }
+    if (!_.isEqual(sanitizedVal, rawVal, { strict: true })) {
+      return { errorCode: FunctionResultCode.FAILURE };
+    }
+    return { sanitizedVal, errorCode: null };
+  }
+
+  _createApp(value, context) {
+    const { isValidServiceName } = require('./state-util');
+    const appName = context.params.app_name;
+    const recordId = context.params.record_id;
+    const resultPath = PathUtil.getCreateAppResultPath(appName, recordId);
+    if (!isValidServiceName(appName)) {
+      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INVALID_SERVICE_NAME);
+    }
+    const { sanitizedVal, errorCode } = this.sanitizeCreateAppConfig(value);
+    if (errorCode) {
+      return this.saveAndReturnFuncResult(context, resultPath, errorCode);
+    }
+    let rule;
+    const owner = {};
+    const adminAddrList = Object.keys(sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]);
+    adminAddrList.forEach((addr) => {
+      CommonUtil.setJsObject(
+          owner, [PredefinedDbPaths.DOT_OWNER, OwnerProperties.OWNERS, addr],
+          buildOwnerPermissions(true, true, true, true));
+    });
+    if (sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_IS_PUBLIC]) {
+      rule = true;
+      // Additionally set anyone to have owner permissions, except for the write_owner permission.
+      CommonUtil.setJsObject(
+          owner, [PredefinedDbPaths.DOT_OWNER, OwnerProperties.OWNERS, OwnerProperties.ANYONE],
+          buildOwnerPermissions(true, true, false, true));
+    } else {
+      rule = adminAddrList.map((addr) => `auth.addr === '${addr}'`).join(' || ');
+    }
+    const appPath = PathUtil.getAppPath(appName);
+    this.setRuleOrLog(appPath, buildRulePermission(rule), context);
+    this.setOwnerOrLog(appPath, owner, context);
     const manageAppConfigPath = PathUtil.getManageAppConfigPath(appName);
     const result = this.setValueOrLog(manageAppConfigPath, sanitizedVal, context);
     if (!CommonUtil.isFailedTx(result)) {
