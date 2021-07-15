@@ -1089,7 +1089,7 @@ class Consensus {
         }
         opList.push({
           type: WriteDbOperations.SET_VALUE,
-          ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
+          ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
               `${ShardingProperties.PROOF_HASH_MAP}/${blockNumberToReport}/` +
               `${ShardingProperties.PROOF_HASH}`,
           value: block.state_proof_hash
@@ -1099,7 +1099,7 @@ class Consensus {
           // Remove old reports
           opList.push({
             type: WriteDbOperations.SET_VALUE,
-            ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
+            ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
                 `${ShardingProperties.PROOF_HASH_MAP}/` +
                 `${blockNumberToReport - MAX_SHARD_REPORT}/` +
                 `${ShardingProperties.PROOF_HASH}`,
@@ -1135,7 +1135,7 @@ class Consensus {
         'ain_get',
         {
           type: ReadDbOperations.GET_VALUE,
-          ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
+          ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
           `${ShardingProperties.PROOF_HASH_MAP}/${ShardingProperties.LATEST}`
         }
     );

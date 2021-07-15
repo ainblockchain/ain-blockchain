@@ -119,6 +119,11 @@ const PredefinedDbPaths = {
   RULES_ROOT: 'rules',
   FUNCTIONS_ROOT: 'functions',
   VALUES_ROOT: 'values',
+  // Entry point labels (.*)
+  DOT_RULE: '.rule',
+  DOT_FUNCTION: '.function',
+  DOT_OWNER: '.owner',
+  DOT_SHARD: '.shard',
   // Consensus
   CONSENSUS: 'consensus',
   WHITELIST: 'whitelist',
@@ -235,7 +240,6 @@ const OwnerProperties = {
   ANYONE: '*',
   BRANCH_OWNER: 'branch_owner',
   FID_PREFIX: 'fid:',
-  OWNER: '.owner',
   OWNERS: 'owners',
   WRITE_FUNCTION: 'write_function',
   WRITE_OWNER: 'write_owner',
@@ -248,7 +252,6 @@ const OwnerProperties = {
  * @enum {string}
  */
 const RuleProperties = {
-  RULE: '.rule',
   WRITE: 'write',
 };
 
@@ -259,7 +262,6 @@ const RuleProperties = {
  */
 const FunctionProperties = {
   EVENT_LISTENER: 'event_listener',
-  FUNCTION: '.function',
   FUNCTION_ID: 'function_id',
   FUNCTION_TYPE: 'function_type',
   SERVICE_NAME: 'service_name',
@@ -335,7 +337,6 @@ const ShardingProperties = {
   PROOF_HASH: 'proof_hash',
   PROOF_HASH_MAP: 'proof_hash_map',
   REPORTING_PERIOD: 'reporting_period',
-  SHARD: '.shard',
   SHARD_OWNER: 'shard_owner',
   SHARD_REPORTER: 'shard_reporter',
   SHARDING_ENABLED: 'sharding_enabled',
@@ -680,7 +681,7 @@ function getShardingRule() {
   const ownerAddress =
       CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
-    [RuleProperties.RULE]: {
+    [PredefinedDbPaths.DOT_RULE]: {
       [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
     }
   };
@@ -688,7 +689,7 @@ function getShardingRule() {
 
 function getShardingOwner() {
   return {
-    [OwnerProperties.OWNER]: {
+    [PredefinedDbPaths.DOT_OWNER]: {
       [OwnerProperties.OWNERS]: {
         [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
         [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
@@ -699,7 +700,7 @@ function getShardingOwner() {
 
 function getWhitelistOwner() {
   return {
-    [OwnerProperties.OWNER]: {
+    [PredefinedDbPaths.DOT_OWNER]: {
       [OwnerProperties.OWNERS]: {
         [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
         [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
@@ -719,7 +720,7 @@ function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule
 
 function buildRulePermission(rule) {
   return {
-    [RuleProperties.RULE]: {
+    [PredefinedDbPaths.DOT_RULE]: {
       [RuleProperties.WRITE]: rule
     }
   };

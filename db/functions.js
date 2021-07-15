@@ -300,7 +300,7 @@ class Functions {
 
     for (const key in obj) {
       const childObj = obj[key];
-      if (key === FunctionProperties.FUNCTION) {
+      if (key === PredefinedDbPaths.DOT_FUNCTION) {
         if (CommonUtil.isDict(childObj) && !CommonUtil.isEmpty(childObj)) {
           for (const fid in childObj) {
             const nativeFunction = this.nativeFunctionMap[fid];
@@ -489,7 +489,7 @@ class Functions {
     const parsedValuePath = context.valuePath;
     const auth = context.auth;
     const owner = {
-      [OwnerProperties.OWNER]: {
+      [PredefinedDbPaths.DOT_OWNER]: {
         [OwnerProperties.OWNERS]: {
           [auth.addr]: buildOwnerPermissions(false, true, true, true),
           [OwnerProperties.ANYONE]: buildOwnerPermissions(false, true, true, true),
@@ -561,7 +561,7 @@ class Functions {
       const adminAddrList = Object.keys(adminConfig);
       for (let i = 0; i < adminAddrList.length; i++) {
         const addr = adminAddrList[i];
-        CommonUtil.setJsObject(owner, [OwnerProperties.OWNER, OwnerProperties.OWNERS, addr],
+        CommonUtil.setJsObject(owner, [PredefinedDbPaths.DOT_OWNER, OwnerProperties.OWNERS, addr],
             buildOwnerPermissions(true, true, true, true));
         rule += `auth.addr === '${addr}'` + (i < adminAddrList.length - 1 ? ' || ' : '');
       }

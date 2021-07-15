@@ -264,9 +264,9 @@ class BlockchainNode {
         const shardPath = ainUtil.decode(encodedPath);
         shardingInfo[encodedPath] = {
           [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(CommonUtil.appendPath(
-              shardPath, ShardingProperties.SHARD, ShardingProperties.SHARDING_ENABLED)),
+              shardPath, PredefinedDbPaths.DOT_SHARD, ShardingProperties.SHARDING_ENABLED)),
           [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(CommonUtil.appendPath(
-              shardPath, ShardingProperties.SHARD, ShardingProperties.PROOF_HASH_MAP,
+              shardPath, PredefinedDbPaths.DOT_SHARD, ShardingProperties.PROOF_HASH_MAP,
               ShardingProperties.LATEST)),
         };
       }
