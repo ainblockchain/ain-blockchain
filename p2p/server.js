@@ -665,10 +665,10 @@ class P2pServer {
     const proofHashRulesLight = `auth.addr === '${shardReporter}'`;
     const proofHashRules = `auth.addr === '${shardReporter}' && ` +
         '((newData === null && ' +
-        `Number($block_number) < (getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+        `Number($block_number) < (getValue('${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
             `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +
         '(newData !== null && ($block_number === "0" || ' +
-        `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+        `$block_number === String((getValue('${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
             `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
     const latestBlockNumberRules = `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`;
     return {
@@ -679,12 +679,12 @@ class P2pServer {
             type: WriteDbOperations.SET_RULE,
             ref: CommonUtil.appendPath(
                 shardingPath,
-                ShardingProperties.SHARD,
+                PredefinedDbPaths.DOT_SHARD,
                 ShardingProperties.PROOF_HASH_MAP,
                 '$block_number',
                 ShardingProperties.PROOF_HASH),
             value: {
-              [RuleProperties.RULE]: {
+              [PredefinedDbPaths.DOT_RULE]: {
                 [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
               }
             }
@@ -693,11 +693,11 @@ class P2pServer {
             type: WriteDbOperations.SET_RULE,
             ref: CommonUtil.appendPath(
                 shardingPath,
-                ShardingProperties.SHARD,
+                PredefinedDbPaths.DOT_SHARD,
                 ShardingProperties.PROOF_HASH_MAP,
                 ShardingProperties.LATEST),
             value: {
-              [RuleProperties.RULE]: {
+              [PredefinedDbPaths.DOT_RULE]: {
                 [RuleProperties.WRITE]: latestBlockNumberRules
               }
             }
@@ -706,12 +706,12 @@ class P2pServer {
             type: WriteDbOperations.SET_FUNCTION,
             ref: CommonUtil.appendPath(
                 shardingPath,
-                ShardingProperties.SHARD,
+                PredefinedDbPaths.DOT_SHARD,
                 ShardingProperties.PROOF_HASH_MAP,
                 '$block_number',
                 ShardingProperties.PROOF_HASH),
             value: {
-              [FunctionProperties.FUNCTION]: {
+              [PredefinedDbPaths.DOT_FUNCTION]: {
                 [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
                   [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
                   [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
@@ -723,7 +723,7 @@ class P2pServer {
             type: WriteDbOperations.SET_VALUE,
             ref: shardingPath,
             value: {
-              [ShardingProperties.SHARD]: {
+              [PredefinedDbPaths.DOT_SHARD]: {
                 [ShardingProperties.SHARDING_ENABLED]: true,
                 [ShardingProperties.PROOF_HASH_MAP]: {
                   [ShardingProperties.LATEST]: -1,
