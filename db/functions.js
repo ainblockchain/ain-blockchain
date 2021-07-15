@@ -584,19 +584,19 @@ class Functions {
     let rule;
     const owner = {};
     const adminAddrList = Object.keys(sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]);
-    for (let i = 0; i < adminAddrList.length; i++) {
-      const addr = adminAddrList[i];
-      rule = adminAddrList.map((addr) => `auth.addr === '${addr}'`).join(' || ');
+    adminAddrList.forEach((addr) => {
       CommonUtil.setJsObject(
           owner, [OwnerProperties.OWNER, OwnerProperties.OWNERS, addr],
           buildOwnerPermissions(true, true, true, true));
-    }
+    });
     if (sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_IS_PUBLIC]) {
       rule = true;
       // Additionally set anyone to have owner permissions, except for the write_owner permission.
       CommonUtil.setJsObject(
           owner, [OwnerProperties.OWNER, OwnerProperties.OWNERS, OwnerProperties.ANYONE],
           buildOwnerPermissions(true, true, false, true));
+    } else {
+      rule = adminAddrList.map((addr) => `auth.addr === '${addr}'`).join(' || ');
     }
     const appPath = PathUtil.getAppPath(appName);
     this.setRuleOrLog(appPath, buildRulePermission(rule), context);
