@@ -5,6 +5,8 @@ const _ = require('lodash');
 const {
   CHAINS_N2B_DIR_NAME,
   CHAINS_H2N_DIR_NAME,
+  CHAINS_N2B_NUMBER_OF_MAX_FILES,
+  CHAINS_H2N_HASH_PREFIX_LENGTH,
   SNAPSHOTS_N2S_DIR_NAME,
 } = require('./constants');
 const CommonUtil = require('./common-util');
@@ -12,9 +14,14 @@ const JSON_GZIP_FILE_EXTENSION = 'json.gz';
 const logger = require('../logger')('FILE-UTIL');
 
 class FileUtil {
+  static getBlockDirPath(chainPath, blockNumber) {
+    const dirPrefixName = Math.floor(blockNumber / CHAINS_N2B_NUMBER_OF_MAX_FILES).toString();
+    return path.join(chainPath, CHAINS_N2B_DIR_NAME, dirPrefixName);
+  }
+
   static getBlockPath(chainPath, blockNumber) {
     if (blockNumber < 0) return null;
-    return path.join(chainPath, CHAINS_N2B_DIR_NAME, this.getBlockFilenameByNumber(blockNumber));
+    return path.join(this.getBlockDirPath(chainPath, blockNumber), this.getBlockFilenameByNumber(blockNumber));
   }
 
   static getSnapshotPathByBlockNumber(snapshotPath, blockNumber) {
@@ -120,6 +127,10 @@ class FileUtil {
   static writeBlock(chainPath, block) {
     const blockPath = this.getBlockPath(chainPath, block.number);
     if (!fs.existsSync(blockPath)) {
+      const blockDirPath = this.getBlockDirPath(chainPath, block.number);
+      if (block.number % CHAINS_N2B_NUMBER_OF_MAX_FILES === 0 && !fs.existsSync(blockDirPath)) {
+        fs.mkdirSync(this.getBlockDirPath(chainPath, block.number));
+      }
       const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
       fs.writeFileSync(blockPath, compressed);
     } else {
