@@ -264,7 +264,6 @@ describe('Sharding', async () => {
     await CommonUtil.sleep(2000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], true);
     await CommonUtil.sleep(2000);
-    await setUpApp('afan', shardServerList, { admin: { [shardOwnerAddr]: true } });
   });
 
   after(() => {
@@ -362,6 +361,10 @@ describe('Sharding', async () => {
   });
 
   describe('Child chain initialization', () => {
+    before(async () => {
+      await setUpApp('afan', shardServerList, { admin: { [shardOwnerAddr]: true } });
+    });
+    
     describe('DB values', () => {
       it('token', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/token')
