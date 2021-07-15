@@ -300,7 +300,7 @@ class Functions {
 
     for (const key in obj) {
       const childObj = obj[key];
-      if (key === FunctionProperties.FUNCTION) {
+      if (key === PredefinedDbPaths.DOT_FUNCTION) {
         if (CommonUtil.isDict(childObj) && !CommonUtil.isEmpty(childObj)) {
           for (const fid in childObj) {
             const nativeFunction = this.nativeFunctionMap[fid];
@@ -489,7 +489,7 @@ class Functions {
     const parsedValuePath = context.valuePath;
     const auth = context.auth;
     const owner = {
-      [OwnerProperties.OWNER]: {
+      [PredefinedDbPaths.DOT_OWNER]: {
         [OwnerProperties.OWNERS]: {
           [auth.addr]: buildOwnerPermissions(false, true, true, true),
           [OwnerProperties.ANYONE]: buildOwnerPermissions(false, true, true, true),
@@ -586,14 +586,14 @@ class Functions {
     const adminAddrList = Object.keys(sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]);
     adminAddrList.forEach((addr) => {
       CommonUtil.setJsObject(
-          owner, [OwnerProperties.OWNER, OwnerProperties.OWNERS, addr],
+          owner, [PredefinedDbPaths.DOT_OWNER, OwnerProperties.OWNERS, addr],
           buildOwnerPermissions(true, true, true, true));
     });
     if (sanitizedVal[PredefinedDbPaths.MANAGE_APP_CONFIG_IS_PUBLIC]) {
       rule = true;
       // Additionally set anyone to have owner permissions, except for the write_owner permission.
       CommonUtil.setJsObject(
-          owner, [OwnerProperties.OWNER, OwnerProperties.OWNERS, OwnerProperties.ANYONE],
+          owner, [PredefinedDbPaths.DOT_OWNER, OwnerProperties.OWNERS, OwnerProperties.ANYONE],
           buildOwnerPermissions(true, true, false, true));
     } else {
       rule = adminAddrList.map((addr) => `auth.addr === '${addr}'`).join(' || ');

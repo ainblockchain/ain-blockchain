@@ -1964,7 +1964,7 @@ describe('Sharding', async () => {
                 type: WriteDbOperations.SET_RULE,
                 ref: `${sharding_path}/${ShardingProperties.LATEST}`,
                 value: {
-                  [RuleProperties.RULE]: {
+                  [PredefinedDbPaths.DOT_RULE]: {
                     [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
                   }
                 }
@@ -1973,7 +1973,7 @@ describe('Sharding', async () => {
                 type: WriteDbOperations.SET_FUNCTION,
                 ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
                 value: {
-                  [FunctionProperties.FUNCTION]: {
+                  [PredefinedDbPaths.DOT_FUNCTION]: {
                     [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
                       [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
                       [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
