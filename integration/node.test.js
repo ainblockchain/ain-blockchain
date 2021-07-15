@@ -3898,7 +3898,7 @@ describe('Blockchain Node', () => {
     describe('App creation', () => {
       before(async () => {
         const appStakingPath =
-            `/staking/test_service_create_app/${serviceAdmin}/0/stake/${Date.now()}/value`;
+            `/staking/test_service_create_app0/${serviceAdmin}/0/stake/${Date.now()}/value`;
         const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: appStakingPath,
           value: 1
@@ -4006,6 +4006,114 @@ describe('Blockchain Node', () => {
             "gas_cost_total": 0
           },
           "tx_hash": "0x60f6a71fedc8bbe457680ff6cf2e24b5c2097718f226c4f40fb4f9849d52f7fa"
+        });
+      });
+
+      it('create a public app', async () => {
+        const appStakingPath =
+            `/staking/test_service_create_app1/${serviceAdmin}/0/stake/${Date.now()}/value`;
+        const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: appStakingPath,
+          value: 1
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const manageAppPath = '/manage_app/test_service_create_app1/create/0';
+        const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: {
+            admin: { [serviceAdmin]: true },
+            is_public: true
+          },
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8')).result;
+        assert.deepEqual(createAppRes, {
+          "result": {
+            "code": 0,
+            "func_results": {
+              "_createApp": {
+                "code": "SUCCESS",
+                "gas_amount": 0,
+                "op_results": [
+                  {
+                    "path": "/apps/test_service_create_app1",
+                    "result": {
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  },
+                  {
+                    "path": "/apps/test_service_create_app1",
+                    "result": {
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  },
+                  {
+                    "path": "/manage_app/test_service_create_app1/config",
+                    "result": {
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  },
+                  {
+                    "path": "/manage_app/test_service_create_app1/create/0/result",
+                    "result": {
+                      "code": 0,
+                      "gas_amount": 1
+                    }
+                  }
+                ]
+              }
+            },
+            "gas_amount": 1,
+            "gas_amount_total": {
+              "app": {
+                "test_service_create_app1": 2
+              },
+              "service": 3
+            },
+            "gas_cost_total": 0
+          },
+          "tx_hash": "0xaa4625dcf4dfa36d6e9a23b64236b88379cac1338d76b915e843fd7cfeda14bb"
+        });
+        const appConfig = parseOrLog(syncRequest('GET', 
+            server2 + `/get_value?ref=/manage_app/test_service_create_app1/config`)
+            .body.toString('utf-8')).result;
+        assert.deepEqual(appConfig, {
+          "admin": {
+            "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true
+          },
+          "is_public": true
+        });
+        const appWriteRule = parseOrLog(syncRequest('GET', 
+            server2 + `/get_rule?ref=/apps/test_service_create_app1`).body.toString('utf-8')).result;
+        assert.deepEqual(appWriteRule, {
+          ".rule": {
+            "write": true
+          }
+        });
+        const appOwnerRule = parseOrLog(syncRequest('GET', 
+            server2 + `/get_owner?ref=/apps/test_service_create_app1`).body.toString('utf-8')).result;
+        assert.deepEqual(appOwnerRule, {
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": false,
+                "write_rule": true
+              },
+              "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true
+              }
+            }
+          }        
         });
       });
     });
