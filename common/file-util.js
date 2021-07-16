@@ -15,8 +15,8 @@ const logger = require('../logger')('FILE-UTIL');
 
 class FileUtil {
   static getBlockDirPath(chainPath, blockNumber) {
-    const dirPrefixName = Math.floor(blockNumber / CHAINS_N2B_NUMBER_OF_MAX_FILES).toString();
-    return path.join(chainPath, CHAINS_N2B_DIR_NAME, dirPrefixName);
+    const n2bPrefix = Math.floor(blockNumber / CHAINS_N2B_NUMBER_OF_MAX_FILES).toString();
+    return path.join(chainPath, CHAINS_N2B_DIR_NAME, n2bPrefix);
   }
 
   static getBlockPath(chainPath, blockNumber) {
@@ -28,8 +28,13 @@ class FileUtil {
     return path.join(snapshotPath, SNAPSHOTS_N2S_DIR_NAME, this.getBlockFilenameByNumber(blockNumber));
   }
 
+  static getHashToNumberDirPath(chainPath, blockHash) {
+    const h2nPrefix = blockHash.substring(0, CHAINS_H2N_HASH_PREFIX_LENGTH);
+    return path.join(chainPath, CHAINS_H2N_DIR_NAME, h2nPrefix);
+  }
+
   static getHashToNumberPath(chainPath, blockHash) {
-    return path.join(chainPath, CHAINS_H2N_DIR_NAME, blockHash);
+    return path.join(this.getHashToNumberDirPath(chainPath, blockHash), blockHash);
   }
 
   static getBlockFilenameByNumber(blockNumber) {
@@ -145,6 +150,10 @@ class FileUtil {
     }
     const hashToNumberPath = this.getHashToNumberPath(chainPath, blockHash);
     if (!fs.existsSync(hashToNumberPath)) {
+      const hashToNumberDirPath = this.getHashToNumberDirPath(chainPath, blockHash);
+      if (!fs.existsSync(hashToNumberDirPath)) {
+        fs.mkdirSync(hashToNumberDirPath);
+      }
       fs.writeFileSync(hashToNumberPath, blockNumber);
     } else {
       logger.debug(`${hashToNumberPath} file already exists!`);
