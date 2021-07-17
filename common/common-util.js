@@ -349,11 +349,36 @@ class CommonUtil {
     return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
   }
 
-  // TODO(liayoo): Fix testing paths (writing at the root) and update isServicePath().
   static isServicePath(parsedPath) {
     const { isServiceType } = require('../common/constants');
 
     return isServiceType(_.get(parsedPath, 0));
+  }
+
+  static getAppNameFromRef(ref) {
+    const parsedPath = CommonUtil.parsePath(ref);
+    if (CommonUtil.isAppPath(parsedPath)) {
+      return _.get(parsedPath, 1, null);
+    }
+    return null;
+  }
+
+  static getAppNameList(op) {
+    if (!op) {
+      return [];
+    }
+    if (op.op_list) {
+      const appNames = new Set();
+      for (const innerOp of op.op_list) {
+        const name = CommonUtil.getAppNameFromRef(innerOp.ref);
+        if (name) {
+          appNames.add(name);
+        }
+      }
+      return [...appNames];
+    }
+    const name = CommonUtil.getAppNameFromRef(op.ref);
+    return name ? [name] : [];
   }
 
   static getDependentAppNameFromRef(ref) {

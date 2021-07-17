@@ -13,10 +13,14 @@ const {
   GenesisAccounts,
   GenesisSharding,
   StateVersions,
+  buildOwnerPermissions,
   LIGHTWEIGHT,
   TREE_HEIGHT_LIMIT,
   TREE_SIZE_LIMIT,
-  buildOwnerPermissions,
+  SERVICE_STATE_BUDGET,
+  APPS_STATE_BUDGET,
+  FREE_STATE_BUDGET,
+  STATE_GAS_CONSTANT,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
@@ -463,9 +467,9 @@ class DB {
     return rootProof;
   }
 
-  static getValueFromStateRoot(stateRoot, statePath) {
+  static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
     return DB.readFromStateRoot(
-        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, false, [], false);
+        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, isShallow, [], false);
   }
 
   /**
@@ -479,8 +483,8 @@ class DB {
       return null;
     }
     return {
-      [StateInfoProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
-      [StateInfoProperties.TREE_SIZE]: stateNode.getTreeSize(),
+      [StateInfoProperties.TREE_HEIGHT]: CommonUtil.numberOrZero(stateNode.getTreeHeight()),
+      [StateInfoProperties.TREE_SIZE]: CommonUtil.numberOrZero(stateNode.getTreeSize()),
     };
   }
 
@@ -900,6 +904,7 @@ class DB {
       }
     }
     let result;
+    const { serviceStateSize: serviceStateSizeBefore } = this.getStateSizes();
     if (op.type === WriteDbOperations.SET) {
       result = this.executeMultiSetOperation(op.op_list, auth, timestamp, tx);
     } else {
@@ -914,6 +919,10 @@ class DB {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
       tx.setExtraField('gas', gasAmountTotal);
+      const stateGasBudgetCheck = this.checkStateBudgetsAndUpdateTxGasAmount(op, tx, serviceStateSizeBefore);
+      if (stateGasBudgetCheck !== true) {
+        return stateGasBudgetCheck;
+      }
       if (blockNumber > 0) {
         // Use only the service gas amount total
         result.gas_cost_total = CommonUtil.getTotalGasCost(gasPrice, gasAmountTotal.service);
@@ -927,6 +936,80 @@ class DB {
       }
     }
     return result;
+  }
+
+  getStateFreeTierInUse() {
+    let size = 0;
+    const apps = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.APPS, true) || {};
+    const appStakes = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.STAKING) || {};
+    for (const appName of Object.keys(apps)) {
+      if (!_.get(appStakes, `${appName}.${PredefinedDbPaths.STAKING_BALANCE_TOTAL}`)) {
+        size += this.getStateSizeAtPath(`apps/${appName}`);
+      }
+    }
+    return size;
+  }
+
+  getStateSizeAtPath(path) {
+    if (!path || path === '/') {
+      return _.get(this.getStateInfo('/'), StateInfoProperties.TREE_SIZE, 0);
+    }
+    return _.get(this.getStateInfo(`/${PredefinedDbPaths.VALUES_ROOT}/${path}`), StateInfoProperties.TREE_SIZE, 0) +
+        _.get(this.getStateInfo(`/${PredefinedDbPaths.RULES_ROOT}/${path}`), StateInfoProperties.TREE_SIZE, 0) +
+        _.get(this.getStateInfo(`/${PredefinedDbPaths.FUNCIONS_ROOT}/${path}`), StateInfoProperties.TREE_SIZE, 0) +
+        _.get(this.getStateInfo(`/${PredefinedDbPaths.OWNERS_ROOT}/${path}`), StateInfoProperties.TREE_SIZE, 0);
+  }
+
+  getStateSizes() {
+    const rootStateSize = this.getStateSizeAtPath('/');
+    const appStateSize = this.getStateSizeAtPath('apps');
+    const serviceStateSize = rootStateSize - appStateSize; // TODO(liayoo): exclude some paths like /consensus ?
+    return { rootStateSize, appStateSize, serviceStateSize };
+  }
+
+  checkStateBudgetsAndUpdateTxGasAmount(op, tx, serviceStateSizeBefore) {
+    const LOG_HEADER = 'checkStateBudgetsAndUpdateTxGasAmount';
+    const { appStateSize, serviceStateSize } = this.getStateSizes();
+    if (serviceStateSize > SERVICE_STATE_BUDGET) {
+      return CommonUtil.returnTxResult(
+          25, `Exceeded state budget limit for services (${serviceStateSize} > ${SERVICE_STATE_BUDGET})`);
+    }
+    if (appStateSize > APPS_STATE_BUDGET) {
+      return CommonUtil.returnTxResult(
+          26, `Exceeded state budget limit for apps (${appStateSize} > ${APPS_STATE_BUDGET})`);
+    }
+    const stateFreeTierInUse = this.getStateFreeTierInUse();
+    let freeTierLimitReached = false;
+    if (stateFreeTierInUse >= FREE_STATE_BUDGET) {
+      freeTierLimitReached = true;
+    }
+    const appStakesTotal = this.getAppStakesTotal();
+    const appNameList = CommonUtil.getAppNameList(op);
+    for (const appName of appNameList) {
+      const appTreeSize = this.getStateSizeAtPath(`/apps/${appName}`);
+      const appStake = this.getAppStake(appName);
+      if (appStake === 0) {
+        if (freeTierLimitReached) {
+          return CommonUtil.returnTxResult(
+              27, `Exceeded state budget limit for free tier (${stateFreeTierInUse} > ${FREE_STATE_BUDGET})`);
+        }
+        // else, we allow apps without stakes
+      } else {
+        const appStateBudget = APPS_STATE_BUDGET * appStake / appStakesTotal;
+        if (appTreeSize > appStateBudget) {
+          return CommonUtil.returnTxResult(
+              28, `Exceeded state budget limit for app ${appName} (${appTreeSize} > ${appStateBudget})`);
+        }
+      }
+    }
+    const serviceStateSizeDelta = serviceStateSize - serviceStateSizeBefore;
+    logger.debug(`[${LOG_HEADER}] serviceStateSizeDelta: ${serviceStateSizeDelta}`);
+    if (serviceStateSizeDelta > 0) {
+      const txGas = _.get(tx, 'extra.gas', { service: 0, app: {} });
+      txGas.service += serviceStateSizeDelta * STATE_GAS_CONSTANT;
+      tx.setExtraField('gas', txGas);
+    }
+    return true;
   }
 
   checkBillingAndCollectFee(op, auth, timestamp, tx, blockNumber, result) {
