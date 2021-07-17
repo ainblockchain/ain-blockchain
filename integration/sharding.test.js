@@ -1547,7 +1547,7 @@ describe('Sharding', async () => {
               "app": {
                 "test": 6
               },
-              "service": 0
+              "service": 8
             },
             "gas_cost_total": 0
           });

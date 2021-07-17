@@ -7,6 +7,12 @@ const {Block} = require('../blockchain/block');
 const BlockchainNode = require('../node');
 const {setNodeForTesting, getTransaction} = require('./test-util');
 const TransactionPool = require('../tx-pool');
+const {
+  BANDWIDTH_BUDGET_PER_BLOCK,
+  SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
+  APPS_BANDWIDTH_BUDGET_PER_BLOCK,
+  FREE_BANDWIDTH_BUDGET_PER_BLOCK,
+} = require('../common/constants');
 
 describe('TransactionPool', async () => {
   let node, transaction;
@@ -457,8 +463,6 @@ describe('TransactionPool', async () => {
 
   describe('Transaction selection & bandwidth budgets', () => {
     describe('performBandwidthChecks()', () => {
-      const { BANDWIDTH_BUDGET_PER_BLOCK, SERVICE_BANDWIDTH_BUDGET_PER_BLOCK } = require('../common/constants');
-      const APP_BANDWIDTH_BUDGET_PER_BLOCK = BANDWIDTH_BUDGET_PER_BLOCK - SERVICE_BANDWIDTH_BUDGET_PER_BLOCK;
       it('empty array', () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([], node.db),
@@ -470,11 +474,11 @@ describe('TransactionPool', async () => {
         node.db.setValuesForTesting(`/staking/app1/balance_total`, 1); // 100%
         assert.deepEqual(
           node.tp.performBandwidthChecks([
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APPS_BANDWIDTH_BUDGET_PER_BLOCK}}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}
           ], node.db),
           [
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APPS_BANDWIDTH_BUDGET_PER_BLOCK}}}},
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}
           ]
         );
@@ -482,12 +486,12 @@ describe('TransactionPool', async () => {
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: 1}}},
             {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK - 1}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APPS_BANDWIDTH_BUDGET_PER_BLOCK}}}}
           ], node.db),
           [
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: 1}}},
             {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK - 1}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APPS_BANDWIDTH_BUDGET_PER_BLOCK}}}}
           ]
         );
       });
@@ -533,25 +537,43 @@ describe('TransactionPool', async () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
           ], node.db),
           [
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
           ]
         );
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: (APP_BANDWIDTH_BUDGET_PER_BLOCK / 2) + 1}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: (APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2) + 1}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
           ], node.db),
           [
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APP_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app2: APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}
           ]
+        );
+      });
+
+      it('within 10% free tier for bandwidth budget', () => {
+        assert.deepEqual(
+          node.tp.performBandwidthChecks([
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: FREE_BANDWIDTH_BUDGET_PER_BLOCK}}}}
+          ], node.db),
+          [{tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: FREE_BANDWIDTH_BUDGET_PER_BLOCK}}}}]
+        );
+      });
+
+      it('cannot exceed 10% free tier for bandwidth budget', () => {
+        assert.deepEqual(
+          node.tp.performBandwidthChecks([
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {app: {app1: FREE_BANDWIDTH_BUDGET_PER_BLOCK + 1}}}}
+          ], node.db),
+          []
         );
       });
 
