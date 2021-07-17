@@ -14,6 +14,7 @@ const {
   GenesisOwners,
   ProofProperties,
   PredefinedDbPaths,
+  SERVICE_STATE_BUDGET,
 } = require('../common/constants')
 const {
   setNodeForTesting,
@@ -21,6 +22,7 @@ const {
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const CommonUtil = require('../common/common-util');
+const ainUtil = require('@ainblockchain/ain-util');
 
 describe("DB initialization", () => {
   let node;
@@ -2397,9 +2399,54 @@ describe("DB operations", () => {
           error_message: "Out of tree height limit (21 > 20)",
           gas_amount: 0,
         });
-      })
+      });
 
-      it("rejects over-size transaction", () => {
+      it('cannot exceed service state budget', () => {
+        // Bloat the state tree just below the service state budget
+        const addr = ainUtil.createAccount().address;
+        const valueObj = {};
+        for (let i = 0; i < 74500; i++) {
+          valueObj[i] = {
+            value: 1,
+            result: {
+              timestamp: 1568798344000,
+              tx_hash: "0xb23fbdfb7b38dc4859872c565b1b0e4140ca4b7896397c817a290b2507e79708",
+              code: "SUCCESS"
+            }
+          }
+        }
+        const tempDb = node.createTempDb(node.db.stateVersion, 'CONSENSUS_UNIT_TEST', node.bc.lastBlockNumber());
+        tempDb.writeDatabase(
+            [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.TRANSFER, node.account.address, addr],
+            valueObj);
+        node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
+        expect(node.db.getStateSizeAtPath('/')).to.be.lessThan(SERVICE_STATE_BUDGET);
+        
+        const overSizeTxBody = {
+          operation: {
+            type: 'SET',
+            op_list: []
+          },
+          gas_price: 1,
+          nonce: -1,
+          timestamp: 1568798344000,
+        };
+        for (let i = 0; i < 1000; i++) {
+          overSizeTxBody.operation.op_list.push({
+            type: 'SET_VALUE',
+            ref: `/manage_app/app_${i}/create/${i}`,
+            value: { admin: { [node.account.address]: true } }
+          });
+        }
+        const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
+        assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
+          "code": 25,
+          "error_message": "Exceeded state budget limit for services (459428 > 450000)",
+          "gas_amount": 0
+        });
+      });
+
+      it("cannot exceed apps state budget", () => {
         const overSizeTree = {};
         for (let i = 0; i < 1000; i++) {
           overSizeTree[i] = {};
@@ -2419,11 +2466,106 @@ describe("DB operations", () => {
         };
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
-          code: 24,
-          error_message: "Out of tree size limit (1001557 > 1000000)",
+          code: 26,
+          error_message: "Exceeded state budget limit for apps (1001130 > 450000)",
           gas_amount: 0,
         });
-      })
+      });
+
+      it('cannot exceed per-app state budget', () => {
+        // Set up 10 apps & stake 1 for each
+        let timestamp = 1568798344000;
+        for (let i = 0; i < 10; i++) {
+          const stakeTx = Transaction.fromTxBody({
+            operation: {
+              type: 'SET_VALUE',
+              ref: `/staking/app_${i}/${node.account.address}/0/stake/${i}/value`,
+              value: 1
+            },
+            gas_price: 1,
+            nonce: -1,
+            timestamp: timestamp++,
+          }, node.account.private_key);
+          const stakeRes = node.db.executeTransaction(stakeTx, node.bc.lastBlockNumber() + 1);
+          assert.deepEqual(stakeRes.code, 0);
+          const createAppTx = Transaction.fromTxBody({
+            operation: {
+              type: 'SET_VALUE',
+              ref: `/manage_app/app_${i}/create/${i}`,
+              value: { admin: { [node.account.address]: true } }
+            },
+            gas_price: 1,
+            nonce: -1,
+            timestamp: timestamp++,
+          }, node.account.private_key);
+          const createAppRes = node.db.executeTransaction(createAppTx, node.bc.lastBlockNumber() + 1);
+          assert.deepEqual(createAppRes.code, 0);
+        }
+        // Send 1/10 + 1 budget tx for one of them
+        const overSizeTree = {};
+        for (let i = 0; i < 1000; i++) {
+          overSizeTree[i] = {};
+          for (let j = 0; j < 100; j++) {
+            overSizeTree[i][j] = 'a';
+          }
+        }
+        const overSizeTxBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: '/apps/app_0/tree',
+            value: overSizeTree,
+          },
+          gas_price: 1,
+          nonce: -1,
+          timestamp
+        };
+        const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
+        assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
+          code: 28,
+          error_message: "Exceeded state budget limit for app app_0 (101013 > 40909.09090909091)",
+          gas_amount: 0,
+        });
+      });
+
+      it('cannot exceed 10% free tier for state budget', () => {
+        // Set up 1 app & do not stake
+        const createAppTx = Transaction.fromTxBody({
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/manage_app/app_0/create/0`,
+            value: { admin: { [node.account.address]: true } }
+          },
+          gas_price: 1,
+          nonce: -1,
+          timestamp: 1568798344000
+        }, node.account.private_key);
+        const createAppRes = node.db.executeTransaction(createAppTx, node.bc.lastBlockNumber() + 1);
+        assert.deepEqual(createAppRes.code, 0);
+        // Send over 10% budget tx
+        const overSizeTree = {};
+        for (let i = 0; i < 1000; i++) {
+          overSizeTree[i] = {};
+          for (let j = 0; j < 100; j++) {
+            overSizeTree[i][j] = 'a';
+          }
+        }
+        const overSizeTxBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: '/apps/app_0/tree',
+            value: overSizeTree,
+          },
+          gas_price: 1,
+          nonce: -1,
+          timestamp: 1568798344001
+        };
+        const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
+        assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
+          code: 27,
+          error_message: "Exceeded state budget limit for free tier (101013 > 100000)",
+          gas_amount: 0,
+        });
+      });
     });
   });
 
