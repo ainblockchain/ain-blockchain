@@ -13,7 +13,7 @@
     "node": ">=12"
   },
   "scripts": {
-    "clean": "sh stop_servers.sh & echo 'cleaned'",
+    "clean": "sh stop_servers_local.sh & echo 'cleaned'",
     "client": "ACCOUNT_INDEX=0 DEBUG=true node ./client/index.js",
     "lint": "eslint --ext js -c .eslintrc.json .",
     "loadtest": "sh loadtest/load_tester.sh",
