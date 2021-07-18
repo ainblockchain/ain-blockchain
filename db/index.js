@@ -969,7 +969,7 @@ class DB {
   getStateSizes() {
     const rootStateSize = this.getStateSizeAtPath('/');
     const appStateSize = this.getStateSizeAtPath('apps');
-    const serviceStateSize = rootStateSize - appStateSize; // TODO(liayoo): exclude some paths like /consensus ?
+    const serviceStateSize = rootStateSize - appStateSize;
     return { rootStateSize, appStateSize, serviceStateSize };
   }
 
