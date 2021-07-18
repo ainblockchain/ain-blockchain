@@ -911,7 +911,10 @@ class DB {
       result = this.executeSingleSetOperation(op, auth, timestamp, tx);
     }
     const gasPrice = tx.tx_body.gas_price;
-    const gasAmountTotal = CommonUtil.getTotalGasAmount(tx.tx_body.operation, result);
+    const gasAmountTotal = {
+      bandwidth: CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, result),
+      state: { service: 0 }
+    };
     result.gas_amount_total = gasAmountTotal;
     result.gas_cost_total = 0;
     // TODO(platfowner): Consider charging gas fee for the failure cases.
@@ -919,13 +922,16 @@ class DB {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
       tx.setExtraField('gas', gasAmountTotal);
-      const stateGasBudgetCheck = this.checkStateBudgetsAndUpdateTxGasAmount(op, tx, serviceStateSizeBefore);
+      const stateGasBudgetCheck = this.checkStateBudgetsAndUpdateGasAmount(op, tx, result, serviceStateSizeBefore);
       if (stateGasBudgetCheck !== true) {
         return stateGasBudgetCheck;
       }
       if (blockNumber > 0) {
         // Use only the service gas amount total
-        result.gas_cost_total = CommonUtil.getTotalGasCost(gasPrice, gasAmountTotal.service);
+        result.gas_cost_total = CommonUtil.getTotalGasCost(
+          gasPrice,
+          _.get(tx, 'extra.gas.bandwidth.service', 0) + _.get(tx, 'extra.gas.state.service', 0)
+        );
         const collectFeeRes = this.checkBillingAndCollectFee(op, auth, timestamp, tx, blockNumber, result);
         if (collectFeeRes !== true) {
           return collectFeeRes;
@@ -967,7 +973,7 @@ class DB {
     return { rootStateSize, appStateSize, serviceStateSize };
   }
 
-  checkStateBudgetsAndUpdateTxGasAmount(op, tx, serviceStateSizeBefore) {
+  checkStateBudgetsAndUpdateGasAmount(op, tx, result, serviceStateSizeBefore) {
     const LOG_HEADER = 'checkStateBudgetsAndUpdateTxGasAmount';
     const { appStateSize, serviceStateSize } = this.getStateSizes();
     if (serviceStateSize > SERVICE_STATE_BUDGET) {
@@ -1002,13 +1008,15 @@ class DB {
         }
       }
     }
-    const serviceStateSizeDelta = serviceStateSize - serviceStateSizeBefore;
+    const serviceStateSizeDelta = Math.max(serviceStateSize - serviceStateSizeBefore, 0);
     logger.debug(`[${LOG_HEADER}] serviceStateSizeDelta: ${serviceStateSizeDelta}`);
-    if (serviceStateSizeDelta > 0) {
-      const txGas = _.get(tx, 'extra.gas', { service: 0, app: {} });
-      txGas.service += serviceStateSizeDelta * STATE_GAS_CONSTANT;
-      tx.setExtraField('gas', txGas);
-    }
+    const txGas = _.get(tx, 'extra.gas', {
+      bandwidth: { service: 0, app: {} },
+      state: { service: 0 }
+    });
+    CommonUtil.setJsObject(txGas, ['state', 'service'], serviceStateSizeDelta * STATE_GAS_CONSTANT);
+    CommonUtil.setJsObject(result, ['gas_amount_total', 'state'], { service: txGas.state.service });
+    tx.setExtraField('gas', txGas);
     return true;
   }
 
