@@ -295,6 +295,7 @@ const ProofProperties = {
 const StateInfoProperties = {
   TREE_HEIGHT: 'tree_height',
   TREE_SIZE: 'tree_size',
+  TREE_BYTES: 'tree_bytes',
 };
 
 /**
