@@ -147,7 +147,7 @@ describe("Functions", () => {
         assert.deepEqual(func_results, {
           "0x11111": {
             "code": "SUCCESS",
-            "gas_amount": 10,
+            "bandwidth_gas_amount": 10,
           }
         });
         promise_results.then((resp) => {
@@ -404,26 +404,26 @@ describe("Functions", () => {
                 "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
                 "result": {
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               },
               {
                 "path": "/accounts/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/balance",
                 "result": {
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               },
               {
                 "path": "/transfer/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/0/result",
                 "result": {
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
             ],
             "code": "SUCCESS",
-            "gas_amount": 1000
+            "bandwidth_gas_amount": 1000
           }
         });
         promise_results.then((resp) => {
@@ -459,26 +459,26 @@ describe("Functions", () => {
                 "path": "/accounts/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/balance",
                 "result": {
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               },
               {
                 "path": "/accounts/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/balance",
                 "result": {
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               },
               {
                 "path": "/transfer/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/0/result",
                 "result": {
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
             ],
             "code": "SUCCESS",
-            "gas_amount": 0
+            "bandwidth_gas_amount": 0
           }
         });
         promise_results.then((resp) => {
@@ -513,7 +513,7 @@ describe("Functions", () => {
         assert.deepEqual(func_results, {
           "0x11111": {
             "code": "SUCCESS",
-            "gas_amount": 10,
+            "bandwidth_gas_amount": 10,
           }
         });
         promise_results.then((resp) => {

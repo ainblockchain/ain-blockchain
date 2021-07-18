@@ -229,8 +229,8 @@ class TransactionPool {
         discardedTxList.push(tx);
         continue;
       }
-      const serviceBandwidth = _.get(tx, 'extra.gas.service', 0);
-      const appBandwidth = _.get(tx, 'extra.gas.app', null);
+      const serviceBandwidth = _.get(tx, 'extra.gas.bandwidth.service', 0);
+      const appBandwidth = _.get(tx, 'extra.gas.bandwidth.app', null);
       // Check if tx exceeds service bandwidth
       if (serviceBandwidth) {
         if (serviceBandwidthSum + serviceBandwidth > SERVICE_BANDWIDTH_BUDGET_PER_BLOCK) {
@@ -313,8 +313,8 @@ class TransactionPool {
     while (i < len1 && j < len2) {
       const tx1 = arr1[i];
       const tx2 = arr2[j];
-      const isTx1ServiceTx = !!_.get(tx1, 'extra.gas.service', false);
-      const isTx2ServiceTx = !!_.get(tx2, 'extra.gas.service', false);
+      const isTx1ServiceTx = !!_.get(tx1, 'extra.gas.bandwidth.service', false);
+      const isTx2ServiceTx = !!_.get(tx2, 'extra.gas.bandwidth.service', false);
       if (isTx1ServiceTx && isTx2ServiceTx) {
         // Compare gas price if both service transactions
         if (tx1.tx_body.gas_price > tx2.tx_body.gas_price) {

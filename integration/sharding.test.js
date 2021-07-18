@@ -1520,34 +1520,39 @@ describe('Sharding', async () => {
             "result_list": [
               {
                 "code": 0,
-                "gas_amount": 1
+                "bandwidth_gas_amount": 1
               },
               {
                 "code": 0,
-                "gas_amount": 1
+                "bandwidth_gas_amount": 1
               },
               {
                 "code": 0,
-                "gas_amount": 1
+                "bandwidth_gas_amount": 1
               },
               {
                 "code": 0,
-                "gas_amount": 1
+                "bandwidth_gas_amount": 1
               },
               {
                 "code": 0,
-                "gas_amount": 1
+                "bandwidth_gas_amount": 1
               },
               {
                 "code": 0,
-                "gas_amount": 1
+                "bandwidth_gas_amount": 1
               },
             ],
             "gas_amount_total": {
-              "app": {
-                "test": 6
+              "bandwidth": {
+                "app": {
+                  "test": 6
+                },
+                "service": 0
               },
-              "service": 8
+              "state": {
+                "service": 8
+              }
             },
             "gas_cost_total": 0
           });
@@ -1626,32 +1631,37 @@ describe('Sharding', async () => {
             "result_list": [
               {
                 "code": 0,
-                "gas_amount": 0
+                "bandwidth_gas_amount": 0
               },
               {
                 "code": 0,
-                "gas_amount": 0
+                "bandwidth_gas_amount": 0
               },
               {
                 "code": 0,
-                "gas_amount": 0
+                "bandwidth_gas_amount": 0
               },
               {
                 "code": 0,
-                "gas_amount": 0
+                "bandwidth_gas_amount": 0
               },
               {
                 "code": 0,
-                "gas_amount": 0
+                "bandwidth_gas_amount": 0
               },
               {
                 "code": 0,
-                "gas_amount": 0
+                "bandwidth_gas_amount": 0
               },
             ],
             "gas_amount_total": {
-              "app": {},
-              "service": 0
+              "bandwidth": {
+                "app": {},
+                "service": 0
+              },
+              "state": {
+                "service": 0
+              }
             },
             "gas_cost_total": 0
           });
@@ -1683,12 +1693,17 @@ describe('Sharding', async () => {
                 result: {
                   result: {
                     code: 0,
-                    gas_amount: 1,
+                    bandwidth_gas_amount: 1,
                     gas_amount_total: {
-                      app: {
-                        test: 1,
+                      bandwidth: {
+                        app: {
+                          test: 1
+                        },
+                        service: 0
                       },
-                      service: 0
+                      state: {
+                        service: 0
+                      }
                     },
                     gas_cost_total: 0
                   },
@@ -1722,12 +1737,17 @@ describe('Sharding', async () => {
                 result: {
                   result: {
                     code: 0,
-                    gas_amount: 1,
+                    bandwidth_gas_amount: 1,
                     gas_amount_total: {
-                      app: {
-                        test: 1
+                      bandwidth: {
+                        app: {
+                          test: 1
+                        },
+                        service: 0
                       },
-                      service: 0
+                      state: {
+                        service: 0
+                      }
                     },
                     gas_cost_total: 0
                   },
@@ -1761,12 +1781,17 @@ describe('Sharding', async () => {
                 result: {
                   result: {
                     code: 0,
-                    gas_amount: 1,
+                    bandwidth_gas_amount: 1,
                     gas_amount_total: {
-                      app: {
-                        afan: 1
+                      bandwidth: {
+                        app: {
+                          afan: 1
+                        },
+                        service: 0
                       },
-                      service: 0
+                      state: {
+                        service: 0
+                      }
                     },
                     gas_cost_total: 0
                   },
@@ -1809,12 +1834,17 @@ describe('Sharding', async () => {
                 {
                   result: {
                     code: 0,
-                    gas_amount: 1,
+                    bandwidth_gas_amount: 1,
                     gas_amount_total: {
-                      app: {
-                        test: 1
+                      bandwidth: {
+                        app: {
+                          test: 1
+                        },
+                        service: 0
                       },
-                      service: 0
+                      state: {
+                        service: 0
+                      }
                     },
                     gas_cost_total: 0
                   },
@@ -1860,12 +1890,17 @@ describe('Sharding', async () => {
                 {
                   result: {
                     code: 0,
-                    gas_amount: 1,
+                    bandwidth_gas_amount: 1,
                     gas_amount_total: {
-                      app: {
-                        test: 1
+                      bandwidth: {
+                        app: {
+                          test: 1
+                        },
+                        service: 0
                       },
-                      service: 0
+                      state: {
+                        service: 0
+                      }
                     },
                     gas_cost_total: 0
                   },
@@ -1911,12 +1946,17 @@ describe('Sharding', async () => {
                 {
                   result: {
                     code: 0,
-                    gas_amount: 1,
+                    bandwidth_gas_amount: 1,
                     gas_amount_total: {
-                      app: {
-                        afan: 1
+                      bandwidth: {
+                        app: {
+                          afan: 1
+                        },
+                        service: 0
                       },
-                      service: 0,
+                      state: {
+                        service: 0
+                      }
                     },
                     gas_cost_total: 0
                   },
@@ -2013,24 +2053,29 @@ describe('Sharding', async () => {
           "func_results": {
             "_updateLatestShardReport": {
               "code": "SUCCESS",
-              "gas_amount": 0,
+              "bandwidth_gas_amount": 0,
               "op_results": [
                 {
                   "path": "/apps/a_dapp/latest",
                   "result": {
                     "code": 0,
-                    "gas_amount": 1,
+                    "bandwidth_gas_amount": 1,
                   }
                 }
               ]
             }
           },
-          "gas_amount": 1,
+          "bandwidth_gas_amount": 1,
           "gas_amount_total": {
-            "app": {
-              "a_dapp": 2
+            "bandwidth": {
+              "app": {
+                "a_dapp": 2
+              },
+              "service": 0
             },
-            "service": 0
+            "state": {
+              "service": 0
+            }
           },
           "gas_cost_total": 0,
         });
@@ -2071,36 +2116,41 @@ describe('Sharding', async () => {
               "func_results": {
                 "_updateLatestShardReport": {
                   "code": "SUCCESS",
-                  "gas_amount": 0,
+                  "bandwidth_gas_amount": 0,
                   "op_results": [
                     {
                       "path": "/apps/a_dapp/latest",
                       "result": {
                         "code": 0,
-                        "gas_amount": 1,
+                        "bandwidth_gas_amount": 1,
                       }
                     }
                   ]
                 }
               },
-              "gas_amount": 1,
+              "bandwidth_gas_amount": 1,
             },
             {
               "code": 0,
               "func_results": {
                 "_updateLatestShardReport": {
                   "code": "SUCCESS",
-                  "gas_amount": 0,
+                  "bandwidth_gas_amount": 0,
                 }
               },
-              "gas_amount": 1
+              "bandwidth_gas_amount": 1
             }
           ],
           "gas_amount_total": {
-            "app": {
-              "a_dapp": 3
+            "bandwidth": {
+              "app": {
+                "a_dapp": 3
+              },
+              "service": 0
             },
-            "service": 0
+            "state": {
+              "service": 0
+            }
           },
           "gas_cost_total": 0,
         });
