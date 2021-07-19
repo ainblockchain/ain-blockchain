@@ -921,8 +921,10 @@ class DB {
     if (!CommonUtil.isFailedTx(result)) {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
+      const { appStateSize, serviceStateSize: serviceStateSizeAfter } = this.getStateSizes();
       tx.setExtraField('gas', gasAmountTotal);
-      const stateGasBudgetCheck = this.checkStateBudgetsAndUpdateGasAmount(op, tx, result, serviceStateSizeBefore);
+      DB.updateStateGasAmounts(tx, result, serviceStateSizeBefore, serviceStateSizeAfter);
+      const stateGasBudgetCheck = this.checkStateGasBudgets(op, appStateSize, serviceStateSizeAfter);
       if (stateGasBudgetCheck !== true) {
         return stateGasBudgetCheck;
       }
@@ -944,6 +946,20 @@ class DB {
     return result;
   }
 
+  static updateStateGasAmounts(tx, result, serviceStateSizeBefore, serviceStateSizeAfter) {
+    const LOG_HEADER = 'updateStateGasAmounts';
+    const serviceStateSizeDelta = Math.max(serviceStateSizeAfter - serviceStateSizeBefore, 0);
+    logger.debug(`[${LOG_HEADER}] serviceStateSizeDelta: ${serviceStateSizeDelta}`);
+    const txGas = _.get(tx, 'extra.gas', {
+      bandwidth: { service: 0, app: {} },
+      state: { service: 0 }
+    });
+    CommonUtil.setJsObject(txGas, ['state', 'service'], serviceStateSizeDelta * STATE_GAS_CONSTANT);
+    CommonUtil.setJsObject(result, ['gas_amount_total', 'state'], { service: txGas.state.service });
+    tx.setExtraField('gas', txGas);
+  }
+
+  // TODO(liayoo): reduce computation by remembering & reusing the computed values.
   getStateFreeTierInUse() {
     let size = 0;
     const apps = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.APPS, true) || {};
@@ -973,9 +989,7 @@ class DB {
     return { rootStateSize, appStateSize, serviceStateSize };
   }
 
-  checkStateBudgetsAndUpdateGasAmount(op, tx, result, serviceStateSizeBefore) {
-    const LOG_HEADER = 'checkStateBudgetsAndUpdateTxGasAmount';
-    const { appStateSize, serviceStateSize } = this.getStateSizes();
+  checkStateGasBudgets(op, appStateSize, serviceStateSize) {
     if (serviceStateSize > SERVICE_STATE_BUDGET) {
       return CommonUtil.returnTxResult(
           25, `Exceeded state budget limit for services (${serviceStateSize} > ${SERVICE_STATE_BUDGET})`);
@@ -985,13 +999,9 @@ class DB {
           26, `Exceeded state budget limit for apps (${appStateSize} > ${APPS_STATE_BUDGET})`);
     }
     const stateFreeTierInUse = this.getStateFreeTierInUse();
-    let freeTierLimitReached = false;
-    if (stateFreeTierInUse >= FREE_STATE_BUDGET) {
-      freeTierLimitReached = true;
-    }
+    const freeTierLimitReached = stateFreeTierInUse >= FREE_STATE_BUDGET;
     const appStakesTotal = this.getAppStakesTotal();
-    const appNameList = CommonUtil.getAppNameList(op);
-    for (const appName of appNameList) {
+    for (const appName of CommonUtil.getAppNameList(op)) {
       const appTreeSize = this.getStateSizeAtPath(`/apps/${appName}`);
       const appStake = this.getAppStake(appName);
       if (appStake === 0) {
@@ -1008,15 +1018,6 @@ class DB {
         }
       }
     }
-    const serviceStateSizeDelta = Math.max(serviceStateSize - serviceStateSizeBefore, 0);
-    logger.debug(`[${LOG_HEADER}] serviceStateSizeDelta: ${serviceStateSizeDelta}`);
-    const txGas = _.get(tx, 'extra.gas', {
-      bandwidth: { service: 0, app: {} },
-      state: { service: 0 }
-    });
-    CommonUtil.setJsObject(txGas, ['state', 'service'], serviceStateSizeDelta * STATE_GAS_CONSTANT);
-    CommonUtil.setJsObject(result, ['gas_amount_total', 'state'], { service: txGas.state.service });
-    tx.setExtraField('gas', txGas);
     return true;
   }
 
