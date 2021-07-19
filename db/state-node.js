@@ -2,7 +2,10 @@ const logger = require('../logger')('STATE_NODE');
 
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
-const { HASH_DELIMITER } = require('../common/constants');
+const {
+  HASH_DELIMITER,
+  JS_REF_SIZE_IN_BYTES,
+} = require('../common/constants');
 
 class StateNode {
   // NOTE(seo): Once new member variables are added, computeNodeBytes() should be updated.
@@ -320,9 +323,10 @@ class StateNode {
 
   computeTreeBytes() {
     if (this.getIsLeaf()) {
-      return this.computeNodeBytes();
+      return this.numParents() * JS_REF_SIZE_IN_BYTES + this.computeNodeBytes();
     } else {
-      return this.getChildLabels().reduce((acc, label) => {
+      return (this.numParents() + this.numChildren()) * JS_REF_SIZE_IN_BYTES +
+          this.getChildLabels().reduce((acc, label) => {
         const child = this.getChild(label);
         return acc + sizeof(label) + CommonUtil.numberOrZero(child.getTreeBytes());
       }, this.computeNodeBytes());

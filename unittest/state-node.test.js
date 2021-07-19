@@ -1124,44 +1124,53 @@ describe("state-node", () => {
 
   describe("computeTreeBytes", () => {
     it("leaf node", () => {
+      const parent = new StateNode();
+      parent.setChild('child', node);
+
+      // node.parentSet : ref set (1 * 8 = 8 bytes)
       node.setVersion('ver');  // string (3 * 2 = 6 bytes)
-      // stateTree.isLeaf : boolean (4 bytses)
+      // node.isLeaf : boolean (4 bytses)
       node.setProofHash('hash');  // string (4 * 2 = 8 bytses)
-      // stateTree.treeHeight : number (8 bytses)
-      // stateTree.treeSize : number (8 bytses)
-      // stateTree.treeBytes : number (8 bytes)
-      // TOTAL: 42 bytes
+      // node.treeHeight : number (8 bytses)
+      // node.treeSize : number (8 bytses)
+      // node.treeBytes : number (8 bytes)
+      // TOTAL: 50 bytes
 
       node.setValue(true);  // boolean (4 bytes)
-      expect(node.computeTreeBytes()).to.equal(46);
+      expect(node.computeTreeBytes()).to.equal(54);
       node.setValue(10);  // number (8 bytes)
-      expect(node.computeTreeBytes()).to.equal(50);
+      expect(node.computeTreeBytes()).to.equal(58);
       node.setValue(-200);  // number (8 bytes)
-      expect(node.computeTreeBytes()).to.equal(50);
+      expect(node.computeTreeBytes()).to.equal(58);
       node.setValue('');  // string (0 * 2 = 0 bytes)
-      expect(node.computeTreeBytes()).to.equal(42);
+      expect(node.computeTreeBytes()).to.equal(50);
       node.setValue('str');  // string (3 * 2 = 6 bytes)
-      expect(node.computeTreeBytes()).to.equal(48);
+      expect(node.computeTreeBytes()).to.equal(56);
       node.setValue(null);  // null (0 bytes)
-      expect(node.computeTreeBytes()).to.equal(42);
+      expect(node.computeTreeBytes()).to.equal(50);
       node.setValue(undefined);  // undefined (0 bytes)
-      expect(node.computeTreeBytes()).to.equal(42);
+      expect(node.computeTreeBytes()).to.equal(50);
     });
 
     it("internal node", () => {
+      const parent = new StateNode();
+      parent.setChild('child', stateTree);
+
+      // stateTree.parentSet : ref set (1 * 8 = 8 bytes)
+      // stateTree.childMap : ref map (3 * 8 = 24 bytes)
       stateTree.setVersion('ver');  // string (3 * 2 = 6 bytes)
       // stateTree.isLeaf : boolean (4 bytses)
       stateTree.setProofHash('hash');  // string (4 * 2 = 8 bytses)
       // stateTree.treeHeight : number (8 bytses)
       // stateTree.treeSize : number (8 bytses)
       // stateTree.treeBytes : number (8 bytes)
-      // TOTAL: 42 bytes
+      // TOTAL: 74 bytes
 
       child1.setTreeBytes(10);
       child2.setTreeBytes(20);
       child3.setTreeBytes(30);
-      // 42 + 6('label1') * 2 + 10 + 6('label2') * 2 + 20 + 6('label3') * 2 + 30 = 138
-      expect(stateTree.computeTreeBytes()).to.equal(138);
+      // 74 + 6('label1') * 2 + 10 + 6('label2') * 2 + 20 + 6('label3') * 2 + 30 = 170
+      expect(stateTree.computeTreeBytes()).to.equal(170);
     });
   });
 
