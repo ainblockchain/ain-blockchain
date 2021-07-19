@@ -5,7 +5,7 @@ const _ = require('lodash');
 const {
   CHAINS_N2B_DIR_NAME,
   CHAINS_H2N_DIR_NAME,
-  CHAINS_N2B_NUMBER_OF_MAX_FILES,
+  CHAINS_N2B_MAX_NUM_FILES,
   CHAINS_H2N_HASH_PREFIX_LENGTH,
   SNAPSHOTS_N2S_DIR_NAME,
 } = require('./constants');
@@ -15,7 +15,7 @@ const logger = require('../logger')('FILE-UTIL');
 
 class FileUtil {
   static getBlockDirPath(chainPath, blockNumber) {
-    const n2bPrefix = Math.floor(blockNumber / CHAINS_N2B_NUMBER_OF_MAX_FILES).toString();
+    const n2bPrefix = Math.floor(blockNumber / CHAINS_N2B_MAX_NUM_FILES).toString();
     return path.join(chainPath, CHAINS_N2B_DIR_NAME, n2bPrefix);
   }
 
@@ -133,7 +133,7 @@ class FileUtil {
     const blockPath = this.getBlockPath(chainPath, block.number);
     if (!fs.existsSync(blockPath)) {
       const blockDirPath = this.getBlockDirPath(chainPath, block.number);
-      if (block.number % CHAINS_N2B_NUMBER_OF_MAX_FILES === 0 && !fs.existsSync(blockDirPath)) {
+      if (block.number % CHAINS_N2B_MAX_NUM_FILES === 0 && !fs.existsSync(blockDirPath)) {
         fs.mkdirSync(this.getBlockDirPath(chainPath, block.number));
       }
       const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
