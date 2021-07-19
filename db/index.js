@@ -481,6 +481,7 @@ class DB {
     return {
       [StateInfoProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
       [StateInfoProperties.TREE_SIZE]: stateNode.getTreeSize(),
+      [StateInfoProperties.TREE_BYTES]: stateNode.getTreeBytes(),
     };
   }
 
