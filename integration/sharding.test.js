@@ -1551,7 +1551,8 @@ describe('Sharding', async () => {
                 "service": 0
               },
               "state": {
-                "service": 8
+                "app": 3130,
+                "service": 1676
               }
             },
             "gas_cost_total": 0
@@ -1660,6 +1661,7 @@ describe('Sharding', async () => {
                 "service": 0
               },
               "state": {
+                "app": 0,
                 "service": 0
               }
             },
@@ -1702,6 +1704,7 @@ describe('Sharding', async () => {
                         service: 0
                       },
                       state: {
+                        app: 24,
                         service: 0
                       }
                     },
@@ -1746,6 +1749,7 @@ describe('Sharding', async () => {
                         service: 0
                       },
                       state: {
+                        app: 24,
                         service: 0
                       }
                     },
@@ -1790,6 +1794,7 @@ describe('Sharding', async () => {
                         service: 0
                       },
                       state: {
+                        app: 24,
                         service: 0
                       }
                     },
@@ -1843,6 +1848,7 @@ describe('Sharding', async () => {
                         service: 0
                       },
                       state: {
+                        app: 24,
                         service: 0
                       }
                     },
@@ -1899,6 +1905,7 @@ describe('Sharding', async () => {
                         service: 0
                       },
                       state: {
+                        app: 24,
                         service: 0
                       }
                     },
@@ -1955,6 +1962,7 @@ describe('Sharding', async () => {
                         service: 0
                       },
                       state: {
+                        app: 24,
                         service: 0
                       }
                     },
@@ -2074,6 +2082,7 @@ describe('Sharding', async () => {
               "service": 0
             },
             "state": {
+              "app": 786,
               "service": 0
             }
           },
@@ -2149,6 +2158,7 @@ describe('Sharding', async () => {
               "service": 0
             },
             "state": {
+              "app": 812,
               "service": 0
             }
           },

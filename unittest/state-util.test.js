@@ -2248,9 +2248,9 @@ describe("state-util", () => {
         ".treeSize": 3,
         ".treeSize:label1": 1,
         ".treeSize:label2": 1,
-        ".treeBytes": 584,
-        ".treeBytes:label1": 188,
-        ".treeBytes:label2": 188,
+        ".treeBytes": 560,
+        ".treeBytes:label1": 180,
+        ".treeBytes:label2": 180,
         label1: "value1",
         label2: "value2"
       });
