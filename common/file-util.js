@@ -133,7 +133,7 @@ class FileUtil {
     const blockPath = this.getBlockPath(chainPath, block.number);
     if (!fs.existsSync(blockPath)) {
       const blockDirPath = this.getBlockDirPath(chainPath, block.number);
-      if (block.number % CHAINS_N2B_MAX_NUM_FILES === 0 && !fs.existsSync(blockDirPath)) {
+      if (!fs.existsSync(blockDirPath)) {
         fs.mkdirSync(this.getBlockDirPath(chainPath, block.number));
       }
       const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
