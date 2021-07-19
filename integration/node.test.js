@@ -874,6 +874,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
+              "app": 0,
               "service": 0
             }
           },
@@ -934,6 +935,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
+              "app": 0,
               "service": 0
             }
           },
@@ -994,6 +996,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
+              "app": 0,
               "service": 0
             }
           },
@@ -1098,6 +1101,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
+              "app": 0,
               "service": 0
             }
           },
@@ -1180,6 +1184,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
+              "app": 0,
               "service": 0
             }
           },
@@ -1290,6 +1295,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
+              "app": 0,
               "service": 0
             }
           },
@@ -1408,7 +1414,8 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
-              "service": 8
+              "app": 3342,
+              "service": 1680
             }
           },
           "gas_cost_total": 0
@@ -1517,6 +1524,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
+              "app": 0,
               "service": 0
             }
           },
@@ -1715,6 +1723,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
+                  "app": 412,
                   "service": 0
                 }
               },
@@ -1734,6 +1743,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
+                  "app": 194,
                   "service": 0
                 }
               },
@@ -1753,6 +1763,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
+                  "app": 194,
                   "service": 0
                 }
               },
@@ -1772,7 +1783,8 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "service": 8
+                  "app": 0,
+                  "service": 1680
                 }
               },
               "gas_cost_total": 0
@@ -1791,6 +1803,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
+                  "app": 798,
                   "service": 0
                 }
               },
@@ -1810,6 +1823,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
+                  "app": 1744,
                   "service": 0
                 }
               },
@@ -1853,7 +1867,8 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "service": 8
+                  "app": 3342,
+                  "service": 1680
                 }
               },
               "gas_cost_total": 0
@@ -2065,6 +2080,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
+                  "app": 412,
                   "service": 0
                 }
               },
@@ -2084,6 +2100,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
+                  "app": 194,
                   "service": 0
                 }
               },
@@ -2103,6 +2120,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
+                  "app": 194,
                   "service": 0
                 }
               },
@@ -2121,6 +2139,7 @@ describe('Blockchain Node', () => {
                   "app": {}
                 },
                 "state": {
+                  "app": 0,
                   "service": 0
                 }
               },
@@ -2140,7 +2159,8 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "service": 8
+                  "app": 0,
+                  "service": 1680
                 }
               },
               "gas_cost_total": 0
@@ -2159,6 +2179,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
+                  "app": 798,
                   "service": 0
                 }
               },
@@ -2178,6 +2199,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
+                  "app": 1744,
                   "service": 0
                 }
               },
@@ -2221,7 +2243,8 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "service": 8
+                  "app": 3342,
+                  "service": 1680
                 }
               },
               "gas_cost_total": 0
@@ -2325,6 +2348,7 @@ describe('Blockchain Node', () => {
                     service: 0
                   },
                   state: {
+                    app: 24,
                     service: 0
                   }
                 },
@@ -2378,6 +2402,7 @@ describe('Blockchain Node', () => {
                       service: 0
                     },
                     state: {
+                      app: 28,
                       service: 0
                     }
                   },
@@ -3418,6 +3443,7 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
+                "app": 0,
                 "service": 0
               }
             },
@@ -3466,6 +3492,7 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
+                "app": 0,
                 "service": 0
               }
             },
@@ -3512,6 +3539,7 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
+                "app": 1348,
                 "service": 0
               }
             },
@@ -3564,6 +3592,7 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
+                "app": 0,
                 "service": 0
               }
             },
@@ -3610,6 +3639,7 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
+                "app": 1126,
                 "service": 0
               }
             },
@@ -3662,6 +3692,7 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
+                "app": 0,
                 "service": 0
               }
             },
@@ -3708,6 +3739,7 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
+                "app": 3072,
                 "service": 0
               }
             },
@@ -4130,7 +4162,8 @@ describe('Blockchain Node', () => {
                 "service": 3
               },
               "state": {
-                "service": 12
+                "app": 2386,
+                "service": 2588
               }
             },
             "gas_cost_total": 0
@@ -4174,6 +4207,7 @@ describe('Blockchain Node', () => {
                 "service": 2
               },
               "state": {
+                "app": 0,
                 "service": 0
               }
             },
@@ -4251,7 +4285,8 @@ describe('Blockchain Node', () => {
                 "service": 3
               },
               "state": {
-                "service": 14
+                "app": 3266,
+                "service": 2984
               }
             },
             "gas_cost_total": 0
@@ -4347,7 +4382,8 @@ describe('Blockchain Node', () => {
               "service": 1004
             },
             "state": {
-              "service": 9
+              "app": 0,
+              "service": 2000
             }
           },
           "gas_cost_total": 0,
@@ -4400,7 +4436,8 @@ describe('Blockchain Node', () => {
               "service": 4
             },
             "state": {
-              "service": 6
+              "app": 0,
+              "service": 1282
             }
           },
           "gas_cost_total": 0,
@@ -4489,7 +4526,8 @@ describe('Blockchain Node', () => {
               "service": 1008
             },
             "state": {
-              "service": 19
+              "app": 0,
+              "service": 4202
             }
           },
           "gas_cost_total": 0,
@@ -4578,7 +4616,8 @@ describe('Blockchain Node', () => {
               "service": 8
             },
             "state": {
-              "service": 12
+              "app": 0,
+              "service": 2592
             }
           },
           "gas_cost_total": 0,
@@ -4608,6 +4647,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
+              "app": 232,
               "service": 0
             }
           },
@@ -4788,7 +4828,8 @@ describe('Blockchain Node', () => {
                   "service": 1004
                 },
                 "state": {
-                  "service": 10
+                  "app": 0,
+                  "service": 2250
                 }
               },
               "gas_cost_total": 0
@@ -4835,6 +4876,7 @@ describe('Blockchain Node', () => {
                   "service": 0
                 },
                 "state": {
+                  "app": 0,
                   "service": 0
                 }
               },
@@ -4945,7 +4987,8 @@ describe('Blockchain Node', () => {
                 "service": 1008
               },
               "state": {
-                "service": 19
+                "app": 0,
+                "service": 4198
               }
             },
             "gas_cost_total": 0,
@@ -5064,6 +5107,7 @@ describe('Blockchain Node', () => {
                   "service": 2
                 },
                 "state": {
+                  "app": 0,
                   "service": 0
                 }
               },
@@ -5219,7 +5263,8 @@ describe('Blockchain Node', () => {
                 "service": 7
               },
               "state": {
-                "service": 15
+                "app": 0,
+                "service": 3360
               }
             },
             "gas_cost_total": 0,
@@ -5399,7 +5444,8 @@ describe('Blockchain Node', () => {
               "service": 1006
             },
             "state": {
-              "service": 22
+              "app": 0,
+              "service": 4818
             }
           },
           "gas_cost_total": 0,
@@ -5537,7 +5583,8 @@ describe('Blockchain Node', () => {
               "service": 6
             },
             "state": {
-              "service": 16
+              "app": 0,
+              "service": 3638
             }
           },
           "gas_cost_total": 0,
@@ -5709,7 +5756,8 @@ describe('Blockchain Node', () => {
                 "service": 1
               },
               "state": {
-                "service": 6
+                "app": 0,
+                "service": 1336
               }
             },
             "gas_cost_total": 0,
@@ -5823,7 +5871,8 @@ describe('Blockchain Node', () => {
                 "service": 1006
               },
               "state": {
-                "service": 16
+                "app": 0,
+                "service": 3724
               }
             },
             "gas_cost_total": 0,
@@ -5953,7 +6002,8 @@ describe('Blockchain Node', () => {
                 "service": 6
               },
               "state": {
-                "service": 15
+                "app": 0,
+                "service": 3440
               }
             },
             "gas_cost_total": 0,
@@ -6023,7 +6073,8 @@ describe('Blockchain Node', () => {
                 "service": 1
               },
               "state": {
-                "service": 6
+                "app": 0,
+                "service": 1398
               }
             },
             "gas_cost_total": 0,
@@ -6130,7 +6181,8 @@ describe('Blockchain Node', () => {
                 "service": 1006
               },
               "state": {
-                "service": 17
+                "app": 0,
+                "service": 4170
               }
             },
             "gas_cost_total": 0,
@@ -6227,7 +6279,8 @@ describe('Blockchain Node', () => {
                 "service": 6
               },
               "state": {
-                "service": 15
+                "app": 0,
+                "service": 3564
               }
             },
             "gas_cost_total": 0,
@@ -6413,7 +6466,6 @@ describe('Blockchain Node', () => {
           timestamp: Date.now(),
         }
       }).body.toString('utf-8')).result;
-      console.log(`${JSON.stringify(txRes, null, 2)}`)
       if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
         console.error(`Failed to check finalization of app tx.`);
       }
@@ -6471,7 +6523,6 @@ describe('Blockchain Node', () => {
           timestamp: Date.now(),
         }
       }).body.toString('utf-8')).result;
-      console.log(`${JSON.stringify(txRes, null, 2)}`)
       if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
         console.error(`Failed to check finalization of app tx.`);
       }
@@ -6493,7 +6544,6 @@ describe('Blockchain Node', () => {
           timestamp: Date.now(),
         }
       }).body.toString('utf-8')).result;
-      console.log(`${JSON.stringify(txRes, null, 2)}`)
       if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
         console.error(`Failed to check finalization of app tx.`);
       }
@@ -6523,7 +6573,6 @@ describe('Blockchain Node', () => {
           timestamp: Date.now(),
         }
       }).body.toString('utf-8')).result;
-      console.log(`${JSON.stringify(txRes, null, 2)}`)
       if (!(await waitUntilTxFinalized(serverList, txRes.tx_hash))) {
         console.error(`Failed to check finalization of app tx.`);
       }

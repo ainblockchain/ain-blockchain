@@ -2346,10 +2346,11 @@ describe("DB operations", () => {
               service: 0
             },
             state: {
-              service: 0
+              app: 1102,
+              service: 16
             }
           },
-          gas_cost_total: 0
+          gas_cost_total: 16
         });
         // extra.executed_at is updated with a non-null value.
         expect(executableTx.extra.executed_at).to.not.equal(null);
@@ -2387,7 +2388,8 @@ describe("DB operations", () => {
               service: 0
             },
             state: {
-              service: 0
+              app: 3420,
+              service: 16
             }
           },
           gas_cost_total: 0,
@@ -2415,7 +2417,7 @@ describe("DB operations", () => {
         // Bloat the state tree just below the service state budget
         const addr = ainUtil.createAccount().address;
         const valueObj = {};
-        for (let i = 0; i < 74500; i++) {
+        for (let i = 0; i < 5000; i++) {
           valueObj[i] = {
             value: 1,
             result: {
@@ -2430,7 +2432,7 @@ describe("DB operations", () => {
             [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.TRANSFER, node.account.address, addr],
             valueObj);
         node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
-        expect(node.db.getStateSizeAtPath('/')).to.be.lessThan(SERVICE_STATE_BUDGET);
+        expect(node.db.getStateTreeBytesAtPath('/')).to.be.lessThan(SERVICE_STATE_BUDGET);
         
         const overSizeTxBody = {
           operation: {
@@ -2451,7 +2453,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
           "code": 25,
-          "error_message": "Exceeded state budget limit for services (459428 > 450000)",
+          "error_message": "Exceeded state budget limit for services (9091080 > 9000000)",
           "bandwidth_gas_amount": 0
         });
       });
@@ -2460,7 +2462,7 @@ describe("DB operations", () => {
         const overSizeTree = {};
         for (let i = 0; i < 1000; i++) {
           overSizeTree[i] = {};
-          for (let j = 0; j < 1000; j++) {
+          for (let j = 0; j < 50; j++) {
             overSizeTree[i][j] = 'a';
           }
         }
@@ -2477,7 +2479,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
           code: 26,
-          error_message: "Exceeded state budget limit for apps (1001130 > 450000)",
+          error_message: "Exceeded state budget limit for apps (9287388 > 9000000)",
           bandwidth_gas_amount: 0,
         });
       });
@@ -2515,7 +2517,7 @@ describe("DB operations", () => {
         const overSizeTree = {};
         for (let i = 0; i < 1000; i++) {
           overSizeTree[i] = {};
-          for (let j = 0; j < 100; j++) {
+          for (let j = 0; j < 5; j++) {
             overSizeTree[i][j] = 'a';
           }
         }
@@ -2532,7 +2534,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
           code: 28,
-          error_message: "Exceeded state budget limit for app app_0 (101013 > 40909.09090909091)",
+          error_message: "Exceeded state budget limit for app app_0 (1084406 > 818181.8181818182)",
           bandwidth_gas_amount: 0,
         });
       });
@@ -2555,7 +2557,7 @@ describe("DB operations", () => {
         const overSizeTree = {};
         for (let i = 0; i < 1000; i++) {
           overSizeTree[i] = {};
-          for (let j = 0; j < 100; j++) {
+          for (let j = 0; j < 20; j++) {
             overSizeTree[i][j] = 'a';
           }
         }
@@ -2572,7 +2574,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
           code: 27,
-          error_message: "Exceeded state budget limit for free tier (101013 > 100000)",
+          error_message: "Exceeded state budget limit for free tier (3804406 > 2000000)",
           bandwidth_gas_amount: 0,
         });
       });
@@ -4267,23 +4269,23 @@ describe("State info (getStateInfo)", () => {
 
       // Existing paths.
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 2, tree_size: 5, tree_bytes: 1054 });
+          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 2, tree_size: 5, tree_bytes: 994 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1/label11'), { tree_height: 0, tree_size: 1, tree_bytes: 194 });
+          node.db.getStateInfo('/values/apps/test/label1/label11'), { tree_height: 0, tree_size: 1, tree_bytes: 182 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1/label12'), { tree_height: 1, tree_size: 3, tree_bytes: 636 });
+          node.db.getStateInfo('/values/apps/test/label1/label12'), { tree_height: 1, tree_size: 3, tree_bytes: 600 });
       assert.deepEqual(
           node.db.getStateInfo('/values/apps/test/label1/label12/label121'),
-          { tree_height: 0, tree_size: 1, tree_bytes: 204 });
+          { tree_height: 0, tree_size: 1, tree_bytes: 192 });
       assert.deepEqual(
           node.db.getStateInfo('/values/apps/test/label1/label12/label122'),
-          { tree_height: 0, tree_size: 1, tree_bytes: 204 });
+          { tree_height: 0, tree_size: 1, tree_bytes: 192 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 1, tree_size: 3, tree_bytes: 612 });
+          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 1, tree_size: 3, tree_bytes: 576 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label21'), { tree_height: 0, tree_size: 1, tree_bytes: 194 });
+          node.db.getStateInfo('/values/apps/test/label2/label21'), { tree_height: 0, tree_size: 1, tree_bytes: 182 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label22'), { tree_height: 0, tree_size: 1, tree_bytes: 194 });
+          node.db.getStateInfo('/values/apps/test/label2/label22'), { tree_height: 0, tree_size: 1, tree_bytes: 182 });
 
       // Non-existing paths.
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/non-existing/path'), null);
@@ -4296,12 +4298,12 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(result.code, 0);
 
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 1, tree_size: 2, tree_bytes: 396 });
+          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 1, tree_size: 2, tree_bytes: 372 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1/label11'), { tree_height: 0, tree_size: 1, tree_bytes: 194 });
+          node.db.getStateInfo('/values/apps/test/label1/label11'), { tree_height: 0, tree_size: 1, tree_bytes: 182 });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12'), null);
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 1, tree_size: 3, tree_bytes: 612 });
+          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 1, tree_size: 3, tree_bytes: 576 });
     });
   });
 
@@ -4314,19 +4316,19 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(result.code, 0);
 
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 2, tree_size: 5, tree_bytes: 1038 });
+          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 2, tree_size: 5, tree_bytes: 978 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 2, tree_size: 5, tree_bytes: 1038 });
+          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 2, tree_size: 5, tree_bytes: 978 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label21'), { tree_height: 1, tree_size: 3, tree_bytes: 620 });
+          node.db.getStateInfo('/values/apps/test/label2/label21'), { tree_height: 1, tree_size: 3, tree_bytes: 584 });
       assert.deepEqual(
           node.db.getStateInfo('/values/apps/test/label2/label21/label211'),
-          { tree_height: 0, tree_size: 1, tree_bytes: 196 });
+          { tree_height: 0, tree_size: 1, tree_bytes: 184 });
       assert.deepEqual(
           node.db.getStateInfo('/values/apps/test/label2/label21/label212'),
-          { tree_height: 0, tree_size: 1, tree_bytes: 196 });
+          { tree_height: 0, tree_size: 1, tree_bytes: 184 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label22'), { tree_height: 0, tree_size: 1, tree_bytes: 194 });
+          node.db.getStateInfo('/values/apps/test/label2/label22'), { tree_height: 0, tree_size: 1, tree_bytes: 182 });
     });
   });
 });
