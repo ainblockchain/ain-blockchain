@@ -70,7 +70,8 @@ class StateNode {
         sizeof(this.proofHash) +
         sizeof(this.treeHeight) +
         sizeof(this.treeSize) +
-        sizeof(this.treeBytes);
+        sizeof(this.treeBytes) +
+        (this.numParents() + this.numChildren()) * JS_REF_SIZE_IN_BYTES;
   }
 
   static fromJsObject(obj, version) {
@@ -323,10 +324,9 @@ class StateNode {
 
   computeTreeBytes() {
     if (this.getIsLeaf()) {
-      return this.numParents() * JS_REF_SIZE_IN_BYTES + this.computeNodeBytes();
+      return this.computeNodeBytes();
     } else {
-      return (this.numParents() + this.numChildren()) * JS_REF_SIZE_IN_BYTES +
-          this.getChildLabels().reduce((acc, label) => {
+      return this.getChildLabels().reduce((acc, label) => {
         const child = this.getChild(label);
         return acc + sizeof(label) + CommonUtil.numberOrZero(child.getTreeBytes());
       }, this.computeNodeBytes());
