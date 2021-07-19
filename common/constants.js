@@ -71,6 +71,8 @@ if (!fs.existsSync(BLOCKCHAIN_DATA_DIR)) {
 const CHAINS_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'chains');
 const CHAINS_N2B_DIR_NAME = 'n2b'; // NOTE: Block number to block.
 const CHAINS_H2N_DIR_NAME = 'h2n'; // NOTE: Block hash to block number.
+const CHAINS_N2B_MAX_NUM_FILES = 100000;
+const CHAINS_H2N_HASH_PREFIX_LENGTH = 5;
 const SNAPSHOTS_ROOT_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'snapshots');
 const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // NOTE: Block number to snapshot.
 const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // NOTE: How often the snapshot is made
@@ -752,6 +754,8 @@ module.exports = {
   CHAINS_DIR,
   CHAINS_N2B_DIR_NAME,
   CHAINS_H2N_DIR_NAME,
+  CHAINS_N2B_MAX_NUM_FILES,
+  CHAINS_H2N_HASH_PREFIX_LENGTH,
   SNAPSHOTS_ROOT_DIR,
   SNAPSHOTS_N2S_DIR_NAME,
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,

@@ -5,6 +5,8 @@ const _ = require('lodash');
 const {
   CHAINS_N2B_DIR_NAME,
   CHAINS_H2N_DIR_NAME,
+  CHAINS_N2B_MAX_NUM_FILES,
+  CHAINS_H2N_HASH_PREFIX_LENGTH,
   SNAPSHOTS_N2S_DIR_NAME,
 } = require('./constants');
 const CommonUtil = require('./common-util');
@@ -12,17 +14,27 @@ const JSON_GZIP_FILE_EXTENSION = 'json.gz';
 const logger = require('../logger')('FILE-UTIL');
 
 class FileUtil {
+  static getBlockDirPath(chainPath, blockNumber) {
+    const n2bPrefix = Math.floor(blockNumber / CHAINS_N2B_MAX_NUM_FILES).toString();
+    return path.join(chainPath, CHAINS_N2B_DIR_NAME, n2bPrefix);
+  }
+
   static getBlockPath(chainPath, blockNumber) {
     if (blockNumber < 0) return null;
-    return path.join(chainPath, CHAINS_N2B_DIR_NAME, this.getBlockFilenameByNumber(blockNumber));
+    return path.join(this.getBlockDirPath(chainPath, blockNumber), this.getBlockFilenameByNumber(blockNumber));
   }
 
   static getSnapshotPathByBlockNumber(snapshotPath, blockNumber) {
     return path.join(snapshotPath, SNAPSHOTS_N2S_DIR_NAME, this.getBlockFilenameByNumber(blockNumber));
   }
 
+  static getHashToNumberDirPath(chainPath, blockHash) {
+    const h2nPrefix = blockHash.substring(0, CHAINS_H2N_HASH_PREFIX_LENGTH);
+    return path.join(chainPath, CHAINS_H2N_DIR_NAME, h2nPrefix);
+  }
+
   static getHashToNumberPath(chainPath, blockHash) {
-    return path.join(chainPath, CHAINS_H2N_DIR_NAME, blockHash);
+    return path.join(this.getHashToNumberDirPath(chainPath, blockHash), blockHash);
   }
 
   static getBlockFilenameByNumber(blockNumber) {
@@ -120,6 +132,10 @@ class FileUtil {
   static writeBlock(chainPath, block) {
     const blockPath = this.getBlockPath(chainPath, block.number);
     if (!fs.existsSync(blockPath)) {
+      const blockDirPath = this.getBlockDirPath(chainPath, block.number);
+      if (!fs.existsSync(blockDirPath)) {
+        fs.mkdirSync(blockDirPath);
+      }
       const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
       fs.writeFileSync(blockPath, compressed);
     } else {
@@ -134,6 +150,10 @@ class FileUtil {
     }
     const hashToNumberPath = this.getHashToNumberPath(chainPath, blockHash);
     if (!fs.existsSync(hashToNumberPath)) {
+      const hashToNumberDirPath = this.getHashToNumberDirPath(chainPath, blockHash);
+      if (!fs.existsSync(hashToNumberDirPath)) {
+        fs.mkdirSync(hashToNumberDirPath);
+      }
       fs.writeFileSync(hashToNumberPath, blockNumber);
     } else {
       logger.debug(`${hashToNumberPath} file already exists!`);
