@@ -18,9 +18,9 @@ class StateNode {
     // Used for leaf nodes only.
     this.value = null;
     this.proofHash = null;
-    this.treeHeight = -1;
-    this.treeSize = -1;
-    this.treeBytes = -1;
+    this.treeHeight = 0;
+    this.treeSize = 0;
+    this.treeBytes = 0;
   }
 
   static _create(version, isLeaf, value, proofHash, treeHeight, treeSize, treeBytes) {
