@@ -4115,23 +4115,23 @@ describe("State info (getStateInfo)", () => {
 
       // Existing paths.
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 2, tree_size: 5 });
+          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 2, tree_size: 5, tree_bytes: 982 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1/label11'), { tree_height: 0, tree_size: 1 });
+          node.db.getStateInfo('/values/apps/test/label1/label11'), { tree_height: 0, tree_size: 1, tree_bytes: 186 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1/label12'), { tree_height: 1, tree_size: 3 });
+          node.db.getStateInfo('/values/apps/test/label1/label12'), { tree_height: 1, tree_size: 3, tree_bytes: 596 });
       assert.deepEqual(
           node.db.getStateInfo('/values/apps/test/label1/label12/label121'),
-          { tree_height: 0, tree_size: 1 });
+          { tree_height: 0, tree_size: 1, tree_bytes: 196 });
       assert.deepEqual(
           node.db.getStateInfo('/values/apps/test/label1/label12/label122'),
-          { tree_height: 0, tree_size: 1 });
+          { tree_height: 0, tree_size: 1, tree_bytes: 196 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 1, tree_size: 3 });
+          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 1, tree_size: 3, tree_bytes: 572 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label21'), { tree_height: 0, tree_size: 1 });
+          node.db.getStateInfo('/values/apps/test/label2/label21'), { tree_height: 0, tree_size: 1, tree_bytes: 186 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label22'), { tree_height: 0, tree_size: 1 });
+          node.db.getStateInfo('/values/apps/test/label2/label22'), { tree_height: 0, tree_size: 1, tree_bytes: 186 });
 
       // Non-existing paths.
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/non-existing/path'), null);
@@ -4144,12 +4144,12 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(result.code, 0);
 
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 1, tree_size: 2 });
+          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 1, tree_size: 2, tree_bytes: 372 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1/label11'), { tree_height: 0, tree_size: 1 });
+          node.db.getStateInfo('/values/apps/test/label1/label11'), { tree_height: 0, tree_size: 1, tree_bytes: 186 });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12'), null);
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 1, tree_size: 3 });
+          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 1, tree_size: 3, tree_bytes: 572 });
     });
   });
 
@@ -4162,19 +4162,19 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(result.code, 0);
 
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 2, tree_size: 5 });
+          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 2, tree_size: 5, tree_bytes: 966 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 2, tree_size: 5 });
+          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 2, tree_size: 5, tree_bytes: 966 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label21'), { tree_height: 1, tree_size: 3 });
+          node.db.getStateInfo('/values/apps/test/label2/label21'), { tree_height: 1, tree_size: 3, tree_bytes: 580 });
       assert.deepEqual(
           node.db.getStateInfo('/values/apps/test/label2/label21/label211'),
-          { tree_height: 0, tree_size: 1 });
+          { tree_height: 0, tree_size: 1, tree_bytes: 188 });
       assert.deepEqual(
           node.db.getStateInfo('/values/apps/test/label2/label21/label212'),
-          { tree_height: 0, tree_size: 1 });
+          { tree_height: 0, tree_size: 1, tree_bytes: 188 });
       assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label22'), { tree_height: 0, tree_size: 1 });
+          node.db.getStateInfo('/values/apps/test/label2/label22'), { tree_height: 0, tree_size: 1, tree_bytes: 186 });
     });
   });
 });
