@@ -90,13 +90,13 @@ const SERVICE_STATE_BUDGET_RATIO = 0.45;
 const APPS_STATE_BUDGET_RATIO = 0.45;
 const FREE_STATE_BUDGET_RATIO = 0.1;
 const bandwidthBudgetPerBlock = GenesisParams.resource.BANDWIDTH_BUDGET_PER_BLOCK;
-const treeSizeLimit = GenesisParams.resource.TREE_SIZE_LIMIT;
+const stateTreeBytesLimit = GenesisParams.resource.STATE_TREE_BYTES_LIMIT; // = Total state budget
 const SERVICE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * SERVICE_BANDWIDTH_BUDGET_RATIO;
 const APPS_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * APPS_BANDWIDTH_BUDGET_RATIO;
 const FREE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * FREE_BANDWIDTH_BUDGET_RATIO;
-const SERVICE_STATE_BUDGET = treeSizeLimit * SERVICE_STATE_BUDGET_RATIO;
-const APPS_STATE_BUDGET = treeSizeLimit * APPS_STATE_BUDGET_RATIO;
-const FREE_STATE_BUDGET = treeSizeLimit * FREE_STATE_BUDGET_RATIO;
+const SERVICE_STATE_BUDGET = stateTreeBytesLimit * SERVICE_STATE_BUDGET_RATIO;
+const APPS_STATE_BUDGET = stateTreeBytesLimit * APPS_STATE_BUDGET_RATIO;
+const FREE_STATE_BUDGET = stateTreeBytesLimit * FREE_STATE_BUDGET_RATIO;
 const STATE_GAS_CONSTANT = 1;
 
 // ** Enums **
