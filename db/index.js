@@ -483,8 +483,9 @@ class DB {
       return null;
     }
     return {
-      [StateInfoProperties.TREE_HEIGHT]: CommonUtil.numberOrZero(stateNode.getTreeHeight()),
-      [StateInfoProperties.TREE_SIZE]: CommonUtil.numberOrZero(stateNode.getTreeSize()),
+      [StateInfoProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
+      [StateInfoProperties.TREE_SIZE]: stateNode.getTreeSize(),
+      [StateInfoProperties.TREE_BYTES]: stateNode.getTreeBytes(),
     };
   }
 

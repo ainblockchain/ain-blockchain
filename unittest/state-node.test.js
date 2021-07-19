@@ -48,6 +48,7 @@ describe("state-node", () => {
   describe("Initialization with version", () => {
     it("constructor", () => {
       const node2 = new StateNode('version1');
+      expect(node2.version).to.equal('version1');
       expect(node2.isLeaf).to.equal(true);
       expect(node2.parentSet).to.not.be.null;
       expect(node2.childMap).to.not.be.null;
@@ -57,7 +58,9 @@ describe("state-node", () => {
       assert.deepEqual(node2.getChildNodes(), []);
       expect(node2.value).to.equal(null);
       expect(node2.proofHash).to.equal(null);
-      expect(node2.version).to.equal('version1');
+      expect(node2.treeHeight).to.equal(0);
+      expect(node2.treeSize).to.equal(0);
+      expect(node2.treeBytes).to.equal(0);
     });
   });
 
@@ -68,13 +71,16 @@ describe("state-node", () => {
       node.setVersion('version1');
 
       const clone = node.clone();
+      expect(clone.getVersion()).to.equal(node.getVersion());
       expect(clone.getIsLeaf()).to.equal(true);
       assert.deepEqual(clone.getParentNodes(), []);
       assert.deepEqual(clone.getChildLabels(), []);
       assert.deepEqual(clone.getChildNodes(), []);
       expect(clone.getValue()).to.equal('value0');
       expect(clone.getProofHash()).to.equal('hash');
-      expect(clone.getVersion()).to.equal(node.getVersion());
+      expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
+      expect(clone.getTreeSize()).to.equal(node.getTreeSize());
+      expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
       assert.deepEqual(clone.toJsObject(true), node.toJsObject(true));
       expect(node.equal(clone)).to.equal(true);
     });
@@ -88,6 +94,7 @@ describe("state-node", () => {
       assert.deepEqual(child3.getParentNodes(), [stateTree]);
 
       const clone = stateTree.clone();
+      expect(clone.getVersion()).to.equal(stateTree.getVersion());
       expect(clone.getIsLeaf()).to.equal(false);
       assert.deepEqual(child1.getParentNodes(), [stateTree, clone]);
       assert.deepEqual(child2.getParentNodes(), [stateTree, clone]);
@@ -97,7 +104,9 @@ describe("state-node", () => {
       assert.deepEqual(clone.getChildNodes(), stateTree.getChildNodes());
       expect(clone.getValue()).to.equal(null);
       expect(clone.getProofHash()).to.equal('hash');
-      expect(clone.getVersion()).to.equal(stateTree.getVersion());
+      expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
+      expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
+      expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
       assert.deepEqual(clone.toJsObject(true), stateTree.toJsObject(true));
       expect(stateTree.equal(clone)).to.equal(true);
     });
@@ -110,13 +119,16 @@ describe("state-node", () => {
       node.setVersion('version1');
 
       const clone = node.clone('version2');
+      expect(clone.getVersion()).to.equal('version2');
       expect(clone.getIsLeaf()).to.equal(true);
       assert.deepEqual(clone.getParentNodes(), []);
       assert.deepEqual(clone.getChildLabels(), []);
       assert.deepEqual(clone.getChildNodes(), []);
       expect(clone.getValue()).to.equal('value0');
       expect(clone.getProofHash()).to.equal('hash');
-      expect(clone.getVersion()).to.equal('version2');
+      expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
+      expect(clone.getTreeSize()).to.equal(node.getTreeSize());
+      expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
     });
 
     it("internal node", () => {
@@ -128,6 +140,7 @@ describe("state-node", () => {
       assert.deepEqual(child3.getParentNodes(), [stateTree]);
 
       const clone = stateTree.clone('version2');
+      expect(clone.getVersion()).to.equal('version2');
       expect(clone.getIsLeaf()).to.equal(false);
       assert.deepEqual(child1.getParentNodes(), [stateTree, clone]);
       assert.deepEqual(child2.getParentNodes(), [stateTree, clone]);
@@ -137,7 +150,9 @@ describe("state-node", () => {
       assert.deepEqual(clone.getChildNodes(), stateTree.getChildNodes());
       expect(clone.getValue()).to.equal(null);
       expect(clone.getProofHash()).to.equal('hash');
-      expect(clone.getVersion()).to.equal('version2');
+      expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
+      expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
+      expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
     });
   });
 
@@ -343,22 +358,30 @@ describe("state-node", () => {
         ".proofHash:number": null,
         ".proofHash:str": null,
         ".proofHash:undef": null,
-        ".treeHeight": null,
-        ".treeHeight:bool": null,
-        ".treeHeight:empty_obj": null,
-        ".treeHeight:empty_str": null,
-        ".treeHeight:null": null,
-        ".treeHeight:number": null,
-        ".treeHeight:str": null,
-        ".treeHeight:undef": null,
-        ".treeSize": null,
-        ".treeSize:bool": null,
-        ".treeSize:empty_obj": null,
-        ".treeSize:empty_str": null,
-        ".treeSize:null": null,
-        ".treeSize:number": null,
-        ".treeSize:str": null,
-        ".treeSize:undef": null,
+        ".treeHeight": 0,
+        ".treeHeight:bool": 0,
+        ".treeHeight:empty_obj": 0,
+        ".treeHeight:empty_str": 0,
+        ".treeHeight:null": 0,
+        ".treeHeight:number": 0,
+        ".treeHeight:str": 0,
+        ".treeHeight:undef": 0,
+        ".treeSize": 0,
+        ".treeSize:bool": 0,
+        ".treeSize:empty_obj": 0,
+        ".treeSize:empty_str": 0,
+        ".treeSize:null": 0,
+        ".treeSize:number": 0,
+        ".treeSize:str": 0,
+        ".treeSize:undef": 0,
+        ".treeBytes": 0,
+        ".treeBytes:bool": 0,
+        ".treeBytes:empty_obj": 0,
+        ".treeBytes:empty_str": 0,
+        ".treeBytes:null": 0,
+        ".treeBytes:number": 0,
+        ".treeBytes:str": 0,
+        ".treeBytes:undef": 0,
         bool: false,
         number: 10,
         str: 'str',
@@ -391,22 +414,30 @@ describe("state-node", () => {
           ".proofHash:number": null,
           ".proofHash:str": null,
           ".proofHash:undef": null,
-          ".treeHeight": null,
-          ".treeHeight:bool": null,
-          ".treeHeight:empty_obj": null,
-          ".treeHeight:empty_str": null,
-          ".treeHeight:null": null,
-          ".treeHeight:number": null,
-          ".treeHeight:str": null,
-          ".treeHeight:undef": null,
-          ".treeSize": null,
-          ".treeSize:bool": null,
-          ".treeSize:empty_obj": null,
-          ".treeSize:empty_str": null,
-          ".treeSize:null": null,
-          ".treeSize:number": null,
-          ".treeSize:str": null,
-          ".treeSize:undef": null,
+          ".treeHeight": 0,
+          ".treeHeight:bool": 0,
+          ".treeHeight:empty_obj": 0,
+          ".treeHeight:empty_str": 0,
+          ".treeHeight:null": 0,
+          ".treeHeight:number": 0,
+          ".treeHeight:str": 0,
+          ".treeHeight:undef": 0,
+          ".treeSize": 0,
+          ".treeSize:bool": 0,
+          ".treeSize:empty_obj": 0,
+          ".treeSize:empty_str": 0,
+          ".treeSize:null": 0,
+          ".treeSize:number": 0,
+          ".treeSize:str": 0,
+          ".treeSize:undef": 0,
+          ".treeBytes": 0,
+          ".treeBytes:bool": 0,
+          ".treeBytes:empty_obj": 0,
+          ".treeBytes:empty_str": 0,
+          ".treeBytes:null": 0,
+          ".treeBytes:number": 0,
+          ".treeBytes:str": 0,
+          ".treeBytes:undef": 0,
           bool: true,
           number: 20,
           str: 'str2',
@@ -440,22 +471,30 @@ describe("state-node", () => {
           ".proofHash:number": null,
           ".proofHash:str": null,
           ".proofHash:undef": null,
-          ".treeHeight": null,
-          ".treeHeight:bool": null,
-          ".treeHeight:empty_obj": null,
-          ".treeHeight:empty_str": null,
-          ".treeHeight:null": null,
-          ".treeHeight:number": null,
-          ".treeHeight:str": null,
-          ".treeHeight:undef": null,
-          ".treeSize": null,
-          ".treeSize:bool": null,
-          ".treeSize:empty_obj": null,
-          ".treeSize:empty_str": null,
-          ".treeSize:null": null,
-          ".treeSize:number": null,
-          ".treeSize:str": null,
-          ".treeSize:undef": null,
+          ".treeHeight": 0,
+          ".treeHeight:bool": 0,
+          ".treeHeight:empty_obj": 0,
+          ".treeHeight:empty_str": 0,
+          ".treeHeight:null": 0,
+          ".treeHeight:number": 0,
+          ".treeHeight:str": 0,
+          ".treeHeight:undef": 0,
+          ".treeSize": 0,
+          ".treeSize:bool": 0,
+          ".treeSize:empty_obj": 0,
+          ".treeSize:empty_str": 0,
+          ".treeSize:null": 0,
+          ".treeSize:number": 0,
+          ".treeSize:str": 0,
+          ".treeSize:undef": 0,
+          ".treeBytes": 0,
+          ".treeBytes:bool": 0,
+          ".treeBytes:empty_obj": 0,
+          ".treeBytes:empty_str": 0,
+          ".treeBytes:null": 0,
+          ".treeBytes:number": 0,
+          ".treeBytes:str": 0,
+          ".treeBytes:undef": 0,
           bool: true,
           number: -10,
           str: 'str3',
@@ -972,7 +1011,7 @@ describe("state-node", () => {
 
   describe("tree height", () => {
     it("getTreeHeight / setTreeHeight", () => {
-      expect(node.getTreeHeight()).to.equal(null);
+      expect(node.getTreeHeight()).to.equal(0);
       node.setTreeHeight(10);
       expect(node.getTreeHeight()).to.equal(10);
       node.setTreeHeight(5);
@@ -982,11 +1021,21 @@ describe("state-node", () => {
 
   describe("tree size", () => {
     it("getTreeSize / setTreeSize", () => {
-      expect(node.getTreeSize()).to.equal(null);
+      expect(node.getTreeSize()).to.equal(0);
       node.setTreeSize(10);
       expect(node.getTreeSize()).to.equal(10);
       node.setTreeSize(5);
       expect(node.getTreeSize()).to.equal(5);
+    });
+  });
+
+  describe("tree bytes", () => {
+    it("getTreeBytes / setTreeBytes", () => {
+      expect(node.getTreeBytes()).to.equal(0);
+      node.setTreeBytes(10);
+      expect(node.getTreeBytes()).to.equal(10);
+      node.setTreeBytes(5);
+      expect(node.getTreeBytes()).to.equal(5);
     });
   });
 
@@ -1021,6 +1070,32 @@ describe("state-node", () => {
     });
   });
 
+  describe("computeTreeHeight", () => {
+    it("leaf node", () => {
+      node.setValue(true);
+      expect(node.computeTreeHeight()).to.equal(0);
+      node.setValue(10);
+      expect(node.computeTreeHeight()).to.equal(0);
+      node.setValue(-200);
+      expect(node.computeTreeHeight()).to.equal(0);
+      node.setValue('');
+      expect(node.computeTreeHeight()).to.equal(0);
+      node.setValue('unittest');
+      expect(node.computeTreeHeight()).to.equal(0);
+      node.setValue(null);
+      expect(node.computeTreeHeight()).to.equal(0);
+      node.setValue(undefined);
+      expect(node.computeTreeHeight()).to.equal(0);
+    });
+
+    it("internal node", () => {
+      child1.setTreeHeight(0);
+      child2.setTreeHeight(1);
+      child3.setTreeHeight(2);
+      expect(stateTree.computeTreeHeight()).to.equal(3);
+    });
+  });
+
   describe("computeTreeSize", () => {
     it("leaf node", () => {
       node.setValue(true);
@@ -1047,29 +1122,55 @@ describe("state-node", () => {
     });
   });
 
-  describe("computeTreeHeight", () => {
+  describe("computeTreeBytes", () => {
     it("leaf node", () => {
-      node.setValue(true);
-      expect(node.computeTreeHeight()).to.equal(0);
-      node.setValue(10);
-      expect(node.computeTreeHeight()).to.equal(0);
-      node.setValue(-200);
-      expect(node.computeTreeHeight()).to.equal(0);
-      node.setValue('');
-      expect(node.computeTreeHeight()).to.equal(0);
-      node.setValue('unittest');
-      expect(node.computeTreeHeight()).to.equal(0);
-      node.setValue(null);
-      expect(node.computeTreeHeight()).to.equal(0);
-      node.setValue(undefined);
-      expect(node.computeTreeHeight()).to.equal(0);
+      const parent = new StateNode();
+      parent.setChild('child', node);
+
+      // node.parentSet : ref set (1 * 8 = 8 bytes)
+      node.setVersion('ver');  // string (3 * 2 = 6 bytes)
+      // node.isLeaf : boolean (4 bytses)
+      node.setProofHash('hash');  // string (4 * 2 = 8 bytses)
+      // node.treeHeight : number (8 bytses)
+      // node.treeSize : number (8 bytses)
+      // node.treeBytes : number (8 bytes)
+      // TOTAL: 50 bytes
+
+      node.setValue(true);  // boolean (4 bytes)
+      expect(node.computeTreeBytes()).to.equal(54);
+      node.setValue(10);  // number (8 bytes)
+      expect(node.computeTreeBytes()).to.equal(58);
+      node.setValue(-200);  // number (8 bytes)
+      expect(node.computeTreeBytes()).to.equal(58);
+      node.setValue('');  // string (0 * 2 = 0 bytes)
+      expect(node.computeTreeBytes()).to.equal(50);
+      node.setValue('str');  // string (3 * 2 = 6 bytes)
+      expect(node.computeTreeBytes()).to.equal(56);
+      node.setValue(null);  // null (0 bytes)
+      expect(node.computeTreeBytes()).to.equal(50);
+      node.setValue(undefined);  // undefined (0 bytes)
+      expect(node.computeTreeBytes()).to.equal(50);
     });
 
     it("internal node", () => {
-      child1.setTreeHeight(0);
-      child2.setTreeHeight(1);
-      child3.setTreeHeight(2);
-      expect(stateTree.computeTreeHeight()).to.equal(3);
+      const parent = new StateNode();
+      parent.setChild('child', stateTree);
+
+      // stateTree.parentSet : ref set (1 * 8 = 8 bytes)
+      // stateTree.childMap : ref map (3 * 8 = 24 bytes)
+      stateTree.setVersion('ver');  // string (3 * 2 = 6 bytes)
+      // stateTree.isLeaf : boolean (4 bytses)
+      stateTree.setProofHash('hash');  // string (4 * 2 = 8 bytses)
+      // stateTree.treeHeight : number (8 bytses)
+      // stateTree.treeSize : number (8 bytses)
+      // stateTree.treeBytes : number (8 bytes)
+      // TOTAL: 74 bytes
+
+      child1.setTreeBytes(10);
+      child2.setTreeBytes(20);
+      child3.setTreeBytes(30);
+      // 74 + 6('label1') * 2 + 10 + 6('label2') * 2 + 20 + 6('label3') * 2 + 30 = 170
+      expect(stateTree.computeTreeBytes()).to.equal(170);
     });
   });
 

@@ -1,9 +1,14 @@
 const logger = require('../logger')('STATE_NODE');
 
+const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
-const { HASH_DELIMITER } = require('../common/constants');
+const {
+  HASH_DELIMITER,
+  JS_REF_SIZE_IN_BYTES,
+} = require('../common/constants');
 
 class StateNode {
+  // NOTE(seo): Once new member variables are added, computeNodeBytes() should be updated.
   constructor(version) {
     this.version = version || null;
     this.isLeaf = true;
@@ -13,23 +18,25 @@ class StateNode {
     // Used for leaf nodes only.
     this.value = null;
     this.proofHash = null;
-    this.treeHeight = null;
-    this.treeSize = null;
+    this.treeHeight = 0;
+    this.treeSize = 0;
+    this.treeBytes = 0;
   }
 
-  static _create(version, isLeaf, value, proofHash, treeHeight, treeSize) {
+  static _create(version, isLeaf, value, proofHash, treeHeight, treeSize, treeBytes) {
     const node = new StateNode(version);
     node.setIsLeaf(isLeaf);
     node.setValue(value);
     node.setProofHash(proofHash);
     node.setTreeHeight(treeHeight);
     node.setTreeSize(treeSize);
+    node.setTreeBytes(treeBytes);
     return node;
   }
 
   clone(version) {
     const cloned = StateNode._create(version ? version : this.version,
-        this.isLeaf, this.value, this.proofHash, this.treeHeight, this.treeSize);
+        this.isLeaf, this.value, this.proofHash, this.treeHeight, this.treeSize, this.treeBytes);
     for (const label of this.getChildLabels()) {
       const child = this.getChild(label);
       cloned.setChild(label, child);
@@ -52,7 +59,19 @@ class StateNode {
         that.proofHash === this.proofHash &&
         that.version === this.version &&
         that.treeHeight === this.treeHeight &&
-        that.treeSize === this.treeSize);
+        that.treeSize === this.treeSize &&
+        that.treeBytes === this.treeBytes);
+  }
+
+  computeNodeBytes() {
+    return sizeof(this.version) +
+        sizeof(this.isLeaf) +
+        sizeof(this.value) +
+        sizeof(this.proofHash) +
+        sizeof(this.treeHeight) +
+        sizeof(this.treeSize) +
+        sizeof(this.treeBytes) +
+        (this.numParents() + this.numChildren()) * JS_REF_SIZE_IN_BYTES;
   }
 
   static fromJsObject(obj, version) {
@@ -85,6 +104,7 @@ class StateNode {
           obj[`.proofHash:${label}`] = childNode.getProofHash();
           obj[`.treeHeight:${label}`] = childNode.getTreeHeight();
           obj[`.treeSize:${label}`] = childNode.getTreeSize();
+          obj[`.treeBytes:${label}`] = childNode.getTreeBytes();
         }
       }
     }
@@ -94,6 +114,7 @@ class StateNode {
       obj[`.proofHash`] = this.getProofHash();
       obj[`.treeHeight`] = this.getTreeHeight();
       obj[`.treeSize`] = this.getTreeSize();
+      obj[`.treeBytes`] = this.getTreeBytes();
     }
 
     return obj;
@@ -259,6 +280,14 @@ class StateNode {
     this.treeSize = treeSize;
   }
 
+  getTreeBytes() {
+    return this.treeBytes;
+  }
+
+  setTreeBytes(treeBytes) {
+    this.treeBytes = treeBytes;
+  }
+
   buildProofHash() {
     let preimage;
     if (this.getIsLeaf()) {
@@ -293,10 +322,22 @@ class StateNode {
     }
   }
 
+  computeTreeBytes() {
+    if (this.getIsLeaf()) {
+      return this.computeNodeBytes();
+    } else {
+      return this.getChildLabels().reduce((acc, label) => {
+        const child = this.getChild(label);
+        return acc + sizeof(label) + CommonUtil.numberOrZero(child.getTreeBytes());
+      }, this.computeNodeBytes());
+    }
+  }
+
   updateProofHashAndStateInfo() {
     this.setProofHash(this.buildProofHash());
     this.setTreeHeight(this.computeTreeHeight());
     this.setTreeSize(this.computeTreeSize());
+    this.setTreeBytes(this.computeTreeBytes());
   }
 }
 
