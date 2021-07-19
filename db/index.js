@@ -905,7 +905,7 @@ class DB {
       }
     }
     let result;
-    const { serviceStateSize: serviceStateSizeBefore } = this.getStateSizes();
+    const stateTreeBytesBefore = this.getStateTreeBytes();
     if (op.type === WriteDbOperations.SET) {
       result = this.executeMultiSetOperation(op.op_list, auth, timestamp, tx);
     } else {
@@ -914,7 +914,7 @@ class DB {
     const gasPrice = tx.tx_body.gas_price;
     const gasAmountTotal = {
       bandwidth: CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, result),
-      state: { service: 0 }
+      state: { service: 0, app: 0 }
     };
     result.gas_amount_total = gasAmountTotal;
     result.gas_cost_total = 0;
@@ -922,10 +922,11 @@ class DB {
     if (!CommonUtil.isFailedTx(result)) {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
-      const { appStateSize, serviceStateSize: serviceStateSizeAfter } = this.getStateSizes();
+      const stateTreeBytesAfter = this.getStateTreeBytes();
       tx.setExtraField('gas', gasAmountTotal);
-      DB.updateStateGasAmounts(tx, result, serviceStateSizeBefore, serviceStateSizeAfter);
-      const stateGasBudgetCheck = this.checkStateGasBudgets(op, appStateSize, serviceStateSizeAfter);
+      DB.updateStateGasAmounts(tx, result, stateTreeBytesBefore, stateTreeBytesAfter);
+      const stateGasBudgetCheck = this.checkStateGasBudgets(
+          op, stateTreeBytesAfter.apps, stateTreeBytesAfter.service);
       if (stateGasBudgetCheck !== true) {
         return stateGasBudgetCheck;
       }
@@ -947,63 +948,67 @@ class DB {
     return result;
   }
 
-  static updateStateGasAmounts(tx, result, serviceStateSizeBefore, serviceStateSizeAfter) {
+  static updateStateGasAmounts(tx, result, stateTreeBytesBefore, stateTreeBytesAfter) {
     const LOG_HEADER = 'updateStateGasAmounts';
-    const serviceStateSizeDelta = Math.max(serviceStateSizeAfter - serviceStateSizeBefore, 0);
-    logger.debug(`[${LOG_HEADER}] serviceStateSizeDelta: ${serviceStateSizeDelta}`);
+    const serviceStateBytesDelta = Math.max(stateTreeBytesAfter.service - stateTreeBytesBefore.service, 0);
+    const appStateBytesDelta = Math.max(stateTreeBytesAfter.apps - stateTreeBytesBefore.apps, 0);
+    logger.debug(`[${LOG_HEADER}] serviceStateBytesDelta: ${serviceStateBytesDelta}, appStateBytesDelta: ${appStateBytesDelta}`);
     const txGas = _.get(tx, 'extra.gas', {
       bandwidth: { service: 0, app: {} },
-      state: { service: 0 }
+      state: { service: 0, app: 0 }
     });
-    CommonUtil.setJsObject(txGas, ['state', 'service'], serviceStateSizeDelta * STATE_GAS_CONSTANT);
-    CommonUtil.setJsObject(result, ['gas_amount_total', 'state'], { service: txGas.state.service });
+    CommonUtil.setJsObject(txGas, ['state'], {
+      service: serviceStateBytesDelta * STATE_GAS_CONSTANT,
+      app: appStateBytesDelta * STATE_GAS_CONSTANT
+    });
+    CommonUtil.setJsObject(result, ['gas_amount_total', 'state'], txGas.state);
     tx.setExtraField('gas', txGas);
   }
 
   // TODO(liayoo): reduce computation by remembering & reusing the computed values.
   getStateFreeTierInUse() {
-    let size = 0;
+    let bytes = 0;
     const apps = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.APPS, true) || {};
     const appStakes = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.STAKING) || {};
     for (const appName of Object.keys(apps)) {
       if (!_.get(appStakes, `${appName}.${PredefinedDbPaths.STAKING_BALANCE_TOTAL}`)) {
-        size += this.getStateSizeAtPath(`apps/${appName}`);
+        bytes += this.getStateTreeBytesAtPath(`apps/${appName}`);
       }
     }
-    return size;
+    return bytes;
   }
 
-  getStateSizeAtPath(path) {
+  getStateTreeBytesAtPath(path) {
     if (!path || path === '/') {
-      return _.get(this.getStateInfo('/'), StateInfoProperties.TREE_SIZE, 0);
+      return _.get(this.getStateInfo('/'), StateInfoProperties.TREE_BYTES, 0);
     }
-    return _.get(this.getStateInfo(`/${PredefinedDbPaths.VALUES_ROOT}/${path}`), StateInfoProperties.TREE_SIZE, 0) +
-        _.get(this.getStateInfo(`/${PredefinedDbPaths.RULES_ROOT}/${path}`), StateInfoProperties.TREE_SIZE, 0) +
-        _.get(this.getStateInfo(`/${PredefinedDbPaths.FUNCIONS_ROOT}/${path}`), StateInfoProperties.TREE_SIZE, 0) +
-        _.get(this.getStateInfo(`/${PredefinedDbPaths.OWNERS_ROOT}/${path}`), StateInfoProperties.TREE_SIZE, 0);
+    return _.get(this.getStateInfo(`/${PredefinedDbPaths.VALUES_ROOT}/${path}`), StateInfoProperties.TREE_BYTES, 0) +
+        _.get(this.getStateInfo(`/${PredefinedDbPaths.RULES_ROOT}/${path}`), StateInfoProperties.TREE_BYTES, 0) +
+        _.get(this.getStateInfo(`/${PredefinedDbPaths.FUNCIONS_ROOT}/${path}`), StateInfoProperties.TREE_BYTES, 0) +
+        _.get(this.getStateInfo(`/${PredefinedDbPaths.OWNERS_ROOT}/${path}`), StateInfoProperties.TREE_BYTES, 0);
   }
 
-  getStateSizes() {
-    const rootStateSize = this.getStateSizeAtPath('/');
-    const appStateSize = this.getStateSizeAtPath('apps');
-    const serviceStateSize = rootStateSize - appStateSize;
-    return { rootStateSize, appStateSize, serviceStateSize };
+  getStateTreeBytes() {
+    const root = this.getStateTreeBytesAtPath('/');
+    const apps = this.getStateTreeBytesAtPath('apps');
+    const service = root - apps;
+    return { root, apps, service };
   }
 
-  checkStateGasBudgets(op, appStateSize, serviceStateSize) {
-    if (serviceStateSize > SERVICE_STATE_BUDGET) {
+  checkStateGasBudgets(op, appStateTreeBytes, serviceStateTreeBytes) {
+    if (serviceStateTreeBytes > SERVICE_STATE_BUDGET) {
       return CommonUtil.returnTxResult(
-          25, `Exceeded state budget limit for services (${serviceStateSize} > ${SERVICE_STATE_BUDGET})`);
+          25, `Exceeded state budget limit for services (${serviceStateTreeBytes} > ${SERVICE_STATE_BUDGET})`);
     }
-    if (appStateSize > APPS_STATE_BUDGET) {
+    if (appStateTreeBytes > APPS_STATE_BUDGET) {
       return CommonUtil.returnTxResult(
-          26, `Exceeded state budget limit for apps (${appStateSize} > ${APPS_STATE_BUDGET})`);
+          26, `Exceeded state budget limit for apps (${appStateTreeBytes} > ${APPS_STATE_BUDGET})`);
     }
     const stateFreeTierInUse = this.getStateFreeTierInUse();
     const freeTierLimitReached = stateFreeTierInUse >= FREE_STATE_BUDGET;
     const appStakesTotal = this.getAppStakesTotal();
     for (const appName of CommonUtil.getAppNameList(op)) {
-      const appTreeSize = this.getStateSizeAtPath(`/apps/${appName}`);
+      const appTreeBytes = this.getStateTreeBytesAtPath(`/apps/${appName}`);
       const appStake = this.getAppStake(appName);
       if (appStake === 0) {
         if (freeTierLimitReached) {
@@ -1013,9 +1018,9 @@ class DB {
         // else, we allow apps without stakes
       } else {
         const appStateBudget = APPS_STATE_BUDGET * appStake / appStakesTotal;
-        if (appTreeSize > appStateBudget) {
+        if (appTreeBytes > appStateBudget) {
           return CommonUtil.returnTxResult(
-              28, `Exceeded state budget limit for app ${appName} (${appTreeSize} > ${appStateBudget})`);
+              28, `Exceeded state budget limit for app ${appName} (${appTreeBytes} > ${appStateBudget})`);
         }
       }
     }
