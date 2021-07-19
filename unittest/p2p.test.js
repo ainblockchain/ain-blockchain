@@ -125,7 +125,7 @@ describe("p2p", () => {
           stateNumeric: 0,
           nonce: null,
           dbStatus: {
-            stateInfo: { tree_height: null, tree_size: null },
+            stateInfo: { tree_height: -1, tree_size: -1, tree_bytes: -1 },
             stateProof: { '.proof_hash': null }
           },
           stateVersionStatus: {
