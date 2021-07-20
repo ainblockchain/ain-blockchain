@@ -1551,7 +1551,9 @@ describe('Sharding', async () => {
                 "service": 0
               },
               "state": {
-                "app": 3130,
+                "app": {
+                  "test": 3130
+                },
                 "service": 1676
               }
             },
@@ -1661,7 +1663,7 @@ describe('Sharding', async () => {
                 "service": 0
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 0
               }
             },
@@ -1704,7 +1706,9 @@ describe('Sharding', async () => {
                         service: 0
                       },
                       state: {
-                        app: 24,
+                        app: {
+                          test: 24
+                        },
                         service: 0
                       }
                     },
@@ -1749,7 +1753,9 @@ describe('Sharding', async () => {
                         service: 0
                       },
                       state: {
-                        app: 24,
+                        app: {
+                          test: 24
+                        },
                         service: 0
                       }
                     },
@@ -1794,7 +1800,9 @@ describe('Sharding', async () => {
                         service: 0
                       },
                       state: {
-                        app: 24,
+                        app: {
+                          test: 24
+                        },
                         service: 0
                       }
                     },
@@ -1848,7 +1856,9 @@ describe('Sharding', async () => {
                         service: 0
                       },
                       state: {
-                        app: 24,
+                        app: {
+                          test: 24
+                        },
                         service: 0
                       }
                     },
@@ -1905,7 +1915,9 @@ describe('Sharding', async () => {
                         service: 0
                       },
                       state: {
-                        app: 24,
+                        app: {
+                          test: 24
+                        },
                         service: 0
                       }
                     },
@@ -1962,7 +1974,9 @@ describe('Sharding', async () => {
                         service: 0
                       },
                       state: {
-                        app: 24,
+                        app: {
+                          test: 24
+                        },
                         service: 0
                       }
                     },
@@ -2082,7 +2096,9 @@ describe('Sharding', async () => {
               "service": 0
             },
             "state": {
-              "app": 786,
+              "app": {
+                "a_dapp": 766
+              },
               "service": 0
             }
           },
@@ -2158,7 +2174,9 @@ describe('Sharding', async () => {
               "service": 0
             },
             "state": {
-              "app": 812,
+              "app": {
+                "a_dapp": 812
+              },
               "service": 0
             }
           },

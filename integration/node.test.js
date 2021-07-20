@@ -874,7 +874,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 0
             }
           },
@@ -935,7 +935,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 0
             }
           },
@@ -996,7 +996,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 0
             }
           },
@@ -1101,7 +1101,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 0
             }
           },
@@ -1184,7 +1184,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 0
             }
           },
@@ -1295,7 +1295,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 0
             }
           },
@@ -1414,7 +1414,9 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
-              "app": 3342,
+              "app": {
+                "test": 3342
+              },
               "service": 1680
             }
           },
@@ -1524,7 +1526,7 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 0
             }
           },
@@ -1723,7 +1725,9 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 412,
+                  "app": {
+                    "test": 412
+                  },
                   "service": 0
                 }
               },
@@ -1743,7 +1747,9 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 194,
+                  "app": {
+                    "test": 194
+                  },
                   "service": 0
                 }
               },
@@ -1763,7 +1769,9 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 194,
+                  "app": {
+                    "test": 194
+                  },
                   "service": 0
                 }
               },
@@ -1783,7 +1791,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 0,
+                  "app": {},
                   "service": 1680
                 }
               },
@@ -1803,7 +1811,9 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 798,
+                  "app": {
+                    "test": 798
+                  },
                   "service": 0
                 }
               },
@@ -1823,7 +1833,9 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 1744,
+                  "app": {
+                    "test": 1744
+                  },
                   "service": 0
                 }
               },
@@ -1867,7 +1879,9 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 3342,
+                  "app": {
+                    "test": 3342
+                  },
                   "service": 1680
                 }
               },
@@ -2080,7 +2094,9 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 412,
+                  "app": {
+                    "test": 412
+                  },
                   "service": 0
                 }
               },
@@ -2100,7 +2116,9 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 194,
+                  "app": {
+                    "test": 194
+                  },
                   "service": 0
                 }
               },
@@ -2120,7 +2138,9 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 194,
+                  "app": {
+                    "test": 194
+                  },
                   "service": 0
                 }
               },
@@ -2139,7 +2159,7 @@ describe('Blockchain Node', () => {
                   "app": {}
                 },
                 "state": {
-                  "app": 0,
+                  "app": {},
                   "service": 0
                 }
               },
@@ -2159,7 +2179,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 0,
+                  "app": {},
                   "service": 1680
                 }
               },
@@ -2179,7 +2199,9 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 798,
+                  "app": {
+                    "test": 798
+                  },
                   "service": 0
                 }
               },
@@ -2199,7 +2221,9 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 1744,
+                  "app": {
+                    "test": 1744
+                  },
                   "service": 0
                 }
               },
@@ -2243,7 +2267,9 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": 3342,
+                  "app": {
+                    "test": 3342
+                  },
                   "service": 1680
                 }
               },
@@ -2348,7 +2374,9 @@ describe('Blockchain Node', () => {
                     service: 0
                   },
                   state: {
-                    app: 24,
+                    app: {
+                      test: 24
+                    },
                     service: 0
                   }
                 },
@@ -2402,7 +2430,9 @@ describe('Blockchain Node', () => {
                       service: 0
                     },
                     state: {
-                      app: 28,
+                      app: {
+                        test: 28
+                      },
                       service: 0
                     }
                   },
@@ -3443,7 +3473,7 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 0
               }
             },
@@ -3492,7 +3522,7 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 0
               }
             },
@@ -3539,7 +3569,9 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
-                "app": 1348,
+                "app": {
+                  "test": 1348
+                },
                 "service": 0
               }
             },
@@ -3592,7 +3624,7 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 0
               }
             },
@@ -3639,7 +3671,9 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
-                "app": 1126,
+                "app": {
+                  "test": 1126
+                },
                 "service": 0
               }
             },
@@ -3692,7 +3726,7 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 0
               }
             },
@@ -3739,7 +3773,9 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
-                "app": 3072,
+                "app": {
+                  "test": 3072
+                },
                 "service": 0
               }
             },
@@ -4162,7 +4198,7 @@ describe('Blockchain Node', () => {
                 "service": 3
               },
               "state": {
-                "app": 2386,
+                "app": {},
                 "service": 2588
               }
             },
@@ -4207,7 +4243,7 @@ describe('Blockchain Node', () => {
                 "service": 2
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 0
               }
             },
@@ -4285,7 +4321,7 @@ describe('Blockchain Node', () => {
                 "service": 3
               },
               "state": {
-                "app": 3266,
+                "app": {},
                 "service": 2984
               }
             },
@@ -4382,7 +4418,7 @@ describe('Blockchain Node', () => {
               "service": 1004
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 2000
             }
           },
@@ -4436,7 +4472,7 @@ describe('Blockchain Node', () => {
               "service": 4
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 1282
             }
           },
@@ -4526,7 +4562,7 @@ describe('Blockchain Node', () => {
               "service": 1008
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 4202
             }
           },
@@ -4616,7 +4652,7 @@ describe('Blockchain Node', () => {
               "service": 8
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 2592
             }
           },
@@ -4647,7 +4683,9 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
-              "app": 232,
+              "app": {
+                "test": 232
+              },
               "service": 0
             }
           },
@@ -4828,7 +4866,7 @@ describe('Blockchain Node', () => {
                   "service": 1004
                 },
                 "state": {
-                  "app": 0,
+                  "app": {},
                   "service": 2250
                 }
               },
@@ -4876,7 +4914,7 @@ describe('Blockchain Node', () => {
                   "service": 0
                 },
                 "state": {
-                  "app": 0,
+                  "app": {},
                   "service": 0
                 }
               },
@@ -4987,7 +5025,7 @@ describe('Blockchain Node', () => {
                 "service": 1008
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 4198
               }
             },
@@ -5107,7 +5145,7 @@ describe('Blockchain Node', () => {
                   "service": 2
                 },
                 "state": {
-                  "app": 0,
+                  "app": {},
                   "service": 0
                 }
               },
@@ -5263,7 +5301,7 @@ describe('Blockchain Node', () => {
                 "service": 7
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 3360
               }
             },
@@ -5444,7 +5482,7 @@ describe('Blockchain Node', () => {
               "service": 1006
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 4818
             }
           },
@@ -5583,7 +5621,7 @@ describe('Blockchain Node', () => {
               "service": 6
             },
             "state": {
-              "app": 0,
+              "app": {},
               "service": 3638
             }
           },
@@ -5756,7 +5794,7 @@ describe('Blockchain Node', () => {
                 "service": 1
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 1336
               }
             },
@@ -5871,7 +5909,7 @@ describe('Blockchain Node', () => {
                 "service": 1006
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 3724
               }
             },
@@ -6002,7 +6040,7 @@ describe('Blockchain Node', () => {
                 "service": 6
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 3440
               }
             },
@@ -6073,7 +6111,7 @@ describe('Blockchain Node', () => {
                 "service": 1
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 1398
               }
             },
@@ -6181,7 +6219,7 @@ describe('Blockchain Node', () => {
                 "service": 1006
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 4170
               }
             },
@@ -6279,7 +6317,7 @@ describe('Blockchain Node', () => {
                 "service": 6
               },
               "state": {
-                "app": 0,
+                "app": {},
                 "service": 3564
               }
             },
