@@ -2436,7 +2436,7 @@ describe("DB operations", () => {
             [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.TRANSFER, node.account.address, addr],
             valueObj);
         node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
-        expect(node.db.getStateTreeBytesAtPath('/')).to.be.lessThan(SERVICE_STATE_BUDGET);
+        expect(node.db.getTreeBytesAtPath('/')).to.be.lessThan(SERVICE_STATE_BUDGET);
         
         const overSizeTxBody = {
           operation: {
