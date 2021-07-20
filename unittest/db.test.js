@@ -2421,7 +2421,7 @@ describe("DB operations", () => {
         // Bloat the state tree just below the service state budget
         const addr = ainUtil.createAccount().address;
         const valueObj = {};
-        for (let i = 0; i < 5000; i++) {
+        for (let i = 0; i < 6000; i++) {
           valueObj[i] = {
             value: 1,
             result: {
@@ -2457,7 +2457,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
           "code": 25,
-          "error_message": "Exceeded state budget limit for services (9091080 > 9000000)",
+          "error_message": "Exceeded state budget limit for services (10379080 > 10000000)",
           "bandwidth_gas_amount": 0
         });
       });
@@ -2561,7 +2561,7 @@ describe("DB operations", () => {
         const overSizeTree = {};
         for (let i = 0; i < 1000; i++) {
           overSizeTree[i] = {};
-          for (let j = 0; j < 20; j++) {
+          for (let j = 0; j < 10; j++) {
             overSizeTree[i][j] = 'a';
           }
         }
@@ -2578,7 +2578,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
           code: 27,
-          error_message: "Exceeded state budget limit for free tier (3804406 > 2000000)",
+          error_message: "Exceeded state budget limit for free tier (1984406 > 1000000)",
           bandwidth_gas_amount: 0,
         });
       });
