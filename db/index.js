@@ -625,13 +625,11 @@ class DB {
         this.stateRoot, this.stateVersion, address, nonce, timestamp);
   }
 
-  // TODO(platfowner): Use shallow fetch once available.
   static getAppStakesTotalFromStateRoot(stateRoot) {
-    const appStakes = DB.getValueFromStateRoot(stateRoot, PredefinedDbPaths.STAKING) || {};
-    return Object.keys(appStakes).reduce((acc, cur) => {
-      if (cur === PredefinedDbPaths.CONSENSUS) return acc;
-      return acc + _.get(appStakes[cur], PredefinedDbPaths.STAKING_BALANCE_TOTAL, 0);
-    }, 0);
+    const appStakes = DB.getValueFromStateRoot(stateRoot, PredefinedDbPaths.STAKING, true) || {};
+    return Object.keys(appStakes).filter((appName) => appName !== PredefinedDbPaths.CONSENSUS)
+        .reduce((acc, appName) => acc +
+            DB.getValueFromStateRoot(stateRoot, PathUtil.getStakingBalanceTotalPath(appName)), 0);
   }
 
   getAppStakesTotal() {
@@ -960,7 +958,7 @@ class DB {
       }
       return acc;
     }, {});
-    logger.info(`[${LOG_HEADER}] serviceStateBytesDelta: ${serviceTreeBytesDelta}, appStateBytesDelta: ${JSON.stringify(appStateGasAmountDelta, null, 2)}`);
+    logger.debug(`[${LOG_HEADER}] serviceStateBytesDelta: ${serviceTreeBytesDelta}, appStateBytesDelta: ${JSON.stringify(appStateGasAmountDelta, null, 2)}`);
     const txGas = _.get(tx, 'extra.gas', {
       bandwidth: { service: 0, app: {} },
       state: { service: 0, app: {} }
