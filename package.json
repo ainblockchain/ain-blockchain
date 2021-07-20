@@ -13,7 +13,7 @@
     "node": ">=12"
   },
   "scripts": {
-    "clean": "sh stop_servers.sh & echo 'cleaned'",
+    "clean": "sh stop_servers_local.sh & echo 'cleaned'",
     "client": "ACCOUNT_INDEX=0 DEBUG=true node ./client/index.js",
     "lint": "eslint --ext js -c .eslintrc.json .",
     "loadtest": "sh loadtest/load_tester.sh",
@@ -33,6 +33,7 @@
     "test_unit_p2p_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/p2p-util.test.js",
     "test_unit_rule_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/rule-util.test.js",
     "test_unit_state_manager": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/state-manager.test.js",
+    "test_unit_state_node": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/state-node.test.js",
     "test_unit_state_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/state-util.test.js",
     "test_unit_tx": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/transaction.test.js",
     "test_unit_tx_pool": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/tx-pool.test.js",

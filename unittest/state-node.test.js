@@ -1134,22 +1134,22 @@ describe("state-node", () => {
       // node.treeHeight : number (8 bytses)
       // node.treeSize : number (8 bytses)
       // node.treeBytes : number (8 bytes)
-      // TOTAL: 50 bytes
+      // TOTAL: 50 - 6 = 44 bytes (exclude version)
 
       node.setValue(true);  // boolean (4 bytes)
-      expect(node.computeTreeBytes()).to.equal(54);
+      expect(node.computeTreeBytes()).to.equal(48);
       node.setValue(10);  // number (8 bytes)
-      expect(node.computeTreeBytes()).to.equal(58);
+      expect(node.computeTreeBytes()).to.equal(52);
       node.setValue(-200);  // number (8 bytes)
-      expect(node.computeTreeBytes()).to.equal(58);
+      expect(node.computeTreeBytes()).to.equal(52);
       node.setValue('');  // string (0 * 2 = 0 bytes)
-      expect(node.computeTreeBytes()).to.equal(50);
+      expect(node.computeTreeBytes()).to.equal(44);
       node.setValue('str');  // string (3 * 2 = 6 bytes)
-      expect(node.computeTreeBytes()).to.equal(56);
+      expect(node.computeTreeBytes()).to.equal(50);
       node.setValue(null);  // null (0 bytes)
-      expect(node.computeTreeBytes()).to.equal(50);
+      expect(node.computeTreeBytes()).to.equal(44);
       node.setValue(undefined);  // undefined (0 bytes)
-      expect(node.computeTreeBytes()).to.equal(50);
+      expect(node.computeTreeBytes()).to.equal(44);
     });
 
     it("internal node", () => {
@@ -1164,13 +1164,13 @@ describe("state-node", () => {
       // stateTree.treeHeight : number (8 bytses)
       // stateTree.treeSize : number (8 bytses)
       // stateTree.treeBytes : number (8 bytes)
-      // TOTAL: 74 bytes
+      // TOTAL: 74 - 6 = 68 bytes (exclude version)
 
       child1.setTreeBytes(10);
       child2.setTreeBytes(20);
       child3.setTreeBytes(30);
-      // 74 + 6('label1') * 2 + 10 + 6('label2') * 2 + 20 + 6('label3') * 2 + 30 = 170
-      expect(stateTree.computeTreeBytes()).to.equal(170);
+      // 68 + 6('label1') * 2 + 10 + 6('label2') * 2 + 20 + 6('label3') * 2 + 30 = 164
+      expect(stateTree.computeTreeBytes()).to.equal(164);
     });
   });
 

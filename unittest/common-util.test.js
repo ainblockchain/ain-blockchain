@@ -400,25 +400,25 @@ describe("CommonUtil", () => {
                           "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
                       ],
                       "code": "SUCCESS",
-                      "gas_amount": 0,
+                      "bandwidth_gas_amount": 0,
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
             ],
             "code": "SUCCESS",
-            "gas_amount": 0,
+            "bandwidth_gas_amount": 0,
           }
         },
         "code": 0,
-        "gas_amount": 1
+        "bandwidth_gas_amount": 1
       })).to.equal(false);
 
       expect(CommonUtil.isFailedTx({
@@ -435,26 +435,26 @@ describe("CommonUtil", () => {
                           "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
                       ],
                       "code": "SUCCESS",
-                      "gas_amount": 0,
+                      "bandwidth_gas_amount": 0,
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
             ],
             "code": "SUCCESS",
-            "gas_amount": 0,
+            "bandwidth_gas_amount": 0,
           }
         },
         "code": 201,  // The root operation failed
         "error_message": "Not a number type: bar or 10",
-        "gas_amount": 1
+        "bandwidth_gas_amount": 1
       })).to.equal(true);
 
       expect(CommonUtil.isFailedTx({
@@ -472,25 +472,25 @@ describe("CommonUtil", () => {
                           "result": {
                             "code": 201,  // A sub-operation failed
                             "error_message": "Not a number type: bar or 10",
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
                       ],
                       "code": "SUCCESS",
-                      "gas_amount": 0,
+                      "bandwidth_gas_amount": 0,
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
             ],
             "code": "SUCCESS",
-            "gas_amount": 0,
+            "bandwidth_gas_amount": 0,
           }
         },
         "code": 0,
-        "gas_amount": 1
+        "bandwidth_gas_amount": 1
       })).to.equal(true);
 
       expect(CommonUtil.isFailedTx({
@@ -507,25 +507,25 @@ describe("CommonUtil", () => {
                           "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
                       ],
                       "code": "FAILURE",  // A function failed.
-                      "gas_amount": 0,
+                      "bandwidth_gas_amount": 0,
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
             ],
             "code": "SUCCESS",
-            "gas_amount": 0,
+            "bandwidth_gas_amount": 0,
           }
         },
         "code": 0,
-        "gas_amount": 1
+        "bandwidth_gas_amount": 1
       })).to.equal(true);
     });
 
@@ -535,11 +535,16 @@ describe("CommonUtil", () => {
         "func_results": {
           "0x11111": {
             "code": "SUCCESS",
-            "gas_amount": 10,
+            "bandwidth_gas_amount": 10,
           }
         },
-        "gas_amount": 1,
-        "gas_amount_total": 11,
+        "bandwidth_gas_amount": 1,
+        "gas_amount_total": {
+          "bandwidth": {
+            "service": 11,
+            "app": {}
+          }
+        },
         "gas_cost_total": 0,
       })).to.equal(false);
     });
@@ -549,15 +554,15 @@ describe("CommonUtil", () => {
         "result_list": [
           {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
           {
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
           },
           {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
         ],
       })).to.equal(false);
@@ -566,16 +571,16 @@ describe("CommonUtil", () => {
         "result_list": [
           {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
           {
             "code": 201,
             "error_message": "Not a number type: bar or 10",
-            "gas_amount": 0
+            "bandwidth_gas_amount": 0
           },
           {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
         ]
       })).to.equal(true);
@@ -586,7 +591,7 @@ describe("CommonUtil", () => {
         "result_list": [
           {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
           {
             "func_results": {
@@ -602,29 +607,29 @@ describe("CommonUtil", () => {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
                           ],
                           "code": "SUCCESS",
-                          "gas_amount": 0,
+                          "bandwidth_gas_amount": 0,
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
                 ],
                 "code": "SUCCESS",
-                "gas_amount": 0,
+                "bandwidth_gas_amount": 0,
               }
             },
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
           },
           {
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
           }
         ]
       })).to.equal(false);
@@ -633,7 +638,7 @@ describe("CommonUtil", () => {
         "result_list": [
           {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
           {
             "func_results": {
@@ -649,30 +654,30 @@ describe("CommonUtil", () => {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
                           ],
                           "code": "SUCCESS",
-                          "gas_amount": 0,
+                          "bandwidth_gas_amount": 0,
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
                 ],
                 "code": "SUCCESS",
-                "gas_amount": 0,
+                "bandwidth_gas_amount": 0,
               }
             },
             "code": 0,
-            "gas_amount": 0
+            "bandwidth_gas_amount": 0
           },
           {
             "code": 201,  // One of the root operations failed.
             "error_message": "Not a number type: bar or 10",
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
           },
         ]
       })).to.equal(true);
@@ -681,7 +686,7 @@ describe("CommonUtil", () => {
         "result_list": [
           {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
           {
             "func_results": {
@@ -698,29 +703,29 @@ describe("CommonUtil", () => {
                               "result": {
                                 "code": 201,  // A sub-operation failed.
                                 "error_message": "Not a number type: bar or 10",
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
                           ],
                           "code": "SUCCESS",
-                          "gas_amount": 0,
+                          "bandwidth_gas_amount": 0,
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
                 ],
                 "code": "SUCCESS",
-                "gas_amount": 0,
+                "bandwidth_gas_amount": 0,
               }
             },
             "code": 0,
-            "gas_amount": 0
+            "bandwidth_gas_amount": 0
           },
           {
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
           },
         ]
       })).to.equal(true);
@@ -729,7 +734,7 @@ describe("CommonUtil", () => {
         "result_list": [
           {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
           {
             "func_results": {
@@ -745,29 +750,29 @@ describe("CommonUtil", () => {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
                           ],
                           "code": "FAILURE",  // A function failed.
-                          "gas_amount": 0,
+                          "bandwidth_gas_amount": 0,
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
                 ],
                 "code": "SUCCESS",
-                "gas_amount": 0,
+                "bandwidth_gas_amount": 0,
               }
             },
             "code": 0,
-            "gas_amount": 0
+            "bandwidth_gas_amount": 0
           },
           {
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
           },
         ]
       })).to.equal(true);
@@ -778,10 +783,12 @@ describe("CommonUtil", () => {
         "result_list": [
           {
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
             "gas_amount_total": {
-              "service": 1,
-              "app": {}
+              "bandwidth": {
+                "service": 1,
+                "app": {}
+              }
             },
             "gas_cost_total": 0
           },
@@ -790,22 +797,26 @@ describe("CommonUtil", () => {
             "func_results": {
               "0x11111": {
                 "code": "SUCCESS",
-                "gas_amount": 10,
+                "bandwidth_gas_amount": 10,
               }
             },
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
             "gas_amount_total": {
-              "service": 11,
-              "app": {}
+              "bandwidth": {
+                "service": 11,
+                "app": {}
+              }
             },
             "gas_cost_total": 0
           },
           {
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
             "gas_amount_total": {
-              "service": 1,
-              "app": {}
+              "bandwidth": {
+                "service": 1,
+                "app": {}
+              }
             }
           }
         ]
@@ -813,21 +824,21 @@ describe("CommonUtil", () => {
     });
   })
 
-  describe("getTotalGasAmount", () => {
+  describe("getTotalBandwidthGasAmount", () => {
     const serviceOp = { ref: '/transfer/test', value: null, type: 'SET_VALUE' };
     const appOp = { ref: '/apps/test', value: null, type: 'SET_VALUE' };
 
     it("when abnormal input", () => {
       const emptyVal = { app: {}, service: 0 };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, null), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, undefined), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, {}), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, { gas: 'gas' }), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, { gas: {} }), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, true), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, 'result'), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, 0), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, 1), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, null), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, undefined), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, {}), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, { gas: 'gas' }), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, { gas: {} }), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, true), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, 'result'), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, 0), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, 1), emptyVal);
     })
 
     it("when single operation result input (service)", () => {
@@ -845,27 +856,27 @@ describe("CommonUtil", () => {
                           "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
                       ],
                       "code": "SUCCESS",
-                      "gas_amount": 10
+                      "bandwidth_gas_amount": 10
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
             ],
             "code": "SUCCESS",
-            "gas_amount": 20,
+            "bandwidth_gas_amount": 20,
           }
         },
         "code": 0,
-        "gas_amount": 30
+        "bandwidth_gas_amount": 30
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(serviceOp, result), {
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, result), {
         app: {},
         service: 62
       });
@@ -886,27 +897,27 @@ describe("CommonUtil", () => {
                           "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
                       ],
                       "code": "SUCCESS",
-                      "gas_amount": 10
+                      "bandwidth_gas_amount": 10
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
             ],
             "code": "SUCCESS",
-            "gas_amount": 20,
+            "bandwidth_gas_amount": 20,
           }
         },
         "code": 0,
-        "gas_amount": 30
+        "bandwidth_gas_amount": 30
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(appOp, result), {
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(appOp, result), {
         app: {
           test: 62
         },
@@ -929,27 +940,27 @@ describe("CommonUtil", () => {
                           "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
                       ],
                       "code": "SUCCESS",
-                      "gas_amount": 10
+                      "bandwidth_gas_amount": 10
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
             ],
             "code": "SUCCESS",
-            "gas_amount": 20,
+            "bandwidth_gas_amount": 20,
           }
         },
         "code": 0,
-        "gas_amount": 30
+        "bandwidth_gas_amount": 30
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(appOp, result), {
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(appOp, result), {
         app: {
           test: 61
         },
@@ -975,33 +986,33 @@ describe("CommonUtil", () => {
                               "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
                           ],
                           "code": "SUCCESS",
-                          "gas_amount": 10
+                          "bandwidth_gas_amount": 10
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
                 ],
                 "code": "SUCCESS",
-                "gas_amount": 20
+                "bandwidth_gas_amount": 20
               }
             },
             "code": 0,
-            "gas_amount": 30
+            "bandwidth_gas_amount": 30
           },
           {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
         ]
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(setTxOp, result), {
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(setTxOp, result), {
         app: {},
         service: 63
       });
@@ -1025,33 +1036,33 @@ describe("CommonUtil", () => {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
                           ],
                           "code": "SUCCESS",
-                          "gas_amount": 10
+                          "bandwidth_gas_amount": 10
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
                 ],
                 "code": "SUCCESS",
-                "gas_amount": 20
+                "bandwidth_gas_amount": 20
               }
             },
             "code": 0,
-            "gas_amount": 30
+            "bandwidth_gas_amount": 30
           },
           {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
         ]
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(setTxOp, result), {
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(setTxOp, result), {
         app: {
           test: 63
         },
@@ -1077,33 +1088,33 @@ describe("CommonUtil", () => {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
                           ],
                           "code": "SUCCESS",
-                          "gas_amount": 10
+                          "bandwidth_gas_amount": 10
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
                 ],
                 "code": "SUCCESS",
-                "gas_amount": 20
+                "bandwidth_gas_amount": 20
               }
             },
             "code": 0,
-            "gas_amount": 30
+            "bandwidth_gas_amount": 30
           },
           {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
         ]
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(setTxOp, result), {
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(setTxOp, result), {
         app: {
           test: 62
         },

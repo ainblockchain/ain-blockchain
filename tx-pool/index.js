@@ -8,8 +8,9 @@ const {
   LIGHTWEIGHT,
   TX_POOL_SIZE_LIMIT,
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
-  BANDWIDTH_BUDGET_PER_BLOCK,
   SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
+  APPS_BANDWIDTH_BUDGET_PER_BLOCK,
+  FREE_BANDWIDTH_BUDGET_PER_BLOCK,
   GenesisSharding,
   GenesisAccounts,
   ShardingProperties,
@@ -26,7 +27,6 @@ const {
 const Transaction = require('./transaction');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
-const APP_BANDWIDTH_BUDGET_PER_BLOCK = BANDWIDTH_BUDGET_PER_BLOCK - SERVICE_BANDWIDTH_BUDGET_PER_BLOCK;
 
 class TransactionPool {
   constructor(node) {
@@ -205,7 +205,7 @@ class TransactionPool {
 
   getAppBandwidthAllocated(db, appStakesTotal, appName) {
     const appStake = db ? db.getAppStake(appName) : 0;
-    return appStakesTotal > 0 ? APP_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
+    return appStakesTotal > 0 ? APPS_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
   }
 
   // NOTE(liayoo): txList is already sorted by their gas prices and/or timestamps,
@@ -214,6 +214,7 @@ class TransactionPool {
   performBandwidthChecks(txList, db) {
     const candidateTxList = [];
     let serviceBandwidthSum = 0;
+    let freeTierBandwidthSum = 0;
     const appBandwidthSum = {};
     // Sum of all apps' staked AIN
     const appStakesTotal = db ? db.getAppStakesTotal() : 0;
@@ -228,8 +229,8 @@ class TransactionPool {
         discardedTxList.push(tx);
         continue;
       }
-      const serviceBandwidth = _.get(tx, 'extra.gas.service', 0);
-      const appBandwidth = _.get(tx, 'extra.gas.app', null);
+      const serviceBandwidth = _.get(tx, 'extra.gas.bandwidth.service', 0);
+      const appBandwidth = _.get(tx, 'extra.gas.bandwidth.app', null);
       // Check if tx exceeds service bandwidth
       if (serviceBandwidth) {
         if (serviceBandwidthSum + serviceBandwidth > SERVICE_BANDWIDTH_BUDGET_PER_BLOCK) {
@@ -249,26 +250,34 @@ class TransactionPool {
       let isSkipped = false;
       if (appBandwidth) {
         const tempAppBandwidthSum = {};
+        let tempFreeTierBandwidthSum = freeTierBandwidthSum;
         for (const [appName, bandwidth] of Object.entries(appBandwidth)) {
           const appBandwidthAllocated =
               this.getAppBandwidthAllocated(db, appStakesTotal, appName);
           const currAppBandwidthSum =
               _.get(appBandwidthSum, appName, 0) + _.get(tempAppBandwidthSum, appName, 0);
           if (currAppBandwidthSum + bandwidth > appBandwidthAllocated) {
-            // Exceeds app bandwidth budget. Discard tx.
-            if (nonce >= 0) {
-              addrToDiscardedNoncedTx[tx.address] = true;
+            if (appBandwidthAllocated === 0 &&
+              tempFreeTierBandwidthSum + bandwidth <= FREE_BANDWIDTH_BUDGET_PER_BLOCK) {
+              // May be able to include this tx for the free tier budget.
+              tempFreeTierBandwidthSum += bandwidth;
+            } else {
+              // Exceeds app bandwidth budget. Discard tx.
+              if (nonce >= 0) {
+                addrToDiscardedNoncedTx[tx.address] = true;
+              }
+              if (FeatureFlags.enableRichTxSelectionLogging) {
+                logger.debug(`Skipping app tx: ${currAppBandwidthSum + bandwidth} > ${appBandwidthAllocated}`);
+              }
+              isSkipped = true;
+              discardedTxList.push(tx);
+              break;
             }
-            if (FeatureFlags.enableRichTxSelectionLogging) {
-              logger.debug(`Skipping app tx: ${currAppBandwidthSum + bandwidth} > ${appBandwidthAllocated}`);
-            }
-            isSkipped = true;
-            discardedTxList.push(tx);
-            break;
           }
           CommonUtil.setJsObject(tempAppBandwidthSum, [appName], bandwidth);
         }
         if (!isSkipped) {
+          freeTierBandwidthSum = tempFreeTierBandwidthSum;
           CommonUtil.mergeNumericJsObjects(appBandwidthSum, appBandwidth);
         }
       }
@@ -304,8 +313,8 @@ class TransactionPool {
     while (i < len1 && j < len2) {
       const tx1 = arr1[i];
       const tx2 = arr2[j];
-      const isTx1ServiceTx = !!_.get(tx1, 'extra.gas.service', false);
-      const isTx2ServiceTx = !!_.get(tx2, 'extra.gas.service', false);
+      const isTx1ServiceTx = !!_.get(tx1, 'extra.gas.bandwidth.service', false);
+      const isTx2ServiceTx = !!_.get(tx2, 'extra.gas.bandwidth.service', false);
       if (isTx1ServiceTx && isTx2ServiceTx) {
         // Compare gas price if both service transactions
         if (tx1.tx_body.gas_price > tx2.tx_body.gas_price) {
