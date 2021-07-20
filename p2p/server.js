@@ -433,6 +433,9 @@ class P2pServer {
               this.consensus.handleConsensusMessage(consensusMessage);
             } else {
               logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
+              Object.values(this.client.outbound).forEach((node) => {
+                this.client.requestChainSegment(node.socket, this.node.bc.lastBlock());
+              });
             }
             break;
           case MessageTypes.TRANSACTION:
@@ -609,6 +612,7 @@ class P2pServer {
 
   // TODO(platfowner): Set .shard config for functions, rules, and owners as well.
   async setUpDbForSharding() {
+    const LOG_HEADER = 'setUpDbForSharding';
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
     const ownerPrivateKey = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
@@ -623,13 +627,14 @@ class P2pServer {
       throw Error(`Shard owner (${shardOwner}) doesn't have the permission to create a shard (${appName})`);
     }
     if (shardingAppConfig === null) {
-      // Create app first. Note that the app should have staked some AIN.
+      // Create app first.
       const shardAppCreateTxBody = P2pServer.buildShardAppCreateTxBody(appName);
       await sendTxAndWaitForFinalization(parentChainEndpoint, shardAppCreateTxBody, ownerPrivateKey);
     }
+    logger.info(`[${LOG_HEADER}] shard app created`);
     const shardInitTxBody = P2pServer.buildShardingSetupTxBody();
     await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTxBody, ownerPrivateKey);
-    logger.info(`setUpDbForSharding success`);
+    logger.info(`[${LOG_HEADER}] shard set up success`);
   }
 
   static async getShardingAppConfig(parentChainEndpoint, appName) {
@@ -642,6 +647,7 @@ class P2pServer {
 
   static buildShardAppCreateTxBody(appName) {
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
+    const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const timestamp = Date.now();
     return {
       operation: {
@@ -649,7 +655,8 @@ class P2pServer {
         ref: PathUtil.getCreateAppRecordPath(appName, timestamp),
         value: {
           [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
-            [shardOwner]: true
+            [shardOwner]: true,
+            [shardReporter]: true,
           }
         }
       },
