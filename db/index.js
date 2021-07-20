@@ -13,10 +13,14 @@ const {
   GenesisAccounts,
   GenesisSharding,
   StateVersions,
+  buildOwnerPermissions,
   LIGHTWEIGHT,
   TREE_HEIGHT_LIMIT,
   TREE_SIZE_LIMIT,
-  buildOwnerPermissions,
+  SERVICE_STATE_BUDGET,
+  APPS_STATE_BUDGET,
+  FREE_STATE_BUDGET,
+  STATE_GAS_CONSTANT,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
@@ -463,9 +467,9 @@ class DB {
     return rootProof;
   }
 
-  static getValueFromStateRoot(stateRoot, statePath) {
+  static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
     return DB.readFromStateRoot(
-        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, false, [], false);
+        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, isShallow, [], false);
   }
 
   /**
@@ -901,23 +905,39 @@ class DB {
       }
     }
     let result;
+    const treeBytesBefore = this.getTreeBytes();
+    const treeBytesPerAppBefore = this.getTreeBytesPerApp(op);
     if (op.type === WriteDbOperations.SET) {
       result = this.executeMultiSetOperation(op.op_list, auth, timestamp, tx);
     } else {
       result = this.executeSingleSetOperation(op, auth, timestamp, tx);
     }
     const gasPrice = tx.tx_body.gas_price;
-    const gasAmountTotal = CommonUtil.getTotalGasAmount(tx.tx_body.operation, result);
+    const treeBytesPerAppAfter = this.getTreeBytesPerApp(op);
+    const gasAmountTotal = {
+      bandwidth: CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, result),
+      state: { service: 0, app: {} }
+    };
     result.gas_amount_total = gasAmountTotal;
     result.gas_cost_total = 0;
     // TODO(platfowner): Consider charging gas fee for the failure cases.
     if (!CommonUtil.isFailedTx(result)) {
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
+      const treeBytesAfter = this.getTreeBytes();
       tx.setExtraField('gas', gasAmountTotal);
+      DB.updateStateGasAmounts(
+          tx, result, treeBytesBefore, treeBytesAfter, treeBytesPerAppBefore, treeBytesPerAppAfter);
+      const stateGasBudgetCheck = this.checkStateGasBudgets(op, treeBytesAfter.apps, treeBytesAfter.service);
+      if (stateGasBudgetCheck !== true) {
+        return stateGasBudgetCheck;
+      }
       if (blockNumber > 0) {
         // Use only the service gas amount total
-        result.gas_cost_total = CommonUtil.getTotalGasCost(gasPrice, gasAmountTotal.service);
+        result.gas_cost_total = CommonUtil.getTotalGasCost(
+          gasPrice,
+          _.get(tx, 'extra.gas.bandwidth.service', 0) + _.get(tx, 'extra.gas.state.service', 0)
+        );
         const collectFeeRes = this.checkBillingAndCollectFee(op, auth, timestamp, tx, blockNumber, result);
         if (collectFeeRes !== true) {
           return collectFeeRes;
@@ -928,6 +948,99 @@ class DB {
       }
     }
     return result;
+  }
+
+  static updateStateGasAmounts(tx, result, treeBytesBefore, treeBytesAfter, treeBytesPerAppBefore, treeBytesPerAppAfter) {
+    const LOG_HEADER = 'updateStateGasAmounts';
+    const serviceTreeBytesDelta = Math.max(treeBytesAfter.service - treeBytesBefore.service, 0);
+    const appStateGasAmountDelta = Object.keys(treeBytesPerAppAfter).reduce((acc, appName) => {
+      const delta = treeBytesPerAppAfter[appName] - treeBytesPerAppBefore[appName];
+      if (delta > 0) {
+        acc[appName] = delta * STATE_GAS_CONSTANT;
+      }
+      return acc;
+    }, {});
+    logger.info(`[${LOG_HEADER}] serviceStateBytesDelta: ${serviceTreeBytesDelta}, appStateBytesDelta: ${JSON.stringify(appStateGasAmountDelta, null, 2)}`);
+    const txGas = _.get(tx, 'extra.gas', {
+      bandwidth: { service: 0, app: {} },
+      state: { service: 0, app: {} }
+    });
+    CommonUtil.setJsObject(txGas, ['state'], {
+      service: serviceTreeBytesDelta * STATE_GAS_CONSTANT,
+      app: appStateGasAmountDelta
+    });
+    CommonUtil.setJsObject(result, ['gas_amount_total', 'state'], txGas.state);
+    tx.setExtraField('gas', txGas);
+  }
+
+  // TODO(liayoo): reduce computation by remembering & reusing the computed values.
+  getStateFreeTierInUse() {
+    let bytes = 0;
+    const apps = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.APPS, true) || {};
+    const appStakes = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.STAKING) || {};
+    for (const appName of Object.keys(apps)) {
+      if (!_.get(appStakes, `${appName}.${PredefinedDbPaths.STAKING_BALANCE_TOTAL}`)) {
+        bytes += this.getTreeBytesAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
+      }
+    }
+    return bytes;
+  }
+
+  getTreeBytesAtPath(path) {
+    if (!path || path === '/') {
+      return _.get(this.getStateInfo('/'), StateInfoProperties.TREE_BYTES, 0);
+    }
+    return _.get(this.getStateInfo(`/${PredefinedDbPaths.VALUES_ROOT}/${path}`), StateInfoProperties.TREE_BYTES, 0) +
+        _.get(this.getStateInfo(`/${PredefinedDbPaths.RULES_ROOT}/${path}`), StateInfoProperties.TREE_BYTES, 0) +
+        _.get(this.getStateInfo(`/${PredefinedDbPaths.FUNCIONS_ROOT}/${path}`), StateInfoProperties.TREE_BYTES, 0) +
+        _.get(this.getStateInfo(`/${PredefinedDbPaths.OWNERS_ROOT}/${path}`), StateInfoProperties.TREE_BYTES, 0);
+  }
+
+  getTreeBytes() {
+    const root = this.getTreeBytesAtPath('/');
+    const apps = this.getTreeBytesAtPath(PredefinedDbPaths.APPS);
+    const service = root - apps;
+    return { root, apps, service };
+  }
+
+  getTreeBytesPerApp(op) {
+    const appNameList = CommonUtil.getAppNameList(op, this.shardingPath);
+    return appNameList.reduce((acc, appName) => {
+      acc[appName] = this.getTreeBytesAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
+      return acc;
+    }, {});
+  }
+
+  checkStateGasBudgets(op, appTreeBytes, serviceTreeBytes) {
+    if (serviceTreeBytes > SERVICE_STATE_BUDGET) {
+      return CommonUtil.returnTxResult(
+          25, `Exceeded state budget limit for services (${serviceTreeBytes} > ${SERVICE_STATE_BUDGET})`);
+    }
+    if (appTreeBytes > APPS_STATE_BUDGET) {
+      return CommonUtil.returnTxResult(
+          26, `Exceeded state budget limit for apps (${appTreeBytes} > ${APPS_STATE_BUDGET})`);
+    }
+    const stateFreeTierInUse = this.getStateFreeTierInUse();
+    const freeTierLimitReached = stateFreeTierInUse >= FREE_STATE_BUDGET;
+    const appStakesTotal = this.getAppStakesTotal();
+    for (const appName of CommonUtil.getAppNameList(op, this.shardingPath)) {
+      const appTreeBytes = this.getTreeBytesAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
+      const appStake = this.getAppStake(appName);
+      if (appStake === 0) {
+        if (freeTierLimitReached) {
+          return CommonUtil.returnTxResult(
+              27, `Exceeded state budget limit for free tier (${stateFreeTierInUse} > ${FREE_STATE_BUDGET})`);
+        }
+        // else, we allow apps without stakes
+      } else {
+        const appStateBudget = APPS_STATE_BUDGET * appStake / appStakesTotal;
+        if (appTreeBytes > appStateBudget) {
+          return CommonUtil.returnTxResult(
+              28, `Exceeded state budget limit for app ${appName} (${appTreeBytes} > ${appStateBudget})`);
+        }
+      }
+    }
+    return true;
   }
 
   checkBillingAndCollectFee(op, auth, timestamp, tx, blockNumber, result) {

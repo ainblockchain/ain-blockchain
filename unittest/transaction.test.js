@@ -219,10 +219,12 @@ describe('Transaction', () => {
   describe('extra', () => {
     const gas = {
       gas_amount: {
-        service: 100,
-        app: {
-          app1: 50,
-          app2: 20
+        bandwidth: {
+          service: 100,
+          app: {
+            app1: 50,
+            app2: 20
+          }
         }
       }
     };

@@ -64,8 +64,7 @@ class StateNode {
   }
 
   computeNodeBytes() {
-    return sizeof(this.version) +
-        sizeof(this.isLeaf) +
+    return sizeof(this.isLeaf) +
         sizeof(this.value) +
         sizeof(this.proofHash) +
         sizeof(this.treeHeight) +

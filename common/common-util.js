@@ -349,11 +349,38 @@ class CommonUtil {
     return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
   }
 
-  // TODO(liayoo): Fix testing paths (writing at the root) and update isServicePath().
   static isServicePath(parsedPath) {
     const { isServiceType } = require('../common/constants');
 
     return isServiceType(_.get(parsedPath, 0));
+  }
+
+  static getAppNameFromRef(ref, shardingPath, isGlobal) {
+    const DB = require('../db');
+    const parsedPath = CommonUtil.parsePath(ref);
+    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
+    if (CommonUtil.isAppPath(localPath)) {
+      return _.get(localPath, 1, null);
+    }
+    return null;
+  }
+
+  static getAppNameList(op, shardingPath) {
+    if (!op) {
+      return [];
+    }
+    if (op.op_list) {
+      const appNames = new Set();
+      for (const innerOp of op.op_list) {
+        const name = CommonUtil.getAppNameFromRef(innerOp.ref, shardingPath, innerOp.is_global);
+        if (name) {
+          appNames.add(name);
+        }
+      }
+      return [...appNames];
+    }
+    const name = CommonUtil.getAppNameFromRef(op.ref, shardingPath, op.is_global);
+    return name ? [name] : [];
   }
 
   static getDependentAppNameFromRef(ref) {
@@ -384,7 +411,7 @@ class CommonUtil {
     return name ? [name] : [];
   }
 
-  static getSingleOpGasAmount(parsedPath, value) {
+  static getSingleOpBandwidthGasAmount(parsedPath, value) {
     const gasAmount = {
       service: 0,
       app: {}
@@ -402,7 +429,7 @@ class CommonUtil {
     return gasAmount;
   }
 
-  static getTotalGasAmountInternal(triggeringPath, resultObj) {
+  static getTotalBandwidthGasAmountInternal(triggeringPath, resultObj) {
     const gasAmount = {
       service: 0,
       app: {}
@@ -416,19 +443,22 @@ class CommonUtil {
           for (const opRes of funcRes.op_results) {
             CommonUtil.mergeNumericJsObjects(
               gasAmount,
-              CommonUtil.getTotalGasAmountInternal(CommonUtil.parsePath(opRes.path), opRes.result)
+              CommonUtil.getTotalBandwidthGasAmountInternal(CommonUtil.parsePath(opRes.path), opRes.result)
             );
           }
         }
         // Follow the tx type of the triggering tx.
-        CommonUtil.mergeNumericJsObjects(gasAmount, CommonUtil.getSingleOpGasAmount(triggeringPath, funcRes.gas_amount));
+        CommonUtil.mergeNumericJsObjects(
+          gasAmount,
+          CommonUtil.getSingleOpBandwidthGasAmount(triggeringPath, funcRes.bandwidth_gas_amount)
+        );
       }
     }
 
-    if (resultObj.gas_amount) {
+    if (resultObj.bandwidth_gas_amount) {
       CommonUtil.mergeNumericJsObjects(
         gasAmount,
-        CommonUtil.getSingleOpGasAmount(triggeringPath, resultObj.gas_amount)
+        CommonUtil.getSingleOpBandwidthGasAmount(triggeringPath, resultObj.bandwidth_gas_amount)
       );
     }
 
@@ -439,7 +469,7 @@ class CommonUtil {
    * Returns the total gas amount of the result, separated by the types of operations (service / app)
    * (esp. multi-operation result).
    */
-  static getTotalGasAmount(op, result) {
+  static getTotalBandwidthGasAmount(op, result) {
     const gasAmount = {
       service: 0,
       app: {}
@@ -450,14 +480,14 @@ class CommonUtil {
         const elem = result.result_list[i];
         CommonUtil.mergeNumericJsObjects(
           gasAmount,
-          CommonUtil.getTotalGasAmountInternal(CommonUtil.parsePath(op.op_list[i].ref), elem)
+          CommonUtil.getTotalBandwidthGasAmountInternal(CommonUtil.parsePath(op.op_list[i].ref), elem)
         );
       }
     } else {
       const triggeringPath = CommonUtil.parsePath(op.ref);
       CommonUtil.mergeNumericJsObjects(
         gasAmount,
-        CommonUtil.getTotalGasAmountInternal(triggeringPath, result)
+        CommonUtil.getTotalBandwidthGasAmountInternal(triggeringPath, result)
       );
     }
 
@@ -486,15 +516,17 @@ class CommonUtil {
   static getServiceGasCostTotalFromTxList(txList, resList) {
     return resList.reduce((acc, cur, index) => {
       const tx = txList[index];
-      const totalGasAmount = CommonUtil.getTotalGasAmount(tx.tx_body.operation, cur);
+      const bandwidthGasAmount = CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, cur);
+      const stateGasAmount = _.get(cur, 'gas_amount_total.state.service', 0);
+      const gasAmountTotal = bandwidthGasAmount.service + stateGasAmount;
       return CommonUtil.mergeNumericJsObjects(acc, {
-        gasAmountTotal: totalGasAmount.service,
-        gasCostTotal: CommonUtil.getTotalGasCost(tx.tx_body.gas_price, totalGasAmount.service)
+        gasAmountTotal,
+        gasCostTotal: CommonUtil.getTotalGasCost(tx.tx_body.gas_price, gasAmountTotal)
       });
     }, { gasAmountTotal: 0, gasCostTotal: 0 });
   }
 
-  static returnTxResult(code, message = null, gasAmount = 0, funcResults = null) {
+  static returnTxResult(code, message = null, bandwidthGasAmount = 0, funcResults = null) {
     const result = {};
     if (message) {
       result.error_message = message;
@@ -503,7 +535,7 @@ class CommonUtil {
       result.func_results = funcResults;
     }
     result.code = code;
-    result.gas_amount = gasAmount;
+    result.bandwidth_gas_amount = bandwidthGasAmount;
     return result;
   }
 

@@ -198,7 +198,7 @@ class Functions {
             }));
             funcResults[functionEntry.function_id] = {
               code: FunctionResultCode.SUCCESS,
-              gas_amount: GasFeeConstants.REST_FUNCTION_CALL_GAS_AMOUNT,
+              bandwidth_gas_amount: GasFeeConstants.REST_FUNCTION_CALL_GAS_AMOUNT,
             };
             triggerCount++;
           }
@@ -406,10 +406,10 @@ class Functions {
   buildFuncResultToReturn(context, code, extraGasAmount = 0) {
     const result = {
       code,
-      gas_amount: this.nativeFunctionMap[context.fid].extraGasAmount
+      bandwidth_gas_amount: this.nativeFunctionMap[context.fid].extraGasAmount
     };
     if (CommonUtil.isNumber(extraGasAmount) && extraGasAmount > 0) {
-      result.gas_amount += extraGasAmount;
+      result.bandwidth_gas_amount += extraGasAmount;
     }
     return result;
   }
