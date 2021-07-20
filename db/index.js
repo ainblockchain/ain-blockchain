@@ -928,8 +928,7 @@ class DB {
       tx.setExtraField('gas', gasAmountTotal);
       DB.updateStateGasAmounts(
           tx, result, stateTreeBytesBefore, stateTreeBytesAfter, stateGasAmountPerAppBefore, stateGasAmountPerAppAfter);
-      const stateGasBudgetCheck = this.checkStateGasBudgets(
-          op, stateTreeBytesAfter.apps, stateTreeBytesAfter.service);
+      const stateGasBudgetCheck = this.checkStateGasBudgets(op, stateTreeBytesAfter.apps, stateTreeBytesAfter.service);
       if (stateGasBudgetCheck !== true) {
         return stateGasBudgetCheck;
       }
@@ -955,9 +954,10 @@ class DB {
     const LOG_HEADER = 'updateStateGasAmounts';
     const serviceStateBytesDelta = Math.max(stateTreeBytesAfter.service - stateTreeBytesBefore.service, 0);
     const appStateBytesDelta = Object.keys(stateGasAmountPerAppAfter).reduce((acc, appName) => {
-      acc[appName] = Math.max(
-          stateGasAmountPerAppAfter[appName] - stateGasAmountPerAppBefore[appName], 0
-        ) * STATE_GAS_CONSTANT;
+      const delta = stateGasAmountPerAppAfter[appName] - stateGasAmountPerAppBefore[appName];
+      if (delta > 0) {
+        acc[appName] = delta * STATE_GAS_CONSTANT;
+      }
       return acc;
     }, {});
     logger.info(`[${LOG_HEADER}] serviceStateBytesDelta: ${serviceStateBytesDelta}, appStateBytesDelta: ${JSON.stringify(appStateBytesDelta, null, 2)}`);
@@ -1004,7 +1004,7 @@ class DB {
   }
 
   getStateTreeBytesPerApp(op) {
-    const appNameList = CommonUtil.getAppNameList(op);
+    const appNameList = CommonUtil.getAppNameList(op, this.shardingPath);
     return appNameList.reduce((acc, appName) => {
       acc[appName] = this.getStateTreeBytesAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
       return acc;
@@ -1023,7 +1023,7 @@ class DB {
     const stateFreeTierInUse = this.getStateFreeTierInUse();
     const freeTierLimitReached = stateFreeTierInUse >= FREE_STATE_BUDGET;
     const appStakesTotal = this.getAppStakesTotal();
-    for (const appName of CommonUtil.getAppNameList(op)) {
+    for (const appName of CommonUtil.getAppNameList(op, this.shardingPath)) {
       const appTreeBytes = this.getStateTreeBytesAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
       const appStake = this.getAppStake(appName);
       if (appStake === 0) {

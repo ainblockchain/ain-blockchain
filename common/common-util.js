@@ -355,29 +355,31 @@ class CommonUtil {
     return isServiceType(_.get(parsedPath, 0));
   }
 
-  static getAppNameFromRef(ref) {
+  static getAppNameFromRef(ref, shardingPath, isGlobal) {
+    const DB = require('../db');
     const parsedPath = CommonUtil.parsePath(ref);
-    if (CommonUtil.isAppPath(parsedPath)) {
-      return _.get(parsedPath, 1, null);
+    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
+    if (CommonUtil.isAppPath(localPath)) {
+      return _.get(localPath, 1, null);
     }
     return null;
   }
 
-  static getAppNameList(op) {
+  static getAppNameList(op, shardingPath) {
     if (!op) {
       return [];
     }
     if (op.op_list) {
       const appNames = new Set();
       for (const innerOp of op.op_list) {
-        const name = CommonUtil.getAppNameFromRef(innerOp.ref);
+        const name = CommonUtil.getAppNameFromRef(innerOp.ref, shardingPath, innerOp.is_global);
         if (name) {
           appNames.add(name);
         }
       }
       return [...appNames];
     }
-    const name = CommonUtil.getAppNameFromRef(op.ref);
+    const name = CommonUtil.getAppNameFromRef(op.ref, shardingPath, op.is_global);
     return name ? [name] : [];
   }
 
