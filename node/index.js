@@ -474,7 +474,7 @@ class BlockchainNode {
         baseVersion, `${StateVersions.SEGMENT}:${this.bc.lastBlockNumber()}`,
         this.bc.lastBlockNumber());
     if (!tempDb) {
-      logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
+      logger.error(`[${LOG_HEADER}] Failed to create a temp database with state version: ${baseVersion}.`);
       return null;
     }
     const validBlocks = this.bc.getValidBlocksInChainSegment(chainSegment);
