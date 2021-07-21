@@ -39,7 +39,7 @@ class TransactionPool {
     this.txCountTotal = 0;
   }
 
-  addTransaction(tx) {
+  addTransaction(tx, isExecutedTx = false) {
     // NOTE(platfowner): A transaction needs to be converted to an executable form
     //                   before being added.
     if (!Transaction.isExecutable(tx)) {
@@ -60,7 +60,7 @@ class TransactionPool {
     }
     this.transactions[tx.address].push(tx);
     this.transactionTracker[tx.hash] = {
-      state: TransactionStates.IN_POOL,
+      state: isExecutedTx ? TransactionStates.EXECUTED : TransactionStates.PENDING,
       address: tx.address,
       index: this.transactions[tx.address].length - 1,
       timestamp: tx.tx_body.timestamp,
