@@ -205,7 +205,8 @@ describe("CommonUtil", () => {
       }
     };
     const value = {
-      some: 'value'
+      some: 'value',
+      b: 'other b value'
     };
     let obj;
 
@@ -261,7 +262,7 @@ describe("CommonUtil", () => {
         }
       }
       for (const key in org) {
-        if (org.hasOwnProperty(key)) {
+        if (org.hasOwnProperty(key) && !value.hasOwnProperty(key)) {
           expect(obj.hasOwnProperty(key)).to.equal(true);
           assert.deepEqual(obj[key], org[key]);
         }
