@@ -205,7 +205,8 @@ describe("CommonUtil", () => {
       }
     };
     const value = {
-      some: 'value'
+      some: 'value',
+      b: 'other b value'
     };
     let obj;
 
@@ -247,9 +248,25 @@ describe("CommonUtil", () => {
       assert.deepEqual(obj.b.ba.baz, value);
     })
 
-    it("when empty path", () => {
-      expect(CommonUtil.setJsObject(obj, [], value)).to.equal(false);
+    it("when empty path with primitive value", () => {
+      expect(CommonUtil.setJsObject(obj, [], 'some value')).to.equal(false);
       assert.deepEqual(obj, org);  // No change.
+    })
+
+    it("when empty path with object value", () => {
+      expect(CommonUtil.setJsObject(obj, [], value)).to.equal(true);
+      for (const key in value) {
+        if (value.hasOwnProperty(key)) {
+          expect(obj.hasOwnProperty(key)).to.equal(true);
+          assert.deepEqual(obj[key], value[key]);
+        }
+      }
+      for (const key in org) {
+        if (org.hasOwnProperty(key) && !value.hasOwnProperty(key)) {
+          expect(obj.hasOwnProperty(key)).to.equal(true);
+          assert.deepEqual(obj[key], org[key]);
+        }
+      }
     })
 
     it("when existing path", () => {

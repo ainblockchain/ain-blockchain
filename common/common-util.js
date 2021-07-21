@@ -239,6 +239,15 @@ class CommonUtil {
     return ref === undefined ? null : ref;
   }
 
+  /**
+   * Sets a value to the given path of an object. If the given path is empty, it tries to copy
+   * the first-level properties of the value to the object.
+   * 
+   * @param {object} obj target object
+   * @param {array} path target path
+   * @param {*} value value to set
+   * @returns true if any changes are done, otherwise false
+   */
   static setJsObject(obj, path, value) {
     if (!CommonUtil.isArray(path)) {
       return false;
@@ -247,7 +256,15 @@ class CommonUtil {
       return false;
     }
     if (path.length === 0) {
-      return false;
+      if (!CommonUtil.isDict(value)) {
+        return false;
+      }
+      for (const key in value) {
+        if (value.hasOwnProperty(key)) {
+          obj[key] = value[key];
+        }
+      }
+      return true;
     }
     let ref = obj;
     for (let i = 0; i < path.length - 1; i++) {
