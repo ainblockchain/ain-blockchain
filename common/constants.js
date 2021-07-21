@@ -686,7 +686,8 @@ function getGenesisRules() {
 }
 
 function getGenesisOwners() {
-  const owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
+  let owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
+  CommonUtil.setJsObject(owners, [], getRootOwner());
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     CommonUtil.setJsObject(
         owners, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
@@ -703,6 +704,17 @@ function getShardingRule() {
   return {
     [PredefinedDbPaths.DOT_RULE]: {
       [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
+    }
+  };
+}
+
+function getRootOwner() {
+  return {
+    [PredefinedDbPaths.DOT_OWNER]: {
+      [OwnerProperties.OWNERS]: {
+        [GenesisAccounts.owner.address]: buildOwnerPermissions(true, true, true, true),
+        [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+      }
     }
   };
 }
