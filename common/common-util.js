@@ -243,8 +243,8 @@ class CommonUtil {
    * Sets a value to the given path of an object. If the given path is empty, it tries to copy
    * the first-level properties of the value to the object.
    * 
-   * @param {*} obj target object
-   * @param {*} path target path
+   * @param {object} obj target object
+   * @param {array} path target path
    * @param {*} value value to set
    * @returns true if any changes are done, otherwise false
    */
