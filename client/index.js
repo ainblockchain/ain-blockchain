@@ -15,7 +15,6 @@ const {
   PORT,
   BlockchainNodeStates,
   WriteDbOperations,
-  TransactionStates,
 } = require('../common/constants');
 const { ConsensusStates } = require('../consensus/constants');
 
@@ -392,23 +391,7 @@ app.get('/tx_pool_size_util', (req, res) => {
 });
 
 app.get('/get_transaction', (req, res, next) => {
-  const transactionInfo = node.tp.transactionTracker[req.query.hash];
-  if (transactionInfo) {
-    if (transactionInfo.state === TransactionStates.IN_BLOCK) {
-      const block = node.bc.getBlockByNumber(transactionInfo.number);
-      const index = transactionInfo.index;
-      if (!block) {
-        logger.debug(`No block found for the tx: ${req.query.hash}`);
-      } else if (index >= 0) {
-        transactionInfo.transaction = block.transactions[index];
-      } else {
-        transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === req.query.hash);
-      }
-    } else if (transactionInfo.state === TransactionStates.IN_POOL) {
-      const address = transactionInfo.address;
-      transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === req.query.hash);
-    }
-  }
+  const transactionInfo = node.getTransactionByHash(req.query.hash);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result: transactionInfo})

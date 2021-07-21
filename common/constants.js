@@ -441,9 +441,10 @@ const FunctionResultCode = {
  */
 const TransactionStates = {
   IN_BLOCK: 'IN_BLOCK',
-  IN_POOL: 'IN_POOL',
+  EXECUTED: 'EXECUTED',
+  FAILED: 'FAILED',
+  PENDING: 'PENDING',
   TIMED_OUT: 'TIMED_OUT',
-  FAILED: 'FAILED'
 };
 
 /**
