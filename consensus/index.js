@@ -26,7 +26,7 @@ const {
   MIN_STAKE_PER_VALIDATOR,
   MAX_STAKE_PER_VALIDATOR,
   EPOCH_MS,
-  CONSENSUS_PROTOCOL_VERSION
+  CONSENSUS_PROTOCOL_VERSION,
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
@@ -350,6 +350,8 @@ class Consensus {
       lastVotes.unshift(lastBlockInfo.proposal);
     }
 
+    this.node.removeOldReceipts(blockNumber, tempDb);
+
     for (const voteTx of lastVotes) {
       const res = this.executeLastVoteOrAbort(tempDb, voteTx);
       if (!res) {
@@ -624,6 +626,8 @@ class Consensus {
     if (isSnapDb) {
       this.node.destroyDb(prevDb);
     }
+
+    this.node.removeOldReceipts(number, newDb);
     const lastVoteRes = newDb.executeTransactionList(last_votes);
     if (!lastVoteRes) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
@@ -938,8 +942,12 @@ class Consensus {
       const block = chain.shift();
       const blockNumber = block.number;
       logger.debug(`[${LOG_HEADER}] applying block ${JSON.stringify(block)}`);
-      snapDb.executeTransactionList(block.last_votes);
-      snapDb.executeTransactionList(block.transactions, blockNumber);
+      const executeRes = this.node.applyBlocksToDb([block], snapDb);
+      if (executeRes !== true) {
+        logger.error(`[${LOG_HEADER}] Failed to execute block`);
+        this.node.destroyDb(snapDb);
+        return null;
+      }
       snapDb.blockNumberSnapshot = blockNumber;
     }
     return snapDb;

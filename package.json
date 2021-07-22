@@ -27,6 +27,7 @@
     "test_unit_block_pool": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/block-pool.test.js",
     "test_unit_blockchain": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/blockchain.test.js",
     "test_unit_common_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/common-util.test.js",
+    "test_unit_consensus": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/consensus.test.js",
     "test_unit_db": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/db.test.js",
     "test_unit_functions": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/functions.test.js",
     "test_unit_p2p": "./node_modules/mocha/bin/mocha --timeout 320000 unittest/p2p.test.js",

@@ -26,6 +26,7 @@ const {
   LIGHTWEIGHT,
   TX_POOL_SIZE_LIMIT,
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
+  MAX_NUM_BLOCKS_RECEIPTS,
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
 const CommonUtil = require('../common/common-util');
@@ -440,10 +441,27 @@ class BlockchainNode {
     return false;
   }
 
+  removeOldReceipts(blockNumber, db) {
+    const LOG_HEADER = 'removeOldReceipts';
+    if (blockNumber > MAX_NUM_BLOCKS_RECEIPTS) {
+      const receiptsPrefixFullPath = DB.getFullPath(
+          [PredefinedDbPaths.RECEIPTS], PredefinedDbPaths.VALUES_ROOT);
+      const oldBlock = this.bc.getBlockByNumber(blockNumber - MAX_NUM_BLOCKS_RECEIPTS);
+      if (oldBlock) {
+        oldBlock.transactions.forEach((tx) => {
+          db.writeDatabase([...receiptsPrefixFullPath, tx.hash], null);
+        });
+      } else {
+        logger.error(`[${LOG_HEADER}] block of number ${blockNumber - MAX_NUM_BLOCKS_RECEIPTS} doesn't exist`);
+      }
+    }
+  }
+
   applyBlocksToDb(blockList, db) {
     const LOG_HEADER = 'applyBlocksToDb';
 
     for (const block of blockList) {
+      this.removeOldReceipts(block.number, db);
       if (!db.executeTransactionList(block.last_votes)) {
         logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
             `${JSON.stringify(block, null, 2)}`);
@@ -538,6 +556,7 @@ class BlockchainNode {
     const LOG_HEADER = 'executeChainOnDb';
 
     for (const block of this.bc.chain) {
+      this.removeOldReceipts(block.number, db);
       if (!db.executeTransactionList(block.last_votes)) {
         logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
         process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
