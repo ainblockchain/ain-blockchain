@@ -1,8 +1,8 @@
 #!/bin/sh
 
 if [[ "$#" -lt 3 ]]; then
-    echo "Usage: sh deploy_blockchain_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup]"
-    echo "Example: sh deploy_blockchain_gcp.sh dev lia 0 --setup"
+    echo "Usage: sh deploy_blockchain_genesis_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup]"
+    echo "Example: sh deploy_blockchain_genesis_gcp.sh dev lia 0 --setup"
     exit
 fi
 

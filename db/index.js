@@ -940,6 +940,10 @@ class DB {
         if (collectFeeRes !== true) {
           return collectFeeRes;
         }
+        const receiptRes = this.recordReceipt(auth, timestamp, tx, blockNumber, result);
+        if (receiptRes !== true) { // should not happen
+          return receiptRes;
+        }
       }
       if (tx && auth && auth.addr && !auth.fid) {
         this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
@@ -975,9 +979,10 @@ class DB {
   getStateFreeTierInUse() {
     let bytes = 0;
     const apps = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.APPS, true) || {};
-    const appStakes = DB.getValueFromStateRoot(this.stateRoot, PredefinedDbPaths.STAKING) || {};
     for (const appName of Object.keys(apps)) {
-      if (!_.get(appStakes, `${appName}.${PredefinedDbPaths.STAKING_BALANCE_TOTAL}`)) {
+      if (!DB.getValueFromStateRoot(
+          this.stateRoot,
+          `/${PredefinedDbPaths.STAKING}/${appName}/${PredefinedDbPaths.STAKING_BALANCE_TOTAL}`)) {
         bytes += this.getTreeBytesAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
       }
     }
@@ -1079,6 +1084,48 @@ class DB {
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) {
       return CommonUtil.returnTxResult(
           18, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
+    }
+    return true;
+  }
+
+  static sanitizeResult(result) {
+     const sanitized = {};
+     if (result.result_list) {
+       result.result_list.forEach((res, i) => {
+         sanitized[i] = {
+           code: res.code
+         };
+         if (res.error_message) {
+           sanitized[i].error_message = res.error_message;
+         }
+       })
+     } else {
+       sanitized.code = result.code;
+      if (result.error_message) {
+        sanitized.error_message = result.error_message;
+      }
+    }
+     return sanitized;
+  }
+
+  recordReceipt(auth, timestamp, tx, blockNumber, result) {
+    const receiptPath = PathUtil.getReceiptsPath(tx.hash);
+    const gasAmountSum = _.get(result, 'gas_amount_total.bandwidth.service', 0) +
+        _.get(result, 'gas_amount_total.state.service', 0);
+    const receipt = {
+      address: auth.addr,
+      block_number: blockNumber,
+      gas_amount: gasAmountSum,
+      gas_cost: result.gas_cost_total,
+      result: DB.sanitizeResult(result)
+    };
+    if (tx.tx_body.billing) {
+      receipt.billing = tx.tx_body.billing;
+    }
+    const recordRes = this.setValue(receiptPath, receipt, auth, timestamp, tx, false);
+    if (CommonUtil.isFailedTx(recordRes)) {
+      return CommonUtil.returnTxResult(
+          29, `Failed to record receipt ${JSON.stringify(recordRes, null, 2)}`, 0);
     }
     return true;
   }
