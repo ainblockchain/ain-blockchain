@@ -20,6 +20,7 @@ const {
   ShardingProtocols,
   GenesisAccounts,
   GenesisSharding,
+  TransactionStates,
   StateVersions,
   SyncModeOptions,
   LIGHTWEIGHT,
@@ -240,6 +241,32 @@ class BlockchainNode {
     return this.stateManager.getFinalRoot().toJsObject(withDetails);
   }
 
+  getTransactionByHash(hash) {
+    const transactionInfo = this.tp.transactionTracker[hash];
+    if (!transactionInfo) {
+      return null;
+    }
+
+    if (transactionInfo.state === TransactionStates.IN_BLOCK) {
+      const block = this.bc.getBlockByNumber(transactionInfo.number);
+      const index = transactionInfo.index;
+      if (!block) {
+        // TODO(liayoo): Ask peers for the transaction / block
+      } else if (index >= 0) {
+        transactionInfo.transaction = block.transactions[index];
+      } else {
+        transactionInfo.transaction =
+            _.find(block.last_votes, (tx) => tx.hash === hash) || null;
+      }
+    } else if (transactionInfo.state === TransactionStates.EXECUTED ||
+        transactionInfo.state === TransactionStates.PENDING) {
+      const address = transactionInfo.address;
+      transactionInfo.transaction =
+          _.find(this.tp.transactions[address], (tx) => tx.hash === hash) || null;
+    }
+    return transactionInfo;
+  }
+
   getNonceForAddr(address, fromPending, fromDb = false) {
     if (!CommonUtil.isValAddr(address)) return -1;
     const cksumAddr = CommonUtil.toCksumAddr(address);
@@ -398,7 +425,7 @@ class BlockchainNode {
         this.tp.addTransaction(executableTx);
       }
     } else {
-      this.tp.addTransaction(executableTx);
+      this.tp.addTransaction(executableTx, true);
     }
 
     return result;

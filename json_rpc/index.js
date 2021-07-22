@@ -7,7 +7,6 @@ const {
   CURRENT_PROTOCOL_VERSION,
   BlockchainNodeStates,
   ReadDbOperations,
-  TransactionStates,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
   NETWORK_ID,
@@ -216,23 +215,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_getTransactionByHash: function(args, done) {
-      const transactionInfo = node.tp.transactionTracker[args.hash];
-      if (transactionInfo) {
-        if (transactionInfo.state === TransactionStates.IN_BLOCK) {
-          const block = node.bc.getBlockByNumber(transactionInfo.number);
-          const index = transactionInfo.index;
-          if (!block) {
-            // TODO(liayoo): Ask peers for the transaction / block
-          } else if (index >= 0) {
-            transactionInfo.transaction = block.transactions[index];
-          } else {
-            transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === args.hash);
-          }
-        } else if (transactionInfo.state === TransactionStates.IN_POOL) {
-          const address = transactionInfo.address;
-          transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === args.hash);
-        }
-      }
+      const transactionInfo = node.getTransactionByHash(args.hash);
       done(null, addProtocolVersion({result: transactionInfo}));
     },
 

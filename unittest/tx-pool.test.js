@@ -12,6 +12,7 @@ const {
   SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
   APPS_BANDWIDTH_BUDGET_PER_BLOCK,
   FREE_BANDWIDTH_BUDGET_PER_BLOCK,
+  TransactionStates,
 } = require('../common/constants');
 
 describe('TransactionPool', async () => {
@@ -34,9 +35,35 @@ describe('TransactionPool', async () => {
   });
 
   describe('Transaction addition', () => {
-    it('addTransaction()', () => {
-      expect(node.tp.transactions[node.account.address].find((t) => t.hash === transaction.hash))
-          .to.equal(transaction);
+    let txToAdd;
+
+    beforeEach(async () => {
+      txToAdd = getTransaction(node, {
+        operation: {
+          type: 'SET_VALUE',
+          ref: 'REF',
+          value: 'VALUE'
+        },
+        nonce: node.nonce++,
+        gas_price: 1
+      });
+    });
+
+    it('add a pending transaction', () => {
+      node.tp.addTransaction(txToAdd);
+      expect(node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash))
+          .to.equal(txToAdd);
+      const txInfo = node.getTransactionByHash(txToAdd.hash);
+      expect(txInfo.state).to.equal(TransactionStates.PENDING);
+    });
+
+    it('add an executed transaction', () => {
+      node.tp.addTransaction(txToAdd, true);
+
+      expect(node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash))
+          .to.equal(txToAdd);
+      const txInfo = node.getTransactionByHash(txToAdd.hash);
+      expect(txInfo.state).to.equal(TransactionStates.EXECUTED);
     });
   });
 
