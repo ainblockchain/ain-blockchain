@@ -425,7 +425,7 @@ class BlockchainNode {
         this.tp.addTransaction(executableTx);
       }
     } else {
-      this.tp.addTransaction(executableTx);
+      this.tp.addTransaction(executableTx, true);
     }
 
     return result;
