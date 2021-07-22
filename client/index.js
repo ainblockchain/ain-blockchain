@@ -398,6 +398,22 @@ app.get('/get_transaction', (req, res, next) => {
     .end();
 });
 
+app.get('/get_block_by_hash', (req, res, next) => {
+  const block = node.bc.getBlockByHash(req.query.hash);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result: block})
+    .end();
+});
+
+app.get('/get_block_by_number', (req, res, next) => {
+  const block = node.bc.getBlockByNumber(req.query.number);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result: block})
+    .end();
+});
+
 app.get('/get_address', (req, res, next) => {
   const result = node.account.address;
   res.status(200)

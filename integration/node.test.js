@@ -23,30 +23,41 @@ const {
   MICRO_AIN,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
-const { waitUntilTxFinalized, parseOrLog, setUpApp } = require('../unittest/test-util');
+const {
+  waitUntilTxFinalized,
+  parseOrLog,
+  setUpApp,
+  getLastBlockNumber,
+  waitForNewBlocks,
+  getBlockByNumber,
+} = require('../unittest/test-util');
 
 const ENV_VARIABLES = [
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MAX_NUM_BLOCKS_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MAX_NUM_BLOCKS_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MAX_NUM_BLOCKS_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MAX_NUM_BLOCKS_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -195,14 +206,14 @@ describe('Blockchain Node', () => {
     await CommonUtil.sleep(2000);
 
 
-  const server1Addr = parseOrLog(syncRequest(
-    'GET', server1 + '/get_address').body.toString('utf-8')).result;
-  const server2Addr = parseOrLog(syncRequest(
-      'GET', server2 + '/get_address').body.toString('utf-8')).result;
-  const server3Addr = parseOrLog(syncRequest(
-      'GET', server3 + '/get_address').body.toString('utf-8')).result;
-  const server4Addr = parseOrLog(syncRequest(
-      'GET', server4 + '/get_address').body.toString('utf-8')).result;
+    const server1Addr = parseOrLog(syncRequest(
+        'GET', server1 + '/get_address').body.toString('utf-8')).result;
+    const server2Addr = parseOrLog(syncRequest(
+        'GET', server2 + '/get_address').body.toString('utf-8')).result;
+    const server3Addr = parseOrLog(syncRequest(
+        'GET', server3 + '/get_address').body.toString('utf-8')).result;
+    const server4Addr = parseOrLog(syncRequest(
+        'GET', server4 + '/get_address').body.toString('utf-8')).result;
     await setUpApp('test', serverList, {
       admin: {
         [server1Addr]: true,
@@ -6751,6 +6762,54 @@ describe('Blockchain Node', () => {
         "code": 16,
         "bandwidth_gas_amount": 0
       });
+    });
+  });
+
+  describe('Tx Receipts', () => {
+    it(`Records a transaction's receipt`, async () => {
+      const txSignerAddress = parseOrLog(syncRequest(
+          'GET', server1 + '/get_address').body.toString('utf-8')).result;
+      const request = {
+        ref: '/apps/test/test_value/some/path',
+        value: "some value"
+      };
+      const body = parseOrLog(syncRequest(
+          'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+      assert.deepEqual(_.get(body, 'result.result.code'), 0);
+      expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+      expect(body.code).to.equal(0);
+      if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+        console.error(`Failed to check finalization of tx.`);
+      }
+
+      const receipt = parseOrLog(syncRequest(
+          'GET', server1 + `/get_value?ref=/receipts/${body.result.tx_hash}`)
+          .body.toString('utf-8')).result;
+      assert.deepEqual(receipt.address, txSignerAddress);
+      assert.deepEqual(receipt.result, {
+        code: 0
+      });
+    });
+
+    it(`Removes an old transaction's receipt`, async () => {
+      const MAX_NUM_BLOCKS_RECEIPTS = 100;
+      let lastBlockNumber = getLastBlockNumber(server1);
+      if (lastBlockNumber <= MAX_NUM_BLOCKS_RECEIPTS) {
+        await waitForNewBlocks(server1, MAX_NUM_BLOCKS_RECEIPTS - lastBlockNumber + 1);
+        lastBlockNumber = getLastBlockNumber(server1);
+      }
+      let oldBlockNumber = lastBlockNumber - MAX_NUM_BLOCKS_RECEIPTS;
+      let oldBlock = getBlockByNumber(server1, oldBlockNumber);
+      while (!oldBlock.transactions.length) {
+        oldBlock = getBlockByNumber(server1, --oldBlockNumber);
+        await CommonUtil.sleep(2000);
+      }
+      for (const tx of oldBlock.transactions) {
+        const receipt = parseOrLog(syncRequest(
+          'GET', server1 + `/get_value?ref=/receipts/${tx.hash}`)
+          .body.toString('utf-8')).result;
+        assert.deepEqual(receipt, null);
+      }
     });
   });
 });
