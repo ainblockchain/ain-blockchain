@@ -256,13 +256,13 @@ class BlockchainNode {
         transactionInfo.transaction = block.transactions[index];
       } else {
         transactionInfo.transaction =
-            _.find(block.last_votes, (tx) => tx.hash === args.hash) || null;
+            _.find(block.last_votes, (tx) => tx.hash === hash) || null;
       }
     } else if (transactionInfo.state === TransactionStates.EXECUTED ||
         transactionInfo.state === TransactionStates.PENDING) {
       const address = transactionInfo.address;
       transactionInfo.transaction =
-          _.find(this.tp.transactions[address], (tx) => tx.hash === args.hash) || null;
+          _.find(this.tp.transactions[address], (tx) => tx.hash === hash) || null;
     }
     return transactionInfo;
   }
