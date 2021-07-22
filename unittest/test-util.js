@@ -93,14 +93,11 @@ async function waitUntilTxFinalized(servers, txHash) {
 }
 
 async function waitForNewBlocks(server, waitFor = 1) {
-  const initialLastBlockNumber =
-      parseOrLog(syncRequest('GET', server + '/last_block_number')
-        .body.toString('utf-8'))['result'];
+  const initialLastBlockNumber = getLastBlockNumber(server);
   let updatedLastBlockNumber = initialLastBlockNumber;
   while (updatedLastBlockNumber < initialLastBlockNumber + waitFor) {
     await CommonUtil.sleep(1000);
-    updatedLastBlockNumber = parseOrLog(syncRequest('GET', server + '/last_block_number')
-      .body.toString('utf-8'))['result'];
+    updatedLastBlockNumber = getLastBlockNumber(server);
   }
 }
 
@@ -151,6 +148,15 @@ function getLastBlock(server) {
   return parseOrLog(syncRequest('GET', server + '/last_block').body.toString('utf-8')).result;
 }
 
+function getLastBlockNumber(server) {
+  return parseOrLog(syncRequest('GET', server + '/last_block_number').body.toString('utf-8')).result;
+}
+
+function getBlockByNumber(server, number) {
+  return parseOrLog(syncRequest('GET', server + `/get_block_by_number?number=${number}`)
+      .body.toString('utf-8')).result;
+}
+
 module.exports = {
   readConfigFile,
   setNodeForTesting,
@@ -162,4 +168,6 @@ module.exports = {
   parseOrLog,
   setUpApp,
   getLastBlock,
+  getLastBlockNumber,
+  getBlockByNumber,
 };
