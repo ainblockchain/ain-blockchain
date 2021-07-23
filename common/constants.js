@@ -44,6 +44,8 @@ const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
 const LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
 const SYNC_MODE = process.env.SYNC_MODE || 'full';
+const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
+    Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
 
 // ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -155,10 +157,18 @@ const PredefinedDbPaths = {
   BLOCK_HASH: 'block_hash',
   STAKE: 'stake',
   PROPOSAL_RIGHT: 'proposal_right',
+  // Receipts
+  RECEIPTS: 'receipts',
+  RECEIPTS_ADDRESS: 'address',
+  RECEIPTS_BILLING: 'billing',
+  RECEIPTS_BLOCK_NUMBER: 'block_number',
+  RECEIPTS_EXEC_RESULT: 'exec_result',
+  RECEIPTS_GAS_COST_TOTAL: 'gas_cost_total',
   // Gas fee
   GAS_FEE: 'gas_fee',
   COLLECT: 'collect',
   BILLING: 'billing',
+  GAS_FEE_AMOUNT: 'amount',
   // Token
   TOKEN: 'token',
   TOKEN_NAME: 'name',
@@ -776,6 +786,7 @@ module.exports = {
   SNAPSHOTS_N2S_DIR_NAME,
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
   MAX_NUM_SNAPSHOTS,
+  MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
   DEBUG,
   CONSOLE_LOG,
   ENABLE_DEV_SET_CLIENT_API,

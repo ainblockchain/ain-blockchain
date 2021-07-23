@@ -166,6 +166,21 @@ class RuleUtil {
         `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}/${userAddr}`) === true;
   }
 
+  isGasFeeCollected(address, newData, txHash, getValue) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    const blockNumber = newData[PredefinedDbPaths.RECEIPTS_BLOCK_NUMBER];
+    const gasCost = _.get(newData, `${PredefinedDbPaths.RECEIPTS_EXEC_RESULT}.${PredefinedDbPaths.RECEIPTS_GAS_COST_TOTAL}`);
+    if (gasCost === undefined) {
+      return false;
+    }
+    const billing = _.get(newData, `${PredefinedDbPaths.RECEIPTS_BILLING}`);
+    const collectedFrom = billing ? `${PredefinedDbPaths.BILLING}|${billing}` : address;
+    const feeCollected = getValue(
+        `/${PredefinedDbPaths.GAS_FEE}/${PredefinedDbPaths.COLLECT}/${collectedFrom}` +
+        `/${blockNumber}/${txHash}/${PredefinedDbPaths.GAS_FEE_AMOUNT}`) || 0;
+    return feeCollected === gasCost;
+  }
+
   getConsensusStakeBalance(address, getValue) {
     const { PredefinedDbPaths } = require('../common/constants');
     return getValue(
