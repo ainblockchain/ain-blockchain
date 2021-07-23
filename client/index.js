@@ -414,6 +414,14 @@ app.get('/get_nonce', (req, res, next) => {
     .end();
 });
 
+app.get('/get_timestamp', (req, res, next) => {
+  const result = node.getTimestampForAddr(req.query.address, req.query.from === 'pending');
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
 app.get('/get_sharding', (req, res, next) => {
   const result = node.getSharding();
   res.status(200)

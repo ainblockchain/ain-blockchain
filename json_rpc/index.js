@@ -352,6 +352,12 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         }));
     },
 
+    ain_getTimestamp: function(args, done) {
+      done(null, addProtocolVersion({
+          result: p2pServer.node.getTimestampForAddr(args.address, args.from === 'pending')
+        }));
+    },
+
     ain_isValidator: function(args, done) {
       const addr = args.address;
       const whitelisted = p2pServer.node.db.getValue(PathUtil.getConsensusWhitelistAddrPath(addr));
