@@ -874,11 +874,11 @@ class DB {
   }
 
   executeMultiSetOperation(opList, auth, timestamp, tx) {
-    const resultList = [];
+    const resultList = {};
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
       const result = this.executeSingleSetOperation(op, auth, timestamp, tx);
-      resultList.push(result);
+      resultList[i] = result;
       if (CommonUtil.isFailedTx(result)) {
         break;
       }
@@ -914,7 +914,7 @@ class DB {
     const treeBytesPerAppAfter = this.getTreeBytesPerApp(op);
     const gasAmountTotal = {
       bandwidth: CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, result),
-      state: { service: 0, app: {} }
+      state: { service: 0 }
     };
     result.gas_amount_total = gasAmountTotal;
     result.gas_cost_total = 0;
@@ -924,7 +924,7 @@ class DB {
       //                   done in isValidTxBody() when transactions are created.
       const treeBytesAfter = this.getTreeBytes();
       tx.setExtraField('gas', gasAmountTotal);
-      DB.updateStateGasAmounts(
+      DB.updateStateGasAmount(
           tx, result, treeBytesBefore, treeBytesAfter, treeBytesPerAppBefore, treeBytesPerAppAfter);
       const stateGasBudgetCheck = this.checkStateGasBudgets(op, treeBytesAfter.apps, treeBytesAfter.service);
       if (stateGasBudgetCheck !== true) {
@@ -952,26 +952,25 @@ class DB {
     return result;
   }
 
-  static updateStateGasAmounts(tx, result, treeBytesBefore, treeBytesAfter, treeBytesPerAppBefore, treeBytesPerAppAfter) {
+  static updateStateGasAmount(tx, result, treeBytesBefore, treeBytesAfter, treeBytesPerAppBefore, treeBytesPerAppAfter) {
     const LOG_HEADER = 'updateStateGasAmounts';
-    const serviceTreeBytesDelta = Math.max(treeBytesAfter.service - treeBytesBefore.service, 0);
-    const appStateGasAmountDelta = Object.keys(treeBytesPerAppAfter).reduce((acc, appName) => {
-      const delta = treeBytesPerAppAfter[appName] - treeBytesPerAppBefore[appName];
-      if (delta > 0) {
-        acc[appName] = delta * STATE_GAS_CONSTANT;
-      }
-      return acc;
-    }, {});
-    logger.debug(`[${LOG_HEADER}] serviceStateBytesDelta: ${serviceTreeBytesDelta}, appStateBytesDelta: ${JSON.stringify(appStateGasAmountDelta, null, 2)}`);
-    const txGas = _.get(tx, 'extra.gas', {
-      bandwidth: { service: 0, app: {} },
-      state: { service: 0, app: {} }
-    });
-    CommonUtil.setJsObject(txGas, ['state'], {
-      service: serviceTreeBytesDelta * STATE_GAS_CONSTANT,
-      app: appStateGasAmountDelta
-    });
-    CommonUtil.setJsObject(result, ['gas_amount_total', 'state'], txGas.state);
+    const stateGasAmount = {
+      service: Math.max(treeBytesAfter.service - treeBytesBefore.service, 0) * STATE_GAS_CONSTANT,
+      app: Object.keys(treeBytesPerAppAfter).reduce((acc, appName) => {
+          const delta = treeBytesPerAppAfter[appName] - treeBytesPerAppBefore[appName];
+          if (delta > 0) {
+            acc[appName] = delta * STATE_GAS_CONSTANT;
+          }
+          return acc;
+        }, {})
+    };
+    logger.debug(`[${LOG_HEADER}] stateGasAmount: ${JSON.stringify(stateGasAmount, null, 2)}`);
+    if (CommonUtil.isEmpty(stateGasAmount.app)) {
+      delete stateGasAmount.app;
+    }
+    CommonUtil.setJsObject(result, ['gas_amount_total', 'state'], stateGasAmount);
+    const txGas = _.get(tx, 'extra.gas', { bandwidth: { service: 0 } });
+    CommonUtil.setJsObject(txGas, ['state'], stateGasAmount);
     tx.setExtraField('gas', txGas);
   }
 
@@ -1088,39 +1087,15 @@ class DB {
     return true;
   }
 
-  static sanitizeResult(result) {
-     const sanitized = {};
-     if (result.result_list) {
-       result.result_list.forEach((res, i) => {
-         sanitized[i] = {
-           code: res.code
-         };
-         if (res.error_message) {
-           sanitized[i].error_message = res.error_message;
-         }
-       })
-     } else {
-       sanitized.code = result.code;
-      if (result.error_message) {
-        sanitized.error_message = result.error_message;
-      }
-    }
-     return sanitized;
-  }
-
-  recordReceipt(auth, timestamp, tx, blockNumber, result) {
+  recordReceipt(auth, timestamp, tx, blockNumber, txExecResult) {
     const receiptPath = PathUtil.getReceiptsPath(tx.hash);
-    const gasAmountSum = _.get(result, 'gas_amount_total.bandwidth.service', 0) +
-        _.get(result, 'gas_amount_total.state.service', 0);
     const receipt = {
-      address: auth.addr,
-      block_number: blockNumber,
-      gas_amount: gasAmountSum,
-      gas_cost: result.gas_cost_total,
-      result: DB.sanitizeResult(result)
+      [PredefinedDbPaths.RECEIPTS_ADDRESS]: auth.addr,
+      [PredefinedDbPaths.RECEIPTS_BLOCK_NUMBER]: blockNumber,
+      [PredefinedDbPaths.RECEIPTS_EXEC_RESULT]: txExecResult
     };
     if (tx.tx_body.billing) {
-      receipt.billing = tx.tx_body.billing;
+      receipt[PredefinedDbPaths.RECEIPTS_BILLING] = tx.tx_body.billing;
     }
     const recordRes = this.setValue(receiptPath, receipt, auth, timestamp, tx, false);
     if (CommonUtil.isFailedTx(recordRes)) {
