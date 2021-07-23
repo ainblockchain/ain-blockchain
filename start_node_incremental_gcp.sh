@@ -147,7 +147,7 @@ eval $KILL_CMD
 printf "\n#### [Step 6] Start new node server ####\n\n"
 
 sleep 10
-MAX_OLD_SPACE_SIZE_MB=4000
+MAX_OLD_SPACE_SIZE_MB=6000
 
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
 printf "START_CMD='$START_CMD'\n"
