@@ -406,21 +406,21 @@ describe("CommonUtil", () => {
       expect(CommonUtil.isFailedTx({
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
+            "op_results": {
+              "0": {
                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
+                      "op_results": {
+                        "0": {
                           "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
                             "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "SUCCESS",
                       "bandwidth_gas_amount": 0,
                     }
@@ -429,7 +429,7 @@ describe("CommonUtil", () => {
                   "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
             "bandwidth_gas_amount": 0,
           }
@@ -441,21 +441,21 @@ describe("CommonUtil", () => {
       expect(CommonUtil.isFailedTx({
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
+            "op_results": {
+              "0": {
                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
+                      "op_results": {
+                        "0": {
                           "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
                             "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "SUCCESS",
                       "bandwidth_gas_amount": 0,
                     }
@@ -464,7 +464,7 @@ describe("CommonUtil", () => {
                   "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
             "bandwidth_gas_amount": 0,
           }
@@ -477,14 +477,14 @@ describe("CommonUtil", () => {
       expect(CommonUtil.isFailedTx({
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
+            "op_results": {
+              "0": {
                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
+                      "op_results": {
+                        "0": {
                           "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 201,  // A sub-operation failed
@@ -492,7 +492,7 @@ describe("CommonUtil", () => {
                             "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "SUCCESS",
                       "bandwidth_gas_amount": 0,
                     }
@@ -501,7 +501,7 @@ describe("CommonUtil", () => {
                   "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
             "bandwidth_gas_amount": 0,
           }
@@ -513,21 +513,21 @@ describe("CommonUtil", () => {
       expect(CommonUtil.isFailedTx({
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
+            "op_results": {
+              "0": {
                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
+                      "op_results": {
+                        "0": {
                           "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
                             "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "FAILURE",  // A function failed.
                       "bandwidth_gas_amount": 0,
                     }
@@ -536,7 +536,7 @@ describe("CommonUtil", () => {
                   "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
             "bandwidth_gas_amount": 0,
           }
@@ -559,7 +559,6 @@ describe("CommonUtil", () => {
         "gas_amount_total": {
           "bandwidth": {
             "service": 11,
-            "app": {}
           }
         },
         "gas_cost_total": 0,
@@ -568,66 +567,66 @@ describe("CommonUtil", () => {
 
     it("when multi-set operation without function triggering", () => {
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
             "bandwidth_gas_amount": 1
           },
-          {
+          "1": {
             "code": 0,
             "bandwidth_gas_amount": 1,
           },
-          {
+          "2": {
             "code": 0,
             "bandwidth_gas_amount": 1
           },
-        ],
+        },
       })).to.equal(false);
 
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
             "bandwidth_gas_amount": 1
           },
-          {
+          "1": {
             "code": 201,
             "error_message": "Not a number type: bar or 10",
             "bandwidth_gas_amount": 0
           },
-          {
+          "2": {
             "code": 0,
             "bandwidth_gas_amount": 1
           },
-        ]
+        }
       })).to.equal(true);
     })
 
     it("when multi-set operation with native function triggering", () => {
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
             "bandwidth_gas_amount": 1
           },
-          {
+          "1": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "SUCCESS",
                           "bandwidth_gas_amount": 0,
                         }
@@ -636,7 +635,7 @@ describe("CommonUtil", () => {
                       "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
               }
@@ -644,37 +643,37 @@ describe("CommonUtil", () => {
             "code": 0,
             "bandwidth_gas_amount": 1,
           },
-          {
+          "2": {
             "code": 0,
             "bandwidth_gas_amount": 1,
           }
-        ]
+        }
       })).to.equal(false);
 
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
             "bandwidth_gas_amount": 1
           },
-          {
+          "1": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "SUCCESS",
                           "bandwidth_gas_amount": 0,
                         }
@@ -683,7 +682,7 @@ describe("CommonUtil", () => {
                       "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
               }
@@ -691,31 +690,31 @@ describe("CommonUtil", () => {
             "code": 0,
             "bandwidth_gas_amount": 0
           },
-          {
+          "2": {
             "code": 201,  // One of the root operations failed.
             "error_message": "Not a number type: bar or 10",
             "bandwidth_gas_amount": 1,
           },
-        ]
+        }
       })).to.equal(true);
 
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
             "bandwidth_gas_amount": 1
           },
-          {
+          "1": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 201,  // A sub-operation failed.
@@ -723,7 +722,7 @@ describe("CommonUtil", () => {
                                 "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "SUCCESS",
                           "bandwidth_gas_amount": 0,
                         }
@@ -732,7 +731,7 @@ describe("CommonUtil", () => {
                       "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
               }
@@ -740,37 +739,37 @@ describe("CommonUtil", () => {
             "code": 0,
             "bandwidth_gas_amount": 0
           },
-          {
+          "2": {
             "code": 0,
             "bandwidth_gas_amount": 1,
           },
-        ]
+        }
       })).to.equal(true);
 
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
             "bandwidth_gas_amount": 1
           },
-          {
+          "1": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "FAILURE",  // A function failed.
                           "bandwidth_gas_amount": 0,
                         }
@@ -779,7 +778,7 @@ describe("CommonUtil", () => {
                       "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
               }
@@ -787,29 +786,28 @@ describe("CommonUtil", () => {
             "code": 0,
             "bandwidth_gas_amount": 0
           },
-          {
+          "2": {
             "code": 0,
             "bandwidth_gas_amount": 1,
           },
-        ]
+        }
       })).to.equal(true);
     })
 
     it("when multi-set operation with REST function triggering", () => {
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
             "bandwidth_gas_amount": 1,
             "gas_amount_total": {
               "bandwidth": {
                 "service": 1,
-                "app": {}
               }
             },
             "gas_cost_total": 0
           },
-          {
+          "1": {
             "code": 0,
             "func_results": {
               "0x11111": {
@@ -821,22 +819,20 @@ describe("CommonUtil", () => {
             "gas_amount_total": {
               "bandwidth": {
                 "service": 11,
-                "app": {}
               }
             },
             "gas_cost_total": 0
           },
-          {
+          "2": {
             "code": 0,
             "bandwidth_gas_amount": 1,
             "gas_amount_total": {
               "bandwidth": {
                 "service": 1,
-                "app": {}
               }
             }
           }
-        ]
+        }
       })).to.equal(false);
     });
   })
@@ -846,7 +842,7 @@ describe("CommonUtil", () => {
     const appOp = { ref: '/apps/test', value: null, type: 'SET_VALUE' };
 
     it("when abnormal input", () => {
-      const emptyVal = { app: {}, service: 0 };
+      const emptyVal = { service: 0 };
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, null), emptyVal);
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, undefined), emptyVal);
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, {}), emptyVal);
@@ -862,21 +858,21 @@ describe("CommonUtil", () => {
       const result = {
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
+            "op_results": {
+              "0": {
                 "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
+                      "op_results": {
+                        "0": {
                           "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
                             "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "SUCCESS",
                       "bandwidth_gas_amount": 10
                     }
@@ -885,7 +881,7 @@ describe("CommonUtil", () => {
                   "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
             "bandwidth_gas_amount": 20,
           }
@@ -894,7 +890,6 @@ describe("CommonUtil", () => {
         "bandwidth_gas_amount": 30
       };
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, result), {
-        app: {},
         service: 62
       });
     })
@@ -903,21 +898,21 @@ describe("CommonUtil", () => {
       const result = {
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
+            "op_results": {
+              "0": {
                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
+                      "op_results": {
+                        "0": {
                           "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
                             "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "SUCCESS",
                       "bandwidth_gas_amount": 10
                     }
@@ -926,7 +921,7 @@ describe("CommonUtil", () => {
                   "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
             "bandwidth_gas_amount": 20,
           }
@@ -946,21 +941,21 @@ describe("CommonUtil", () => {
       const result = {
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
+            "op_results": {
+              "0": {
                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
+                      "op_results": {
+                        "0": {
                           "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
                             "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "SUCCESS",
                       "bandwidth_gas_amount": 10
                     }
@@ -969,7 +964,7 @@ describe("CommonUtil", () => {
                   "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
             "bandwidth_gas_amount": 20,
           }
@@ -988,25 +983,25 @@ describe("CommonUtil", () => {
     it("when multiple operation result input (service)", () => {
       const setTxOp = { type: 'SET', op_list: [{...serviceOp}, {...serviceOp}] };
       const result = {
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "SUCCESS",
                           "bandwidth_gas_amount": 10
                         }
@@ -1015,7 +1010,7 @@ describe("CommonUtil", () => {
                       "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 20
               }
@@ -1023,14 +1018,13 @@ describe("CommonUtil", () => {
             "code": 0,
             "bandwidth_gas_amount": 30
           },
-          {
+          "1": {
             "code": 0,
             "bandwidth_gas_amount": 1
           },
-        ]
+        }
       };
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(setTxOp, result), {
-        app: {},
         service: 63
       });
     })
@@ -1038,25 +1032,25 @@ describe("CommonUtil", () => {
     it("when multiple operation result input (app)", () => {
       const setTxOp = { type: 'SET', op_list: [{...appOp}, {...appOp}] };
       const result = {
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "SUCCESS",
                           "bandwidth_gas_amount": 10
                         }
@@ -1065,7 +1059,7 @@ describe("CommonUtil", () => {
                       "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 20
               }
@@ -1073,11 +1067,11 @@ describe("CommonUtil", () => {
             "code": 0,
             "bandwidth_gas_amount": 30
           },
-          {
+          "1": {
             "code": 0,
             "bandwidth_gas_amount": 1
           },
-        ]
+        }
       };
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(setTxOp, result), {
         app: {
@@ -1090,25 +1084,25 @@ describe("CommonUtil", () => {
     it("when multiple operation result input (service & app)", () => {
       const setTxOp = { type: 'SET', op_list: [{...appOp}, {...serviceOp}] };
       const result = {
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "SUCCESS",
                           "bandwidth_gas_amount": 10
                         }
@@ -1117,7 +1111,7 @@ describe("CommonUtil", () => {
                       "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 20
               }
@@ -1125,11 +1119,11 @@ describe("CommonUtil", () => {
             "code": 0,
             "bandwidth_gas_amount": 30
           },
-          {
+          "1": {
             "code": 0,
             "bandwidth_gas_amount": 1
           },
-        ]
+        }
       };
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(setTxOp, result), {
         app: {

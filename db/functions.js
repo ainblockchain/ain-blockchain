@@ -263,10 +263,6 @@ class Functions {
     return call && call.fidList && call.fidList.includes(fid);
   }
 
-  static getOpResultList(context) {
-    return JSON.parse(JSON.stringify(context.opResultList));
-  }
-
   static addToOpResultList(path, result, context) {
     context.opResultList.push({ path, result, });
   }
@@ -427,10 +423,10 @@ class Functions {
   }
 
   returnFuncResult(context, code, extraGasAmount = 0) {
-    const opResultList = Functions.getOpResultList(context);
+    const opResultListObj = CommonUtil.convertListToObj(context.opResultList);
     const funcResultToReturn = {};
-    if (!CommonUtil.isEmpty(opResultList)) {
-      funcResultToReturn.op_results = opResultList;
+    if (CommonUtil.isDict(opResultListObj)) {
+      funcResultToReturn.op_results = opResultListObj;
     }
     Object.assign(funcResultToReturn, this.buildFuncResultToReturn(context, code, extraGasAmount));
     return funcResultToReturn;

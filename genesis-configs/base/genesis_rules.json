@@ -165,7 +165,7 @@
   "receipts": {
     "$tx_hash": {
       ".rule": {
-        "write": "util.isDict(newData) && newData.address === auth.addr && util.isNumber(newData.block_number) && util.isNumber(newData.gas_cost) && util.isGasFeeCollected(auth.addr, newData.billing, newData.block_number, $tx_hash, newData.gas_cost, getValue)"
+        "write": "util.isDict(newData) && newData.address === auth.addr && util.isNumber(newData.block_number) && util.isGasFeeCollected(auth.addr, newData, $tx_hash, getValue)"
       }
     }
   },

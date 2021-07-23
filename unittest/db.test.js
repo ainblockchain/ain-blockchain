@@ -1721,21 +1721,21 @@ describe("DB operations", () => {
             timestamp, tx), {
           "func_results": {
             "_saveLastTx": {
-              "op_results": [
-                {
+              "op_results": {
+                "0": {
                   "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                   "result": {
                     "func_results": {
                       "_eraseValue": {
-                        "op_results": [
-                          {
+                        "op_results": {
+                          "0": {
                             "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1,
                             }
                           }
-                        ],
+                        },
                         "code": "SUCCESS",
                         "bandwidth_gas_amount": 0,
                       }
@@ -1744,7 +1744,7 @@ describe("DB operations", () => {
                     "bandwidth_gas_amount": 1
                   }
                 }
-              ],
+              },
               "code": "SUCCESS",
               "bandwidth_gas_amount": 0
             }
@@ -1825,14 +1825,14 @@ describe("DB operations", () => {
             timestamp, tx), {
           "func_results": {
             "_saveLastTx": {
-              "op_results": [
-                {
+              "op_results": {
+                "0": {
                   "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                   "result": {
                     "func_results": {
                       "_eraseValue": {
-                        "op_results": [
-                          {
+                        "op_results": {
+                          "0": {
                             "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                             "result": {
                               "code": 103,
@@ -1840,7 +1840,7 @@ describe("DB operations", () => {
                               "bandwidth_gas_amount": 0
                             }
                           }
-                        ],
+                        },
                         "code": "FAILURE",
                         "bandwidth_gas_amount": 0,
                       }
@@ -1849,7 +1849,7 @@ describe("DB operations", () => {
                     "bandwidth_gas_amount": 1
                   }
                 }
-              ],
+              },
               "code": "FAILURE",
               "bandwidth_gas_amount": 0,
             }
@@ -1933,32 +1933,32 @@ describe("DB operations", () => {
             }
           }
         ], { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, { extra: { executed_at: 1234567890000 }}), {
-          "result_list": [
-            {
+          "result_list": {
+            "0": {
               "code": 0,
               "bandwidth_gas_amount": 1,
             },
-            {
+            "1": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "2": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "3": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "4": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "5": {
               "code": 0,
               "bandwidth_gas_amount": 1
             }
-          ]
+          }
         });
         assert.deepEqual(node.db.getValue("/apps/test/nested/far/down"), { "new": 12345 })
         expect(node.db.getValue("/apps/test/increment/value")).to.equal(30)
@@ -2037,17 +2037,17 @@ describe("DB operations", () => {
             value: 10
           },
         ]), {
-          result_list: [
-            {
+          result_list: {
+            "0": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "1": {
               "code": 201,
               "error_message": "Not a number type: bar or 10",
               "bandwidth_gas_amount": 0
             }
-          ]
+          }
         })
         expect(node.db.getValue("/apps/test/ai/foo")).to.equal("bar")
       })
@@ -2132,25 +2132,25 @@ describe("DB operations", () => {
 
         assert.deepEqual(node.db.executeMultiSetOperation(txBody.operation.op_list,
             { addr: 'abcd' }, timestamp, tx), {
-          "result_list": [
-            {
+          "result_list": {
+            "0": {
               "func_results": {
                 "_saveLastTx": {
-                  "op_results": [
-                    {
+                  "op_results": {
+                    "0": {
                       "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                       "result": {
                         "func_results": {
                           "_eraseValue": {
-                            "op_results": [
-                              {
+                            "op_results": {
+                              "0": {
                                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                                 "result": {
                                   "code": 0,
                                   "bandwidth_gas_amount": 1
                                 }
                               }
-                            ],
+                            },
                             "code": "SUCCESS",
                             "bandwidth_gas_amount": 0
                           }
@@ -2159,7 +2159,7 @@ describe("DB operations", () => {
                         "bandwidth_gas_amount": 1
                       }
                     }
-                  ],
+                  },
                   "code": "SUCCESS",
                   "bandwidth_gas_amount": 0
                 }
@@ -2167,11 +2167,11 @@ describe("DB operations", () => {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "1": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-          ],
+          },
         });
       })
 
@@ -2255,18 +2255,18 @@ describe("DB operations", () => {
 
         assert.deepEqual(node.db.executeMultiSetOperation(txBody.operation.op_list,
             { addr: 'abcd' }, timestamp, tx), {
-          "result_list": [
-            {
+          "result_list": {
+            "0": {
               "func_results": {
                 "_saveLastTx": {
-                  "op_results": [
-                    {
+                  "op_results": {
+                    "0": {
                       "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                       "result": {
                         "func_results": {
                           "_eraseValue": {
-                            "op_results": [
-                              {
+                            "op_results": {
+                              "0": {
                                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                                 "result": {
                                   "code": 103,
@@ -2274,7 +2274,7 @@ describe("DB operations", () => {
                                   "bandwidth_gas_amount": 0,
                                 }
                               }
-                            ],
+                            },
                             "code": "FAILURE",
                             "bandwidth_gas_amount": 0,
                           }
@@ -2283,7 +2283,7 @@ describe("DB operations", () => {
                         "bandwidth_gas_amount": 1
                       }
                     }
-                  ],
+                  },
                   "code": "FAILURE",
                   "bandwidth_gas_amount": 0,
                 }
@@ -2291,7 +2291,7 @@ describe("DB operations", () => {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-          ],
+          },
         });
       })
     })
@@ -2457,7 +2457,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
           "code": 25,
-          "error_message": "Exceeded state budget limit for services (10382760 > 10000000)",
+          "error_message": "Exceeded state budget limit for services (10382594 > 10000000)",
           "bandwidth_gas_amount": 0
         });
       });

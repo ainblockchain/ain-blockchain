@@ -1517,32 +1517,32 @@ describe('Sharding', async () => {
           const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result'), {
-            "result_list": [
-              {
+            "result_list": {
+              "0": {
                 "code": 0,
                 "bandwidth_gas_amount": 1
               },
-              {
+              "1": {
                 "code": 0,
                 "bandwidth_gas_amount": 1
               },
-              {
+              "2": {
                 "code": 0,
                 "bandwidth_gas_amount": 1
               },
-              {
+              "3": {
                 "code": 0,
                 "bandwidth_gas_amount": 1
               },
-              {
+              "4": {
                 "code": 0,
                 "bandwidth_gas_amount": 1
               },
-              {
+              "5": {
                 "code": 0,
                 "bandwidth_gas_amount": 1
               },
-            ],
+            },
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
@@ -1631,39 +1631,37 @@ describe('Sharding', async () => {
           const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result'), {
-            "result_list": [
-              {
+            "result_list": {
+              "0": {
                 "code": 0,
                 "bandwidth_gas_amount": 0
               },
-              {
+              "1": {
                 "code": 0,
                 "bandwidth_gas_amount": 0
               },
-              {
+              "2": {
                 "code": 0,
                 "bandwidth_gas_amount": 0
               },
-              {
+              "3": {
                 "code": 0,
                 "bandwidth_gas_amount": 0
               },
-              {
+              "4": {
                 "code": 0,
                 "bandwidth_gas_amount": 0
               },
-              {
+              "5": {
                 "code": 0,
                 "bandwidth_gas_amount": 0
               },
-            ],
+            },
             "gas_amount_total": {
               "bandwidth": {
-                "app": {},
                 "service": 0
               },
               "state": {
-                "app": {},
                 "service": 0
               }
             },
@@ -2076,15 +2074,15 @@ describe('Sharding', async () => {
             "_updateLatestShardReport": {
               "code": "SUCCESS",
               "bandwidth_gas_amount": 0,
-              "op_results": [
-                {
+              "op_results": {
+                "0": {
                   "path": "/apps/a_dapp/latest",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1,
                   }
                 }
-              ]
+              }
             }
           },
           "bandwidth_gas_amount": 1,
@@ -2135,27 +2133,27 @@ describe('Sharding', async () => {
             'POST', parentServer + '/set', { json: multipleReportVal }).body.toString('utf-8')
         );
         assert.deepEqual(_.get(shardReportBody, 'result.result'), {
-          "result_list": [
-            {
+          "result_list": {
+            "0": {
               "code": 0,
               "func_results": {
                 "_updateLatestShardReport": {
                   "code": "SUCCESS",
                   "bandwidth_gas_amount": 0,
-                  "op_results": [
-                    {
+                  "op_results": {
+                    "0": {
                       "path": "/apps/a_dapp/latest",
                       "result": {
                         "code": 0,
                         "bandwidth_gas_amount": 1,
                       }
                     }
-                  ]
+                  }
                 }
               },
               "bandwidth_gas_amount": 1,
             },
-            {
+            "1": {
               "code": 0,
               "func_results": {
                 "_updateLatestShardReport": {
@@ -2165,7 +2163,7 @@ describe('Sharding', async () => {
               },
               "bandwidth_gas_amount": 1
             }
-          ],
+          },
           "gas_amount_total": {
             "bandwidth": {
               "app": {

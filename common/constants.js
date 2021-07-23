@@ -158,6 +158,11 @@ const PredefinedDbPaths = {
   PROPOSAL_RIGHT: 'proposal_right',
   // Receipts
   RECEIPTS: 'receipts',
+  RECEIPTS_ADDRESS: 'address',
+  RECEIPTS_BILLING: 'billing',
+  RECEIPTS_BLOCK_NUMBER: 'block_number',
+  RECEIPTS_EXEC_RESULT: 'exec_result',
+  RECEIPTS_GAS_COST_TOTAL: 'gas_cost_total',
   // Gas fee
   GAS_FEE: 'gas_fee',
   COLLECT: 'collect',
