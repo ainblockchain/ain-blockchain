@@ -198,9 +198,11 @@ class P2pServer {
       total += allTimes;
     }
     const usage = total - free;
+    const usagePercent = total ? usage / total * 100 : 0;
     return {
       free,
       usage,
+      usagePercent,
       total
     };
   }
