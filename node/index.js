@@ -35,8 +35,6 @@ const StateManager = require('../db/state-manager');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 
-// TODO(platfowner): Migrate nonce to getAccountNonceAndTimestamp() and
-// updateAccountNonceAndTimestamp().
 class BlockchainNode {
   constructor() {
     const LOG_HEADER = 'constructor';
@@ -59,7 +57,6 @@ class BlockchainNode {
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
-    this.nonce = null;  // nonce from current final version
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
     this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
@@ -125,7 +122,6 @@ class BlockchainNode {
     logger.info(`[${LOG_HEADER}] Executing chains on DB..`);
     this.executeChainOnDb(startingDb);
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
-    this.nonce = this.getNonceForAddr(this.account.address, false, true);
 
     // 5. Execute transactions from the pool.
     logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
@@ -191,8 +187,6 @@ class BlockchainNode {
           `${this.stateManager.getFinalVersion()}`);
     }
     this.db.setStateVersion(newVersion, clonedRoot);
-    const { nonce } = this.db.getAccountNonceAndTimestamp(this.account.address);
-    this.nonce = nonce;
     return true;
   }
 
@@ -267,19 +261,32 @@ class BlockchainNode {
     return transactionInfo;
   }
 
-  getNonceForAddr(address, fromPending, fromDb = false) {
+  getNonce(fromPending = true) {
+    return this.getNonceForAddr(this.account.address, fromPending);
+  }
+
+  getNonceForAddr(address, fromPending = true) {
     if (!CommonUtil.isValAddr(address)) return -1;
     const cksumAddr = CommonUtil.toCksumAddr(address);
     if (fromPending) {
       const { nonce } = this.db.getAccountNonceAndTimestamp(cksumAddr);
       return nonce;
     }
-    if (!fromDb && cksumAddr === this.account.address) {
-      return this.nonce;
-    }
     const stateRoot = this.stateManager.getFinalRoot();
     const { nonce } = DB.getAccountNonceAndTimestampFromStateRoot(stateRoot, cksumAddr);
     return nonce;
+  }
+
+  getTimestampForAddr(address, fromPending) {
+    if (!CommonUtil.isValAddr(address)) return -1;
+    const cksumAddr = CommonUtil.toCksumAddr(address);
+    if (fromPending) {
+      const { timestamp } = this.db.getAccountNonceAndTimestamp(cksumAddr);
+      return timestamp;
+    }
+    const stateRoot = this.stateManager.getFinalRoot();
+    const { timestamp } = DB.getAccountNonceAndTimestampFromStateRoot(stateRoot, cksumAddr);
+    return timestamp;
   }
 
   getSharding() {
@@ -348,8 +355,7 @@ class BlockchainNode {
 
   createSingleTransaction(txBody) {
     if (txBody.nonce === undefined) {
-      const { nonce } = this.db.getAccountNonceAndTimestamp(this.account.address);
-      txBody.nonce = nonce;
+      txBody.nonce = this.getNonce();
     }
     if (txBody.timestamp === undefined) {
       txBody.timestamp = Date.now();
