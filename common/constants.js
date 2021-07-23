@@ -44,8 +44,8 @@ const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
 const LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
 const SYNC_MODE = process.env.SYNC_MODE || 'full';
-const MAX_NUM_BLOCKS_RECEIPTS = process.env.MAX_NUM_BLOCKS_RECEIPTS ?
-    Number(process.env.MAX_NUM_BLOCKS_RECEIPTS) : 1000;
+const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
+    Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
 
 // ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -785,7 +785,7 @@ module.exports = {
   SNAPSHOTS_N2S_DIR_NAME,
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
   MAX_NUM_SNAPSHOTS,
-  MAX_NUM_BLOCKS_RECEIPTS,
+  MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
   DEBUG,
   CONSOLE_LOG,
   ENABLE_DEV_SET_CLIENT_API,

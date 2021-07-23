@@ -340,7 +340,7 @@ class CommonUtil {
         if (CommonUtil.isFailedFuncResultCode(funcResult.code)) {
           return true;
         }
-        if (CommonUtil.isDict(funcResult.op_results)) {
+        if (!CommonUtil.isEmpty(funcResult.op_results)) {
           for (const opResult of Object.values(funcResult.op_results)) {
             if (CommonUtil.isFailedTx(opResult.result)) {
               return true;
@@ -450,7 +450,7 @@ class CommonUtil {
 
     if (resultObj.func_results) {
       for (const funcRes of Object.values(resultObj.func_results)) {
-        if (CommonUtil.isDict(funcRes.op_results)) {
+        if (!CommonUtil.isEmpty(funcRes.op_results)) {
           for (const opRes of Object.values(funcRes.op_results)) {
             CommonUtil.mergeNumericJsObjects(
               gasAmount,

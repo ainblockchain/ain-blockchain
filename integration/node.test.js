@@ -36,28 +36,28 @@ const ENV_VARIABLES = [
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_NUM_BLOCKS_RECEIPTS: 100,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_NUM_BLOCKS_RECEIPTS: 100,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_NUM_BLOCKS_RECEIPTS: 100,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_NUM_BLOCKS_RECEIPTS: 100,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -6727,18 +6727,34 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8')).result;
       assert.deepEqual(receipt.address, txSignerAddress);
       assert.deepEqual(receipt.exec_result, {
-        code: 0
+        bandwidth_gas_amount: 1,
+        code: 0,
+        gas_amount_total: {
+          bandwidth: {
+            app: {
+              test: 1
+            },
+            service: 0
+          },
+          state: {
+            app: {
+              test: 204
+            },
+            service: 0
+          },
+        },
+        gas_cost_total: 0
       });
     });
 
     it(`Removes an old transaction's receipt`, async () => {
-      const MAX_NUM_BLOCKS_RECEIPTS = 100;
+      const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = 100;
       let lastBlockNumber = getLastBlockNumber(server1);
-      if (lastBlockNumber <= MAX_NUM_BLOCKS_RECEIPTS) {
-        await waitForNewBlocks(server1, MAX_NUM_BLOCKS_RECEIPTS - lastBlockNumber + 1);
+      if (lastBlockNumber <= MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
+        await waitForNewBlocks(server1, MAX_BLOCK_NUMBERS_FOR_RECEIPTS - lastBlockNumber + 1);
         lastBlockNumber = getLastBlockNumber(server1);
       }
-      let oldBlockNumber = lastBlockNumber - MAX_NUM_BLOCKS_RECEIPTS;
+      let oldBlockNumber = lastBlockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS;
       let oldBlock = getBlockByNumber(server1, oldBlockNumber);
       while (!oldBlock.transactions.length) {
         oldBlock = getBlockByNumber(server1, --oldBlockNumber);

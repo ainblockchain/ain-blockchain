@@ -26,7 +26,7 @@ const {
   LIGHTWEIGHT,
   TX_POOL_SIZE_LIMIT,
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
-  MAX_NUM_BLOCKS_RECEIPTS,
+  MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
 const CommonUtil = require('../common/common-util');
@@ -443,16 +443,16 @@ class BlockchainNode {
 
   removeOldReceipts(blockNumber, db) {
     const LOG_HEADER = 'removeOldReceipts';
-    if (blockNumber > MAX_NUM_BLOCKS_RECEIPTS) {
+    if (blockNumber > MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
       const receiptsPrefixFullPath = DB.getFullPath(
           [PredefinedDbPaths.RECEIPTS], PredefinedDbPaths.VALUES_ROOT);
-      const oldBlock = this.bc.getBlockByNumber(blockNumber - MAX_NUM_BLOCKS_RECEIPTS);
+      const oldBlock = this.bc.getBlockByNumber(blockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS);
       if (oldBlock) {
         oldBlock.transactions.forEach((tx) => {
           db.writeDatabase([...receiptsPrefixFullPath, tx.hash], null);
         });
       } else {
-        logger.error(`[${LOG_HEADER}] block of number ${blockNumber - MAX_NUM_BLOCKS_RECEIPTS} doesn't exist`);
+        logger.error(`[${LOG_HEADER}] block of number ${blockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS} doesn't exist`);
       }
     }
   }

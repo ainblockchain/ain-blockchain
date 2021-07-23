@@ -425,7 +425,7 @@ class Functions {
   returnFuncResult(context, code, extraGasAmount = 0) {
     const opResultListObj = CommonUtil.convertListToObj(context.opResultList);
     const funcResultToReturn = {};
-    if (CommonUtil.isDict(opResultListObj)) {
+    if (!CommonUtil.isEmpty(opResultListObj)) {
       funcResultToReturn.op_results = opResultListObj;
     }
     Object.assign(funcResultToReturn, this.buildFuncResultToReturn(context, code, extraGasAmount));
