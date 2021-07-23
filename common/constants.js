@@ -92,7 +92,8 @@ const SERVICE_STATE_BUDGET_RATIO = 0.5;
 const APPS_STATE_BUDGET_RATIO = 0.45;
 const FREE_STATE_BUDGET_RATIO = 0.05;
 const bandwidthBudgetPerBlock = GenesisParams.resource.BANDWIDTH_BUDGET_PER_BLOCK;
-const stateTreeBytesLimit = GenesisParams.resource.STATE_TREE_BYTES_LIMIT; // = Total state budget
+const stateTreeBytesLimit = process.env.STATE_TREE_BYTES_LIMIT ?
+    process.env.STATE_TREE_BYTES_LIMIT : GenesisParams.resource.STATE_TREE_BYTES_LIMIT; // = Total state budget
 const SERVICE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * SERVICE_BANDWIDTH_BUDGET_RATIO;
 const APPS_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * APPS_BANDWIDTH_BUDGET_RATIO;
 const FREE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * FREE_BANDWIDTH_BUDGET_RATIO;
