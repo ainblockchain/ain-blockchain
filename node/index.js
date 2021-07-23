@@ -261,11 +261,11 @@ class BlockchainNode {
     return transactionInfo;
   }
 
-  getNonce() {
-    return this.getNonceForAddr(this.account.address, true);
+  getNonce(fromPending = true) {
+    return this.getNonceForAddr(this.account.address, fromPending);
   }
 
-  getNonceForAddr(address, fromPending) {
+  getNonceForAddr(address, fromPending = true) {
     if (!CommonUtil.isValAddr(address)) return -1;
     const cksumAddr = CommonUtil.toCksumAddr(address);
     if (fromPending) {
