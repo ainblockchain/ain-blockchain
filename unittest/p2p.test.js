@@ -158,7 +158,7 @@ describe("p2p", () => {
 
     describe("getCpuUsage", () => {
       it("gets initial cpu usage (it depends on the machine)", () => {
-        const actual = { free: 3174023060, usage: 313233920, total: 3487256980 };
+        const actual = { free: 3174023060, usage: 313233920, usagePercent: 7.5, total: 3487256980 };
         assert.deepEqual(Object.keys(actual), Object.keys(p2pServer.getCpuUsage()));
       });
     });
