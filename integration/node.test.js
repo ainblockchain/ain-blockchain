@@ -23,30 +23,41 @@ const {
   MICRO_AIN,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
-const { waitUntilTxFinalized, parseOrLog, setUpApp } = require('../unittest/test-util');
+const {
+  waitUntilTxFinalized,
+  parseOrLog,
+  setUpApp,
+  getLastBlockNumber,
+  waitForNewBlocks,
+  getBlockByNumber,
+} = require('../unittest/test-util');
 
 const ENV_VARIABLES = [
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -195,14 +206,14 @@ describe('Blockchain Node', () => {
     await CommonUtil.sleep(2000);
 
 
-  const server1Addr = parseOrLog(syncRequest(
-    'GET', server1 + '/get_address').body.toString('utf-8')).result;
-  const server2Addr = parseOrLog(syncRequest(
-      'GET', server2 + '/get_address').body.toString('utf-8')).result;
-  const server3Addr = parseOrLog(syncRequest(
-      'GET', server3 + '/get_address').body.toString('utf-8')).result;
-  const server4Addr = parseOrLog(syncRequest(
-      'GET', server4 + '/get_address').body.toString('utf-8')).result;
+    const server1Addr = parseOrLog(syncRequest(
+        'GET', server1 + '/get_address').body.toString('utf-8')).result;
+    const server2Addr = parseOrLog(syncRequest(
+        'GET', server2 + '/get_address').body.toString('utf-8')).result;
+    const server3Addr = parseOrLog(syncRequest(
+        'GET', server3 + '/get_address').body.toString('utf-8')).result;
+    const server4Addr = parseOrLog(syncRequest(
+        'GET', server4 + '/get_address').body.toString('utf-8')).result;
     await setUpApp('test', serverList, {
       admin: {
         [server1Addr]: true,
@@ -870,11 +881,9 @@ describe('Blockchain Node', () => {
           "error_message": "No write permission on: /apps/some/wrong/path",
           "gas_amount_total": {
             "bandwidth": {
-              "app": {},
               "service": 0
             },
             "state": {
-              "app": {},
               "service": 0
             }
           },
@@ -931,11 +940,9 @@ describe('Blockchain Node', () => {
           "error_message": "No write permission on: /apps/some/wrong/path2",
           "gas_amount_total": {
             "bandwidth": {
-              "app": {},
               "service": 0
             },
             "state": {
-              "app": {},
               "service": 0
             }
           },
@@ -992,11 +999,9 @@ describe('Blockchain Node', () => {
           "error_message": "No write permission on: /apps/some/wrong/path3",
           "gas_amount_total": {
             "bandwidth": {
-              "app": {},
               "service": 0
             },
             "state": {
-              "app": {},
               "service": 0
             }
           },
@@ -1097,11 +1102,9 @@ describe('Blockchain Node', () => {
           "error_message": "No write_function permission on: /apps/some/wrong/path",
           "gas_amount_total": {
             "bandwidth": {
-              "app": {},
               "service": 0
             },
             "state": {
-              "app": {},
               "service": 0
             }
           },
@@ -1180,11 +1183,9 @@ describe('Blockchain Node', () => {
           "error_message": "No write_rule permission on: /apps/some/wrong/path",
           "gas_amount_total": {
             "bandwidth": {
-              "app": {},
               "service": 0
             },
             "state": {
-              "app": {},
               "service": 0
             }
           },
@@ -1291,11 +1292,9 @@ describe('Blockchain Node', () => {
           "error_message": "No write_owner or branch_owner permission on: /apps/some/wrong/path",
           "gas_amount_total": {
             "bandwidth": {
-              "app": {},
               "service": 0
             },
             "state": {
-              "app": {},
               "service": 0
             }
           },
@@ -1380,32 +1379,32 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
-          "result_list": [
-            {
+          "result_list": {
+            "0": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "1": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "2": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "3": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "4": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "5": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-          ],
+          },
           "gas_amount_total": {
             "bandwidth": {
               "app": {
@@ -1499,25 +1498,25 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
-          "result_list": [
-            {
+          "result_list": {
+            "0": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "1": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "2": {
               "code": 0,
               "bandwidth_gas_amount": 1
             },
-            {
+            "3": {
               "code": 103,
               "error_message": "No write permission on: /apps/some/wrong/path",
               "bandwidth_gas_amount": 0
             }
-          ],
+          },
           "gas_amount_total": {
             "bandwidth": {
               "app": {
@@ -1526,7 +1525,6 @@ describe('Blockchain Node', () => {
               "service": 0
             },
             "state": {
-              "app": {},
               "service": 0
             }
           },
@@ -1791,7 +1789,6 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": {},
                   "service": 1680
                 }
               },
@@ -1845,32 +1842,32 @@ describe('Blockchain Node', () => {
           {
             "tx_hash": "erased",
             "result": {
-              "result_list": [
-                {
+              "result_list": {
+                "0": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 },
-                {
+                "1": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 },
-                {
+                "2": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 },
-                {
+                "3": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 },
-                {
+                "4": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 },
-                {
+                "5": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 }
-              ],
+              },
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2156,10 +2153,8 @@ describe('Blockchain Node', () => {
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
-                  "app": {}
                 },
                 "state": {
-                  "app": {},
                   "service": 0
                 }
               },
@@ -2179,7 +2174,6 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "app": {},
                   "service": 1680
                 }
               },
@@ -2233,32 +2227,32 @@ describe('Blockchain Node', () => {
           {
             "tx_hash": "erased",
             "result": {
-              "result_list": [
-                {
+              "result_list": {
+                "0": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 },
-                {
+                "1": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 },
-                {
+                "2": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 },
-                {
+                "3": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 },
-                {
+                "4": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 },
-                {
+                "5": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 }
-              ],
+              },
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -3469,11 +3463,9 @@ describe('Blockchain Node', () => {
             "bandwidth_gas_amount": 0,
             "gas_amount_total": {
               "bandwidth": {
-                "app": {},
                 "service": 0
               },
               "state": {
-                "app": {},
                 "service": 0
               }
             },
@@ -3501,8 +3493,8 @@ describe('Blockchain Node', () => {
               "_saveLastTx": {
                 "code": "FAILURE",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value",
                     "result": {
                       "code": 103,
@@ -3510,7 +3502,7 @@ describe('Blockchain Node', () => {
                       "bandwidth_gas_amount": 0,
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
@@ -3522,7 +3514,6 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
-                "app": {},
                 "service": 0
               }
             },
@@ -3549,15 +3540,15 @@ describe('Blockchain Node', () => {
               "_saveLastTx": {
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/allowed_path_with_fid/.last_tx/value",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
@@ -3603,8 +3594,8 @@ describe('Blockchain Node', () => {
               "_saveLastTx": {
                 "code": "FAILURE",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value",
                     "result": {
                       "code": 103,
@@ -3612,7 +3603,7 @@ describe('Blockchain Node', () => {
                       "bandwidth_gas_amount": 0,
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
@@ -3624,7 +3615,6 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
-                "app": {},
                 "service": 0
               }
             },
@@ -3651,15 +3641,15 @@ describe('Blockchain Node', () => {
               "_saveLastTx": {
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/allowed_path_with_fids/.last_tx/value",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
@@ -3705,8 +3695,8 @@ describe('Blockchain Node', () => {
               "_setOwnerConfig": {
                 "code": "FAILURE",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value",
                     "result": {
                       "code": 603,
@@ -3714,7 +3704,7 @@ describe('Blockchain Node', () => {
                       "bandwidth_gas_amount": 0,
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
@@ -3726,7 +3716,6 @@ describe('Blockchain Node', () => {
                 "service": 0
               },
               "state": {
-                "app": {},
                 "service": 0
               }
             },
@@ -3753,15 +3742,15 @@ describe('Blockchain Node', () => {
               "_setOwnerConfig": {
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/set_owner_allowed_path_with_fid/value",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
@@ -4157,36 +4146,36 @@ describe('Blockchain Node', () => {
               "_createApp": {
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test_service_create_app0",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1
                     }
                   },
-                  {
+                  "1": {
                     "path": "/apps/test_service_create_app0",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1
                     }
                   },
-                  {
+                  "2": {
                     "path": "/manage_app/test_service_create_app0/config",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1
                     }
                   },
-                  {
+                  "3": {
                     "path": "/manage_app/test_service_create_app0/create/1/result",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
@@ -4198,7 +4187,6 @@ describe('Blockchain Node', () => {
                 "service": 3
               },
               "state": {
-                "app": {},
                 "service": 2588
               }
             },
@@ -4225,25 +4213,23 @@ describe('Blockchain Node', () => {
               "_createApp": {
                 "code": "INVALID_SERVICE_NAME",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/manage_app/0test_service_create_app/create/1/result",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
             "gas_amount_total": {
               "bandwidth": {
-                "app": {},
                 "service": 2
               },
               "state": {
-                "app": {},
                 "service": 0
               }
             },
@@ -4280,36 +4266,36 @@ describe('Blockchain Node', () => {
               "_createApp": {
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test_service_create_app1",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1
                     }
                   },
-                  {
+                  "1": {
                     "path": "/apps/test_service_create_app1",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1
                     }
                   },
-                  {
+                  "2": {
                     "path": "/manage_app/test_service_create_app1/config",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1
                     }
                   },
-                  {
+                  "3": {
                     "path": "/manage_app/test_service_create_app1/create/0/result",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
@@ -4321,7 +4307,6 @@ describe('Blockchain Node', () => {
                 "service": 3
               },
               "state": {
-                "app": {},
                 "service": 2984
               }
             },
@@ -4383,29 +4368,29 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "func_results": {
             "_transfer": {
-              "op_results": [
-                {
+              "op_results": {
+                "0": {
                   "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 },
-                {
+                "1": {
                   "path": "/accounts/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/balance",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 },
-                {
+                "2": {
                   "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/0/result",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 }
-              ],
+              },
               "code": "SUCCESS",
               "bandwidth_gas_amount": 1000
             }
@@ -4414,11 +4399,9 @@ describe('Blockchain Node', () => {
           "bandwidth_gas_amount": 1,
           "gas_amount_total": {
             "bandwidth": {
-              "app": {},
               "service": 1004
             },
             "state": {
-              "app": {},
               "service": 2000
             }
           },
@@ -4437,29 +4420,29 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "func_results": {
             "_transfer": {
-              "op_results": [
-                {
+              "op_results": {
+                "0": {
                   "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 },
-                {
+                "1": {
                   "path": "/accounts/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/balance",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 },
-                {
+                "2": {
                   "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/1/result",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 }
-              ],
+              },
               "code": "SUCCESS",
               "bandwidth_gas_amount": 0
             }
@@ -4468,11 +4451,9 @@ describe('Blockchain Node', () => {
           "bandwidth_gas_amount": 1,
           "gas_amount_total": {
             "bandwidth": {
-              "app": {},
               "service": 4
             },
             "state": {
-              "app": {},
               "service": 1282
             }
           },
@@ -4491,35 +4472,35 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "func_results": {
             "_stake": {
-              "op_results": [
-                {
+              "op_results": {
+                "0": {
                   "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/staking|test_service_gas_fee|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1234567890000/value",
                   "result": {
                     "func_results": {
                       "_transfer": {
-                        "op_results": [
-                          {
+                        "op_results": {
+                          "0": {
                             "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1
                             }
                           },
-                          {
+                          "1": {
                             "path": "/service_accounts/staking/test_service_gas_fee/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1
                             }
                           },
-                          {
+                          "2": {
                             "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/staking|test_service_gas_fee|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1234567890000/result",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1
                             }
                           }
-                        ],
+                        },
                         "code": "SUCCESS",
                         "bandwidth_gas_amount": 1000
                       }
@@ -4528,28 +4509,28 @@ describe('Blockchain Node', () => {
                     "bandwidth_gas_amount": 1
                   }
                 },
-                {
+                "1": {
                   "path": "/staking/test_service_gas_fee/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0/expire_at",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 },
-                {
+                "2": {
                   "path": "/staking/test_service_gas_fee/balance_total",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 },
-                {
+                "3": {
                   "path": "/staking/test_service_gas_fee/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0/stake/100/result",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 }
-              ],
+              },
               "code": "SUCCESS",
               "bandwidth_gas_amount": 0
             }
@@ -4558,11 +4539,9 @@ describe('Blockchain Node', () => {
           "bandwidth_gas_amount": 1,
           "gas_amount_total": {
             "bandwidth": {
-              "app": {},
               "service": 1008
             },
             "state": {
-              "app": {},
               "service": 4202
             }
           },
@@ -4581,35 +4560,35 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "func_results": {
             "_stake": {
-              "op_results": [
-                {
+              "op_results": {
+                "0": {
                   "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/staking|test_service_gas_fee|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1234567890001/value",
                   "result": {
                     "func_results": {
                       "_transfer": {
-                        "op_results": [
-                          {
+                        "op_results": {
+                          "0": {
                             "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1
                             }
                           },
-                          {
+                          "1": {
                             "path": "/service_accounts/staking/test_service_gas_fee/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1
                             }
                           },
-                          {
+                          "2": {
                             "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/staking|test_service_gas_fee|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1234567890001/result",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1
                             }
                           }
-                        ],
+                        },
                         "code": "SUCCESS",
                         "bandwidth_gas_amount": 0
                       }
@@ -4618,28 +4597,28 @@ describe('Blockchain Node', () => {
                     "bandwidth_gas_amount": 1
                   }
                 },
-                {
+                "1": {
                   "path": "/staking/test_service_gas_fee/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0/expire_at",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 },
-                {
+                "2": {
                   "path": "/staking/test_service_gas_fee/balance_total",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 },
-                {
+                "3": {
                   "path": "/staking/test_service_gas_fee/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0/stake/101/result",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 }
-              ],
+              },
               "code": "SUCCESS",
               "bandwidth_gas_amount": 0
             }
@@ -4648,11 +4627,9 @@ describe('Blockchain Node', () => {
           "bandwidth_gas_amount": 1,
           "gas_amount_total": {
             "bandwidth": {
-              "app": {},
               "service": 8
             },
             "state": {
-              "app": {},
               "service": 2592
             }
           },
@@ -4834,39 +4811,37 @@ describe('Blockchain Node', () => {
                 "_transfer": {
                   "code": "SUCCESS",
                   "bandwidth_gas_amount": 1000,
-                  "op_results": [
-                    {
+                  "op_results": {
+                    "0": {
                       "path": "/accounts/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance",
                       "result": {
                         "code": 0,
                         "bandwidth_gas_amount": 1
                       }
                     },
-                    {
+                    "1": {
                       "path": "/service_accounts/staking/test_service/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
                       "result": {
                         "code": 0,
                         "bandwidth_gas_amount": 1
                       }
                     },
-                    {
+                    "2": {
                       "path": "/transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/staking|test_service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1/result",
                       "result": {
                         "code": 0,
                         "bandwidth_gas_amount": 1
                       }
                     }
-                  ]
+                  }
                 }
               },
               "bandwidth_gas_amount": 1,
               "gas_amount_total": {
                 "bandwidth": {
-                  "app": {},
                   "service": 1004
                 },
                 "state": {
-                  "app": {},
                   "service": 2250
                 }
               },
@@ -4910,11 +4885,9 @@ describe('Blockchain Node', () => {
               "bandwidth_gas_amount": 0,
               "gas_amount_total": {
                 "bandwidth": {
-                  "app": {},
                   "service": 0
                 },
                 "state": {
-                  "app": {},
                   "service": 0
                 }
               },
@@ -4957,8 +4930,8 @@ describe('Blockchain Node', () => {
               "_stake": {
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/staking|test_service_staking|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1234567890000/value",
                     "result": {
                       "code": 0,
@@ -4966,66 +4939,64 @@ describe('Blockchain Node', () => {
                         "_transfer": {
                           "code": "SUCCESS",
                           "bandwidth_gas_amount": 1000,
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             },
-                            {
+                            "1": {
                               "path": "/service_accounts/staking/test_service_staking/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             },
-                            {
+                            "2": {
                               "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/staking|test_service_staking|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1234567890000/result",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             }
-                          ]
+                          }
                         }
                       },
                       "bandwidth_gas_amount": 1,
                     }
                   },
-                  {
+                  "1": {
                     "path": "/staking/test_service_staking/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0/expire_at",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
                   },
-                  {
+                  "2": {
                     "path": "/staking/test_service_staking/balance_total",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
                   },
-                  {
+                  "3": {
                     "path": "/staking/test_service_staking/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0/stake/1/result",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
             "gas_amount_total": {
               "bandwidth": {
-                "app": {},
                 "service": 1008
               },
               "state": {
-                "app": {},
                 "service": 4198
               }
             },
@@ -5127,25 +5098,23 @@ describe('Blockchain Node', () => {
                 "_stake": {
                   "code": "FAILURE",
                   "bandwidth_gas_amount": 0,
-                  "op_results": [
-                    {
+                  "op_results": {
+                    "0": {
                       "path": "/staking/test_service_staking/0x07A43138CC760C85A5B1F115aa60eADEaa0bf417/0/stake/1/result",
                       "result": {
                         "code": 0,
                         "bandwidth_gas_amount": 1,
                       }
                     }
-                  ]
+                  }
                 }
               },
               "bandwidth_gas_amount": 1,
               "gas_amount_total": {
                 "bandwidth": {
-                  "app": {},
                   "service": 2
                 },
                 "state": {
-                  "app": {},
                   "service": 0
                 }
               },
@@ -5240,8 +5209,8 @@ describe('Blockchain Node', () => {
               "_unstake": {
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/transfer/staking|test_service_staking|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1234567890000/value",
                     "result": {
                       "code": 0,
@@ -5249,59 +5218,57 @@ describe('Blockchain Node', () => {
                         "_transfer": {
                           "code": "SUCCESS",
                           "bandwidth_gas_amount": 0,
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/service_accounts/staking/test_service_staking/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             },
-                            {
+                            "1": {
                               "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             },
-                            {
+                            "2": {
                               "path": "/transfer/staking|test_service_staking|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1234567890000/result",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             }
-                          ]
+                          }
                         }
                       },
                       "bandwidth_gas_amount": 1,
                     }
                   },
-                  {
+                  "1": {
                     "path": "/staking/test_service_staking/balance_total",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
                   },
-                  {
+                  "2": {
                     "path": "/staking/test_service_staking/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0/unstake/2/result",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
             "gas_amount_total": {
               "bandwidth": {
-                "app": {},
                 "service": 7
               },
               "state": {
-                "app": {},
                 "service": 3360
               }
             },
@@ -5428,8 +5395,8 @@ describe('Blockchain Node', () => {
             "_pay": {
               "code": "SUCCESS",
               "bandwidth_gas_amount": 0,
-              "op_results": [
-                {
+              "op_results": {
+                "0": {
                   "path": "/transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/payments|test_service_payment|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1234567890000/value",
                   "result": {
                     "code": 0,
@@ -5437,52 +5404,50 @@ describe('Blockchain Node', () => {
                       "_transfer": {
                         "code": "SUCCESS",
                         "bandwidth_gas_amount": 1000,
-                        "op_results": [
-                          {
+                        "op_results": {
+                          "0": {
                             "path": "/accounts/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1,
                             }
                           },
-                          {
+                          "1": {
                             "path": "/service_accounts/payments/test_service_payment/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1,
                             }
                           },
-                          {
+                          "2": {
                             "path": "/transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/payments|test_service_payment|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1234567890000/result",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1,
                             }
                           }
-                        ]
+                        }
                       }
                     },
                     "bandwidth_gas_amount": 1,
                   }
                 },
-                {
+                "1": {
                   "path": "/payments/test_service_payment/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0/pay/key2/result",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1,
                   }
                 }
-              ]
+              }
             }
           },
           "bandwidth_gas_amount": 1,
           "gas_amount_total": {
             "bandwidth": {
-              "app": {},
               "service": 1006
             },
             "state": {
-              "app": {},
               "service": 4818
             }
           },
@@ -5567,8 +5532,8 @@ describe('Blockchain Node', () => {
             "_claim": {
               "code": "SUCCESS",
               "bandwidth_gas_amount": 0,
-              "op_results": [
-                {
+              "op_results": {
+                "0": {
                   "path": "/transfer/payments|test_service_payment|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/1234567890000/value",
                   "result": {
                     "code": 0,
@@ -5576,52 +5541,50 @@ describe('Blockchain Node', () => {
                       "_transfer": {
                         "code": "SUCCESS",
                         "bandwidth_gas_amount": 0,
-                        "op_results": [
-                          {
+                        "op_results": {
+                          "0": {
                             "path": "/service_accounts/payments/test_service_payment/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1,
                             }
                           },
-                          {
+                          "1": {
                             "path": "/accounts/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1,
                             }
                           },
-                          {
+                          "2": {
                             "path": "/transfer/payments|test_service_payment|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/1234567890000/result",
                             "result": {
                               "code": 0,
                               "bandwidth_gas_amount": 1,
                             }
                           }
-                        ]
+                        }
                       }
                     },
                     "bandwidth_gas_amount": 1,
                   }
                 },
-                {
+                "1": {
                   "path": "/payments/test_service_payment/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0/claim/key2/result",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1,
                   }
                 }
-              ]
+              }
             }
           },
           "bandwidth_gas_amount": 1,
           "gas_amount_total": {
             "bandwidth": {
-              "app": {},
               "service": 6
             },
             "state": {
-              "app": {},
               "service": 3638
             }
           },
@@ -5790,11 +5753,9 @@ describe('Blockchain Node', () => {
             "bandwidth_gas_amount": 1,
             "gas_amount_total": {
               "bandwidth": {
-                "app": {},
                 "service": 1
               },
               "state": {
-                "app": {},
                 "service": 1336
               }
             },
@@ -5855,8 +5816,8 @@ describe('Blockchain Node', () => {
               "_hold": {
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/escrow|escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204:0x00ADEc28B6a845a085e03591bE7550dd68673C1C:0/1234567890000/value",
                     "result": {
                       "code": 0,
@@ -5864,52 +5825,50 @@ describe('Blockchain Node', () => {
                         "_transfer": {
                           "code": "SUCCESS",
                           "bandwidth_gas_amount": 1000,
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             },
-                            {
+                            "1": {
                               "path": "/service_accounts/escrow/escrow/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204:0x00ADEc28B6a845a085e03591bE7550dd68673C1C:0/balance",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             },
-                            {
+                            "2": {
                               "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/escrow|escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204:0x00ADEc28B6a845a085e03591bE7550dd68673C1C:0/1234567890000/result",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             }
-                          ]
+                          }
                         }
                       },
                       "bandwidth_gas_amount": 1,
                     }
                   },
-                  {
+                  "1": {
                     "path": "/escrow/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/0/hold/1234567890002/result",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
             "gas_amount_total": {
               "bandwidth": {
-                "app": {},
                 "service": 1006
               },
               "state": {
-                "app": {},
                 "service": 3724
               }
             },
@@ -5986,8 +5945,8 @@ describe('Blockchain Node', () => {
               "_release": {
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/transfer/escrow|escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204:0x00ADEc28B6a845a085e03591bE7550dd68673C1C:0/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1234567890000/value",
                     "result": {
                       "code": 0,
@@ -5995,52 +5954,50 @@ describe('Blockchain Node', () => {
                         "_transfer": {
                           "code": "SUCCESS",
                           "bandwidth_gas_amount": 0,
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/service_accounts/escrow/escrow/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204:0x00ADEc28B6a845a085e03591bE7550dd68673C1C:0/balance",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             },
-                            {
+                            "1": {
                               "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             },
-                            {
+                            "2": {
                               "path": "/transfer/escrow|escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204:0x00ADEc28B6a845a085e03591bE7550dd68673C1C:0/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1234567890000/result",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             }
-                          ]
+                          }
                         }
                       },
                       "bandwidth_gas_amount": 1,
                     }
                   },
-                  {
+                  "1": {
                     "path": "/escrow/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/0/release/1234567890006/result",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
             "gas_amount_total": {
               "bandwidth": {
-                "app": {},
                 "service": 6
               },
               "state": {
-                "app": {},
                 "service": 3440
               }
             },
@@ -6107,11 +6064,9 @@ describe('Blockchain Node', () => {
             "bandwidth_gas_amount": 1,
             "gas_amount_total": {
               "bandwidth": {
-                "app": {},
                 "service": 1
               },
               "state": {
-                "app": {},
                 "service": 1398
               }
             },
@@ -6165,8 +6120,8 @@ describe('Blockchain Node', () => {
               "_hold": {
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/transfer/payments|test_service_escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/escrow|escrow|payments|test_service_escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0:0x00ADEc28B6a845a085e03591bE7550dd68673C1C:1/1234567890000/value",
                     "result": {
                       "code": 0,
@@ -6174,52 +6129,50 @@ describe('Blockchain Node', () => {
                         "_transfer": {
                           "code": "SUCCESS",
                           "bandwidth_gas_amount": 1000,
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/service_accounts/payments/test_service_escrow/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             },
-                            {
+                            "1": {
                               "path": "/service_accounts/escrow/escrow/payments|test_service_escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0:0x00ADEc28B6a845a085e03591bE7550dd68673C1C:1/balance",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             },
-                            {
+                            "2": {
                               "path": "/transfer/payments|test_service_escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/escrow|escrow|payments|test_service_escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0:0x00ADEc28B6a845a085e03591bE7550dd68673C1C:1/1234567890000/result",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             }
-                          ]
+                          }
                         }
                       },
                       "bandwidth_gas_amount": 1,
                     }
                   },
-                  {
+                  "1": {
                     "path": "/escrow/payments|test_service_escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/1/hold/1234567890103/result",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
             "gas_amount_total": {
               "bandwidth": {
-                "app": {},
                 "service": 1006
               },
               "state": {
-                "app": {},
                 "service": 4170
               }
             },
@@ -6263,8 +6216,8 @@ describe('Blockchain Node', () => {
               "_release": {
                 "code": "SUCCESS",
                 "bandwidth_gas_amount": 0,
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/transfer/escrow|escrow|payments|test_service_escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0:0x00ADEc28B6a845a085e03591bE7550dd68673C1C:1/payments|test_service_escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1234567890000/value",
                     "result": {
                       "code": 0,
@@ -6272,52 +6225,50 @@ describe('Blockchain Node', () => {
                         "_transfer": {
                           "code": "SUCCESS",
                           "bandwidth_gas_amount": 0,
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/service_accounts/escrow/escrow/payments|test_service_escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0:0x00ADEc28B6a845a085e03591bE7550dd68673C1C:1/balance",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             },
-                            {
+                            "1": {
                               "path": "/service_accounts/payments/test_service_escrow/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             },
-                            {
+                            "2": {
                               "path": "/transfer/escrow|escrow|payments|test_service_escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0:0x00ADEc28B6a845a085e03591bE7550dd68673C1C:1/payments|test_service_escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1234567890000/result",
                               "result": {
                                 "code": 0,
                                 "bandwidth_gas_amount": 1,
                               }
                             }
-                          ]
+                          }
                         }
                       },
                       "bandwidth_gas_amount": 1,
                     }
                   },
-                  {
+                  "1": {
                     "path": "/escrow/payments|test_service_escrow|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/1/release/1234567890104/result",
                     "result": {
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
                   }
-                ]
+                }
               }
             },
             "bandwidth_gas_amount": 1,
             "gas_amount_total": {
               "bandwidth": {
-                "app": {},
                 "service": 6
               },
               "state": {
-                "app": {},
                 "service": 3564
               }
             },
@@ -6751,6 +6702,70 @@ describe('Blockchain Node', () => {
         "code": 16,
         "bandwidth_gas_amount": 0
       });
+    });
+  });
+
+  describe('Tx Receipts', () => {
+    it(`Records a transaction's receipt`, async () => {
+      const txSignerAddress = parseOrLog(syncRequest(
+          'GET', server1 + '/get_address').body.toString('utf-8')).result;
+      const request = {
+        ref: '/apps/test/test_value/some/path',
+        value: "some value"
+      };
+      const body = parseOrLog(syncRequest(
+          'POST', server1 + '/set_value', {json: request}).body.toString('utf-8'));
+      assert.deepEqual(_.get(body, 'result.result.code'), 0);
+      expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+      expect(body.code).to.equal(0);
+      if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+        console.error(`Failed to check finalization of tx.`);
+      }
+
+      const receipt = parseOrLog(syncRequest(
+          'GET', server1 + `/get_value?ref=/receipts/${body.result.tx_hash}`)
+          .body.toString('utf-8')).result;
+      assert.deepEqual(receipt.address, txSignerAddress);
+      assert.deepEqual(receipt.exec_result, {
+        bandwidth_gas_amount: 1,
+        code: 0,
+        gas_amount_total: {
+          bandwidth: {
+            app: {
+              test: 1
+            },
+            service: 0
+          },
+          state: {
+            app: {
+              test: 204
+            },
+            service: 0
+          },
+        },
+        gas_cost_total: 0
+      });
+    });
+
+    it(`Removes an old transaction's receipt`, async () => {
+      const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = 100;
+      let lastBlockNumber = getLastBlockNumber(server1);
+      if (lastBlockNumber <= MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
+        await waitForNewBlocks(server1, MAX_BLOCK_NUMBERS_FOR_RECEIPTS - lastBlockNumber + 1);
+        lastBlockNumber = getLastBlockNumber(server1);
+      }
+      let oldBlockNumber = lastBlockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS;
+      let oldBlock = getBlockByNumber(server1, oldBlockNumber);
+      while (!oldBlock.transactions.length) {
+        oldBlock = getBlockByNumber(server1, --oldBlockNumber);
+        await CommonUtil.sleep(2000);
+      }
+      for (const tx of oldBlock.transactions) {
+        const receipt = parseOrLog(syncRequest(
+          'GET', server1 + `/get_value?ref=/receipts/${tx.hash}`)
+          .body.toString('utf-8')).result;
+        assert.deepEqual(receipt, null);
+      }
     });
   });
 });

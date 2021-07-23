@@ -30,8 +30,8 @@ describe("Consensus", () => {
     const tx = getTransaction(node1, {
         operation: { 
           type: 'SET_VALUE', 
-          ref: '/afan/test', 
-          value: 'foo'
+          ref: `/transfer/${node1.account.address}/${node2.account.address}/0/value`,
+          value: 1
         },
         nonce: -1,
         gas_price: 1
