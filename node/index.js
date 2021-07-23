@@ -262,8 +262,7 @@ class BlockchainNode {
   }
 
   getNonce() {
-      const { nonce } = this.db.getAccountNonceAndTimestamp(this.account.address);
-      return nonce;
+    return this.getNonceForAddr(this.account.address, true);
   }
 
   getNonceForAddr(address, fromPending) {
@@ -276,6 +275,18 @@ class BlockchainNode {
     const stateRoot = this.stateManager.getFinalRoot();
     const { nonce } = DB.getAccountNonceAndTimestampFromStateRoot(stateRoot, cksumAddr);
     return nonce;
+  }
+
+  getTimestampForAddr(address, fromPending) {
+    if (!CommonUtil.isValAddr(address)) return -1;
+    const cksumAddr = CommonUtil.toCksumAddr(address);
+    if (fromPending) {
+      const { timestamp } = this.db.getAccountNonceAndTimestamp(cksumAddr);
+      return timestamp;
+    }
+    const stateRoot = this.stateManager.getFinalRoot();
+    const { timestamp } = DB.getAccountNonceAndTimestampFromStateRoot(stateRoot, cksumAddr);
+    return timestamp;
   }
 
   getSharding() {
