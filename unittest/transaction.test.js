@@ -262,7 +262,7 @@ describe('Transaction', () => {
     it('assigns nonces correctly', async () => {
       let tx2;
       let currentNonce;
-      for (currentNonce = node.nonce - 1; currentNonce < 50; currentNonce++) {
+      for (currentNonce = node.getNonce() - 1; currentNonce < 50; currentNonce++) {
         delete txBodyForNode.nonce;
         tx2 = getTransaction(node, txBodyForNode);
         node.db.executeTransaction(tx2, node.bc.lastBlockNumber() + 1);

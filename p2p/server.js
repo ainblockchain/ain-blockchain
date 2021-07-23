@@ -166,7 +166,7 @@ class P2pServer {
       address: this.getNodeAddress(),
       state: this.node.state,
       stateNumeric: Object.keys(BlockchainNodeStates).indexOf(this.node.state),
-      nonce: this.node.nonce,
+      nonce: this.node.getNonce(),
       dbStatus: {
         stateInfo: this.node.db.getStateInfo('/'),
         stateProof: this.node.db.getStateProof('/'),

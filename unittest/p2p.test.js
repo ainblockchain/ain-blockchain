@@ -123,7 +123,7 @@ describe("p2p", () => {
           address: p2pServer.getNodeAddress(),
           state: 'STARTING',
           stateNumeric: 0,
-          nonce: null,
+          nonce: 0,
           dbStatus: {
             stateInfo: {
               tree_height: 0,
