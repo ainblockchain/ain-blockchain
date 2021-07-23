@@ -27,7 +27,7 @@ describe('TransactionPool', async () => {
         ref: 'REF',
         value: 'VALUE'
       },
-      nonce: node.nonce++,
+      nonce: node.getNonce(),
       gas_price: 1
     });
     node.tp.addTransaction(transaction);
@@ -35,6 +35,7 @@ describe('TransactionPool', async () => {
   });
 
   describe('Transaction addition', () => {
+    let initialNonce = node.getNonce();
     let txToAdd;
 
     beforeEach(async () => {
@@ -44,7 +45,7 @@ describe('TransactionPool', async () => {
           ref: 'REF',
           value: 'VALUE'
         },
-        nonce: node.nonce++,
+        nonce: initialNonce++,
         gas_price: 1
       });
     });
@@ -71,6 +72,7 @@ describe('TransactionPool', async () => {
     let node2; let node3; let node4;
 
     beforeEach(async () => {
+      let initialNonce = node.getNonce();
       for (let i = 0; i < 10; i++) {
         const tx = getTransaction(node, {
           operation: {
@@ -78,7 +80,7 @@ describe('TransactionPool', async () => {
             ref: 'REF',
             value: 'VALUE',
           },
-          nonce: node.nonce++,
+          nonce: initialNonce++,
           gas_price: 1
         });
         node.tp.addTransaction(tx);
@@ -97,14 +99,16 @@ describe('TransactionPool', async () => {
       setNodeForTesting(node4, 3);
       const nodes = [node2, node3, node4];
       for (let j = 0; j < nodes.length; j++) {
+        const curNode = nodes[j];
+        let initialNonce = curNode.getNonce();
         for (let i = 0; i < 11; i++) {
-          const tx = getTransaction(nodes[j], {
+          const tx = getTransaction(curNode, {
             operation: {
               type: 'SET_VALUE',
               ref: 'REF',
               value: 'VALUE',
             },
-            nonce: nodes[j].nonce++,
+            nonce: initialNonce++,
             gas_price: 1
           });
           node.tp.addTransaction(tx);
@@ -626,6 +630,7 @@ describe('TransactionPool', async () => {
           node.account.address, []);
       const newTransactions = {};
       newTransactions[node.account.address] = [];
+      let initialNonce = node.getNonce();
       for (let i = 0; i < 10; i++) {
         newTransactions[node.account.address].push(getTransaction(node, {
           operation: {
@@ -633,7 +638,7 @@ describe('TransactionPool', async () => {
             ref: 'REF',
             value: 'VALUE',
           },
-          nonce: node.nonce++,
+          nonce: initialNonce++,
           gas_price: 1
         }));
         node.tp.addTransaction(newTransactions[node.account.address][i]);
