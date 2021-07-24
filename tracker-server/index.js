@@ -283,10 +283,12 @@ function getMemoryUsage() {
   const free = os.freemem();
   const total = os.totalmem();
   const usage = total - free;
+  const usagePercent = total ? usage / total * 100 : 0;
   return {
     os: {
       free,
       usage,
+      usagePercent,
       total,
     },
     heap: process.memoryUsage(),
@@ -297,8 +299,11 @@ function getMemoryUsage() {
 function getDiskUsage() {
   try {
     const diskUsage = disk.checkSync(DISK_USAGE_PATH);
-    const used = _.get(diskUsage, 'total', 0) - _.get(diskUsage, 'free', 0);
-    return Object.assign({}, diskUsage, { used });
+    const free =  _.get(diskUsage, 'free', 0);
+    const total = _.get(diskUsage, 'total', 0);
+    const usage = total - free;
+    const usagePercent = total ? usage / total * 100 : 0;
+    return Object.assign({}, diskUsage, { usage, usagePercent });
   } catch (err) {
     logger.error(`Error: ${err} ${err.stack}`);
     return {};
