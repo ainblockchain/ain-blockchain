@@ -250,6 +250,7 @@ function getStatus() {
     networkStatus: {
       numAliveNodes: getNumAliveNodes(),
     },
+    cpuStatus: getCpuUsage(),
     memoryStatus: getMemoryUsage(),
     diskStatus: getDiskUsage(),
     runtimeInfo: getRuntimeInfo(),
@@ -257,30 +258,56 @@ function getStatus() {
   };
 }
 
-function getDiskUsage() {
-  try {
-    const diskUsage = disk.checkSync(DISK_USAGE_PATH);
-    const used = _.get(diskUsage, 'total', 0) - _.get(diskUsage, 'free', 0);
-    return Object.assign({}, diskUsage, { used });
-  } catch (err) {
-    logger.error(`Error: ${err} ${err.stack}`);
-    return {};
+function getCpuUsage() {
+  const cores = os.cpus();
+  let free = 0;
+  let total = 0;
+  for (const core of cores) {
+    const cpuInfo = _.get(core, 'times');
+    const idle = _.get(cpuInfo, 'idle');
+    const allTimes = Object.values(cpuInfo).reduce((acc, cur) => { return acc + cur }, 0);
+    free += idle;
+    total += allTimes;
   }
+  const usage = total - free;
+  const usagePercent = total ? usage / total * 100 : 0;
+  return {
+    free,
+    usage,
+    usagePercent,
+    total
+  };
 }
 
 function getMemoryUsage() {
   const free = os.freemem();
   const total = os.totalmem();
   const usage = total - free;
+  const usagePercent = total ? usage / total * 100 : 0;
   return {
     os: {
       free,
       usage,
+      usagePercent,
       total,
     },
     heap: process.memoryUsage(),
     heapStats: v8.getHeapStatistics(),
   };
+}
+
+function getDiskUsage() {
+  try {
+    const diskUsage = disk.checkSync(DISK_USAGE_PATH);
+    const free =  _.get(diskUsage, 'free', 0);
+    const total = _.get(diskUsage, 'total', 0);
+    const usage = total - free;
+    const usagePercent = total ? usage / total * 100 : 0;
+    return Object.assign({}, diskUsage, { usage, usagePercent });
+  } catch (err) {
+    logger.error(`Error: ${err} ${err.stack}`);
+    return {};
+  }
 }
 
 function getRuntimeInfo() {
