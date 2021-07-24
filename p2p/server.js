@@ -166,24 +166,13 @@ class P2pServer {
       address: this.getNodeAddress(),
       state: this.node.state,
       stateNumeric: Object.keys(BlockchainNodeStates).indexOf(this.node.state),
-      nonce: this.node.nonce,
+      nonce: this.node.getNonce(),
       dbStatus: {
         stateInfo: this.node.db.getStateInfo('/'),
         stateProof: this.node.db.getStateProof('/'),
       },
       stateVersionStatus: this.getStateVersionStatus(),
     };
-  }
-
-  getDiskUsage() {
-    try {
-      const diskUsage = disk.checkSync(DISK_USAGE_PATH);
-      const used = _.get(diskUsage, 'total', 0) - _.get(diskUsage, 'free', 0);
-      return Object.assign({}, diskUsage, { used });
-    } catch (err) {
-      logger.error(`Error: ${err} ${err.stack}`);
-      return {};
-    }
   }
 
   getCpuUsage() {
@@ -198,9 +187,11 @@ class P2pServer {
       total += allTimes;
     }
     const usage = total - free;
+    const usagePercent = total ? usage / total * 100 : 0;
     return {
       free,
       usage,
+      usagePercent,
       total
     };
   }
@@ -209,15 +200,31 @@ class P2pServer {
     const free = os.freemem();
     const total = os.totalmem();
     const usage = total - free;
+    const usagePercent = total ? usage / total * 100 : 0;
     return {
       os: {
         free,
         usage,
+        usagePercent,
         total,
       },
       heap: process.memoryUsage(),
       heapStats: v8.getHeapStatistics(),
     };
+  }
+
+  getDiskUsage() {
+    try {
+      const diskUsage = disk.checkSync(DISK_USAGE_PATH);
+      const free =  _.get(diskUsage, 'free', 0);
+      const total = _.get(diskUsage, 'total', 0);
+      const usage = total - free;
+      const usagePercent = total ? usage / total * 100 : 0;
+      return Object.assign({}, diskUsage, { usage, usagePercent });
+    } catch (err) {
+      logger.error(`Error: ${err} ${err.stack}`);
+      return {};
+    }
   }
 
   getRuntimeInfo() {

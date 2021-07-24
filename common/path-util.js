@@ -209,6 +209,10 @@ class PathUtil {
     return CommonUtil.formatPath([
         PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.COLLECT, userAddr, blockNumber, txHash]);
   }
+
+  static getReceiptsPath(txHash) {
+    return CommonUtil.formatPath([PredefinedDbPaths.RECEIPTS, txHash]);
+  }
 }
 
 module.exports = PathUtil;

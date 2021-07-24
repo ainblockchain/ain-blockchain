@@ -302,8 +302,8 @@ class CommonUtil {
     if (!result) {
       return true;
     }
-    if (CommonUtil.isArray(result.result_list)) {
-      for (const subResult of result.result_list) {
+    if (CommonUtil.isDict(result.result_list)) {
+      for (const subResult of Object.values(result.result_list)) {
         if (CommonUtil.isFailedTxResultCode(subResult.code)) {
           return true;
         }
@@ -340,8 +340,8 @@ class CommonUtil {
         if (CommonUtil.isFailedFuncResultCode(funcResult.code)) {
           return true;
         }
-        if (CommonUtil.isArray(funcResult.op_results)) {
-          for (const opResult of funcResult.op_results) {
+        if (!CommonUtil.isEmpty(funcResult.op_results)) {
+          for (const opResult of Object.values(funcResult.op_results)) {
             if (CommonUtil.isFailedTx(opResult.result)) {
               return true;
             }
@@ -429,10 +429,7 @@ class CommonUtil {
   }
 
   static getSingleOpBandwidthGasAmount(parsedPath, value) {
-    const gasAmount = {
-      service: 0,
-      app: {}
-    };
+    const gasAmount = { service: 0 };
     if (!value) {
       return gasAmount;
     }
@@ -447,17 +444,14 @@ class CommonUtil {
   }
 
   static getTotalBandwidthGasAmountInternal(triggeringPath, resultObj) {
-    const gasAmount = {
-      service: 0,
-      app: {}
-    };
+    const gasAmount = { service: 0 };
     if (!resultObj) return gasAmount;
     if (resultObj.result_list) return gasAmount; // NOTE: Assume nested SET is not allowed
 
     if (resultObj.func_results) {
       for (const funcRes of Object.values(resultObj.func_results)) {
-        if (CommonUtil.isArray(funcRes.op_results)) {
-          for (const opRes of funcRes.op_results) {
+        if (!CommonUtil.isEmpty(funcRes.op_results)) {
+          for (const opRes of Object.values(funcRes.op_results)) {
             CommonUtil.mergeNumericJsObjects(
               gasAmount,
               CommonUtil.getTotalBandwidthGasAmountInternal(CommonUtil.parsePath(opRes.path), opRes.result)
@@ -487,17 +481,13 @@ class CommonUtil {
    * (esp. multi-operation result).
    */
   static getTotalBandwidthGasAmount(op, result) {
-    const gasAmount = {
-      service: 0,
-      app: {}
-    };
+    const gasAmount = { service: 0 };
     if (!op || !result) return gasAmount;
     if (result.result_list) {
-      for (let i = 0, len = result.result_list.length; i < len; i++) {
-        const elem = result.result_list[i];
+      for (const [index, res] of Object.entries(result.result_list)) {
         CommonUtil.mergeNumericJsObjects(
           gasAmount,
-          CommonUtil.getTotalBandwidthGasAmountInternal(CommonUtil.parsePath(op.op_list[i].ref), elem)
+          CommonUtil.getTotalBandwidthGasAmountInternal(CommonUtil.parsePath(op.op_list[index].ref), res)
         );
       }
     } else {
@@ -631,6 +621,16 @@ class CommonUtil {
 
   static convertEnvVarInputToBool(input, defaultValue = false) {
     return input ? input.toLowerCase().startsWith('t') : defaultValue;
+  }
+
+  static convertListToObj(list) {
+    const obj = {};
+    if (!CommonUtil.isArray(list)) return null;
+    const copyOfList = JSON.parse(JSON.stringify(list));
+    copyOfList.forEach((item, index) => {
+      obj[index] = item;
+    });
+    return obj;
   }
 }
 
