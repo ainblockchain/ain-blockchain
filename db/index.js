@@ -23,7 +23,7 @@ const {
   SERVICE_STATE_BUDGET,
   APPS_STATE_BUDGET,
   FREE_STATE_BUDGET,
-  STATE_GAS_CONSTANT,
+  STATE_GAS_COEFFICIENT,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
@@ -961,20 +961,20 @@ class DB {
         _.get(allStateUsageAfter, `service.${StateInfoProperties.TREE_BYTES}`, 0) -
         _.get(allStateUsageBefore, `service.${StateInfoProperties.TREE_BYTES}`, 0);
     const stateGasAmount = {
-      service: Math.max(serviceTreeBytesDelta, 0) * STATE_GAS_CONSTANT,
+      service: Math.max(serviceTreeBytesDelta, 0) * STATE_GAS_COEFFICIENT,
       app: Object.keys(stateUsagePerAppAfter).reduce((acc, appName) => {
           const delta = stateUsagePerAppAfter[appName][StateInfoProperties.TREE_BYTES] -
               stateUsagePerAppBefore[appName][StateInfoProperties.TREE_BYTES];
           if (delta > 0) {
-            acc[appName] = delta * STATE_GAS_CONSTANT;
+            acc[appName] = delta * STATE_GAS_COEFFICIENT;
           }
           return acc;
         }, {})
     };
-    logger.debug(`[${LOG_HEADER}] stateGasAmount: ${JSON.stringify(stateGasAmount, null, 2)}`);
     if (CommonUtil.isEmpty(stateGasAmount.app)) {
       delete stateGasAmount.app;
     }
+    logger.debug(`[${LOG_HEADER}] stateGasAmount: ${JSON.stringify(stateGasAmount, null, 2)}`);
     CommonUtil.setJsObject(result, ['gas_amount_total', 'state'], stateGasAmount);
     const txGas = _.get(tx, 'extra.gas', { bandwidth: { service: 0 } });
     CommonUtil.setJsObject(txGas, ['state'], stateGasAmount);
