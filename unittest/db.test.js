@@ -14,6 +14,7 @@ const {
   GenesisOwners,
   ProofProperties,
   PredefinedDbPaths,
+  StateInfoProperties,
   SERVICE_STATE_BUDGET,
 } = require('../common/constants')
 const {
@@ -2436,7 +2437,7 @@ describe("DB operations", () => {
             [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.TRANSFER, node.account.address, addr],
             valueObj);
         node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
-        expect(node.db.getTreeBytesAtPath('/')).to.be.lessThan(SERVICE_STATE_BUDGET);
+        expect(node.db.getStateUsageAtPath('/')[StateInfoProperties.TREE_BYTES]).to.be.lessThan(SERVICE_STATE_BUDGET);
         
         const overSizeTxBody = {
           operation: {
@@ -2537,7 +2538,7 @@ describe("DB operations", () => {
         };
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
-          code: 28,
+          code: 31,
           error_message: "Exceeded state budget limit for app app_0 (1084406 > 818181.8181818182)",
           bandwidth_gas_amount: 0,
         });
@@ -2577,7 +2578,7 @@ describe("DB operations", () => {
         };
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
-          code: 27,
+          code: 29,
           error_message: "Exceeded state budget limit for free tier (1984406 > 1000000)",
           bandwidth_gas_amount: 0,
         });
