@@ -960,19 +960,19 @@ class DB {
     const serviceTreeBytesDelta =
         _.get(allStateUsageAfter, `service.${StateInfoProperties.TREE_BYTES}`, 0) -
         _.get(allStateUsageBefore, `service.${StateInfoProperties.TREE_BYTES}`, 0);
+    const appStateGasAmount = Object.keys(stateUsagePerAppAfter).reduce((acc, appName) => {
+      const delta = stateUsagePerAppAfter[appName][StateInfoProperties.TREE_BYTES] -
+          stateUsagePerAppBefore[appName][StateInfoProperties.TREE_BYTES];
+      if (delta > 0) {
+        acc[appName] = delta * STATE_GAS_COEFFICIENT;
+      }
+      return acc;
+    }, {});
     const stateGasAmount = {
-      service: Math.max(serviceTreeBytesDelta, 0) * STATE_GAS_COEFFICIENT,
-      app: Object.keys(stateUsagePerAppAfter).reduce((acc, appName) => {
-          const delta = stateUsagePerAppAfter[appName][StateInfoProperties.TREE_BYTES] -
-              stateUsagePerAppBefore[appName][StateInfoProperties.TREE_BYTES];
-          if (delta > 0) {
-            acc[appName] = delta * STATE_GAS_COEFFICIENT;
-          }
-          return acc;
-        }, {})
+      service: Math.max(serviceTreeBytesDelta, 0) * STATE_GAS_COEFFICIENT
     };
-    if (CommonUtil.isEmpty(stateGasAmount.app)) {
-      delete stateGasAmount.app;
+    if (!CommonUtil.isEmpty(appStateGasAmount)) {
+      stateGasAmount.app = appStateGasAmount;
     }
     logger.debug(`[${LOG_HEADER}] stateGasAmount: ${JSON.stringify(stateGasAmount, null, 2)}`);
     CommonUtil.setJsObject(result, ['gas_amount_total', 'state'], stateGasAmount);
