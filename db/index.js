@@ -406,7 +406,6 @@ class DB {
 
   static readFromStateRoot(stateRoot, rootLabel, refPath, options, shardingPath) {
     const isGlobal = options && options.isGlobal;
-    const isShallow = options && options.isShallow;
     if (!stateRoot) return null;
     const parsedPath = CommonUtil.parsePath(refPath);
     const localPath = isGlobal ?  DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
@@ -419,11 +418,7 @@ class DB {
     if (stateNode === null) {
       return null;
     }
-    if (isShallow) {
-      return stateNode.toJsObjectShallow();
-    } else {
-      return stateNode.toJsObject(options);
-    }
+    return stateNode.toJsObject(options);
   }
 
   readDatabase(refPath, rootLabel, options) {
