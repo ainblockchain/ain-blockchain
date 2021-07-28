@@ -185,6 +185,14 @@ class CommonUtil {
     return options;
   }
 
+  static toSetOptions(args) {
+    const options = {};
+    if (args.is_global !== undefined) {
+      options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    return options;
+  }
+
   static parseJsonOrNull(str) {
     let parsed = null;
     try {
