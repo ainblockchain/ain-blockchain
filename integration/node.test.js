@@ -530,8 +530,17 @@ describe('Blockchain Node', () => {
             'GET', server1 + `/get_state_info?ref=/values/apps/test/test_state_info/some/path`)
                 .body.toString('utf-8'));
         infoBody.result.tree_bytes = 0;  // Erase tree bytes for stable comparison.
+        infoBody.result.version = 'erased';  // Erase state version for stable comparison.
         assert.deepEqual(
-            infoBody, { code: 0, result: { tree_height: 2, tree_size: 5, tree_bytes: 0 }});
+            infoBody, {
+              code: 0,
+              result: {
+                "proof_hash": "0x972cc2f16c7b20173eb9426d2698459a9351d38b5bca7d2af70124cd617bbeac",
+                "tree_bytes": 0,
+                "tree_height": 2,
+                "tree_size": 5,
+                "version": "erased",
+              }});
       });
     });
 

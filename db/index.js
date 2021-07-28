@@ -486,6 +486,8 @@ class DB {
       [StateInfoProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
       [StateInfoProperties.TREE_SIZE]: stateNode.getTreeSize(),
       [StateInfoProperties.TREE_BYTES]: stateNode.getTreeBytes(),
+      [StateInfoProperties.PROOF_HASH]: stateNode.getProofHash(),
+      [StateInfoProperties.VERSION]: stateNode.getVersion(),
     };
   }
 
