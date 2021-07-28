@@ -185,11 +185,11 @@ class CommonUtil {
     if (args.include_tree_info !== undefined) {
       options.includeTreeInfo = CommonUtil.toBool(args.include_tree_info);
     }
-    if (args.include_state_proof !== undefined) {
-      options.includeStateProof = CommonUtil.toBool(args.include_state_proof);
+    if (args.include_proof !== undefined) {
+      options.includeProof = CommonUtil.toBool(args.include_proof);
     }
-    if (args.include_state_version !== undefined) {
-      options.includeStateVersion = CommonUtil.toBool(args.include_state_version);
+    if (args.include_version !== undefined) {
+      options.includeVersion = CommonUtil.toBool(args.include_version);
     }
     return options;
   }
