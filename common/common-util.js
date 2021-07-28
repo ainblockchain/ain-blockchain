@@ -295,6 +295,11 @@ class CommonUtil {
     return newObj;
   }
 
+  static execTxPrecheckFailed(result) {
+    const precheckFailureCode = [21, 22, 3, 15, 33, 16, 17, 34, 35];
+    return precheckFailureCode.includes(result.code);
+  }
+
   /**
    * Returns true if the given result is from failed transaction or transaction list.
    */
@@ -366,10 +371,16 @@ class CommonUtil {
     return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
   }
 
-  static isServicePath(parsedPath) {
-    const { isServiceType } = require('../common/constants');
-
-    return isServiceType(_.get(parsedPath, 0));
+  static hasServiceOp(op) {
+    if (op.op_list) {
+      for (const innerOp of op.op_list) {
+        if (!CommonUtil.isAppPath(CommonUtil.parsePath(innerOp.ref))) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return !CommonUtil.isAppPath(CommonUtil.parsePath(op.ref));
   }
 
   static getAppNameFromRef(ref, shardingPath, isGlobal) {
@@ -433,12 +444,12 @@ class CommonUtil {
     if (!value) {
       return gasAmount;
     }
-    if (CommonUtil.isServicePath(parsedPath)) {
-      CommonUtil.setJsObject(gasAmount, ['service'], value);
-    } else if (CommonUtil.isAppPath(parsedPath)) {
+    if (CommonUtil.isAppPath(parsedPath)) {
       const appName = _.get(parsedPath, 1);
       if (!appName) return;
       CommonUtil.setJsObject(gasAmount, ['app', appName], value);
+    } else {
+      CommonUtil.setJsObject(gasAmount, ['service'], value);
     }
     return gasAmount;
   }
@@ -523,12 +534,9 @@ class CommonUtil {
   static getServiceGasCostTotalFromTxList(txList, resList) {
     return resList.reduce((acc, cur, index) => {
       const tx = txList[index];
-      const bandwidthGasAmount = CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, cur);
-      const stateGasAmount = _.get(cur, 'gas_amount_total.state.service', 0);
-      const gasAmountTotal = bandwidthGasAmount.service + stateGasAmount;
       return CommonUtil.mergeNumericJsObjects(acc, {
-        gasAmountTotal,
-        gasCostTotal: CommonUtil.getTotalGasCost(tx.tx_body.gas_price, gasAmountTotal)
+        gasAmountTotal: cur.gas_amount_charged,
+        gasCostTotal: CommonUtil.getTotalGasCost(tx.tx_body.gas_price, cur.gas_amount_charged)
       });
     }, { gasAmountTotal: 0, gasCostTotal: 0 });
   }

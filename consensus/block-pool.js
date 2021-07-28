@@ -361,7 +361,7 @@ class BlockPool {
     delete this.hashToNextBlockSet[blockHash];
     const db = this.hashToDb.get(blockHash);
     if (db) {
-      this.node.destroyDb(db);
+      db.destroyDb();
       this.hashToDb.delete(blockHash);
     }
   }
