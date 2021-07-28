@@ -327,9 +327,18 @@ const ProofProperties = {
  * @enum {string}
  */
 const StateInfoProperties = {
+  NUM_PARENTS: 'num_parents',
+  PROOF_HASH: 'proof_hash',
+  VERSION: 'version',
   TREE_HEIGHT: 'tree_height',
   TREE_SIZE: 'tree_size',
   TREE_BYTES: 'tree_bytes',
+};
+
+const GET_OPTIONS_INCLUDE_ALL = {
+  includeTreeInfo: true,
+  includeProof: true,
+  includeVersion: true,
 };
 
 /**
@@ -433,12 +442,6 @@ const WriteDbOperations = {
   SET_RULE: 'SET_RULE',
   SET_OWNER: 'SET_OWNER',
   SET: 'SET',
-};
-
-const GET_OPTIONS_INCLUDE_ALL = {
-  includeTreeInfo: true,
-  includeStateProof: true,
-  includeStateVersion: true,
 };
 
 /**
@@ -669,7 +672,7 @@ function getGenesisSharding() {
   const config = getGenesisConfig('genesis_sharding.json');
   if (config[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.POA) {
     const ownerAddress = CommonUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+        GenesisAccounts, [AccountProperties.OWNER, Accountroperties.ADDRESS]);
     const reporterAddress =
         GenesisAccounts[AccountProperties.OTHERS][0][AccountProperties.ADDRESS];
     CommonUtil.setJsObject(config, [ShardingProperties.SHARD_OWNER], ownerAddress);
@@ -838,6 +841,7 @@ module.exports = {
   FunctionResultCode,
   ProofProperties,
   StateInfoProperties,
+  GET_OPTIONS_INCLUDE_ALL,
   NativeFunctionIds,
   isNativeFunctionId,
   ShardingProperties,
@@ -845,7 +849,6 @@ module.exports = {
   TokenExchangeSchemes,
   ReadDbOperations,
   WriteDbOperations,
-  GET_OPTIONS_INCLUDE_ALL,
   TransactionStates,
   StateVersions,
   GenesisToken,

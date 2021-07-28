@@ -5,6 +5,7 @@ const CommonUtil = require('../common/common-util');
 const {
   HASH_DELIMITER,
   JS_REF_SIZE_IN_BYTES,
+  StateInfoProperties,
 } = require('../common/constants');
 
 class StateNode {
@@ -91,8 +92,8 @@ class StateNode {
   toJsObject(options) {
     const isShallow = options && options.isShallow;
     const includeTreeInfo = options && options.includeTreeInfo;
-    const includeStateProof = options && options.includeStateProof;
-    const includeStateVersion = options && options.includeStateVersion;
+    const includeProof = options && options.includeProof;
+    const includeVersion = options && options.includeVersion;
     if (this.getIsLeaf()) {
       return this.getValue();
     }
@@ -102,30 +103,30 @@ class StateNode {
       obj[label] = isShallow ? true : childNode.toJsObject(options);
       if (childNode.getIsLeaf()) {
         if (includeTreeInfo) {
-          obj[`.numParents:${label}`] = childNode.numParents();
-          obj[`.treeHeight:${label}`] = childNode.getTreeHeight();
-          obj[`.treeSize:${label}`] = childNode.getTreeSize();
-          obj[`.treeBytes:${label}`] = childNode.getTreeBytes();
+          obj[`.${StateInfoProperties.NUM_PARENTS}:${label}`] = childNode.numParents();
+          obj[`.${StateInfoProperties.TREE_HEIGHT}:${label}`] = childNode.getTreeHeight();
+          obj[`.${StateInfoProperties.TREE_SIZE}:${label}`] = childNode.getTreeSize();
+          obj[`.${StateInfoProperties.TREE_BYTES}:${label}`] = childNode.getTreeBytes();
         }
-        if (includeStateProof) {
-          obj[`.proofHash:${label}`] = childNode.getProofHash();
+        if (includeProof) {
+          obj[`.${StateInfoProperties.PROOF_HASH}:${label}`] = childNode.getProofHash();
         }
-        if (includeStateVersion) {
-          obj[`.version:${label}`] = childNode.getVersion();
+        if (includeVersion) {
+          obj[`.${StateInfoProperties.VERSION}:${label}`] = childNode.getVersion();
         }
       }
     }
     if (includeTreeInfo) {
-      obj['.numParents'] = this.numParents();
-      obj[`.treeHeight`] = this.getTreeHeight();
-      obj[`.treeSize`] = this.getTreeSize();
-      obj[`.treeBytes`] = this.getTreeBytes();
+      obj[`.${StateInfoProperties.NUM_PARENTS}`] = this.numParents();
+      obj[`.${StateInfoProperties.TREE_HEIGHT}`] = this.getTreeHeight();
+      obj[`.${StateInfoProperties.TREE_SIZE}`] = this.getTreeSize();
+      obj[`.${StateInfoProperties.TREE_BYTES}`] = this.getTreeBytes();
     }
-    if (includeStateProof) {
-      obj[`.proofHash`] = this.getProofHash();
+    if (includeProof) {
+      obj[`.${StateInfoProperties.PROOF_HASH}`] = this.getProofHash();
     }
-    if (includeStateVersion) {
-      obj['.version'] = this.getVersion();
+    if (includeVersion) {
+      obj[`.${StateInfoProperties.VERSION}`] = this.getVersion();
     }
 
     return obj;
