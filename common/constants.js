@@ -435,9 +435,7 @@ const WriteDbOperations = {
   SET: 'SET',
 };
 
-const GET_OPTIONS_FULL = {
-  isShallow: true,
-  isGlobal: true,
+const GET_OPTIONS_INCLUDE_ALL = {
   includeTreeInfo: true,
   includeStateProof: true,
   includeStateVersion: true,
@@ -847,7 +845,7 @@ module.exports = {
   TokenExchangeSchemes,
   ReadDbOperations,
   WriteDbOperations,
-  GET_OPTIONS_FULL,
+  GET_OPTIONS_INCLUDE_ALL,
   TransactionStates,
   StateVersions,
   GenesisToken,

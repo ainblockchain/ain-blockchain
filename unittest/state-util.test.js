@@ -27,7 +27,7 @@ const {
 } = require('../db/state-util');
 const {
   STATE_LABEL_LENGTH_LIMIT,
-  GET_OPTIONS_FULL,
+  GET_OPTIONS_INCLUDE_ALL,
 } = require('../common/constants');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
@@ -1741,7 +1741,7 @@ describe("state-util", () => {
       const stateTree = StateNode.fromJsObject(stateObj);
       const numNodes = setStateTreeVersion(stateTree, ver1);
       expect(numNodes).to.equal(24);
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_FULL), {
+      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
         ".version": "ver1",
         ".version:bool": "ver1",
         ".version:empty_obj": "ver1",
@@ -1960,7 +1960,7 @@ describe("state-util", () => {
       const stateTree = new StateNode(ver3);
       stateTree.setChild('label1', child1);
       stateTree.setChild('label2', child2);
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_FULL), {
+      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
         ".numParents": 0,
         ".proofHash": null,
         ".treeHeight": 0,
@@ -2015,7 +2015,7 @@ describe("state-util", () => {
 
       const numNodes = renameStateTreeVersion(stateTree, ver2, ver3);
       expect(numNodes).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_FULL), {
+      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
         ".numParents": 0,
         ".proofHash": null,
         ".treeHeight": 0,
@@ -2118,7 +2118,7 @@ describe("state-util", () => {
       const numNodes = deleteStateTree(stateTree);
       expect(numNodes).to.equal(3);
       // State tree is deleted.
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_FULL), null);
+      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // And child nodes are deleted as well.
       expect(child1.getValue()).to.equal(null);
       expect(child1.getProofHash()).to.equal(null);
@@ -2195,7 +2195,7 @@ describe("state-util", () => {
       const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(3);
       // State tree is deleted.
-      assert.deepEqual(node.toJsObject(GET_OPTIONS_FULL), null);
+      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // And child nodes are deleted as well.
       expect(child1.getValue()).to.equal(null);
       expect(child1.getProofHash()).to.equal(null);
@@ -2214,7 +2214,7 @@ describe("state-util", () => {
       const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(3);
       // State tree is deleted.
-      assert.deepEqual(node.toJsObject(GET_OPTIONS_FULL), null);
+      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // And child nodes are deleted as well.
       expect(child1.getValue()).to.equal(null);
       expect(child1.getProofHash()).to.equal(null);
@@ -2233,7 +2233,7 @@ describe("state-util", () => {
       const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(0);
       // State tree is not deleted.
-      assert.deepEqual(node.toJsObject(GET_OPTIONS_FULL), {
+      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
         ".version": "ver3",
         ".version:label1": "ver1",
         ".version:label2": "ver2",
@@ -2261,7 +2261,7 @@ describe("state-util", () => {
       const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(3);
       // Root node is deleted.
-      assert.deepEqual(node.toJsObject(GET_OPTIONS_FULL), null);
+      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // And child nodes are deleted as well.
       expect(child1.getValue()).to.equal(null);
       expect(child1.getProofHash()).to.equal(null);
@@ -2285,7 +2285,7 @@ describe("state-util", () => {
       const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(1);
       // State tree is deleted.
-      assert.deepEqual(node.toJsObject(GET_OPTIONS_FULL), null);
+      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // But child nodes are not deleted.
       expect(child1.getValue()).to.equal('value1');
       expect(child1.getProofHash()).to.not.equal(null);

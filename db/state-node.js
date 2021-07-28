@@ -89,6 +89,7 @@ class StateNode {
   }
 
   toJsObject(options) {
+    const isShallow = options && options.isShallow;
     const includeTreeInfo = options && options.includeTreeInfo;
     const includeStateProof = options && options.includeStateProof;
     const includeStateVersion = options && options.includeStateVersion;
@@ -98,7 +99,7 @@ class StateNode {
     const obj = {};
     for (const label of this.getChildLabels()) {
       const childNode = this.getChild(label);
-      obj[label] = childNode.toJsObject(options);
+      obj[label] = isShallow ? true : childNode.toJsObject(options);
       if (childNode.getIsLeaf()) {
         if (includeTreeInfo) {
           obj[`.numParents:${label}`] = childNode.numParents();
@@ -128,16 +129,6 @@ class StateNode {
     }
 
     return obj;
-  }
-
-  toJsObjectShallow() {
-    if (this.getIsLeaf()) {
-      return this.getValue();
-    }
-    return this.getChildLabels().reduce((shallowCopy, label) => {
-      shallowCopy[label] = true;
-      return shallowCopy;
-    }, {});
   }
 
   getIsLeaf() {
