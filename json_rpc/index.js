@@ -254,27 +254,27 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       switch (args.type) {
         case ReadDbOperations.GET_VALUE:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getValue(args.ref, args.is_shallow, args.is_global)
+            result: p2pServer.node.db.getValue(args.ref, CommonUtil.toGetOptions(args))
           }));
           return;
         case ReadDbOperations.GET_RULE:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getRule(args.ref, args.is_shallow, args.is_global)
+            result: p2pServer.node.db.getRule(args.ref, CommonUtil.toGetOptions(args))
           }));
           return;
         case ReadDbOperations.GET_FUNCTION:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getFunction(args.ref, args.is_shallow, args.is_global)
+            result: p2pServer.node.db.getFunction(args.ref, CommonUtil.toGetOptions(args))
           }));
           return;
         case ReadDbOperations.GET_OWNER:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getOwner(args.ref, args.is_shallow, args.is_global)
+            result: p2pServer.node.db.getOwner(args.ref, CommonUtil.toGetOptions(args))
           }));
           return;
         case ReadDbOperations.GET:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.get(args.op_list, args.is_global)
+            result: p2pServer.node.db.get(args.op_list)
           }));
           return;
         default:
@@ -283,17 +283,17 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_matchFunction: function(args, done) {
-      const result = p2pServer.node.db.matchFunction(args.ref, args.is_global);
+      const result = p2pServer.node.db.matchFunction(args.ref, CommonUtil.toGetOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
     ain_matchRule: function(args, done) {
-      const result = p2pServer.node.db.matchRule(args.ref, args.is_global);
+      const result = p2pServer.node.db.matchRule(args.ref, CommonUtil.toGetOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
     ain_matchOwner: function(args, done) {
-      const result = p2pServer.node.db.matchOwner(args.ref, args.is_global);
+      const result = p2pServer.node.db.matchOwner(args.ref, CommonUtil.toGetOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
@@ -306,7 +306,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         auth.fid = args.fid;
       }
       const result = p2pServer.node.db.evalRule(
-          args.ref, args.value, auth, args.timestamp || Date.now(), args.is_global);
+          args.ref, args.value, auth, args.timestamp || Date.now(), CommonUtil.toGetOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
@@ -318,8 +318,8 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       if (args.fid) {
         auth.fid = args.fid;
       }
-      const result =
-          p2pServer.node.db.evalOwner(args.ref, args.permission, auth, args.is_global);
+      const result = p2pServer.node.db.evalOwner(
+          args.ref, args.permission, auth, CommonUtil.toGetOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
