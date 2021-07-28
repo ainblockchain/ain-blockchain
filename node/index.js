@@ -127,7 +127,7 @@ class BlockchainNode {
     // 5. Execute transactions from the pool.
     logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
     this.db.executeTransactionList(
-        this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()),
+        this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()), true,
         this.bc.lastBlockNumber() + 1);
 
     // 6. Node status changed: STARTING -> SYNCING.
@@ -164,14 +164,6 @@ class BlockchainNode {
       this.stateManager.finalizeVersion(newVersion);
     }
     return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot, this.stateManager);
-  }
-
-  destroyDb(db) {
-    const LOG_HEADER = 'destroyDb';
-
-    logger.debug(`[${LOG_HEADER}] Destroying DB with state version: ${db.stateVersion}`);
-    db.deleteStateVersion();
-    db.deleteBackupStateVersion();
   }
 
   syncDbAndNonce(newVersion) {
@@ -368,28 +360,6 @@ class BlockchainNode {
   }
 
   /**
-   * Try to executes a transaction on the node database. If it was not successful, all changes are
-   * rolled back from the database states.
-   * @param {Object} tx transaction
-   */
-  executeOrRollbackTransaction(tx) {
-    const LOG_HEADER = 'executeOrRollbackTransaction';
-    if (!this.db.backupDb()) {
-      return CommonUtil.logAndReturnTxResult(
-          logger, 3,
-          `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
-    }
-    const result = this.db.executeTransaction(tx, this.bc.lastBlockNumber() + 1);
-    if (CommonUtil.isFailedTx(result)) {
-      if (!this.db.restoreDb()) {
-        logger.error(
-          `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
-      }
-    }
-    return result;
-  }
-
-  /**
    * Executes a transaction and add it to the transaction pool if the execution was successful.
    * @param {Object} tx transaction
    */
@@ -420,15 +390,14 @@ class BlockchainNode {
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
           `for account: ${executableTx.address}`);
     }
-    const result = this.executeOrRollbackTransaction(executableTx);
+    const result = this.db.executeTransaction(executableTx, true, this.bc.lastBlockNumber() + 1);
     if (CommonUtil.isFailedTx(result)) {
       if (FeatureFlags.enableRichTransactionLogging) {
         logger.error(
             `[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(executableTx, null, 2)}\n ` +
             `WITH RESULT:${JSON.stringify(result)}`);
       }
-      const errorCode = _.get(result, 'code');
-      if (errorCode === TX_NONCE_ERROR_CODE || errorCode === TX_TIMESTAMP_ERROR_CODE) {
+      if (!CommonUtil.execTxPrecheckFailed(result)) {
         this.tp.addTransaction(executableTx);
       }
     } else {
@@ -468,12 +437,14 @@ class BlockchainNode {
 
     for (const block of blockList) {
       this.removeOldReceipts(block.number, db);
-      if (!db.executeTransactionList(block.last_votes)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
-            `${JSON.stringify(block, null, 2)}`);
-        return false;
+      if (block.number > 0) {
+        if (!db.executeTransactionList(block.last_votes, false)) {
+          logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
+              `${JSON.stringify(block, null, 2)}`);
+          return false;
+        }
       }
-      if (!db.executeTransactionList(block.transactions, block.number)) {
+      if (!db.executeTransactionList(block.transactions, true, block.number)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
             `${JSON.stringify(block, null, 2)}`);
         return false;
@@ -533,14 +504,14 @@ class BlockchainNode {
       if (!this.applyBlocksToDb(validBlocks, tempDb)) {
         logger.error(`[${LOG_HEADER}] Failed to apply valid blocks to database: ` +
             `${JSON.stringify(validBlocks, null, 2)}`);
-        this.destroyDb(tempDb);
+        tempDb.destroyDb();
         return false;
       }
       for (const block of validBlocks) {
         if (!this.bc.addNewBlockToChain(block)) {
           logger.error(`[${LOG_HEADER}] Failed to add new block to chain: ` +
               `${JSON.stringify(block, null, 2)}`);
-          this.destroyDb(tempDb);
+          tempDb.destroyDb();
           return false;
         }
       }
@@ -553,7 +524,7 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] No blocks to apply.`);
       return true;
     }
-    this.destroyDb(tempDb);
+    tempDb.destroyDb();
 
     return true;
   }
@@ -563,11 +534,13 @@ class BlockchainNode {
 
     for (const block of this.bc.chain) {
       this.removeOldReceipts(block.number, db);
-      if (!db.executeTransactionList(block.last_votes)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
-        process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+      if (block.number > 0) {
+        if (!db.executeTransactionList(block.last_votes, false)) {
+          logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
+          process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+        }
       }
-      if (!db.executeTransactionList(block.transactions, block.number)) {
+      if (!db.executeTransactionList(block.transactions, true, block.number)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
         process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
       }

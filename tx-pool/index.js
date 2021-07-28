@@ -199,7 +199,7 @@ class TransactionPool {
     // Initial ordering by nonce is preserved.
     const merged = TransactionPool.mergeMultipleSortedArrays(Object.values(addrToTxList));
     const checkedTxs = this.performBandwidthChecks(merged, tempDb);
-    this.node.destroyDb(tempDb);
+    tempDb.destroyDb();
     return checkedTxs;
   }
 
