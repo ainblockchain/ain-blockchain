@@ -404,10 +404,11 @@ class DB {
     return DB.removeEmptyNodesRecursive(fullPath, 0, stateRoot);
   }
 
-  static readFromStateRoot(stateRoot, rootLabel, refPath, isShallow, isGlobal, shardingPath) {
+  static readFromStateRoot(stateRoot, rootLabel, refPath, options, shardingPath) {
     if (!stateRoot) return null;
     const parsedPath = CommonUtil.parsePath(refPath);
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
+    const localPath = (options && options.isGlobal) ?
+        DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
@@ -417,32 +418,32 @@ class DB {
     if (stateNode === null) {
       return null;
     }
-    if (isShallow) {
+    if (options && options.isShallow) {
       return stateNode.toJsObjectShallow();
     } else {
       return stateNode.toJsObject();
     }
   }
 
-  readDatabase(refPath, rootLabel, isShallow, isGlobal) {
-    return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, isShallow, isGlobal, this.shardingPath);
+  readDatabase(refPath, rootLabel, options) {
+    return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, options, this.shardingPath);
   }
 
   // TODO(platfowner): Support lookups on the final version.
-  getValue(valuePath, isShallow, isGlobal) {
-    return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, isShallow, isGlobal);
+  getValue(valuePath, options) {
+    return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, options);
   }
 
-  getFunction(functionPath, isShallow, isGlobal) {
-    return this.readDatabase(functionPath, PredefinedDbPaths.FUNCTIONS_ROOT, isShallow, isGlobal);
+  getFunction(functionPath, options) {
+    return this.readDatabase(functionPath, PredefinedDbPaths.FUNCTIONS_ROOT, options);
   }
 
-  getRule(rulePath, isShallow, isGlobal) {
-    return this.readDatabase(rulePath, PredefinedDbPaths.RULES_ROOT, isShallow, isGlobal);
+  getRule(rulePath, options) {
+    return this.readDatabase(rulePath, PredefinedDbPaths.RULES_ROOT, options);
   }
 
-  getOwner(ownerPath, isShallow, isGlobal) {
-    return this.readDatabase(ownerPath, PredefinedDbPaths.OWNERS_ROOT, isShallow, isGlobal);
+  getOwner(ownerPath, options) {
+    return this.readDatabase(ownerPath, PredefinedDbPaths.OWNERS_ROOT, options);
   }
 
   /**
@@ -472,7 +473,7 @@ class DB {
 
   static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
     return DB.readFromStateRoot(
-        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, isShallow, [], false);
+        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, { isShallow }, []);
   }
 
   /**
@@ -492,39 +493,46 @@ class DB {
     };
   }
 
-  matchFunction(funcPath, isGlobal) {
+  matchFunction(funcPath, options) {
+    const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(funcPath);
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
     }
-    return this.convertFunctionMatch(this.matchFunctionForParsedPath(localPath), isGlobal);
+    return this.convertFunctionMatch(
+        this.matchFunctionForParsedPath(localPath), isGlobal);
   }
 
-  matchRule(valuePath, isGlobal) {
+  matchRule(valuePath, options) {
+    const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(valuePath);
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
     }
-    return this.convertRuleMatch(this.matchRuleForParsedPath(localPath), isGlobal);
+    return this.convertRuleMatch(
+        this.matchRuleForParsedPath(localPath), isGlobal);
   }
 
-  matchOwner(rulePath, isGlobal) {
+  matchOwner(rulePath, options) {
+    const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(rulePath);
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
     }
-    return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
+    return this.convertOwnerMatch(
+        this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
-  evalRule(valuePath, value, auth, timestamp, isGlobal) {
+  evalRule(valuePath, value, auth, timestamp, options) {
+    const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(valuePath);
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
@@ -532,9 +540,10 @@ class DB {
     return this.getPermissionForValue(localPath, value, auth, timestamp);
   }
 
-  evalOwner(refPath, permission, auth, isGlobal) {
+  evalOwner(refPath, permission, auth, options) {
+    const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(refPath);
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
@@ -548,19 +557,19 @@ class DB {
     const resultList = [];
     opList.forEach((op) => {
       if (op.type === undefined || op.type === ReadDbOperations.GET_VALUE) {
-        resultList.push(this.getValue(op.ref, op.is_shallow, op.is_global));
+        resultList.push(this.getValue(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.GET_RULE) {
-        resultList.push(this.getRule(op.ref, op.is_shallow, op.is_global));
+        resultList.push(this.getRule(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.GET_FUNCTION) {
-        resultList.push(this.getFunction(op.ref, op.is_shallow, op.is_global));
+        resultList.push(this.getFunction(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.GET_OWNER) {
-        resultList.push(this.getOwner(op.ref, op.is_shallow, op.is_global));
+        resultList.push(this.getOwner(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
-        resultList.push(this.matchFunction(op.ref, op.is_global));
+        resultList.push(this.matchFunction(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.MATCH_RULE) {
-        resultList.push(this.matchRule(op.ref, op.is_global));
+        resultList.push(this.matchRule(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.MATCH_OWNER) {
-        resultList.push(this.matchOwner(op.ref, op.is_global));
+        resultList.push(this.matchOwner(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.EVAL_RULE) {
         const auth = {};
         if (op.address) {
@@ -570,7 +579,7 @@ class DB {
           auth.fid = op.fid;
         }
         resultList.push(this.evalRule(
-            op.ref, op.value, auth, op.timestamp || Date.now(), op.is_global));
+            op.ref, op.value, auth, op.timestamp || Date.now(), CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.EVAL_OWNER) {
         const auth = {};
         if (op.address) {
@@ -579,7 +588,7 @@ class DB {
         if (op.fid) {
           auth.fid = op.fid;
         }
-        resultList.push(this.evalOwner(op.ref, op.permission, auth, op.is_global));
+        resultList.push(this.evalOwner(op.ref, op.permission, auth, CommonUtil.toGetOptions(op)));
       }
     });
     return resultList;
@@ -693,7 +702,7 @@ class DB {
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
-    const valueBefore = this.getValue(valuePath, false, isGlobal);
+    const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return CommonUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`);
@@ -703,7 +712,7 @@ class DB {
   }
 
   decValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
-    const valueBefore = this.getValue(valuePath, false, isGlobal);
+    const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return CommonUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`);
@@ -742,7 +751,7 @@ class DB {
     if (!this.getPermissionForFunction(localPath, auth)) {
       return CommonUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`);
     }
-    const curFunction = this.getFunction(functionPath, false, isGlobal);
+    const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
     const newFunction = applyFunctionChange(curFunction, func);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
@@ -802,7 +811,7 @@ class DB {
       return CommonUtil.returnTxResult(
           603, `No write_owner or branch_owner permission on: ${ownerPath}`);
     }
-    const curOwner = this.getOwner(ownerPath, false, isGlobal);
+    const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
     const newOwner = applyOwnerChange(curOwner, owner);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     this.writeDatabase(fullPath, newOwner);

@@ -284,7 +284,7 @@ describe("DB operations", () => {
       })
 
       it('when retrieving value near top of database with is_shallow', () => {
-        assert.deepEqual(node.db.getValue('/apps/test', true, false), {
+        assert.deepEqual(node.db.getValue('/apps/test', { isShallow: true, isGlobal: false }), {
           'ai': true,
           'increment': true,
           'decrement': true,
@@ -342,7 +342,7 @@ describe("DB operations", () => {
       })
 
       it("when retrieving existing function config with is_shallow", () => {
-        assert.deepEqual(node.db.getFunction('/apps/test/test_function', true, false), {
+        assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isShallow: true, isGlobal: false }), {
           some: true,
         });
       })
@@ -370,7 +370,7 @@ describe("DB operations", () => {
       })
 
       it('when retrieving existing rule config with is_shallow', () => {
-        assert.deepEqual(node.db.getRule('/apps/test/test_rule', true, false), {
+        assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isShallow: true, isGlobal: false }), {
           some: true,
         });
       });
@@ -423,7 +423,7 @@ describe("DB operations", () => {
       })
 
       it("when retrieving existing owner config with is_shallow", () => {
-        assert.deepEqual(node.db.getOwner("/apps/test/test_owner", true, false), {
+        assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isShallow: true, isGlobal: false }), {
           some: true,
         })
       })
@@ -3435,13 +3435,13 @@ describe("DB sharding config", () => {
     })
 
     it("getValue with isGlobal = true", () => {
-      expect(node.db.getValue("/apps/test/apps/test/test_sharding/some/path/to/value", false, true)).to.equal(null);
-      expect(node.db.getValue("/apps/afan/apps/test/test_sharding/some/path/to/value", false, true))
+      expect(node.db.getValue("/apps/test/apps/test/test_sharding/some/path/to/value", { isShallow: false, isGlobal: true })).to.equal(null);
+      expect(node.db.getValue("/apps/afan/apps/test/test_sharding/some/path/to/value", { isShallow: false, isGlobal: true }))
           .to.equal(value);
     })
 
     it("getValue with isGlobal = true and non-existing path", () => {
-      expect(node.db.getValue("/apps/some/non-existing/path", false, true)).to.equal(null);
+      expect(node.db.getValue("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
     })
 
     it("setValue with isGlobal = false", () => {
@@ -3480,7 +3480,7 @@ describe("DB sharding config", () => {
           "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 20, '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', null, null,
           true).code)
               .to.equal(0);
-      expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", false, true))
+      expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
           .to.equal(10);  // value unchanged
     })
 
@@ -3495,7 +3495,7 @@ describe("DB sharding config", () => {
           "apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 20, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
-      expect(node.db.getValue("apps/afan/apps/test/test_sharding/shards/disabled_shard/path", false, true))
+      expect(node.db.getValue("apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
           .to.equal(20);  // value changed
     })
 
@@ -3534,7 +3534,7 @@ describe("DB sharding config", () => {
           "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, null, true).code)
               .to.equal(0);
-      expect(node.db.getValue("apps/afan/apps/test/test_sharding/shards/enabled_shard/path", false, true))
+      expect(node.db.getValue("apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
           .to.equal(10);  // value unchanged
     })
 
@@ -3549,7 +3549,7 @@ describe("DB sharding config", () => {
           "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
-      expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", false, true))
+      expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
           .to.equal(15);  // value changed
     })
 
@@ -3589,7 +3589,7 @@ describe("DB sharding config", () => {
           null, null, true).code)
               .to.equal(0);
       expect(node.db.getValue(
-          "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", false, true))
+          "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
               .to.equal(10);  // value unchanged
     })
 
@@ -3605,7 +3605,7 @@ describe("DB sharding config", () => {
           "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
           null, { extra: { executed_at: 1234567890000 }}, true).code)
               .to.equal(0);
-      expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", false, true))
+      expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
         .to.equal(5);  // value changed
     })
 
@@ -3669,13 +3669,13 @@ describe("DB sharding config", () => {
     })
 
     it("getFunction with isGlobal = true", () => {
-      expect(node.db.getFunction("/apps/test/test_sharding/some/path/to", false, true)).to.equal(null);
+      expect(node.db.getFunction("/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true })).to.equal(null);
       assert.deepEqual(
-          node.db.getFunction("/apps/afan/apps/test/test_sharding/some/path/to", false, true), func);
+          node.db.getFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), func);
     })
 
     it("getFunction with isGlobal = true and non-existing path", () => {
-      expect(node.db.getFunction("/apps/some/non-existing/path", false, true)).to.equal(null);
+      expect(node.db.getFunction("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
     })
 
     it("setFunction with isGlobal = false", () => {
@@ -3691,7 +3691,7 @@ describe("DB sharding config", () => {
           true).code)
               .to.equal(0);
       assert.deepEqual(
-          node.db.getFunction("/apps/afan/apps/test/test_sharding/some/path/to", false, true), newFunc);
+          node.db.getFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newFunc);
     })
 
     it("setFunction with isGlobal = true and non-existing path", () => {
@@ -3735,7 +3735,7 @@ describe("DB sharding config", () => {
     })
 
     it("matchFunction with isGlobal = true", () => {
-      assert.deepEqual(node.db.matchFunction("/apps/afan/apps/test/test_sharding/some/path/to", true), {
+      assert.deepEqual(node.db.matchFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
         "matched_path": {
           "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
           "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
@@ -3769,7 +3769,7 @@ describe("DB sharding config", () => {
     })
 
     it("matchFunction with isGlobal = true and non-existing path", () => {
-      expect(node.db.matchFunction("/apps/some/non-existing/path", true)).to.equal(null);
+      expect(node.db.matchFunction("/apps/some/non-existing/path", { isGlobal: true })).to.equal(null);
     })
   })
 
@@ -3797,13 +3797,13 @@ describe("DB sharding config", () => {
     })
 
     it("getRule with isGlobal = true", () => {
-      expect(node.db.getRule("/apps/test/test_sharding/some/path/to", false, true)).to.equal(null);
+      expect(node.db.getRule("/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true })).to.equal(null);
       assert.deepEqual(
-          node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to", false, true), rule);
+          node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), rule);
     })
 
     it("getRule with isGlobal = true and non-existing path", () => {
-      expect(node.db.getRule("/apps/some/non-existing/path", false, true)).to.equal(null);
+      expect(node.db.getRule("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
     })
 
     it("setRule with isGlobal = false", () => {
@@ -3818,7 +3818,7 @@ describe("DB sharding config", () => {
           "/apps/afan/apps/test/test_sharding/some/path/to", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, true).code)
               .to.equal(0);
       assert.deepEqual(
-          node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to", false, true), newRule);
+          node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newRule);
     })
 
     it("setRule with isGlobal = true and non-existing path", () => {
@@ -3851,7 +3851,7 @@ describe("DB sharding config", () => {
     })
 
     it("matchRule with isGlobal = true", () => {
-      assert.deepEqual(node.db.matchRule("/apps/afan/apps/test/test_sharding/some/path/to", true), {
+      assert.deepEqual(node.db.matchRule("/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
         "matched_path": {
           "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
           "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
@@ -3875,7 +3875,7 @@ describe("DB sharding config", () => {
     })
 
     it("matchRule with isGlobal = true and non-existing path", () => {
-      expect(node.db.matchRule("/apps/some/non-existing/path", true)).to.equal(null);
+      expect(node.db.matchRule("/apps/some/non-existing/path", { isGlobal: true })).to.equal(null);
     })
 
     it("evalRule with isGlobal = false", () => {
@@ -3886,13 +3886,13 @@ describe("DB sharding config", () => {
     it("evalRule with isGlobal = true", () => {
       expect(node.db.evalRule(
           "/apps/afan/apps/test/test_sharding/some/path/to", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" },
-          null, true))
+          null, { isGlobal: true }))
               .to.equal(true);
     })
 
     it("evalRule with isGlobal = true and non-existing path", () => {
       expect(node.db.evalRule(
-          "/apps/some/non-existing/path", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, true))
+          "/apps/some/non-existing/path", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true }))
               .to.equal(null);
     })
   })
@@ -3966,13 +3966,13 @@ describe("DB sharding config", () => {
     })
 
     it("getOwner with isGlobal = true", () => {
-      expect(node.db.getOwner("/apps/test/test_sharding/some/path/to", false, true)).to.equal(null);
+      expect(node.db.getOwner("/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true })).to.equal(null);
       assert.deepEqual(
-          node.db.getOwner("apps/afan/apps/test/test_sharding/some/path/to", false, true), owner);
+          node.db.getOwner("apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), owner);
     })
 
     it("getOwner with isGlobal = true and non-existing path", () => {
-      expect(node.db.getOwner("/apps/some/non-existing/path", false, true)).to.equal(null);
+      expect(node.db.getOwner("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
     })
 
     it("setOwner with isGlobal = false", () => {
@@ -3989,7 +3989,7 @@ describe("DB sharding config", () => {
           { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, true).code)
               .to.equal(0);
       assert.deepEqual(
-          node.db.getOwner("/apps/afan/apps/test/test_sharding/some/path/to", false, true), newOwner);
+          node.db.getOwner("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newOwner);
     })
 
     it("setOwner with isGlobal = true and non-existing path", () => {
@@ -4026,7 +4026,7 @@ describe("DB sharding config", () => {
     })
 
     it("matchOwner with isGlobal = true", () => {
-      assert.deepEqual(node.db.matchOwner("/apps/afan/apps/test/test_sharding/some/path/to", true), {
+      assert.deepEqual(node.db.matchOwner("/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
         "matched_path": {
           "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
         },
@@ -4053,7 +4053,7 @@ describe("DB sharding config", () => {
     })
 
     it("matchOwner with isGlobal = true and non-existing path", () => {
-      expect(node.db.matchOwner("/apps/some/non-existing/path", true)).to.equal(null);
+      expect(node.db.matchOwner("/apps/some/non-existing/path", { isGlobal: true })).to.equal(null);
     })
 
     it("evalOwner with isGlobal = false", () => {
@@ -4065,13 +4065,13 @@ describe("DB sharding config", () => {
     it("evalOwner with isGlobal = true", () => {
       expect(node.db.evalOwner(
           "/apps/afan/apps/test/test_sharding/some/path/to", "write_rule",
-          { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, true)).to.equal(true);
+          { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })).to.equal(true);
     })
 
     it("evalOwner with isGlobal = true and non-existing path", () => {
       expect(node.db.evalOwner(
           "/apps/some/non-existing/path", "write_rule",
-          { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, true)).to.equal(null);
+          { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })).to.equal(null);
     })
   })
 })

@@ -174,6 +174,17 @@ class CommonUtil {
     }
   }
 
+  static toGetOptions(args) {
+    const options = {};
+    if (args.is_shallow !== undefined) {
+      options.isShallow = CommonUtil.toBool(args.is_shallow);
+    }
+    if (args.is_global !== undefined) {
+      options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    return options;
+  }
+
   static parseJsonOrNull(str) {
     let parsed = null;
     try {
