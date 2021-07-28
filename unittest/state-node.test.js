@@ -4,7 +4,10 @@ const expect = chai.expect;
 const assert = chai.assert;
 
 const CommonUtil = require('../common/common-util');
-const { HASH_DELIMITER } = require('../common/constants');
+const {
+  HASH_DELIMITER,
+  GET_OPTIONS_FULL,
+} = require('../common/constants');
 
 describe("state-node", () => {
   let node;
@@ -81,7 +84,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(node.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
-      assert.deepEqual(clone.toJsObject(true), node.toJsObject(true));
+      assert.deepEqual(clone.toJsObject(GET_OPTIONS_FULL), node.toJsObject(GET_OPTIONS_FULL));
       expect(node.equal(clone)).to.equal(true);
     });
 
@@ -107,7 +110,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
-      assert.deepEqual(clone.toJsObject(true), stateTree.toJsObject(true));
+      assert.deepEqual(clone.toJsObject(GET_OPTIONS_FULL), stateTree.toJsObject(GET_OPTIONS_FULL));
       expect(stateTree.equal(clone)).to.equal(true);
     });
   });
@@ -295,11 +298,11 @@ describe("state-node", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
-      expect(StateNode.fromJsObject(true, ver1).toJsObject(true)).to.equal(true);
-      expect(StateNode.fromJsObject(false, ver1).toJsObject(true)).to.equal(false);
-      expect(StateNode.fromJsObject(10, ver1).toJsObject(true)).to.equal(10);
-      expect(StateNode.fromJsObject('str', ver1).toJsObject(true)).to.equal('str');
-      expect(StateNode.fromJsObject(null, ver1).toJsObject(true)).to.equal(null);
+      expect(StateNode.fromJsObject(true, ver1).toJsObject(GET_OPTIONS_FULL)).to.equal(true);
+      expect(StateNode.fromJsObject(false, ver1).toJsObject(GET_OPTIONS_FULL)).to.equal(false);
+      expect(StateNode.fromJsObject(10, ver1).toJsObject(GET_OPTIONS_FULL)).to.equal(10);
+      expect(StateNode.fromJsObject('str', ver1).toJsObject(GET_OPTIONS_FULL)).to.equal('str');
+      expect(StateNode.fromJsObject(null, ver1).toJsObject(GET_OPTIONS_FULL)).to.equal(null);
     })
 
     it("internal node", () => {
@@ -333,7 +336,7 @@ describe("state-node", () => {
         }
       };
       // Expect no updates on proof hash and state info (tree height and tree size).
-      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject(true), {
+      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject(GET_OPTIONS_FULL), {
         ".version": "ver1",
         ".version:bool": "ver1",
         ".version:empty_obj": "ver1",

@@ -88,32 +88,43 @@ class StateNode {
     return node;
   }
 
-  toJsObject(withDetails) {
+  toJsObject(options) {
+    const includeTreeInfo = options && options.includeTreeInfo;
+    const includeStateProof = options && options.includeStateProof;
+    const includeStateVersion = options && options.includeStateVersion;
     if (this.getIsLeaf()) {
       return this.getValue();
     }
     const obj = {};
     for (const label of this.getChildLabels()) {
       const childNode = this.getChild(label);
-      obj[label] = childNode.toJsObject(withDetails);
+      obj[label] = childNode.toJsObject(options);
       if (childNode.getIsLeaf()) {
-        if (withDetails) {
-          obj[`.version:${label}`] = childNode.getVersion();
+        if (includeTreeInfo) {
           obj[`.numParents:${label}`] = childNode.numParents();
-          obj[`.proofHash:${label}`] = childNode.getProofHash();
           obj[`.treeHeight:${label}`] = childNode.getTreeHeight();
           obj[`.treeSize:${label}`] = childNode.getTreeSize();
           obj[`.treeBytes:${label}`] = childNode.getTreeBytes();
         }
+        if (includeStateProof) {
+          obj[`.proofHash:${label}`] = childNode.getProofHash();
+        }
+        if (includeStateVersion) {
+          obj[`.version:${label}`] = childNode.getVersion();
+        }
       }
     }
-    if (withDetails) {
-      obj['.version'] = this.getVersion();
+    if (includeTreeInfo) {
       obj['.numParents'] = this.numParents();
-      obj[`.proofHash`] = this.getProofHash();
       obj[`.treeHeight`] = this.getTreeHeight();
       obj[`.treeSize`] = this.getTreeSize();
       obj[`.treeBytes`] = this.getTreeBytes();
+    }
+    if (includeStateProof) {
+      obj[`.proofHash`] = this.getProofHash();
+    }
+    if (includeStateVersion) {
+      obj['.version'] = this.getVersion();
     }
 
     return obj;
