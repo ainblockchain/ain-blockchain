@@ -284,13 +284,244 @@ describe("DB operations", () => {
       })
 
       it('when retrieving value near top of database with is_shallow', () => {
-        assert.deepEqual(node.db.getValue('/apps/test', { isShallow: true, isGlobal: false }), {
+        assert.deepEqual(node.db.getValue('/apps/test', { isShallow: true }), {
           'ai': true,
           'increment': true,
           'decrement': true,
           'nested': true,
           'shards': true,
         })
+      });
+
+      it('when retrieving value with include_tree_info', () => {
+        assert.deepEqual(node.db.getValue('/apps/test', { includeTreeInfo: true }), {
+          ".numParents": 1,
+          ".treeBytes": 4036,
+          ".treeHeight": 4,
+          ".treeSize": 21,
+          "ai": {
+            ".numParents": 1,
+            ".numParents:baz": 1,
+            ".numParents:comcom": 1,
+            ".numParents:foo": 1,
+            ".treeBytes": 740,
+            ".treeBytes:baz": 174,
+            ".treeBytes:comcom": 176,
+            ".treeBytes:foo": 174,
+            ".treeHeight": 1,
+            ".treeHeight:baz": 0,
+            ".treeHeight:comcom": 0,
+            ".treeHeight:foo": 0,
+            ".treeSize": 4,
+            ".treeSize:baz": 1,
+            ".treeSize:comcom": 1,
+            ".treeSize:foo": 1,
+            "baz": "qux",
+            "comcom": 123,
+            "foo": "bar",
+          },
+          "decrement": {
+            ".numParents": 1,
+            ".numParents:value": 1,
+            ".treeBytes": 362,
+            ".treeBytes:value": 176,
+            ".treeHeight": 1,
+            ".treeHeight:value": 0,
+            ".treeSize": 2,
+            ".treeSize:value": 1,
+            "value": 20,
+          },
+          "increment": {
+            ".numParents": 1,
+            ".numParents:value": 1,
+            ".treeBytes": 362,
+            ".treeBytes:value": 176,
+            ".treeHeight": 1,
+            ".treeHeight:value": 0,
+            ".treeSize": 2,
+            ".treeSize:value": 1,
+            "value": 20,
+          },
+          "nested": {
+            ".numParents": 1,
+            ".treeBytes": 542,
+            ".treeHeight": 2,
+            ".treeSize": 3,
+            "far": {
+              ".numParents": 1,
+              ".numParents:down": 1,
+              ".treeBytes": 360,
+              ".treeBytes:down": 176,
+              ".treeHeight": 1,
+              ".treeHeight:down": 0,
+              ".treeSize": 2,
+              ".treeSize:down": 1,
+              "down": 456,
+            },
+          },
+          "shards": {
+            ".numParents": 1,
+            ".treeBytes": 1758,
+            ".treeHeight": 3,
+            ".treeSize": 9,
+            "disabled_shard": {
+              ".numParents": 1,
+              ".numParents:path": 1,
+              ".shard": {
+                ".numParents": 1,
+                ".numParents:sharding_enabled": 1,
+                ".treeBytes": 380,
+                ".treeBytes:sharding_enabled": 172,
+                ".treeHeight": 1,
+                ".treeHeight:sharding_enabled": 0,
+                ".treeSize": 2,
+                ".treeSize:sharding_enabled": 1,
+                "sharding_enabled": false,
+              },
+              ".treeBytes": 760,
+              ".treeBytes:path": 176,
+              ".treeHeight": 2,
+              ".treeHeight:path": 0,
+              ".treeSize": 4,
+              ".treeSize:path": 1,
+              "path": 10,
+            },
+            "enabled_shard": {
+              ".numParents": 1,
+              ".numParents:path": 1,
+              ".shard": {
+                ".numParents": 1,
+                ".numParents:sharding_enabled": 1,
+                ".treeBytes": 380,
+                ".treeBytes:sharding_enabled": 172,
+                ".treeHeight": 1,
+                ".treeHeight:sharding_enabled": 0,
+                ".treeSize": 2,
+                ".treeSize:sharding_enabled": 1,
+                "sharding_enabled": true,
+              },
+              ".treeBytes": 760,
+              ".treeBytes:path": 176,
+              ".treeHeight": 2,
+              ".treeHeight:path": 0,
+              ".treeSize": 4,
+              ".treeSize:path": 1,
+              "path": 10,
+            }
+          }
+        })
+      });
+
+      it('when retrieving value with include_state_proof', () => {
+        assert.deepEqual(node.db.getValue('/apps/test', { includeStateProof: true }), {
+          ".proofHash": "0x753458b0796af84a76e4256ec295c65a7563f5ef2c855f2ecc3e15f47887b8bf",
+          "ai": {
+            ".proofHash": "0x475a10041bd4a36132a63b16f5ba0a2b528642f01a8d00923969507289239c44",
+            ".proofHash:baz": "0x74e6d7e9818333ef5d6f4eb74dc0ee64537c9e142e4fe55e583476a62b539edf",
+            ".proofHash:comcom": "0x90840252cdaacaf90d95c14f9d366f633fd53abf7a2c359f7abfb7f651b532b5",
+            ".proofHash:foo": "0xea86f62ccb8ed9240afb6c9090be001ef7859bf40e0782f2b8d3579b3d8310a4",
+            "baz": "qux",
+            "comcom": 123,
+            "foo": "bar",
+          },
+          "decrement": {
+            ".proofHash": "0x875a06d5687f3fe01ddee9a76b48c5439a233ad4753980d239e7b91793f4b2a3",
+            ".proofHash:value": "0xc3c28ad8a683cb7f3d8cf05420651e08e14564e18a1805fe33720cd9d7d2deb2",
+            "value": 20,
+          },
+          "increment": {
+            ".proofHash": "0x875a06d5687f3fe01ddee9a76b48c5439a233ad4753980d239e7b91793f4b2a3",
+            ".proofHash:value": "0xc3c28ad8a683cb7f3d8cf05420651e08e14564e18a1805fe33720cd9d7d2deb2",
+            "value": 20,
+          },
+          "nested": {
+            ".proofHash": "0xb2d436a46347f073c9fbbc6daf074c6020493d39bbcf6219f483d80ba4fcba12",
+            "far": {
+              ".proofHash": "0xdb10e1d3b0aa83908d4414d79940160b4ee59fab7363c3223685829b31c9912d",
+              ".proofHash:down": "0x4611868537ffbffa17f70f8ddb7cf5aacc6b4d1b32817315f631a2c7d6b6481d",
+              "down": 456,
+            },
+          },
+          "shards": {
+            ".proofHash": "0xca7a8628678dd40de218e17a9df8acbbf31e596397ffcf94af36c2134be31e16",
+            "disabled_shard": {
+              ".proofHash": "0xd05c3b7418eedc09e24d61376ddffabc28245006150e8ade7ee586109821c3f9",
+              ".proofHash:path": "0xd024945cba75febe35837d24c977a187a6339888d99d505c1be63251fec52279",
+              ".shard": {
+                ".proofHash": "0xc1def4354bd8f269460896e38f288dba21d77d2c115a02285f6cce8f7e646fca",
+                ".proofHash:sharding_enabled": "0x055600b34c3a8a69ea5dfc2cd2f92336933be237c8b265089f3114b38b4a540a",
+                "sharding_enabled": false,
+              },
+              "path": 10,
+            },
+            "enabled_shard": {
+              ".proofHash": "0xb9ab65702643eccef3d025b650a02af574b22fa52be1ac9272f20b382e21e84d",
+              ".proofHash:path": "0xd024945cba75febe35837d24c977a187a6339888d99d505c1be63251fec52279",
+              ".shard": {
+                ".proofHash": "0xca256dadfca4c89edbc3de62b0732eac55d792b4661fdbb1c1455bfc1ef9048b",
+                ".proofHash:sharding_enabled": "0x1eafc1e61d5b7b28f90a34330bf62265eeb466e012aa7318098003f37e4c61cc",
+                "sharding_enabled": true,
+              },
+              "path": 10,
+            }
+          }
+        })
+      });
+
+      it('when retrieving value with include_state_version', () => {
+        assert.deepEqual(node.db.getValue('/apps/test', { includeStateVersion: true }), {
+          ".version": "NODE:0",
+          "ai": {
+            ".version": "NODE:0",
+            ".version:baz": "NODE:0",
+            ".version:comcom": "NODE:0",
+            ".version:foo": "NODE:0",
+            "baz": "qux",
+            "comcom": 123,
+            "foo": "bar",
+          },
+          "decrement": {
+            ".version": "NODE:0",
+            ".version:value": "NODE:0",
+            "value": 20,
+          },
+          "increment": {
+            ".version": "NODE:0",
+            ".version:value": "NODE:0",
+            "value": 20,
+          },
+          "nested": {
+            ".version": "NODE:0",
+            "far": {
+              ".version": "NODE:0",
+              ".version:down": "NODE:0",
+              "down": 456,
+            }
+          },
+          "shards": {
+            ".version": "NODE:0",
+            "disabled_shard": {
+              ".shard": {
+                ".version": "NODE:0",
+                ".version:sharding_enabled": "NODE:0",
+                "sharding_enabled": false,
+              },
+              ".version": "NODE:0",
+              ".version:path": "NODE:0",
+              "path": 10,
+            },
+            "enabled_shard": {
+              ".shard": {
+                ".version": "NODE:0",
+                ".version:sharding_enabled": "NODE:0",
+                "sharding_enabled": true,
+              },
+              ".version": "NODE:0",
+              ".version:path": "NODE:0",
+              "path": 10,
+            }
+          }
+        });
       });
 
       it("when retrieving shallow nested value", () => {
@@ -342,7 +573,7 @@ describe("DB operations", () => {
       })
 
       it("when retrieving existing function config with is_shallow", () => {
-        assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isShallow: true, isGlobal: false }), {
+        assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isShallow: true }), {
           some: true,
         });
       })
@@ -370,7 +601,7 @@ describe("DB operations", () => {
       })
 
       it('when retrieving existing rule config with is_shallow', () => {
-        assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isShallow: true, isGlobal: false }), {
+        assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isShallow: true }), {
           some: true,
         });
       });
@@ -423,7 +654,7 @@ describe("DB operations", () => {
       })
 
       it("when retrieving existing owner config with is_shallow", () => {
-        assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isShallow: true, isGlobal: false }), {
+        assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isShallow: true }), {
           some: true,
         })
       })
