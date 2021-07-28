@@ -1124,7 +1124,14 @@ class DB {
       return;
     }
     const billing = tx.tx_body.billing;
-    const billedTo = billing ? CommonUtil.toBillingAccountName(billing) : auth.addr;
+    let billedTo = billing ? CommonUtil.toBillingAccountName(billing) : auth.addr;
+    if (billing) {
+      const billingParsed = billing.split('|');
+      if (!this.isBillingUser(billingParsed[0], billingParsed[1], auth.addr)) {
+        // No longer in the billing users list. Charge the tx signer instead
+        billedTo = auth.addr;
+      }
+    }
     let balance = this.getBalance(billedTo);
     if (balance < gasAmountChargedByTransfer) {
       Object.assign(executionResult, {
@@ -1166,9 +1173,7 @@ class DB {
 
   isBillingUser(billingAppName, billingId, userAddr) {
     return this.getValue(
-        `/${PredefinedDbPaths.MANAGE_APP}/${billingAppName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
-        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING}/${billingId}/` +
-        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}/${userAddr}`) === true;
+        PathUtil.getManageAppBillingUsersPath(billingAppName, billingId) + '/' + userAddr) === true;
   }
 
   precheckTxBillingParam(op, addr, billing, blockNumber) {
@@ -1180,9 +1185,7 @@ class DB {
     if (billingParsed.length !== 2) {
       return CommonUtil.logAndReturnTxResult(logger, 15, `[${LOG_HEADER}] Invalid billing param`);
     }
-    const billingAppName = billingParsed[0];
-    const billingId = billingParsed[1];
-    if (!this.isBillingUser(billingAppName, billingId, addr)) {
+    if (!this.isBillingUser(billingParsed[0], billingParsed[1], addr)) {
       return CommonUtil.logAndReturnTxResult(
         logger, 33, `[${LOG_HEADER}] User doesn't have permission to the billing account`);
     }
@@ -1193,7 +1196,7 @@ class DB {
         logger, 16, `[${LOG_HEADER}] Multiple app-dependent service operations for a billing account`);
     }
     if (appNameList.length === 1) {
-      if (appNameList[0] !== billingAppName) {
+      if (appNameList[0] !== billingParsed[0]) {
         // Tx app name doesn't match the billing account.
         return CommonUtil.logAndReturnTxResult(logger, 17, `[${LOG_HEADER}] Invalid billing account`);
       }
