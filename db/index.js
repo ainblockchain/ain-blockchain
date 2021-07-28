@@ -1132,7 +1132,7 @@ class DB {
   collectFee(billedTo, gasCost, auth, timestamp, tx, blockNumber) {
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(billedTo, blockNumber, tx.hash);
     const gasFeeCollectRes = this.setValue(
-        gasFeeCollectPath, { amount: gasCost }, auth, timestamp, tx, { isGlobal: false });
+        gasFeeCollectPath, { amount: gasCost }, auth, timestamp, tx);
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) {
       return CommonUtil.returnTxResult(
           18, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
@@ -1150,7 +1150,7 @@ class DB {
     if (tx.tx_body.billing) {
       receipt[PredefinedDbPaths.RECEIPTS_BILLING] = tx.tx_body.billing;
     }
-    const recordRes = this.setValue(receiptPath, receipt, auth, timestamp, tx, { isGlobal: false });
+    const recordRes = this.setValue(receiptPath, receipt, auth, timestamp, tx);
     if (CommonUtil.isFailedTx(recordRes)) {
       return CommonUtil.returnTxResult(
           29, `Failed to record receipt ${JSON.stringify(recordRes, null, 2)}`, 0);
