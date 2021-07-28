@@ -182,6 +182,15 @@ class CommonUtil {
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
     }
+    if (args.include_tree_info !== undefined) {
+      options.includeTreeInfo = CommonUtil.toBool(args.include_tree_info);
+    }
+    if (args.include_state_proof !== undefined) {
+      options.includeStateProof = CommonUtil.toBool(args.include_state_proof);
+    }
+    if (args.include_state_version !== undefined) {
+      options.includeStateVersion = CommonUtil.toBool(args.include_state_version);
+    }
     return options;
   }
 

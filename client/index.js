@@ -369,8 +369,8 @@ app.get('/state_versions', (req, res) => {
 });
 
 // TODO(platfowner): Support for subtree dumping (i.e. with ref path).
-app.get('/dump_final_version', (req, res) => {
-  const result = node.dumpFinalVersion(true);
+app.get('/dump_final_db_states', (req, res) => {
+  const result = node.dumpFinalDbStates(CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})

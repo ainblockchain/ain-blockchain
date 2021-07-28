@@ -229,11 +229,11 @@ class DB {
     return true;
   }
 
-  dumpDbStates() {
+  dumpDbStates(options) {
     if (this.stateRoot === null) {
       return null;
     }
-    return this.stateRoot.toJsObject(true);
+    return this.stateRoot.toJsObject(options);
   }
 
   // For testing purpose only.
@@ -405,10 +405,11 @@ class DB {
   }
 
   static readFromStateRoot(stateRoot, rootLabel, refPath, options, shardingPath) {
+    const isGlobal = options && options.isGlobal;
+    const isShallow = options && options.isShallow;
     if (!stateRoot) return null;
     const parsedPath = CommonUtil.parsePath(refPath);
-    const localPath = (options && options.isGlobal) ?
-        DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
+    const localPath = isGlobal ?  DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
@@ -418,10 +419,10 @@ class DB {
     if (stateNode === null) {
       return null;
     }
-    if (options && options.isShallow) {
+    if (isShallow) {
       return stateNode.toJsObjectShallow();
     } else {
-      return stateNode.toJsObject();
+      return stateNode.toJsObject(options);
     }
   }
 
