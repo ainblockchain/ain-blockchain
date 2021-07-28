@@ -4504,24 +4504,62 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(result.code, 0);
 
       // Existing paths.
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 2, tree_size: 5, tree_bytes: 994 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1/label11'), { tree_height: 0, tree_size: 1, tree_bytes: 182 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1/label12'), { tree_height: 1, tree_size: 3, tree_bytes: 600 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1/label12/label121'),
-          { tree_height: 0, tree_size: 1, tree_bytes: 192 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1/label12/label122'),
-          { tree_height: 0, tree_size: 1, tree_bytes: 192 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 1, tree_size: 3, tree_bytes: 576 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label21'), { tree_height: 0, tree_size: 1, tree_bytes: 182 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label22'), { tree_height: 0, tree_size: 1, tree_bytes: 182 });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
+        "proof_hash": "0x213304021f1ea1e8f7954c815d49207c0a42ab4bdf09929263369fa5f4d77c8b",
+        "tree_bytes": 994,
+        "tree_height": 2,
+        "tree_size": 5,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label11'), {
+        "proof_hash": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
+        "tree_bytes": 182,
+        "tree_height": 0,
+        "tree_size": 1,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12'), {
+        "proof_hash": "0xbc8b6e1e9e369b5af09e14fea3769c348d66e453b3a2fc6dbec0d00278e094e7",
+        "tree_bytes": 600,
+        "tree_height": 1,
+        "tree_size": 3,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12/label121'), {
+        "proof_hash": "0xfbe04067ec980e5d7364e8b6cf45f4bee9d53be89419211d0233aada9151ad50",
+        "tree_bytes": 192,
+        "tree_height": 0,
+        "tree_size": 1,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12/label122'), {
+        "proof_hash": "0x8f17965ac862bad15172d21facff45ff3efb8a55ae50ca085131a3012e001c1f",
+        "tree_bytes": 192,
+        "tree_height": 0,
+        "tree_size": 1,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2'), {
+        "proof_hash": "0x7b614d2449c2ce477ac040c52b78798e5ff36a20b83115b6af8688f5e88a813f",
+        "tree_bytes": 576,
+        "tree_height": 1,
+        "tree_size": 3,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21'), {
+        "proof_hash": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
+        "tree_bytes": 182,
+        "tree_height": 0,
+        "tree_size": 1,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label22'), {
+        "proof_hash": "0xc0da1458b190e12347891ab14253518f5e43d95473cd2546dbf8852dfb3dc281",
+        "tree_bytes": 182,
+        "tree_height": 0,
+        "tree_size": 1,
+        "version": "NODE:0",
+      });
 
       // Non-existing paths.
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/non-existing/path'), null);
@@ -4533,13 +4571,28 @@ describe("State info (getStateInfo)", () => {
       result = node.db.setValue("/apps/test/label1/label12", null);  // Reduce tree
       assert.deepEqual(result.code, 0);
 
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 1, tree_size: 2, tree_bytes: 372 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1/label11'), { tree_height: 0, tree_size: 1, tree_bytes: 182 });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
+        "proof_hash": "0x1b8f144f5692c88c242776485c0cafc184d4724942578752d083c615d84a1caa",
+        "tree_bytes": 372,
+        "tree_height": 1,
+        "tree_size": 2,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label11'), {
+        "proof_hash": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
+        "tree_bytes": 182,
+        "tree_height": 0,
+        "tree_size": 1,
+        "version": "NODE:0",
+      });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12'), null);
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 1, tree_size: 3, tree_bytes: 576 });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2'), {
+        "proof_hash": "0x7b614d2449c2ce477ac040c52b78798e5ff36a20b83115b6af8688f5e88a813f",
+        "tree_bytes": 576,
+        "tree_height": 1,
+        "tree_size": 3,
+        "version": "NODE:0",
+      });
     });
   });
 
@@ -4551,20 +4604,48 @@ describe("State info (getStateInfo)", () => {
       });
       assert.deepEqual(result.code, 0);
 
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label1'), { tree_height: 2, tree_size: 5, tree_bytes: 978 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2'), { tree_height: 2, tree_size: 5, tree_bytes: 978 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label21'), { tree_height: 1, tree_size: 3, tree_bytes: 584 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label21/label211'),
-          { tree_height: 0, tree_size: 1, tree_bytes: 184 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label21/label212'),
-          { tree_height: 0, tree_size: 1, tree_bytes: 184 });
-      assert.deepEqual(
-          node.db.getStateInfo('/values/apps/test/label2/label22'), { tree_height: 0, tree_size: 1, tree_bytes: 182 });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
+        "proof_hash": "0x052b9dbac10fca45626652f264b9896216da0ce6f1b55d10934b7e9cb9141871",
+        "tree_bytes": 978,
+        "tree_height": 2,
+        "tree_size": 5,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2'), {
+        "proof_hash": "0x7da207e739139a3fabbcb53c9a2b91f786441b903ffd1de445e69d921f9f30af",
+        "tree_bytes": 978,
+        "tree_height": 2,
+        "tree_size": 5,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21'), {
+        "proof_hash": "0x805586e32d13b938808c5e283c027d0fa7f8b496bdb6fdc8cd5a57d0b12c72af",
+        "tree_bytes": 584,
+        "tree_height": 1,
+        "tree_size": 3,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21/label211'), {
+        "proof_hash": "0xc7b107bdd716d26c8fe34fbcec5b91d738c3f53ee09fdf047678e85181e5f90c",
+        "tree_bytes": 184,
+        "tree_height": 0,
+        "tree_size": 1,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21/label212'), {
+        "proof_hash": "0x736c5dded3f67ab5717c8c7c1b15580cb0bbf23562edd4a6898f2c1a6ca63200",
+        "tree_bytes": 184,
+        "tree_height": 0,
+        "tree_size": 1,
+        "version": "NODE:0",
+      });
+      assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label22'), {
+        "proof_hash": "0xc0da1458b190e12347891ab14253518f5e43d95473cd2546dbf8852dfb3dc281",
+        "tree_bytes": 182,
+        "tree_height": 0,
+        "tree_size": 1,
+        "version": "NODE:0",
+      });
     });
   });
 });
