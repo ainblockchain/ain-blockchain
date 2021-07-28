@@ -54,6 +54,11 @@ class PathUtil {
     return CommonUtil.formatPath([PredefinedDbPaths.MANAGE_APP, appName, PredefinedDbPaths.MANAGE_APP_CONFIG]);
   }
 
+  static getManageAppBillingUsersPath(appName, billingId) {
+    return `${PathUtil.getManageAppConfigPath(appName)}/${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING}/` +
+        `${billingId}/${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}`;
+  }
+
   static getAppPath(appName) {
     return CommonUtil.formatPath([PredefinedDbPaths.APPS, appName]);
   }
