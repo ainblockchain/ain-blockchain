@@ -1234,8 +1234,8 @@ class DB {
     return true;
   }
 
-  executeTransactionPrecheck(tx, restoreIfFails, blockNumber) {
-    const LOG_HEADER = 'executeTransactionPrecheck';
+  precheckTransaction(tx, restoreIfFails, blockNumber) {
+    const LOG_HEADER = 'precheckTransaction';
     // NOTE(platfowner): A transaction needs to be converted to an executable form
     //                   before being executed.
     if (!Transaction.isExecutable(tx)) {
@@ -1269,7 +1269,7 @@ class DB {
 
   executeTransaction(tx, restoreIfFails, blockNumber = 0) {
     const LOG_HEADER = 'executeTransaction';
-    const precheckResult = this.executeTransactionPrecheck(tx, restoreIfFails, blockNumber);
+    const precheckResult = this.precheckTransaction(tx, restoreIfFails, blockNumber);
     if (precheckResult !== true) {
       logger.debug(`[${LOG_HEADER}] Pre-check failed`);
       return precheckResult;
