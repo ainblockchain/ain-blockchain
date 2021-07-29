@@ -8,6 +8,7 @@ const {
   CHAINS_DIR,
   CHAINS_N2B_DIR_NAME,
 } = require('../common/constants');
+const CommonUtil = require('../common/common-util');
 const CHAIN_SEGMENT_LENGTH = 20;
 const ON_MEM_CHAIN_LENGTH = 20;
 
@@ -99,9 +100,11 @@ class Blockchain {
     */
   getBlockByNumber(number) {
     if (number === undefined || number === null) return null;
-    const blockPath = FileUtil.getBlockPath(this.blockchainPath, number);
-    if (!blockPath || number > this.lastBlockNumber() - ON_MEM_CHAIN_LENGTH) {
-      return this.chain.find((block) => block.number === number);
+    const numOrNaN = CommonUtil.toNumberOrNaN(number);
+    if (!CommonUtil.isNumber(numOrNaN)) return null;
+    const blockPath = FileUtil.getBlockPath(this.blockchainPath, numOrNaN);
+    if (!blockPath || numOrNaN > this.lastBlockNumber() - ON_MEM_CHAIN_LENGTH) {
+      return this.chain.find((block) => block.number === numOrNaN);
     } else {
       return Block.parse(FileUtil.readCompressedJson(blockPath));
     }

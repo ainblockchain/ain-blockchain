@@ -134,6 +134,10 @@ class CommonUtil {
     return ruleUtil.toBool(value);
   }
 
+  static toNumberOrNaN(value) {
+    return ruleUtil.toNumberOrNaN(value);
+  }
+
   static toCksumAddr(addr) {
     return ruleUtil.toCksumAddr(addr);
   }

@@ -102,6 +102,10 @@ class RuleUtil {
     return this.isBool(value) ? value : value === 'true';
   }
 
+  toNumberOrNaN(value) {
+    return this.isNumber(value) ? value : Number(value);
+  }
+
   toCksumAddr(addr) {
     try {
       return ainUtil.toChecksumAddress(addr);
