@@ -931,15 +931,16 @@ class DB {
     result.gas_amount_total = gasAmountTotal;
     result.gas_cost_total = 0;
     if (!CommonUtil.isFailedTx(result)) {
-      const stateInfo = this.getStateInfo('/');
-      const treeHeight = stateInfo[StateInfoProperties.TREE_HEIGHT];
+      const {
+        [StateInfoProperties.TREE_HEIGHT]: treeHeight,
+        [StateInfoProperties.TREE_SIZE]: treeSize
+      } = this.getStateInfo('/');
       if (treeHeight > TREE_HEIGHT_LIMIT) {
         return Object.assign(result, {
           code: 23,
           error_message: `Out of tree height limit (${treeHeight} > ${TREE_HEIGHT_LIMIT})`
         });
       }
-      const treeSize = stateInfo[StateInfoProperties.TREE_SIZE];
       if (treeSize > TREE_SIZE_LIMIT) {
         return Object.assign(result, {
           code: 24,
@@ -1141,10 +1142,8 @@ class DB {
       this.restoreDb(); // Revert changes made by the tx operations
       balance = this.getBalance(billedTo);
       gasAmountChargedByTransfer = Math.min(balance, serviceBandwidthGasAmount);
-      executionResult.gas_amount_charged = gasAmountChargedByTransfer;
-    } else {
-      executionResult.gas_amount_charged = gasAmountChargedByTransfer;
     }
+    executionResult.gas_amount_charged = gasAmountChargedByTransfer;
     executionResult.gas_cost_total = CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged);
     if (executionResult.gas_cost_total <= 0) return;
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(billedTo, blockNumber, tx.hash);
@@ -1176,11 +1175,11 @@ class DB {
         PathUtil.getManageAppBillingUsersPath(billingAppName, billingId) + '/' + userAddr) === true;
   }
 
-  precheckTxBillingParam(op, addr, billing, blockNumber) {
+  precheckTxBillingParams(op, addr, billing, blockNumber) {
+    const LOG_HEADER = 'precheckTxBillingParams';
     if (!billing || blockNumber === 0) {
       return true;
     }
-    const LOG_HEADER = 'precheckTxBillingParam';
     const billingParsed = billing.split('|');
     if (billingParsed.length !== 2) {
       return CommonUtil.logAndReturnTxResult(logger, 15, `[${LOG_HEADER}] Invalid billing param`);
@@ -1211,10 +1210,10 @@ class DB {
   }
 
   precheckBalanceAndStakes(op, addr, billing, blockNumber) {
+    const LOG_HEADER = 'precheckBalanceAndStakes';
     if (blockNumber === 0) {
       return true;
     }
-    const LOG_HEADER = 'precheckBalanceAndStakes';
     const billedTo = billing ? CommonUtil.toBillingAccountName(billing) : addr;
     if (CommonUtil.hasServiceOp(op)) {
       const balance = this.getBalance(billedTo);
@@ -1250,19 +1249,13 @@ class DB {
     const billing = tx.tx_body.billing;
     const op = tx.tx_body.operation;
     const addr = tx.address;
-    const checkBillingResult = this.precheckTxBillingParam(op, addr, billing, blockNumber);
+    const checkBillingResult = this.precheckTxBillingParams(op, addr, billing, blockNumber);
     if (checkBillingResult !== true) {
       return checkBillingResult;
     }
     const checkBalanceResult = this.precheckBalanceAndStakes(op, addr, billing, blockNumber);
     if (checkBalanceResult !== true) {
       return checkBalanceResult;
-    }
-    if (restoreIfFails) {
-      if (!this.backupDb()) {
-        return CommonUtil.logAndReturnTxResult(
-          logger, 3, `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`, 0);
-      }
     }
     return true;
   }
@@ -1273,6 +1266,12 @@ class DB {
     if (precheckResult !== true) {
       logger.debug(`[${LOG_HEADER}] Pre-check failed`);
       return precheckResult;
+    }
+    if (restoreIfFails) {
+      if (!this.backupDb()) {
+        return CommonUtil.logAndReturnTxResult(
+          logger, 3, `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`, 0);
+      }
     }
     // Record when the tx was executed.
     const txBody = tx.tx_body;
