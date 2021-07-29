@@ -76,8 +76,7 @@ app.get('/metrics', (req, res, next) => {
 });
 
 app.get('/get_value', (req, res, next) => {
-  const result = node.db.getValue(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
-      CommonUtil.toBool(req.query.is_global));
+  const result = node.db.getValue(req.query.ref, CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -85,8 +84,7 @@ app.get('/get_value', (req, res, next) => {
 });
 
 app.get('/get_function', (req, res, next) => {
-  const result = node.db.getFunction(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
-      CommonUtil.toBool(req.query.is_global));
+  const result = node.db.getFunction(req.query.ref, CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -94,8 +92,7 @@ app.get('/get_function', (req, res, next) => {
 });
 
 app.get('/get_rule', (req, res, next) => {
-  const result = node.db.getRule(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
-      CommonUtil.toBool(req.query.is_global));
+  const result = node.db.getRule(req.query.ref, CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -103,8 +100,7 @@ app.get('/get_rule', (req, res, next) => {
 });
 
 app.get('/get_owner', (req, res, next) => {
-  const result = node.db.getOwner(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
-      CommonUtil.toBool(req.query.is_global));
+  const result = node.db.getOwner(req.query.ref, CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -134,7 +130,7 @@ app.get('/get_state_info', (req, res, next) => {
 });
 
 app.get('/match_function', (req, res, next) => {
-  const result = node.db.matchFunction(req.query.ref, CommonUtil.toBool(req.query.is_global));
+  const result = node.db.matchFunction(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -142,7 +138,7 @@ app.get('/match_function', (req, res, next) => {
 });
 
 app.get('/match_rule', (req, res, next) => {
-  const result = node.db.matchRule(req.query.ref, CommonUtil.toBool(req.query.is_global));
+  const result = node.db.matchRule(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -150,7 +146,7 @@ app.get('/match_rule', (req, res, next) => {
 });
 
 app.get('/match_owner', (req, res, next) => {
-  const result = node.db.matchOwner(req.query.ref, CommonUtil.toBool(req.query.is_global));
+  const result = node.db.matchOwner(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -168,7 +164,7 @@ app.post('/eval_rule', (req, res, next) => {
   }
   const result = node.db.evalRule(
       body.ref, body.value, auth, body.timestamp || Date.now(),
-      CommonUtil.toBool(body.is_global));
+      CommonUtil.toMatchOrEvalOptions(body));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -185,7 +181,7 @@ app.post('/eval_owner', (req, res, next) => {
     auth.fid = body.fid;
   }
   const result = node.db.evalOwner(
-      body.ref, body.permission, auth, CommonUtil.toBool(body.is_global));
+      body.ref, body.permission, auth, CommonUtil.toMatchOrEvalOptions(body));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -373,8 +369,8 @@ app.get('/state_versions', (req, res) => {
 });
 
 // TODO(platfowner): Support for subtree dumping (i.e. with ref path).
-app.get('/dump_final_version', (req, res) => {
-  const result = node.dumpFinalVersion(true);
+app.get('/dump_final_db_states', (req, res) => {
+  const result = node.dumpFinalDbStates(CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
