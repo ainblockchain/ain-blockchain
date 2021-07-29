@@ -1318,7 +1318,7 @@ class DB {
       if (CommonUtil.isFailedTx(res)) {
         logger.debug(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);
-        if (CommonUtil.execTxPrecheckFailed(res) && !restoreIfFails) { // abort right away
+        if (CommonUtil.txPrecheckFailed(res) && !restoreIfFails) { // abort right away
           return false;
         }
       }

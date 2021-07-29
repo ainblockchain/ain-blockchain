@@ -331,7 +331,7 @@ class CommonUtil {
     return newObj;
   }
 
-  static execTxPrecheckFailed(result) {
+  static txPrecheckFailed(result) {
     const precheckFailureCode = [21, 22, 3, 15, 33, 16, 17, 34, 35];
     return precheckFailureCode.includes(result.code);
   }
