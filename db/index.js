@@ -563,11 +563,11 @@ class DB {
       } else if (op.type === ReadDbOperations.GET_OWNER) {
         resultList.push(this.getOwner(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
-        resultList.push(this.matchFunction(op.ref, CommonUtil.toGetOptions(op)));
+        resultList.push(this.matchFunction(op.ref, CommonUtil.toMatchOrEvalOptions(op)));
       } else if (op.type === ReadDbOperations.MATCH_RULE) {
-        resultList.push(this.matchRule(op.ref, CommonUtil.toGetOptions(op)));
+        resultList.push(this.matchRule(op.ref, CommonUtil.toMatchOrEvalOptions(op)));
       } else if (op.type === ReadDbOperations.MATCH_OWNER) {
-        resultList.push(this.matchOwner(op.ref, CommonUtil.toGetOptions(op)));
+        resultList.push(this.matchOwner(op.ref, CommonUtil.toMatchOrEvalOptions(op)));
       } else if (op.type === ReadDbOperations.EVAL_RULE) {
         const auth = {};
         if (op.address) {
@@ -576,8 +576,9 @@ class DB {
         if (op.fid) {
           auth.fid = op.fid;
         }
+        const timestamp = op.timestamp || Date.now();
         resultList.push(this.evalRule(
-            op.ref, op.value, auth, op.timestamp || Date.now(), CommonUtil.toGetOptions(op)));
+            op.ref, op.value, auth, timestamp, CommonUtil.toMatchOrEvalOptions(op)));
       } else if (op.type === ReadDbOperations.EVAL_OWNER) {
         const auth = {};
         if (op.address) {
@@ -586,7 +587,8 @@ class DB {
         if (op.fid) {
           auth.fid = op.fid;
         }
-        resultList.push(this.evalOwner(op.ref, op.permission, auth, CommonUtil.toGetOptions(op)));
+        resultList.push(this.evalOwner(
+            op.ref, op.permission, auth, CommonUtil.toMatchOrEvalOptions(op)));
       }
     });
     return resultList;
