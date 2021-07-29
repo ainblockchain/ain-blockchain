@@ -174,6 +174,42 @@ class CommonUtil {
     }
   }
 
+  static toGetOptions(args) {
+    const options = {};
+    if (args.is_shallow !== undefined) {
+      options.isShallow = CommonUtil.toBool(args.is_shallow);
+    }
+    if (args.is_global !== undefined) {
+      options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    if (args.include_tree_info !== undefined) {
+      options.includeTreeInfo = CommonUtil.toBool(args.include_tree_info);
+    }
+    if (args.include_proof !== undefined) {
+      options.includeProof = CommonUtil.toBool(args.include_proof);
+    }
+    if (args.include_version !== undefined) {
+      options.includeVersion = CommonUtil.toBool(args.include_version);
+    }
+    return options;
+  }
+
+  static toMatchOrEvalOptions(args) {
+    const options = {};
+    if (args.is_global !== undefined) {
+      options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    return options;
+  }
+
+  static toSetOptions(args) {
+    const options = {};
+    if (args.is_global !== undefined) {
+      options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    return options;
+  }
+
   static parseJsonOrNull(str) {
     let parsed = null;
     try {

@@ -327,6 +327,9 @@ const ProofProperties = {
  * @enum {string}
  */
 const StateInfoProperties = {
+  NUM_PARENTS: 'num_parents',
+  PROOF_HASH: 'proof_hash',
+  VERSION: 'version',
   TREE_HEIGHT: 'tree_height',
   TREE_SIZE: 'tree_size',
   TREE_BYTES: 'tree_bytes',

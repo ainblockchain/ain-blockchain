@@ -217,15 +217,15 @@ class BlockchainNode {
 
   updateSnapshots(blockNumber) {
     if (blockNumber > 0 && blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
-      const snapshot = this.dumpFinalVersion(false);
+      const snapshot = this.dumpFinalDbStates();
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
           this.snapshotDir, blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
   }
 
-  dumpFinalVersion(withDetails) {
-    return this.stateManager.getFinalRoot().toJsObject(withDetails);
+  dumpFinalDbStates(options) {
+    return this.stateManager.getFinalRoot().toJsObject(options);
   }
 
   getTransactionByHash(hash) {
