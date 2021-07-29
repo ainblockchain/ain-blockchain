@@ -229,11 +229,11 @@ class DB {
     return true;
   }
 
-  dumpDbStates() {
+  dumpDbStates(options) {
     if (this.stateRoot === null) {
       return null;
     }
-    return this.stateRoot.toJsObject(true);
+    return this.stateRoot.toJsObject(options);
   }
 
   // For testing purpose only.
@@ -404,10 +404,11 @@ class DB {
     return DB.removeEmptyNodesRecursive(fullPath, 0, stateRoot);
   }
 
-  static readFromStateRoot(stateRoot, rootLabel, refPath, isShallow, isGlobal, shardingPath) {
+  static readFromStateRoot(stateRoot, rootLabel, refPath, options, shardingPath) {
+    const isGlobal = options && options.isGlobal;
     if (!stateRoot) return null;
     const parsedPath = CommonUtil.parsePath(refPath);
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
+    const localPath = isGlobal ?  DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
@@ -417,32 +418,28 @@ class DB {
     if (stateNode === null) {
       return null;
     }
-    if (isShallow) {
-      return stateNode.toJsObjectShallow();
-    } else {
-      return stateNode.toJsObject();
-    }
+    return stateNode.toJsObject(options);
   }
 
-  readDatabase(refPath, rootLabel, isShallow, isGlobal) {
-    return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, isShallow, isGlobal, this.shardingPath);
+  readDatabase(refPath, rootLabel, options) {
+    return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, options, this.shardingPath);
   }
 
   // TODO(platfowner): Support lookups on the final version.
-  getValue(valuePath, isShallow, isGlobal) {
-    return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, isShallow, isGlobal);
+  getValue(valuePath, options) {
+    return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, options);
   }
 
-  getFunction(functionPath, isShallow, isGlobal) {
-    return this.readDatabase(functionPath, PredefinedDbPaths.FUNCTIONS_ROOT, isShallow, isGlobal);
+  getFunction(functionPath, options) {
+    return this.readDatabase(functionPath, PredefinedDbPaths.FUNCTIONS_ROOT, options);
   }
 
-  getRule(rulePath, isShallow, isGlobal) {
-    return this.readDatabase(rulePath, PredefinedDbPaths.RULES_ROOT, isShallow, isGlobal);
+  getRule(rulePath, options) {
+    return this.readDatabase(rulePath, PredefinedDbPaths.RULES_ROOT, options);
   }
 
-  getOwner(ownerPath, isShallow, isGlobal) {
-    return this.readDatabase(ownerPath, PredefinedDbPaths.OWNERS_ROOT, isShallow, isGlobal);
+  getOwner(ownerPath, options) {
+    return this.readDatabase(ownerPath, PredefinedDbPaths.OWNERS_ROOT, options);
   }
 
   /**
@@ -472,7 +469,7 @@ class DB {
 
   static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
     return DB.readFromStateRoot(
-        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, isShallow, [], false);
+        stateRoot, PredefinedDbPaths.VALUES_ROOT, statePath, { isShallow }, []);
   }
 
   /**
@@ -489,42 +486,51 @@ class DB {
       [StateInfoProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
       [StateInfoProperties.TREE_SIZE]: stateNode.getTreeSize(),
       [StateInfoProperties.TREE_BYTES]: stateNode.getTreeBytes(),
+      [StateInfoProperties.PROOF_HASH]: stateNode.getProofHash(),
+      [StateInfoProperties.VERSION]: stateNode.getVersion(),
     };
   }
 
-  matchFunction(funcPath, isGlobal) {
+  matchFunction(funcPath, options) {
+    const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(funcPath);
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
     }
-    return this.convertFunctionMatch(this.matchFunctionForParsedPath(localPath), isGlobal);
+    return this.convertFunctionMatch(
+        this.matchFunctionForParsedPath(localPath), isGlobal);
   }
 
-  matchRule(valuePath, isGlobal) {
+  matchRule(valuePath, options) {
+    const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(valuePath);
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
     }
-    return this.convertRuleMatch(this.matchRuleForParsedPath(localPath), isGlobal);
+    return this.convertRuleMatch(
+        this.matchRuleForParsedPath(localPath), isGlobal);
   }
 
-  matchOwner(rulePath, isGlobal) {
+  matchOwner(rulePath, options) {
+    const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(rulePath);
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
     }
-    return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
+    return this.convertOwnerMatch(
+        this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
-  evalRule(valuePath, value, auth, timestamp, isGlobal) {
+  evalRule(valuePath, value, auth, timestamp, options) {
+    const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(valuePath);
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
@@ -532,9 +538,10 @@ class DB {
     return this.getPermissionForValue(localPath, value, auth, timestamp);
   }
 
-  evalOwner(refPath, permission, auth, isGlobal) {
+  evalOwner(refPath, permission, auth, options) {
+    const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(refPath);
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
@@ -548,19 +555,19 @@ class DB {
     const resultList = [];
     opList.forEach((op) => {
       if (op.type === undefined || op.type === ReadDbOperations.GET_VALUE) {
-        resultList.push(this.getValue(op.ref, op.is_shallow, op.is_global));
+        resultList.push(this.getValue(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.GET_RULE) {
-        resultList.push(this.getRule(op.ref, op.is_shallow, op.is_global));
+        resultList.push(this.getRule(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.GET_FUNCTION) {
-        resultList.push(this.getFunction(op.ref, op.is_shallow, op.is_global));
+        resultList.push(this.getFunction(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.GET_OWNER) {
-        resultList.push(this.getOwner(op.ref, op.is_shallow, op.is_global));
+        resultList.push(this.getOwner(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.MATCH_FUNCTION) {
-        resultList.push(this.matchFunction(op.ref, op.is_global));
+        resultList.push(this.matchFunction(op.ref, CommonUtil.toMatchOrEvalOptions(op)));
       } else if (op.type === ReadDbOperations.MATCH_RULE) {
-        resultList.push(this.matchRule(op.ref, op.is_global));
+        resultList.push(this.matchRule(op.ref, CommonUtil.toMatchOrEvalOptions(op)));
       } else if (op.type === ReadDbOperations.MATCH_OWNER) {
-        resultList.push(this.matchOwner(op.ref, op.is_global));
+        resultList.push(this.matchOwner(op.ref, CommonUtil.toMatchOrEvalOptions(op)));
       } else if (op.type === ReadDbOperations.EVAL_RULE) {
         const auth = {};
         if (op.address) {
@@ -569,8 +576,9 @@ class DB {
         if (op.fid) {
           auth.fid = op.fid;
         }
+        const timestamp = op.timestamp || Date.now();
         resultList.push(this.evalRule(
-            op.ref, op.value, auth, op.timestamp || Date.now(), op.is_global));
+            op.ref, op.value, auth, timestamp, CommonUtil.toMatchOrEvalOptions(op)));
       } else if (op.type === ReadDbOperations.EVAL_OWNER) {
         const auth = {};
         if (op.address) {
@@ -579,7 +587,8 @@ class DB {
         if (op.fid) {
           auth.fid = op.fid;
         }
-        resultList.push(this.evalOwner(op.ref, op.permission, auth, op.is_global));
+        resultList.push(this.evalOwner(
+            op.ref, op.permission, auth, CommonUtil.toMatchOrEvalOptions(op)));
       }
     });
     return resultList;
@@ -651,7 +660,8 @@ class DB {
   // TODO(platfowner): Define error code explicitly.
   // TODO(platfowner): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
   //                   and setOwner() as well.
-  setValue(valuePath, value, auth, timestamp, transaction, isGlobal) {
+  setValue(valuePath, value, auth, timestamp, transaction, options) {
+    const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(101, `Invalid object for states: ${isValidObj.invalidPath}`);
@@ -661,7 +671,7 @@ class DB {
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(102, `Invalid path: ${isValidPath.invalidPath}`);
     }
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
       return CommonUtil.returnTxResult(0);
@@ -692,27 +702,30 @@ class DB {
     return CommonUtil.returnTxResult(0, null, 1, funcResults);
   }
 
-  incValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
-    const valueBefore = this.getValue(valuePath, false, isGlobal);
+  incValue(valuePath, delta, auth, timestamp, transaction, options) {
+    const isGlobal = options && options.isGlobal;
+    const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return CommonUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`);
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
-    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal);
+    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, options);
   }
 
-  decValue(valuePath, delta, auth, timestamp, transaction, isGlobal) {
-    const valueBefore = this.getValue(valuePath, false, isGlobal);
+  decValue(valuePath, delta, auth, timestamp, transaction, options) {
+    const isGlobal = options && options.isGlobal;
+    const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
       return CommonUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`);
     }
     const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, isGlobal);
+    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, options);
   }
 
-  setFunction(functionPath, func, auth, isGlobal) {
+  setFunction(functionPath, func, auth, options) {
+    const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(func);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(401, `Invalid object for states: ${isValidObj.invalidPath}`);
@@ -733,8 +746,7 @@ class DB {
             403, `Trying to write owner-only function: ${ownerOnlyFid}`);
       }
     }
-    const localPath = isGlobal === true ?
-        DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
       return CommonUtil.returnTxResult(0);
@@ -742,7 +754,7 @@ class DB {
     if (!this.getPermissionForFunction(localPath, auth)) {
       return CommonUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`);
     }
-    const curFunction = this.getFunction(functionPath, false, isGlobal);
+    const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
     const newFunction = applyFunctionChange(curFunction, func);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
@@ -751,7 +763,8 @@ class DB {
 
   // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
   //                   multiple path variables).
-  setRule(rulePath, rule, auth, isGlobal) {
+  setRule(rulePath, rule, auth, options) {
+    const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(501, `Invalid object for states: ${isValidObj.invalidPath}`);
@@ -765,7 +778,7 @@ class DB {
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(502, `Invalid path: ${isValidPath.invalidPath}`);
     }
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
       return CommonUtil.returnTxResult(0);
@@ -779,7 +792,8 @@ class DB {
     return CommonUtil.returnTxResult(0, null, 1);
   }
 
-  setOwner(ownerPath, owner, auth, isGlobal) {
+  setOwner(ownerPath, owner, auth, options) {
+    const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(601, `Invalid object for states: ${isValidObj.invalidPath}`);
@@ -793,7 +807,7 @@ class DB {
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(602, `Invalid path: ${isValidPath.invalidPath}`);
     }
-    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
       return CommonUtil.returnTxResult(0);
@@ -802,7 +816,7 @@ class DB {
       return CommonUtil.returnTxResult(
           603, `No write_owner or branch_owner permission on: ${ownerPath}`);
     }
-    const curOwner = this.getOwner(ownerPath, false, isGlobal);
+    const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
     const newOwner = applyOwnerChange(curOwner, owner);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     this.writeDatabase(fullPath, newOwner);
@@ -853,22 +867,22 @@ class DB {
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        result = this.setValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
+        result = this.setValue(op.ref, op.value, auth, timestamp, tx, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.INC_VALUE:
-        result = this.incValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
+        result = this.incValue(op.ref, op.value, auth, timestamp, tx, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.DEC_VALUE:
-        result = this.decValue(op.ref, op.value, auth, timestamp, tx, op.is_global);
+        result = this.decValue(op.ref, op.value, auth, timestamp, tx, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_FUNCTION:
-        result = this.setFunction(op.ref, op.value, auth, op.is_global);
+        result = this.setFunction(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_RULE:
-        result = this.setRule(op.ref, op.value, auth, op.is_global);
+        result = this.setRule(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_OWNER:
-        result = this.setOwner(op.ref, op.value, auth, op.is_global);
+        result = this.setOwner(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
         break;
       default:
         return CommonUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
@@ -1122,7 +1136,7 @@ class DB {
   collectFee(billedTo, gasCost, auth, timestamp, tx, blockNumber) {
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(billedTo, blockNumber, tx.hash);
     const gasFeeCollectRes = this.setValue(
-        gasFeeCollectPath, { amount: gasCost }, auth, timestamp, tx, false);
+        gasFeeCollectPath, { amount: gasCost }, auth, timestamp, tx);
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) {
       return CommonUtil.returnTxResult(
           18, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
@@ -1140,7 +1154,7 @@ class DB {
     if (tx.tx_body.billing) {
       receipt[PredefinedDbPaths.RECEIPTS_BILLING] = tx.tx_body.billing;
     }
-    const recordRes = this.setValue(receiptPath, receipt, auth, timestamp, tx, false);
+    const recordRes = this.setValue(receiptPath, receipt, auth, timestamp, tx);
     if (CommonUtil.isFailedTx(recordRes)) {
       return CommonUtil.returnTxResult(
           29, `Failed to record receipt ${JSON.stringify(recordRes, null, 2)}`, 0);
@@ -1381,7 +1395,7 @@ class DB {
   }
 
   convertPathAndConfig(pathAndConfig, isGlobal) {
-    const path = (isGlobal === true) ? this.toGlobalPath(pathAndConfig.path) : pathAndConfig.path;
+    const path = isGlobal ? this.toGlobalPath(pathAndConfig.path) : pathAndConfig.path;
     return {
       path: CommonUtil.formatPath(path),
       config: pathAndConfig.config,
@@ -1389,9 +1403,9 @@ class DB {
   }
 
   convertFunctionMatch(matched, isGlobal) {
-    const functionPath = (isGlobal === true) ?
+    const functionPath = isGlobal ?
         this.toGlobalPath(matched.matchedFunctionPath) : matched.matchedFunctionPath;
-    const valuePath = (isGlobal === true) ?
+    const valuePath = isGlobal ?
         this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
     const subtreeFunctions =
         matched.subtreeFunctions.map((entry) => this.convertPathAndConfig(entry, false));
@@ -1523,9 +1537,9 @@ class DB {
   }
 
   convertRuleMatch(matched, isGlobal) {
-    const rulePath = (isGlobal === true) ?
+    const rulePath = isGlobal ?
         this.toGlobalPath(matched.matchedRulePath) : matched.matchedRulePath;
-    const valuePath = (isGlobal === true) ?
+    const valuePath = isGlobal ?
         this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
     const subtreeRules = matched.subtreeRules.map((entry) =>
       this.convertPathAndConfig(entry, false));
@@ -1614,7 +1628,7 @@ class DB {
   }
 
   convertOwnerMatch(matched, isGlobal) {
-    const ownerPath = (isGlobal === true) ?
+    const ownerPath = isGlobal ?
         this.toGlobalPath(matched.matchedOwnerPath) : matched.matchedOwnerPath;
     return {
       matched_path: {

@@ -5,6 +5,7 @@ const assert = chai.assert;
 
 const CommonUtil = require('../common/common-util');
 const { HASH_DELIMITER } = require('../common/constants');
+const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 
 describe("state-node", () => {
   let node;
@@ -81,7 +82,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(node.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
-      assert.deepEqual(clone.toJsObject(true), node.toJsObject(true));
+      assert.deepEqual(clone.toJsObject(GET_OPTIONS_INCLUDE_ALL), node.toJsObject(GET_OPTIONS_INCLUDE_ALL));
       expect(node.equal(clone)).to.equal(true);
     });
 
@@ -107,7 +108,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
-      assert.deepEqual(clone.toJsObject(true), stateTree.toJsObject(true));
+      assert.deepEqual(clone.toJsObject(GET_OPTIONS_INCLUDE_ALL), stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL));
       expect(stateTree.equal(clone)).to.equal(true);
     });
   });
@@ -295,11 +296,11 @@ describe("state-node", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
-      expect(StateNode.fromJsObject(true, ver1).toJsObject(true)).to.equal(true);
-      expect(StateNode.fromJsObject(false, ver1).toJsObject(true)).to.equal(false);
-      expect(StateNode.fromJsObject(10, ver1).toJsObject(true)).to.equal(10);
-      expect(StateNode.fromJsObject('str', ver1).toJsObject(true)).to.equal('str');
-      expect(StateNode.fromJsObject(null, ver1).toJsObject(true)).to.equal(null);
+      expect(StateNode.fromJsObject(true, ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal(true);
+      expect(StateNode.fromJsObject(false, ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal(false);
+      expect(StateNode.fromJsObject(10, ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal(10);
+      expect(StateNode.fromJsObject('str', ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal('str');
+      expect(StateNode.fromJsObject(null, ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal(null);
     })
 
     it("internal node", () => {
@@ -332,8 +333,186 @@ describe("state-node", () => {
           empty_obj: {},
         }
       };
-      // Expect no updates on proof hash and state info (tree height and tree size).
-      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject(true), {
+
+      // Expect no updates on tree info.
+      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeTreeInfo: true }), {
+        ".num_parents": 0,
+        ".num_parents:bool": 1,
+        ".num_parents:empty_obj": 1,
+        ".num_parents:empty_str": 1,
+        ".num_parents:null": 1,
+        ".num_parents:number": 1,
+        ".num_parents:str": 1,
+        ".num_parents:undef": 1,
+        ".tree_height": 0,
+        ".tree_height:bool": 0,
+        ".tree_height:empty_obj": 0,
+        ".tree_height:empty_str": 0,
+        ".tree_height:null": 0,
+        ".tree_height:number": 0,
+        ".tree_height:str": 0,
+        ".tree_height:undef": 0,
+        ".tree_size": 0,
+        ".tree_size:bool": 0,
+        ".tree_size:empty_obj": 0,
+        ".tree_size:empty_str": 0,
+        ".tree_size:null": 0,
+        ".tree_size:number": 0,
+        ".tree_size:str": 0,
+        ".tree_size:undef": 0,
+        ".tree_bytes": 0,
+        ".tree_bytes:bool": 0,
+        ".tree_bytes:empty_obj": 0,
+        ".tree_bytes:empty_str": 0,
+        ".tree_bytes:null": 0,
+        ".tree_bytes:number": 0,
+        ".tree_bytes:str": 0,
+        ".tree_bytes:undef": 0,
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
+        empty_obj: null,
+        subobj1: {
+          ".num_parents": 1,
+          ".num_parents:bool": 1,
+          ".num_parents:empty_obj": 1,
+          ".num_parents:empty_str": 1,
+          ".num_parents:null": 1,
+          ".num_parents:number": 1,
+          ".num_parents:str": 1,
+          ".num_parents:undef": 1,
+          ".tree_height": 0,
+          ".tree_height:bool": 0,
+          ".tree_height:empty_obj": 0,
+          ".tree_height:empty_str": 0,
+          ".tree_height:null": 0,
+          ".tree_height:number": 0,
+          ".tree_height:str": 0,
+          ".tree_height:undef": 0,
+          ".tree_size": 0,
+          ".tree_size:bool": 0,
+          ".tree_size:empty_obj": 0,
+          ".tree_size:empty_str": 0,
+          ".tree_size:null": 0,
+          ".tree_size:number": 0,
+          ".tree_size:str": 0,
+          ".tree_size:undef": 0,
+          ".tree_bytes": 0,
+          ".tree_bytes:bool": 0,
+          ".tree_bytes:empty_obj": 0,
+          ".tree_bytes:empty_str": 0,
+          ".tree_bytes:null": 0,
+          ".tree_bytes:number": 0,
+          ".tree_bytes:str": 0,
+          ".tree_bytes:undef": 0,
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        },
+        subobj2: {
+          ".num_parents": 1,
+          ".num_parents:bool": 1,
+          ".num_parents:empty_obj": 1,
+          ".num_parents:empty_str": 1,
+          ".num_parents:null": 1,
+          ".num_parents:number": 1,
+          ".num_parents:str": 1,
+          ".num_parents:undef": 1,
+          ".tree_height": 0,
+          ".tree_height:bool": 0,
+          ".tree_height:empty_obj": 0,
+          ".tree_height:empty_str": 0,
+          ".tree_height:null": 0,
+          ".tree_height:number": 0,
+          ".tree_height:str": 0,
+          ".tree_height:undef": 0,
+          ".tree_size": 0,
+          ".tree_size:bool": 0,
+          ".tree_size:empty_obj": 0,
+          ".tree_size:empty_str": 0,
+          ".tree_size:null": 0,
+          ".tree_size:number": 0,
+          ".tree_size:str": 0,
+          ".tree_size:undef": 0,
+          ".tree_bytes": 0,
+          ".tree_bytes:bool": 0,
+          ".tree_bytes:empty_obj": 0,
+          ".tree_bytes:empty_str": 0,
+          ".tree_bytes:null": 0,
+          ".tree_bytes:number": 0,
+          ".tree_bytes:str": 0,
+          ".tree_bytes:undef": 0,
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        }
+      });
+
+      // Expect no updates on state proof.
+      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
+        ".proof_hash:bool": null,
+        ".proof_hash:empty_obj": null,
+        ".proof_hash:empty_str": null,
+        ".proof_hash:null": null,
+        ".proof_hash:number": null,
+        ".proof_hash:str": null,
+        ".proof_hash:undef": null,
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
+        empty_obj: null,
+        subobj1: {
+          ".proof_hash": null,
+          ".proof_hash:bool": null,
+          ".proof_hash:empty_obj": null,
+          ".proof_hash:empty_str": null,
+          ".proof_hash:null": null,
+          ".proof_hash:number": null,
+          ".proof_hash:str": null,
+          ".proof_hash:undef": null,
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        },
+        subobj2: {
+          ".proof_hash": null,
+          ".proof_hash:bool": null,
+          ".proof_hash:empty_obj": null,
+          ".proof_hash:empty_str": null,
+          ".proof_hash:null": null,
+          ".proof_hash:number": null,
+          ".proof_hash:str": null,
+          ".proof_hash:undef": null,
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        }
+      });
+
+      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeVersion: true }), {
         ".version": "ver1",
         ".version:bool": "ver1",
         ".version:empty_obj": "ver1",
@@ -342,46 +521,6 @@ describe("state-node", () => {
         ".version:number": "ver1",
         ".version:str": "ver1",
         ".version:undef": "ver1",
-        ".numParents": 0,
-        ".numParents:bool": 1,
-        ".numParents:empty_obj": 1,
-        ".numParents:empty_str": 1,
-        ".numParents:null": 1,
-        ".numParents:number": 1,
-        ".numParents:str": 1,
-        ".numParents:undef": 1,
-        ".proofHash": null,
-        ".proofHash:bool": null,
-        ".proofHash:empty_obj": null,
-        ".proofHash:empty_str": null,
-        ".proofHash:null": null,
-        ".proofHash:number": null,
-        ".proofHash:str": null,
-        ".proofHash:undef": null,
-        ".treeHeight": 0,
-        ".treeHeight:bool": 0,
-        ".treeHeight:empty_obj": 0,
-        ".treeHeight:empty_str": 0,
-        ".treeHeight:null": 0,
-        ".treeHeight:number": 0,
-        ".treeHeight:str": 0,
-        ".treeHeight:undef": 0,
-        ".treeSize": 0,
-        ".treeSize:bool": 0,
-        ".treeSize:empty_obj": 0,
-        ".treeSize:empty_str": 0,
-        ".treeSize:null": 0,
-        ".treeSize:number": 0,
-        ".treeSize:str": 0,
-        ".treeSize:undef": 0,
-        ".treeBytes": 0,
-        ".treeBytes:bool": 0,
-        ".treeBytes:empty_obj": 0,
-        ".treeBytes:empty_str": 0,
-        ".treeBytes:null": 0,
-        ".treeBytes:number": 0,
-        ".treeBytes:str": 0,
-        ".treeBytes:undef": 0,
         bool: false,
         number: 10,
         str: 'str',
@@ -398,46 +537,6 @@ describe("state-node", () => {
           ".version:number": "ver1",
           ".version:str": "ver1",
           ".version:undef": "ver1",
-          ".numParents": 1,
-          ".numParents:bool": 1,
-          ".numParents:empty_obj": 1,
-          ".numParents:empty_str": 1,
-          ".numParents:null": 1,
-          ".numParents:number": 1,
-          ".numParents:str": 1,
-          ".numParents:undef": 1,
-          ".proofHash": null,
-          ".proofHash:bool": null,
-          ".proofHash:empty_obj": null,
-          ".proofHash:empty_str": null,
-          ".proofHash:null": null,
-          ".proofHash:number": null,
-          ".proofHash:str": null,
-          ".proofHash:undef": null,
-          ".treeHeight": 0,
-          ".treeHeight:bool": 0,
-          ".treeHeight:empty_obj": 0,
-          ".treeHeight:empty_str": 0,
-          ".treeHeight:null": 0,
-          ".treeHeight:number": 0,
-          ".treeHeight:str": 0,
-          ".treeHeight:undef": 0,
-          ".treeSize": 0,
-          ".treeSize:bool": 0,
-          ".treeSize:empty_obj": 0,
-          ".treeSize:empty_str": 0,
-          ".treeSize:null": 0,
-          ".treeSize:number": 0,
-          ".treeSize:str": 0,
-          ".treeSize:undef": 0,
-          ".treeBytes": 0,
-          ".treeBytes:bool": 0,
-          ".treeBytes:empty_obj": 0,
-          ".treeBytes:empty_str": 0,
-          ".treeBytes:null": 0,
-          ".treeBytes:number": 0,
-          ".treeBytes:str": 0,
-          ".treeBytes:undef": 0,
           bool: true,
           number: 20,
           str: 'str2',
@@ -455,46 +554,6 @@ describe("state-node", () => {
           ".version:number": "ver1",
           ".version:str": "ver1",
           ".version:undef": "ver1",
-          ".numParents": 1,
-          ".numParents:bool": 1,
-          ".numParents:empty_obj": 1,
-          ".numParents:empty_str": 1,
-          ".numParents:null": 1,
-          ".numParents:number": 1,
-          ".numParents:str": 1,
-          ".numParents:undef": 1,
-          ".proofHash": null,
-          ".proofHash:bool": null,
-          ".proofHash:empty_obj": null,
-          ".proofHash:empty_str": null,
-          ".proofHash:null": null,
-          ".proofHash:number": null,
-          ".proofHash:str": null,
-          ".proofHash:undef": null,
-          ".treeHeight": 0,
-          ".treeHeight:bool": 0,
-          ".treeHeight:empty_obj": 0,
-          ".treeHeight:empty_str": 0,
-          ".treeHeight:null": 0,
-          ".treeHeight:number": 0,
-          ".treeHeight:str": 0,
-          ".treeHeight:undef": 0,
-          ".treeSize": 0,
-          ".treeSize:bool": 0,
-          ".treeSize:empty_obj": 0,
-          ".treeSize:empty_str": 0,
-          ".treeSize:null": 0,
-          ".treeSize:number": 0,
-          ".treeSize:str": 0,
-          ".treeSize:undef": 0,
-          ".treeBytes": 0,
-          ".treeBytes:bool": 0,
-          ".treeBytes:empty_obj": 0,
-          ".treeBytes:empty_str": 0,
-          ".treeBytes:null": 0,
-          ".treeBytes:number": 0,
-          ".treeBytes:str": 0,
-          ".treeBytes:undef": 0,
           bool: true,
           number: -10,
           str: 'str3',
@@ -507,26 +566,26 @@ describe("state-node", () => {
     })
   })
 
-  describe("fromJsObject with version / toJsObjectShallow", () => {
+  describe("fromJsObject with version / toJsObject with isShallow", () => {
     it("leaf node", () => {
       const ver = 'test_version';
-      expect(StateNode.fromJsObject(true, ver).toJsObjectShallow()).to.equal(true);
-      expect(StateNode.fromJsObject(false, ver).toJsObjectShallow()).to.equal(false);
-      expect(StateNode.fromJsObject(10, ver).toJsObjectShallow()).to.equal(10);
-      expect(StateNode.fromJsObject('str', ver).toJsObjectShallow()).to.equal('str');
-      expect(StateNode.fromJsObject(null, ver).toJsObjectShallow()).to.equal(null);
+      expect(StateNode.fromJsObject(true, ver).toJsObject({ isShallow: true })).to.equal(true);
+      expect(StateNode.fromJsObject(false, ver).toJsObject({ isShallow: true })).to.equal(false);
+      expect(StateNode.fromJsObject(10, ver).toJsObject({ isShallow: true })).to.equal(10);
+      expect(StateNode.fromJsObject('str', ver).toJsObject({ isShallow: true })).to.equal('str');
+      expect(StateNode.fromJsObject(null, ver).toJsObject({ isShallow: true })).to.equal(null);
     })
 
     it("internal node", () => {
       const ver = 'test_version';
-      assert.deepEqual(StateNode.fromJsObject({ a: 1, b: 2, c: 3 }, ver).toJsObjectShallow(),
+      assert.deepEqual(StateNode.fromJsObject({ a: 1, b: 2, c: 3 }, ver).toJsObject({ isShallow: true }),
           {
             a: true,
             b: true,
             c: true,
           },
       );
-      assert.deepEqual(StateNode.fromJsObject({ a: { aa: 11 }, b: 2 }, ver).toJsObjectShallow(),
+      assert.deepEqual(StateNode.fromJsObject({ a: { aa: 11 }, b: 2 }, ver).toJsObject({ isShallow: true }),
           {
             a: true,
             b: true,
