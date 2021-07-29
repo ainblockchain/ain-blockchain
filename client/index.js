@@ -407,7 +407,8 @@ app.get('/get_block_by_hash', (req, res, next) => {
 });
 
 app.get('/get_block_by_number', (req, res, next) => {
-  const block = node.bc.getBlockByNumber(Number(req.query.number));
+  const block = CommonUtil.isNumber(req.query.number) ?
+      node.bc.getBlockByNumber(CommonUtil.numberOrZero(req.query.number)) : null;
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result: block})
