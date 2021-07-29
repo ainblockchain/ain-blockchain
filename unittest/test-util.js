@@ -5,6 +5,12 @@ const { Block } = require('../blockchain/block');
 const { CURRENT_PROTOCOL_VERSION, StateVersions } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
+const GET_OPTIONS_INCLUDE_ALL = {
+  includeTreeInfo: true,
+  includeProof: true,
+  includeVersion: true,
+};
+
 function readConfigFile(filePath) {
   if (!fs.existsSync(filePath)) {
     throw Error('Missing config file: ' + filePath);
@@ -158,6 +164,7 @@ function getBlockByNumber(server, number) {
 }
 
 module.exports = {
+  GET_OPTIONS_INCLUDE_ALL,
   readConfigFile,
   setNodeForTesting,
   getTransaction,
