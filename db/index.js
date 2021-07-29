@@ -1141,7 +1141,7 @@ class DB {
     const billing = tx.tx_body.billing;
     let billedTo = billing ? CommonUtil.toBillingAccountName(billing) : auth.addr;
     if (billing) {
-      const billingParsed = billing.split('|');
+      const billingParsed = CommonUtil.parseServAcntName(billing);
       if (!this.isBillingUser(billingParsed[0], billingParsed[1], auth.addr)) {
         // No longer in the billing users list. Charge the tx signer instead
         billedTo = auth.addr;
@@ -1194,8 +1194,8 @@ class DB {
     if (!billing || blockNumber === 0) {
       return true;
     }
-    const billingParsed = billing.split('|');
-    if (billingParsed.length !== 2) {
+    const billingParsed = CommonUtil.parseServAcntName(billing);
+    if (billingParsed[0] === null || billingParsed[1] === null || billingParsed[2] !== null) {
       return CommonUtil.logAndReturnTxResult(logger, 15, `[${LOG_HEADER}] Invalid billing param`);
     }
     if (!this.isBillingUser(billingParsed[0], billingParsed[1], addr)) {
