@@ -1247,7 +1247,7 @@ class DB {
     return true;
   }
 
-  precheckTransaction(tx, restoreIfFails, blockNumber) {
+  precheckTransaction(tx, blockNumber) {
     const LOG_HEADER = 'precheckTransaction';
     // NOTE(platfowner): A transaction needs to be converted to an executable form
     //                   before being executed.
@@ -1274,9 +1274,9 @@ class DB {
     return true;
   }
 
-  executeTransaction(tx, restoreIfFails, blockNumber = 0) {
+  executeTransaction(tx, restoreIfFails = false, blockNumber = 0) {
     const LOG_HEADER = 'executeTransaction';
-    const precheckResult = this.precheckTransaction(tx, restoreIfFails, blockNumber);
+    const precheckResult = this.precheckTransaction(tx, blockNumber);
     if (precheckResult !== true) {
       logger.debug(`[${LOG_HEADER}] Pre-check failed`);
       return precheckResult;
@@ -1298,7 +1298,6 @@ class DB {
       if (restoreIfFails) {
         this.restoreDb();
       } else {
-        this.destroyDb();
         return executionResult;
       }
     }
@@ -1309,7 +1308,7 @@ class DB {
     return executionResult;
   }
 
-  executeTransactionList(txList, restoreIfFails, blockNumber = 0) {
+  executeTransactionList(txList, restoreIfFails = false, blockNumber = 0) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
