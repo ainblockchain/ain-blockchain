@@ -529,8 +529,9 @@ describe('Blockchain Node', () => {
         const infoBody = parseOrLog(syncRequest(
             'GET', server1 + `/get_state_info?ref=/values/apps/test/test_state_info/some/path`)
                 .body.toString('utf-8'));
-        infoBody.result.tree_bytes = 0;  // Erase tree bytes for stable comparison.
-        infoBody.result.version = 'erased';  // Erase state version for stable comparison.
+        // Erase some properties for stable comparison.
+        infoBody.result.tree_bytes = 0;
+        infoBody.result.version = 'erased';
         assert.deepEqual(
             infoBody, {
               code: 0,
@@ -714,8 +715,16 @@ describe('Blockchain Node', () => {
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateInfo', request)
         .then(res => {
           const stateInfo = res.result.result;
-          stateInfo.tree_bytes = 0;  // Erase tree bytes for stable comparison.
-          assert.deepEqual(stateInfo, { tree_height: 2, tree_size: 5, tree_bytes: 0 });
+          // Erase some properties for stable comparison.
+          stateInfo.tree_bytes = 0;
+          stateInfo.version = 'erased';
+          assert.deepEqual(stateInfo, {
+            "proof_hash": "0x972cc2f16c7b20173eb9426d2698459a9351d38b5bca7d2af70124cd617bbeac",
+            "tree_height": 2,
+            "tree_size": 5,
+            "tree_bytes": 0,
+            "version": "erased"
+          });
         })
       })
     })
