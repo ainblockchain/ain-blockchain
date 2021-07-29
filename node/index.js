@@ -383,6 +383,9 @@ class BlockchainNode {
             `[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(executableTx, null, 2)}\n ` +
             `WITH RESULT:${JSON.stringify(result)}`);
       }
+      // NOTE(liayoo): Transactions that don't pass the pre-checks will be rejected instantly and
+      //               will not be included in the tx pool, as they can't be included in a block
+      //               anyway, and may be used for attacks on blockchain nodes.
       if (!CommonUtil.txPrecheckFailed(result)) {
         this.tp.addTransaction(executableTx);
       }
@@ -424,7 +427,7 @@ class BlockchainNode {
     for (const block of blockList) {
       this.removeOldReceipts(block.number, db);
       if (block.number > 0) {
-        if (!db.executeTransactionList(block.last_votes, false)) {
+        if (!db.executeTransactionList(block.last_votes)) {
           logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
               `${JSON.stringify(block, null, 2)}`);
           return false;
@@ -521,7 +524,7 @@ class BlockchainNode {
     for (const block of this.bc.chain) {
       this.removeOldReceipts(block.number, db);
       if (block.number > 0) {
-        if (!db.executeTransactionList(block.last_votes, false)) {
+        if (!db.executeTransactionList(block.last_votes)) {
           logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
           process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
         }

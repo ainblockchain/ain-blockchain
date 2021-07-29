@@ -315,7 +315,7 @@ class Consensus {
     this.node.removeOldReceipts(blockNumber, tempDb);
 
     for (const voteTx of lastVotes) {
-      if (CommonUtil.isFailedTx(tempDb.executeTransaction(Transaction.toExecutable(voteTx), false))) {
+      if (CommonUtil.isFailedTx(tempDb.executeTransaction(Transaction.toExecutable(voteTx)))) {
         tempDb.destroyDb();
         return null;
       }
@@ -532,7 +532,7 @@ class Consensus {
         if (voteTx.hash === prevBlockProposal.hash) continue;
         if (!Consensus.isValidConsensusTx(voteTx) ||
             CommonUtil.isFailedTx(
-                tempDb.executeTransaction(Transaction.toExecutable(voteTx), false))) {
+                tempDb.executeTransaction(Transaction.toExecutable(voteTx)))) {
           logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
           tempDb.destroyDb();
           return false;
@@ -590,7 +590,7 @@ class Consensus {
     }
 
     this.node.removeOldReceipts(number, newDb);
-    if (!newDb.executeTransactionList(last_votes, false)) {
+    if (!newDb.executeTransactionList(last_votes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
       newDb.destroyDb();
       return false;
@@ -630,7 +630,7 @@ class Consensus {
       newDb.destroyDb();
       return null;
     }
-    const proposalTxExecRes = tempDb.executeTransaction(executableTx, false);
+    const proposalTxExecRes = tempDb.executeTransaction(executableTx);
     if (CommonUtil.isFailedTx(proposalTxExecRes)) {
       logger.error(
           `[${LOG_HEADER}] Failed to execute the proposal tx: ` +
@@ -692,7 +692,7 @@ class Consensus {
           `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(executableTx)}`);
       return false;
     }
-    const voteTxRes = tempDb.executeTransaction(executableTx, false);
+    const voteTxRes = tempDb.executeTransaction(executableTx);
     tempDb.destroyDb();
     if (CommonUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);
