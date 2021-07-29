@@ -327,7 +327,7 @@ class Consensus {
     const resList = [];
     for (const tx of transactions) {
       const res = tempDb.executeTransaction(Transaction.toExecutable(tx), true, blockNumber);
-      if (CommonUtil.execTxPrecheckFailed(res)) {
+      if (CommonUtil.txPrecheckFailed(res)) {
         invalidTransactions.push(tx);
       } else {
         validTransactions.push(tx);

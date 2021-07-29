@@ -2789,7 +2789,7 @@ describe('Blockchain Node', () => {
           const resultList = _.get(res, 'result.result', null);
           expect(CommonUtil.isArray(resultList)).to.equal(true);
           for (let i = 0; i < resultList.length; i++) {
-            expect(CommonUtil.execTxPrecheckFailed(resultList[i].result)).to.equal(false);
+            expect(CommonUtil.txPrecheckFailed(resultList[i].result)).to.equal(false);
           }
         })
       })

@@ -397,7 +397,7 @@ class BlockchainNode {
             `[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(executableTx, null, 2)}\n ` +
             `WITH RESULT:${JSON.stringify(result)}`);
       }
-      if (!CommonUtil.execTxPrecheckFailed(result)) {
+      if (!CommonUtil.txPrecheckFailed(result)) {
         this.tp.addTransaction(executableTx);
       }
     } else {
