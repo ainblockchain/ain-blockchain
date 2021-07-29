@@ -119,15 +119,15 @@ class CommonUtil {
   }
 
   static boolOrFalse(value) {
-    return CommonUtil.isBool(value) ? value : false;
+    return ruleUtil.boolOrFalse(value);
   }
 
   static numberOrZero(num) {
-    return CommonUtil.isNumber(num) ? num : 0;
+    return ruleUtil.numberOrZero(num);
   }
 
   static stringOrEmpty(str) {
-    return CommonUtil.isString(str) ? str : '';
+    return ruleUtil.stringOrEmpty(str);
   }
 
   static toBool(value) {
