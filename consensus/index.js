@@ -316,6 +316,7 @@ class Consensus {
 
     for (const voteTx of lastVotes) {
       if (CommonUtil.isFailedTx(tempDb.executeTransaction(Transaction.toExecutable(voteTx), false))) {
+        tempDb.destroyDb();
         return null;
       }
     }
@@ -362,8 +363,12 @@ class Consensus {
       validators = this.getValidators(lastBlock.hash, lastBlock.number);
     }
     const numValidators = Object.keys(validators).length;
-    if (!validators || !numValidators) throw Error('No whitelisted validators');
+    if (!validators || !numValidators) {
+      tempDb.destroyDb();
+      throw Error('No whitelisted validators');
+    }
     if (numValidators < MIN_NUM_VALIDATORS) {
+      tempDb.destroyDb();
       throw Error(`Not enough validators: ${JSON.stringify(validators)}`);
     }
     const totalAtStake = Object.values(validators).reduce((acc, cur) => {
@@ -529,6 +534,7 @@ class Consensus {
             CommonUtil.isFailedTx(
                 tempDb.executeTransaction(Transaction.toExecutable(voteTx), false))) {
           logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
+          tempDb.destroyDb();
           return false;
         } else {
           this.blockPool.addSeenVote(voteTx);
@@ -621,6 +627,7 @@ class Consensus {
         prevBlock.number - 1);
     if (!tempDb) {
       logger.error(`Failed to create a temp database with state version: ${newDb.stateVersion}.`);
+      newDb.destroyDb();
       return null;
     }
     const proposalTxExecRes = tempDb.executeTransaction(executableTx, false);
@@ -629,6 +636,7 @@ class Consensus {
           `[${LOG_HEADER}] Failed to execute the proposal tx: ` +
           `${JSON.stringify(proposalTxExecRes)}`);
       newDb.destroyDb();
+      tempDb.destroyDb();
       return false;
     }
     tempDb.destroyDb();
@@ -639,7 +647,6 @@ class Consensus {
         logger.error(`[${LOG_HEADER}] State proof hashes don't match: ` +
             `${newDb.getStateProof('/')[ProofProperties.PROOF_HASH]} / ` +
             `${state_proof_hash}`);
-        tempDb.destroyDb();
         return false;
       }
     }
@@ -686,11 +693,11 @@ class Consensus {
       return false;
     }
     const voteTxRes = tempDb.executeTransaction(executableTx, false);
+    tempDb.destroyDb();
     if (CommonUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);
       return false;
     }
-    tempDb.destroyDb();
     this.node.tp.addTransaction(executableTx);
     this.blockPool.addSeenVote(voteTx, this.epoch);
     return true;
