@@ -283,17 +283,18 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_matchFunction: function(args, done) {
-      const result = p2pServer.node.db.matchFunction(args.ref, CommonUtil.toGetOptions(args));
+      const result =
+          p2pServer.node.db.matchFunction(args.ref, CommonUtil.toMatchOrEvalOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
     ain_matchRule: function(args, done) {
-      const result = p2pServer.node.db.matchRule(args.ref, CommonUtil.toGetOptions(args));
+      const result = p2pServer.node.db.matchRule(args.ref, CommonUtil.toMatchOrEvalOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
     ain_matchOwner: function(args, done) {
-      const result = p2pServer.node.db.matchOwner(args.ref, CommonUtil.toGetOptions(args));
+      const result = p2pServer.node.db.matchOwner(args.ref, CommonUtil.toMatchOrEvalOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
@@ -305,8 +306,9 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       if (args.fid) {
         auth.fid = args.fid;
       }
+      const timestamp = args.timestamp || Date.now();
       const result = p2pServer.node.db.evalRule(
-          args.ref, args.value, auth, args.timestamp || Date.now(), CommonUtil.toGetOptions(args));
+          args.ref, args.value, auth, timestamp, CommonUtil.toMatchOrEvalOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
@@ -319,7 +321,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         auth.fid = args.fid;
       }
       const result = p2pServer.node.db.evalOwner(
-          args.ref, args.permission, auth, CommonUtil.toGetOptions(args));
+          args.ref, args.permission, auth, CommonUtil.toMatchOrEvalOptions(args));
       done(null, addProtocolVersion({result}));
     },
 

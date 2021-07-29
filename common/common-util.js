@@ -194,6 +194,14 @@ class CommonUtil {
     return options;
   }
 
+  static toMatchOrEvalOptions(args) {
+    const options = {};
+    if (args.is_global !== undefined) {
+      options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    return options;
+  }
+
   static toSetOptions(args) {
     const options = {};
     if (args.is_global !== undefined) {
