@@ -238,6 +238,23 @@ class DB {
     this.deleteBackupStateVersion();
   }
 
+  static create(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot, stateManager) {
+    const LOG_HEADER = 'create';
+
+    logger.debug(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
+        `${baseVersion} -> ${newVersion}`);
+    const newRoot = stateManager.cloneVersion(baseVersion, newVersion);
+    if (!newRoot) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to clone state version: ${baseVersion} -> ${newVersion}`);
+      return null;
+    }
+    if (finalizeVersion) {
+      stateManager.finalizeVersion(newVersion);
+    }
+    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot, stateManager);
+  }
+
   dumpDbStates(options) {
     if (this.stateRoot === null) {
       return null;

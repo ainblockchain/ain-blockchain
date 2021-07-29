@@ -57,7 +57,9 @@ class BlockchainNode {
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
-    this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
+    this.db = DB.create(
+        StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true,
+        this.bc.lastBlockNumber(), this.stateManager);
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
     this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
@@ -115,8 +117,9 @@ class BlockchainNode {
 
     // 3. Initialize DB (with the latest snapshot, if it exists)
     logger.info(`[${LOG_HEADER}] Initializing DB..`);
-    const startingDb =
-        this.createDb(StateVersions.EMPTY, StateVersions.START, this.bc, this.tp, true);
+    const startingDb = DB.create(
+        StateVersions.EMPTY, StateVersions.START, this.bc, this.tp, true, false,
+        latestSnapshotBlockNumber, this.stateManager);
     startingDb.initDbStates(latestSnapshot);
 
     // 4. Execute the chain on the DB and finalize it.
@@ -147,23 +150,6 @@ class BlockchainNode {
       return null;
     }
     return new DB(tempRoot, tempVersion, null, null, false, blockNumberSnapshot, this.stateManager);
-  }
-
-  createDb(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot) {
-    const LOG_HEADER = 'createDb';
-
-    logger.debug(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
-        `${baseVersion} -> ${newVersion}`);
-    const newRoot = this.stateManager.cloneVersion(baseVersion, newVersion);
-    if (!newRoot) {
-      logger.error(
-          `[${LOG_HEADER}] Failed to clone state version: ${baseVersion} -> ${newVersion}`);
-      return null;
-    }
-    if (finalizeVersion) {
-      this.stateManager.finalizeVersion(newVersion);
-    }
-    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot, this.stateManager);
   }
 
   syncDbAndNonce(newVersion) {
