@@ -3632,7 +3632,7 @@ describe('Blockchain Node', () => {
               },
               "state": {
                 "app": {
-                  "test": 1348
+                  "test": 1124
                 },
                 "service": 0
               }
@@ -6795,7 +6795,7 @@ describe('Blockchain Node', () => {
       }).body.toString('utf-8'));
       assert.deepEqual(txResBody.result.result, {
         "bandwidth_gas_amount": 0,
-        "error_message": "[precheckTxBillingParam] Multiple app-dependent service operations for a billing account",
+        "error_message": "[precheckTxBillingParams] Multiple app-dependent service operations for a billing account",
         "code": 16
       });
     });
