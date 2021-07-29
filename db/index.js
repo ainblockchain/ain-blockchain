@@ -715,10 +715,10 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
-    if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
+    if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
       return CommonUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`, 1);
     }
-    const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
+    const valueAfter = CommonUtil.numberOrZero(valueBefore) + delta;
     return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, options);
   }
 
@@ -726,10 +726,10 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
-    if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
+    if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
       return CommonUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`, 1);
     }
-    const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
+    const valueAfter = CommonUtil.numberOrZero(valueBefore) - delta;
     return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, options);
   }
 
