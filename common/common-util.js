@@ -331,6 +331,12 @@ class CommonUtil {
     return newObj;
   }
 
+  /**
+   * Returns true if the given result is one of the pre-check failure codes.
+   * Includes codes from precheckTxBillingParams(), precheckBalanceAndStakes(),
+   * precheckTransaction(), and executeTransaction() but does not include any codes returned
+   * after executeOperation().
+   */
   static txPrecheckFailed(result) {
     const precheckFailureCode = [21, 22, 3, 15, 33, 16, 17, 34, 35];
     return precheckFailureCode.includes(result.code);

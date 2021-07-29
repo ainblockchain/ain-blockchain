@@ -1198,6 +1198,8 @@ class DB {
     if (tx.tx_body.billing) {
       receipt[PredefinedDbPaths.RECEIPTS_BILLING] = tx.tx_body.billing;
     }
+    // NOTE(liayoo): necessary balance & permission checks have been done in precheckTransaction()
+    //               and collectFee().
     this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...CommonUtil.parsePath(receiptPath)], receipt);
   }
 
