@@ -25,10 +25,8 @@ const {
   updateProofHashForAllRootPaths,
   verifyProofHashForStateTree
 } = require('../db/state-util');
-const {
-  STATE_LABEL_LENGTH_LIMIT,
-  GET_OPTIONS_INCLUDE_ALL,
-} = require('../common/constants');
+const { STATE_LABEL_LENGTH_LIMIT } = require('../common/constants');
+const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
 const expect = chai.expect;

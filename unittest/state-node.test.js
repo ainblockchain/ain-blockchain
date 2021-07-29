@@ -4,10 +4,8 @@ const expect = chai.expect;
 const assert = chai.assert;
 
 const CommonUtil = require('../common/common-util');
-const {
-  HASH_DELIMITER,
-  GET_OPTIONS_INCLUDE_ALL,
-} = require('../common/constants');
+const { HASH_DELIMITER } = require('../common/constants');
+const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 
 describe("state-node", () => {
   let node;

@@ -335,12 +335,6 @@ const StateInfoProperties = {
   TREE_BYTES: 'tree_bytes',
 };
 
-const GET_OPTIONS_INCLUDE_ALL = {
-  includeTreeInfo: true,
-  includeProof: true,
-  includeVersion: true,
-};
-
 /**
  * IDs of native functions.
  *
@@ -841,7 +835,6 @@ module.exports = {
   FunctionResultCode,
   ProofProperties,
   StateInfoProperties,
-  GET_OPTIONS_INCLUDE_ALL,
   NativeFunctionIds,
   isNativeFunctionId,
   ShardingProperties,
