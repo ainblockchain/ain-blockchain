@@ -666,7 +666,7 @@ function getGenesisSharding() {
   const config = getGenesisConfig('genesis_sharding.json');
   if (config[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.POA) {
     const ownerAddress = CommonUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, Accountroperties.ADDRESS]);
+        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
     const reporterAddress =
         GenesisAccounts[AccountProperties.OTHERS][0][AccountProperties.ADDRESS];
     CommonUtil.setJsObject(config, [ShardingProperties.SHARD_OWNER], ownerAddress);
