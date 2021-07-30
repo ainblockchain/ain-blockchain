@@ -172,7 +172,7 @@ class FileUtil {
   }
 
   static deleteH2nFile(chainPath, blockHash) {
-    logger.info(`Deleting h2n file with block number: ${blockHash}`);
+    logger.info(`Deleting h2n file with block hash: ${blockHash}`);
     const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
     if (fs.existsSync(h2nPath)) {
       fs.unlinkSync(h2nPath);
