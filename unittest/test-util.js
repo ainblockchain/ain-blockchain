@@ -67,8 +67,8 @@ function addBlock(node, txs, votes, validators) {
   const finalDb = DB.create(
       node.stateManager.getFinalVersion(), `${StateVersions.FINAL}:${lastBlock.number + 1}`,
       node.bc, node.tp, true, false, lastBlock.number, node.stateManager);
-  finalDb.executeTransactionList(votes);
-  finalDb.executeTransactionList(txs, true, lastBlock.number + 1);
+  finalDb.executeTransactionList(votes, true);
+  finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1);
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   node.addNewBlock(Block.create(
       lastBlock.hash, votes, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
@@ -95,7 +95,7 @@ async function waitUntilTxFinalized(servers, txHash) {
         unchecked.delete(server);
       }
     }
-    await CommonUtil.sleep(200);
+    await CommonUtil.sleep(500);
     iterCount++;
   }
 }
