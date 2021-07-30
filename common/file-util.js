@@ -31,13 +31,13 @@ class FileUtil {
         snapshotPath, SNAPSHOTS_N2S_DIR_NAME, FileUtil.getBlockFilenameByNumber(blockNumber));
   }
 
-  static getHashToNumberDirPath(chainPath, blockHash) {
+  static getH2nDirPath(chainPath, blockHash) {
     const h2nPrefix = blockHash.substring(0, CHAINS_H2N_HASH_PREFIX_LENGTH);
     return path.join(chainPath, CHAINS_H2N_DIR_NAME, h2nPrefix);
   }
 
-  static getHashToNumberPath(chainPath, blockHash) {
-    return path.join(FileUtil.getHashToNumberDirPath(chainPath, blockHash), blockHash);
+  static getH2nPath(chainPath, blockHash) {
+    return path.join(FileUtil.getH2nDirPath(chainPath, blockHash), blockHash);
   }
 
   static getBlockFilenameByNumber(blockNumber) {
@@ -146,27 +146,27 @@ class FileUtil {
     }
   }
 
-  static writeHashToNumber(chainPath, blockHash, blockNumber) {
+  static writeH2nFile(chainPath, blockHash, blockNumber) {
     if (!blockHash || !CommonUtil.isNumber(blockNumber) || blockNumber < 0) {
-      logger.error(`Invalid writeHashToNumber parameters (${blockHash}, ${blockNumber})`);
+      logger.error(`Invalid parameters: '${blockHash}', '${blockNumber}'`);
       return;
     }
-    const hashToNumberPath = FileUtil.getHashToNumberPath(chainPath, blockHash);
-    if (!fs.existsSync(hashToNumberPath)) {
-      const hashToNumberDirPath = FileUtil.getHashToNumberDirPath(chainPath, blockHash);
-      if (!fs.existsSync(hashToNumberDirPath)) {
-        fs.mkdirSync(hashToNumberDirPath);
+    const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
+    if (!fs.existsSync(h2nPath)) {
+      const h2nDirPath = FileUtil.getH2nDirPath(chainPath, blockHash);
+      if (!fs.existsSync(h2nDirPath)) {
+        fs.mkdirSync(h2nDirPath);
       }
-      fs.writeFileSync(hashToNumberPath, blockNumber);
+      fs.writeFileSync(h2nPath, blockNumber);
     } else {
-      logger.debug(`${hashToNumberPath} file already exists!`);
+      logger.debug(`${h2nPath} file already exists!`);
     }
   }
 
-  static readHashToNumber(chainPath, blockHash) {
+  static readH2nFile(chainPath, blockHash) {
     try {
-      const hashToNumberPath = FileUtil.getHashToNumberPath(chainPath, blockHash);
-      return Number(fs.readFileSync(hashToNumberPath).toString());
+      const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
+      return Number(fs.readFileSync(h2nPath).toString());
     } catch (err) {
       return -1;
     }

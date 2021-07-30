@@ -79,7 +79,7 @@ class Blockchain {
   getBlockByHash(hash) {
     if (!hash) return null;
     const blockPath = FileUtil.getBlockPath(this.blockchainPath,
-        FileUtil.readHashToNumber(this.blockchainPath, hash));
+        FileUtil.readH2nFile(this.blockchainPath, hash));
     if (!blockPath) {
       return this.chain.find((block) => block.hash === hash);
     } else {
@@ -205,7 +205,7 @@ class Blockchain {
 
   writeBlock(block) {
     FileUtil.writeBlock(this.blockchainPath, block);
-    FileUtil.writeHashToNumber(this.blockchainPath, block.hash, block.number);
+    FileUtil.writeH2nFile(this.blockchainPath, block.hash, block.number);
   }
 
   getValidBlocksInChainSegment(chainSegment) {
