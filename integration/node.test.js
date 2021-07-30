@@ -3632,7 +3632,7 @@ describe('Blockchain Node', () => {
               },
               "state": {
                 "app": {
-                  "test": 1124
+                  "test": 1348
                 },
                 "service": 0
               }
@@ -4392,6 +4392,9 @@ describe('Blockchain Node', () => {
           },
           "tx_hash": "0xaa4625dcf4dfa36d6e9a23b64236b88379cac1338d76b915e843fd7cfeda14bb"
         });
+        if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
         const appConfig = parseOrLog(syncRequest('GET', 
             server2 + `/get_value?ref=/manage_app/test_service_create_app1/config`)
             .body.toString('utf-8')).result;
