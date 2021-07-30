@@ -5,8 +5,9 @@ const logger = require('../logger')('BLOCKCHAIN');
 const { Block } = require('./block');
 const FileUtil = require('../common/file-util');
 const {
+  SYNC_MODE,
   CHAINS_DIR,
-  CHAINS_N2B_DIR_NAME,
+  SyncModeOptions,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const CHAIN_SEGMENT_LENGTH = 20;
@@ -253,22 +254,24 @@ class Blockchain {
   loadChain(latestSnapshotBlockNumber) {
     const chainPath = this.blockchainPath;
     const newChain = [];
-    const numBlockFiles = fs.readdirSync(path.join(chainPath, CHAINS_N2B_DIR_NAME)).length;
+    const fromBlockNumber = SYNC_MODE === SyncModeOptions.FAST ? latestSnapshotBlockNumber + 1 : 0;
+    const numBlockFiles = FileUtil.getNumBlockFiles(chainPath);
     const blockPaths =
-        FileUtil.getBlockPathList(chainPath, latestSnapshotBlockNumber + 1, numBlockFiles);
+        FileUtil.getBlockPathList(chainPath, fromBlockNumber, numBlockFiles - fromBlockNumber + 1);
 
     blockPaths.forEach((blockPath) => {
       const block = Block.parse(FileUtil.readCompressedJson(blockPath));
       newChain.push(block);
     });
 
-    if (Blockchain.isValidChain(newChain, latestSnapshotBlockNumber)) {
-      logger.info(`Valid chain of size ${newChain.length}`);
-      return newChain;
+    if (!Blockchain.isValidChain(newChain, latestSnapshotBlockNumber)) {
+      logger.error(`Removing invalid chain of size ${newChain.length}`);
+      rimraf.sync(chainPath + '/*');
+      return null;
     }
-    logger.error(`Invalid chain`);
-    rimraf.sync(chainPath + '/*');
-    return null;
+
+    logger.info(`Successfully loaded chain of size ${newChain.length}`);
+    return newChain;
   }
 
   /**
