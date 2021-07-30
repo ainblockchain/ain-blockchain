@@ -66,7 +66,7 @@ class FileUtil {
     return { latestSnapshotPath, latestSnapshotBlockNumber };
   }
 
-  static getBlockPaths(chainPath, from, size) {
+  static getBlockPathList(chainPath, from, size) {
     const blockPaths = [];
     if (size <= 0) return blockPaths;
     for (let number = from; number < from + size; number++) {
