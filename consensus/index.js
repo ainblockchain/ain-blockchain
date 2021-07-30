@@ -315,7 +315,8 @@ class Consensus {
     this.node.removeOldReceipts(blockNumber, tempDb);
 
     for (const voteTx of lastVotes) {
-      if (CommonUtil.isFailedTx(tempDb.executeTransaction(Transaction.toExecutable(voteTx)))) {
+      if (CommonUtil.isFailedTx(tempDb.executeTransaction(Transaction.toExecutable(voteTx), true))) {
+        logger.debug(`[${LOG_HEADER}] failed to execute last vote: ${JSON.stringify(voteTx, null, 2)}`);
         tempDb.destroyDb();
         return null;
       }
@@ -327,8 +328,9 @@ class Consensus {
     const invalidTransactions = [];
     const resList = [];
     for (const tx of transactions) {
-      const res = tempDb.executeTransaction(Transaction.toExecutable(tx), true, blockNumber);
+      const res = tempDb.executeTransaction(Transaction.toExecutable(tx), false, true, blockNumber);
       if (CommonUtil.txPrecheckFailed(res)) {
+        logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
         invalidTransactions.push(tx);
       } else {
         validTransactions.push(tx);
@@ -532,7 +534,7 @@ class Consensus {
         if (voteTx.hash === prevBlockProposal.hash) continue;
         if (!Consensus.isValidConsensusTx(voteTx) ||
             CommonUtil.isFailedTx(
-                tempDb.executeTransaction(Transaction.toExecutable(voteTx)))) {
+                tempDb.executeTransaction(Transaction.toExecutable(voteTx), true))) {
           logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
           tempDb.destroyDb();
           return false;
@@ -590,12 +592,12 @@ class Consensus {
     }
 
     this.node.removeOldReceipts(number, newDb);
-    if (!newDb.executeTransactionList(last_votes)) {
+    if (!newDb.executeTransactionList(last_votes, true)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
       newDb.destroyDb();
       return false;
     }
-    const txsRes = newDb.executeTransactionList(transactions, true, number);
+    const txsRes = newDb.executeTransactionList(transactions, false, true, number);
     if (!txsRes) {
       logger.error(`[${LOG_HEADER}] Failed to execute transactions`);
       newDb.destroyDb();
@@ -630,7 +632,7 @@ class Consensus {
       newDb.destroyDb();
       return null;
     }
-    const proposalTxExecRes = tempDb.executeTransaction(executableTx);
+    const proposalTxExecRes = tempDb.executeTransaction(executableTx, true);
     if (CommonUtil.isFailedTx(proposalTxExecRes)) {
       logger.error(
           `[${LOG_HEADER}] Failed to execute the proposal tx: ` +
@@ -646,7 +648,7 @@ class Consensus {
       if (newDb.getStateProof('/')[ProofProperties.PROOF_HASH] !== state_proof_hash) {
         logger.error(`[${LOG_HEADER}] State proof hashes don't match: ` +
             `${newDb.getStateProof('/')[ProofProperties.PROOF_HASH]} / ` +
-            `${state_proof_hash}`);
+            `${state_proof_hash}\n\n${JSON.stringify(proposalBlock, null, 2)}`);
         return false;
       }
     }
@@ -692,7 +694,7 @@ class Consensus {
           `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(executableTx)}`);
       return false;
     }
-    const voteTxRes = tempDb.executeTransaction(executableTx);
+    const voteTxRes = tempDb.executeTransaction(executableTx, true);
     tempDb.destroyDb();
     if (CommonUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);

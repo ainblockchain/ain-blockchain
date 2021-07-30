@@ -1293,7 +1293,7 @@ class DB {
     return true;
   }
 
-  executeTransaction(tx, restoreIfFails = false, blockNumber = 0) {
+  executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0) {
     const LOG_HEADER = 'executeTransaction';
     const precheckResult = this.precheckTransaction(tx, blockNumber);
     if (precheckResult !== true) {
@@ -1320,19 +1320,19 @@ class DB {
         return executionResult;
       }
     }
-    if (blockNumber > 0) {
+    if (!skipFees) {
       this.collectFee(auth, timestamp, tx, blockNumber, executionResult);
       this.recordReceipt(auth, tx, blockNumber, executionResult);
     }
     return executionResult;
   }
 
-  executeTransactionList(txList, restoreIfFails = false, blockNumber = 0) {
+  executeTransactionList(txList, skipFees = false, restoreIfFails = false, blockNumber = 0) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
       const executableTx = Transaction.toExecutable(tx);
-      const res = this.executeTransaction(executableTx, restoreIfFails, blockNumber);
+      const res = this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber);
       if (CommonUtil.isFailedTx(res)) {
         logger.debug(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);
