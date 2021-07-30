@@ -130,7 +130,7 @@ class BlockchainNode {
     // 5. Execute transactions from the pool.
     logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
     this.db.executeTransactionList(
-        this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()), true,
+        this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()), false, true,
         this.bc.lastBlockNumber() + 1);
 
     // 6. Node status changed: STARTING -> SYNCING.
@@ -376,7 +376,7 @@ class BlockchainNode {
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
           `for account: ${executableTx.address}`);
     }
-    const result = this.db.executeTransaction(executableTx, true, this.bc.lastBlockNumber() + 1);
+    const result = this.db.executeTransaction(executableTx, false, true, this.bc.lastBlockNumber() + 1);
     if (CommonUtil.isFailedTx(result)) {
       if (FeatureFlags.enableRichTransactionLogging) {
         logger.error(
@@ -427,13 +427,13 @@ class BlockchainNode {
     for (const block of blockList) {
       this.removeOldReceipts(block.number, db);
       if (block.number > 0) {
-        if (!db.executeTransactionList(block.last_votes)) {
+        if (!db.executeTransactionList(block.last_votes, true)) {
           logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
               `${JSON.stringify(block, null, 2)}`);
           return false;
         }
       }
-      if (!db.executeTransactionList(block.transactions, true, block.number)) {
+      if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
             `${JSON.stringify(block, null, 2)}`);
         return false;
@@ -524,12 +524,12 @@ class BlockchainNode {
     for (const block of this.bc.chain) {
       this.removeOldReceipts(block.number, db);
       if (block.number > 0) {
-        if (!db.executeTransactionList(block.last_votes)) {
+        if (!db.executeTransactionList(block.last_votes, true)) {
           logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
           process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
         }
       }
-      if (!db.executeTransactionList(block.transactions, true, block.number)) {
+      if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
         process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
       }
