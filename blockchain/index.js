@@ -38,7 +38,6 @@ class Blockchain {
         logger.info('## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##');
         logger.info('#############################################################');
         logger.info('\n');
-        this.writeChain();
       }
     } else {
       if (isFirstNode) {
@@ -65,11 +64,6 @@ class Blockchain {
         }
         this.chain = newChain;
       }
-    }
-    if (!this.getBlockByNumber(0)) {
-      const genesisBlock = Block.genesis();
-      FileUtil.writeBlock(this.blockchainPath, genesisBlock);
-      FileUtil.writeHashToNumber(this.blockchainPath, genesisBlock.hash, genesisBlock.number);
     }
     return lastBlockWithoutProposal;
   }
@@ -204,10 +198,13 @@ class Blockchain {
 
   writeChain() {
     for (let i = 0; i < this.chain.length; i++) {
-      const block = this.chain[i];
-      FileUtil.writeBlock(this.blockchainPath, block);
-      FileUtil.writeHashToNumber(this.blockchainPath, block.hash, block.number);
+      this.writeBlock(this.chain[i]);
     }
+  }
+
+  writeBlock(block) {
+    FileUtil.writeBlock(this.blockchainPath, block);
+    FileUtil.writeHashToNumber(this.blockchainPath, block.hash, block.number);
   }
 
   getValidBlocksInChainSegment(chainSegment) {
@@ -257,7 +254,8 @@ class Blockchain {
     const chainPath = this.blockchainPath;
     const newChain = [];
     const numBlockFiles = fs.readdirSync(path.join(chainPath, CHAINS_N2B_DIR_NAME)).length;
-    const blockPaths = FileUtil.getBlockPaths(chainPath, latestSnapshotBlockNumber + 1, numBlockFiles);
+    const blockPaths =
+        FileUtil.getBlockPathList(chainPath, latestSnapshotBlockNumber + 1, numBlockFiles);
 
     blockPaths.forEach((blockPath) => {
       const block = Block.parse(FileUtil.readCompressedJson(blockPath));
@@ -301,7 +299,7 @@ class Blockchain {
     if (to - from > CHAIN_SEGMENT_LENGTH) { // NOTE: To prevent large query.
       to = from + CHAIN_SEGMENT_LENGTH;
     }
-    const blockPaths = FileUtil.getBlockPaths(this.blockchainPath, from, to - from);
+    const blockPaths = FileUtil.getBlockPathList(this.blockchainPath, from, to - from);
     blockPaths.forEach((blockPath) => {
       blockList.push(Block.parse(FileUtil.readCompressedJson(blockPath)));
     });
