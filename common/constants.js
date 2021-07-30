@@ -71,14 +71,14 @@ if (!fs.existsSync(BLOCKCHAIN_DATA_DIR)) {
   fs.mkdirSync(BLOCKCHAIN_DATA_DIR, { recursive: true });
 }
 const CHAINS_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'chains');
-const CHAINS_N2B_DIR_NAME = 'n2b'; // NOTE: Block number to block.
-const CHAINS_H2N_DIR_NAME = 'h2n'; // NOTE: Block hash to block number.
+const CHAINS_N2B_DIR_NAME = 'n2b'; // Number-to-block directory name.
+const CHAINS_H2N_DIR_NAME = 'h2n'; // Hash-to-number directory name.
 const CHAINS_N2B_MAX_NUM_FILES = 100000;
 const CHAINS_H2N_HASH_PREFIX_LENGTH = 5;
 const SNAPSHOTS_ROOT_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'snapshots');
-const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // NOTE: Block number to snapshot.
-const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // NOTE: How often the snapshot is made
-const MAX_NUM_SNAPSHOTS = 10; // NOTE: max number of snapshots to keep
+const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
+const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
+const MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
 const HASH_DELIMITER = '#';
 const JS_REF_SIZE_IN_BYTES = 8;
 const TX_NONCE_ERROR_CODE = 900;
@@ -794,6 +794,7 @@ module.exports = {
   SNAPSHOTS_N2S_DIR_NAME,
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
   MAX_NUM_SNAPSHOTS,
+  MAX_CHAIN_LENGTH_IN_BATCH_LOAD,
   MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
   DEBUG,
   CONSOLE_LOG,
