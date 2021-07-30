@@ -59,9 +59,7 @@ class Blockchain {
         // NOTE(minsulee2): Deal with the case the only genesis block was generated.
         if (newChain.length > 1) {
           lastBlockWithoutProposal = newChain.pop();
-          const lastBlockPath = FileUtil.getBlockPath(
-              this.blockchainPath, lastBlockWithoutProposal.number);
-          fs.unlinkSync(lastBlockPath);
+          this.deleteBlock(lastBlockWithoutProposal);
         }
         this.chain = newChain;
       }
@@ -204,8 +202,13 @@ class Blockchain {
   }
 
   writeBlock(block) {
-    FileUtil.writeBlock(this.blockchainPath, block);
+    FileUtil.writeBlockFile(this.blockchainPath, block);
     FileUtil.writeH2nFile(this.blockchainPath, block.hash, block.number);
+  }
+
+  deleteBlock(block) {
+    FileUtil.deleteBlockFile(this.blockchainPath, block.number);
+    FileUtil.deleteH2nFile(this.blockchainPath, block.hash);
   }
 
   getValidBlocksInChainSegment(chainSegment) {

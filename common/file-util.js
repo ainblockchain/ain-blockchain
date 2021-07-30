@@ -132,7 +132,7 @@ class FileUtil {
   }
 
   // TODO(cshcomcom): Change to asynchronous.
-  static writeBlock(chainPath, block) {
+  static writeBlockFile(chainPath, block) {
     const blockPath = FileUtil.getBlockPath(chainPath, block.number);
     if (!fs.existsSync(blockPath)) {
       const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
@@ -143,6 +143,14 @@ class FileUtil {
       fs.writeFileSync(blockPath, compressed);
     } else {
       logger.debug(`${blockPath} file already exists!`);
+    }
+  }
+
+  static deleteBlockFile(chainPath, blockNumber) {
+    logger.info(`Deleting block file with block number: ${blockNumber}`);
+    const blockPath = FileUtil.getBlockPath(chainPath, blockNumber);
+    if (fs.existsSync(blockPath)) {
+      fs.unlinkSync(blockPath);
     }
   }
 
@@ -160,6 +168,14 @@ class FileUtil {
       fs.writeFileSync(h2nPath, blockNumber);
     } else {
       logger.debug(`${h2nPath} file already exists!`);
+    }
+  }
+
+  static deleteH2nFile(chainPath, blockHash) {
+    logger.info(`Deleting h2n file with block number: ${blockHash}`);
+    const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
+    if (fs.existsSync(h2nPath)) {
+      fs.unlinkSync(h2nPath);
     }
   }
 
