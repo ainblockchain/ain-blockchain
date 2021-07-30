@@ -305,7 +305,7 @@ class Blockchain {
     if (to - from > CHAIN_SEGMENT_LENGTH) { // NOTE: To prevent large query.
       to = from + CHAIN_SEGMENT_LENGTH;
     }
-    const blockPaths = FileUtil.getBlockPathList(this.blockchainPath, from, to - from);
+    const blockPaths = FileUtil.getBlockPathList(this.blockchainPath, from, to - from + 1);
     blockPaths.forEach((blockPath) => {
       blockList.push(Block.parse(FileUtil.readCompressedJson(blockPath)));
     });
