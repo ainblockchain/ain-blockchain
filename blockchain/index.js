@@ -5,8 +5,9 @@ const logger = require('../logger')('BLOCKCHAIN');
 const { Block } = require('./block');
 const FileUtil = require('../common/file-util');
 const {
+  SYNC_MODE,
   CHAINS_DIR,
-  CHAINS_N2B_DIR_NAME,
+  SyncModeOptions,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const CHAIN_SEGMENT_LENGTH = 20;
@@ -38,7 +39,6 @@ class Blockchain {
         logger.info('## Starting NON-FIRST-NODE blockchain with EMPTY blocks... ##');
         logger.info('#############################################################');
         logger.info('\n');
-        this.writeChain();
       }
     } else {
       if (isFirstNode) {
@@ -59,17 +59,10 @@ class Blockchain {
         // NOTE(minsulee2): Deal with the case the only genesis block was generated.
         if (newChain.length > 1) {
           lastBlockWithoutProposal = newChain.pop();
-          const lastBlockPath = FileUtil.getBlockPath(
-              this.blockchainPath, lastBlockWithoutProposal.number);
-          fs.unlinkSync(lastBlockPath);
+          this.deleteBlock(lastBlockWithoutProposal);
         }
         this.chain = newChain;
       }
-    }
-    if (!this.getBlockByNumber(0)) {
-      const genesisBlock = Block.genesis();
-      FileUtil.writeBlock(this.blockchainPath, genesisBlock);
-      FileUtil.writeHashToNumber(this.blockchainPath, genesisBlock.hash, genesisBlock.number);
     }
     return lastBlockWithoutProposal;
   }
@@ -84,7 +77,7 @@ class Blockchain {
   getBlockByHash(hash) {
     if (!hash) return null;
     const blockPath = FileUtil.getBlockPath(this.blockchainPath,
-        FileUtil.readHashToNumber(this.blockchainPath, hash));
+        FileUtil.readH2nFile(this.blockchainPath, hash));
     if (!blockPath) {
       return this.chain.find((block) => block.hash === hash);
     } else {
@@ -204,10 +197,18 @@ class Blockchain {
 
   writeChain() {
     for (let i = 0; i < this.chain.length; i++) {
-      const block = this.chain[i];
-      FileUtil.writeBlock(this.blockchainPath, block);
-      FileUtil.writeHashToNumber(this.blockchainPath, block.hash, block.number);
+      this.writeBlock(this.chain[i]);
     }
+  }
+
+  writeBlock(block) {
+    FileUtil.writeBlockFile(this.blockchainPath, block);
+    FileUtil.writeH2nFile(this.blockchainPath, block.hash, block.number);
+  }
+
+  deleteBlock(block) {
+    FileUtil.deleteBlockFile(this.blockchainPath, block.number);
+    FileUtil.deleteH2nFile(this.blockchainPath, block.hash);
   }
 
   getValidBlocksInChainSegment(chainSegment) {
@@ -256,29 +257,32 @@ class Blockchain {
   loadChain(latestSnapshotBlockNumber) {
     const chainPath = this.blockchainPath;
     const newChain = [];
-    const numBlockFiles = fs.readdirSync(path.join(chainPath, CHAINS_N2B_DIR_NAME)).length;
-    const blockPaths = FileUtil.getBlockPaths(chainPath, latestSnapshotBlockNumber + 1, numBlockFiles);
+    const fromBlockNumber = SYNC_MODE === SyncModeOptions.FAST ? latestSnapshotBlockNumber + 1 : 0;
+    const numBlockFiles = FileUtil.getNumBlockFiles(chainPath);
+    const blockPaths =
+        FileUtil.getBlockPathList(chainPath, fromBlockNumber, numBlockFiles - fromBlockNumber + 1);
 
     blockPaths.forEach((blockPath) => {
       const block = Block.parse(FileUtil.readCompressedJson(blockPath));
       newChain.push(block);
     });
 
-    if (Blockchain.isValidChain(newChain, latestSnapshotBlockNumber)) {
-      logger.info(`Valid chain of size ${newChain.length}`);
-      return newChain;
+    if (!Blockchain.isValidChain(newChain, latestSnapshotBlockNumber)) {
+      logger.error(`Removing invalid chain of size ${newChain.length}`);
+      rimraf.sync(chainPath + '/*');
+      return null;
     }
-    logger.error(`Invalid chain`);
-    rimraf.sync(chainPath + '/*');
-    return null;
+
+    logger.info(`Successfully loaded chain of size ${newChain.length}`);
+    return newChain;
   }
 
   /**
     * Returns a section of the chain up to a maximuim of length CHAIN_SEGMENT_LENGTH, starting from
-    * the `from` block number up till `to` block number.
+    * the `from` block number (included) up till `to` block number (excluded).
     *
-    * @param {Number} from - The lowest block number to get
-    * @param {Number} to - The highest block number to geet
+    * @param {Number} from - The lowest block number to get (included)
+    * @param {Number} to - The highest block number to geet (excluded)
     * @return {list} A list of Blocks, up to a maximuim length of CHAIN_SEGMENT_LENGTH
     */
   getBlockList(from, to) {
@@ -301,7 +305,7 @@ class Blockchain {
     if (to - from > CHAIN_SEGMENT_LENGTH) { // NOTE: To prevent large query.
       to = from + CHAIN_SEGMENT_LENGTH;
     }
-    const blockPaths = FileUtil.getBlockPaths(this.blockchainPath, from, to - from);
+    const blockPaths = FileUtil.getBlockPathList(this.blockchainPath, from, to - from);
     blockPaths.forEach((blockPath) => {
       blockList.push(Block.parse(FileUtil.readCompressedJson(blockPath)));
     });

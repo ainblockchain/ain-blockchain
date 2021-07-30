@@ -21,20 +21,23 @@ class FileUtil {
 
   static getBlockPath(chainPath, blockNumber) {
     if (blockNumber < 0) return null;
-    return path.join(this.getBlockDirPath(chainPath, blockNumber), this.getBlockFilenameByNumber(blockNumber));
+    return path.join(
+        FileUtil.getBlockDirPath(chainPath, blockNumber),
+        FileUtil.getBlockFilenameByNumber(blockNumber));
   }
 
   static getSnapshotPathByBlockNumber(snapshotPath, blockNumber) {
-    return path.join(snapshotPath, SNAPSHOTS_N2S_DIR_NAME, this.getBlockFilenameByNumber(blockNumber));
+    return path.join(
+        snapshotPath, SNAPSHOTS_N2S_DIR_NAME, FileUtil.getBlockFilenameByNumber(blockNumber));
   }
 
-  static getHashToNumberDirPath(chainPath, blockHash) {
+  static getH2nDirPath(chainPath, blockHash) {
     const h2nPrefix = blockHash.substring(0, CHAINS_H2N_HASH_PREFIX_LENGTH);
     return path.join(chainPath, CHAINS_H2N_DIR_NAME, h2nPrefix);
   }
 
-  static getHashToNumberPath(chainPath, blockHash) {
-    return path.join(this.getHashToNumberDirPath(chainPath, blockHash), blockHash);
+  static getH2nPath(chainPath, blockHash) {
+    return path.join(FileUtil.getH2nDirPath(chainPath, blockHash), blockHash);
   }
 
   static getBlockFilenameByNumber(blockNumber) {
@@ -42,7 +45,7 @@ class FileUtil {
   }
 
   static getBlockFilename(block) {
-    return this.getBlockFilenameByNumber(block.number);
+    return FileUtil.getBlockFilenameByNumber(block.number);
   }
 
   static getLatestSnapshotInfo(snapshotPath) {
@@ -66,11 +69,11 @@ class FileUtil {
     return { latestSnapshotPath, latestSnapshotBlockNumber };
   }
 
-  static getBlockPaths(chainPath, from, size) {
+  static getBlockPathList(chainPath, from, size) {
     const blockPaths = [];
     if (size <= 0) return blockPaths;
     for (let number = from; number < from + size; number++) {
-      const blockFile = this.getBlockPath(chainPath, number);
+      const blockFile = FileUtil.getBlockPath(chainPath, number);
       if (fs.existsSync(blockFile)) {
         blockPaths.push(blockFile);
       } else {
@@ -124,15 +127,15 @@ class FileUtil {
   }
 
   static readBlockByNumber(chainPath, blockNumber) {
-    const blockPath = this.getBlockPath(chainPath, blockNumber);
-    return this.readCompressedJson(blockPath);
+    const blockPath = FileUtil.getBlockPath(chainPath, blockNumber);
+    return FileUtil.readCompressedJson(blockPath);
   }
 
   // TODO(cshcomcom): Change to asynchronous.
-  static writeBlock(chainPath, block) {
-    const blockPath = this.getBlockPath(chainPath, block.number);
+  static writeBlockFile(chainPath, block) {
+    const blockPath = FileUtil.getBlockPath(chainPath, block.number);
     if (!fs.existsSync(blockPath)) {
-      const blockDirPath = this.getBlockDirPath(chainPath, block.number);
+      const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
       if (!fs.existsSync(blockDirPath)) {
         fs.mkdirSync(blockDirPath);
       }
@@ -143,34 +146,50 @@ class FileUtil {
     }
   }
 
-  static writeHashToNumber(chainPath, blockHash, blockNumber) {
-    if (!blockHash || !CommonUtil.isNumber(blockNumber) || blockNumber < 0) {
-      logger.error(`Invalid writeHashToNumber parameters (${blockHash}, ${blockNumber})`);
-      return;
-    }
-    const hashToNumberPath = this.getHashToNumberPath(chainPath, blockHash);
-    if (!fs.existsSync(hashToNumberPath)) {
-      const hashToNumberDirPath = this.getHashToNumberDirPath(chainPath, blockHash);
-      if (!fs.existsSync(hashToNumberDirPath)) {
-        fs.mkdirSync(hashToNumberDirPath);
-      }
-      fs.writeFileSync(hashToNumberPath, blockNumber);
-    } else {
-      logger.debug(`${hashToNumberPath} file already exists!`);
+  static deleteBlockFile(chainPath, blockNumber) {
+    logger.info(`Deleting block file with block number: ${blockNumber}`);
+    const blockPath = FileUtil.getBlockPath(chainPath, blockNumber);
+    if (fs.existsSync(blockPath)) {
+      fs.unlinkSync(blockPath);
     }
   }
 
-  static readHashToNumber(chainPath, blockHash) {
+  static writeH2nFile(chainPath, blockHash, blockNumber) {
+    if (!blockHash || !CommonUtil.isNumber(blockNumber) || blockNumber < 0) {
+      logger.error(`Invalid parameters: '${blockHash}', '${blockNumber}'`);
+      return;
+    }
+    const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
+    if (!fs.existsSync(h2nPath)) {
+      const h2nDirPath = FileUtil.getH2nDirPath(chainPath, blockHash);
+      if (!fs.existsSync(h2nDirPath)) {
+        fs.mkdirSync(h2nDirPath);
+      }
+      fs.writeFileSync(h2nPath, blockNumber);
+    } else {
+      logger.debug(`${h2nPath} file already exists!`);
+    }
+  }
+
+  static deleteH2nFile(chainPath, blockHash) {
+    logger.info(`Deleting h2n file with block hash: ${blockHash}`);
+    const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
+    if (fs.existsSync(h2nPath)) {
+      fs.unlinkSync(h2nPath);
+    }
+  }
+
+  static readH2nFile(chainPath, blockHash) {
     try {
-      const hashToNumberPath = this.getHashToNumberPath(chainPath, blockHash);
-      return Number(fs.readFileSync(hashToNumberPath).toString());
+      const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
+      return Number(fs.readFileSync(h2nPath).toString());
     } catch (err) {
       return -1;
     }
   }
 
   static writeSnapshot(snapshotPath, blockNumber, snapshot) {
-    const filePath = this.getSnapshotPathByBlockNumber(snapshotPath, blockNumber);
+    const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber);
     if (snapshot === null) { // Delete
       if (fs.existsSync(filePath)) {
         try {
@@ -183,6 +202,26 @@ class FileUtil {
       // TODO(liayoo): Change this operation to be asynchronous
       fs.writeFileSync(filePath, zlib.gzipSync(Buffer.from(JSON.stringify(snapshot))));
     }
+  }
+
+  static getNumFiles(path) {
+    if (!fs.existsSync(path)) {
+      return 0;
+    }
+    return fs.readdirSync(path).length;
+  }
+
+  static getNumBlockFiles(chainPath) {
+    let numBlockFiles = 0;
+    let blockNumber = 0;
+    let numFiles;
+    do {
+      const blockDirPath = FileUtil.getBlockDirPath(chainPath, blockNumber);
+      numFiles = FileUtil.getNumFiles(blockDirPath);
+      numBlockFiles += numFiles;
+      blockNumber += CHAINS_N2B_MAX_NUM_FILES;
+    } while (numFiles > 0);
+    return numBlockFiles;
   }
 }
 
