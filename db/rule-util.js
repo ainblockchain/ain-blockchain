@@ -86,8 +86,24 @@ class RuleUtil {
     return value === ShardingProtocols.NONE || value === ShardingProtocols.POA;
   }
 
+  boolOrFalse(value) {
+    return this.isBool(value) ? value : false;
+  }
+
+  numberOrZero(num) {
+    return this.isNumber(num) ? num : 0;
+  }
+
+  stringOrEmpty(str) {
+    return this.isString(str) ? str : '';
+  }
+
   toBool(value) {
     return this.isBool(value) ? value : value === 'true';
+  }
+
+  toNumberOrNaN(value) {
+    return this.isNumber(value) ? value : Number(value);
   }
 
   toCksumAddr(addr) {

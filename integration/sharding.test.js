@@ -1543,6 +1543,7 @@ describe('Sharding', async () => {
                 "bandwidth_gas_amount": 1
               },
             },
+            "gas_amount_charged": 1676,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
@@ -1634,31 +1635,35 @@ describe('Sharding', async () => {
             "result_list": {
               "0": {
                 "code": 0,
-                "bandwidth_gas_amount": 0
+                "bandwidth_gas_amount": 1
               },
               "1": {
                 "code": 0,
-                "bandwidth_gas_amount": 0
+                "bandwidth_gas_amount": 1
               },
               "2": {
                 "code": 0,
-                "bandwidth_gas_amount": 0
+                "bandwidth_gas_amount": 1
               },
               "3": {
                 "code": 0,
-                "bandwidth_gas_amount": 0
+                "bandwidth_gas_amount": 1
               },
               "4": {
                 "code": 0,
-                "bandwidth_gas_amount": 0
+                "bandwidth_gas_amount": 1
               },
               "5": {
                 "code": 0,
-                "bandwidth_gas_amount": 0
+                "bandwidth_gas_amount": 1
               },
             },
+            "gas_amount_charged": 0,
             "gas_amount_total": {
               "bandwidth": {
+                "app": {
+                  "test": 6
+                },
                 "service": 0
               },
               "state": {
@@ -1696,6 +1701,7 @@ describe('Sharding', async () => {
                   result: {
                     code: 0,
                     bandwidth_gas_amount: 1,
+                    gas_amount_charged: 0,
                     gas_amount_total: {
                       bandwidth: {
                         app: {
@@ -1743,6 +1749,7 @@ describe('Sharding', async () => {
                   result: {
                     code: 0,
                     bandwidth_gas_amount: 1,
+                    gas_amount_charged: 0,
                     gas_amount_total: {
                       bandwidth: {
                         app: {
@@ -1790,6 +1797,7 @@ describe('Sharding', async () => {
                   result: {
                     code: 0,
                     bandwidth_gas_amount: 1,
+                    gas_amount_charged: 0,
                     gas_amount_total: {
                       bandwidth: {
                         app: {
@@ -1846,6 +1854,7 @@ describe('Sharding', async () => {
                   result: {
                     code: 0,
                     bandwidth_gas_amount: 1,
+                    gas_amount_charged: 0,
                     gas_amount_total: {
                       bandwidth: {
                         app: {
@@ -1905,6 +1914,7 @@ describe('Sharding', async () => {
                   result: {
                     code: 0,
                     bandwidth_gas_amount: 1,
+                    gas_amount_charged: 0,
                     gas_amount_total: {
                       bandwidth: {
                         app: {
@@ -1964,6 +1974,7 @@ describe('Sharding', async () => {
                   result: {
                     code: 0,
                     bandwidth_gas_amount: 1,
+                    gas_amount_charged: 0,
                     gas_amount_total: {
                       bandwidth: {
                         app: {
@@ -2086,6 +2097,7 @@ describe('Sharding', async () => {
             }
           },
           "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
               "app": {
@@ -2164,6 +2176,7 @@ describe('Sharding', async () => {
               "bandwidth_gas_amount": 1
             }
           },
+          "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
               "app": {
