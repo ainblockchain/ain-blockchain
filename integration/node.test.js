@@ -894,11 +894,15 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
           .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
-          "bandwidth_gas_amount": 0,
+          "bandwidth_gas_amount": 1,
           "code": 103,
           "error_message": "No write permission on: /apps/some/wrong/path",
+          "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
+              "app": {
+                "some": 1
+              },
               "service": 0
             },
             "state": {
@@ -953,11 +957,15 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
-          "bandwidth_gas_amount": 0,
+          "bandwidth_gas_amount": 1,
           "code": 103,
           "error_message": "No write permission on: /apps/some/wrong/path2",
+          "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
+              "app": {
+                "some": 1
+              },
               "service": 0
             },
             "state": {
@@ -1012,11 +1020,15 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
-          "bandwidth_gas_amount": 0,
+          "bandwidth_gas_amount": 1,
           "code": 103,
           "error_message": "No write permission on: /apps/some/wrong/path3",
+          "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
+              "app": {
+                "some": 1
+              },
               "service": 0
             },
             "state": {
@@ -1115,11 +1127,15 @@ describe('Blockchain Node', () => {
             'POST', server1 + '/set_function', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
-          "bandwidth_gas_amount": 0,
+          "bandwidth_gas_amount": 1,
           "code": 404,
           "error_message": "No write_function permission on: /apps/some/wrong/path",
+          "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
+              "app": {
+                "some": 1
+              },
               "service": 0
             },
             "state": {
@@ -1196,11 +1212,15 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
-          "bandwidth_gas_amount": 0,
+          "bandwidth_gas_amount": 1,
           "code": 503,
           "error_message": "No write_rule permission on: /apps/some/wrong/path",
+          "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
+              "app": {
+                "some": 1
+              },
               "service": 0
             },
             "state": {
@@ -1305,11 +1325,15 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/set_owner', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
-          "bandwidth_gas_amount": 0,
+          "bandwidth_gas_amount": 1,
           "code": 603,
           "error_message": "No write_owner or branch_owner permission on: /apps/some/wrong/path",
+          "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
+              "app": {
+                "some": 1
+              },
               "service": 0
             },
             "state": {
@@ -1423,6 +1447,7 @@ describe('Blockchain Node', () => {
               "bandwidth_gas_amount": 1
             },
           },
+          "gas_amount_charged": 1680,
           "gas_amount_total": {
             "bandwidth": {
               "app": {
@@ -1532,12 +1557,14 @@ describe('Blockchain Node', () => {
             "3": {
               "code": 103,
               "error_message": "No write permission on: /apps/some/wrong/path",
-              "bandwidth_gas_amount": 0
+              "bandwidth_gas_amount": 1
             }
           },
+          "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
               "app": {
+                "some": 1,
                 "test": 3
               },
               "service": 0
@@ -1733,6 +1760,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -1755,6 +1783,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -1777,6 +1806,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -1799,6 +1829,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 1680,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -1818,6 +1849,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -1840,6 +1872,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -1886,6 +1919,7 @@ describe('Blockchain Node', () => {
                   "bandwidth_gas_amount": 1
                 }
               },
+              "gas_amount_charged": 1680,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2101,6 +2135,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2123,6 +2158,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2145,6 +2181,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2167,9 +2204,13 @@ describe('Blockchain Node', () => {
             "result": {
               "error_message": "No write permission on: /apps/some/wrong/path",
               "code": 103,
-              "bandwidth_gas_amount": 0,
+              "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
+                  "app": {
+                    "some": 1
+                  },
                   "service": 0,
                 },
                 "state": {
@@ -2184,6 +2225,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 1680,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2203,6 +2245,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2225,6 +2268,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2271,6 +2315,7 @@ describe('Blockchain Node', () => {
                   "bandwidth_gas_amount": 1
                 }
               },
+              "gas_amount_charged": 1680,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2378,6 +2423,7 @@ describe('Blockchain Node', () => {
               result: {
                 code: 0,
                 bandwidth_gas_amount: 1,
+                gas_amount_charged: 0,
                 gas_amount_total: {
                   bandwidth: {
                     app: {
@@ -2434,6 +2480,7 @@ describe('Blockchain Node', () => {
                 result: {
                   code: 0,
                   bandwidth_gas_amount: 1,
+                  gas_amount_charged: 0,
                   gas_amount_total: {
                     bandwidth: {
                       app: {
@@ -2742,7 +2789,7 @@ describe('Blockchain Node', () => {
           const resultList = _.get(res, 'result.result', null);
           expect(CommonUtil.isArray(resultList)).to.equal(true);
           for (let i = 0; i < resultList.length; i++) {
-            expect(CommonUtil.isFailedTx(resultList[i].result)).to.equal(false);
+            expect(CommonUtil.txPrecheckFailed(resultList[i].result)).to.equal(false);
           }
         })
       })
@@ -3478,9 +3525,13 @@ describe('Blockchain Node', () => {
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 403,
             "error_message": "Trying to write owner-only function: _transfer",
-            "bandwidth_gas_amount": 0,
+            "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 0,
             "gas_amount_total": {
               "bandwidth": {
+                "app": {
+                  "test": 1
+                },
                 "service": 0
               },
               "state": {
@@ -3517,17 +3568,18 @@ describe('Blockchain Node', () => {
                     "result": {
                       "code": 103,
                       "error_message": "No write permission on: /apps/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value",
-                      "bandwidth_gas_amount": 0,
+                      "bandwidth_gas_amount": 1,
                     }
                   }
                 }
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 0,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
-                  "test": 1
+                  "test": 2
                 },
                 "service": 0
               },
@@ -3570,6 +3622,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 0,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
@@ -3618,17 +3671,18 @@ describe('Blockchain Node', () => {
                     "result": {
                       "code": 103,
                       "error_message": "No write permission on: /apps/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value",
-                      "bandwidth_gas_amount": 0,
+                      "bandwidth_gas_amount": 1,
                     }
                   }
                 }
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 0,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
-                  "test": 1
+                  "test": 2
                 },
                 "service": 0
               },
@@ -3671,6 +3725,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 0,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
@@ -3719,17 +3774,18 @@ describe('Blockchain Node', () => {
                     "result": {
                       "code": 603,
                       "error_message": "No write_owner or branch_owner permission on: /apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value",
-                      "bandwidth_gas_amount": 0,
+                      "bandwidth_gas_amount": 1,
                     }
                   }
                 }
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 0,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
-                  "test": 1
+                  "test": 2
                 },
                 "service": 0
               },
@@ -3772,6 +3828,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 0,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
@@ -4197,6 +4254,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 2591,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
@@ -4243,6 +4301,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 2,
             "gas_amount_total": {
               "bandwidth": {
                 "service": 2
@@ -4317,6 +4376,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 2987,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
@@ -4332,6 +4392,9 @@ describe('Blockchain Node', () => {
           },
           "tx_hash": "0xaa4625dcf4dfa36d6e9a23b64236b88379cac1338d76b915e843fd7cfeda14bb"
         });
+        if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
         const appConfig = parseOrLog(syncRequest('GET', 
             server2 + `/get_value?ref=/manage_app/test_service_create_app1/config`)
             .body.toString('utf-8')).result;
@@ -4415,6 +4478,7 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 3004,
           "gas_amount_total": {
             "bandwidth": {
               "service": 1004
@@ -4467,6 +4531,7 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1286,
           "gas_amount_total": {
             "bandwidth": {
               "service": 4
@@ -4555,6 +4620,7 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 5210,
           "gas_amount_total": {
             "bandwidth": {
               "service": 1008
@@ -4643,6 +4709,7 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 2600,
           "gas_amount_total": {
             "bandwidth": {
               "service": 8
@@ -4670,6 +4737,7 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
               "app": {
@@ -4855,6 +4923,7 @@ describe('Blockchain Node', () => {
                 }
               },
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 3254,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 1004
@@ -4900,10 +4969,11 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 103,
               "error_message": "No write permission on: /transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/invalid_service_type|test_service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1/value",
-              "bandwidth_gas_amount": 0,
+              "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 1,
               "gas_amount_total": {
                 "bandwidth": {
-                  "service": 0
+                  "service": 1
                 },
                 "state": {
                   "service": 0
@@ -5010,6 +5080,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 5206,
             "gas_amount_total": {
               "bandwidth": {
                 "service": 1008
@@ -5128,6 +5199,7 @@ describe('Blockchain Node', () => {
                 }
               },
               "bandwidth_gas_amount": 1,
+              "gas_amount_charged": 2,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 2
@@ -5282,6 +5354,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 3367,
             "gas_amount_total": {
               "bandwidth": {
                 "service": 7
@@ -5461,6 +5534,7 @@ describe('Blockchain Node', () => {
             }
           },
           "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 5824,
           "gas_amount_total": {
             "bandwidth": {
               "service": 1006
@@ -5598,6 +5672,7 @@ describe('Blockchain Node', () => {
             }
           },
           "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 3644,
           "gas_amount_total": {
             "bandwidth": {
               "service": 6
@@ -5769,6 +5844,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 0,
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 1337,
             "gas_amount_total": {
               "bandwidth": {
                 "service": 1
@@ -5882,6 +5958,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 4730,
             "gas_amount_total": {
               "bandwidth": {
                 "service": 1006
@@ -6011,6 +6088,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 3446,
             "gas_amount_total": {
               "bandwidth": {
                 "service": 6
@@ -6080,6 +6158,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 0,
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 1399,
             "gas_amount_total": {
               "bandwidth": {
                 "service": 1
@@ -6186,6 +6265,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 5176,
             "gas_amount_total": {
               "bandwidth": {
                 "service": 1006
@@ -6282,6 +6362,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
+            "gas_amount_charged": 3570,
             "gas_amount_total": {
               "bandwidth": {
                 "service": 6
@@ -6485,7 +6566,7 @@ describe('Blockchain Node', () => {
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
-        gasPrice * MICRO_AIN * (txRes.result.gas_amount_total.bandwidth.service + txRes.result.gas_amount_total.state.service)
+        gasPrice * MICRO_AIN * txRes.result.gas_amount_charged
       );
     });
 
@@ -6537,7 +6618,7 @@ describe('Blockchain Node', () => {
           'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       assert.deepEqual(
         billingAccountBalanceAfter,
-        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * (txRes.result.gas_amount_total.bandwidth.service + txRes.result.gas_amount_total.state.service))
+        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_charged)
       );
     });
 
@@ -6563,7 +6644,7 @@ describe('Blockchain Node', () => {
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
-        gasPrice * MICRO_AIN * (txRes.result.gas_amount_total.bandwidth.service + txRes.result.gas_amount_total.state.service)
+        gasPrice * MICRO_AIN * txRes.result.gas_amount_charged
       );
     });
 
@@ -6587,7 +6668,7 @@ describe('Blockchain Node', () => {
           'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       assert.deepEqual(
         billingAccountBalanceAfter,
-        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * (txRes.result.gas_amount_total.bandwidth.service + txRes.result.gas_amount_total.state.service))
+        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_charged)
       );
     });
 
@@ -6623,7 +6704,7 @@ describe('Blockchain Node', () => {
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
-        gasPrice * MICRO_AIN * (txRes.result.gas_amount_total.bandwidth.service + txRes.result.gas_amount_total.state.service)
+        gasPrice * MICRO_AIN * txRes.result.gas_amount_charged
       );
     });
 
@@ -6657,7 +6738,7 @@ describe('Blockchain Node', () => {
           'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       assert.deepEqual(
         billingAccountBalanceAfter,
-        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * (txRes.result.gas_amount_total.bandwidth.service + txRes.result.gas_amount_total.state.service))
+        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_charged)
       );
     });
 
@@ -6716,15 +6797,15 @@ describe('Blockchain Node', () => {
         }
       }).body.toString('utf-8'));
       assert.deepEqual(txResBody.result.result, {
-        "error_message": "Failed to collect gas fee: Multiple app-dependent service operations for a billing account",
-        "code": 16,
-        "bandwidth_gas_amount": 0
+        "bandwidth_gas_amount": 0,
+        "error_message": "[precheckTxBillingParams] Multiple app-dependent service operations for a billing account",
+        "code": 16
       });
     });
   });
 
   describe('Tx Receipts', () => {
-    it(`Records a transaction's receipt`, async () => {
+    it(`records a transaction's receipt`, async () => {
       const txSignerAddress = parseOrLog(syncRequest(
           'GET', server1 + '/get_address').body.toString('utf-8')).result;
       const request = {
@@ -6747,6 +6828,7 @@ describe('Blockchain Node', () => {
       assert.deepEqual(receipt.exec_result, {
         bandwidth_gas_amount: 1,
         code: 0,
+        gas_amount_charged: 0,
         gas_amount_total: {
           bandwidth: {
             app: {
@@ -6765,7 +6847,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    it(`Removes an old transaction's receipt`, async () => {
+    it(`removes an old transaction's receipt`, async () => {
       const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = 100;
       let lastBlockNumber = getLastBlockNumber(server1);
       if (lastBlockNumber <= MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
@@ -6784,6 +6866,54 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8')).result;
         assert.deepEqual(receipt, null);
       }
+    });
+
+    it('failed transaction', async () => {
+      const server1Address = parseOrLog(syncRequest(
+        'GET', server1 + '/get_address').body.toString('utf-8')).result;
+      const server2Address = parseOrLog(syncRequest(
+        'GET', server2 + '/get_address').body.toString('utf-8')).result;
+      const failingTx = {
+        ref: `/transfer/${server1Address}/${server2Address}/${Date.now()}/value`,
+        value: 10000000000,
+        gas_price: 1
+      }
+      const body = parseOrLog(syncRequest(
+        'POST', server1 + '/set_value', {json: failingTx}).body.toString('utf-8'));
+      assert.deepEqual(body.result.result.code, 103);
+      assert.deepEqual(body.result.result.bandwidth_gas_amount, 1);
+      assert.deepEqual(body.result.result.gas_amount_total, {
+        "bandwidth": {
+          "service": 1
+        },
+        "state": {
+          "service": 0
+        }
+      });
+      assert.deepEqual(body.result.result.gas_cost_total, 0.000001);
+      
+      if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+        console.error(`Failed to check finalization of tx.`);
+      }
+
+      // Failed tx's receipt is in state
+      const txHash = body.result.tx_hash;
+      const receipt = parseOrLog(syncRequest(
+        'GET', server2 + `/get_value?ref=/receipts/${txHash}`).body.toString('utf-8')).result;
+      expect(receipt).to.not.equal(null);
+      assert.deepEqual(receipt.exec_result, body.result.result);
+
+      // Failed tx's gas fees have been collected
+      const blockNumber = receipt.block_number;
+      const gasFeeCollected = parseOrLog(syncRequest(
+        'GET', server2 + `/get_value?ref=/gas_fee/collect/${server1Address}/${blockNumber}/${txHash}/amount`
+      ).body.toString('utf-8')).result;
+      assert.deepEqual(gasFeeCollected, body.result.result.gas_cost_total);
+
+      // Failed tx is in a block
+      const block = getBlockByNumber(server2, blockNumber);
+      expect(block).to.not.equal(undefined);
+      expect(block.transactions.find((tx) => tx.hash === txHash)).to.not.equal(undefined);
     });
   });
 });

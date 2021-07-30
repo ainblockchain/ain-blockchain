@@ -57,7 +57,9 @@ class BlockchainNode {
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
-    this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
+    this.db = DB.create(
+        StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true,
+        this.bc.lastBlockNumber(), this.stateManager);
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
     this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
@@ -115,8 +117,9 @@ class BlockchainNode {
 
     // 3. Initialize DB (with the latest snapshot, if it exists)
     logger.info(`[${LOG_HEADER}] Initializing DB..`);
-    const startingDb =
-        this.createDb(StateVersions.EMPTY, StateVersions.START, this.bc, this.tp, true);
+    const startingDb = DB.create(
+        StateVersions.EMPTY, StateVersions.START, this.bc, this.tp, true, false,
+        latestSnapshotBlockNumber, this.stateManager);
     startingDb.initDbStates(latestSnapshot);
 
     // 4. Execute the chain on the DB and finalize it.
@@ -127,7 +130,7 @@ class BlockchainNode {
     // 5. Execute transactions from the pool.
     logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
     this.db.executeTransactionList(
-        this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()),
+        this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()), false, true,
         this.bc.lastBlockNumber() + 1);
 
     // 6. Node status changed: STARTING -> SYNCING.
@@ -147,31 +150,6 @@ class BlockchainNode {
       return null;
     }
     return new DB(tempRoot, tempVersion, null, null, false, blockNumberSnapshot, this.stateManager);
-  }
-
-  createDb(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot) {
-    const LOG_HEADER = 'createDb';
-
-    logger.debug(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
-        `${baseVersion} -> ${newVersion}`);
-    const newRoot = this.stateManager.cloneVersion(baseVersion, newVersion);
-    if (!newRoot) {
-      logger.error(
-          `[${LOG_HEADER}] Failed to clone state version: ${baseVersion} -> ${newVersion}`);
-      return null;
-    }
-    if (finalizeVersion) {
-      this.stateManager.finalizeVersion(newVersion);
-    }
-    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot, this.stateManager);
-  }
-
-  destroyDb(db) {
-    const LOG_HEADER = 'destroyDb';
-
-    logger.debug(`[${LOG_HEADER}] Destroying DB with state version: ${db.stateVersion}`);
-    db.deleteStateVersion();
-    db.deleteBackupStateVersion();
   }
 
   syncDbAndNonce(newVersion) {
@@ -368,28 +346,6 @@ class BlockchainNode {
   }
 
   /**
-   * Try to executes a transaction on the node database. If it was not successful, all changes are
-   * rolled back from the database states.
-   * @param {Object} tx transaction
-   */
-  executeOrRollbackTransaction(tx) {
-    const LOG_HEADER = 'executeOrRollbackTransaction';
-    if (!this.db.backupDb()) {
-      return CommonUtil.logAndReturnTxResult(
-          logger, 3,
-          `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
-    }
-    const result = this.db.executeTransaction(tx, this.bc.lastBlockNumber() + 1);
-    if (CommonUtil.isFailedTx(result)) {
-      if (!this.db.restoreDb()) {
-        logger.error(
-          `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
-      }
-    }
-    return result;
-  }
-
-  /**
    * Executes a transaction and add it to the transaction pool if the execution was successful.
    * @param {Object} tx transaction
    */
@@ -420,15 +376,17 @@ class BlockchainNode {
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
           `for account: ${executableTx.address}`);
     }
-    const result = this.executeOrRollbackTransaction(executableTx);
+    const result = this.db.executeTransaction(executableTx, false, true, this.bc.lastBlockNumber() + 1);
     if (CommonUtil.isFailedTx(result)) {
       if (FeatureFlags.enableRichTransactionLogging) {
         logger.error(
             `[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(executableTx, null, 2)}\n ` +
             `WITH RESULT:${JSON.stringify(result)}`);
       }
-      const errorCode = _.get(result, 'code');
-      if (errorCode === TX_NONCE_ERROR_CODE || errorCode === TX_TIMESTAMP_ERROR_CODE) {
+      // NOTE(liayoo): Transactions that don't pass the pre-checks will be rejected instantly and
+      //               will not be included in the tx pool, as they can't be included in a block
+      //               anyway, and may be used for attacks on blockchain nodes.
+      if (!CommonUtil.txPrecheckFailed(result)) {
         this.tp.addTransaction(executableTx);
       }
     } else {
@@ -468,12 +426,14 @@ class BlockchainNode {
 
     for (const block of blockList) {
       this.removeOldReceipts(block.number, db);
-      if (!db.executeTransactionList(block.last_votes)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
-            `${JSON.stringify(block, null, 2)}`);
-        return false;
+      if (block.number > 0) {
+        if (!db.executeTransactionList(block.last_votes, true)) {
+          logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
+              `${JSON.stringify(block, null, 2)}`);
+          return false;
+        }
       }
-      if (!db.executeTransactionList(block.transactions, block.number)) {
+      if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
             `${JSON.stringify(block, null, 2)}`);
         return false;
@@ -533,14 +493,14 @@ class BlockchainNode {
       if (!this.applyBlocksToDb(validBlocks, tempDb)) {
         logger.error(`[${LOG_HEADER}] Failed to apply valid blocks to database: ` +
             `${JSON.stringify(validBlocks, null, 2)}`);
-        this.destroyDb(tempDb);
+        tempDb.destroyDb();
         return false;
       }
       for (const block of validBlocks) {
         if (!this.bc.addNewBlockToChain(block)) {
           logger.error(`[${LOG_HEADER}] Failed to add new block to chain: ` +
               `${JSON.stringify(block, null, 2)}`);
-          this.destroyDb(tempDb);
+          tempDb.destroyDb();
           return false;
         }
       }
@@ -553,7 +513,7 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] No blocks to apply.`);
       return true;
     }
-    this.destroyDb(tempDb);
+    tempDb.destroyDb();
 
     return true;
   }
@@ -563,11 +523,13 @@ class BlockchainNode {
 
     for (const block of this.bc.chain) {
       this.removeOldReceipts(block.number, db);
-      if (!db.executeTransactionList(block.last_votes)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
-        process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+      if (block.number > 0) {
+        if (!db.executeTransactionList(block.last_votes, true)) {
+          logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
+          process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+        }
       }
-      if (!db.executeTransactionList(block.transactions, block.number)) {
+      if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
         process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
       }

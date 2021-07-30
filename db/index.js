@@ -24,6 +24,8 @@ const {
   APPS_STATE_BUDGET,
   FREE_STATE_BUDGET,
   STATE_GAS_COEFFICIENT,
+  MIN_STAKING_FOR_APP_TX,
+  MIN_BALANCE_FOR_SERVICE_TX,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
@@ -227,6 +229,30 @@ class DB {
     this.setStateVersion(restoreVersion, restoreRoot);
     this.deleteBackupStateVersion();
     return true;
+  }
+
+  destroyDb() {
+    const LOG_HEADER = 'destroyDb';
+    logger.debug(`[${LOG_HEADER}] Destroying DB with state version: ${this.stateVersion}`);
+    this.deleteStateVersion();
+    this.deleteBackupStateVersion();
+  }
+
+  static create(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot, stateManager) {
+    const LOG_HEADER = 'create';
+
+    logger.debug(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
+        `${baseVersion} -> ${newVersion}`);
+    const newRoot = stateManager.cloneVersion(baseVersion, newVersion);
+    if (!newRoot) {
+      logger.error(
+          `[${LOG_HEADER}] Failed to clone state version: ${baseVersion} -> ${newVersion}`);
+      return null;
+    }
+    if (finalizeVersion) {
+      stateManager.finalizeVersion(newVersion);
+    }
+    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot, stateManager);
   }
 
   dumpDbStates(options) {
@@ -664,30 +690,30 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
-      return CommonUtil.returnTxResult(101, `Invalid object for states: ${isValidObj.invalidPath}`);
+      return CommonUtil.returnTxResult(101, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
     }
     const parsedPath = CommonUtil.parsePath(valuePath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return CommonUtil.returnTxResult(102, `Invalid path: ${isValidPath.invalidPath}`);
+      return CommonUtil.returnTxResult(102, `Invalid path: ${isValidPath.invalidPath}`, 1);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return CommonUtil.returnTxResult(0);
+      return CommonUtil.returnTxResult(0, null, 1);
     }
     if (!this.getPermissionForValue(localPath, value, auth, timestamp)) {
-      return CommonUtil.returnTxResult(103, `No write permission on: ${valuePath}`);
+      return CommonUtil.returnTxResult(103, `No write permission on: ${valuePath}`, 1);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);
     if (!isWritablePath.isValid) {
       if (isGlobal) {
         // There is nothing to do.
-        return CommonUtil.returnTxResult(0);
+        return CommonUtil.returnTxResult(0, null, 1);
       } else {
         return CommonUtil.returnTxResult(
-            104, `Non-writable path with shard config: ${isWritablePath.invalidPath}`);
+            104, `Non-writable path with shard config: ${isWritablePath.invalidPath}`, 1);
       }
     }
     const valueCopy = CommonUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
@@ -706,10 +732,10 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
-    if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return CommonUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`);
+    if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
+      return CommonUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`, 1);
     }
-    const valueAfter = (valueBefore === undefined ? 0 : valueBefore) + delta;
+    const valueAfter = CommonUtil.numberOrZero(valueBefore) + delta;
     return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, options);
   }
 
@@ -717,10 +743,10 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
-    if ((valueBefore && typeof valueBefore !== 'number') || typeof delta !== 'number') {
-      return CommonUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`);
+    if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
+      return CommonUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`, 1);
     }
-    const valueAfter = (valueBefore === undefined ? 0 : valueBefore) - delta;
+    const valueAfter = CommonUtil.numberOrZero(valueBefore) - delta;
     return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, options);
   }
 
@@ -728,31 +754,31 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(func);
     if (!isValidObj.isValid) {
-      return CommonUtil.returnTxResult(401, `Invalid object for states: ${isValidObj.invalidPath}`);
+      return CommonUtil.returnTxResult(401, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
     }
     const isValidFunction = isValidFunctionTree(func);
     if (!isValidFunction.isValid) {
-      return CommonUtil.returnTxResult(405, `Invalid function tree: ${isValidFunction.invalidPath}`);
+      return CommonUtil.returnTxResult(405, `Invalid function tree: ${isValidFunction.invalidPath}`, 1);
     }
     const parsedPath = CommonUtil.parsePath(functionPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return CommonUtil.returnTxResult(402, `Invalid path: ${isValidPath.invalidPath}`);
+      return CommonUtil.returnTxResult(402, `Invalid path: ${isValidPath.invalidPath}`, 1);
     }
     if (!auth || auth.addr !== this.ownerAddress) {
       const ownerOnlyFid = this.func.hasOwnerOnlyFunction(func);
       if (ownerOnlyFid !== null) {
         return CommonUtil.returnTxResult(
-            403, `Trying to write owner-only function: ${ownerOnlyFid}`);
+            403, `Trying to write owner-only function: ${ownerOnlyFid}`, 1);
       }
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return CommonUtil.returnTxResult(0);
+      return CommonUtil.returnTxResult(0, null, 1);
     }
     if (!this.getPermissionForFunction(localPath, auth)) {
-      return CommonUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`);
+      return CommonUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`, 1);
     }
     const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
     const newFunction = applyFunctionChange(curFunction, func);
@@ -767,24 +793,24 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
-      return CommonUtil.returnTxResult(501, `Invalid object for states: ${isValidObj.invalidPath}`);
+      return CommonUtil.returnTxResult(501, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
     }
     const isValidRule = isValidRuleTree(rule);
     if (!isValidRule.isValid) {
-      return CommonUtil.returnTxResult(504, `Invalid rule tree: ${isValidRule.invalidPath}`);
+      return CommonUtil.returnTxResult(504, `Invalid rule tree: ${isValidRule.invalidPath}`, 1);
     }
     const parsedPath = CommonUtil.parsePath(rulePath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return CommonUtil.returnTxResult(502, `Invalid path: ${isValidPath.invalidPath}`);
+      return CommonUtil.returnTxResult(502, `Invalid path: ${isValidPath.invalidPath}`, 1);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return CommonUtil.returnTxResult(0);
+      return CommonUtil.returnTxResult(0, null, 1);
     }
     if (!this.getPermissionForRule(localPath, auth)) {
-      return CommonUtil.returnTxResult(503, `No write_rule permission on: ${rulePath}`);
+      return CommonUtil.returnTxResult(503, `No write_rule permission on: ${rulePath}`, 1);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     const ruleCopy = CommonUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
@@ -796,25 +822,25 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
-      return CommonUtil.returnTxResult(601, `Invalid object for states: ${isValidObj.invalidPath}`);
+      return CommonUtil.returnTxResult(601, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
     }
     const isValidOwner = isValidOwnerTree(owner);
     if (!isValidOwner.isValid) {
-      return CommonUtil.returnTxResult(604, `Invalid owner tree: ${isValidOwner.invalidPath}`);
+      return CommonUtil.returnTxResult(604, `Invalid owner tree: ${isValidOwner.invalidPath}`, 1);
     }
     const parsedPath = CommonUtil.parsePath(ownerPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return CommonUtil.returnTxResult(602, `Invalid path: ${isValidPath.invalidPath}`);
+      return CommonUtil.returnTxResult(602, `Invalid path: ${isValidPath.invalidPath}`, 1);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return CommonUtil.returnTxResult(0);
+      return CommonUtil.returnTxResult(0, null, 1);
     }
     if (!this.getPermissionForOwner(localPath, auth)) {
       return CommonUtil.returnTxResult(
-          603, `No write_owner or branch_owner permission on: ${ownerPath}`);
+          603, `No write_owner or branch_owner permission on: ${ownerPath}`, 1);
     }
     const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
     const newOwner = applyOwnerChange(curOwner, owner);
@@ -885,7 +911,7 @@ class DB {
         result = this.setOwner(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
         break;
       default:
-        return CommonUtil.returnTxResult(14, `Invalid operation type: ${op.type}`);
+        return CommonUtil.returnTxResult(14, `Invalid operation type: ${op.type}`, 1);
     }
     return result;
   }
@@ -903,64 +929,75 @@ class DB {
     return { result_list: resultList };
   }
 
-  executeOperation(op, auth, timestamp, tx, blockNumber = 0) {
+  static updateGasAmountTotal(tx, gasAmountTotal, executionResult) {
+    gasAmountTotal.bandwidth = CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, executionResult);
+    executionResult.gas_amount_total = gasAmountTotal;
+    tx.setExtraField('gas', gasAmountTotal);
+  }
+
+  executeOperation(op, auth, timestamp, tx) {
+    const gasAmountTotal = {
+      bandwidth: { service: 0 },
+      state: { service: 0 }
+    };
+    const result = {
+      gas_amount_total: gasAmountTotal,
+      gas_cost_total: 0
+    };
     if (!op) {
-      return CommonUtil.returnTxResult(11, `Invalid operation: ${op}`);
+      Object.assign(result, CommonUtil.returnTxResult(11, `Invalid operation: ${op}`, 1));
+      DB.updateGasAmountTotal(tx, gasAmountTotal, result);
+      return result;
     }
     if (tx && auth && auth.addr && !auth.fid) {
       const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
-        return CommonUtil.returnTxResult(
-          12, `Invalid nonce (!== ${nonce}) of transaction: ${JSON.stringify(tx)}`);
+        Object.assign(result, CommonUtil.returnTxResult(
+            12, `Invalid nonce (!== ${nonce}) of transaction: ${JSON.stringify(tx)}`, 1));
+        DB.updateGasAmountTotal(tx, gasAmountTotal, result);
+        return result;
       }
       if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
-        return CommonUtil.returnTxResult(
-          13, `Invalid timestamp (<= ${accountTimestamp}) of transaction: ` +
-          `${JSON.stringify(tx)}`);
+        Object.assign(result, CommonUtil.returnTxResult(
+            13, `Invalid timestamp (<= ${accountTimestamp}) of transaction: ${JSON.stringify(tx)}`, 1));
+        DB.updateGasAmountTotal(tx, gasAmountTotal, result);
+        return result;
       }
     }
-    let result;
     const allStateUsageBefore = this.getAllStateUsages();
     const stateUsagePerAppBefore = this.getStateUsagePerApp(op);
     if (op.type === WriteDbOperations.SET) {
-      result = this.executeMultiSetOperation(op.op_list, auth, timestamp, tx);
+      Object.assign(result, this.executeMultiSetOperation(op.op_list, auth, timestamp, tx));
     } else {
-      result = this.executeSingleSetOperation(op, auth, timestamp, tx);
+      Object.assign(result, this.executeSingleSetOperation(op, auth, timestamp, tx));
     }
-    const gasPrice = tx.tx_body.gas_price;
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
-    const gasAmountTotal = {
-      bandwidth: CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, result),
-      state: { service: 0 }
-    };
-    result.gas_amount_total = gasAmountTotal;
-    result.gas_cost_total = 0;
-    // TODO(platfowner): Consider charging gas fee for the failure cases.
+    DB.updateGasAmountTotal(tx, gasAmountTotal, result);
     if (!CommonUtil.isFailedTx(result)) {
+      const {
+        [StateInfoProperties.TREE_HEIGHT]: treeHeight,
+        [StateInfoProperties.TREE_SIZE]: treeSize
+      } = this.getStateInfo('/');
+      if (treeHeight > TREE_HEIGHT_LIMIT) {
+        return Object.assign(result, {
+          code: 23,
+          error_message: `Out of tree height limit (${treeHeight} > ${TREE_HEIGHT_LIMIT})`
+        });
+      }
+      if (treeSize > TREE_SIZE_LIMIT) {
+        return Object.assign(result, {
+          code: 24,
+          error_message: `Out of tree size limit (${treeSize} > ${TREE_SIZE_LIMIT})`
+        });
+      }
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
       const allStateUsageAfter = this.getAllStateUsages();
-      tx.setExtraField('gas', gasAmountTotal);
       DB.updateStateGasAmount(
           tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore, stateUsagePerAppAfter);
-      const stateGasBudgetCheck = this.checkStateGasBudgets(op, allStateUsageAfter.apps, allStateUsageAfter.service);
+      const stateGasBudgetCheck = this.checkStateGasBudgets(op, allStateUsageAfter.apps, allStateUsageAfter.service, result);
       if (stateGasBudgetCheck !== true) {
         return stateGasBudgetCheck;
-      }
-      if (blockNumber > 0) {
-        // Use only the service gas amount total
-        result.gas_cost_total = CommonUtil.getTotalGasCost(
-          gasPrice,
-          _.get(tx, 'extra.gas.bandwidth.service', 0) + _.get(tx, 'extra.gas.state.service', 0)
-        );
-        const collectFeeRes = this.checkBillingAndCollectFee(op, auth, timestamp, tx, blockNumber, result);
-        if (collectFeeRes !== true) {
-          return collectFeeRes;
-        }
-        const receiptRes = this.recordReceipt(auth, timestamp, tx, blockNumber, result);
-        if (receiptRes !== true) { // should not happen
-          return receiptRes;
-        }
       }
       if (tx && auth && auth.addr && !auth.fid) {
         this.updateAccountNonceAndTimestamp(auth.addr, tx.tx_body.nonce, tx.tx_body.timestamp);
@@ -1044,26 +1081,34 @@ class DB {
     }, {});
   }
 
-  checkStateGasBudgets(op, allAppsStateUsage, serviceStateUsage) {
+  checkStateGasBudgets(op, allAppsStateUsage, serviceStateUsage, result) {
     if (serviceStateUsage[StateInfoProperties.TREE_BYTES] > SERVICE_STATE_BUDGET) {
-      return CommonUtil.returnTxResult(
-          25, `Exceeded state budget limit for services ` +
-          `(${serviceStateUsage[StateInfoProperties.TREE_BYTES]} > ${SERVICE_STATE_BUDGET})`);
+      return Object.assign(result, {
+          code: 25,
+          error_message: `Exceeded state budget limit for services ` +
+            `(${serviceStateUsage[StateInfoProperties.TREE_BYTES]} > ${SERVICE_STATE_BUDGET})`
+      });
     }
     if (allAppsStateUsage[StateInfoProperties.TREE_BYTES] > APPS_STATE_BUDGET) {
-      return CommonUtil.returnTxResult(
-          26, `Exceeded state budget limit for apps ` +
-          `(${allAppsStateUsage[StateInfoProperties.TREE_BYTES]} > ${APPS_STATE_BUDGET})`);
+      return Object.assign(result, {
+          code: 26,
+          error_message: `Exceeded state budget limit for apps ` +
+            `(${allAppsStateUsage[StateInfoProperties.TREE_BYTES]} > ${APPS_STATE_BUDGET})`
+      });
     }
     if (serviceStateUsage[StateInfoProperties.TREE_SIZE] > SERVICE_TREE_SIZE_BUDGET) {
-      return CommonUtil.returnTxResult(
-          27, `Exceeded state tree size limit for services ` +
-          `(${serviceStateUsage[StateInfoProperties.TREE_SIZE]} > ${SERVICE_TREE_SIZE_BUDGET})`);
+      return Object.assign(result, {
+          code: 27,
+          error_message: `Exceeded state tree size limit for services ` +
+            `(${serviceStateUsage[StateInfoProperties.TREE_SIZE]} > ${SERVICE_TREE_SIZE_BUDGET})`
+      });
     }
     if (allAppsStateUsage[StateInfoProperties.TREE_SIZE] > APPS_TREE_SIZE_BUDGET) {
-      return CommonUtil.returnTxResult(
-          28, `Exceeded state tree size limit for apps ` +
-          `(${allAppsStateUsage[StateInfoProperties.TREE_SIZE]} > ${APPS_TREE_SIZE_BUDGET})`);
+      return Object.assign(result, {
+          code: 28,
+          error_message: `Exceeded state tree size limit for apps ` +
+            `(${allAppsStateUsage[StateInfoProperties.TREE_SIZE]} > ${APPS_TREE_SIZE_BUDGET})`
+      });
     }
     const stateFreeTierUsage = this.getStateFreeTierUsage();
     const freeTierTreeBytesLimitReached = stateFreeTierUsage[StateInfoProperties.TREE_BYTES] >= FREE_STATE_BUDGET;
@@ -1074,96 +1119,167 @@ class DB {
       const appStake = this.getAppStake(appName);
       if (appStake === 0) {
         if (freeTierTreeBytesLimitReached) {
-          return CommonUtil.returnTxResult(
-              29, `Exceeded state budget limit for free tier ` +
-              `(${stateFreeTierUsage[StateInfoProperties.TREE_BYTES]} > ${FREE_STATE_BUDGET})`);
+          return Object.assign(result, {
+              code: 29,
+              error_message: `Exceeded state budget limit for free tier ` +
+                `(${stateFreeTierUsage[StateInfoProperties.TREE_BYTES]} > ${FREE_STATE_BUDGET})`
+          });
         }
         if (freeTierTreeSizeLimitReached) {
-          return CommonUtil.returnTxResult(
-            30, `Exceeded state tree size limit for free tier ` +
-            `(${stateFreeTierUsage[StateInfoProperties.TREE_SIZE]} > ${FREE_TREE_SIZE_BUDGET})`);
+          return Object.assign(result, {
+            code: 30,
+            error_message: `Exceeded state tree size limit for free tier ` +
+              `(${stateFreeTierUsage[StateInfoProperties.TREE_SIZE]} > ${FREE_TREE_SIZE_BUDGET})`
+          });
         }
         // else, we allow apps without stakes
       } else {
         const appStateBudget = APPS_STATE_BUDGET * appStake / appStakesTotal;
         const appTreeSizeBudget = APPS_TREE_SIZE_BUDGET * appStake / appStakesTotal;
         if (appStateUsage[StateInfoProperties.TREE_BYTES] > appStateBudget) {
-          return CommonUtil.returnTxResult(
-              31, `Exceeded state budget limit for app ${appName} ` +
-              `(${appStateUsage[StateInfoProperties.TREE_BYTES]} > ${appStateBudget})`);
+          return Object.assign(result, {
+              code: 31,
+              error_message: `Exceeded state budget limit for app ${appName} ` +
+                `(${appStateUsage[StateInfoProperties.TREE_BYTES]} > ${appStateBudget})`
+          });
         }
         if (appStateUsage[StateInfoProperties.TREE_SIZE] > appTreeSizeBudget) {
-          return CommonUtil.returnTxResult(
-              32, `Exceeded state tree size limit for app ${appName} ` +
-              `(${appStateUsage[StateInfoProperties.TREE_SIZE]} > ${appTreeSizeBudget})`);
+          return Object.assign(result, {
+              code: 32,
+              error_message: `Exceeded state tree size limit for app ${appName} ` +
+                `(${appStateUsage[StateInfoProperties.TREE_SIZE]} > ${appTreeSizeBudget})`
+          });
         }
       }
     }
     return true;
   }
 
-  checkBillingAndCollectFee(op, auth, timestamp, tx, blockNumber, result) {
-    if (result.gas_cost_total <= 0) { // No fees to collect
-      return true;
+  collectFee(auth, timestamp, tx, blockNumber, executionResult) {
+    const gasPrice = tx.tx_body.gas_price;
+    // Use only the service gas amount total
+    const serviceBandwidthGasAmount = _.get(tx, 'extra.gas.bandwidth.service', 0);
+    const serviceStateGasAmount = _.get(tx, 'extra.gas.state.service', 0);
+    let gasAmountChargedByTransfer = serviceBandwidthGasAmount +
+        (CommonUtil.isFailedTx(executionResult) ? 0 : serviceStateGasAmount);
+    if (gasAmountChargedByTransfer <= 0 || gasPrice === 0) { // No fees to collect
+      executionResult.gas_amount_charged = gasAmountChargedByTransfer;
+      executionResult.gas_cost_total = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer);
+      return;
     }
-
     const billing = tx.tx_body.billing;
-    if (!billing) { // Charge the individual account
-      return this.collectFee(auth.addr, result.gas_cost_total, auth, timestamp, tx, blockNumber);
+    let billedTo = billing ? CommonUtil.toBillingAccountName(billing) : auth.addr;
+    if (billing) {
+      const billingParsed = CommonUtil.parseServAcntName(billing);
+      if (!this.isBillingUser(billingParsed[0], billingParsed[1], auth.addr)) {
+        // No longer in the billing users list. Charge the tx signer instead
+        billedTo = auth.addr;
+      }
     }
-    const billingParsed = billing.split('|');
-    if (billingParsed.length !== 2) {
-      const reason = 'Invalid billing param';
-      return CommonUtil.returnTxResult(15, `Failed to collect gas fee: ${reason}`, 0);
+    let balance = this.getBalance(billedTo);
+    if (balance < gasAmountChargedByTransfer) {
+      Object.assign(executionResult, {
+        code: 36,
+        error_message: `Failed to collect gas fee: balance too low (${balance} / ${gasAmountChargedByTransfer})`
+      });
+      this.restoreDb(); // Revert changes made by the tx operations
+      balance = this.getBalance(billedTo);
+      gasAmountChargedByTransfer = Math.min(balance, serviceBandwidthGasAmount);
     }
-    const billingAppName = billingParsed[0];
-    const billingServiceAcntName = CommonUtil.toBillingAccountName(billing);
-    const appNameList = CommonUtil.getServiceDependentAppNameList(op);
-    if (appNameList.length > 1) {
-      // More than 1 apps are involved. Cannot charge an app-related billing account.
-      const reason = 'Multiple app-dependent service operations for a billing account';
-      return CommonUtil.returnTxResult(16, `Failed to collect gas fee: ${reason}`, 0);
-    } else if (appNameList.length === 1 && appNameList[0] !== billingAppName) {
-      // Tx app name doesn't match the billing account.
-      const reason = 'Invalid billing account';
-      return CommonUtil.returnTxResult(17, `Failed to collect gas fee: ${reason}`, 0);
-    }
-    // Either app-independent or app name matches the billing account.
-    return this.collectFee(
-        billingServiceAcntName, result.gas_cost_total, auth, timestamp, tx, blockNumber);
-  }
-
-  collectFee(billedTo, gasCost, auth, timestamp, tx, blockNumber) {
+    executionResult.gas_amount_charged = gasAmountChargedByTransfer;
+    executionResult.gas_cost_total = CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged);
+    if (executionResult.gas_cost_total <= 0) return;
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(billedTo, blockNumber, tx.hash);
     const gasFeeCollectRes = this.setValue(
-        gasFeeCollectPath, { amount: gasCost }, auth, timestamp, tx);
-    if (CommonUtil.isFailedTx(gasFeeCollectRes)) {
-      return CommonUtil.returnTxResult(
-          18, `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`, 0);
+        gasFeeCollectPath, { amount: executionResult.gas_cost_total }, auth, timestamp, tx);
+    if (CommonUtil.isFailedTx(gasFeeCollectRes)) { // Should not happend
+      Object.assign(executionResult, {
+        code: 18,
+        error_message: `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`
+      });
     }
-    return true;
   }
 
-  recordReceipt(auth, timestamp, tx, blockNumber, txExecResult) {
+  recordReceipt(auth, tx, blockNumber, executionResult) {
     const receiptPath = PathUtil.getReceiptsPath(tx.hash);
     const receipt = {
       [PredefinedDbPaths.RECEIPTS_ADDRESS]: auth.addr,
       [PredefinedDbPaths.RECEIPTS_BLOCK_NUMBER]: blockNumber,
-      [PredefinedDbPaths.RECEIPTS_EXEC_RESULT]: txExecResult
+      [PredefinedDbPaths.RECEIPTS_EXEC_RESULT]: executionResult
     };
     if (tx.tx_body.billing) {
       receipt[PredefinedDbPaths.RECEIPTS_BILLING] = tx.tx_body.billing;
     }
-    const recordRes = this.setValue(receiptPath, receipt, auth, timestamp, tx);
-    if (CommonUtil.isFailedTx(recordRes)) {
-      return CommonUtil.returnTxResult(
-          29, `Failed to record receipt ${JSON.stringify(recordRes, null, 2)}`, 0);
+    // NOTE(liayoo): necessary balance & permission checks have been done in precheckTransaction()
+    //               and collectFee().
+    this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...CommonUtil.parsePath(receiptPath)], receipt);
+  }
+
+  isBillingUser(billingAppName, billingId, userAddr) {
+    return this.getValue(
+        PathUtil.getManageAppBillingUsersPath(billingAppName, billingId) + '/' + userAddr) === true;
+  }
+
+  precheckTxBillingParams(op, addr, billing, blockNumber) {
+    const LOG_HEADER = 'precheckTxBillingParams';
+    if (!billing || blockNumber === 0) {
+      return true;
     }
+    const billingParsed = CommonUtil.parseServAcntName(billing);
+    if (billingParsed[0] === null || billingParsed[1] === null || billingParsed[2] !== null) {
+      return CommonUtil.logAndReturnTxResult(logger, 15, `[${LOG_HEADER}] Invalid billing param`);
+    }
+    if (!this.isBillingUser(billingParsed[0], billingParsed[1], addr)) {
+      return CommonUtil.logAndReturnTxResult(
+        logger, 33, `[${LOG_HEADER}] User doesn't have permission to the billing account`);
+    }
+    const appNameList = CommonUtil.getServiceDependentAppNameList(op);
+    if (appNameList.length > 1) {
+      // More than 1 apps are involved. Cannot charge an app-related billing account.
+      return CommonUtil.logAndReturnTxResult(
+        logger, 16, `[${LOG_HEADER}] Multiple app-dependent service operations for a billing account`);
+    }
+    if (appNameList.length === 1) {
+      if (appNameList[0] !== billingParsed[0]) {
+        // Tx app name doesn't match the billing account.
+        return CommonUtil.logAndReturnTxResult(logger, 17, `[${LOG_HEADER}] Invalid billing account`);
+      }
+      // App name matches the billing account.
+    }
+    // Tx is app-independent.
     return true;
   }
 
-  executeTransaction(tx, blockNumber = 0) {
-    const LOG_HEADER = 'executeTransaction';
+  getBalance(addrOrServAcnt) {
+    return this.getValue(CommonUtil.getBalancePath(addrOrServAcnt)) || 0;
+  }
+
+  precheckBalanceAndStakes(op, addr, billing, blockNumber) {
+    const LOG_HEADER = 'precheckBalanceAndStakes';
+    if (blockNumber === 0) {
+      return true;
+    }
+    const billedTo = billing ? CommonUtil.toBillingAccountName(billing) : addr;
+    if (CommonUtil.hasServiceOp(op)) {
+      const balance = this.getBalance(billedTo);
+      if (balance < MIN_BALANCE_FOR_SERVICE_TX) {
+        return CommonUtil.logAndReturnTxResult(
+          logger, 34, `[${LOG_HEADER}] Balance too low (${balance} < ${MIN_BALANCE_FOR_SERVICE_TX})`);
+      }
+    }
+    const appNameList = CommonUtil.getAppNameList(op, this.shardingPath);
+    appNameList.forEach((appName) => {
+      const appStake = this.getAppStake(appName);
+      if (appStake < MIN_STAKING_FOR_APP_TX) {
+        return CommonUtil.logAndReturnTxResult(
+          logger, 35, `[${LOG_HEADER}] App stake too low (${appStake} < ${MIN_STAKING_FOR_APP_TX})`);
+      }
+    });
+    return true;
+  }
+
+  precheckTransaction(tx, blockNumber) {
+    const LOG_HEADER = 'precheckTransaction';
     // NOTE(platfowner): A transaction needs to be converted to an executable form
     //                   before being executed.
     if (!Transaction.isExecutable(tx)) {
@@ -1171,43 +1287,70 @@ class DB {
           logger, 21,
           `[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx)}`, 0);
     }
-    // Record when the tx was executed.
-    tx.setExtraField('executed_at', Date.now());
-    const txBody = tx.tx_body;
-    if (!txBody) {
+    if (!tx.tx_body) {
       return CommonUtil.logAndReturnTxResult(
           logger, 22, `[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`, 0);
     }
+    const billing = tx.tx_body.billing;
+    const op = tx.tx_body.operation;
+    const addr = tx.address;
+    const checkBillingResult = this.precheckTxBillingParams(op, addr, billing, blockNumber);
+    if (checkBillingResult !== true) {
+      return checkBillingResult;
+    }
+    const checkBalanceResult = this.precheckBalanceAndStakes(op, addr, billing, blockNumber);
+    if (checkBalanceResult !== true) {
+      return checkBalanceResult;
+    }
+    return true;
+  }
+
+  executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0) {
+    const LOG_HEADER = 'executeTransaction';
+    const precheckResult = this.precheckTransaction(tx, blockNumber);
+    if (precheckResult !== true) {
+      logger.debug(`[${LOG_HEADER}] Pre-check failed`);
+      return precheckResult;
+    }
+    if (restoreIfFails) {
+      if (!this.backupDb()) {
+        return CommonUtil.logAndReturnTxResult(
+          logger, 3, `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`, 0);
+      }
+    }
+    // Record when the tx was executed.
+    const txBody = tx.tx_body;
+    tx.setExtraField('executed_at', Date.now());
     // NOTE(platfowner): It's not allowed for users to send transactions with auth.fid.
-    const executionResult = this.executeOperation(
-        txBody.operation, { addr: tx.address }, txBody.timestamp, tx, blockNumber);
-    const stateInfo = this.getStateInfo('/');
-    if (!CommonUtil.isFailedTx(executionResult)) {
-      const treeHeight = stateInfo[StateInfoProperties.TREE_HEIGHT];
-      if (treeHeight > TREE_HEIGHT_LIMIT) {
-        return CommonUtil.returnTxResult(23, `Out of tree height limit ` +
-            `(${treeHeight} > ${TREE_HEIGHT_LIMIT})`);
+    const auth = { addr: tx.address };
+    const timestamp = txBody.timestamp;
+    const executionResult = this.executeOperation(txBody.operation, auth, timestamp, tx, blockNumber);
+    if (CommonUtil.isFailedTx(executionResult)) {
+      if (restoreIfFails) {
+        this.restoreDb();
+      } else {
+        return executionResult;
       }
-      const treeSize = stateInfo[StateInfoProperties.TREE_SIZE];
-      if (treeSize > TREE_SIZE_LIMIT) {
-        return CommonUtil.returnTxResult(24, `Out of tree size limit ` +
-            `(${treeSize} > ${TREE_SIZE_LIMIT})`);
-      }
+    }
+    if (!skipFees) {
+      this.collectFee(auth, timestamp, tx, blockNumber, executionResult);
+      this.recordReceipt(auth, tx, blockNumber, executionResult);
     }
     return executionResult;
   }
 
-  executeTransactionList(txList, blockNumber = 0) {
+  executeTransactionList(txList, skipFees = false, restoreIfFails = false, blockNumber = 0) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
       const executableTx = Transaction.toExecutable(tx);
-      const res = this.executeTransaction(executableTx, blockNumber);
+      const res = this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber);
       if (CommonUtil.isFailedTx(res)) {
-        // FIXME: remove the failed transaction from tx pool?
-        logger.error(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +
+        logger.debug(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);
-        return false;
+        if (CommonUtil.txPrecheckFailed(res) && !restoreIfFails) { // abort right away
+          return false;
+        }
       }
       resList.push(res);
     }

@@ -1405,35 +1405,35 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {array: []}), {
           "code": 101,
           "error_message": "Invalid object for states: /array",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {'.': 'x'}), {
           "code": 101,
           "error_message": "Invalid object for states: /.",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {'$': 'x'}), {
           "code": 101,
           "error_message": "Invalid object for states: /$",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {'*a': 'x'}), {
           "code": 101,
           "error_message": "Invalid object for states: /*a",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {'a*': 'x'}), {
           "code": 101,
           "error_message": "Invalid object for states: /a*",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
       })
@@ -1442,62 +1442,62 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/.", 12345), {
           "code": 102,
           "error_message": "Invalid path: /apps/test/new/unchartered/nested/.",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/$", 12345), {
           "code": 102,
           "error_message": "Invalid path: /apps/test/new/unchartered/nested/$",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/a*", 12345), {
           "code": 102,
           "error_message": "Invalid path: /apps/test/new/unchartered/nested/a*",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/*a", 12345), {
           "code": 102,
           "error_message": "Invalid path: /apps/test/new/unchartered/nested/*a",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/#", 12345), {
           "code": 102,
           "error_message": "Invalid path: /apps/test/new/unchartered/nested/#",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/{", 12345), {
           "code": 102,
           "error_message": "Invalid path: /apps/test/new/unchartered/nested/{",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/}", 12345), {
           "code": 102,
           "error_message": "Invalid path: /apps/test/new/unchartered/nested/}",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/[", 12345), {
           "code": 102,
           "error_message": "Invalid path: /apps/test/new/unchartered/nested/[",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/]", 12345), {
           "code": 102,
           "error_message": "Invalid path: /apps/test/new/unchartered/nested/]",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/\x00", 12345), {
           "code": 102,
           "error_message": "Invalid path: /apps/test/new/unchartered/nested/\x00",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/\x1F", 12345), {
           "code": 102,
           "error_message": "Invalid path: /apps/test/new/unchartered/nested/\x1F",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/\x7F", 12345), {
           "code": 102,
           "error_message": "Invalid path: /apps/test/new/unchartered/nested/\x7F",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
       })
 
@@ -1505,12 +1505,12 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setValue("/apps/test/shards/enabled_shard", 20), {
           "code": 104,
           "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/shards/enabled_shard/path", 20), {
           "code": 104,
           "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
       })
 
@@ -1547,7 +1547,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.incValue("/apps/test/shards/enabled_shard/path", 5), {
           "code": 104,
           "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
       })
 
@@ -1582,7 +1582,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.decValue("/apps/test/shards/enabled_shard/path", 5), {
           "code": 104,
           "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
       })
 
@@ -1651,14 +1651,14 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setFunction("/apps/test/test_function/some/path2", {array: []}), {
           "code": 401,
           "error_message": "Invalid object for states: /array",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         expect(node.db.getFunction("/apps/test/new2/unchartered/nested/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setFunction("/apps/test/test_function/some/path2", {'.': 'x'}), {
           "code": 401,
           "error_message": "Invalid object for states: /.",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         expect(node.db.getFunction("/apps/test/new2/unchartered/nested/path2")).to.equal(null)
       })
@@ -1669,7 +1669,7 @@ describe("DB operations", () => {
             "/apps/test/test_function/some/path", { ".function": null }), {
           "code": 405,
           "error_message": "Invalid function tree: /.function",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.getOwner("/apps/test/test_function/some/path"), functionTreeBefore);
       })
@@ -1688,7 +1688,7 @@ describe("DB operations", () => {
             }), {
           "code": 402,
           "error_message": "Invalid path: /apps/test/test_function/some/path/.",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
       })
     })
@@ -1719,14 +1719,14 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setRule("/apps/test/test_rule/some/path2", {array: []}), {
           "code": 501,
           "error_message": "Invalid object for states: /array",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         expect(node.db.getRule("/apps/test/test_rule/some/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setRule("/apps/test/test_rule/some/path2", {'.': 'x'}), {
           "code": 501,
           "error_message": "Invalid object for states: /.",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         expect(node.db.getRule("/apps/test/test_rule/some/path2")).to.equal(null)
       })
@@ -1742,7 +1742,7 @@ describe("DB operations", () => {
             }), {
           "code": 504,
           "error_message": "Invalid rule tree: /.rule/write",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleTreeBefore);
       })
@@ -1756,7 +1756,7 @@ describe("DB operations", () => {
             }), {
           "code": 502,
           "error_message": "Invalid path: /apps/test/test_rule/some/path/.",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
       })
     })
@@ -1800,14 +1800,14 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path2", {array: []}), {
           "code": 601,
           "error_message": "Invalid object for states: /array",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         expect(node.db.getOwner("/apps/test/test_owner/some/path2")).to.equal(null)
 
         assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path2", {'.': 'x'}), {
           "code": 601,
           "error_message": "Invalid object for states: /.",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         expect(node.db.getOwner("/apps/test/test_owner/some/path2")).to.equal(null)
       })
@@ -1819,7 +1819,7 @@ describe("DB operations", () => {
         }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
           "code": 604,
           "error_message": "Invalid owner tree: /.owner",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.getOwner("/apps/test/test_owner/some/path"), ownerTreeBefore);
 
@@ -1830,7 +1830,7 @@ describe("DB operations", () => {
         }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
           "code": 604,
           "error_message": "Invalid owner tree: /.owner/owners",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.getOwner("/apps/test/test_owner/some/path"), ownerTreeBefore);
       })
@@ -1850,7 +1850,7 @@ describe("DB operations", () => {
         }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
           "code": 602,
           "error_message": "Invalid path: /apps/test/test_owner/some/path/.",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         });
       })
     })
@@ -1878,7 +1878,7 @@ describe("DB operations", () => {
         }), {
           "code": 201,
           "error_message": "Not a number type: bar or 10",
-          "bandwidth_gas_amount": 0
+          "bandwidth_gas_amount": 1
         })
         expect(node.db.getValue("/apps/test/ai/foo")).to.equal("bar")
       })
@@ -2069,7 +2069,7 @@ describe("DB operations", () => {
                             "result": {
                               "code": 103,
                               "error_message": "No write permission on: /apps/test/test_function_triggering/allowed_path/.last_tx/value",
-                              "bandwidth_gas_amount": 0
+                              "bandwidth_gas_amount": 1
                             }
                           }
                         },
@@ -2277,7 +2277,7 @@ describe("DB operations", () => {
             "1": {
               "code": 201,
               "error_message": "Not a number type: bar or 10",
-              "bandwidth_gas_amount": 0
+              "bandwidth_gas_amount": 1
             }
           }
         })
@@ -2503,7 +2503,7 @@ describe("DB operations", () => {
                                 "result": {
                                   "code": 103,
                                   "error_message": "No write permission on: /apps/test/test_function_triggering/allowed_path/.last_tx/value",
-                                  "bandwidth_gas_amount": 0,
+                                  "bandwidth_gas_amount": 1,
                                 }
                               }
                             },
@@ -2567,8 +2567,9 @@ describe("DB operations", () => {
       it("returns code 0 for executable transaction", () => {
         expect(executableTx.extra).to.not.equal(undefined);
         expect(executableTx.extra.executed_at).to.equal(null);
-        assert.deepEqual(node.db.executeTransaction(executableTx, node.bc.lastBlockNumber() + 1), {
+        assert.deepEqual(node.db.executeTransaction(executableTx, false, true, node.bc.lastBlockNumber() + 1), {
           code: 0,
+          gas_amount_charged: 16,
           bandwidth_gas_amount: 1,
           gas_amount_total: {
             bandwidth: {
@@ -2591,9 +2592,9 @@ describe("DB operations", () => {
       });
 
       it("returns error code for object transaction", () => {
-        assert.deepEqual(node.db.executeTransaction(objectTx, node.bc.lastBlockNumber() + 1), {
+        assert.deepEqual(node.db.executeTransaction(objectTx, false, true, node.bc.lastBlockNumber() + 1), {
           code: 21,
-          error_message: "[executeTransaction] Not executable transaction: {\"tx_body\":{\"operation\":{\"type\":\"SET_VALUE\",\"ref\":\"/apps/test/some/path/for/tx\",\"value\":\"some value\"},\"gas_price\":1000000,\"nonce\":-1,\"timestamp\":1568798344000},\"signature\":\"0x8b07b9ba72d969396c460faee6959b1b89b61fa049e116fd81686224fffd4fb19a879b401552e0c07bc211a7ba7cbb99e2ac32922e6f3c118caf183c2b351a7527ad5322e51d5f8405b2751255ca012008894a7e2e7673232fba1490a9fb35671b\",\"hash\":\"0x8b07b9ba72d969396c460faee6959b1b89b61fa049e116fd81686224fffd4fb1\",\"address\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}",
+          error_message: "[precheckTransaction] Not executable transaction: {\"tx_body\":{\"operation\":{\"type\":\"SET_VALUE\",\"ref\":\"/apps/test/some/path/for/tx\",\"value\":\"some value\"},\"gas_price\":1000000,\"nonce\":-1,\"timestamp\":1568798344000},\"signature\":\"0x8b07b9ba72d969396c460faee6959b1b89b61fa049e116fd81686224fffd4fb19a879b401552e0c07bc211a7ba7cbb99e2ac32922e6f3c118caf183c2b351a7527ad5322e51d5f8405b2751255ca012008894a7e2e7673232fba1490a9fb35671b\",\"hash\":\"0x8b07b9ba72d969396c460faee6959b1b89b61fa049e116fd81686224fffd4fb1\",\"address\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}",
           bandwidth_gas_amount: 0
         });
         assert.deepEqual(objectTx.extra, undefined);
@@ -2611,8 +2612,9 @@ describe("DB operations", () => {
           timestamp: 1568798344000,
         };
         const maxHeightTx = Transaction.fromTxBody(maxHeightTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(maxHeightTx, node.bc.lastBlockNumber() + 1), {
+        assert.deepEqual(node.db.executeTransaction(maxHeightTx, false, true, node.bc.lastBlockNumber() + 1), {
           code: 0,
+          gas_amount_charged: 16,
           bandwidth_gas_amount: 1,
           gas_amount_total: {
             bandwidth: {
@@ -2642,10 +2644,23 @@ describe("DB operations", () => {
           timestamp: 1568798344000,
         };
         const overHeightTx = Transaction.fromTxBody(overHeightTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(overHeightTx, node.bc.lastBlockNumber() + 1), {
+        assert.deepEqual(node.db.executeTransaction(overHeightTx, false, true, node.bc.lastBlockNumber() + 1), {
           code: 23,
           error_message: "Out of tree height limit (21 > 20)",
-          bandwidth_gas_amount: 0,
+          gas_amount_charged: 0,
+          bandwidth_gas_amount: 1,
+          gas_cost_total: 0,
+          gas_amount_total: {
+            bandwidth: {
+              app: {
+                test: 1
+              },
+              service: 0
+            },
+            state: {
+              service: 0
+            }
+          }
         });
       });
 
@@ -2665,11 +2680,23 @@ describe("DB operations", () => {
         }
         const tempDb = node.createTempDb(node.db.stateVersion, 'CONSENSUS_UNIT_TEST', node.bc.lastBlockNumber());
         tempDb.writeDatabase(
+          [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.ACCOUNTS, node.account.address, PredefinedDbPaths.BALANCE],
+          1000000000);
+        tempDb.writeDatabase(
             [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.TRANSFER, node.account.address, addr],
             valueObj);
         node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
         expect(node.db.getStateUsageAtPath('/')[StateInfoProperties.TREE_BYTES]).to.be.lessThan(SERVICE_STATE_BUDGET);
         
+        const expectedGasAmountTotal = {
+          bandwidth: {
+            service: 3000,
+            app: {},
+          },
+          state: {
+            service: 2557560
+          } 
+        };
         const overSizeTxBody = {
           operation: {
             type: 'SET',
@@ -2685,13 +2712,14 @@ describe("DB operations", () => {
             ref: `/manage_app/app_${i}/create/${i}`,
             value: { admin: { [node.account.address]: true } }
           });
+          expectedGasAmountTotal.bandwidth.app[`app_${i}`] = 2;
         }
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
-          "code": 25,
-          "error_message": "Exceeded state budget limit for services (10382594 > 10000000)",
-          "bandwidth_gas_amount": 0
-        });
+        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
+        assert.deepEqual(res.code, 25);
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (10381522 > 10000000)");
+        assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
+        assert.deepEqual(res.gas_cost_total, 2.5605599999999997);
       });
 
       it("cannot exceed apps state budget", () => {
@@ -2713,11 +2741,14 @@ describe("DB operations", () => {
           timestamp: 1568798344000,
         };
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
-          code: 26,
-          error_message: "Exceeded state budget limit for apps (9287388 > 9000000)",
-          bandwidth_gas_amount: 0,
+        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
+        assert.deepEqual(res.code, 26);
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for apps (9287388 > 9000000)");
+        assert.deepEqual(res.gas_amount_total, {
+          bandwidth: { service: 0, app: { test: 1 } },
+          state: { service: 16, app: { test: 9262132 } }
         });
+        assert.deepEqual(res.gas_cost_total, 0);
       });
 
       it('cannot exceed per-app state budget', () => {
@@ -2734,7 +2765,7 @@ describe("DB operations", () => {
             nonce: -1,
             timestamp: timestamp++,
           }, node.account.private_key);
-          const stakeRes = node.db.executeTransaction(stakeTx, node.bc.lastBlockNumber() + 1);
+          const stakeRes = node.db.executeTransaction(stakeTx, false, true, node.bc.lastBlockNumber() + 1);
           assert.deepEqual(stakeRes.code, 0);
           const createAppTx = Transaction.fromTxBody({
             operation: {
@@ -2746,7 +2777,7 @@ describe("DB operations", () => {
             nonce: -1,
             timestamp: timestamp++,
           }, node.account.private_key);
-          const createAppRes = node.db.executeTransaction(createAppTx, node.bc.lastBlockNumber() + 1);
+          const createAppRes = node.db.executeTransaction(createAppTx, false, true, node.bc.lastBlockNumber() + 1);
           assert.deepEqual(createAppRes.code, 0);
         }
         // Send 1/10 + 1 budget tx for one of them
@@ -2768,11 +2799,14 @@ describe("DB operations", () => {
           timestamp
         };
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
-          code: 31,
-          error_message: "Exceeded state budget limit for app app_0 (1084406 > 818181.8181818182)",
-          bandwidth_gas_amount: 0,
+        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
+        assert.deepEqual(res.code, 31);
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for app app_0 (1084406 > 818181.8181818182)");
+        assert.deepEqual(res.gas_amount_total, {
+          bandwidth: { service: 0, app: { app_0: 1 } },
+          state: { service: 16, app: { app_0: 1082132 } }
         });
+        assert.deepEqual(res.gas_cost_total, 0);
       });
 
       it('cannot exceed 10% free tier for state budget', () => {
@@ -2787,7 +2821,7 @@ describe("DB operations", () => {
           nonce: -1,
           timestamp: 1568798344000
         }, node.account.private_key);
-        const createAppRes = node.db.executeTransaction(createAppTx, node.bc.lastBlockNumber() + 1);
+        const createAppRes = node.db.executeTransaction(createAppTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(createAppRes.code, 0);
         // Send over 10% budget tx
         const overSizeTree = {};
@@ -2808,11 +2842,14 @@ describe("DB operations", () => {
           timestamp: 1568798344001
         };
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(overSizeTx, node.bc.lastBlockNumber() + 1), {
-          code: 29,
-          error_message: "Exceeded state budget limit for free tier (1984406 > 1000000)",
-          bandwidth_gas_amount: 0,
+        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
+        assert.deepEqual(res.code, 29);
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for free tier (1984406 > 1000000)");
+        assert.deepEqual(res.gas_amount_total, {
+          bandwidth: { service: 0, app: { app_0: 1 } },
+          state: { service: 16, app: { app_0: 1982132 } }
         });
+        assert.deepEqual(res.gas_cost_total, 0);
       });
     });
   });
@@ -3702,7 +3739,7 @@ describe("DB sharding config", () => {
       assert.deepEqual(node.db.setValue("/apps/test/test_sharding/shards/enabled_shard/path", 20), {
         "code": 104,
         "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
-        "bandwidth_gas_amount": 0
+        "bandwidth_gas_amount": 1
       });
     })
 
@@ -3756,7 +3793,7 @@ describe("DB sharding config", () => {
       assert.deepEqual(node.db.incValue("/apps/test/test_sharding/shards/enabled_shard/path", 5), {
         "code": 104,
         "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
-        "bandwidth_gas_amount": 0
+        "bandwidth_gas_amount": 1
       });
     })
 
@@ -3810,7 +3847,7 @@ describe("DB sharding config", () => {
       assert.deepEqual(node.db.decValue("/apps/test/test_sharding/shards/enabled_shard/path", 5), {
         "code": 104,
         "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
-        "bandwidth_gas_amount": 0
+        "bandwidth_gas_amount": 1
       });
     })
 

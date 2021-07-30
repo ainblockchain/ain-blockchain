@@ -265,7 +265,7 @@ describe('Transaction', () => {
       for (currentNonce = node.getNonce() - 1; currentNonce < 50; currentNonce++) {
         delete txBodyForNode.nonce;
         tx2 = getTransaction(node, txBodyForNode);
-        node.db.executeTransaction(tx2, node.bc.lastBlockNumber() + 1);
+        node.db.executeTransaction(tx2, false, true, node.bc.lastBlockNumber() + 1);
         await CommonUtil.sleep(1);
       }
       expect(tx2).to.not.equal(null);

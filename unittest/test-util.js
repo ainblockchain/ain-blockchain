@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require("fs");
 const syncRequest = require('sync-request');
 const { Block } = require('../blockchain/block');
+const DB = require('../db');
 const { CURRENT_PROTOCOL_VERSION, StateVersions } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
@@ -63,10 +64,11 @@ function getTransaction(node, inputTxBody) {
 
 function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
-  const finalDb = node.createDb(node.stateManager.getFinalVersion(),
-      `${StateVersions.FINAL}:${lastBlock.number + 1}`, node.bc, node.tp, true);
-  finalDb.executeTransactionList(votes);
-  finalDb.executeTransactionList(txs, lastBlock.number + 1);
+  const finalDb = DB.create(
+      node.stateManager.getFinalVersion(), `${StateVersions.FINAL}:${lastBlock.number + 1}`,
+      node.bc, node.tp, true, false, lastBlock.number, node.stateManager);
+  finalDb.executeTransactionList(votes, true);
+  finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1);
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   node.addNewBlock(Block.create(
       lastBlock.hash, votes, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
@@ -93,7 +95,7 @@ async function waitUntilTxFinalized(servers, txHash) {
         unchecked.delete(server);
       }
     }
-    await CommonUtil.sleep(200);
+    await CommonUtil.sleep(500);
     iterCount++;
   }
 }

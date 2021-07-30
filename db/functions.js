@@ -617,7 +617,6 @@ class Functions {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
       logger.error(`  ===> _collectFee failed: ${JSON.stringify(result)}`);
-      // TODO(liayoo): Return error, check in setValue(), revert changes.
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
   }
