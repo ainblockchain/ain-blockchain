@@ -279,10 +279,10 @@ class Blockchain {
 
   /**
     * Returns a section of the chain up to a maximuim of length CHAIN_SEGMENT_LENGTH, starting from
-    * the `from` block number up till `to` block number.
+    * the `from` block number (included) up till `to` block number (excluded).
     *
-    * @param {Number} from - The lowest block number to get
-    * @param {Number} to - The highest block number to geet
+    * @param {Number} from - The lowest block number to get (included)
+    * @param {Number} to - The highest block number to geet (excluded)
     * @return {list} A list of Blocks, up to a maximuim length of CHAIN_SEGMENT_LENGTH
     */
   getBlockList(from, to) {
@@ -305,7 +305,7 @@ class Blockchain {
     if (to - from > CHAIN_SEGMENT_LENGTH) { // NOTE: To prevent large query.
       to = from + CHAIN_SEGMENT_LENGTH;
     }
-    const blockPaths = FileUtil.getBlockPathList(this.blockchainPath, from, to - from + 1);
+    const blockPaths = FileUtil.getBlockPathList(this.blockchainPath, from, to - from);
     blockPaths.forEach((blockPath) => {
       blockList.push(Block.parse(FileUtil.readCompressedJson(blockPath)));
     });
