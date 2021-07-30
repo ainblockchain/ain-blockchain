@@ -929,38 +929,50 @@ class DB {
     return { result_list: resultList };
   }
 
+  static updateGasAmountTotal(tx, gasAmountTotal, executionResult) {
+    gasAmountTotal.bandwidth = CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, executionResult);
+    executionResult.gas_amount_total = gasAmountTotal;
+    tx.setExtraField('gas', gasAmountTotal);
+  }
+
   executeOperation(op, auth, timestamp, tx) {
+    const gasAmountTotal = {
+      bandwidth: { service: 0 },
+      state: { service: 0 }
+    };
+    const result = {
+      gas_amount_total: gasAmountTotal,
+      gas_cost_total: 0
+    };
     if (!op) {
-      return CommonUtil.returnTxResult(11, `Invalid operation: ${op}`, 1);
+      Object.assign(result, CommonUtil.returnTxResult(11, `Invalid operation: ${op}`, 1));
+      DB.updateGasAmountTotal(tx, gasAmountTotal, result);
+      return result;
     }
     if (tx && auth && auth.addr && !auth.fid) {
       const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
-        return CommonUtil.returnTxResult(
-          12, `Invalid nonce (!== ${nonce}) of transaction: ${JSON.stringify(tx)}`, 1);
+        Object.assign(result, CommonUtil.returnTxResult(
+            12, `Invalid nonce (!== ${nonce}) of transaction: ${JSON.stringify(tx)}`, 1));
+        DB.updateGasAmountTotal(tx, gasAmountTotal, result);
+        return result;
       }
       if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
-        return CommonUtil.returnTxResult(
-          13, `Invalid timestamp (<= ${accountTimestamp}) of transaction: ` +
-          `${JSON.stringify(tx)}`, 1);
+        Object.assign(result, CommonUtil.returnTxResult(
+            13, `Invalid timestamp (<= ${accountTimestamp}) of transaction: ${JSON.stringify(tx)}`, 1));
+        DB.updateGasAmountTotal(tx, gasAmountTotal, result);
+        return result;
       }
     }
-    let result;
     const allStateUsageBefore = this.getAllStateUsages();
     const stateUsagePerAppBefore = this.getStateUsagePerApp(op);
     if (op.type === WriteDbOperations.SET) {
-      result = this.executeMultiSetOperation(op.op_list, auth, timestamp, tx);
+      Object.assign(result, this.executeMultiSetOperation(op.op_list, auth, timestamp, tx));
     } else {
-      result = this.executeSingleSetOperation(op, auth, timestamp, tx);
+      Object.assign(result, this.executeSingleSetOperation(op, auth, timestamp, tx));
     }
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
-    const gasAmountTotal = {
-      bandwidth: CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, result),
-      state: { service: 0 }
-    };
-    tx.setExtraField('gas', gasAmountTotal);
-    result.gas_amount_total = gasAmountTotal;
-    result.gas_cost_total = 0;
+    DB.updateGasAmountTotal(tx, gasAmountTotal, result);
     if (!CommonUtil.isFailedTx(result)) {
       const {
         [StateInfoProperties.TREE_HEIGHT]: treeHeight,
