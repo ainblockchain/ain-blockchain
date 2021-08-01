@@ -2247,9 +2247,9 @@ describe("state-util", () => {
         ".tree_size": 3,
         ".tree_size:label1": 1,
         ".tree_size:label2": 1,
-        ".tree_bytes": 560,
-        ".tree_bytes:label1": 180,
-        ".tree_bytes:label2": 180,
+        ".tree_bytes": 528,
+        ".tree_bytes:label1": 172,
+        ".tree_bytes:label2": 172,
         label1: "value1",
         label2: "value2"
       });
@@ -2526,10 +2526,10 @@ describe("state-util", () => {
       expect(anotherNode.getTreeSize()).to.equal(0);
       expect(testNode.getTreeSize()).to.equal(0);
       // Checks tree bytes.
-      expect(fooNode.getTreeBytes()).to.equal(174);
-      expect(bazNode.getTreeBytes()).to.equal(174);
-      expect(level1Node.getTreeBytes()).to.equal(544);
-      expect(level0Node.getTreeBytes()).to.equal(732);
+      expect(fooNode.getTreeBytes()).to.equal(166);
+      expect(bazNode.getTreeBytes()).to.equal(166);
+      expect(level1Node.getTreeBytes()).to.equal(504);
+      expect(level0Node.getTreeBytes()).to.equal(676);
       expect(anotherNode.getTreeBytes()).to.equal(0);
       expect(testNode.getTreeBytes()).to.equal(0);
     });
@@ -2583,9 +2583,9 @@ describe("state-util", () => {
       expect(level0Node.getTreeSize()).to.equal(7);
       expect(rootNode.getTreeSize()).to.equal(8);
       // Checks tree bytes.
-      expect(level1Node.getTreeBytes()).to.equal(338);
-      expect(level0Node.getTreeBytes()).to.equal(660);
-      expect(rootNode.getTreeBytes()).to.equal(840);
+      expect(level1Node.getTreeBytes()).to.equal(322);
+      expect(level0Node.getTreeBytes()).to.equal(620);
+      expect(rootNode.getTreeBytes()).to.equal(792);
     });
 
     it("updates proof hashes for multiple root paths", () => {
