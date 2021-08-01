@@ -953,13 +953,13 @@ class DB {
       const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
       if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
         Object.assign(result, CommonUtil.returnTxResult(
-            12, `Invalid nonce (!== ${nonce}) of transaction: ${JSON.stringify(tx)}`, 1));
+            12, `Invalid nonce: ${tx.tx_body.nonce} !== ${nonce}`, 1));
         DB.updateGasAmountTotal(tx, gasAmountTotal, result);
         return result;
       }
       if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
         Object.assign(result, CommonUtil.returnTxResult(
-            13, `Invalid timestamp (<= ${accountTimestamp}) of transaction: ${JSON.stringify(tx)}`, 1));
+            13, `Invalid timestamp: ${tx.tx_body.timestamp} <= ${accountTimestamp}`, 1));
         DB.updateGasAmountTotal(tx, gasAmountTotal, result);
         return result;
       }
@@ -1290,7 +1290,7 @@ class DB {
     }
     if (!tx.tx_body) {
       return CommonUtil.logAndReturnTxResult(
-          logger, 22, `[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx, null, 2)}`, 0);
+          logger, 22, `[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx)}`, 0);
     }
     const billing = tx.tx_body.billing;
     const op = tx.tx_body.operation;
@@ -1316,7 +1316,7 @@ class DB {
     if (restoreIfFails) {
       if (!this.backupDb()) {
         return CommonUtil.logAndReturnTxResult(
-          logger, 3, `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`, 0);
+          logger, 3, `[${LOG_HEADER}] Failed to backup db for tx: ${tx.hash}`, 0);
       }
     }
     // Record when the tx was executed.
