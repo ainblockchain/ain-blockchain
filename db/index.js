@@ -1177,10 +1177,11 @@ class DB {
       }
     }
     let balance = this.getBalance(billedTo);
-    if (balance < gasAmountChargedByTransfer) {
+    const gasCost = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer);
+    if (balance < gasCost) {
       Object.assign(executionResult, {
         code: 36,
-        error_message: `Failed to collect gas fee: balance too low (${balance} / ${gasAmountChargedByTransfer})`
+        error_message: `Failed to collect gas fee: balance too low (${balance} / ${gasCost})`
       });
       this.restoreDb(); // Revert changes made by the tx operations
       balance = this.getBalance(billedTo);
