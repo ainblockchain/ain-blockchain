@@ -70,8 +70,7 @@ class StateNode {
         sizeof(this.proofHash) +
         sizeof(this.treeHeight) +
         sizeof(this.treeSize) +
-        sizeof(this.treeBytes) +
-        (this.numParents() + this.numChildren()) * JS_REF_SIZE_IN_BYTES;
+        sizeof(this.treeBytes);
   }
 
   static fromJsObject(obj, version) {
