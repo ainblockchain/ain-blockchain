@@ -118,14 +118,15 @@ class BlockchainNode {
 
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
-    const needToLoadBlocks = this.bc.init(isFirstNode, latestSnapshotBlockNumber);
+    const { wasBlockDirEmpty, isGenesisStart } =
+        this.bc.init(isFirstNode, latestSnapshotBlockNumber);
 
     // 4. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
     let lastBlockWithoutProposal = null;
-    if (needToLoadBlocks) {
+    if (!wasBlockDirEmpty || isGenesisStart) {
       lastBlockWithoutProposal =
-          this.loadAndExecuteChainOnDb(isFirstNode, latestSnapshotBlockNumber, startingDb);
+          this.loadAndExecuteChainOnDb(latestSnapshotBlockNumber, isGenesisStart, startingDb);
     }
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
 
@@ -423,7 +424,8 @@ class BlockchainNode {
           db.writeDatabase([...receiptsPrefixFullPath, tx.hash], null);
         });
       } else {
-        logger.error(`[${LOG_HEADER}] block of number ${blockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS} doesn't exist`);
+        logger.error(
+            `[${LOG_HEADER}] Non-existing block ${blockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS}.`);
       }
     }
   }
@@ -548,9 +550,10 @@ class BlockchainNode {
       process.exit(1);
     }
     this.tp.cleanUpForNewBlock(block);
+    logger.info(`[${LOG_HEADER}] Successfully executed block ${block.number} on DB.`);
   }
 
-  loadAndExecuteChainOnDb(isFirstNode, latestSnapshotBlockNumber, db) {
+  loadAndExecuteChainOnDb(latestSnapshotBlockNumber, isGenesisStart, db) {
     const LOG_HEADER = 'loadAndExecuteChainOnDb';
 
     let lastBlockWithoutProposal = null;
@@ -561,18 +564,18 @@ class BlockchainNode {
     for (let number = fromBlockNumber; number < numBlockFiles; number++) {
       const block = this.bc.loadBlock(number);
       if (!block) {
-        logger.error(`[${LOG_HEADER}] Failed to load block of number ${number}.`);
+        logger.error(`[${LOG_HEADER}] Failed to load block ${number}.`);
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
         process.exit(1);
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
       if (!Blockchain.validateBlock(block, prevBlockNumber, prevBlockHash)) {
-        logger.error(`[${LOG_HEADER}] Failed to validate block of number ${number}.`);
+        logger.error(`[${LOG_HEADER}] Failed to validate block ${number}.`);
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
         process.exit(1);
       }
       // NOTE(minsulee2): Deal with the case the only genesis block was generated.
-      if (!isFirstNode && number === numBlockFiles - 1) {
+      if (!isGenesisStart && number === numBlockFiles - 1) {
         lastBlockWithoutProposal = block;
         this.bc.deleteBlock(lastBlockWithoutProposal);
       } else {
