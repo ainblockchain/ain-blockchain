@@ -1051,16 +1051,19 @@ class DB {
     if (!path || path === '/') {
       return this.getStateInfo('/');
     }
-    const usages = [
+    const usageList = [
       this.getStateInfo(`/${PredefinedDbPaths.VALUES_ROOT}/${path}`),
       this.getStateInfo(`/${PredefinedDbPaths.RULES_ROOT}/${path}`),
       this.getStateInfo(`/${PredefinedDbPaths.FUNCIONS_ROOT}/${path}`),
       this.getStateInfo(`/${PredefinedDbPaths.OWNERS_ROOT}/${path}`)
     ];
-    return usages.reduce((acc, cur) => {
+    const usage = usageList.reduce((acc, cur) => {
       CommonUtil.mergeNumericJsObjects(acc, cur);
       return acc;
     }, {});
+    delete usage[StateInfoProperties.VERSION];
+    delete usage[StateInfoProperties.PROOF_HASH];
+    return usage;
   }
 
   getAllStateUsages() {
