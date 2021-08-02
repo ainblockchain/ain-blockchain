@@ -3662,7 +3662,7 @@ describe('Blockchain Node', () => {
               },
               "state": {
                 "app": {
-                  "test": 1252 // 1044
+                  "test": 1252
                 },
                 "service": 0
               }
