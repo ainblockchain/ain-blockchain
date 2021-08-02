@@ -15,6 +15,7 @@ const {
   PORT,
   BlockchainNodeStates,
   WriteDbOperations,
+  PredefinedDbPaths,
 } = require('../common/constants');
 const { ConsensusStates } = require('../consensus/constants');
 
@@ -123,6 +124,18 @@ app.get('/get_state_proof', (req, res, next) => {
  */
 app.get('/get_state_info', (req, res, next) => {
   const result = node.db.getStateInfo(req.query.ref);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
+    .end();
+});
+
+/**
+ * Returns the state usage of the given app.
+ */
+ app.get('/get_state_usage', (req, res, next) => {
+  const result = req.query.app_name
+      ? node.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${req.query.app_name}`) : null;
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
