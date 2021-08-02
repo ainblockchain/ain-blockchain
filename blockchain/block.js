@@ -129,8 +129,6 @@ class Block {
           `[${LOG_HEADER}] Last votes or last_votes_hash is incorrect for block ${block.hash}`);
       return false;
     }
-    logger.info(
-        `[${LOG_HEADER}] Hash check successfully done for block: ${block.number} / ${block.epoch}`);
     return true;
   }
 
