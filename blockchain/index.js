@@ -23,8 +23,9 @@ class Blockchain {
    */
   init(isFirstNode, latestSnapshotBlockNumber) {
     this.initSnapshotBlockNumber = latestSnapshotBlockNumber;
-    const isBlocksDirEmpty = FileUtil.createBlockchainDir(this.blockchainPath);
-    if (isBlocksDirEmpty) {
+    const wasBlockDirEmpty = FileUtil.createBlockchainDir(this.blockchainPath);
+    let isGenesisStart = false;
+    if (wasBlockDirEmpty) {
       if (isFirstNode) {
         logger.info('\n');
         logger.info('############################################################');
@@ -32,6 +33,7 @@ class Blockchain {
         logger.info('############################################################');
         logger.info('\n');
         this.writeBlock(Block.genesis());
+        isGenesisStart = true;
       } else {
         logger.info('\n');
         logger.info('#############################################################');
@@ -54,7 +56,10 @@ class Blockchain {
         logger.info('\n');
       }
     }
-    return !isBlocksDirEmpty || isFirstNode;
+    return {
+      wasBlockDirEmpty,
+      isGenesisStart,
+    };
   }
 
   /**
@@ -128,7 +133,10 @@ class Blockchain {
   }
 
   addBlockToChain(block) {
+    const LOG_HEADER = 'addBlockToChain';
+
     this.chain.push(block);
+    logger.info(`[${LOG_HEADER}] Successfully added block ${block.number} to chain.`);
   }
 
   addNewBlockToChain(newBlock) {
