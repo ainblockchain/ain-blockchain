@@ -50,13 +50,13 @@ describe('Blockchain', () => {
     const data = 'foo';
     node1.bc.addNewBlock(Block.create(
         data, node1, node1.bc.lastBlockNumber() + 1, node1.bc.lastBlock(), 0, 0));
-    expect(Blockchain.isValidChain(node1.bc.chain)).to.equal(true);
+    expect(Blockchain.validateChainSegment(node1.bc.chain)).to.equal(true);
   });
   */
 
   it('invalidates chain with corrupt genesis block', () => {
     node1.bc.chain[0].transactions = ':(';
-    expect(Blockchain.isValidChain(node1.bc.chain)).to.equal(false);
+    expect(Blockchain.validateChainSegment(node1.bc.chain)).to.equal(false);
   });
 
   it('invalidates corrupt chain', () => {
@@ -69,7 +69,7 @@ describe('Blockchain', () => {
         lastBlock.hash, [], [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
         node1.account.address, {}, 0, 0));
     node1.bc.chain[node1.bc.chain.length - 1].transactions = ':(';
-    expect(Blockchain.isValidChain(node1.bc.chain)).to.equal(false);
+    expect(Blockchain.validateChainSegment(node1.bc.chain)).to.equal(false);
   });
 
   describe('with lots of blocks', () => {
