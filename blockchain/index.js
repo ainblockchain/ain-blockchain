@@ -1,17 +1,14 @@
-const rimraf = require('rimraf');
 const path = require('path');
 const fs = require('fs');
 const logger = require('../logger')('BLOCKCHAIN');
 const { Block } = require('./block');
 const FileUtil = require('../common/file-util');
 const {
-  SYNC_MODE,
   CHAINS_DIR,
-  SyncModeOptions,
+  CHAIN_SEGMENT_LENGTH,
+  ON_MEMORY_CHAIN_LENGTH,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
-const CHAIN_SEGMENT_LENGTH = 20;
-const ON_MEM_CHAIN_LENGTH = 20;
 
 class Blockchain {
   constructor(basePath) {
@@ -22,17 +19,16 @@ class Blockchain {
   }
 
   init(isFirstNode, latestSnapshotBlockNumber) {
-    let lastBlockWithoutProposal;
     this.initSnapshotBlockNumber = latestSnapshotBlockNumber;
-    if (FileUtil.createBlockchainDir(this.blockchainPath)) {
+    const isBlocksDirEmpty = FileUtil.createBlockchainDir(this.blockchainPath);
+    if (isBlocksDirEmpty) {
       if (isFirstNode) {
         logger.info('\n');
         logger.info('############################################################');
         logger.info('## Starting FIRST-NODE blockchain with a GENESIS block... ##');
         logger.info('############################################################');
         logger.info('\n');
-        this.chain.push(Block.genesis());
-        this.writeChain();
+        this.writeBlock(Block.genesis());
       } else {
         logger.info('\n');
         logger.info('#############################################################');
@@ -54,17 +50,8 @@ class Blockchain {
         logger.info('################################################################');
         logger.info('\n');
       }
-      const newChain = this.loadChain(latestSnapshotBlockNumber);
-      if (newChain) {
-        // NOTE(minsulee2): Deal with the case the only genesis block was generated.
-        if (newChain.length > 1) {
-          lastBlockWithoutProposal = newChain.pop();
-          this.deleteBlock(lastBlockWithoutProposal);
-        }
-        this.chain = newChain;
-      }
     }
-    return lastBlockWithoutProposal;
+    return !isBlocksDirEmpty || isFirstNode;
   }
 
   /**
@@ -93,11 +80,11 @@ class Blockchain {
     */
   getBlockByNumber(number) {
     if (number === undefined || number === null) return null;
-    const numOrNaN = CommonUtil.toNumberOrNaN(number);
-    if (!CommonUtil.isNumber(numOrNaN)) return null;
-    const blockPath = FileUtil.getBlockPath(this.blockchainPath, numOrNaN);
-    if (!blockPath || numOrNaN > this.lastBlockNumber() - ON_MEM_CHAIN_LENGTH) {
-      return this.chain.find((block) => block.number === numOrNaN);
+    const blockNumber = CommonUtil.toNumberOrNaN(number);
+    if (!CommonUtil.isNumber(blockNumber)) return null;
+    const blockPath = FileUtil.getBlockPath(this.blockchainPath, blockNumber);
+    if (!blockPath || blockNumber > this.lastBlockNumber() - ON_MEMORY_CHAIN_LENGTH) {
+      return this.chain.find((block) => block.number === blockNumber);
     } else {
       return Block.parse(FileUtil.readCompressedJson(blockPath));
     }
@@ -137,6 +124,10 @@ class Blockchain {
     return lastBlock.timestamp;
   }
 
+  addBlockToChain(block) {
+    this.chain.push(block);
+  }
+
   addNewBlockToChain(newBlock) {
     const LOG_HEADER = 'addNewBlockToChain';
 
@@ -151,10 +142,10 @@ class Blockchain {
     if (!(newBlock instanceof Block)) {
       newBlock = Block.parse(newBlock);
     }
-    this.chain.push(newBlock);
-    this.writeChain();
-    // Keep up to latest ON_MEM_CHAIN_LENGTH blocks
-    while (this.chain.length > ON_MEM_CHAIN_LENGTH) {
+    this.addBlockToChain(newBlock);
+    this.writeBlock(newBlock);
+    // Keep up to latest ON_MEMORY_CHAIN_LENGTH blocks
+    while (this.chain.length > ON_MEMORY_CHAIN_LENGTH) {
       this.chain.shift();
     }
     return true;
@@ -193,12 +184,6 @@ class Blockchain {
       }
     }
     return true;
-  }
-
-  writeChain() {
-    for (let i = 0; i < this.chain.length; i++) {
-      this.writeBlock(this.chain[i]);
-    }
   }
 
   writeBlock(block) {
@@ -248,33 +233,16 @@ class Blockchain {
     return validBlocks;
   }
 
-  /**
-   * Reads the block files at the chains n2b directory and returns a list of blocks starting from
-   * the latestSnapshotBlockNumber + 1.
-   * @param {Number} latestSnapshotBlockNumber
-   * @returns {list} A list of Blocks
-   */
-  loadChain(latestSnapshotBlockNumber) {
-    const chainPath = this.blockchainPath;
-    const newChain = [];
-    const fromBlockNumber = SYNC_MODE === SyncModeOptions.FAST ? latestSnapshotBlockNumber + 1 : 0;
-    const numBlockFiles = FileUtil.getNumBlockFiles(chainPath);
-    const blockPaths =
-        FileUtil.getBlockPathList(chainPath, fromBlockNumber, numBlockFiles - fromBlockNumber + 1);
+  getNumBlockFiles() {
+    return FileUtil.getNumBlockFiles(this.blockchainPath);
+  }
 
-    blockPaths.forEach((blockPath) => {
-      const block = Block.parse(FileUtil.readCompressedJson(blockPath));
-      newChain.push(block);
-    });
-
-    if (!Blockchain.isValidChain(newChain, latestSnapshotBlockNumber)) {
-      logger.error(`Removing invalid chain of size ${newChain.length}`);
-      rimraf.sync(chainPath + '/*');
+  loadBlock(blockNumber) {
+    const blockPath = FileUtil.getBlockPath(this.blockchainPath, blockNumber);
+    if (!fs.existsSync(blockPath)) {
       return null;
     }
-
-    logger.info(`Successfully loaded chain of size ${newChain.length}`);
-    return newChain;
+    return Block.parse(FileUtil.readCompressedJson(blockPath));
   }
 
   /**

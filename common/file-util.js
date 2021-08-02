@@ -87,24 +87,20 @@ class FileUtil {
   static createBlockchainDir(chainPath) {
     const n2bPath = path.join(chainPath, CHAINS_N2B_DIR_NAME);
     const h2nPath = path.join(chainPath, CHAINS_H2N_DIR_NAME);
-    let isBlockEmpty = true;
-
+    let isBlocksDirEmpty = true;
     if (!fs.existsSync(chainPath)) {
       fs.mkdirSync(chainPath, {recursive: true});
     }
-
     if (!fs.existsSync(n2bPath)) {
       fs.mkdirSync(n2bPath);
     }
-
     if (!fs.existsSync(h2nPath)) {
       fs.mkdirSync(h2nPath);
     }
-
     if (fs.readdirSync(n2bPath).length > 0) {
-      isBlockEmpty = false;
+      isBlocksDirEmpty = false;
     }
-    return isBlockEmpty;
+    return isBlocksDirEmpty;
   }
 
   static createSnapshotDir(snapshotPath) {
