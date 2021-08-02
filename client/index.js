@@ -134,8 +134,7 @@ app.get('/get_state_info', (req, res, next) => {
  * Returns the state usage of the given app.
  */
  app.get('/get_state_usage', (req, res, next) => {
-  const result = req.query.app_name
-      ? node.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${req.query.app_name}`) : null;
+  const result = node.getStateUsage(req.query.app_name);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})

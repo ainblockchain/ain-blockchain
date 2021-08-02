@@ -337,8 +337,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_getStateUsage: function(args, done) {
-      const result = args.app_name
-          ? p2pServer.node.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${args.app_name}`) : null;
+      const result = p2pServer.node.getStateUsage(args.app_name);
       done(null, addProtocolVersion({result}));
     },
 

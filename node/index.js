@@ -287,6 +287,11 @@ class BlockchainNode {
     return shardingInfo;
   }
 
+  getStateUsage(appName) {
+    if (!appName) return null;
+    return this.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
+  }
+
   getTxPoolSizeUtilization(address) {
     const result = {};
     if (address) { // Per account
