@@ -556,6 +556,8 @@ class BlockchainNode {
     let lastBlockWithoutProposal = null;
     const numBlockFiles = this.bc.getNumBlockFiles();
     const fromBlockNumber = SYNC_MODE === SyncModeOptions.FAST ? latestSnapshotBlockNumber + 1 : 0;
+    let prevBlockNumber = latestSnapshotBlockNumber;
+    let prevBlockHash = null;
     for (let number = fromBlockNumber; number < numBlockFiles; number++) {
       const block = this.bc.loadBlock(number);
       if (!block) {
@@ -563,9 +565,12 @@ class BlockchainNode {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
         process.exit(1);
       }
-      logger.info(
-          `[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
-      // TODO(platfowner): Validate block.
+      logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
+      if (!Blockchain.validateBlock(block, prevBlockNumber, prevBlockHash)) {
+        logger.error(`[${LOG_HEADER}] Failed to validate block of number ${number}.`);
+        // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+        process.exit(1);
+      }
       // NOTE(minsulee2): Deal with the case the only genesis block was generated.
       if (!isFirstNode && number === numBlockFiles - 1) {
         lastBlockWithoutProposal = block;
@@ -576,6 +581,8 @@ class BlockchainNode {
           this.bc.addBlockToChain(block)
         }
       }
+      prevBlockNumber = block.number;
+      prevBlockHash = block.hash;
     }
 
     return lastBlockWithoutProposal;

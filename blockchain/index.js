@@ -18,6 +18,9 @@ class Blockchain {
     this.initSnapshotBlockNumber = -1;
   }
 
+  /**
+   * Initializes the blockchain and returns whether there are block files to load.
+   */
   init(isFirstNode, latestSnapshotBlockNumber) {
     this.initSnapshotBlockNumber = latestSnapshotBlockNumber;
     const isBlocksDirEmpty = FileUtil.createBlockchainDir(this.blockchainPath);
@@ -151,37 +154,45 @@ class Blockchain {
     return true;
   }
 
-  static isValidChain(chain, latestSnapshotBlockNumber) {
-    if (!chain.length) {
-      return true;
-    }
-    const firstBlock = Block.parse(chain[0]);
-    if (!firstBlock) {
+  static validateBlock(block, prevBlockNumber = null, prevBlockHash = null) {
+    const LOG_HEADER = 'loadAndExecuteChainOnDb';
+
+    if (prevBlockNumber != null && block.number !== prevBlockNumber + 1) {
+      logger.error(`Invalid block number (expected: ${prevBlockNumber}) of block: ${block.number}`);
       return false;
     }
-    if (latestSnapshotBlockNumber > 0 && latestSnapshotBlockNumber + 1 !== firstBlock.number) {
-      logger.error(`Missing blocks between ${latestSnapshotBlockNumber + 1} and ${firstBlock.number}`);
+    if (prevBlockHash !== null && block.last_hash !== prevBlockHash) {
+      logger.error(
+          `Invalid block last_hash (expected: ${prevBlockHash}) of block: ${block.last_hash}`);
       return false;
     }
-    if (firstBlock.number === 0 && firstBlock.hash !== Block.genesis().hash) {
-      logger.error(`Invalid genesis block: ${firstBlock}\n${Block.genesis()}`);
+    if (!Block.validateHashes(block)) {
+      logger.error(`Invalid block hashes of block: ${block.number}`);
       return false;
     }
-    return Blockchain.isValidChainSegment(chain);
+    logger.info(`[${LOG_HEADER}] Successfully validated block: ${block.number} / ${block.epoch}`);
+    return true;
   }
 
-  static isValidChainSegment(chainSegment) {
-    if (chainSegment.length) {
-      if (!Block.validateHashes(chainSegment[0])) {
+
+  static validateChainSegment(chainSegment) {
+    let prevBlockNumber;
+    let prevBlockHash;
+    if (chainSegment.length > 0) {
+      const block = chainSegment[0];
+      if (!Blockchain.validateBlock(block)) {
         return false;
       }
+      prevBlockNumber = block.number;
+      prevBlockHash = block.hash;
     }
     for (let i = 1; i < chainSegment.length; i++) {
       const block = chainSegment[i];
-      const lastBlock = Block.parse(chainSegment[i - 1]);
-      if (block.last_hash !== lastBlock.hash || !Block.validateHashes(block)) {
+      if (!Blockchain.validateBlock(block, prevBlockNumber, prevBlockHash)) {
         return false;
       }
+      prevBlockNumber = block.number;
+      prevBlockHash = block.hash;
     }
     return true;
   }
@@ -220,7 +231,7 @@ class Blockchain {
         return validBlocks;
       }
     }
-    if (!Blockchain.isValidChainSegment(chainSegment)) {
+    if (!Blockchain.validateChainSegment(chainSegment)) {
       logger.error(`Invalid chain segment`);
       return validBlocks;
     }
