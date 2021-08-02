@@ -1,7 +1,6 @@
 /* eslint guard-for-in: "off" */
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
-const fs = require('fs');
 const path = require('path');
 const logger = require('../logger')('NODE');
 const {
@@ -9,8 +8,7 @@ const {
   PORT,
   ACCOUNT_INDEX,
   SYNC_MODE,
-  TX_NONCE_ERROR_CODE,
-  TX_TIMESTAMP_ERROR_CODE,
+  ON_MEMORY_CHAIN_LENGTH,
   SNAPSHOTS_ROOT_DIR,
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
   MAX_NUM_SNAPSHOTS,
@@ -111,20 +109,24 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] Initializing node in 'full' mode..`);
     }
 
-    // 2. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
-    logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
-    const lastBlockWithoutProposal = this.bc.init(isFirstNode, latestSnapshotBlockNumber);
-
-    // 3. Initialize DB (with the latest snapshot, if it exists)
+    // 2. Initialize DB (with the latest snapshot, if it exists)
     logger.info(`[${LOG_HEADER}] Initializing DB..`);
     const startingDb = DB.create(
         StateVersions.EMPTY, StateVersions.START, this.bc, this.tp, true, false,
         latestSnapshotBlockNumber, this.stateManager);
     startingDb.initDbStates(latestSnapshot);
 
+    // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
+    logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
+    const needToLoadBlocks = this.bc.init(isFirstNode, latestSnapshotBlockNumber);
+
     // 4. Execute the chain on the DB and finalize it.
-    logger.info(`[${LOG_HEADER}] Executing chains on DB..`);
-    this.executeChainOnDb(startingDb);
+    logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
+    let lastBlockWithoutProposal = null;
+    if (needToLoadBlocks) {
+      lastBlockWithoutProposal =
+          this.loadAndExecuteChainOnDb(isFirstNode, latestSnapshotBlockNumber, startingDb);
+    }
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
 
     // 5. Execute transactions from the pool.
@@ -523,28 +525,60 @@ class BlockchainNode {
     return true;
   }
 
-  executeChainOnDb(db) {
-    const LOG_HEADER = 'executeChainOnDb';
+  executeBlockOnDb(block, db) {
+    const LOG_HEADER = 'executeBlockOnDb';
 
-    for (const block of this.bc.chain) {
-      this.removeOldReceipts(block.number, db);
-      if (block.number > 0) {
-        if (!db.executeTransactionList(block.last_votes, true)) {
-          logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
-          process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+    this.removeOldReceipts(block.number, db);
+    if (block.number > 0) {
+      if (!db.executeTransactionList(block.last_votes, true)) {
+        logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
+        // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+        process.exit(1);
+      }
+    }
+    if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number)) {
+      logger.error(`[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
+      // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+      process.exit(1);
+    }
+    if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
+      logger.error(`[${LOG_HEADER}] Invalid state proof hash (${block.number}): ` +
+          `${db.stateRoot.getProofHash()}, ${block.state_proof_hash}`);
+      // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+      process.exit(1);
+    }
+    this.tp.cleanUpForNewBlock(block);
+  }
+
+  loadAndExecuteChainOnDb(isFirstNode, latestSnapshotBlockNumber, db) {
+    const LOG_HEADER = 'loadAndExecuteChainOnDb';
+
+    let lastBlockWithoutProposal = null;
+    const numBlockFiles = this.bc.getNumBlockFiles();
+    const fromBlockNumber = SYNC_MODE === SyncModeOptions.FAST ? latestSnapshotBlockNumber + 1 : 0;
+    for (let number = fromBlockNumber; number < numBlockFiles; number++) {
+      const block = this.bc.loadBlock(number);
+      if (!block) {
+        logger.error(`[${LOG_HEADER}] Failed to load block of number ${number}.`);
+        // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+        process.exit(1);
+      }
+      logger.info(
+          `[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
+      // TODO(platfowner): Validate block.
+      // NOTE(minsulee2): Deal with the case the only genesis block was generated.
+      if (!isFirstNode && number === numBlockFiles - 1) {
+        lastBlockWithoutProposal = block;
+        this.bc.deleteBlock(lastBlockWithoutProposal);
+      } else {
+        this.executeBlockOnDb(block, db);
+        if (numBlockFiles - number <= ON_MEMORY_CHAIN_LENGTH) {
+          this.bc.addBlockToChain(block)
         }
       }
-      if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
-        process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-      }
-      if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
-        logger.error(`[${LOG_HEADER}] Invalid state proof hash (${block.number}): ` +
-            `${db.stateRoot.getProofHash()}, ${block.state_proof_hash}`);
-        process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-      }
-      this.tp.cleanUpForNewBlock(block);
     }
+
+    return lastBlockWithoutProposal;
   }
 }
 
