@@ -545,6 +545,19 @@ describe('Blockchain Node', () => {
       });
     });
 
+    describe('/get_state_usage', () => {
+      it('get_state_usage', () => {
+        const body = parseOrLog(syncRequest(
+            'GET', server1 + `/get_state_usage?app_name=test`)
+                .body.toString('utf-8'));
+        assert.deepEqual(body.result, {
+          "tree_height": 17,
+          "tree_size": 52,
+          "tree_bytes": 10076,
+        });
+      });
+    });
+
     describe('ain_get', () => {
       it('returns the correct value', () => {
         const expected = 100;
@@ -724,6 +737,21 @@ describe('Blockchain Node', () => {
             "tree_size": 5,
             "tree_bytes": 0,
             "version": "erased"
+          });
+        })
+      })
+    })
+
+    describe('ain_getStateUsage', () => {
+      it('returns correct value', () => {
+        const request = { app_name: 'test', protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_getStateUsage', request)
+        .then(res => {
+          const stateUsage = res.result.result;
+          assert.deepEqual(stateUsage, {
+            "tree_height": 17,
+            "tree_size": 52,
+            "tree_bytes": 10076,
           });
         })
       })
