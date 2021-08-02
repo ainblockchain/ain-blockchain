@@ -296,7 +296,7 @@ describe("DB operations", () => {
       it('when retrieving value with include_tree_info', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { includeTreeInfo: true }), {
           ".num_parents": 1,
-          ".tree_bytes": 4036,
+          ".tree_bytes": 3708,
           ".tree_height": 4,
           ".tree_size": 21,
           "ai": {
@@ -304,10 +304,10 @@ describe("DB operations", () => {
             ".num_parents:baz": 1,
             ".num_parents:comcom": 1,
             ".num_parents:foo": 1,
-            ".tree_bytes": 740,
-            ".tree_bytes:baz": 174,
-            ".tree_bytes:comcom": 176,
-            ".tree_bytes:foo": 174,
+            ".tree_bytes": 684,
+            ".tree_bytes:baz": 166,
+            ".tree_bytes:comcom": 168,
+            ".tree_bytes:foo": 166,
             ".tree_height": 1,
             ".tree_height:baz": 0,
             ".tree_height:comcom": 0,
@@ -323,8 +323,8 @@ describe("DB operations", () => {
           "decrement": {
             ".num_parents": 1,
             ".num_parents:value": 1,
-            ".tree_bytes": 362,
-            ".tree_bytes:value": 176,
+            ".tree_bytes": 338,
+            ".tree_bytes:value": 168,
             ".tree_height": 1,
             ".tree_height:value": 0,
             ".tree_size": 2,
@@ -334,8 +334,8 @@ describe("DB operations", () => {
           "increment": {
             ".num_parents": 1,
             ".num_parents:value": 1,
-            ".tree_bytes": 362,
-            ".tree_bytes:value": 176,
+            ".tree_bytes": 338,
+            ".tree_bytes:value": 168,
             ".tree_height": 1,
             ".tree_height:value": 0,
             ".tree_size": 2,
@@ -344,14 +344,14 @@ describe("DB operations", () => {
           },
           "nested": {
             ".num_parents": 1,
-            ".tree_bytes": 542,
+            ".tree_bytes": 502,
             ".tree_height": 2,
             ".tree_size": 3,
             "far": {
               ".num_parents": 1,
               ".num_parents:down": 1,
-              ".tree_bytes": 360,
-              ".tree_bytes:down": 176,
+              ".tree_bytes": 336,
+              ".tree_bytes:down": 168,
               ".tree_height": 1,
               ".tree_height:down": 0,
               ".tree_size": 2,
@@ -361,7 +361,7 @@ describe("DB operations", () => {
           },
           "shards": {
             ".num_parents": 1,
-            ".tree_bytes": 1758,
+            ".tree_bytes": 1622,
             ".tree_height": 3,
             ".tree_size": 9,
             "disabled_shard": {
@@ -370,16 +370,16 @@ describe("DB operations", () => {
               ".shard": {
                 ".num_parents": 1,
                 ".num_parents:sharding_enabled": 1,
-                ".tree_bytes": 380,
-                ".tree_bytes:sharding_enabled": 172,
+                ".tree_bytes": 356,
+                ".tree_bytes:sharding_enabled": 164,
                 ".tree_height": 1,
                 ".tree_height:sharding_enabled": 0,
                 ".tree_size": 2,
                 ".tree_size:sharding_enabled": 1,
                 "sharding_enabled": false,
               },
-              ".tree_bytes": 760,
-              ".tree_bytes:path": 176,
+              ".tree_bytes": 704,
+              ".tree_bytes:path": 168,
               ".tree_height": 2,
               ".tree_height:path": 0,
               ".tree_size": 4,
@@ -392,16 +392,16 @@ describe("DB operations", () => {
               ".shard": {
                 ".num_parents": 1,
                 ".num_parents:sharding_enabled": 1,
-                ".tree_bytes": 380,
-                ".tree_bytes:sharding_enabled": 172,
+                ".tree_bytes": 356,
+                ".tree_bytes:sharding_enabled": 164,
                 ".tree_height": 1,
                 ".tree_height:sharding_enabled": 0,
                 ".tree_size": 2,
                 ".tree_size:sharding_enabled": 1,
                 "sharding_enabled": true,
               },
-              ".tree_bytes": 760,
-              ".tree_bytes:path": 176,
+              ".tree_bytes": 704,
+              ".tree_bytes:path": 168,
               ".tree_height": 2,
               ".tree_height:path": 0,
               ".tree_size": 4,
@@ -2569,7 +2569,7 @@ describe("DB operations", () => {
         expect(executableTx.extra.executed_at).to.equal(null);
         assert.deepEqual(node.db.executeTransaction(executableTx, false, true, node.bc.lastBlockNumber() + 1), {
           code: 0,
-          gas_amount_charged: 16,
+          gas_amount_charged: 8,
           bandwidth_gas_amount: 1,
           gas_amount_total: {
             bandwidth: {
@@ -2580,12 +2580,12 @@ describe("DB operations", () => {
             },
             state: {
               app: {
-                test: 918
+                test: 846
               },
-              service: 16
+              service: 8
             }
           },
-          gas_cost_total: 16
+          gas_cost_total: 8
         });
         // extra.executed_at is updated with a non-null value.
         expect(executableTx.extra.executed_at).to.not.equal(null);
@@ -2614,7 +2614,7 @@ describe("DB operations", () => {
         const maxHeightTx = Transaction.fromTxBody(maxHeightTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(maxHeightTx, false, true, node.bc.lastBlockNumber() + 1), {
           code: 0,
-          gas_amount_charged: 16,
+          gas_amount_charged: 8,
           bandwidth_gas_amount: 1,
           gas_amount_total: {
             bandwidth: {
@@ -2625,9 +2625,9 @@ describe("DB operations", () => {
             },
             state: {
               app: {
-                test: 3236
+                test: 2956
               },
-              service: 16
+              service: 8
             }
           },
           gas_cost_total: 0,
@@ -2690,11 +2690,11 @@ describe("DB operations", () => {
         
         const expectedGasAmountTotal = {
           bandwidth: {
-            service: 3000,
+            service: 4500,
             app: {},
           },
           state: {
-            service: 2557560
+            service: 3550560
           } 
         };
         const overSizeTxBody = {
@@ -2706,7 +2706,7 @@ describe("DB operations", () => {
           nonce: -1,
           timestamp: 1568798344000,
         };
-        for (let i = 0; i < 1000; i++) {
+        for (let i = 0; i < 1500; i++) {
           overSizeTxBody.operation.op_list.push({
             type: 'SET_VALUE',
             ref: `/manage_app/app_${i}/create/${i}`,
@@ -2717,16 +2717,16 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (10381522 > 10000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (10791482 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
-        assert.deepEqual(res.gas_cost_total, 2.5605599999999997);
+        assert.deepEqual(res.gas_cost_total, 3.5550599999999997);
       });
 
       it("cannot exceed apps state budget", () => {
         const overSizeTree = {};
         for (let i = 0; i < 1000; i++) {
           overSizeTree[i] = {};
-          for (let j = 0; j < 50; j++) {
+          for (let j = 0; j < 100; j++) {
             overSizeTree[i][j] = 'a';
           }
         }
@@ -2743,10 +2743,10 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 26);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for apps (9287388 > 9000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for apps (16769332 > 9000000)");
         assert.deepEqual(res.gas_amount_total, {
           bandwidth: { service: 0, app: { test: 1 } },
-          state: { service: 16, app: { test: 9262132 } }
+          state: { service: 8, app: { test: 16746108 } }
         });
         assert.deepEqual(res.gas_cost_total, 0);
       });
@@ -2801,10 +2801,10 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 31);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for app app_0 (1084406 > 818181.8181818182)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for app app_0 (988222 > 818181.8181818182)");
         assert.deepEqual(res.gas_amount_total, {
           bandwidth: { service: 0, app: { app_0: 1 } },
-          state: { service: 16, app: { app_0: 1082132 } }
+          state: { service: 8, app: { app_0: 986108 } }
         });
         assert.deepEqual(res.gas_cost_total, 0);
       });
@@ -2844,10 +2844,10 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 29);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for free tier (1984406 > 1000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for free tier (1808222 > 1000000)");
         assert.deepEqual(res.gas_amount_total, {
           bandwidth: { service: 0, app: { app_0: 1 } },
-          state: { service: 16, app: { app_0: 1982132 } }
+          state: { service: 8, app: { app_0: 1806108 } }
         });
         assert.deepEqual(res.gas_cost_total, 0);
       });
@@ -4543,56 +4543,56 @@ describe("State info (getStateInfo)", () => {
       // Existing paths.
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
         "proof_hash": "0x213304021f1ea1e8f7954c815d49207c0a42ab4bdf09929263369fa5f4d77c8b",
-        "tree_bytes": 994,
+        "tree_bytes": 922,
         "tree_height": 2,
         "tree_size": 5,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label11'), {
         "proof_hash": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
-        "tree_bytes": 182,
+        "tree_bytes": 174,
         "tree_height": 0,
         "tree_size": 1,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12'), {
         "proof_hash": "0xbc8b6e1e9e369b5af09e14fea3769c348d66e453b3a2fc6dbec0d00278e094e7",
-        "tree_bytes": 600,
+        "tree_bytes": 560,
         "tree_height": 1,
         "tree_size": 3,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12/label121'), {
         "proof_hash": "0xfbe04067ec980e5d7364e8b6cf45f4bee9d53be89419211d0233aada9151ad50",
-        "tree_bytes": 192,
+        "tree_bytes": 184,
         "tree_height": 0,
         "tree_size": 1,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12/label122'), {
         "proof_hash": "0x8f17965ac862bad15172d21facff45ff3efb8a55ae50ca085131a3012e001c1f",
-        "tree_bytes": 192,
+        "tree_bytes": 184,
         "tree_height": 0,
         "tree_size": 1,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2'), {
         "proof_hash": "0x7b614d2449c2ce477ac040c52b78798e5ff36a20b83115b6af8688f5e88a813f",
-        "tree_bytes": 576,
+        "tree_bytes": 536,
         "tree_height": 1,
         "tree_size": 3,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21'), {
         "proof_hash": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
-        "tree_bytes": 182,
+        "tree_bytes": 174,
         "tree_height": 0,
         "tree_size": 1,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label22'), {
         "proof_hash": "0xc0da1458b190e12347891ab14253518f5e43d95473cd2546dbf8852dfb3dc281",
-        "tree_bytes": 182,
+        "tree_bytes": 174,
         "tree_height": 0,
         "tree_size": 1,
         "version": "NODE:0",
@@ -4610,14 +4610,14 @@ describe("State info (getStateInfo)", () => {
 
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
         "proof_hash": "0x1b8f144f5692c88c242776485c0cafc184d4724942578752d083c615d84a1caa",
-        "tree_bytes": 372,
+        "tree_bytes": 348,
         "tree_height": 1,
         "tree_size": 2,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label11'), {
         "proof_hash": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
-        "tree_bytes": 182,
+        "tree_bytes": 174,
         "tree_height": 0,
         "tree_size": 1,
         "version": "NODE:0",
@@ -4625,7 +4625,7 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12'), null);
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2'), {
         "proof_hash": "0x7b614d2449c2ce477ac040c52b78798e5ff36a20b83115b6af8688f5e88a813f",
-        "tree_bytes": 576,
+        "tree_bytes": 536,
         "tree_height": 1,
         "tree_size": 3,
         "version": "NODE:0",
@@ -4643,42 +4643,42 @@ describe("State info (getStateInfo)", () => {
 
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
         "proof_hash": "0x052b9dbac10fca45626652f264b9896216da0ce6f1b55d10934b7e9cb9141871",
-        "tree_bytes": 978,
+        "tree_bytes": 906,
         "tree_height": 2,
         "tree_size": 5,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2'), {
         "proof_hash": "0x7da207e739139a3fabbcb53c9a2b91f786441b903ffd1de445e69d921f9f30af",
-        "tree_bytes": 978,
+        "tree_bytes": 906,
         "tree_height": 2,
         "tree_size": 5,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21'), {
         "proof_hash": "0x805586e32d13b938808c5e283c027d0fa7f8b496bdb6fdc8cd5a57d0b12c72af",
-        "tree_bytes": 584,
+        "tree_bytes": 544,
         "tree_height": 1,
         "tree_size": 3,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21/label211'), {
         "proof_hash": "0xc7b107bdd716d26c8fe34fbcec5b91d738c3f53ee09fdf047678e85181e5f90c",
-        "tree_bytes": 184,
+        "tree_bytes": 176,
         "tree_height": 0,
         "tree_size": 1,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21/label212'), {
         "proof_hash": "0x736c5dded3f67ab5717c8c7c1b15580cb0bbf23562edd4a6898f2c1a6ca63200",
-        "tree_bytes": 184,
+        "tree_bytes": 176,
         "tree_height": 0,
         "tree_size": 1,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label22'), {
         "proof_hash": "0xc0da1458b190e12347891ab14253518f5e43d95473cd2546dbf8852dfb3dc281",
-        "tree_bytes": 182,
+        "tree_bytes": 174,
         "tree_height": 0,
         "tree_size": 1,
         "version": "NODE:0",

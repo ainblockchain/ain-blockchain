@@ -1196,19 +1196,19 @@ describe("state-node", () => {
       // TOTAL: 50 - 6 = 44 bytes (exclude version)
 
       node.setValue(true);  // boolean (4 bytes)
-      expect(node.computeTreeBytes()).to.equal(48);
+      expect(node.computeTreeBytes()).to.equal(40);
       node.setValue(10);  // number (8 bytes)
-      expect(node.computeTreeBytes()).to.equal(52);
+      expect(node.computeTreeBytes()).to.equal(44);
       node.setValue(-200);  // number (8 bytes)
-      expect(node.computeTreeBytes()).to.equal(52);
+      expect(node.computeTreeBytes()).to.equal(44);
       node.setValue('');  // string (0 * 2 = 0 bytes)
-      expect(node.computeTreeBytes()).to.equal(44);
+      expect(node.computeTreeBytes()).to.equal(36);
       node.setValue('str');  // string (3 * 2 = 6 bytes)
-      expect(node.computeTreeBytes()).to.equal(50);
+      expect(node.computeTreeBytes()).to.equal(42);
       node.setValue(null);  // null (0 bytes)
-      expect(node.computeTreeBytes()).to.equal(44);
+      expect(node.computeTreeBytes()).to.equal(36);
       node.setValue(undefined);  // undefined (0 bytes)
-      expect(node.computeTreeBytes()).to.equal(44);
+      expect(node.computeTreeBytes()).to.equal(36);
     });
 
     it("internal node", () => {
@@ -1229,7 +1229,7 @@ describe("state-node", () => {
       child2.setTreeBytes(20);
       child3.setTreeBytes(30);
       // 68 + 6('label1') * 2 + 10 + 6('label2') * 2 + 20 + 6('label3') * 2 + 30 = 164
-      expect(stateTree.computeTreeBytes()).to.equal(164);
+      expect(stateTree.computeTreeBytes()).to.equal(132);
     });
   });
 
