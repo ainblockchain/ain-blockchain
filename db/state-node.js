@@ -4,7 +4,6 @@ const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
   HASH_DELIMITER,
-  JS_REF_SIZE_IN_BYTES,
   StateInfoProperties,
 } = require('../common/constants');
 
