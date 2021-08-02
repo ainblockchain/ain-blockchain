@@ -5,11 +5,12 @@ const sizeof = require('object-sizeof');
 const _ = require('lodash');
 const {
   CURRENT_PROTOCOL_VERSION,
-  BlockchainNodeStates,
-  ReadDbOperations,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
   NETWORK_ID,
+  BlockchainNodeStates,
+  ReadDbOperations,
+  PredefinedDbPaths,
 } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
 const CommonUtil = require('../common/common-util');
@@ -332,6 +333,11 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     ain_getStateInfo: function(args, done) {
       const result = p2pServer.node.db.getStateInfo(args.ref);
+      done(null, addProtocolVersion({result}));
+    },
+
+    ain_getStateUsage: function(args, done) {
+      const result = p2pServer.node.getStateUsage(args.app_name);
       done(null, addProtocolVersion({result}));
     },
 
