@@ -105,7 +105,7 @@ describe('Blockchain', () => {
       while (!node1.bc.lastBlock() || !node2.bc.lastBlock() || node1.bc.lastBlock().hash !== node2.bc.lastBlock().hash) {
         const blockSection = node1.bc.getBlockList(node2.bc.lastBlock().number + 1);
         if (blockSection) {
-          node2.mergeChainSegment(blockSection);
+          expect(node2.mergeChainSegment(blockSection)).to.equal(true);
         }
       }
       assert.deepEqual(JSON.stringify(node1.bc.chain), JSON.stringify(node2.bc.chain));

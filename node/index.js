@@ -126,7 +126,7 @@ class BlockchainNode {
     let lastBlockWithoutProposal = null;
     if (!wasBlockDirEmpty || isGenesisStart) {
       lastBlockWithoutProposal =
-          this.loadAndExecuteChainOnDb(latestSnapshotBlockNumber, isGenesisStart, startingDb);
+          this.loadAndExecuteChainOnDb(latestSnapshotBlockNumber, !wasBlockDirEmpty, startingDb);
     }
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
 
@@ -553,7 +553,7 @@ class BlockchainNode {
     logger.info(`[${LOG_HEADER}] Successfully executed block ${block.number} on DB.`);
   }
 
-  loadAndExecuteChainOnDb(latestSnapshotBlockNumber, isGenesisStart, db) {
+  loadAndExecuteChainOnDb(latestSnapshotBlockNumber, deleteLastBlock, db) {
     const LOG_HEADER = 'loadAndExecuteChainOnDb';
 
     let lastBlockWithoutProposal = null;
@@ -575,7 +575,7 @@ class BlockchainNode {
         process.exit(1);
       }
       // NOTE(minsulee2): Deal with the case the only genesis block was generated.
-      if (!isGenesisStart && number === numBlockFiles - 1) {
+      if (deleteLastBlock && number > 0 && number === numBlockFiles - 1) {
         lastBlockWithoutProposal = block;
         this.bc.deleteBlock(lastBlockWithoutProposal);
       } else {
