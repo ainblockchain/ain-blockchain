@@ -63,6 +63,8 @@ class StateNode {
         that.treeBytes === this.treeBytes);
   }
 
+  // NOTE(liayoo): Bytes for some data (e.g. parents & children references, version) are excluded
+  //               from this calculation, since their sizes can vary and affect the gas costs and state proof hashes.
   computeNodeBytes() {
     return sizeof(this.isLeaf) +
         sizeof(this.value) +
