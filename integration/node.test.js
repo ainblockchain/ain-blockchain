@@ -3653,10 +3653,6 @@ describe('Blockchain Node', () => {
         });
 
         it('write rule: auth.fid: with function permission', async () => {
-          const BEFORE = parseOrLog(syncRequest('GET',
-              server2 + `/get_value?ref=/apps/test&include_tree_info=true`)
-            .body.toString('utf-8')).result
-          console.log(`BEFORE: ${JSON.stringify(BEFORE, null, 2)}`);
           const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
             ref: saveLastTxAllowedPath + '/value',
             value: 'some value',
@@ -3666,10 +3662,6 @@ describe('Blockchain Node', () => {
           if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
-          const AFTER = parseOrLog(syncRequest('GET',
-              server2 + `/get_value?ref=/apps/test&include_tree_info=true`)
-            .body.toString('utf-8')).result
-          console.log(`AFTER: ${JSON.stringify(AFTER, null, 2)}`);
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 0,
             "func_results": {
