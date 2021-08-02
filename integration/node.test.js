@@ -545,6 +545,19 @@ describe('Blockchain Node', () => {
       });
     });
 
+    describe('/get_state_usage', () => {
+      it('get_state_usage', () => {
+        const body = parseOrLog(syncRequest(
+            'GET', server1 + `/get_state_usage?app_name=test`)
+                .body.toString('utf-8'));
+        assert.deepEqual(body.result, {
+          "tree_height": 17,
+          "tree_size": 52,
+          "tree_bytes": 10076,
+        });
+      });
+    });
+
     describe('ain_get', () => {
       it('returns the correct value', () => {
         const expected = 100;
@@ -724,6 +737,21 @@ describe('Blockchain Node', () => {
             "tree_size": 5,
             "tree_bytes": 0,
             "version": "erased"
+          });
+        })
+      })
+    })
+
+    describe('ain_getStateUsage', () => {
+      it('returns correct value', () => {
+        const request = { app_name: 'test', protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_getStateUsage', request)
+        .then(res => {
+          const stateUsage = res.result.result;
+          assert.deepEqual(stateUsage, {
+            "tree_height": 17,
+            "tree_size": 52,
+            "tree_bytes": 10076,
           });
         })
       })
@@ -3625,6 +3653,10 @@ describe('Blockchain Node', () => {
         });
 
         it('write rule: auth.fid: with function permission', async () => {
+          const BEFORE = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=/apps/test&include_tree_info=true`)
+            .body.toString('utf-8')).result
+          console.log(`BEFORE: ${JSON.stringify(BEFORE, null, 2)}`);
           const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
             ref: saveLastTxAllowedPath + '/value',
             value: 'some value',
@@ -3634,6 +3666,10 @@ describe('Blockchain Node', () => {
           if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
+          const AFTER = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=/apps/test&include_tree_info=true`)
+            .body.toString('utf-8')).result
+          console.log(`AFTER: ${JSON.stringify(AFTER, null, 2)}`);
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 0,
             "func_results": {
