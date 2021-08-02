@@ -4,7 +4,6 @@ const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
   HASH_DELIMITER,
-  JS_REF_SIZE_IN_BYTES,
   StateInfoProperties,
 } = require('../common/constants');
 
@@ -64,14 +63,15 @@ class StateNode {
         that.treeBytes === this.treeBytes);
   }
 
+  // NOTE(liayoo): Bytes for some data (e.g. parents & children references, version) are excluded
+  //               from this calculation, since their sizes can vary and affect the gas costs and state proof hashes.
   computeNodeBytes() {
     return sizeof(this.isLeaf) +
         sizeof(this.value) +
         sizeof(this.proofHash) +
         sizeof(this.treeHeight) +
         sizeof(this.treeSize) +
-        sizeof(this.treeBytes) +
-        (this.numParents() + this.numChildren()) * JS_REF_SIZE_IN_BYTES;
+        sizeof(this.treeBytes);
   }
 
   static fromJsObject(obj, version) {

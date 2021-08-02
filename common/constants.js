@@ -80,7 +80,6 @@ const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
 const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
 const MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
 const HASH_DELIMITER = '#';
-const JS_REF_SIZE_IN_BYTES = 8;
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
 const MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
@@ -807,7 +806,6 @@ module.exports = {
   LIGHTWEIGHT,
   SYNC_MODE,
   HASH_DELIMITER,
-  JS_REF_SIZE_IN_BYTES,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
   MICRO_AIN,
