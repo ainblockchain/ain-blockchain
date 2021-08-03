@@ -27,6 +27,8 @@ const FeatureFlags = {
   enableRichP2pCommunicationLogging: false,
   // Enables rich logging for tx selection in tx pool.
   enableRichTxSelectionLogging: false,
+  // Enables receipt path's prefix labels.
+  enableReceiptPathPrefixLabels: true,
 };
 
 // ** Environment variables **

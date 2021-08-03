@@ -1,4 +1,8 @@
-const { PredefinedDbPaths, ShardingProperties } = require('./constants');
+const {
+  FeatureFlags,
+  PredefinedDbPaths,
+  ShardingProperties
+} = require('./constants');
 const CommonUtil = require('./common-util');
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
@@ -215,8 +219,27 @@ class PathUtil {
         PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.COLLECT, userAddr, blockNumber, txHash]);
   }
 
-  static getReceiptsPath(txHash) {
-    return CommonUtil.formatPath([PredefinedDbPaths.RECEIPTS, txHash]);
+  static getReceiptPath(txHash) {
+    const hashPath =
+        FeatureFlags.enableReceiptPathPrefixLabels ? PathUtil.getPrefixedHashPath(txHash) : txHash;
+    return CommonUtil.formatPath([PredefinedDbPaths.RECEIPTS, hashPath]);
+  }
+
+  static getPrefixedHashPath(hash) {
+    const PREFIXED_HASH_PATH_LABEL_LENGTH = 2;
+    const NUM_PREFIXED_HASH_PATH_LABELS = 2;
+    if (!CommonUtil.isString(hash) ||
+        hash.length <= 2 + NUM_PREFIXED_HASH_PATH_LABELS * PREFIXED_HASH_PATH_LABEL_LENGTH) {
+      return hash;
+    }
+    const prefixLabels = [];
+    for (let i = 0; i < NUM_PREFIXED_HASH_PATH_LABELS; i++) {
+      const from = i === 0 ? 0 : 2 + i * PREFIXED_HASH_PATH_LABEL_LENGTH;
+      const to = 2 + (i + 1) * PREFIXED_HASH_PATH_LABEL_LENGTH;
+      prefixLabels.push(hash.substring(from, to));
+    }
+console.error(`!!!!!!!!!!!!!!!!! prefixLabels: `, prefixLabels);
+    return CommonUtil.formatPath([...prefixLabels, hash]);
   }
 }
 
