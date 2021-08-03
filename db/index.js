@@ -1205,7 +1205,7 @@ class DB {
   }
 
   recordReceipt(auth, tx, blockNumber, executionResult) {
-    const receiptPath = PathUtil.getReceiptsPath(tx.hash);
+    const receiptPath = PathUtil.getReceiptPath(tx.hash);
     const receipt = {
       [PredefinedDbPaths.RECEIPTS_ADDRESS]: auth.addr,
       [PredefinedDbPaths.RECEIPTS_BLOCK_NUMBER]: blockNumber,
