@@ -238,7 +238,6 @@ class PathUtil {
       const to = 2 + (i + 1) * PREFIXED_HASH_PATH_LABEL_LENGTH;
       prefixLabels.push(hash.substring(from, to));
     }
-console.error(`!!!!!!!!!!!!!!!!! prefixLabels: `, prefixLabels);
     return CommonUtil.formatPath([...prefixLabels, hash]);
   }
 }
