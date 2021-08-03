@@ -1,4 +1,8 @@
-const { PredefinedDbPaths, ShardingProperties } = require('./constants');
+const {
+  FeatureFlags,
+  PredefinedDbPaths,
+  ShardingProperties
+} = require('./constants');
 const CommonUtil = require('./common-util');
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
@@ -215,8 +219,28 @@ class PathUtil {
         PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.COLLECT, userAddr, blockNumber, txHash]);
   }
 
-  static getReceiptsPath(txHash) {
-    return CommonUtil.formatPath([PredefinedDbPaths.RECEIPTS, txHash]);
+  static getReceiptPath(txHash) {
+    const RECEIPT_NUM_PREFIX_LAYERS = 5;
+    const RECEIPT_PREFIX_LABEL_LENGTH = 1;
+
+    const hashPath = FeatureFlags.enableReceiptPathPrefixLayers ?
+        PathUtil.getPrefixedHashPath(
+            txHash, RECEIPT_NUM_PREFIX_LAYERS, RECEIPT_PREFIX_LABEL_LENGTH) : txHash;
+    return CommonUtil.formatPath([PredefinedDbPaths.RECEIPTS, hashPath]);
+  }
+
+  static getPrefixedHashPath(hash, numPrefixLayers, prefixLabelLength) {
+    if (!CommonUtil.isString(hash) ||
+        hash.length <= 2 + numPrefixLayers * prefixLabelLength) {
+      return hash;
+    }
+    const prefixLabels = [];
+    for (let i = 0; i < numPrefixLayers; i++) {
+      const from = i === 0 ? 0 : 2 + i * prefixLabelLength;
+      const to = 2 + (i + 1) * prefixLabelLength;
+      prefixLabels.push(hash.substring(from, to));
+    }
+    return CommonUtil.formatPath([...prefixLabels, hash]);
   }
 }
 
