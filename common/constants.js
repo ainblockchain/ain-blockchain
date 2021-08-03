@@ -75,8 +75,11 @@ const CHAINS_N2B_DIR_NAME = 'n2b'; // Number-to-block directory name.
 const CHAINS_H2N_DIR_NAME = 'h2n'; // Hash-to-number directory name.
 const CHAINS_N2B_MAX_NUM_FILES = 100000;
 const CHAINS_H2N_HASH_PREFIX_LENGTH = 5;
+const CHAIN_SEGMENT_LENGTH = 20;
+const ON_MEMORY_CHAIN_LENGTH = 10;
 const SNAPSHOTS_ROOT_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'snapshots');
 const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
+// NOTE(platfowner): Should have a value bigger than ON_MEMORY_CHAIN_LENGTH.
 const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
 const MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
 const HASH_DELIMITER = '#';
@@ -789,6 +792,8 @@ module.exports = {
   CHAINS_H2N_DIR_NAME,
   CHAINS_N2B_MAX_NUM_FILES,
   CHAINS_H2N_HASH_PREFIX_LENGTH,
+  CHAIN_SEGMENT_LENGTH,
+  ON_MEMORY_CHAIN_LENGTH,
   SNAPSHOTS_ROOT_DIR,
   SNAPSHOTS_N2S_DIR_NAME,
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
