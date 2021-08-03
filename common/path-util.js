@@ -220,8 +220,8 @@ class PathUtil {
   }
 
   static getReceiptPath(txHash) {
-    const RECEIPT_NUM_PREFIX_LAYERS = 2;
-    const RECEIPT_PREFIX_LABEL_LENGTH = 2;
+    const RECEIPT_NUM_PREFIX_LAYERS = 5;
+    const RECEIPT_PREFIX_LABEL_LENGTH = 1;
 
     const hashPath = FeatureFlags.enableReceiptPathPrefixLabels ?
         PathUtil.getPrefixedHashPath(
