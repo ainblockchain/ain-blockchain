@@ -220,24 +220,24 @@ class PathUtil {
   }
 
   static getReceiptPath(txHash) {
-    const NUM_PREFIXED_HASH_PATH_LABELS = 2;
-    const PREFIXED_HASH_PATH_LABEL_LENGTH = 2;
+    const RECEIPT_NUM_PREFIX_LAYERS = 2;
+    const RECEIPT_PREFIX_LABEL_LENGTH = 2;
 
     const hashPath = FeatureFlags.enableReceiptPathPrefixLabels ?
         PathUtil.getPrefixedHashPath(
-            txHash, NUM_PREFIXED_HASH_PATH_LABELS, PREFIXED_HASH_PATH_LABEL_LENGTH) : txHash;
+            txHash, RECEIPT_NUM_PREFIX_LAYERS, RECEIPT_PREFIX_LABEL_LENGTH) : txHash;
     return CommonUtil.formatPath([PredefinedDbPaths.RECEIPTS, hashPath]);
   }
 
-  static getPrefixedHashPath(hash, numPrefixedLabels, prefixedLabelLength) {
+  static getPrefixedHashPath(hash, numPrefixLayers, prefixLabelLength) {
     if (!CommonUtil.isString(hash) ||
-        hash.length <= 2 + numPrefixedLabels * prefixedLabelLength) {
+        hash.length <= 2 + numPrefixLayers * prefixLabelLength) {
       return hash;
     }
     const prefixLabels = [];
-    for (let i = 0; i < numPrefixedLabels; i++) {
-      const from = i === 0 ? 0 : 2 + i * prefixedLabelLength;
-      const to = 2 + (i + 1) * prefixedLabelLength;
+    for (let i = 0; i < numPrefixLayers; i++) {
+      const from = i === 0 ? 0 : 2 + i * prefixLabelLength;
+      const to = 2 + (i + 1) * prefixLabelLength;
       prefixLabels.push(hash.substring(from, to));
     }
     return CommonUtil.formatPath([...prefixLabels, hash]);
