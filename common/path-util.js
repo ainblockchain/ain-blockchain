@@ -223,7 +223,7 @@ class PathUtil {
     const RECEIPT_NUM_PREFIX_LAYERS = 5;
     const RECEIPT_PREFIX_LABEL_LENGTH = 1;
 
-    const hashPath = FeatureFlags.enableReceiptPathPrefixLabels ?
+    const hashPath = FeatureFlags.enableReceiptPathPrefixLayers ?
         PathUtil.getPrefixedHashPath(
             txHash, RECEIPT_NUM_PREFIX_LAYERS, RECEIPT_PREFIX_LABEL_LENGTH) : txHash;
     return CommonUtil.formatPath([PredefinedDbPaths.RECEIPTS, hashPath]);
