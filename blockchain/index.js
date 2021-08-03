@@ -163,7 +163,7 @@ class Blockchain {
   }
 
   static validateBlock(block, prevBlockNumber = null, prevBlockHash = null) {
-    const LOG_HEADER = 'loadAndExecuteChainOnDb';
+    const LOG_HEADER = 'validateBlock';
 
     if (prevBlockNumber != null && block.number !== prevBlockNumber + 1) {
       logger.error(`Invalid block number (expected: ${prevBlockNumber}) of block: ${block.number}`);
