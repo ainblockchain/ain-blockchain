@@ -205,7 +205,8 @@ describe("CommonUtil", () => {
       }
     };
     const value = {
-      some: 'value'
+      some: 'value',
+      b: 'other b value'
     };
     let obj;
 
@@ -247,9 +248,25 @@ describe("CommonUtil", () => {
       assert.deepEqual(obj.b.ba.baz, value);
     })
 
-    it("when empty path", () => {
-      expect(CommonUtil.setJsObject(obj, [], value)).to.equal(false);
+    it("when empty path with primitive value", () => {
+      expect(CommonUtil.setJsObject(obj, [], 'some value')).to.equal(false);
       assert.deepEqual(obj, org);  // No change.
+    })
+
+    it("when empty path with object value", () => {
+      expect(CommonUtil.setJsObject(obj, [], value)).to.equal(true);
+      for (const key in value) {
+        if (value.hasOwnProperty(key)) {
+          expect(obj.hasOwnProperty(key)).to.equal(true);
+          assert.deepEqual(obj[key], value[key]);
+        }
+      }
+      for (const key in org) {
+        if (org.hasOwnProperty(key) && !value.hasOwnProperty(key)) {
+          expect(obj.hasOwnProperty(key)).to.equal(true);
+          assert.deepEqual(obj[key], org[key]);
+        }
+      }
     })
 
     it("when existing path", () => {
@@ -389,143 +406,143 @@ describe("CommonUtil", () => {
       expect(CommonUtil.isFailedTx({
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
-                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+            "op_results": {
+              "0": {
+                "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
-                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                      "op_results": {
+                        "0": {
+                          "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "SUCCESS",
-                      "gas_amount": 0,
+                      "bandwidth_gas_amount": 0,
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
-            "gas_amount": 0,
+            "bandwidth_gas_amount": 0,
           }
         },
         "code": 0,
-        "gas_amount": 1
+        "bandwidth_gas_amount": 1
       })).to.equal(false);
 
       expect(CommonUtil.isFailedTx({
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
-                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+            "op_results": {
+              "0": {
+                "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
-                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                      "op_results": {
+                        "0": {
+                          "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "SUCCESS",
-                      "gas_amount": 0,
+                      "bandwidth_gas_amount": 0,
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
-            "gas_amount": 0,
+            "bandwidth_gas_amount": 0,
           }
         },
         "code": 201,  // The root operation failed
         "error_message": "Not a number type: bar or 10",
-        "gas_amount": 1
+        "bandwidth_gas_amount": 1
       })).to.equal(true);
 
       expect(CommonUtil.isFailedTx({
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
-                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+            "op_results": {
+              "0": {
+                "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
-                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                      "op_results": {
+                        "0": {
+                          "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 201,  // A sub-operation failed
                             "error_message": "Not a number type: bar or 10",
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "SUCCESS",
-                      "gas_amount": 0,
+                      "bandwidth_gas_amount": 0,
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
-            "gas_amount": 0,
+            "bandwidth_gas_amount": 0,
           }
         },
         "code": 0,
-        "gas_amount": 1
+        "bandwidth_gas_amount": 1
       })).to.equal(true);
 
       expect(CommonUtil.isFailedTx({
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
-                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+            "op_results": {
+              "0": {
+                "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
-                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                      "op_results": {
+                        "0": {
+                          "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "FAILURE",  // A function failed.
-                      "gas_amount": 0,
+                      "bandwidth_gas_amount": 0,
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
-            "gas_amount": 0,
+            "bandwidth_gas_amount": 0,
           }
         },
         "code": 0,
-        "gas_amount": 1
+        "bandwidth_gas_amount": 1
       })).to.equal(true);
     });
 
@@ -535,338 +552,344 @@ describe("CommonUtil", () => {
         "func_results": {
           "0x11111": {
             "code": "SUCCESS",
-            "gas_amount": 10,
+            "bandwidth_gas_amount": 10,
           }
         },
-        "gas_amount": 1,
-        "gas_amount_total": 11,
+        "bandwidth_gas_amount": 1,
+        "gas_amount_total": {
+          "bandwidth": {
+            "service": 11,
+          }
+        },
         "gas_cost_total": 0,
       })).to.equal(false);
     });
 
     it("when multi-set operation without function triggering", () => {
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
-          {
+          "1": {
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
           },
-          {
+          "2": {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
-        ],
+        },
       })).to.equal(false);
 
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
-          {
+          "1": {
             "code": 201,
             "error_message": "Not a number type: bar or 10",
-            "gas_amount": 0
+            "bandwidth_gas_amount": 0
           },
-          {
+          "2": {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
-        ]
+        }
       })).to.equal(true);
     })
 
     it("when multi-set operation with native function triggering", () => {
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
-          {
+          "1": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "op_results": {
+                  "0": {
+                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "op_results": {
+                            "0": {
+                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "SUCCESS",
-                          "gas_amount": 0,
+                          "bandwidth_gas_amount": 0,
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
-                "gas_amount": 0,
+                "bandwidth_gas_amount": 0,
               }
             },
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
           },
-          {
+          "2": {
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
           }
-        ]
+        }
       })).to.equal(false);
 
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
-          {
+          "1": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "op_results": {
+                  "0": {
+                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "op_results": {
+                            "0": {
+                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "SUCCESS",
-                          "gas_amount": 0,
+                          "bandwidth_gas_amount": 0,
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
-                "gas_amount": 0,
+                "bandwidth_gas_amount": 0,
               }
             },
             "code": 0,
-            "gas_amount": 0
+            "bandwidth_gas_amount": 0
           },
-          {
+          "2": {
             "code": 201,  // One of the root operations failed.
             "error_message": "Not a number type: bar or 10",
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
           },
-        ]
+        }
       })).to.equal(true);
 
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
-          {
+          "1": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "op_results": {
+                  "0": {
+                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "op_results": {
+                            "0": {
+                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 201,  // A sub-operation failed.
                                 "error_message": "Not a number type: bar or 10",
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "SUCCESS",
-                          "gas_amount": 0,
+                          "bandwidth_gas_amount": 0,
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
-                "gas_amount": 0,
+                "bandwidth_gas_amount": 0,
               }
             },
             "code": 0,
-            "gas_amount": 0
+            "bandwidth_gas_amount": 0
           },
-          {
+          "2": {
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
           },
-        ]
+        }
       })).to.equal(true);
 
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
-          {
+          "1": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "op_results": {
+                  "0": {
+                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "op_results": {
+                            "0": {
+                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "FAILURE",  // A function failed.
-                          "gas_amount": 0,
+                          "bandwidth_gas_amount": 0,
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
-                "gas_amount": 0,
+                "bandwidth_gas_amount": 0,
               }
             },
             "code": 0,
-            "gas_amount": 0
+            "bandwidth_gas_amount": 0
           },
-          {
+          "2": {
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
           },
-        ]
+        }
       })).to.equal(true);
     })
 
     it("when multi-set operation with REST function triggering", () => {
       expect(CommonUtil.isFailedTx({
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
             "gas_amount_total": {
-              "service": 1,
-              "app": {}
+              "bandwidth": {
+                "service": 1,
+              }
             },
             "gas_cost_total": 0
           },
-          {
+          "1": {
             "code": 0,
             "func_results": {
               "0x11111": {
                 "code": "SUCCESS",
-                "gas_amount": 10,
+                "bandwidth_gas_amount": 10,
               }
             },
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
             "gas_amount_total": {
-              "service": 11,
-              "app": {}
+              "bandwidth": {
+                "service": 11,
+              }
             },
             "gas_cost_total": 0
           },
-          {
+          "2": {
             "code": 0,
-            "gas_amount": 1,
+            "bandwidth_gas_amount": 1,
             "gas_amount_total": {
-              "service": 1,
-              "app": {}
+              "bandwidth": {
+                "service": 1,
+              }
             }
           }
-        ]
+        }
       })).to.equal(false);
     });
   })
 
-  describe("getTotalGasAmount", () => {
-    const op = { ref: '/test', value: null, type: 'SET_VALUE' };
+  describe("getTotalBandwidthGasAmount", () => {
+    const serviceOp = { ref: '/transfer/test', value: null, type: 'SET_VALUE' };
     const appOp = { ref: '/apps/test', value: null, type: 'SET_VALUE' };
 
     it("when abnormal input", () => {
-      const emptyVal = { app: {}, service: 0 };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, null), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, undefined), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, {}), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, { gas: 'gas' }), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, { gas: {} }), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, true), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, 'result'), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, 0), emptyVal);
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, 1), emptyVal);
+      const emptyVal = { service: 0 };
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, null), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, undefined), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, {}), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, { gas: 'gas' }), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, { gas: {} }), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, true), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, 'result'), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, 0), emptyVal);
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, 1), emptyVal);
     })
 
     it("when single operation result input (service)", () => {
       const result = {
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
-                "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+            "op_results": {
+              "0": {
+                "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
-                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                      "op_results": {
+                        "0": {
+                          "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "SUCCESS",
-                      "gas_amount": 10
+                      "bandwidth_gas_amount": 10
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
-            "gas_amount": 20,
+            "bandwidth_gas_amount": 20,
           }
         },
         "code": 0,
-        "gas_amount": 30
+        "bandwidth_gas_amount": 30
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(op, result), {
-        app: {},
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, result), {
         service: 62
       });
     })
@@ -875,38 +898,38 @@ describe("CommonUtil", () => {
       const result = {
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
+            "op_results": {
+              "0": {
                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
+                      "op_results": {
+                        "0": {
                           "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "SUCCESS",
-                      "gas_amount": 10
+                      "bandwidth_gas_amount": 10
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
-            "gas_amount": 20,
+            "bandwidth_gas_amount": 20,
           }
         },
         "code": 0,
-        "gas_amount": 30
+        "bandwidth_gas_amount": 30
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(appOp, result), {
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(appOp, result), {
         app: {
           test: 62
         },
@@ -918,38 +941,38 @@ describe("CommonUtil", () => {
       const result = {
         "func_results": {
           "_saveLastTx": {
-            "op_results": [
-              {
+            "op_results": {
+              "0": {
                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                 "result": {
                   "func_results": {
                     "_eraseValue": {
-                      "op_results": [
-                        {
-                          "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                      "op_results": {
+                        "0": {
+                          "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 0,
-                            "gas_amount": 1
+                            "bandwidth_gas_amount": 1
                           }
                         }
-                      ],
+                      },
                       "code": "SUCCESS",
-                      "gas_amount": 10
+                      "bandwidth_gas_amount": 10
                     }
                   },
                   "code": 0,
-                  "gas_amount": 1
+                  "bandwidth_gas_amount": 1
                 }
               }
-            ],
+            },
             "code": "SUCCESS",
-            "gas_amount": 20,
+            "bandwidth_gas_amount": 20,
           }
         },
         "code": 0,
-        "gas_amount": 30
+        "bandwidth_gas_amount": 30
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(appOp, result), {
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(appOp, result), {
         app: {
           test: 61
         },
@@ -958,51 +981,50 @@ describe("CommonUtil", () => {
     })
 
     it("when multiple operation result input (service)", () => {
-      const setTxOp = { type: 'SET', op_list: [{...op}, {...op}] };
+      const setTxOp = { type: 'SET', op_list: [{...serviceOp}, {...serviceOp}] };
       const result = {
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "op_results": {
+                  "0": {
+                    "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "op_results": {
+                            "0": {
+                              "path": "/transfer/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "SUCCESS",
-                          "gas_amount": 10
+                          "bandwidth_gas_amount": 10
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
-                "gas_amount": 20
+                "bandwidth_gas_amount": 20
               }
             },
             "code": 0,
-            "gas_amount": 30
+            "bandwidth_gas_amount": 30
           },
-          {
+          "1": {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
-        ]
+        }
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(setTxOp, result), {
-        app: {},
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(setTxOp, result), {
         service: 63
       });
     })
@@ -1010,48 +1032,48 @@ describe("CommonUtil", () => {
     it("when multiple operation result input (app)", () => {
       const setTxOp = { type: 'SET', op_list: [{...appOp}, {...appOp}] };
       const result = {
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
+                "op_results": {
+                  "0": {
                     "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
+                          "op_results": {
+                            "0": {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "SUCCESS",
-                          "gas_amount": 10
+                          "bandwidth_gas_amount": 10
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
-                "gas_amount": 20
+                "bandwidth_gas_amount": 20
               }
             },
             "code": 0,
-            "gas_amount": 30
+            "bandwidth_gas_amount": 30
           },
-          {
+          "1": {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
-        ]
+        }
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(setTxOp, result), {
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(setTxOp, result), {
         app: {
           test: 63
         },
@@ -1060,54 +1082,54 @@ describe("CommonUtil", () => {
     })
 
     it("when multiple operation result input (service & app)", () => {
-      const setTxOp = { type: 'SET', op_list: [{...appOp}, {...op}] };
+      const setTxOp = { type: 'SET', op_list: [{...appOp}, {...serviceOp}] };
       const result = {
-        "result_list": [
-          {
+        "result_list": {
+          "0": {
             "func_results": {
               "_saveLastTx": {
-                "op_results": [
-                  {
-                    "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                "op_results": {
+                  "0": {
+                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                     "result": {
                       "func_results": {
                         "_eraseValue": {
-                          "op_results": [
-                            {
-                              "path": "/test/test_function_triggering/allowed_path/.last_tx/value",
+                          "op_results": {
+                            "0": {
+                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 0,
-                                "gas_amount": 1
+                                "bandwidth_gas_amount": 1
                               }
                             }
-                          ],
+                          },
                           "code": "SUCCESS",
-                          "gas_amount": 10
+                          "bandwidth_gas_amount": 10
                         }
                       },
                       "code": 0,
-                      "gas_amount": 1
+                      "bandwidth_gas_amount": 1
                     }
                   }
-                ],
+                },
                 "code": "SUCCESS",
-                "gas_amount": 20
+                "bandwidth_gas_amount": 20
               }
             },
             "code": 0,
-            "gas_amount": 30
+            "bandwidth_gas_amount": 30
           },
-          {
+          "1": {
             "code": 0,
-            "gas_amount": 1
+            "bandwidth_gas_amount": 1
           },
-        ]
+        }
       };
-      assert.deepEqual(CommonUtil.getTotalGasAmount(setTxOp, result), {
+      assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(setTxOp, result), {
         app: {
-          test: 50
+          test: 62
         },
-        service: 13
+        service: 1
       });
     })
   })

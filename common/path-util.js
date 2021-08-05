@@ -1,4 +1,8 @@
-const { PredefinedDbPaths, ShardingProperties } = require('./constants');
+const {
+  FeatureFlags,
+  PredefinedDbPaths,
+  ShardingProperties
+} = require('./constants');
 const CommonUtil = require('./common-util');
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
@@ -54,6 +58,11 @@ class PathUtil {
     return CommonUtil.formatPath([PredefinedDbPaths.MANAGE_APP, appName, PredefinedDbPaths.MANAGE_APP_CONFIG]);
   }
 
+  static getManageAppBillingUsersPath(appName, billingId) {
+    return `${PathUtil.getManageAppConfigPath(appName)}/${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING}/` +
+        `${billingId}/${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}`;
+  }
+
   static getAppPath(appName) {
     return CommonUtil.formatPath([PredefinedDbPaths.APPS, appName]);
   }
@@ -66,6 +75,10 @@ class PathUtil {
     return CommonUtil.formatPath([PredefinedDbPaths.MANAGE_APP, serviceName,
         PredefinedDbPaths.MANAGE_APP_CONFIG, PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE,
         PredefinedDbPaths.STAKING, PredefinedDbPaths.STAKING_LOCKUP_DURATION]);
+  }
+
+  static getStakingServicePath(serviceName) {
+    return CommonUtil.formatPath([PredefinedDbPaths.STAKING, serviceName]);
   }
 
   static getStakingExpirationPath(serviceName, user, stakingKey) {
@@ -187,7 +200,7 @@ class PathUtil {
   }
 
   static getConsensusStakingAccountBalancePath(address) {
-    const accountPath =  PathUtil.getServiceAccountPath(PredefinedDbPaths.STAKING, PredefinedDbPaths.CONSENSUS, `${address}|0`);
+    const accountPath = PathUtil.getServiceAccountPath(PredefinedDbPaths.STAKING, PredefinedDbPaths.CONSENSUS, `${address}|0`);
     return CommonUtil.appendPath(accountPath, PredefinedDbPaths.BALANCE)
   }
 
@@ -204,6 +217,30 @@ class PathUtil {
   static getGasFeeCollectPath(userAddr, blockNumber, txHash) {
     return CommonUtil.formatPath([
         PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.COLLECT, userAddr, blockNumber, txHash]);
+  }
+
+  static getReceiptPath(txHash) {
+    const RECEIPT_NUM_PREFIX_LAYERS = 5;
+    const RECEIPT_PREFIX_LABEL_LENGTH = 1;
+
+    const hashPath = FeatureFlags.enableReceiptPathPrefixLayers ?
+        PathUtil.getPrefixedHashPath(
+            txHash, RECEIPT_NUM_PREFIX_LAYERS, RECEIPT_PREFIX_LABEL_LENGTH) : txHash;
+    return CommonUtil.formatPath([PredefinedDbPaths.RECEIPTS, hashPath]);
+  }
+
+  static getPrefixedHashPath(hash, numPrefixLayers, prefixLabelLength) {
+    if (!CommonUtil.isString(hash) ||
+        hash.length <= 2 + numPrefixLayers * prefixLabelLength) {
+      return hash;
+    }
+    const prefixLabels = [];
+    for (let i = 0; i < numPrefixLayers; i++) {
+      const from = i === 0 ? 0 : 2 + i * prefixLabelLength;
+      const to = 2 + (i + 1) * prefixLabelLength;
+      prefixLabels.push(hash.substring(from, to));
+    }
+    return CommonUtil.formatPath([...prefixLabels, hash]);
   }
 }
 

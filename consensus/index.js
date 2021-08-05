@@ -22,9 +22,11 @@ const {
   GENESIS_WHITELIST,
   LIGHTWEIGHT,
   MIN_NUM_VALIDATORS,
+  MAX_NUM_VALIDATORS,
   MIN_STAKE_PER_VALIDATOR,
+  MAX_STAKE_PER_VALIDATOR,
   EPOCH_MS,
-  CONSENSUS_PROTOCOL_VERSION
+  CONSENSUS_PROTOCOL_VERSION,
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
@@ -68,7 +70,7 @@ class Consensus {
   }
 
   init(lastBlockWithoutProposal) {
-    const LOG_HEADER = 'init';
+    const LOG_HEADER = 'Consensus.init';
     const finalizedNumber = this.node.bc.lastBlockNumber();
     const genesisBlock = this.node.bc.getBlockByNumber(0);
     if (!genesisBlock) {
@@ -80,7 +82,7 @@ class Consensus {
     try {
       const targetStake = process.env.STAKE ? Number(process.env.STAKE) : 0;
       const currentStake =
-          this.getValidConsensusStake(this.node.stateManager.getFinalVersion(), myAddr);
+          this.getConsensusStakeFromAddr(this.node.stateManager.getFinalVersion(), myAddr);
       logger.info(`[${LOG_HEADER}] Current stake: ${currentStake} / Target stake: ${targetStake}`);
       if (!targetStake && !currentStake) {
         logger.info(`[${LOG_HEADER}] Node doesn't have any stakes. ` +
@@ -249,7 +251,7 @@ class Consensus {
         // can keep sending messages with higher numbers, making the node's status unsynced, and
         // prevent the node from getting/handling messages properly.
         // this.node.state = BlockchainNodeStates.SYNCING;
-        Object.values(this.server.client.outbound).forEach(node => {
+        Object.values(this.server.client.outbound).forEach((node) => {
           this.server.client.requestChainSegment(node.socket, this.node.bc.lastBlock());
         });
         return;
@@ -268,44 +270,6 @@ class Consensus {
         this.server.client.broadcastConsensusMessage(msg);
       }
     }
-  }
-
-  executeLastVoteOrAbort(db, tx) {
-    const LOG_HEADER = 'executeLastVoteOrAbort';
-    const txRes = db.executeTransaction(Transaction.toExecutable(tx));
-    if (!CommonUtil.isFailedTx(txRes)) {
-      logger.debug(`[${LOG_HEADER}] tx: success`);
-      return txRes;
-    } else {
-      logger.error(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
-      return false;
-    }
-  }
-
-  executeOrRollbackTransactionForBlock(
-      db, tx, blockNumber, validTransactions, invalidTransactions, resList) {
-    const LOG_HEADER = 'executeOrRollbackTransactionForBlock';
-    if (!db.backupDb()) {
-      logger.error(
-          `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
-      return null;
-    }
-    logger.debug(`[${LOG_HEADER}] Checking tx ${JSON.stringify(tx, null, 2)}`);
-    const txRes = db.executeTransaction(Transaction.toExecutable(tx), blockNumber);
-    if (!CommonUtil.isFailedTx(txRes)) {
-      logger.debug(`[${LOG_HEADER}] tx: success`);
-      validTransactions.push(tx);
-      resList.push(txRes);
-    } else {
-      logger.debug(`[${LOG_HEADER}] tx: failure\n ${JSON.stringify(txRes)}`);
-      invalidTransactions.push(tx);
-      if (!db.restoreDb()) {
-        logger.error(
-            `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
-        return null;
-      }
-    }
-    return txRes;
   }
 
   // proposing for block #N :
@@ -348,10 +312,12 @@ class Consensus {
       lastVotes.unshift(lastBlockInfo.proposal);
     }
 
+    this.node.removeOldReceipts(blockNumber, tempDb);
+
     for (const voteTx of lastVotes) {
-      const res = this.executeLastVoteOrAbort(tempDb, voteTx);
-      if (!res) {
-        this.node.destroyDb(tempDb);
+      if (CommonUtil.isFailedTx(tempDb.executeTransaction(Transaction.toExecutable(voteTx), true))) {
+        logger.debug(`[${LOG_HEADER}] failed to execute last vote: ${JSON.stringify(voteTx, null, 2)}`);
+        tempDb.destroyDb();
         return null;
       }
     }
@@ -362,11 +328,13 @@ class Consensus {
     const invalidTransactions = [];
     const resList = [];
     for (const tx of transactions) {
-      const res = this.executeOrRollbackTransactionForBlock(
-          tempDb, tx, blockNumber, validTransactions, invalidTransactions, resList);
-      if (!res) {
-        this.node.destroyDb(tempDb);
-        return null;
+      const res = tempDb.executeTransaction(Transaction.toExecutable(tx), false, true, blockNumber);
+      if (CommonUtil.txPrecheckFailed(res)) {
+        logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
+        invalidTransactions.push(tx);
+      } else {
+        validTransactions.push(tx);
+        resList.push(res);
       }
     }
     const { gasAmountTotal, gasCostTotal } =
@@ -382,11 +350,13 @@ class Consensus {
     if (this.node.bc.lastBlockNumber() < 1) {
       const whitelist = GENESIS_WHITELIST;
       for (const address in whitelist) {
-        if (Object.prototype.hasOwnProperty.call(whitelist, address)) {
-          const stakingAccount = tempDb.getValue(PathUtil.getConsensusStakingAccountPath(address));
-          if (whitelist[address] === true && stakingAccount &&
-              stakingAccount.balance >= MIN_STAKE_PER_VALIDATOR) {
-            validators[address] = stakingAccount.balance;
+        if (whitelist[address] === true) {
+          const stake = tempDb.getValue(PathUtil.getConsensusStakingAccountBalancePath(address));
+          if (stake && MIN_STAKE_PER_VALIDATOR <= stake && stake <= MAX_STAKE_PER_VALIDATOR) {
+            validators[address] = {
+              [PredefinedDbPaths.STAKE]: stake,
+              [PredefinedDbPaths.PROPOSAL_RIGHT]: true
+            };
           }
         }
       }
@@ -395,12 +365,16 @@ class Consensus {
       validators = this.getValidators(lastBlock.hash, lastBlock.number);
     }
     const numValidators = Object.keys(validators).length;
-    if (!validators || !numValidators) throw Error('No whitelisted validators');
+    if (!validators || !numValidators) {
+      tempDb.destroyDb();
+      throw Error('No whitelisted validators');
+    }
     if (numValidators < MIN_NUM_VALIDATORS) {
+      tempDb.destroyDb();
       throw Error(`Not enough validators: ${JSON.stringify(validators)}`);
     }
-    const totalAtStake = Object.values(validators).reduce(function(a, b) {
-      return a + b;
+    const totalAtStake = Object.values(validators).reduce((acc, cur) => {
+      return acc + cur[PredefinedDbPaths.STAKE];
     }, 0);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.create(
@@ -448,7 +422,7 @@ class Consensus {
     if (LIGHTWEIGHT) {
       this.cache[blockNumber] = proposalBlock.hash;
     }
-    this.node.destroyDb(tempDb);
+    tempDb.destroyDb();
     return { proposalBlock, proposalTx: Transaction.toJsObject(proposalTx) };
   }
 
@@ -505,11 +479,11 @@ class Consensus {
     }
     const prevBlock = number > 1 ? prevBlockInfo.block : prevBlockInfo;
 
-    // Make sure we have at least MIN_NUM_VALIDATORS validators.
-    if (Object.keys(validators).length < MIN_NUM_VALIDATORS) {
+    // Make sure we have validators within MIN_NUM_VALIDATORS and MAX_NUM_VALIDATORS.
+    if (Object.keys(validators).length < MIN_NUM_VALIDATORS || Object.keys(validators).length > MAX_NUM_VALIDATORS) {
       logger.error(
-          `[${LOG_HEADER}] Validator set smaller than MIN_NUM_VALIDATORS: ` +
-          `${JSON.stringify(validators)}`);
+          `[${LOG_HEADER}] Invalid validator set size (${JSON.stringify(validators)})\n` +
+          `MIN_NUM_VALIDATORS: ${MIN_NUM_VALIDATORS}, MAX_NUM_VALIDATORS: ${MAX_NUM_VALIDATORS}`);
       return false;
     }
 
@@ -554,25 +528,21 @@ class Consensus {
         return null;
       }
       if (isSnapDb) {
-        this.node.destroyDb(prevDb);
+        prevDb.destroyDb();
       }
-      let hasInvalidLastVote = false;
       for (const voteTx of last_votes) {
         if (voteTx.hash === prevBlockProposal.hash) continue;
         if (!Consensus.isValidConsensusTx(voteTx) ||
             CommonUtil.isFailedTx(
-                tempDb.executeTransaction(Transaction.toExecutable(voteTx)))) {
+                tempDb.executeTransaction(Transaction.toExecutable(voteTx), true))) {
           logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
-          hasInvalidLastVote = true;
+          tempDb.destroyDb();
+          return false;
         } else {
           this.blockPool.addSeenVote(voteTx);
         }
       }
-      this.node.destroyDb(tempDb);
-      if (hasInvalidLastVote) {
-        logger.error(`[${LOG_HEADER}] Invalid proposalBlock: has invalid last_votes`);
-        return false;
-      }
+      tempDb.destroyDb();
       prevBlockInfo = this.blockPool.hashToBlockInfo[last_hash];
       if (!prevBlockInfo.notarized) {
         logger.error(`[${LOG_HEADER}] Block's last_votes don't correctly notarize ` +
@@ -618,30 +588,31 @@ class Consensus {
       return null;
     }
     if (isSnapDb) {
-      this.node.destroyDb(prevDb);
+      prevDb.destroyDb();
     }
-    const lastVoteRes = newDb.executeTransactionList(last_votes);
-    if (!lastVoteRes) {
+
+    this.node.removeOldReceipts(number, newDb);
+    if (!newDb.executeTransactionList(last_votes, true)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
-      this.node.destroyDb(newDb);
+      newDb.destroyDb();
       return false;
     }
-    const txsRes = newDb.executeTransactionList(transactions, number);
+    const txsRes = newDb.executeTransactionList(transactions, false, true, number);
     if (!txsRes) {
       logger.error(`[${LOG_HEADER}] Failed to execute transactions`);
-      this.node.destroyDb(newDb);
+      newDb.destroyDb();
       return false;
     }
     const { gasAmountTotal, gasCostTotal } =
         CommonUtil.getServiceGasCostTotalFromTxList(transactions, txsRes);
     if (gasAmountTotal !== gas_amount_total) {
       logger.error(`[${LOG_HEADER}] Invalid gas_amount_total`);
-      this.node.destroyDb(newDb);
+      newDb.destroyDb();
       return false;
     }
     if (gasCostTotal !== gas_cost_total) {
       logger.error(`[${LOG_HEADER}] Invalid gas_cost_total`);
-      this.node.destroyDb(newDb);
+      newDb.destroyDb();
       return false;
     }
 
@@ -650,7 +621,7 @@ class Consensus {
     if (!executableTx) {
       logger.error(`[${LOG_HEADER}] Failed to create a transaction with a proposal: ` +
           `${JSON.stringify(proposalTx, null, 2)}`);
-      this.node.destroyDb(newDb);
+      newDb.destroyDb();
       return false;
     }
     const tempDb = this.node.createTempDb(
@@ -658,31 +629,31 @@ class Consensus {
         prevBlock.number - 1);
     if (!tempDb) {
       logger.error(`Failed to create a temp database with state version: ${newDb.stateVersion}.`);
+      newDb.destroyDb();
       return null;
     }
-    const proposalTxExecRes = tempDb.executeTransaction(executableTx);
+    const proposalTxExecRes = tempDb.executeTransaction(executableTx, true);
     if (CommonUtil.isFailedTx(proposalTxExecRes)) {
       logger.error(
           `[${LOG_HEADER}] Failed to execute the proposal tx: ` +
           `${JSON.stringify(proposalTxExecRes)}`);
-      this.node.destroyDb(tempDb);
-      this.node.destroyDb(newDb);
+      newDb.destroyDb();
+      tempDb.destroyDb();
       return false;
     }
-    this.node.destroyDb(tempDb);
+    tempDb.destroyDb();
     this.node.tp.addTransaction(executableTx);
     newDb.blockNumberSnapshot += 1;
     if (!LIGHTWEIGHT) {
       if (newDb.getStateProof('/')[ProofProperties.PROOF_HASH] !== state_proof_hash) {
         logger.error(`[${LOG_HEADER}] State proof hashes don't match: ` +
             `${newDb.getStateProof('/')[ProofProperties.PROOF_HASH]} / ` +
-            `${state_proof_hash}`);
-        this.node.destroyDb(newDb);
+            `${state_proof_hash}\n\n${JSON.stringify(proposalBlock, null, 2)}`);
         return false;
       }
     }
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
-      this.node.destroyDb(newDb);
+      newDb.destroyDb();
       return false;
     }
     this.blockPool.hashToDb.set(hash, newDb);
@@ -723,8 +694,8 @@ class Consensus {
           `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(executableTx)}`);
       return false;
     }
-    const voteTxRes = tempDb.executeTransaction(executableTx);
-    this.node.destroyDb(tempDb);
+    const voteTxRes = tempDb.executeTransaction(executableTx, true);
+    tempDb.destroyDb();
     if (CommonUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);
       return false;
@@ -778,8 +749,8 @@ class Consensus {
 
   vote(block) {
     const myAddr = this.node.account.address;
-    const myStake = block.validators[myAddr];
-    if (!myStake) {
+    const isValidator = block.validators[myAddr];
+    if (!isValidator) {
       return;
     }
     const operation = {
@@ -787,7 +758,7 @@ class Consensus {
       ref: PathUtil.getConsensusVotePath(block.number, myAddr),
       value: {
         [PredefinedDbPaths.BLOCK_HASH]: block.hash,
-        [PredefinedDbPaths.STAKE]: myStake
+        [PredefinedDbPaths.STAKE]: isValidator.stake
       }
     };
     const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
@@ -934,8 +905,12 @@ class Consensus {
       const block = chain.shift();
       const blockNumber = block.number;
       logger.debug(`[${LOG_HEADER}] applying block ${JSON.stringify(block)}`);
-      snapDb.executeTransactionList(block.last_votes);
-      snapDb.executeTransactionList(block.transactions, blockNumber);
+      const executeRes = this.node.applyBlocksToDb([block], snapDb);
+      if (executeRes !== true) {
+        logger.error(`[${LOG_HEADER}] Failed to execute block`);
+        snapDb.destroyDb();
+        return null;
+      }
       snapDb.blockNumberSnapshot = blockNumber;
     }
     return snapDb;
@@ -977,20 +952,49 @@ class Consensus {
       logger.error(err);
       throw Error(err);
     }
-    const whitelist = this.getWhitelist(stateVersion);
+    let candidates = [];
     const validators = {};
-    Object.keys(whitelist).forEach((address) => {
-      const stake = this.getValidConsensusStake(stateVersion, address);
-      if (whitelist[address] === true && stake >= MIN_STAKE_PER_VALIDATOR) {
-        validators[address] = stake;
+    const whitelist = this.getWhitelist(stateVersion);
+    const stateRoot = this.node.stateManager.getRoot(stateVersion);
+    const allStakeInfo = DB.getValueFromStateRoot(
+        stateRoot, PathUtil.getStakingServicePath(PredefinedDbPaths.CONSENSUS)) || {};
+    for (const [address, stakeInfo] of Object.entries(allStakeInfo)) {
+      const stake = this.getConsensusStakeFromAddr(stateVersion, address);
+      if (stake) {
+        if (whitelist[address] === true) {
+          if (MIN_STAKE_PER_VALIDATOR <= stake && stake <= MAX_STAKE_PER_VALIDATOR) {
+            validators[address] = {
+              [PredefinedDbPaths.STAKE]: stake,
+              [PredefinedDbPaths.PROPOSAL_RIGHT]: true
+            };
+          }
+        } else {
+          candidates.push({
+            address,
+            stake,
+            expireAt: _.get(stakeInfo, `0.${PredefinedDbPaths.STAKING_EXPIRE_AT}`, 0)
+          });
+        }
       }
-    });
+    }
+    // NOTE(liayoo): tie-breaking by addresses as a temporary solution.
+    candidates = _.orderBy(candidates, ['stake', 'expireAt', 'address'], ['desc', 'desc', 'asc']);
+    for (const candidate of candidates) {
+      if (Object.keys(validators).length < MAX_NUM_VALIDATORS) {
+        validators[candidate.address] = {
+          [PredefinedDbPaths.STAKE]: candidate.stake,
+          [PredefinedDbPaths.PROPOSAL_RIGHT]: false
+        };
+      } else {
+        break;
+      }
+    }
     logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators, null, 2)}, ` +
         `whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return validators;
   }
 
-  getValidConsensusStake(stateVersion, address) {
+  getConsensusStakeFromAddr(stateVersion, address) {
     const stateRoot = this.node.stateManager.getRoot(stateVersion);
     return DB.getValueFromStateRoot(
         stateRoot, PathUtil.getConsensusStakingAccountBalancePath(address)) || 0;
@@ -1056,7 +1060,7 @@ class Consensus {
         }
         opList.push({
           type: WriteDbOperations.SET_VALUE,
-          ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
+          ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
               `${ShardingProperties.PROOF_HASH_MAP}/${blockNumberToReport}/` +
               `${ShardingProperties.PROOF_HASH}`,
           value: block.state_proof_hash
@@ -1066,7 +1070,7 @@ class Consensus {
           // Remove old reports
           opList.push({
             type: WriteDbOperations.SET_VALUE,
-            ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
+            ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
                 `${ShardingProperties.PROOF_HASH_MAP}/` +
                 `${blockNumberToReport - MAX_SHARD_REPORT}/` +
                 `${ShardingProperties.PROOF_HASH}`,
@@ -1102,7 +1106,7 @@ class Consensus {
         'ain_get',
         {
           type: ReadDbOperations.GET_VALUE,
-          ref: `${shardingPath}/${ShardingProperties.SHARD}/` +
+          ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
           `${ShardingProperties.PROOF_HASH_MAP}/${ShardingProperties.LATEST}`
         }
     );
@@ -1201,22 +1205,27 @@ class Consensus {
   static selectProposer(seed, validators) {
     const LOG_HEADER = 'selectProposer';
     logger.debug(`[${LOG_HEADER}] seed: ${seed}, validators: ${JSON.stringify(validators)}`);
-    const alphabeticallyOrderedValidators = Object.keys(validators).sort();
-    const totalAtStake = Object.values(validators).reduce((a, b) => {
-      return a + b;
+    const validatorsWithProducingRights = _.pickBy(validators, (x) => {
+      return _.get(x, PredefinedDbPaths.PROPOSAL_RIGHT) === true;
+    });
+    const alphabeticallyOrderedValidators = Object.keys(validatorsWithProducingRights).sort();
+    const totalAtStake = Object.values(validatorsWithProducingRights).reduce((acc, cur) => {
+      return acc + cur[PredefinedDbPaths.STAKE];
     }, 0);
     const randomNumGenerator = seedrandom(seed);
     const targetValue = randomNumGenerator() * totalAtStake;
     let cumulative = 0;
     for (let i = 0; i < alphabeticallyOrderedValidators.length; i++) {
-      cumulative += validators[alphabeticallyOrderedValidators[i]];
+      const addr = alphabeticallyOrderedValidators[i];
+      cumulative += validatorsWithProducingRights[addr][PredefinedDbPaths.STAKE];
       if (cumulative > targetValue) {
-        logger.info(`Proposer is ${alphabeticallyOrderedValidators[i]}`);
-        return alphabeticallyOrderedValidators[i];
+        logger.info(`Proposer is ${addr}`);
+        return addr;
       }
     }
-    logger.error(`[${LOG_HEADER}] Failed to get the proposer.\nvalidators: ` +
-        `${alphabeticallyOrderedValidators}\n` +
+    logger.error(
+        `[${LOG_HEADER}] Failed to get the proposer.\n` +
+        `alphabeticallyOrderedValidators: ${alphabeticallyOrderedValidators}\n` +
         `totalAtStake: ${totalAtStake}\nseed: ${seed}\ntargetValue: ${targetValue}`);
     return null;
   }

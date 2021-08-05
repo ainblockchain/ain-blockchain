@@ -15,7 +15,7 @@ const {
   PORT,
   BlockchainNodeStates,
   WriteDbOperations,
-  TransactionStates,
+  PredefinedDbPaths,
 } = require('../common/constants');
 const { ConsensusStates } = require('../consensus/constants');
 
@@ -77,8 +77,7 @@ app.get('/metrics', (req, res, next) => {
 });
 
 app.get('/get_value', (req, res, next) => {
-  const result = node.db.getValue(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
-      CommonUtil.toBool(req.query.is_global));
+  const result = node.db.getValue(req.query.ref, CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -86,8 +85,7 @@ app.get('/get_value', (req, res, next) => {
 });
 
 app.get('/get_function', (req, res, next) => {
-  const result = node.db.getFunction(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
-      CommonUtil.toBool(req.query.is_global));
+  const result = node.db.getFunction(req.query.ref, CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -95,8 +93,7 @@ app.get('/get_function', (req, res, next) => {
 });
 
 app.get('/get_rule', (req, res, next) => {
-  const result = node.db.getRule(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
-      CommonUtil.toBool(req.query.is_global));
+  const result = node.db.getRule(req.query.ref, CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -104,8 +101,7 @@ app.get('/get_rule', (req, res, next) => {
 });
 
 app.get('/get_owner', (req, res, next) => {
-  const result = node.db.getOwner(req.query.ref, CommonUtil.toBool(req.query.is_shallow),
-      CommonUtil.toBool(req.query.is_global));
+  const result = node.db.getOwner(req.query.ref, CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -134,8 +130,19 @@ app.get('/get_state_info', (req, res, next) => {
     .end();
 });
 
+/**
+ * Returns the state usage of the given app.
+ */
+ app.get('/get_state_usage', (req, res, next) => {
+  const result = node.getStateUsage(req.query.app_name);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: result !== null ? 0 : 1, result})
+    .end();
+});
+
 app.get('/match_function', (req, res, next) => {
-  const result = node.db.matchFunction(req.query.ref, CommonUtil.toBool(req.query.is_global));
+  const result = node.db.matchFunction(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -143,7 +150,7 @@ app.get('/match_function', (req, res, next) => {
 });
 
 app.get('/match_rule', (req, res, next) => {
-  const result = node.db.matchRule(req.query.ref, CommonUtil.toBool(req.query.is_global));
+  const result = node.db.matchRule(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -151,7 +158,7 @@ app.get('/match_rule', (req, res, next) => {
 });
 
 app.get('/match_owner', (req, res, next) => {
-  const result = node.db.matchOwner(req.query.ref, CommonUtil.toBool(req.query.is_global));
+  const result = node.db.matchOwner(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: result !== null ? 0 : 1, result})
@@ -169,7 +176,7 @@ app.post('/eval_rule', (req, res, next) => {
   }
   const result = node.db.evalRule(
       body.ref, body.value, auth, body.timestamp || Date.now(),
-      CommonUtil.toBool(body.is_global));
+      CommonUtil.toMatchOrEvalOptions(body));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -186,7 +193,7 @@ app.post('/eval_owner', (req, res, next) => {
     auth.fid = body.fid;
   }
   const result = node.db.evalOwner(
-      body.ref, body.permission, auth, CommonUtil.toBool(body.is_global));
+      body.ref, body.permission, auth, CommonUtil.toMatchOrEvalOptions(body));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -374,8 +381,8 @@ app.get('/state_versions', (req, res) => {
 });
 
 // TODO(platfowner): Support for subtree dumping (i.e. with ref path).
-app.get('/dump_final_version', (req, res) => {
-  const result = node.dumpFinalVersion(true);
+app.get('/dump_final_db_states', (req, res) => {
+  const result = node.dumpFinalDbStates(CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
@@ -392,26 +399,26 @@ app.get('/tx_pool_size_util', (req, res) => {
 });
 
 app.get('/get_transaction', (req, res, next) => {
-  const transactionInfo = node.tp.transactionTracker[req.query.hash];
-  if (transactionInfo) {
-    if (transactionInfo.state === TransactionStates.IN_BLOCK) {
-      const block = node.bc.getBlockByNumber(transactionInfo.number);
-      const index = transactionInfo.index;
-      if (!block) {
-        logger.debug(`No block found for the tx: ${req.query.hash}`);
-      } else if (index >= 0) {
-        transactionInfo.transaction = block.transactions[index];
-      } else {
-        transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === req.query.hash);
-      }
-    } else if (transactionInfo.state === TransactionStates.IN_POOL) {
-      const address = transactionInfo.address;
-      transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === req.query.hash);
-    }
-  }
+  const transactionInfo = node.getTransactionByHash(req.query.hash);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result: transactionInfo})
+    .end();
+});
+
+app.get('/get_block_by_hash', (req, res, next) => {
+  const block = node.bc.getBlockByHash(req.query.hash);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result: block})
+    .end();
+});
+
+app.get('/get_block_by_number', (req, res, next) => {
+  const block = node.bc.getBlockByNumber(req.query.number);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result: block})
     .end();
 });
 
@@ -425,6 +432,14 @@ app.get('/get_address', (req, res, next) => {
 
 app.get('/get_nonce', (req, res, next) => {
   const result = node.getNonceForAddr(req.query.address, req.query.from === 'pending');
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({code: 0, result})
+    .end();
+});
+
+app.get('/get_timestamp', (req, res, next) => {
+  const result = node.getTimestampForAddr(req.query.address, req.query.from === 'pending');
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})

@@ -1,72 +1,85 @@
 {
-  ".write": true,
+  ".rule": {
+    "write": true
+  },
   "ai": {
-    ".write": true
+    ".rule": {
+      "write": true
+    }
   },
   "comcom": {
-    ".write": true
-  },
-  "consensus": {
-    "number": {
-      "$number": {
-        ".write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))",
-        "propose": {
-          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && (newData.number === 1 || getValue('/consensus/number/' + (newData.number - 1) + '/propose/validators/' + auth.addr) > 0)"
-        },
-        "vote": {
-          "$user_addr": {
-            ".write": "auth.addr === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/service_accounts/staking/consensus/' + $user_addr + '|0/value') >= newData.stake"
-          }
-        }
-      }
+    ".rule": {
+      "write": true
     }
   },
   "billing_keys": {
     "update_billing": {
-      ".write": true
+      ".rule": {
+        "write": true
+      }
     }
   },
   "nested":{
-    ".write": true
+    ".rule": {
+      "write": true
+    }
   },
   "new":{
-    ".write": true
+    ".rule": {
+      "write": true
+    }
   },
   "users":{
     "$uid": {
-      ".write": "auth.addr === $uid",
+      ".rule": {
+        "write": "auth.addr === $uid"
+      },
       "balance": {
-        ".write": "typeof newData === 'number' && newData >= 0"
+        ".rule": {
+          "write": "typeof newData === 'number' && newData >= 0"
+        }
       },
       "info": {
-        ".write": "data !== null"
+        ".rule": {
+          "write": "data !== null"
+        }
       },
       "balance_info": {
-        ".write": "getValue('test/billing_keys/update_billing/' + $uid) !== null"
+        ".rule": {
+          "write": "getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null"
+        }
       },
       "next_counter": {
-        ".write": "typeof newData === 'number' && newData === data + 1"
+        ".rule": {
+          "write": "typeof newData === 'number' && newData === data + 1"
+        }
       }
     }
   },
   "second_users": {
     "$wcard1":{
       "$wcard2": {
-        ".write": "$wcard1 == $wcard2"
+        ".rule": {
+          "write": "$wcard1 == $wcard2"
+        }
       }
     }
   },
   "no_dup_key": {
     "$key1": {
       "$key2": {
-        ".write": true
+        ".rule": {
+          "write": true
+        }
       }
     }
   },
   "dup_key": {
     "$key1": {
       "$key1": {
-        ".write": true
+        ".rule": {
+          "write": true
+        }
       }
     }
   }

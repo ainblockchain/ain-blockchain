@@ -7,7 +7,7 @@ const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
 const { CHAINS_DIR } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
-const { waitUntilTxFinalized, parseOrLog } = require('../unittest/test-util');
+const { waitUntilTxFinalized, parseOrLog, setUpApp } = require('../unittest/test-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
@@ -62,34 +62,15 @@ async function setUp() {
       'GET', server3 + '/get_address').body.toString('utf-8')).result;
   const server4Addr = parseOrLog(syncRequest(
       'GET', server4 + '/get_address').body.toString('utf-8')).result;
-  const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {
-    json: {
-      ref: `/staking/afan/${server1Addr}/0/stake/${Date.now()}/value`,
-      value: 1
-    }
-  }).body.toString('utf-8')).result;
-  assert.deepEqual(CommonUtil.isFailedTx(_.get(appStakingRes, 'result')), false);
-  if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
-    console.log(`setUp(): Failed to check finalization of app staking tx.`);
-  }
 
-  const createAppRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {
-    json: {
-      ref: `/manage_app/afan/create/${Date.now()}`,
-      value: {
-        admin: {
-          [server1Addr]: true,
-          [server2Addr]: true,
-          [server3Addr]: true,
-          [server4Addr]: true,
-        }
-      }
+  await setUpApp('afan', serverList, {
+    admin: {
+      [server1Addr]: true,
+      [server2Addr]: true,
+      [server3Addr]: true,
+      [server4Addr]: true,
     }
-  }).body.toString('utf-8')).result;
-  assert.deepEqual(CommonUtil.isFailedTx(_.get(createAppRes, 'result')), false);
-  if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
-    console.log(`setUp(): Failed to check finalization of create app tx.`)
-  }
+  });
 }
 
 async function cleanUp() {

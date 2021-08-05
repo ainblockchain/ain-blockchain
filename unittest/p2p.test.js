@@ -123,10 +123,18 @@ describe("p2p", () => {
           address: p2pServer.getNodeAddress(),
           state: 'STARTING',
           stateNumeric: 0,
-          nonce: null,
+          nonce: 0,
           dbStatus: {
-            stateInfo: { tree_height: null, tree_size: null },
-            stateProof: { '.proof_hash': null }
+            stateInfo: {
+              tree_height: 0,
+              tree_size: 0,
+              tree_bytes: 0,
+              proof_hash: null,
+              version: "NODE:-1",
+            },
+            stateProof: {
+              '.proof_hash': null
+            }
           },
           stateVersionStatus: {
             numVersions: 2,
@@ -144,7 +152,8 @@ describe("p2p", () => {
           available: 113007648768,
           free: 235339354112,
           total: 250685575168,
-          used: 15346221056
+          usage: 15346221056,
+          usagePercent: 10.1
         };
         assert.deepEqual(Object.keys(actual), Object.keys(p2pServer.getDiskUsage()));
       });
@@ -152,7 +161,7 @@ describe("p2p", () => {
 
     describe("getCpuUsage", () => {
       it("gets initial cpu usage (it depends on the machine)", () => {
-        const actual = { free: 3174023060, usage: 313233920, total: 3487256980 };
+        const actual = { free: 3174023060, usage: 313233920, usagePercent: 7.5, total: 3487256980 };
         assert.deepEqual(Object.keys(actual), Object.keys(p2pServer.getCpuUsage()));
       });
     });
@@ -160,7 +169,12 @@ describe("p2p", () => {
     describe("getMemoryUsage", () => {
       it("gets initial memory usage (it depends on the machine)", () => {
         const actual = {
-          os: { free: 211546112, usage: 16968323072, total: 17179869184 },
+          os: {
+            free: 211546112,
+            usage: 16968323072,
+            usagePercent: 30.3,
+            total: 17179869184
+          },
           heap: {
             rss: 80953344,
             heapTotal: 56041472,
@@ -212,6 +226,7 @@ describe("p2p", () => {
             NETWORK_OPTIMIZATION: undefined,
             GENESIS_CONFIGS_DIR: undefined,
             MIN_NUM_VALIDATORS: undefined,
+            MAX_NUM_VALIDATORS: undefined,
             ACCOUNT_INDEX: undefined,
             P2P_PORT: undefined,
             PORT: undefined,

@@ -1,12 +1,12 @@
 #!/bin/sh
 
-if [ "$#" -lt 1 ]; then
+if [[ "$#" -lt 1 ]]; then
     echo "Usage: sh setup_monitoring_gcp.sh [dev|staging|spring|summer]"
     echo "Example: sh setup_monitoring_gcp.sh dev"
     exit
 fi
 
-if [ "$1" != 'spring' ] && [ "$1" != 'summer' ] && [ "$1" != 'dev' ] && [ "$1" != 'staging' ]; then
+if [[ "$1" != 'spring' ]] && [[ "$1" != 'summer' ]] && [[ "$1" != 'dev' ]] && [[ "$1" != 'staging' ]]; then
     echo "Invalid season argument: $1"
     exit
 fi

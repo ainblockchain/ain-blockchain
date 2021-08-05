@@ -27,6 +27,8 @@ const FeatureFlags = {
   enableRichP2pCommunicationLogging: false,
   // Enables rich logging for tx selection in tx pool.
   enableRichTxSelectionLogging: false,
+  // Enables receipt path's prefix layers.
+  enableReceiptPathPrefixLayers: true,
 };
 
 // ** Environment variables **
@@ -44,6 +46,8 @@ const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
 const LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
 const SYNC_MODE = process.env.SYNC_MODE || 'full';
+const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
+    Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
 
 // ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -69,17 +73,43 @@ if (!fs.existsSync(BLOCKCHAIN_DATA_DIR)) {
   fs.mkdirSync(BLOCKCHAIN_DATA_DIR, { recursive: true });
 }
 const CHAINS_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'chains');
-const CHAINS_N2B_DIR_NAME = 'n2b'; // NOTE: Block number to block.
-const CHAINS_H2N_DIR_NAME = 'h2n'; // NOTE: Block hash to block number.
+const CHAINS_N2B_DIR_NAME = 'n2b'; // Number-to-block directory name.
+const CHAINS_H2N_DIR_NAME = 'h2n'; // Hash-to-number directory name.
+const CHAINS_N2B_MAX_NUM_FILES = 100000;
+const CHAINS_H2N_HASH_PREFIX_LENGTH = 5;
+const CHAIN_SEGMENT_LENGTH = 20;
+const ON_MEMORY_CHAIN_LENGTH = 10;
 const SNAPSHOTS_ROOT_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'snapshots');
-const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // NOTE: Block number to snapshot.
-const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // NOTE: How often the snapshot is made
-const MAX_NUM_SNAPSHOTS = 10; // NOTE: max number of snapshots to keep
+const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
+// NOTE(platfowner): Should have a value bigger than ON_MEMORY_CHAIN_LENGTH.
+const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
+const MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
 const HASH_DELIMITER = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
 const MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
 const MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
+const SERVICE_BANDWIDTH_BUDGET_RATIO = 0.5;
+const APPS_BANDWIDTH_BUDGET_RATIO = 0.45;
+const FREE_BANDWIDTH_BUDGET_RATIO = 0.05;
+const SERVICE_STATE_BUDGET_RATIO = 0.5;
+const APPS_STATE_BUDGET_RATIO = 0.45;
+const FREE_STATE_BUDGET_RATIO = 0.05;
+const bandwidthBudgetPerBlock = GenesisParams.resource.BANDWIDTH_BUDGET_PER_BLOCK;
+const stateTreeBytesLimit = process.env.STATE_TREE_BYTES_LIMIT ?
+    process.env.STATE_TREE_BYTES_LIMIT : GenesisParams.resource.STATE_TREE_BYTES_LIMIT; // = Total state budget
+const SERVICE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * SERVICE_BANDWIDTH_BUDGET_RATIO;
+const APPS_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * APPS_BANDWIDTH_BUDGET_RATIO;
+const FREE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * FREE_BANDWIDTH_BUDGET_RATIO;
+const SERVICE_STATE_BUDGET = stateTreeBytesLimit * SERVICE_STATE_BUDGET_RATIO;
+const APPS_STATE_BUDGET = stateTreeBytesLimit * APPS_STATE_BUDGET_RATIO;
+const FREE_STATE_BUDGET = stateTreeBytesLimit * FREE_STATE_BUDGET_RATIO;
+const MAX_STATE_TREE_SIZE_PER_BYTE = 0.005;
+const TREE_SIZE_BUDGET = stateTreeBytesLimit * MAX_STATE_TREE_SIZE_PER_BYTE;
+const SERVICE_TREE_SIZE_BUDGET = SERVICE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
+const APPS_TREE_SIZE_BUDGET = APPS_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
+const FREE_TREE_SIZE_BUDGET = FREE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
+const STATE_GAS_COEFFICIENT = 1;
 
 // ** Enums **
 /**
@@ -119,6 +149,11 @@ const PredefinedDbPaths = {
   RULES_ROOT: 'rules',
   FUNCTIONS_ROOT: 'functions',
   VALUES_ROOT: 'values',
+  // Entry point labels (.*)
+  DOT_RULE: '.rule',
+  DOT_FUNCTION: '.function',
+  DOT_OWNER: '.owner',
+  DOT_SHARD: '.shard',
   // Consensus
   CONSENSUS: 'consensus',
   WHITELIST: 'whitelist',
@@ -130,10 +165,19 @@ const PredefinedDbPaths = {
   VOTE: 'vote',
   BLOCK_HASH: 'block_hash',
   STAKE: 'stake',
+  PROPOSAL_RIGHT: 'proposal_right',
+  // Receipts
+  RECEIPTS: 'receipts',
+  RECEIPTS_ADDRESS: 'address',
+  RECEIPTS_BILLING: 'billing',
+  RECEIPTS_BLOCK_NUMBER: 'block_number',
+  RECEIPTS_EXEC_RESULT: 'exec_result',
+  RECEIPTS_GAS_COST_TOTAL: 'gas_cost_total',
   // Gas fee
   GAS_FEE: 'gas_fee',
   COLLECT: 'collect',
   BILLING: 'billing',
+  GAS_FEE_AMOUNT: 'amount',
   // Token
   TOKEN: 'token',
   TOKEN_NAME: 'name',
@@ -159,6 +203,7 @@ const PredefinedDbPaths = {
   MANAGE_APP_CONFIG_ADMIN: 'admin',
   MANAGE_APP_CONFIG_BILLING: 'billing',
   MANAGE_APP_CONFIG_BILLING_USERS: 'users',
+  MANAGE_APP_CONFIG_IS_PUBLIC: 'is_public',
   MANAGE_APP_CONFIG_SERVICE: 'service',
   MANAGE_APP_CREATE: 'create',
   MANAGE_APP_RESULT: 'result',
@@ -234,7 +279,6 @@ const OwnerProperties = {
   ANYONE: '*',
   BRANCH_OWNER: 'branch_owner',
   FID_PREFIX: 'fid:',
-  OWNER: '.owner',
   OWNERS: 'owners',
   WRITE_FUNCTION: 'write_function',
   WRITE_OWNER: 'write_owner',
@@ -247,7 +291,7 @@ const OwnerProperties = {
  * @enum {string}
  */
 const RuleProperties = {
-  WRITE: '.write',
+  WRITE: 'write',
 };
 
 /**
@@ -257,7 +301,6 @@ const RuleProperties = {
  */
 const FunctionProperties = {
   EVENT_LISTENER: 'event_listener',
-  FUNCTION: '.function',
   FUNCTION_ID: 'function_id',
   FUNCTION_TYPE: 'function_type',
   SERVICE_NAME: 'service_name',
@@ -288,8 +331,12 @@ const ProofProperties = {
  * @enum {string}
  */
 const StateInfoProperties = {
+  NUM_PARENTS: 'num_parents',
+  PROOF_HASH: 'proof_hash',
+  VERSION: 'version',
   TREE_HEIGHT: 'tree_height',
   TREE_SIZE: 'tree_size',
+  TREE_BYTES: 'tree_bytes',
 };
 
 /**
@@ -333,7 +380,6 @@ const ShardingProperties = {
   PROOF_HASH: 'proof_hash',
   PROOF_HASH_MAP: 'proof_hash_map',
   REPORTING_PERIOD: 'reporting_period',
-  SHARD: '.shard',
   SHARD_OWNER: 'shard_owner',
   SHARD_REPORTER: 'shard_reporter',
   SHARDING_ENABLED: 'sharding_enabled',
@@ -418,9 +464,10 @@ const FunctionResultCode = {
  */
 const TransactionStates = {
   IN_BLOCK: 'IN_BLOCK',
-  IN_POOL: 'IN_POOL',
+  EXECUTED: 'EXECUTED',
+  FAILED: 'FAILED',
+  PENDING: 'PENDING',
   TIMED_OUT: 'TIMED_OUT',
-  FAILED: 'FAILED'
 };
 
 /**
@@ -469,7 +516,6 @@ const SERVICE_TYPES = [
   PredefinedDbPaths.SHARDING,
   PredefinedDbPaths.STAKING,
   PredefinedDbPaths.TRANSFER,
-  'test',  // NOTE(platfowner): A temporary solution for tests.
 ];
 
 function isServiceType(type) {
@@ -521,7 +567,7 @@ const SyncModeOptions = {
  * (priority: base params < genesis_params.json in GENESIS_CONFIGS_DIR < env var)
  */
 const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'HOSTING_ENV'];
-const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'EPOCH_MS'];
+const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'MAX_NUM_VALIDATORS', 'EPOCH_MS'];
 
 function overwriteGenesisParams(overwritingParams, type) {
   for (const key of overwritingParams) {
@@ -536,7 +582,10 @@ function overwriteGenesisParams(overwritingParams, type) {
     for (let i = 0; i < GenesisParams.consensus.MIN_NUM_VALIDATORS; i++) {
       const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
       CommonUtil.setJsObject(whitelist, [addr], true);
-      CommonUtil.setJsObject(validators, [addr], GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR);
+      CommonUtil.setJsObject(validators, [addr], {
+          [PredefinedDbPaths.STAKE]: GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR,
+          [PredefinedDbPaths.PROPOSAL_RIGHT]: true
+        });
     }
     GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
     GenesisParams.consensus.GENESIS_VALIDATORS = validators;
@@ -547,19 +596,19 @@ overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
 overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
 // NOTE(minsulee2): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
-// The minimum network connections are set based on the MIN_NUM_VALIDATORS otherwise.
+// The minimum network connections are set based on the MAX_NUM_VALIDATORS otherwise.
 function initializeNetworkEnvronments() {
   if (process.env.NETWORK_OPTIMIZATION) {
     return GenesisParams.network;
   } else {
     return {
-      // NOTE(minsulee2): Need a discussion that MIN_NUM_VALIDATORS and MAX_INBOUND_LIMIT
+      // NOTE(minsulee2): Need a discussion that MAX_NUM_VALIDATORS and MAX_INBOUND_LIMIT
       // should not be related to one another.
       P2P_MESSAGE_TIMEOUT_MS: 600000,
-      MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
-      MAX_INBOUND_LIMIT: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
-      DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1,
-      DEFAULT_MAX_INBOUND: GenesisParams.consensus.MIN_NUM_VALIDATORS - 1
+      MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      MAX_INBOUND_LIMIT: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      DEFAULT_MAX_INBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1
     }
   }
 }
@@ -661,7 +710,8 @@ function getGenesisRules() {
 }
 
 function getGenesisOwners() {
-  const owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
+  let owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
+  CommonUtil.setJsObject(owners, [], getRootOwner());
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     CommonUtil.setJsObject(
         owners, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
@@ -676,13 +726,26 @@ function getShardingRule() {
   const ownerAddress =
       CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
   return {
-    [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
+    [PredefinedDbPaths.DOT_RULE]: {
+      [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
+    }
+  };
+}
+
+function getRootOwner() {
+  return {
+    [PredefinedDbPaths.DOT_OWNER]: {
+      [OwnerProperties.OWNERS]: {
+        [GenesisAccounts.owner.address]: buildOwnerPermissions(true, true, true, true),
+        [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+      }
+    }
   };
 }
 
 function getShardingOwner() {
   return {
-    [OwnerProperties.OWNER]: {
+    [PredefinedDbPaths.DOT_OWNER]: {
       [OwnerProperties.OWNERS]: {
         [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
         [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
@@ -693,7 +756,7 @@ function getShardingOwner() {
 
 function getWhitelistOwner() {
   return {
-    [OwnerProperties.OWNER]: {
+    [PredefinedDbPaths.DOT_OWNER]: {
       [OwnerProperties.OWNERS]: {
         [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
         [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
@@ -712,7 +775,11 @@ function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule
 }
 
 function buildRulePermission(rule) {
-  return { [RuleProperties.WRITE]: rule };
+  return {
+    [PredefinedDbPaths.DOT_RULE]: {
+      [RuleProperties.WRITE]: rule
+    }
+  };
 }
 
 module.exports = {
@@ -725,10 +792,15 @@ module.exports = {
   CHAINS_DIR,
   CHAINS_N2B_DIR_NAME,
   CHAINS_H2N_DIR_NAME,
+  CHAINS_N2B_MAX_NUM_FILES,
+  CHAINS_H2N_HASH_PREFIX_LENGTH,
+  CHAIN_SEGMENT_LENGTH,
+  ON_MEMORY_CHAIN_LENGTH,
   SNAPSHOTS_ROOT_DIR,
   SNAPSHOTS_N2S_DIR_NAME,
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
   MAX_NUM_SNAPSHOTS,
+  MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
   DEBUG,
   CONSOLE_LOG,
   ENABLE_DEV_SET_CLIENT_API,
@@ -745,6 +817,17 @@ module.exports = {
   TX_TIMESTAMP_ERROR_CODE,
   MICRO_AIN,
   MILLI_AIN,
+  SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
+  APPS_BANDWIDTH_BUDGET_PER_BLOCK,
+  FREE_BANDWIDTH_BUDGET_PER_BLOCK,
+  SERVICE_STATE_BUDGET,
+  APPS_STATE_BUDGET,
+  FREE_STATE_BUDGET,
+  TREE_SIZE_BUDGET,
+  SERVICE_TREE_SIZE_BUDGET,
+  APPS_TREE_SIZE_BUDGET,
+  FREE_TREE_SIZE_BUDGET,
+  STATE_GAS_COEFFICIENT,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,

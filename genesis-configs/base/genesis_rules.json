@@ -1,9 +1,13 @@
 {
-  ".write": false,
+  ".rule": {
+    "write": false
+  },
   "accounts": {
     "$user_addr": {
       "balance": {
-        ".write": "auth.fid === '_transfer'"
+        ".rule": {
+          "write": "auth.fid === '_transfer'"
+        }
       }
     }
   },
@@ -11,12 +15,16 @@
     "$user_addr": {
       "$checkin_id": {
         "request": {
-          ".write": "data === null && auth.addr === $user_addr && util.isDict(newData)"
+          ".rule": {
+            "write": "data === null && auth.addr === $user_addr && util.isDict(newData)"
+          }
         },
         "parent_finalize": {
           "$tx_hash": {
             "result": {
-              ".write": "auth.addr === getValue('/sharding/config/shard_owner') && util.isBool(newData)"
+              ".rule": {
+                "write": "auth.addr === getValue('/sharding/config/shard_owner') && util.isBool(newData)"
+              }
             }
           }
         }
@@ -26,20 +34,28 @@
   "consensus": {
     "number": {
       "$number": {
-        ".write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))",
+        ".rule": {
+          "write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))"
+        },
         "propose": {
-          ".write": "newData !== null && util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount()) && util.isNumber(newData.gas_cost_total) && (newData.gas_cost_total === 0 || newData.gas_cost_total === getValue('/service_accounts/gas_fee/gas_fee/' + $number + '/balance'))"
+          ".rule": {
+            "write": "util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || (getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount() && getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') <= util.getMaxStakeAmount())) && util.isNumber(newData.gas_cost_total) && (newData.gas_cost_total === 0 || newData.gas_cost_total === getValue('/service_accounts/gas_fee/gas_fee/' + $number + '/balance'))"
+          }
         },
         "vote": {
           "$user_addr": {
-            ".write": "auth.addr === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && newData.stake > 0 && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount())"
+            ".rule": {
+              "write": "auth.addr === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && (lastBlockNumber < 1 || util.getConsensusStakeBalance(auth.addr, getValue) === newData.stake)"
+            }
           }
         }
       }
     },
     "whitelist": {
       "$user_addr": {
-        ".write": "getValue('/manage_app/consensus/config/admin/' + auth.addr) === true && (newData === true || (newData === null && util.length(util.values(getValue('/consensus/whitelist')).filter(x => x === true)) > util.getMinNumValidators()))"
+        ".rule": {
+          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.length(util.values(getValue('/consensus/whitelist')).filter(x => x === true)) > util.getMinNumValidators()))"
+        }
       }
     }
   },
@@ -48,21 +64,31 @@
       "$target_account": {
         "$escrow_key": {
           "config": {
-            ".write": "data === null || getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config/admin/' + auth.addr) === true"
+            ".rule": {
+              "write": "data === null || getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config/admin/' + auth.addr) === true"
+            }
           },
           "hold": {
             "$record_id": {
-              ".write": "((util.isServAcntName($source_account) && getValue(util.getAppAdminPath($source_account) + '/' + auth.addr) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config') !== null && data === null && util.isDict(newData)",
+              ".rule": {
+                "write": "((util.isServAcntName($source_account) && util.isAppAdminFromServAcntName($source_account, auth.addr, getValue) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config') !== null && data === null && util.isDict(newData)"
+              },
               "result": {
-                ".write": "auth.fid === '_hold'"
+                ".rule": {
+                  "write": "auth.fid === '_hold'"
+                }
               }
             }
           },
           "release": {
             "$record_id": {
-              ".write": "getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config/admin/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.ratio) && 0 <= newData.ratio && newData.ratio <= 1",
+              ".rule": {
+                "write": "getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config/admin/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.ratio) && 0 <= newData.ratio && newData.ratio <= 1"
+              },
               "result": {
-                ".write": "auth.fid === '_release'"
+                ".rule": {
+                  "write": "auth.fid === '_release'"
+                }
               }
             }
           }
@@ -75,7 +101,9 @@
       "$from": {
         "$block_number": {
           "$tx_hash": {
-            ".write": "(auth.addr === $from || (util.isServAcntName($from) && getValue(util.getBillingUserPath($from, auth.addr)) === true)) && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount <= getValue(util.getBalancePath($from))"
+            ".rule": {
+              "write": "(auth.addr === $from || (util.isServAcntName($from) && util.isBillingUser($from, auth.addr, getValue) === true)) && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount <= util.getBalance($from, getValue)"
+            }
           }
         }
       }
@@ -84,13 +112,19 @@
   "manage_app": {
     "$app_name": {
       "config": {
-        ".write": "auth.fid === '_createApp' || getValue('/manage_app/' + $app_name + '/config/admin/' + auth.addr) === true"
+        ".rule": {
+          "write": "auth.fid === '_createApp' || util.isAppAdmin($app_name, auth.addr, getValue) === true"
+        }
       },
       "create": {
         "$record_id": {
-          ".write": "data === null && getValue('/manage_app/' + $app_name + '/config') === null && util.isDict(newData)",
+          ".rule": {
+            "write": "data === null && getValue('/manage_app/' + $app_name + '/config') === null && util.isDict(newData)"
+          },
           "result": {
-            ".write": "auth.fid === '_createApp'"
+            ".rule": {
+              "write": "auth.fid === '_createApp'"
+            }
           }
         }
       }
@@ -102,17 +136,25 @@
         "$payment_key": {
           "claim": {
             "$record_id": {
-              ".write": "getValue('/manage_app/' + $service_name + '/config/admin/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))",
+              ".rule": {
+                "write": "util.isAppAdmin($service_name, auth.addr, getValue) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))"
+              },
               "result": {
-                ".write": "auth.fid === '_claim'"
+                ".rule": {
+                  "write": "auth.fid === '_claim'"
+                }
               }
             }
           },
           "pay": {
             "$record_id": {
-              ".write": "getValue('/manage_app/' + $service_name + '/config/admin/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0",
+              ".rule": {
+                "write": "util.isAppAdmin($service_name, auth.addr, getValue) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0"
+              },
               "result": {
-                ".write": "auth.fid === '_pay'"
+                ".rule": {
+                  "write": "auth.fid === '_pay'"
+                }
               }
             }
           }
@@ -125,7 +167,9 @@
       "$service_name": {
         "$key": {
           "balance": {
-            ".write": "auth.fid === '_transfer'"
+            ".rule": {
+              "write": "auth.fid === '_transfer'"
+            }
           }
         }
       }
@@ -133,39 +177,55 @@
   },
   "sharding": {
     "shard": {
-      ".write": false,
+      ".rule": {
+        "write": false
+      },
       "$sharding_path": {
-        ".write": "(data === null && util.isDict(newData) && util.isString(newData.sharding_path) && util.isString(newData.parent_chain_poc) && util.isNumber(newData.reporting_period) && util.isValAddr(newData.shard_owner) && util.isValAddr(newData.shard_reporter) && util.isValShardProto(newData.sharding_protocol) && evalOwner(newData.sharding_path, 'write_owner', auth) && evalOwner(newData.sharding_path, 'write_rule', auth) && evalOwner(newData.sharding_path, 'write_function', auth)) || (auth.addr === data.shard_owner && newData === null)"
+        ".rule": {
+          "write": "(data === null && util.isDict(newData) && util.isString(newData.sharding_path) && util.isString(newData.parent_chain_poc) && util.isNumber(newData.reporting_period) && util.isValAddr(newData.shard_owner) && util.isValAddr(newData.shard_reporter) && util.isValShardProto(newData.sharding_protocol) && evalOwner(newData.sharding_path, 'write_owner', auth) && evalOwner(newData.sharding_path, 'write_rule', auth) && evalOwner(newData.sharding_path, 'write_function', auth)) || (auth.addr === data.shard_owner && newData === null)"
+        }
       }
     }
   },
   "staking": {
     "$service_name": {
       "balance_total": {
-        ".write": "auth.fid === '_stake' || auth.fid === '_unstake'"
+        ".rule": {
+          "write": "auth.fid === '_stake' || auth.fid === '_unstake'"
+        }
       },
       "$user_addr": {
         "$staking_key": {
           "expire_at": {
-            ".write": "auth.fid === '_stake'"
+            ".rule": {
+              "write": "auth.fid === '_stake'"
+            }
           },
           "stake": {
             "$record_id": {
               "value": {
-                ".write": "$user_addr === auth.addr && data === null && util.isNumber(newData) && newData >= 0 && getValue('/accounts/' + $user_addr + '/balance') >= newData"
+                ".rule": {
+                  "write": "$user_addr === auth.addr && data === null && util.isNumber(newData) && newData >= 0 && getValue('/accounts/' + $user_addr + '/balance') >= newData"
+                }
               },
               "result": {
-                ".write": "auth.fid === '_stake'"
+                ".rule": {
+                  "write": "auth.fid === '_stake'"
+                }
               }
             }
           },
           "unstake": {
             "$record_id": {
               "value": {
-                ".write": "$user_addr === auth.addr && data === null && util.isNumber(newData) && newData > 0 && newData <= getValue(util.getBalancePath(util.toServiceAccountName('staking', $service_name, $user_addr + '|' + $staking_key)))"
+                ".rule": {
+                  "write": "$user_addr === auth.addr && data === null && util.isNumber(newData) && newData > 0 && newData <= util.getBalance(util.toServiceAccountName('staking', $service_name, $user_addr + '|' + $staking_key), getValue)"
+                }
               },
               "result": {
-                ".write": "auth.fid === '_unstake'"
+                ".rule": {
+                  "write": "auth.fid === '_unstake'"
+                }
               }
             }
           }
@@ -178,10 +238,14 @@
       "$to": {
         "$key": {
           "value": {
-            ".write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
+            ".rule": {
+              "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && util.getBalance($from, getValue) >= newData"
+            }
           },
           "result": {
-            ".write": "auth.fid === '_transfer'"
+            ".rule": {
+              "write": "auth.fid === '_transfer'"
+            }
           }
         }
       }

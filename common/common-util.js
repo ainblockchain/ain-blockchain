@@ -119,19 +119,23 @@ class CommonUtil {
   }
 
   static boolOrFalse(value) {
-    return CommonUtil.isBool(value) ? value : false;
+    return ruleUtil.boolOrFalse(value);
   }
 
   static numberOrZero(num) {
-    return CommonUtil.isNumber(num) ? num : 0;
+    return ruleUtil.numberOrZero(num);
   }
 
   static stringOrEmpty(str) {
-    return CommonUtil.isString(str) ? str : '';
+    return ruleUtil.stringOrEmpty(str);
   }
 
   static toBool(value) {
     return ruleUtil.toBool(value);
+  }
+
+  static toNumberOrNaN(value) {
+    return ruleUtil.toNumberOrNaN(value);
   }
 
   static toCksumAddr(addr) {
@@ -172,6 +176,42 @@ class CommonUtil {
     } else {
       return JSON.stringify(value);
     }
+  }
+
+  static toGetOptions(args) {
+    const options = {};
+    if (args.is_shallow !== undefined) {
+      options.isShallow = CommonUtil.toBool(args.is_shallow);
+    }
+    if (args.is_global !== undefined) {
+      options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    if (args.include_tree_info !== undefined) {
+      options.includeTreeInfo = CommonUtil.toBool(args.include_tree_info);
+    }
+    if (args.include_proof !== undefined) {
+      options.includeProof = CommonUtil.toBool(args.include_proof);
+    }
+    if (args.include_version !== undefined) {
+      options.includeVersion = CommonUtil.toBool(args.include_version);
+    }
+    return options;
+  }
+
+  static toMatchOrEvalOptions(args) {
+    const options = {};
+    if (args.is_global !== undefined) {
+      options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    return options;
+  }
+
+  static toSetOptions(args) {
+    const options = {};
+    if (args.is_global !== undefined) {
+      options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    return options;
   }
 
   static parseJsonOrNull(str) {
@@ -239,6 +279,15 @@ class CommonUtil {
     return ref === undefined ? null : ref;
   }
 
+  /**
+   * Sets a value to the given path of an object. If the given path is empty, it tries to copy
+   * the first-level properties of the value to the object.
+   * 
+   * @param {object} obj target object
+   * @param {array} path target path
+   * @param {*} value value to set
+   * @returns true if any changes are done, otherwise false
+   */
   static setJsObject(obj, path, value) {
     if (!CommonUtil.isArray(path)) {
       return false;
@@ -247,7 +296,15 @@ class CommonUtil {
       return false;
     }
     if (path.length === 0) {
-      return false;
+      if (!CommonUtil.isDict(value)) {
+        return false;
+      }
+      for (const key in value) {
+        if (value.hasOwnProperty(key)) {
+          obj[key] = value[key];
+        }
+      }
+      return true;
     }
     let ref = obj;
     for (let i = 0; i < path.length - 1; i++) {
@@ -279,14 +336,25 @@ class CommonUtil {
   }
 
   /**
+   * Returns true if the given result is one of the pre-check failure codes.
+   * Includes codes from precheckTxBillingParams(), precheckBalanceAndStakes(),
+   * precheckTransaction(), and executeTransaction() but does not include any codes returned
+   * after executeOperation().
+   */
+  static txPrecheckFailed(result) {
+    const precheckFailureCode = [21, 22, 3, 15, 33, 16, 17, 34, 35];
+    return precheckFailureCode.includes(result.code);
+  }
+
+  /**
    * Returns true if the given result is from failed transaction or transaction list.
    */
   static isFailedTx(result) {
     if (!result) {
       return true;
     }
-    if (CommonUtil.isArray(result.result_list)) {
-      for (const subResult of result.result_list) {
+    if (CommonUtil.isDict(result.result_list)) {
+      for (const subResult of Object.values(result.result_list)) {
         if (CommonUtil.isFailedTxResultCode(subResult.code)) {
           return true;
         }
@@ -323,8 +391,8 @@ class CommonUtil {
         if (CommonUtil.isFailedFuncResultCode(funcResult.code)) {
           return true;
         }
-        if (CommonUtil.isArray(funcResult.op_results)) {
-          for (const opResult of funcResult.op_results) {
+        if (!CommonUtil.isEmpty(funcResult.op_results)) {
+          for (const opResult of Object.values(funcResult.op_results)) {
             if (CommonUtil.isFailedTx(opResult.result)) {
               return true;
             }
@@ -349,11 +417,44 @@ class CommonUtil {
     return _.get(parsedPath, 0) === PredefinedDbPaths.APPS;
   }
 
-  // TODO(liayoo): Fix testing paths (writing at the root) and update isServicePath().
-  static isServicePath(parsedPath) {
-    const { isServiceType } = require('../common/constants');
+  static hasServiceOp(op) {
+    if (op.op_list) {
+      for (const innerOp of op.op_list) {
+        if (!CommonUtil.isAppPath(CommonUtil.parsePath(innerOp.ref))) {
+          return true;
+        }
+      }
+      return false;
+    }
+    return !CommonUtil.isAppPath(CommonUtil.parsePath(op.ref));
+  }
 
-    return isServiceType(_.get(parsedPath, 0));
+  static getAppNameFromRef(ref, shardingPath, isGlobal) {
+    const DB = require('../db');
+    const parsedPath = CommonUtil.parsePath(ref);
+    const localPath = isGlobal === true ? DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
+    if (CommonUtil.isAppPath(localPath)) {
+      return _.get(localPath, 1, null);
+    }
+    return null;
+  }
+
+  static getAppNameList(op, shardingPath) {
+    if (!op) {
+      return [];
+    }
+    if (op.op_list) {
+      const appNames = new Set();
+      for (const innerOp of op.op_list) {
+        const name = CommonUtil.getAppNameFromRef(innerOp.ref, shardingPath, innerOp.is_global);
+        if (name) {
+          appNames.add(name);
+        }
+      }
+      return [...appNames];
+    }
+    const name = CommonUtil.getAppNameFromRef(op.ref, shardingPath, op.is_global);
+    return name ? [name] : [];
   }
 
   static getDependentAppNameFromRef(ref) {
@@ -384,51 +485,48 @@ class CommonUtil {
     return name ? [name] : [];
   }
 
-  static getSingleOpGasAmount(parsedPath, value) {
-    const gasAmount = {
-      service: 0,
-      app: {}
-    };
+  static getSingleOpBandwidthGasAmount(parsedPath, value) {
+    const gasAmount = { service: 0 };
     if (!value) {
       return gasAmount;
     }
-    if (CommonUtil.isServicePath(parsedPath)) {
-      CommonUtil.setJsObject(gasAmount, ['service'], value);
-    } else if (CommonUtil.isAppPath(parsedPath)) {
+    if (CommonUtil.isAppPath(parsedPath)) {
       const appName = _.get(parsedPath, 1);
       if (!appName) return;
       CommonUtil.setJsObject(gasAmount, ['app', appName], value);
+    } else {
+      CommonUtil.setJsObject(gasAmount, ['service'], value);
     }
     return gasAmount;
   }
 
-  static getTotalGasAmountInternal(triggeringPath, resultObj) {
-    const gasAmount = {
-      service: 0,
-      app: {}
-    };
+  static getTotalBandwidthGasAmountInternal(triggeringPath, resultObj) {
+    const gasAmount = { service: 0 };
     if (!resultObj) return gasAmount;
     if (resultObj.result_list) return gasAmount; // NOTE: Assume nested SET is not allowed
 
     if (resultObj.func_results) {
       for (const funcRes of Object.values(resultObj.func_results)) {
-        if (CommonUtil.isArray(funcRes.op_results)) {
-          for (const opRes of funcRes.op_results) {
+        if (!CommonUtil.isEmpty(funcRes.op_results)) {
+          for (const opRes of Object.values(funcRes.op_results)) {
             CommonUtil.mergeNumericJsObjects(
               gasAmount,
-              CommonUtil.getTotalGasAmountInternal(CommonUtil.parsePath(opRes.path), opRes.result)
+              CommonUtil.getTotalBandwidthGasAmountInternal(CommonUtil.parsePath(opRes.path), opRes.result)
             );
           }
         }
         // Follow the tx type of the triggering tx.
-        CommonUtil.mergeNumericJsObjects(gasAmount, CommonUtil.getSingleOpGasAmount(triggeringPath, funcRes.gas_amount));
+        CommonUtil.mergeNumericJsObjects(
+          gasAmount,
+          CommonUtil.getSingleOpBandwidthGasAmount(triggeringPath, funcRes.bandwidth_gas_amount)
+        );
       }
     }
 
-    if (resultObj.gas_amount) {
+    if (resultObj.bandwidth_gas_amount) {
       CommonUtil.mergeNumericJsObjects(
         gasAmount,
-        CommonUtil.getSingleOpGasAmount(triggeringPath, resultObj.gas_amount)
+        CommonUtil.getSingleOpBandwidthGasAmount(triggeringPath, resultObj.bandwidth_gas_amount)
       );
     }
 
@@ -439,25 +537,21 @@ class CommonUtil {
    * Returns the total gas amount of the result, separated by the types of operations (service / app)
    * (esp. multi-operation result).
    */
-  static getTotalGasAmount(op, result) {
-    const gasAmount = {
-      service: 0,
-      app: {}
-    };
+  static getTotalBandwidthGasAmount(op, result) {
+    const gasAmount = { service: 0 };
     if (!op || !result) return gasAmount;
     if (result.result_list) {
-      for (let i = 0, len = result.result_list.length; i < len; i++) {
-        const elem = result.result_list[i];
+      for (const [index, res] of Object.entries(result.result_list)) {
         CommonUtil.mergeNumericJsObjects(
           gasAmount,
-          CommonUtil.getTotalGasAmountInternal(CommonUtil.parsePath(op.op_list[i].ref), elem)
+          CommonUtil.getTotalBandwidthGasAmountInternal(CommonUtil.parsePath(op.op_list[index].ref), res)
         );
       }
     } else {
       const triggeringPath = CommonUtil.parsePath(op.ref);
       CommonUtil.mergeNumericJsObjects(
         gasAmount,
-        CommonUtil.getTotalGasAmountInternal(triggeringPath, result)
+        CommonUtil.getTotalBandwidthGasAmountInternal(triggeringPath, result)
       );
     }
 
@@ -486,15 +580,14 @@ class CommonUtil {
   static getServiceGasCostTotalFromTxList(txList, resList) {
     return resList.reduce((acc, cur, index) => {
       const tx = txList[index];
-      const totalGasAmount = CommonUtil.getTotalGasAmount(tx.tx_body.operation, cur);
       return CommonUtil.mergeNumericJsObjects(acc, {
-        gasAmountTotal: totalGasAmount.service,
-        gasCostTotal: CommonUtil.getTotalGasCost(tx.tx_body.gas_price, totalGasAmount.service)
+        gasAmountTotal: cur.gas_amount_charged,
+        gasCostTotal: CommonUtil.getTotalGasCost(tx.tx_body.gas_price, cur.gas_amount_charged)
       });
     }, { gasAmountTotal: 0, gasCostTotal: 0 });
   }
 
-  static returnTxResult(code, message = null, gasAmount = 0, funcResults = null) {
+  static returnTxResult(code, message = null, bandwidthGasAmount = 0, funcResults = null) {
     const result = {};
     if (message) {
       result.error_message = message;
@@ -503,7 +596,7 @@ class CommonUtil {
       result.func_results = funcResults;
     }
     result.code = code;
-    result.gas_amount = gasAmount;
+    result.bandwidth_gas_amount = bandwidthGasAmount;
     return result;
   }
 
@@ -574,14 +667,24 @@ class CommonUtil {
     return CommonUtil.metricsToText(metrics);
   }
 
-  static sleep = (ms) => {
+  static sleep(ms) {
     return new Promise((resolve) => {
       setTimeout(resolve, ms);
     });
   };
 
-  static convertEnvVarInputToBool = (input, defaultValue = false) => {
+  static convertEnvVarInputToBool(input, defaultValue = false) {
     return input ? input.toLowerCase().startsWith('t') : defaultValue;
+  }
+
+  static convertListToObj(list) {
+    const obj = {};
+    if (!CommonUtil.isArray(list)) return null;
+    const copyOfList = JSON.parse(JSON.stringify(list));
+    copyOfList.forEach((item, index) => {
+      obj[index] = item;
+    });
+    return obj;
   }
 }
 
