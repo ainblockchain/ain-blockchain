@@ -102,7 +102,7 @@ class P2pServer {
     // Set the number of maximum clients.
     this.wsServer.setMaxListeners(this.maxInbound);
     this.wsServer.on('connection', (socket) => {
-      this.setPeerEventHandlers(socket);
+      this.setServerSidePeerEventHandlers(socket);
     });
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     await this.setUpIpAddresses();
@@ -166,24 +166,13 @@ class P2pServer {
       address: this.getNodeAddress(),
       state: this.node.state,
       stateNumeric: Object.keys(BlockchainNodeStates).indexOf(this.node.state),
-      nonce: this.node.nonce,
+      nonce: this.node.getNonce(),
       dbStatus: {
         stateInfo: this.node.db.getStateInfo('/'),
         stateProof: this.node.db.getStateProof('/'),
       },
       stateVersionStatus: this.getStateVersionStatus(),
     };
-  }
-
-  getDiskUsage() {
-    try {
-      const diskUsage = disk.checkSync(DISK_USAGE_PATH);
-      const used = _.get(diskUsage, 'total', 0) - _.get(diskUsage, 'free', 0);
-      return Object.assign({}, diskUsage, { used });
-    } catch (err) {
-      logger.error(`Error: ${err} ${err.stack}`);
-      return {};
-    }
   }
 
   getCpuUsage() {
@@ -198,9 +187,11 @@ class P2pServer {
       total += allTimes;
     }
     const usage = total - free;
+    const usagePercent = total ? usage / total * 100 : 0;
     return {
       free,
       usage,
+      usagePercent,
       total
     };
   }
@@ -209,15 +200,31 @@ class P2pServer {
     const free = os.freemem();
     const total = os.totalmem();
     const usage = total - free;
+    const usagePercent = total ? usage / total * 100 : 0;
     return {
       os: {
         free,
         usage,
+        usagePercent,
         total,
       },
       heap: process.memoryUsage(),
       heapStats: v8.getHeapStatistics(),
     };
+  }
+
+  getDiskUsage() {
+    try {
+      const diskUsage = disk.checkSync(DISK_USAGE_PATH);
+      const free =  _.get(diskUsage, 'free', 0);
+      const total = _.get(diskUsage, 'total', 0);
+      const usage = total - free;
+      const usagePercent = total ? usage / total * 100 : 0;
+      return Object.assign({}, diskUsage, { usage, usagePercent });
+    } catch (err) {
+      logger.error(`Error: ${err} ${err.stack}`);
+      return {};
+    }
   }
 
   getRuntimeInfo() {
@@ -241,6 +248,7 @@ class P2pServer {
         NETWORK_OPTIMIZATION: process.env.NETWORK_OPTIMIZATION,
         GENESIS_CONFIGS_DIR: process.env.GENESIS_CONFIGS_DIR,
         MIN_NUM_VALIDATORS: process.env.MIN_NUM_VALIDATORS,
+        MAX_NUM_VALIDATORS: process.env.MAX_NUM_VALIDATORS,
         ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
         P2P_PORT: process.env.P2P_PORT,
         PORT: process.env.PORT,
@@ -345,8 +353,8 @@ class P2pServer {
     return 0;
   }
 
-  setPeerEventHandlers(socket) {
-    const LOG_HEADER = 'setPeerEventHandlers';
+  setServerSidePeerEventHandlers(socket) {
+    const LOG_HEADER = 'setServerSidePeerEventHandlers';
     socket.on('message', (message) => {
       try {
         const parsedMessage = JSON.parse(message);
@@ -432,6 +440,9 @@ class P2pServer {
               this.consensus.handleConsensusMessage(consensusMessage);
             } else {
               logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
+              Object.values(this.client.outbound).forEach((node) => {
+                this.client.requestChainSegment(node.socket, this.node.bc.lastBlock());
+              });
             }
             break;
           case MessageTypes.TRANSACTION:
@@ -601,11 +612,14 @@ class P2pServer {
     if (this.node.isShardReporter && this.node.bc.lastBlockNumber() === 0) {
       logger.info(`Setting up sharding..`);
       await this.setUpDbForSharding();
+      return true;
     }
+    return false;
   }
 
   // TODO(platfowner): Set .shard config for functions, rules, and owners as well.
   async setUpDbForSharding() {
+    const LOG_HEADER = 'setUpDbForSharding';
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
     const ownerPrivateKey = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
@@ -620,13 +634,14 @@ class P2pServer {
       throw Error(`Shard owner (${shardOwner}) doesn't have the permission to create a shard (${appName})`);
     }
     if (shardingAppConfig === null) {
-      // Create app first. Note that the app should have staked some AIN.
+      // Create app first.
       const shardAppCreateTxBody = P2pServer.buildShardAppCreateTxBody(appName);
       await sendTxAndWaitForFinalization(parentChainEndpoint, shardAppCreateTxBody, ownerPrivateKey);
     }
+    logger.info(`[${LOG_HEADER}] shard app created`);
     const shardInitTxBody = P2pServer.buildShardingSetupTxBody();
     await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTxBody, ownerPrivateKey);
-    logger.info(`setUpDbForSharding success`);
+    logger.info(`[${LOG_HEADER}] shard set up success`);
   }
 
   static async getShardingAppConfig(parentChainEndpoint, appName) {
@@ -639,6 +654,7 @@ class P2pServer {
 
   static buildShardAppCreateTxBody(appName) {
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
+    const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const timestamp = Date.now();
     return {
       operation: {
@@ -646,7 +662,8 @@ class P2pServer {
         ref: PathUtil.getCreateAppRecordPath(appName, timestamp),
         value: {
           [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
-            [shardOwner]: true
+            [shardOwner]: true,
+            [shardReporter]: true,
           }
         }
       },
@@ -662,10 +679,10 @@ class P2pServer {
     const proofHashRulesLight = `auth.addr === '${shardReporter}'`;
     const proofHashRules = `auth.addr === '${shardReporter}' && ` +
         '((newData === null && ' +
-        `Number($block_number) < (getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+        `Number($block_number) < (getValue('${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
             `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +
         '(newData !== null && ($block_number === "0" || ' +
-        `$block_number === String((getValue('${shardingPath}/${ShardingProperties.SHARD}/` +
+        `$block_number === String((getValue('${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
             `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
     const latestBlockNumberRules = `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`;
     return {
@@ -676,35 +693,39 @@ class P2pServer {
             type: WriteDbOperations.SET_RULE,
             ref: CommonUtil.appendPath(
                 shardingPath,
-                ShardingProperties.SHARD,
+                PredefinedDbPaths.DOT_SHARD,
                 ShardingProperties.PROOF_HASH_MAP,
                 '$block_number',
                 ShardingProperties.PROOF_HASH),
             value: {
-              [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
+              [PredefinedDbPaths.DOT_RULE]: {
+                [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
+              }
             }
           },
           {
             type: WriteDbOperations.SET_RULE,
             ref: CommonUtil.appendPath(
                 shardingPath,
-                ShardingProperties.SHARD,
+                PredefinedDbPaths.DOT_SHARD,
                 ShardingProperties.PROOF_HASH_MAP,
                 ShardingProperties.LATEST),
             value: {
-              [RuleProperties.WRITE]: latestBlockNumberRules
+              [PredefinedDbPaths.DOT_RULE]: {
+                [RuleProperties.WRITE]: latestBlockNumberRules
+              }
             }
           },
           {
             type: WriteDbOperations.SET_FUNCTION,
             ref: CommonUtil.appendPath(
                 shardingPath,
-                ShardingProperties.SHARD,
+                PredefinedDbPaths.DOT_SHARD,
                 ShardingProperties.PROOF_HASH_MAP,
                 '$block_number',
                 ShardingProperties.PROOF_HASH),
             value: {
-              [FunctionProperties.FUNCTION]: {
+              [PredefinedDbPaths.DOT_FUNCTION]: {
                 [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
                   [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
                   [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
@@ -716,7 +737,7 @@ class P2pServer {
             type: WriteDbOperations.SET_VALUE,
             ref: shardingPath,
             value: {
-              [ShardingProperties.SHARD]: {
+              [PredefinedDbPaths.DOT_SHARD]: {
                 [ShardingProperties.SHARDING_ENABLED]: true,
                 [ShardingProperties.PROOF_HASH_MAP]: {
                   [ShardingProperties.LATEST]: -1,

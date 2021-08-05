@@ -1,9 +1,14 @@
 const logger = require('../logger')('STATE_NODE');
 
+const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
-const { HASH_DELIMITER } = require('../common/constants');
+const {
+  HASH_DELIMITER,
+  StateInfoProperties,
+} = require('../common/constants');
 
 class StateNode {
+  // NOTE(seo): Once new member variables are added, computeNodeBytes() should be updated.
   constructor(version) {
     this.version = version || null;
     this.isLeaf = true;
@@ -13,23 +18,25 @@ class StateNode {
     // Used for leaf nodes only.
     this.value = null;
     this.proofHash = null;
-    this.treeHeight = null;
-    this.treeSize = null;
+    this.treeHeight = 0;
+    this.treeSize = 0;
+    this.treeBytes = 0;
   }
 
-  static _create(version, isLeaf, value, proofHash, treeHeight, treeSize) {
+  static _create(version, isLeaf, value, proofHash, treeHeight, treeSize, treeBytes) {
     const node = new StateNode(version);
     node.setIsLeaf(isLeaf);
     node.setValue(value);
     node.setProofHash(proofHash);
     node.setTreeHeight(treeHeight);
     node.setTreeSize(treeSize);
+    node.setTreeBytes(treeBytes);
     return node;
   }
 
   clone(version) {
     const cloned = StateNode._create(version ? version : this.version,
-        this.isLeaf, this.value, this.proofHash, this.treeHeight, this.treeSize);
+        this.isLeaf, this.value, this.proofHash, this.treeHeight, this.treeSize, this.treeBytes);
     for (const label of this.getChildLabels()) {
       const child = this.getChild(label);
       cloned.setChild(label, child);
@@ -52,7 +59,19 @@ class StateNode {
         that.proofHash === this.proofHash &&
         that.version === this.version &&
         that.treeHeight === this.treeHeight &&
-        that.treeSize === this.treeSize);
+        that.treeSize === this.treeSize &&
+        that.treeBytes === this.treeBytes);
+  }
+
+  // NOTE(liayoo): Bytes for some data (e.g. parents & children references, version) are excluded
+  //               from this calculation, since their sizes can vary and affect the gas costs and state proof hashes.
+  computeNodeBytes() {
+    return sizeof(this.isLeaf) +
+        sizeof(this.value) +
+        sizeof(this.proofHash) +
+        sizeof(this.treeHeight) +
+        sizeof(this.treeSize) +
+        sizeof(this.treeBytes);
   }
 
   static fromJsObject(obj, version) {
@@ -70,43 +89,47 @@ class StateNode {
     return node;
   }
 
-  toJsObject(withDetails) {
+  toJsObject(options) {
+    const isShallow = options && options.isShallow;
+    const includeTreeInfo = options && options.includeTreeInfo;
+    const includeProof = options && options.includeProof;
+    const includeVersion = options && options.includeVersion;
     if (this.getIsLeaf()) {
       return this.getValue();
     }
     const obj = {};
     for (const label of this.getChildLabels()) {
       const childNode = this.getChild(label);
-      obj[label] = childNode.toJsObject(withDetails);
+      obj[label] = isShallow ? true : childNode.toJsObject(options);
       if (childNode.getIsLeaf()) {
-        if (withDetails) {
-          obj[`.version:${label}`] = childNode.getVersion();
-          obj[`.numParents:${label}`] = childNode.numParents();
-          obj[`.proofHash:${label}`] = childNode.getProofHash();
-          obj[`.treeHeight:${label}`] = childNode.getTreeHeight();
-          obj[`.treeSize:${label}`] = childNode.getTreeSize();
+        if (includeTreeInfo) {
+          obj[`.${StateInfoProperties.NUM_PARENTS}:${label}`] = childNode.numParents();
+          obj[`.${StateInfoProperties.TREE_HEIGHT}:${label}`] = childNode.getTreeHeight();
+          obj[`.${StateInfoProperties.TREE_SIZE}:${label}`] = childNode.getTreeSize();
+          obj[`.${StateInfoProperties.TREE_BYTES}:${label}`] = childNode.getTreeBytes();
+        }
+        if (includeProof) {
+          obj[`.${StateInfoProperties.PROOF_HASH}:${label}`] = childNode.getProofHash();
+        }
+        if (includeVersion) {
+          obj[`.${StateInfoProperties.VERSION}:${label}`] = childNode.getVersion();
         }
       }
     }
-    if (withDetails) {
-      obj['.version'] = this.getVersion();
-      obj['.numParents'] = this.numParents();
-      obj[`.proofHash`] = this.getProofHash();
-      obj[`.treeHeight`] = this.getTreeHeight();
-      obj[`.treeSize`] = this.getTreeSize();
+    if (includeTreeInfo) {
+      obj[`.${StateInfoProperties.NUM_PARENTS}`] = this.numParents();
+      obj[`.${StateInfoProperties.TREE_HEIGHT}`] = this.getTreeHeight();
+      obj[`.${StateInfoProperties.TREE_SIZE}`] = this.getTreeSize();
+      obj[`.${StateInfoProperties.TREE_BYTES}`] = this.getTreeBytes();
+    }
+    if (includeProof) {
+      obj[`.${StateInfoProperties.PROOF_HASH}`] = this.getProofHash();
+    }
+    if (includeVersion) {
+      obj[`.${StateInfoProperties.VERSION}`] = this.getVersion();
     }
 
     return obj;
-  }
-
-  toJsObjectShallow() {
-    if (this.getIsLeaf()) {
-      return this.getValue();
-    }
-    return this.getChildLabels().reduce((shallowCopy, label) => {
-      shallowCopy[label] = true;
-      return shallowCopy;
-    }, {});
   }
 
   getIsLeaf() {
@@ -259,6 +282,14 @@ class StateNode {
     this.treeSize = treeSize;
   }
 
+  getTreeBytes() {
+    return this.treeBytes;
+  }
+
+  setTreeBytes(treeBytes) {
+    this.treeBytes = treeBytes;
+  }
+
   buildProofHash() {
     let preimage;
     if (this.getIsLeaf()) {
@@ -293,10 +324,22 @@ class StateNode {
     }
   }
 
+  computeTreeBytes() {
+    if (this.getIsLeaf()) {
+      return this.computeNodeBytes();
+    } else {
+      return this.getChildLabels().reduce((acc, label) => {
+        const child = this.getChild(label);
+        return acc + sizeof(label) + CommonUtil.numberOrZero(child.getTreeBytes());
+      }, this.computeNodeBytes());
+    }
+  }
+
   updateProofHashAndStateInfo() {
     this.setProofHash(this.buildProofHash());
     this.setTreeHeight(this.computeTreeHeight());
     this.setTreeSize(this.computeTreeSize());
+    this.setTreeBytes(this.computeTreeBytes());
   }
 }
 

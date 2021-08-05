@@ -25,9 +25,8 @@ const {
   updateProofHashForAllRootPaths,
   verifyProofHashForStateTree
 } = require('../db/state-util');
-const {
-  STATE_LABEL_LENGTH_LIMIT,
-} = require('../common/constants');
+const { STATE_LABEL_LENGTH_LIMIT } = require('../common/constants');
+const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
 const expect = chai.expect;
@@ -594,7 +593,9 @@ describe("state-util", () => {
           }
         },
         "rules": {
-          ".write": true
+          ".rule": {
+            "write": true
+          }
         }
       }), {isValid: true, invalidPath: ''});
       assert.deepEqual(
@@ -688,12 +689,12 @@ describe("state-util", () => {
     })
 
     it("when valid input", () => {
-      assert.deepEqual(isValidRuleConfig(true), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig(false), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig("auth.addr === 'abcd'"), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig(
-          "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"),
-          {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({ "write": true }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({ "write": false }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({ "write": "auth.addr === 'abcd'" }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({
+        "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
+      }), {isValid: true, invalidPath: ''});
     })
   })
 
@@ -734,33 +735,44 @@ describe("state-util", () => {
     it("when invalid input with invalid owner config", () => {
       assert.deepEqual(isValidRuleTree({
         some_path: {
-          '.write': {
+          '.rule': {
+            'write': {}
           }
         }
-      }), {isValid: false, invalidPath: '/some_path/.write'});
+      }), {isValid: false, invalidPath: '/some_path/.rule/write'});
       assert.deepEqual(isValidRuleTree({
         some_path: {
-          '.write': null 
+          '.rule': {
+            'write': null 
+          }
         }
-      }), {isValid: false, invalidPath: '/some_path/.write'});
+      }), {isValid: false, invalidPath: '/some_path/.rule/write'});
       assert.deepEqual(isValidRuleTree({
         some_path: {
-          '.write': undefined
+          '.rule': {
+            'write': undefined
+          }
         }
-      }), {isValid: false, invalidPath: '/some_path/.write'});
+      }), {isValid: false, invalidPath: '/some_path/.rule/write'});
     })
 
     it("when valid input", () => {
       assert.deepEqual(isValidRuleTree(null), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleTree({
-        '.write': true 
+        '.rule': {
+          'write': true 
+        }
       }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleTree({
         some_path1: {
-          '.write': true
+          '.rule': {
+            'write': true
+          }
         },
         some_path2: {
-          '.write': "auth.addr === 'abcd'"
+          '.rule': {
+            'write': "auth.addr === 'abcd'"
+          }
         }
       }), {isValid: true, invalidPath: ''});
     })
@@ -1727,7 +1739,7 @@ describe("state-util", () => {
       const stateTree = StateNode.fromJsObject(stateObj);
       const numNodes = setStateTreeVersion(stateTree, ver1);
       expect(numNodes).to.equal(24);
-      assert.deepEqual(stateTree.toJsObject(true), {
+      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
         ".version": "ver1",
         ".version:bool": "ver1",
         ".version:empty_obj": "ver1",
@@ -1736,38 +1748,46 @@ describe("state-util", () => {
         ".version:number": "ver1",
         ".version:str": "ver1",
         ".version:undef": "ver1",
-        ".numParents": 0,
-        ".numParents:bool": 1,
-        ".numParents:empty_obj": 1,
-        ".numParents:empty_str": 1,
-        ".numParents:null": 1,
-        ".numParents:number": 1,
-        ".numParents:str": 1,
-        ".numParents:undef": 1,
-        ".proofHash": null,
-        ".proofHash:bool": null,
-        ".proofHash:empty_obj": null,
-        ".proofHash:empty_str": null,
-        ".proofHash:null": null,
-        ".proofHash:number": null,
-        ".proofHash:str": null,
-        ".proofHash:undef": null,
-        ".treeHeight": null,
-        ".treeHeight:bool": null,
-        ".treeHeight:empty_obj": null,
-        ".treeHeight:empty_str": null,
-        ".treeHeight:null": null,
-        ".treeHeight:number": null,
-        ".treeHeight:str": null,
-        ".treeHeight:undef": null,
-        ".treeSize": null,
-        ".treeSize:bool": null,
-        ".treeSize:empty_obj": null,
-        ".treeSize:empty_str": null,
-        ".treeSize:null": null,
-        ".treeSize:number": null,
-        ".treeSize:str": null,
-        ".treeSize:undef": null,
+        ".num_parents": 0,
+        ".num_parents:bool": 1,
+        ".num_parents:empty_obj": 1,
+        ".num_parents:empty_str": 1,
+        ".num_parents:null": 1,
+        ".num_parents:number": 1,
+        ".num_parents:str": 1,
+        ".num_parents:undef": 1,
+        ".proof_hash": null,
+        ".proof_hash:bool": null,
+        ".proof_hash:empty_obj": null,
+        ".proof_hash:empty_str": null,
+        ".proof_hash:null": null,
+        ".proof_hash:number": null,
+        ".proof_hash:str": null,
+        ".proof_hash:undef": null,
+        ".tree_height": 0,
+        ".tree_height:bool": 0,
+        ".tree_height:empty_obj": 0,
+        ".tree_height:empty_str": 0,
+        ".tree_height:null": 0,
+        ".tree_height:number": 0,
+        ".tree_height:str": 0,
+        ".tree_height:undef": 0,
+        ".tree_size": 0,
+        ".tree_size:bool": 0,
+        ".tree_size:empty_obj": 0,
+        ".tree_size:empty_str": 0,
+        ".tree_size:null": 0,
+        ".tree_size:number": 0,
+        ".tree_size:str": 0,
+        ".tree_size:undef": 0,
+        ".tree_bytes": 0,
+        ".tree_bytes:bool": 0,
+        ".tree_bytes:empty_obj": 0,
+        ".tree_bytes:empty_str": 0,
+        ".tree_bytes:null": 0,
+        ".tree_bytes:number": 0,
+        ".tree_bytes:str": 0,
+        ".tree_bytes:undef": 0,
         bool: false,
         number: 10,
         str: 'str',
@@ -1784,38 +1804,46 @@ describe("state-util", () => {
           ".version:number": "ver1",
           ".version:str": "ver1",
           ".version:undef": "ver1",
-          ".numParents": 1,
-          ".numParents:bool": 1,
-          ".numParents:empty_obj": 1,
-          ".numParents:empty_str": 1,
-          ".numParents:null": 1,
-          ".numParents:number": 1,
-          ".numParents:str": 1,
-          ".numParents:undef": 1,
-          ".proofHash": null,
-          ".proofHash:bool": null,
-          ".proofHash:empty_obj": null,
-          ".proofHash:empty_str": null,
-          ".proofHash:null": null,
-          ".proofHash:number": null,
-          ".proofHash:str": null,
-          ".proofHash:undef": null,
-          ".treeHeight": null,
-          ".treeHeight:bool": null,
-          ".treeHeight:empty_obj": null,
-          ".treeHeight:empty_str": null,
-          ".treeHeight:null": null,
-          ".treeHeight:number": null,
-          ".treeHeight:str": null,
-          ".treeHeight:undef": null,
-          ".treeSize": null,
-          ".treeSize:bool": null,
-          ".treeSize:empty_obj": null,
-          ".treeSize:empty_str": null,
-          ".treeSize:null": null,
-          ".treeSize:number": null,
-          ".treeSize:str": null,
-          ".treeSize:undef": null,
+          ".num_parents": 1,
+          ".num_parents:bool": 1,
+          ".num_parents:empty_obj": 1,
+          ".num_parents:empty_str": 1,
+          ".num_parents:null": 1,
+          ".num_parents:number": 1,
+          ".num_parents:str": 1,
+          ".num_parents:undef": 1,
+          ".proof_hash": null,
+          ".proof_hash:bool": null,
+          ".proof_hash:empty_obj": null,
+          ".proof_hash:empty_str": null,
+          ".proof_hash:null": null,
+          ".proof_hash:number": null,
+          ".proof_hash:str": null,
+          ".proof_hash:undef": null,
+          ".tree_height": 0,
+          ".tree_height:bool": 0,
+          ".tree_height:empty_obj": 0,
+          ".tree_height:empty_str": 0,
+          ".tree_height:null": 0,
+          ".tree_height:number": 0,
+          ".tree_height:str": 0,
+          ".tree_height:undef": 0,
+          ".tree_size": 0,
+          ".tree_size:bool": 0,
+          ".tree_size:empty_obj": 0,
+          ".tree_size:empty_str": 0,
+          ".tree_size:null": 0,
+          ".tree_size:number": 0,
+          ".tree_size:str": 0,
+          ".tree_size:undef": 0,
+          ".tree_bytes": 0,
+          ".tree_bytes:bool": 0,
+          ".tree_bytes:empty_obj": 0,
+          ".tree_bytes:empty_str": 0,
+          ".tree_bytes:null": 0,
+          ".tree_bytes:number": 0,
+          ".tree_bytes:str": 0,
+          ".tree_bytes:undef": 0,
           bool: true,
           number: 20,
           str: 'str2',
@@ -1833,38 +1861,46 @@ describe("state-util", () => {
           ".version:number": "ver1",
           ".version:str": "ver1",
           ".version:undef": "ver1",
-          ".numParents": 1,
-          ".numParents:bool": 1,
-          ".numParents:empty_obj": 1,
-          ".numParents:empty_str": 1,
-          ".numParents:null": 1,
-          ".numParents:number": 1,
-          ".numParents:str": 1,
-          ".numParents:undef": 1,
-          ".proofHash": null,
-          ".proofHash:bool": null,
-          ".proofHash:empty_obj": null,
-          ".proofHash:empty_str": null,
-          ".proofHash:null": null,
-          ".proofHash:number": null,
-          ".proofHash:str": null,
-          ".proofHash:undef": null,
-          ".treeHeight": null,
-          ".treeHeight:bool": null,
-          ".treeHeight:empty_obj": null,
-          ".treeHeight:empty_str": null,
-          ".treeHeight:null": null,
-          ".treeHeight:number": null,
-          ".treeHeight:str": null,
-          ".treeHeight:undef": null,
-          ".treeSize": null,
-          ".treeSize:bool": null,
-          ".treeSize:empty_obj": null,
-          ".treeSize:empty_str": null,
-          ".treeSize:null": null,
-          ".treeSize:number": null,
-          ".treeSize:str": null,
-          ".treeSize:undef": null,
+          ".num_parents": 1,
+          ".num_parents:bool": 1,
+          ".num_parents:empty_obj": 1,
+          ".num_parents:empty_str": 1,
+          ".num_parents:null": 1,
+          ".num_parents:number": 1,
+          ".num_parents:str": 1,
+          ".num_parents:undef": 1,
+          ".proof_hash": null,
+          ".proof_hash:bool": null,
+          ".proof_hash:empty_obj": null,
+          ".proof_hash:empty_str": null,
+          ".proof_hash:null": null,
+          ".proof_hash:number": null,
+          ".proof_hash:str": null,
+          ".proof_hash:undef": null,
+          ".tree_height": 0,
+          ".tree_height:bool": 0,
+          ".tree_height:empty_obj": 0,
+          ".tree_height:empty_str": 0,
+          ".tree_height:null": 0,
+          ".tree_height:number": 0,
+          ".tree_height:str": 0,
+          ".tree_height:undef": 0,
+          ".tree_size": 0,
+          ".tree_size:bool": 0,
+          ".tree_size:empty_obj": 0,
+          ".tree_size:empty_str": 0,
+          ".tree_size:null": 0,
+          ".tree_size:number": 0,
+          ".tree_size:str": 0,
+          ".tree_size:undef": 0,
+          ".tree_bytes": 0,
+          ".tree_bytes:bool": 0,
+          ".tree_bytes:empty_obj": 0,
+          ".tree_bytes:empty_str": 0,
+          ".tree_bytes:null": 0,
+          ".tree_bytes:number": 0,
+          ".tree_bytes:str": 0,
+          ".tree_bytes:undef": 0,
           bool: true,
           number: -10,
           str: 'str3',
@@ -1922,25 +1958,29 @@ describe("state-util", () => {
       const stateTree = new StateNode(ver3);
       stateTree.setChild('label1', child1);
       stateTree.setChild('label2', child2);
-      assert.deepEqual(stateTree.toJsObject(true), {
-        ".numParents": 0,
-        ".proofHash": null,
-        ".treeHeight": null,
-        ".treeSize": null,
+      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+        ".num_parents": 0,
+        ".proof_hash": null,
+        ".tree_height": 0,
+        ".tree_size": 0,
+        ".tree_bytes": 0,
         ".version": "ver3",
         "label1": {
-          ".numParents": 1,
-          ".numParents:label11": 1,
-          ".numParents:label12": 1,
-          ".proofHash": null,
-          ".proofHash:label11": null,
-          ".proofHash:label12": null,
-          ".treeHeight": null,
-          ".treeHeight:label11": null,
-          ".treeHeight:label12": null,
-          ".treeSize": null,
-          ".treeSize:label11": null,
-          ".treeSize:label12": null,
+          ".num_parents": 1,
+          ".num_parents:label11": 1,
+          ".num_parents:label12": 1,
+          ".proof_hash": null,
+          ".proof_hash:label11": null,
+          ".proof_hash:label12": null,
+          ".tree_height": 0,
+          ".tree_height:label11": 0,
+          ".tree_height:label12": 0,
+          ".tree_size": 0,
+          ".tree_size:label11": 0,
+          ".tree_size:label12": 0,
+          ".tree_bytes": 0,
+          ".tree_bytes:label11": 0,
+          ".tree_bytes:label12": 0,
           ".version": "ver2",
           ".version:label11": "ver1",
           ".version:label12": "ver2",
@@ -1948,18 +1988,21 @@ describe("state-util", () => {
           "label12": "value12",
         },
         "label2": {
-          ".numParents": 1,
-          ".numParents:label21": 1,
-          ".numParents:label22": 1,
-          ".proofHash": null,
-          ".proofHash:label21": null,
-          ".proofHash:label22": null,
-          ".treeHeight": null,
-          ".treeHeight:label21": null,
-          ".treeHeight:label22": null,
-          ".treeSize": null,
-          ".treeSize:label21": null,
-          ".treeSize:label22": null,
+          ".num_parents": 1,
+          ".num_parents:label21": 1,
+          ".num_parents:label22": 1,
+          ".proof_hash": null,
+          ".proof_hash:label21": null,
+          ".proof_hash:label22": null,
+          ".tree_height": 0,
+          ".tree_height:label21": 0,
+          ".tree_height:label22": 0,
+          ".tree_size": 0,
+          ".tree_size:label21": 0,
+          ".tree_size:label22": 0,
+          ".tree_bytes": 0,
+          ".tree_bytes:label21": 0,
+          ".tree_bytes:label22": 0,
           ".version": "ver2",
           ".version:label21": "ver2",
           ".version:label22": "ver1",
@@ -1970,25 +2013,29 @@ describe("state-util", () => {
 
       const numNodes = renameStateTreeVersion(stateTree, ver2, ver3);
       expect(numNodes).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject(true), {
-        ".numParents": 0,
-        ".proofHash": null,
-        ".treeHeight": null,
-        ".treeSize": null,
+      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+        ".num_parents": 0,
+        ".proof_hash": null,
+        ".tree_height": 0,
+        ".tree_size": 0,
+        ".tree_bytes": 0,
         ".version": "ver3",
         "label1": {
-          ".numParents": 1,
-          ".numParents:label11": 1,
-          ".numParents:label12": 1,
-          ".proofHash": null,
-          ".proofHash:label11": null,
-          ".proofHash:label12": null,
-          ".treeHeight": null,
-          ".treeHeight:label11": null,
-          ".treeHeight:label12": null,
-          ".treeSize": null,
-          ".treeSize:label11": null,
-          ".treeSize:label12": null,
+          ".num_parents": 1,
+          ".num_parents:label11": 1,
+          ".num_parents:label12": 1,
+          ".proof_hash": null,
+          ".proof_hash:label11": null,
+          ".proof_hash:label12": null,
+          ".tree_height": 0,
+          ".tree_height:label11": 0,
+          ".tree_height:label12": 0,
+          ".tree_size": 0,
+          ".tree_size:label11": 0,
+          ".tree_size:label12": 0,
+          ".tree_bytes": 0,
+          ".tree_bytes:label11": 0,
+          ".tree_bytes:label12": 0,
           ".version": "ver3",  // renamed
           ".version:label11": "ver1",
           ".version:label12": "ver3",  // renamed
@@ -1996,18 +2043,21 @@ describe("state-util", () => {
           "label12": "value12",
         },
         "label2": {
-          ".numParents": 1,
-          ".numParents:label21": 1,
-          ".numParents:label22": 1,
-          ".proofHash": null,
-          ".proofHash:label21": null,
-          ".proofHash:label22": null,
-          ".treeHeight": null,
-          ".treeHeight:label21": null,
-          ".treeHeight:label22": null,
-          ".treeSize": null,
-          ".treeSize:label21": null,
-          ".treeSize:label22": null,
+          ".num_parents": 1,
+          ".num_parents:label21": 1,
+          ".num_parents:label22": 1,
+          ".proof_hash": null,
+          ".proof_hash:label21": null,
+          ".proof_hash:label22": null,
+          ".tree_height": 0,
+          ".tree_height:label21": 0,
+          ".tree_height:label22": 0,
+          ".tree_size": 0,
+          ".tree_size:label21": 0,
+          ".tree_size:label22": 0,
+          ".tree_bytes": 0,
+          ".tree_bytes:label21": 0,
+          ".tree_bytes:label22": 0,
           ".version": "ver3",  // renamed
           ".version:label21": "ver3",  // renamed
           ".version:label22": "ver1",
@@ -2066,7 +2116,7 @@ describe("state-util", () => {
       const numNodes = deleteStateTree(stateTree);
       expect(numNodes).to.equal(3);
       // State tree is deleted.
-      assert.deepEqual(stateTree.toJsObject(true), null);
+      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // And child nodes are deleted as well.
       expect(child1.getValue()).to.equal(null);
       expect(child1.getProofHash()).to.equal(null);
@@ -2143,7 +2193,7 @@ describe("state-util", () => {
       const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(3);
       // State tree is deleted.
-      assert.deepEqual(node.toJsObject(true), null);
+      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // And child nodes are deleted as well.
       expect(child1.getValue()).to.equal(null);
       expect(child1.getProofHash()).to.equal(null);
@@ -2162,7 +2212,7 @@ describe("state-util", () => {
       const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(3);
       // State tree is deleted.
-      assert.deepEqual(node.toJsObject(true), null);
+      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // And child nodes are deleted as well.
       expect(child1.getValue()).to.equal(null);
       expect(child1.getProofHash()).to.equal(null);
@@ -2181,22 +2231,25 @@ describe("state-util", () => {
       const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(0);
       // State tree is not deleted.
-      assert.deepEqual(node.toJsObject(true), {
+      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
         ".version": "ver3",
         ".version:label1": "ver1",
         ".version:label2": "ver2",
-        ".numParents": 1,
-        ".numParents:label1": 1,
-        ".numParents:label2": 1,
-        ".proofHash": "0xa540d9d1906f4579604302acdee0b4c9742f537eb5f8397fb9a43ed458dad439",
-        ".proofHash:label1": "0xb41f4a6e100333ddd8e8dcc01ca1fed23662d9faaec359ed255d21a900cecd08",
-        ".proofHash:label2": "0x7597bdc763c23c44e90f26c63d7eac963cc0d0aa8a0a3268e7f5691c5361d942",
-        ".treeHeight": 1,
-        ".treeHeight:label1": 0,
-        ".treeHeight:label2": 0,
-        ".treeSize": 3,
-        ".treeSize:label1": 1,
-        ".treeSize:label2": 1,
+        ".num_parents": 1,
+        ".num_parents:label1": 1,
+        ".num_parents:label2": 1,
+        ".proof_hash": "0xa540d9d1906f4579604302acdee0b4c9742f537eb5f8397fb9a43ed458dad439",
+        ".proof_hash:label1": "0xb41f4a6e100333ddd8e8dcc01ca1fed23662d9faaec359ed255d21a900cecd08",
+        ".proof_hash:label2": "0x7597bdc763c23c44e90f26c63d7eac963cc0d0aa8a0a3268e7f5691c5361d942",
+        ".tree_height": 1,
+        ".tree_height:label1": 0,
+        ".tree_height:label2": 0,
+        ".tree_size": 3,
+        ".tree_size:label1": 1,
+        ".tree_size:label2": 1,
+        ".tree_bytes": 528,
+        ".tree_bytes:label1": 172,
+        ".tree_bytes:label2": 172,
         label1: "value1",
         label2: "value2"
       });
@@ -2206,7 +2259,7 @@ describe("state-util", () => {
       const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(3);
       // Root node is deleted.
-      assert.deepEqual(node.toJsObject(true), null);
+      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // And child nodes are deleted as well.
       expect(child1.getValue()).to.equal(null);
       expect(child1.getProofHash()).to.equal(null);
@@ -2230,7 +2283,7 @@ describe("state-util", () => {
       const numNodes = deleteStateTreeVersion(node);
       expect(numNodes).to.equal(1);
       // State tree is deleted.
-      assert.deepEqual(node.toJsObject(true), null);
+      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // But child nodes are not deleted.
       expect(child1.getValue()).to.equal('value1');
       expect(child1.getProofHash()).to.not.equal(null);
@@ -2463,15 +2516,22 @@ describe("state-util", () => {
       expect(bazNode.getTreeHeight()).to.equal(0);
       expect(level1Node.getTreeHeight()).to.equal(1);
       expect(level0Node.getTreeHeight()).to.equal(2);
-      expect(anotherNode.getTreeHeight()).to.equal(null);
-      expect(testNode.getTreeHeight()).to.equal(null);
+      expect(anotherNode.getTreeHeight()).to.equal(0);
+      expect(testNode.getTreeHeight()).to.equal(0);
       // Checks tree sizes.
       expect(fooNode.getTreeSize()).to.equal(1);
       expect(bazNode.getTreeSize()).to.equal(1);
       expect(level1Node.getTreeSize()).to.equal(3);
       expect(level0Node.getTreeSize()).to.equal(4);
-      expect(anotherNode.getTreeSize()).to.equal(null);
-      expect(testNode.getTreeSize()).to.equal(null);
+      expect(anotherNode.getTreeSize()).to.equal(0);
+      expect(testNode.getTreeSize()).to.equal(0);
+      // Checks tree bytes.
+      expect(fooNode.getTreeBytes()).to.equal(166);
+      expect(bazNode.getTreeBytes()).to.equal(166);
+      expect(level1Node.getTreeBytes()).to.equal(504);
+      expect(level0Node.getTreeBytes()).to.equal(676);
+      expect(anotherNode.getTreeBytes()).to.equal(0);
+      expect(testNode.getTreeBytes()).to.equal(0);
     });
   });
 
@@ -2496,6 +2556,13 @@ describe("state-util", () => {
       const level2Node = level1Node.getChild('level2');
       const anotherNode = level0Node.getChild('another_route');
 
+      level2Node.setTreeHeight(1);
+      level2Node.setTreeSize(3);
+      level2Node.setTreeBytes(150);  // An arbitrary value
+      anotherNode.setTreeHeight(1);
+      anotherNode.setTreeSize(2);
+      anotherNode.setTreeBytes(100);  // An arbitrary value
+
       const numAffectedNodes = updateProofHashForAllRootPaths(['level0', 'level1'], rootNode);
       expect(numAffectedNodes).to.equal(3);
       // Checks proof hashes.
@@ -2508,13 +2575,17 @@ describe("state-util", () => {
       expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
       expect(rootNode.getProofHash()).to.equal(rootNode.buildProofHash());
       // Checks tree heights.
-      expect(level1Node.getTreeHeight()).to.equal(1);
-      expect(level0Node.getTreeHeight()).to.equal(2);
-      expect(rootNode.getTreeHeight()).to.equal(3);
+      expect(level1Node.getTreeHeight()).to.equal(2);
+      expect(level0Node.getTreeHeight()).to.equal(3);
+      expect(rootNode.getTreeHeight()).to.equal(4);
       // Checks tree sizes.
-      expect(level1Node.getTreeSize()).to.equal(1);
-      expect(level0Node.getTreeSize()).to.equal(2);
-      expect(rootNode.getTreeSize()).to.equal(3);
+      expect(level1Node.getTreeSize()).to.equal(4);
+      expect(level0Node.getTreeSize()).to.equal(7);
+      expect(rootNode.getTreeSize()).to.equal(8);
+      // Checks tree bytes.
+      expect(level1Node.getTreeBytes()).to.equal(322);
+      expect(level0Node.getTreeBytes()).to.equal(620);
+      expect(rootNode.getTreeBytes()).to.equal(792);
     });
 
     it("updates proof hashes for multiple root paths", () => {

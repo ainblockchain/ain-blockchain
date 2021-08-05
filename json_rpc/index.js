@@ -5,12 +5,12 @@ const sizeof = require('object-sizeof');
 const _ = require('lodash');
 const {
   CURRENT_PROTOCOL_VERSION,
-  BlockchainNodeStates,
-  ReadDbOperations,
-  TransactionStates,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
   NETWORK_ID,
+  BlockchainNodeStates,
+  ReadDbOperations,
+  PredefinedDbPaths,
 } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
 const CommonUtil = require('../common/common-util');
@@ -216,23 +216,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_getTransactionByHash: function(args, done) {
-      const transactionInfo = node.tp.transactionTracker[args.hash];
-      if (transactionInfo) {
-        if (transactionInfo.state === TransactionStates.IN_BLOCK) {
-          const block = node.bc.getBlockByNumber(transactionInfo.number);
-          const index = transactionInfo.index;
-          if (!block) {
-            // TODO(liayoo): Ask peers for the transaction / block
-          } else if (index >= 0) {
-            transactionInfo.transaction = block.transactions[index];
-          } else {
-            transactionInfo.transaction = _.find(block.last_votes, (tx) => tx.hash === args.hash);
-          }
-        } else if (transactionInfo.state === TransactionStates.IN_POOL) {
-          const address = transactionInfo.address;
-          transactionInfo.transaction = _.find(node.tp.transactions[address], (tx) => tx.hash === args.hash);
-        }
-      }
+      const transactionInfo = node.getTransactionByHash(args.hash);
       done(null, addProtocolVersion({result: transactionInfo}));
     },
 
@@ -271,27 +255,27 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       switch (args.type) {
         case ReadDbOperations.GET_VALUE:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getValue(args.ref, args.is_shallow, args.is_global)
+            result: p2pServer.node.db.getValue(args.ref, CommonUtil.toGetOptions(args))
           }));
           return;
         case ReadDbOperations.GET_RULE:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getRule(args.ref, args.is_shallow, args.is_global)
+            result: p2pServer.node.db.getRule(args.ref, CommonUtil.toGetOptions(args))
           }));
           return;
         case ReadDbOperations.GET_FUNCTION:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getFunction(args.ref, args.is_shallow, args.is_global)
+            result: p2pServer.node.db.getFunction(args.ref, CommonUtil.toGetOptions(args))
           }));
           return;
         case ReadDbOperations.GET_OWNER:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.getOwner(args.ref, args.is_shallow, args.is_global)
+            result: p2pServer.node.db.getOwner(args.ref, CommonUtil.toGetOptions(args))
           }));
           return;
         case ReadDbOperations.GET:
           done(null, addProtocolVersion({
-            result: p2pServer.node.db.get(args.op_list, args.is_global)
+            result: p2pServer.node.db.get(args.op_list)
           }));
           return;
         default:
@@ -300,17 +284,18 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_matchFunction: function(args, done) {
-      const result = p2pServer.node.db.matchFunction(args.ref, args.is_global);
+      const result =
+          p2pServer.node.db.matchFunction(args.ref, CommonUtil.toMatchOrEvalOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
     ain_matchRule: function(args, done) {
-      const result = p2pServer.node.db.matchRule(args.ref, args.is_global);
+      const result = p2pServer.node.db.matchRule(args.ref, CommonUtil.toMatchOrEvalOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
     ain_matchOwner: function(args, done) {
-      const result = p2pServer.node.db.matchOwner(args.ref, args.is_global);
+      const result = p2pServer.node.db.matchOwner(args.ref, CommonUtil.toMatchOrEvalOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
@@ -322,8 +307,9 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       if (args.fid) {
         auth.fid = args.fid;
       }
+      const timestamp = args.timestamp || Date.now();
       const result = p2pServer.node.db.evalRule(
-          args.ref, args.value, auth, args.timestamp || Date.now(), args.is_global);
+          args.ref, args.value, auth, timestamp, CommonUtil.toMatchOrEvalOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
@@ -335,8 +321,8 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       if (args.fid) {
         auth.fid = args.fid;
       }
-      const result =
-          p2pServer.node.db.evalOwner(args.ref, args.permission, auth, args.is_global);
+      const result = p2pServer.node.db.evalOwner(
+          args.ref, args.permission, auth, CommonUtil.toMatchOrEvalOptions(args));
       done(null, addProtocolVersion({result}));
     },
 
@@ -347,6 +333,11 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     ain_getStateInfo: function(args, done) {
       const result = p2pServer.node.db.getStateInfo(args.ref);
+      done(null, addProtocolVersion({result}));
+    },
+
+    ain_getStateUsage: function(args, done) {
+      const result = p2pServer.node.getStateUsage(args.app_name);
       done(null, addProtocolVersion({result}));
     },
 
@@ -366,6 +357,12 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     ain_getNonce: function(args, done) {
       done(null, addProtocolVersion({
           result: p2pServer.node.getNonceForAddr(args.address, args.from === 'pending')
+        }));
+    },
+
+    ain_getTimestamp: function(args, done) {
+      done(null, addProtocolVersion({
+          result: p2pServer.node.getTimestampForAddr(args.address, args.from === 'pending')
         }));
     },
 

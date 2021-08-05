@@ -316,8 +316,7 @@ class BlockPool {
     }
     const voter = voteTx.address;
     logger.debug(`[${LOG_HEADER}] voted block: ${JSON.stringify(block, null, 2)}`);
-    logger.debug(`[${LOG_HEADER}] ${block && block.validators[voter] === stake}`);
-    if (stake > 0 && block && block.validators[voter] === stake) {
+    if (stake > 0 && block && get(block, `validators.${voter}.stake`) === stake) {
       this.hashToBlockInfo[blockHash].tallied += stake;
       this.tryUpdateNotarized(blockHash);
     }
@@ -345,8 +344,8 @@ class BlockPool {
       logger.info(`[${LOG_HEADER}] Prev block is unavailable`);
       return;
     }
-    const totalAtStake = Object.values(prevBlock.validators).reduce((a, b) => {
-      return a + b;
+    const totalAtStake = Object.values(prevBlock.validators).reduce((acc, cur) => {
+      return acc + get(cur, 'stake', 0);
     }, 0);
     if (currentBlockInfo.tallied &&
         currentBlockInfo.tallied >= totalAtStake * ConsensusConsts.MAJORITY) {
@@ -362,7 +361,7 @@ class BlockPool {
     delete this.hashToNextBlockSet[blockHash];
     const db = this.hashToDb.get(blockHash);
     if (db) {
-      this.node.destroyDb(db);
+      db.destroyDb();
       this.hashToDb.delete(blockHash);
     }
   }

@@ -2,8 +2,15 @@ const path = require('path');
 const fs = require("fs");
 const syncRequest = require('sync-request');
 const { Block } = require('../blockchain/block');
+const DB = require('../db');
 const { CURRENT_PROTOCOL_VERSION, StateVersions } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
+
+const GET_OPTIONS_INCLUDE_ALL = {
+  includeTreeInfo: true,
+  includeProof: true,
+  includeVersion: true,
+};
 
 function readConfigFile(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -24,21 +31,21 @@ function setNodeForTesting(
       throw Error('Missing owners file: ' + ownersFile);
     }
     const owners = readConfigFile(ownersFile);
-    node.db.setOwnersForTesting("test", owners);
+    node.db.setOwnersForTesting("/apps/test", owners);
 
     const rulesFile = path.resolve(__dirname, './data/rules_for_testing.json');
     if (!fs.existsSync(rulesFile)) {
       throw Error('Missing rules file: ' + rulesFile);
     }
     const rules = readConfigFile(rulesFile);
-    node.db.setRulesForTesting("test", rules);
+    node.db.setRulesForTesting("/apps/test", rules);
 
     const functionsFile = path.resolve(__dirname, './data/functions_for_testing.json');
     if (!fs.existsSync(functionsFile)) {
       throw Error('Missing functions file: ' + functionsFile);
     }
     const functions = JSON.parse(fs.readFileSync(functionsFile));
-    node.db.setFunctionsForTesting("test", functions);
+    node.db.setFunctionsForTesting("/apps/test", functions);
   }
   if (!skipShardingConfig) {
     const shardingFile = path.resolve(__dirname, './data/sharding_for_testing.json');
@@ -57,10 +64,11 @@ function getTransaction(node, inputTxBody) {
 
 function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
-  const finalDb = node.createDb(node.stateManager.getFinalVersion(),
-      `${StateVersions.FINAL}:${lastBlock.number + 1}`, node.bc, node.tp, true);
-  finalDb.executeTransactionList(votes);
-  finalDb.executeTransactionList(txs, lastBlock.number + 1);
+  const finalDb = DB.create(
+      node.stateManager.getFinalVersion(), `${StateVersions.FINAL}:${lastBlock.number + 1}`,
+      node.bc, node.tp, true, false, lastBlock.number, node.stateManager);
+  finalDb.executeTransactionList(votes, true);
+  finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1);
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   node.addNewBlock(Block.create(
       lastBlock.hash, votes, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
@@ -87,20 +95,17 @@ async function waitUntilTxFinalized(servers, txHash) {
         unchecked.delete(server);
       }
     }
-    await CommonUtil.sleep(200);
+    await CommonUtil.sleep(500);
     iterCount++;
   }
 }
 
 async function waitForNewBlocks(server, waitFor = 1) {
-  const initialLastBlockNumber =
-      parseOrLog(syncRequest('GET', server + '/last_block_number')
-        .body.toString('utf-8'))['result'];
+  const initialLastBlockNumber = getLastBlockNumber(server);
   let updatedLastBlockNumber = initialLastBlockNumber;
   while (updatedLastBlockNumber < initialLastBlockNumber + waitFor) {
     await CommonUtil.sleep(1000);
-    updatedLastBlockNumber = parseOrLog(syncRequest('GET', server + '/last_block_number')
-      .body.toString('utf-8'))['result'];
+    updatedLastBlockNumber = getLastBlockNumber(server);
   }
 }
 
@@ -123,7 +128,45 @@ function parseOrLog(resp) {
   return parsed;
 }
 
+async function setUpApp(appName, serverList, appConfig) {
+  const signingAddr = parseOrLog(syncRequest(
+    'GET', serverList[0] + '/get_address').body.toString('utf-8')).result;
+  const appStakingRes = parseOrLog(syncRequest('POST', serverList[0] + '/set_value', {
+    json: {
+      ref: `/staking/${appName}/${signingAddr}/0/stake/${Date.now()}/value`,
+      value: 1
+    }
+  }).body.toString('utf-8')).result;
+  if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+    console.log(`setUpApp(): Failed to check finalization of app staking tx.`);
+  }
+
+  const createAppRes = parseOrLog(syncRequest('POST', serverList[0] + '/set_value', {
+    json: {
+      ref: `/manage_app/${appName}/create/${Date.now()}`,
+      value: appConfig
+    }
+  }).body.toString('utf-8')).result;
+  if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
+    console.log(`setUpApp(): Failed to check finalization of create app tx.`)
+  }
+}
+
+function getLastBlock(server) {
+  return parseOrLog(syncRequest('GET', server + '/last_block').body.toString('utf-8')).result;
+}
+
+function getLastBlockNumber(server) {
+  return parseOrLog(syncRequest('GET', server + '/last_block_number').body.toString('utf-8')).result;
+}
+
+function getBlockByNumber(server, number) {
+  return parseOrLog(syncRequest('GET', server + `/get_block_by_number?number=${number}`)
+      .body.toString('utf-8')).result;
+}
+
 module.exports = {
+  GET_OPTIONS_INCLUDE_ALL,
   readConfigFile,
   setNodeForTesting,
   getTransaction,
@@ -132,4 +175,8 @@ module.exports = {
   waitForNewBlocks,
   waitUntilNodeSyncs,
   parseOrLog,
+  setUpApp,
+  getLastBlock,
+  getLastBlockNumber,
+  getBlockByNumber,
 };

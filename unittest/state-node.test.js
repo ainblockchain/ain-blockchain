@@ -5,6 +5,7 @@ const assert = chai.assert;
 
 const CommonUtil = require('../common/common-util');
 const { HASH_DELIMITER } = require('../common/constants');
+const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 
 describe("state-node", () => {
   let node;
@@ -48,6 +49,7 @@ describe("state-node", () => {
   describe("Initialization with version", () => {
     it("constructor", () => {
       const node2 = new StateNode('version1');
+      expect(node2.version).to.equal('version1');
       expect(node2.isLeaf).to.equal(true);
       expect(node2.parentSet).to.not.be.null;
       expect(node2.childMap).to.not.be.null;
@@ -57,7 +59,9 @@ describe("state-node", () => {
       assert.deepEqual(node2.getChildNodes(), []);
       expect(node2.value).to.equal(null);
       expect(node2.proofHash).to.equal(null);
-      expect(node2.version).to.equal('version1');
+      expect(node2.treeHeight).to.equal(0);
+      expect(node2.treeSize).to.equal(0);
+      expect(node2.treeBytes).to.equal(0);
     });
   });
 
@@ -68,14 +72,17 @@ describe("state-node", () => {
       node.setVersion('version1');
 
       const clone = node.clone();
+      expect(clone.getVersion()).to.equal(node.getVersion());
       expect(clone.getIsLeaf()).to.equal(true);
       assert.deepEqual(clone.getParentNodes(), []);
       assert.deepEqual(clone.getChildLabels(), []);
       assert.deepEqual(clone.getChildNodes(), []);
       expect(clone.getValue()).to.equal('value0');
       expect(clone.getProofHash()).to.equal('hash');
-      expect(clone.getVersion()).to.equal(node.getVersion());
-      assert.deepEqual(clone.toJsObject(true), node.toJsObject(true));
+      expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
+      expect(clone.getTreeSize()).to.equal(node.getTreeSize());
+      expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
+      assert.deepEqual(clone.toJsObject(GET_OPTIONS_INCLUDE_ALL), node.toJsObject(GET_OPTIONS_INCLUDE_ALL));
       expect(node.equal(clone)).to.equal(true);
     });
 
@@ -88,6 +95,7 @@ describe("state-node", () => {
       assert.deepEqual(child3.getParentNodes(), [stateTree]);
 
       const clone = stateTree.clone();
+      expect(clone.getVersion()).to.equal(stateTree.getVersion());
       expect(clone.getIsLeaf()).to.equal(false);
       assert.deepEqual(child1.getParentNodes(), [stateTree, clone]);
       assert.deepEqual(child2.getParentNodes(), [stateTree, clone]);
@@ -97,8 +105,10 @@ describe("state-node", () => {
       assert.deepEqual(clone.getChildNodes(), stateTree.getChildNodes());
       expect(clone.getValue()).to.equal(null);
       expect(clone.getProofHash()).to.equal('hash');
-      expect(clone.getVersion()).to.equal(stateTree.getVersion());
-      assert.deepEqual(clone.toJsObject(true), stateTree.toJsObject(true));
+      expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
+      expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
+      expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
+      assert.deepEqual(clone.toJsObject(GET_OPTIONS_INCLUDE_ALL), stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL));
       expect(stateTree.equal(clone)).to.equal(true);
     });
   });
@@ -110,13 +120,16 @@ describe("state-node", () => {
       node.setVersion('version1');
 
       const clone = node.clone('version2');
+      expect(clone.getVersion()).to.equal('version2');
       expect(clone.getIsLeaf()).to.equal(true);
       assert.deepEqual(clone.getParentNodes(), []);
       assert.deepEqual(clone.getChildLabels(), []);
       assert.deepEqual(clone.getChildNodes(), []);
       expect(clone.getValue()).to.equal('value0');
       expect(clone.getProofHash()).to.equal('hash');
-      expect(clone.getVersion()).to.equal('version2');
+      expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
+      expect(clone.getTreeSize()).to.equal(node.getTreeSize());
+      expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
     });
 
     it("internal node", () => {
@@ -128,6 +141,7 @@ describe("state-node", () => {
       assert.deepEqual(child3.getParentNodes(), [stateTree]);
 
       const clone = stateTree.clone('version2');
+      expect(clone.getVersion()).to.equal('version2');
       expect(clone.getIsLeaf()).to.equal(false);
       assert.deepEqual(child1.getParentNodes(), [stateTree, clone]);
       assert.deepEqual(child2.getParentNodes(), [stateTree, clone]);
@@ -137,7 +151,9 @@ describe("state-node", () => {
       assert.deepEqual(clone.getChildNodes(), stateTree.getChildNodes());
       expect(clone.getValue()).to.equal(null);
       expect(clone.getProofHash()).to.equal('hash');
-      expect(clone.getVersion()).to.equal('version2');
+      expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
+      expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
+      expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
     });
   });
 
@@ -280,11 +296,11 @@ describe("state-node", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
-      expect(StateNode.fromJsObject(true, ver1).toJsObject(true)).to.equal(true);
-      expect(StateNode.fromJsObject(false, ver1).toJsObject(true)).to.equal(false);
-      expect(StateNode.fromJsObject(10, ver1).toJsObject(true)).to.equal(10);
-      expect(StateNode.fromJsObject('str', ver1).toJsObject(true)).to.equal('str');
-      expect(StateNode.fromJsObject(null, ver1).toJsObject(true)).to.equal(null);
+      expect(StateNode.fromJsObject(true, ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal(true);
+      expect(StateNode.fromJsObject(false, ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal(false);
+      expect(StateNode.fromJsObject(10, ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal(10);
+      expect(StateNode.fromJsObject('str', ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal('str');
+      expect(StateNode.fromJsObject(null, ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal(null);
     })
 
     it("internal node", () => {
@@ -317,8 +333,186 @@ describe("state-node", () => {
           empty_obj: {},
         }
       };
-      // Expect no updates on proof hash and state info (tree height and tree size).
-      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject(true), {
+
+      // Expect no updates on tree info.
+      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeTreeInfo: true }), {
+        ".num_parents": 0,
+        ".num_parents:bool": 1,
+        ".num_parents:empty_obj": 1,
+        ".num_parents:empty_str": 1,
+        ".num_parents:null": 1,
+        ".num_parents:number": 1,
+        ".num_parents:str": 1,
+        ".num_parents:undef": 1,
+        ".tree_height": 0,
+        ".tree_height:bool": 0,
+        ".tree_height:empty_obj": 0,
+        ".tree_height:empty_str": 0,
+        ".tree_height:null": 0,
+        ".tree_height:number": 0,
+        ".tree_height:str": 0,
+        ".tree_height:undef": 0,
+        ".tree_size": 0,
+        ".tree_size:bool": 0,
+        ".tree_size:empty_obj": 0,
+        ".tree_size:empty_str": 0,
+        ".tree_size:null": 0,
+        ".tree_size:number": 0,
+        ".tree_size:str": 0,
+        ".tree_size:undef": 0,
+        ".tree_bytes": 0,
+        ".tree_bytes:bool": 0,
+        ".tree_bytes:empty_obj": 0,
+        ".tree_bytes:empty_str": 0,
+        ".tree_bytes:null": 0,
+        ".tree_bytes:number": 0,
+        ".tree_bytes:str": 0,
+        ".tree_bytes:undef": 0,
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
+        empty_obj: null,
+        subobj1: {
+          ".num_parents": 1,
+          ".num_parents:bool": 1,
+          ".num_parents:empty_obj": 1,
+          ".num_parents:empty_str": 1,
+          ".num_parents:null": 1,
+          ".num_parents:number": 1,
+          ".num_parents:str": 1,
+          ".num_parents:undef": 1,
+          ".tree_height": 0,
+          ".tree_height:bool": 0,
+          ".tree_height:empty_obj": 0,
+          ".tree_height:empty_str": 0,
+          ".tree_height:null": 0,
+          ".tree_height:number": 0,
+          ".tree_height:str": 0,
+          ".tree_height:undef": 0,
+          ".tree_size": 0,
+          ".tree_size:bool": 0,
+          ".tree_size:empty_obj": 0,
+          ".tree_size:empty_str": 0,
+          ".tree_size:null": 0,
+          ".tree_size:number": 0,
+          ".tree_size:str": 0,
+          ".tree_size:undef": 0,
+          ".tree_bytes": 0,
+          ".tree_bytes:bool": 0,
+          ".tree_bytes:empty_obj": 0,
+          ".tree_bytes:empty_str": 0,
+          ".tree_bytes:null": 0,
+          ".tree_bytes:number": 0,
+          ".tree_bytes:str": 0,
+          ".tree_bytes:undef": 0,
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        },
+        subobj2: {
+          ".num_parents": 1,
+          ".num_parents:bool": 1,
+          ".num_parents:empty_obj": 1,
+          ".num_parents:empty_str": 1,
+          ".num_parents:null": 1,
+          ".num_parents:number": 1,
+          ".num_parents:str": 1,
+          ".num_parents:undef": 1,
+          ".tree_height": 0,
+          ".tree_height:bool": 0,
+          ".tree_height:empty_obj": 0,
+          ".tree_height:empty_str": 0,
+          ".tree_height:null": 0,
+          ".tree_height:number": 0,
+          ".tree_height:str": 0,
+          ".tree_height:undef": 0,
+          ".tree_size": 0,
+          ".tree_size:bool": 0,
+          ".tree_size:empty_obj": 0,
+          ".tree_size:empty_str": 0,
+          ".tree_size:null": 0,
+          ".tree_size:number": 0,
+          ".tree_size:str": 0,
+          ".tree_size:undef": 0,
+          ".tree_bytes": 0,
+          ".tree_bytes:bool": 0,
+          ".tree_bytes:empty_obj": 0,
+          ".tree_bytes:empty_str": 0,
+          ".tree_bytes:null": 0,
+          ".tree_bytes:number": 0,
+          ".tree_bytes:str": 0,
+          ".tree_bytes:undef": 0,
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        }
+      });
+
+      // Expect no updates on state proof.
+      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
+        ".proof_hash:bool": null,
+        ".proof_hash:empty_obj": null,
+        ".proof_hash:empty_str": null,
+        ".proof_hash:null": null,
+        ".proof_hash:number": null,
+        ".proof_hash:str": null,
+        ".proof_hash:undef": null,
+        bool: false,
+        number: 10,
+        str: 'str',
+        empty_str: '',
+        null: null,
+        undef: undefined,
+        empty_obj: null,
+        subobj1: {
+          ".proof_hash": null,
+          ".proof_hash:bool": null,
+          ".proof_hash:empty_obj": null,
+          ".proof_hash:empty_str": null,
+          ".proof_hash:null": null,
+          ".proof_hash:number": null,
+          ".proof_hash:str": null,
+          ".proof_hash:undef": null,
+          bool: true,
+          number: 20,
+          str: 'str2',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        },
+        subobj2: {
+          ".proof_hash": null,
+          ".proof_hash:bool": null,
+          ".proof_hash:empty_obj": null,
+          ".proof_hash:empty_str": null,
+          ".proof_hash:null": null,
+          ".proof_hash:number": null,
+          ".proof_hash:str": null,
+          ".proof_hash:undef": null,
+          bool: true,
+          number: -10,
+          str: 'str3',
+          empty_str: '',
+          null: null,
+          undef: undefined,
+          empty_obj: null,
+        }
+      });
+
+      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeVersion: true }), {
         ".version": "ver1",
         ".version:bool": "ver1",
         ".version:empty_obj": "ver1",
@@ -327,38 +521,6 @@ describe("state-node", () => {
         ".version:number": "ver1",
         ".version:str": "ver1",
         ".version:undef": "ver1",
-        ".numParents": 0,
-        ".numParents:bool": 1,
-        ".numParents:empty_obj": 1,
-        ".numParents:empty_str": 1,
-        ".numParents:null": 1,
-        ".numParents:number": 1,
-        ".numParents:str": 1,
-        ".numParents:undef": 1,
-        ".proofHash": null,
-        ".proofHash:bool": null,
-        ".proofHash:empty_obj": null,
-        ".proofHash:empty_str": null,
-        ".proofHash:null": null,
-        ".proofHash:number": null,
-        ".proofHash:str": null,
-        ".proofHash:undef": null,
-        ".treeHeight": null,
-        ".treeHeight:bool": null,
-        ".treeHeight:empty_obj": null,
-        ".treeHeight:empty_str": null,
-        ".treeHeight:null": null,
-        ".treeHeight:number": null,
-        ".treeHeight:str": null,
-        ".treeHeight:undef": null,
-        ".treeSize": null,
-        ".treeSize:bool": null,
-        ".treeSize:empty_obj": null,
-        ".treeSize:empty_str": null,
-        ".treeSize:null": null,
-        ".treeSize:number": null,
-        ".treeSize:str": null,
-        ".treeSize:undef": null,
         bool: false,
         number: 10,
         str: 'str',
@@ -375,38 +537,6 @@ describe("state-node", () => {
           ".version:number": "ver1",
           ".version:str": "ver1",
           ".version:undef": "ver1",
-          ".numParents": 1,
-          ".numParents:bool": 1,
-          ".numParents:empty_obj": 1,
-          ".numParents:empty_str": 1,
-          ".numParents:null": 1,
-          ".numParents:number": 1,
-          ".numParents:str": 1,
-          ".numParents:undef": 1,
-          ".proofHash": null,
-          ".proofHash:bool": null,
-          ".proofHash:empty_obj": null,
-          ".proofHash:empty_str": null,
-          ".proofHash:null": null,
-          ".proofHash:number": null,
-          ".proofHash:str": null,
-          ".proofHash:undef": null,
-          ".treeHeight": null,
-          ".treeHeight:bool": null,
-          ".treeHeight:empty_obj": null,
-          ".treeHeight:empty_str": null,
-          ".treeHeight:null": null,
-          ".treeHeight:number": null,
-          ".treeHeight:str": null,
-          ".treeHeight:undef": null,
-          ".treeSize": null,
-          ".treeSize:bool": null,
-          ".treeSize:empty_obj": null,
-          ".treeSize:empty_str": null,
-          ".treeSize:null": null,
-          ".treeSize:number": null,
-          ".treeSize:str": null,
-          ".treeSize:undef": null,
           bool: true,
           number: 20,
           str: 'str2',
@@ -424,38 +554,6 @@ describe("state-node", () => {
           ".version:number": "ver1",
           ".version:str": "ver1",
           ".version:undef": "ver1",
-          ".numParents": 1,
-          ".numParents:bool": 1,
-          ".numParents:empty_obj": 1,
-          ".numParents:empty_str": 1,
-          ".numParents:null": 1,
-          ".numParents:number": 1,
-          ".numParents:str": 1,
-          ".numParents:undef": 1,
-          ".proofHash": null,
-          ".proofHash:bool": null,
-          ".proofHash:empty_obj": null,
-          ".proofHash:empty_str": null,
-          ".proofHash:null": null,
-          ".proofHash:number": null,
-          ".proofHash:str": null,
-          ".proofHash:undef": null,
-          ".treeHeight": null,
-          ".treeHeight:bool": null,
-          ".treeHeight:empty_obj": null,
-          ".treeHeight:empty_str": null,
-          ".treeHeight:null": null,
-          ".treeHeight:number": null,
-          ".treeHeight:str": null,
-          ".treeHeight:undef": null,
-          ".treeSize": null,
-          ".treeSize:bool": null,
-          ".treeSize:empty_obj": null,
-          ".treeSize:empty_str": null,
-          ".treeSize:null": null,
-          ".treeSize:number": null,
-          ".treeSize:str": null,
-          ".treeSize:undef": null,
           bool: true,
           number: -10,
           str: 'str3',
@@ -468,26 +566,26 @@ describe("state-node", () => {
     })
   })
 
-  describe("fromJsObject with version / toJsObjectShallow", () => {
+  describe("fromJsObject with version / toJsObject with isShallow", () => {
     it("leaf node", () => {
       const ver = 'test_version';
-      expect(StateNode.fromJsObject(true, ver).toJsObjectShallow()).to.equal(true);
-      expect(StateNode.fromJsObject(false, ver).toJsObjectShallow()).to.equal(false);
-      expect(StateNode.fromJsObject(10, ver).toJsObjectShallow()).to.equal(10);
-      expect(StateNode.fromJsObject('str', ver).toJsObjectShallow()).to.equal('str');
-      expect(StateNode.fromJsObject(null, ver).toJsObjectShallow()).to.equal(null);
+      expect(StateNode.fromJsObject(true, ver).toJsObject({ isShallow: true })).to.equal(true);
+      expect(StateNode.fromJsObject(false, ver).toJsObject({ isShallow: true })).to.equal(false);
+      expect(StateNode.fromJsObject(10, ver).toJsObject({ isShallow: true })).to.equal(10);
+      expect(StateNode.fromJsObject('str', ver).toJsObject({ isShallow: true })).to.equal('str');
+      expect(StateNode.fromJsObject(null, ver).toJsObject({ isShallow: true })).to.equal(null);
     })
 
     it("internal node", () => {
       const ver = 'test_version';
-      assert.deepEqual(StateNode.fromJsObject({ a: 1, b: 2, c: 3 }, ver).toJsObjectShallow(),
+      assert.deepEqual(StateNode.fromJsObject({ a: 1, b: 2, c: 3 }, ver).toJsObject({ isShallow: true }),
           {
             a: true,
             b: true,
             c: true,
           },
       );
-      assert.deepEqual(StateNode.fromJsObject({ a: { aa: 11 }, b: 2 }, ver).toJsObjectShallow(),
+      assert.deepEqual(StateNode.fromJsObject({ a: { aa: 11 }, b: 2 }, ver).toJsObject({ isShallow: true }),
           {
             a: true,
             b: true,
@@ -972,7 +1070,7 @@ describe("state-node", () => {
 
   describe("tree height", () => {
     it("getTreeHeight / setTreeHeight", () => {
-      expect(node.getTreeHeight()).to.equal(null);
+      expect(node.getTreeHeight()).to.equal(0);
       node.setTreeHeight(10);
       expect(node.getTreeHeight()).to.equal(10);
       node.setTreeHeight(5);
@@ -982,11 +1080,21 @@ describe("state-node", () => {
 
   describe("tree size", () => {
     it("getTreeSize / setTreeSize", () => {
-      expect(node.getTreeSize()).to.equal(null);
+      expect(node.getTreeSize()).to.equal(0);
       node.setTreeSize(10);
       expect(node.getTreeSize()).to.equal(10);
       node.setTreeSize(5);
       expect(node.getTreeSize()).to.equal(5);
+    });
+  });
+
+  describe("tree bytes", () => {
+    it("getTreeBytes / setTreeBytes", () => {
+      expect(node.getTreeBytes()).to.equal(0);
+      node.setTreeBytes(10);
+      expect(node.getTreeBytes()).to.equal(10);
+      node.setTreeBytes(5);
+      expect(node.getTreeBytes()).to.equal(5);
     });
   });
 
@@ -1021,6 +1129,32 @@ describe("state-node", () => {
     });
   });
 
+  describe("computeTreeHeight", () => {
+    it("leaf node", () => {
+      node.setValue(true);
+      expect(node.computeTreeHeight()).to.equal(0);
+      node.setValue(10);
+      expect(node.computeTreeHeight()).to.equal(0);
+      node.setValue(-200);
+      expect(node.computeTreeHeight()).to.equal(0);
+      node.setValue('');
+      expect(node.computeTreeHeight()).to.equal(0);
+      node.setValue('unittest');
+      expect(node.computeTreeHeight()).to.equal(0);
+      node.setValue(null);
+      expect(node.computeTreeHeight()).to.equal(0);
+      node.setValue(undefined);
+      expect(node.computeTreeHeight()).to.equal(0);
+    });
+
+    it("internal node", () => {
+      child1.setTreeHeight(0);
+      child2.setTreeHeight(1);
+      child3.setTreeHeight(2);
+      expect(stateTree.computeTreeHeight()).to.equal(3);
+    });
+  });
+
   describe("computeTreeSize", () => {
     it("leaf node", () => {
       node.setValue(true);
@@ -1047,29 +1181,55 @@ describe("state-node", () => {
     });
   });
 
-  describe("computeTreeHeight", () => {
+  describe("computeTreeBytes", () => {
     it("leaf node", () => {
-      node.setValue(true);
-      expect(node.computeTreeHeight()).to.equal(0);
-      node.setValue(10);
-      expect(node.computeTreeHeight()).to.equal(0);
-      node.setValue(-200);
-      expect(node.computeTreeHeight()).to.equal(0);
-      node.setValue('');
-      expect(node.computeTreeHeight()).to.equal(0);
-      node.setValue('unittest');
-      expect(node.computeTreeHeight()).to.equal(0);
-      node.setValue(null);
-      expect(node.computeTreeHeight()).to.equal(0);
-      node.setValue(undefined);
-      expect(node.computeTreeHeight()).to.equal(0);
+      const parent = new StateNode();
+      parent.setChild('child', node);
+
+      // node.parentSet : ref set (1 * 8 = 8 bytes)
+      node.setVersion('ver');  // string (3 * 2 = 6 bytes)
+      // node.isLeaf : boolean (4 bytses)
+      node.setProofHash('hash');  // string (4 * 2 = 8 bytses)
+      // node.treeHeight : number (8 bytses)
+      // node.treeSize : number (8 bytses)
+      // node.treeBytes : number (8 bytes)
+      // TOTAL: 50 - 6 = 44 bytes (exclude version)
+
+      node.setValue(true);  // boolean (4 bytes)
+      expect(node.computeTreeBytes()).to.equal(40);
+      node.setValue(10);  // number (8 bytes)
+      expect(node.computeTreeBytes()).to.equal(44);
+      node.setValue(-200);  // number (8 bytes)
+      expect(node.computeTreeBytes()).to.equal(44);
+      node.setValue('');  // string (0 * 2 = 0 bytes)
+      expect(node.computeTreeBytes()).to.equal(36);
+      node.setValue('str');  // string (3 * 2 = 6 bytes)
+      expect(node.computeTreeBytes()).to.equal(42);
+      node.setValue(null);  // null (0 bytes)
+      expect(node.computeTreeBytes()).to.equal(36);
+      node.setValue(undefined);  // undefined (0 bytes)
+      expect(node.computeTreeBytes()).to.equal(36);
     });
 
     it("internal node", () => {
-      child1.setTreeHeight(0);
-      child2.setTreeHeight(1);
-      child3.setTreeHeight(2);
-      expect(stateTree.computeTreeHeight()).to.equal(3);
+      const parent = new StateNode();
+      parent.setChild('child', stateTree);
+
+      // stateTree.parentSet : ref set (1 * 8 = 8 bytes)
+      // stateTree.childMap : ref map (3 * 8 = 24 bytes)
+      stateTree.setVersion('ver');  // string (3 * 2 = 6 bytes)
+      // stateTree.isLeaf : boolean (4 bytses)
+      stateTree.setProofHash('hash');  // string (4 * 2 = 8 bytses)
+      // stateTree.treeHeight : number (8 bytses)
+      // stateTree.treeSize : number (8 bytses)
+      // stateTree.treeBytes : number (8 bytes)
+      // TOTAL: 74 - 6 = 68 bytes (exclude version)
+
+      child1.setTreeBytes(10);
+      child2.setTreeBytes(20);
+      child3.setTreeBytes(30);
+      // 68 + 6('label1') * 2 + 10 + 6('label2') * 2 + 20 + 6('label3') * 2 + 30 = 164
+      expect(stateTree.computeTreeBytes()).to.equal(132);
     });
   });
 

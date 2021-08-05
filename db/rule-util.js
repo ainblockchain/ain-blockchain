@@ -86,8 +86,24 @@ class RuleUtil {
     return value === ShardingProtocols.NONE || value === ShardingProtocols.POA;
   }
 
+  boolOrFalse(value) {
+    return this.isBool(value) ? value : false;
+  }
+
+  numberOrZero(num) {
+    return this.isNumber(num) ? num : 0;
+  }
+
+  stringOrEmpty(str) {
+    return this.isString(str) ? str : '';
+  }
+
   toBool(value) {
     return this.isBool(value) ? value : value === 'true';
+  }
+
+  toNumberOrNaN(value) {
+    return this.isNumber(value) ? value : Number(value);
   }
 
   toCksumAddr(addr) {
@@ -130,10 +146,15 @@ class RuleUtil {
     return parsed[1];
   }
 
-  getAppAdminPath(accountName) {
+  isAppAdmin(appName, address, getValue) {
     const { PredefinedDbPaths } = require('../common/constants');
+    return getValue(`/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
+        `${PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN}/${address}`) === true;
+  }
+
+  isAppAdminFromServAcntName(accountName, address, getValue) {
     const appName = this.getServiceNameFromServAcntName(accountName);
-    return `/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/${PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN}`;
+    return this.isAppAdmin(appName, address, getValue);
   }
 
   getBalancePath(addrOrServAcnt) {
@@ -146,14 +167,41 @@ class RuleUtil {
     }
   }
 
-  getBillingUserPath(billingServAcntName, userAddr) {
+  getBalance(addrOrServAcnt, getValue) {
+    return getValue(this.getBalancePath(addrOrServAcnt)) || 0;
+  }
+
+  isBillingUser(billingServAcntName, userAddr, getValue) {
     const { PredefinedDbPaths } = require('../common/constants');
     const parsed = this.parseServAcntName(billingServAcntName);
     const appName = parsed[1];
     const billingId = parsed[2];
-    return `/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
+    return getValue(
+        `/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
         `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING}/${billingId}/` +
-        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}/${userAddr}`;
+        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}/${userAddr}`) === true;
+  }
+
+  isGasFeeCollected(address, newData, txHash, getValue) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    const blockNumber = newData[PredefinedDbPaths.RECEIPTS_BLOCK_NUMBER];
+    const gasCost = _.get(newData, `${PredefinedDbPaths.RECEIPTS_EXEC_RESULT}.${PredefinedDbPaths.RECEIPTS_GAS_COST_TOTAL}`);
+    if (gasCost === undefined) {
+      return false;
+    }
+    const billing = _.get(newData, `${PredefinedDbPaths.RECEIPTS_BILLING}`);
+    const collectedFrom = billing ? `${PredefinedDbPaths.BILLING}|${billing}` : address;
+    const feeCollected = getValue(
+        `/${PredefinedDbPaths.GAS_FEE}/${PredefinedDbPaths.COLLECT}/${collectedFrom}` +
+        `/${blockNumber}/${txHash}/${PredefinedDbPaths.GAS_FEE_AMOUNT}`) || 0;
+    return feeCollected === gasCost;
+  }
+
+  getConsensusStakeBalance(address, getValue) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    return getValue(
+        `/${PredefinedDbPaths.SERVICE_ACCOUNTS}/${PredefinedDbPaths.STAKING}/` +
+        `${PredefinedDbPaths.CONSENSUS}/${address}|0/${PredefinedDbPaths.BALANCE}`) || 0;
   }
 
   getOwnerAddr() {
@@ -164,6 +212,11 @@ class RuleUtil {
   getMinStakeAmount() {
     const { MIN_STAKE_PER_VALIDATOR } = require('../common/constants');
     return MIN_STAKE_PER_VALIDATOR;
+  }
+
+  getMaxStakeAmount() {
+    const { MAX_STAKE_PER_VALIDATOR } = require('../common/constants');
+    return MAX_STAKE_PER_VALIDATOR;
   }
 
   getMinNumValidators() {

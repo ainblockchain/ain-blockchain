@@ -129,8 +129,20 @@ class Block {
           `[${LOG_HEADER}] Last votes or last_votes_hash is incorrect for block ${block.hash}`);
       return false;
     }
-    logger.info(
-        `[${LOG_HEADER}] Hash check successfully done for block: ${block.number} / ${block.epoch}`);
+    return true;
+  }
+
+  static validateValidators(validators) {
+    if (!CommonUtil.isDict(validators)) return false;
+    for (const [address, info] of Object.entries(validators)) {
+      if (!CommonUtil.isCksumAddr(address)) {
+        return false;
+      }
+      if (!CommonUtil.isDict(info) || !CommonUtil.isNumber(info[PredefinedDbPaths.STAKE]) ||
+          !CommonUtil.isBool(info[PredefinedDbPaths.PROPOSAL_RIGHT])) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -156,6 +168,12 @@ class Block {
         return false;
       }
       nonceTracker[tx.address] = tx.tx_body.nonce;
+    }
+    if (!Block.validateValidators(block.validators)) {
+      logger.error(
+          `[${LOG_HEADER}] Invalid validators format: ${JSON.stringify(block.validators)} ` +
+          `(${block.number} / ${block.epoch})`);
+      return false;
     }
 
     logger.info(`[${LOG_HEADER}] Validated block: ${block.number} / ${block.epoch}`);
@@ -261,7 +279,7 @@ class Block {
 
   static buildGenesisStakingTxs(timestamp) {
     const txs = [];
-    Object.entries(GENESIS_VALIDATORS).forEach(([address, amount], index) => {
+    Object.entries(GENESIS_VALIDATORS).forEach(([address, info], index) => {
       const privateKey = _.get(GenesisAccounts,
           `${AccountProperties.OTHERS}.${index}.${AccountProperties.PRIVATE_KEY}`);
       if (!privateKey) {
@@ -274,7 +292,7 @@ class Block {
         operation: {
           type: 'SET_VALUE',
           ref: PathUtil.getStakingStakeRecordValuePath(PredefinedDbPaths.CONSENSUS, address, 0, timestamp),
-          value: amount
+          value: info[PredefinedDbPaths.STAKE]
         }
       };
       txs.push(Transaction.fromTxBody(txBody, privateKey));
@@ -303,7 +321,7 @@ class Block {
     tempGenesisDb.initDbStates();
     const resList = [];
     for (const tx of genesisTxs) {
-      const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx));
+      const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx), true);
       if (CommonUtil.isFailedTx(res)) {
         logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
             `\nRESULT: ${JSON.stringify(res)}`)

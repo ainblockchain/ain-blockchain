@@ -4,6 +4,7 @@ const assert = chai.assert;
 const expect = chai.expect;
 const {
   CHAINS_DIR,
+  PredefinedDbPaths,
 } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
 const BlockchainNode = require('../node/');
@@ -28,6 +29,14 @@ describe('Transaction', () => {
 
     node = new BlockchainNode();
     setNodeForTesting(node);
+    node.db.writeDatabase(
+      [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.STAKING, 'app_a', PredefinedDbPaths.STAKING_BALANCE_TOTAL],
+      1
+    );
+    node.db.writeDatabase(
+      [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.STAKING, 'test', PredefinedDbPaths.STAKING_BALANCE_TOTAL],
+      1
+    );
 
     txBody = {
       operation: {
@@ -83,7 +92,7 @@ describe('Transaction', () => {
     txBodyForNode = {
       operation: {
         type: 'SET_VALUE',
-        ref: 'test/comcom',
+        ref: '/apps/test/comcom',
         value: 'val'
       },
       gas_price: 1
@@ -210,10 +219,12 @@ describe('Transaction', () => {
   describe('extra', () => {
     const gas = {
       gas_amount: {
-        service: 100,
-        app: {
-          app1: 50,
-          app2: 20
+        bandwidth: {
+          service: 100,
+          app: {
+            app1: 50,
+            app2: 20
+          }
         }
       }
     };
@@ -251,10 +262,10 @@ describe('Transaction', () => {
     it('assigns nonces correctly', async () => {
       let tx2;
       let currentNonce;
-      for (currentNonce = node.nonce - 1; currentNonce < 50; currentNonce++) {
+      for (currentNonce = node.getNonce() - 1; currentNonce < 50; currentNonce++) {
         delete txBodyForNode.nonce;
         tx2 = getTransaction(node, txBodyForNode);
-        node.db.executeTransaction(tx2, node.bc.lastBlockNumber() + 1);
+        node.db.executeTransaction(tx2, false, true, node.bc.lastBlockNumber() + 1);
         await CommonUtil.sleep(1);
       }
       expect(tx2).to.not.equal(null);

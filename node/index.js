@@ -1,7 +1,6 @@
 /* eslint guard-for-in: "off" */
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
-const fs = require('fs');
 const path = require('path');
 const logger = require('../logger')('NODE');
 const {
@@ -9,8 +8,7 @@ const {
   PORT,
   ACCOUNT_INDEX,
   SYNC_MODE,
-  TX_NONCE_ERROR_CODE,
-  TX_TIMESTAMP_ERROR_CODE,
+  ON_MEMORY_CHAIN_LENGTH,
   SNAPSHOTS_ROOT_DIR,
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
   MAX_NUM_SNAPSHOTS,
@@ -20,11 +18,13 @@ const {
   ShardingProtocols,
   GenesisAccounts,
   GenesisSharding,
+  TransactionStates,
   StateVersions,
   SyncModeOptions,
   LIGHTWEIGHT,
   TX_POOL_SIZE_LIMIT,
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
+  MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
 const CommonUtil = require('../common/common-util');
@@ -34,8 +34,6 @@ const StateManager = require('../db/state-manager');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 
-// TODO(platfowner): Migrate nonce to getAccountNonceAndTimestamp() and
-// updateAccountNonceAndTimestamp().
 class BlockchainNode {
   constructor() {
     const LOG_HEADER = 'constructor';
@@ -57,9 +55,11 @@ class BlockchainNode {
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
-    this.db = this.createDb(StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true);
-    this.nonce = null;  // nonce from current final version
+    this.db = DB.create(
+        StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true,
+        this.bc.lastBlockNumber(), this.stateManager);
     this.state = BlockchainNodeStates.STARTING;
+    logger.info(`Now node in STARTING state!`);
     this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
     FileUtil.createSnapshotDir(this.snapshotDir);
   }
@@ -85,14 +85,15 @@ class BlockchainNode {
   }
 
   init(isFirstNode) {
-    const LOG_HEADER = 'init';
-    logger.info(`[${LOG_HEADER}] Initializing node..`);
+    const LOG_HEADER = 'BlockchainNode.init';
+
     let latestSnapshot = null;
     let latestSnapshotPath = null;
     let latestSnapshotBlockNumber = -1;
 
     // 1. Get the latest snapshot if in the "fast" sync mode.
     if (SYNC_MODE === SyncModeOptions.FAST) {
+      logger.info(`[${LOG_HEADER}] Initializing node in 'fast' mode..`);
       const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
       latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
       latestSnapshotBlockNumber = latestSnapshotInfo.latestSnapshotBlockNumber;
@@ -103,28 +104,41 @@ class BlockchainNode {
           logger.error(`[${LOG_HEADER}] ${err.stack}`);
         }
       }
+      logger.info(`[${LOG_HEADER}] Fast mode sync done!`);
+    } else {
+      logger.info(`[${LOG_HEADER}] Initializing node in 'full' mode..`);
     }
 
-    // 2. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
-    const lastBlockWithoutProposal = this.bc.init(isFirstNode, latestSnapshotBlockNumber);
-
-    // 3. Initialize DB (with the latest snapshot, if it exists)
-    const startingDb =
-        this.createDb(StateVersions.EMPTY, StateVersions.START, this.bc, this.tp, true);
+    // 2. Initialize DB (with the latest snapshot, if it exists)
+    logger.info(`[${LOG_HEADER}] Initializing DB..`);
+    const startingDb = DB.create(
+        StateVersions.EMPTY, StateVersions.START, this.bc, this.tp, true, false,
+        latestSnapshotBlockNumber, this.stateManager);
     startingDb.initDbStates(latestSnapshot);
 
+    // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
+    logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
+    const { wasBlockDirEmpty, isGenesisStart } =
+        this.bc.init(isFirstNode, latestSnapshotBlockNumber);
+
     // 4. Execute the chain on the DB and finalize it.
-    this.executeChainOnDb(startingDb);
+    logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
+    let lastBlockWithoutProposal = null;
+    if (!wasBlockDirEmpty || isGenesisStart) {
+      lastBlockWithoutProposal =
+          this.loadAndExecuteChainOnDb(latestSnapshotBlockNumber, !wasBlockDirEmpty, startingDb);
+    }
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
-    this.nonce = this.getNonceForAddr(this.account.address, false, true);
 
     // 5. Execute transactions from the pool.
+    logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
     this.db.executeTransactionList(
-        this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()),
+        this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()), false, true,
         this.bc.lastBlockNumber() + 1);
 
     // 6. Node status changed: STARTING -> SYNCING.
     this.state = BlockchainNodeStates.SYNCING;
+    logger.info(`[${LOG_HEADER}] Now node in SYNCING state!`);
 
     return lastBlockWithoutProposal;
   }
@@ -141,31 +155,6 @@ class BlockchainNode {
     return new DB(tempRoot, tempVersion, null, null, false, blockNumberSnapshot, this.stateManager);
   }
 
-  createDb(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot) {
-    const LOG_HEADER = 'createDb';
-
-    logger.info(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
-        `${baseVersion} -> ${newVersion}`);
-    const newRoot = this.stateManager.cloneVersion(baseVersion, newVersion);
-    if (!newRoot) {
-      logger.error(
-          `[${LOG_HEADER}] Failed to clone state version: ${baseVersion} -> ${newVersion}`);
-      return null;
-    }
-    if (finalizeVersion) {
-      this.stateManager.finalizeVersion(newVersion);
-    }
-    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot, this.stateManager);
-  }
-
-  destroyDb(db) {
-    const LOG_HEADER = 'destroyDb';
-
-    logger.info(`[${LOG_HEADER}] Destroying DB with state version: ${db.stateVersion}`);
-    db.deleteStateVersion();
-    db.deleteBackupStateVersion();
-  }
-
   syncDbAndNonce(newVersion) {
     const LOG_HEADER = 'syncDbAndNonce';
 
@@ -180,8 +169,6 @@ class BlockchainNode {
           `${this.stateManager.getFinalVersion()}`);
     }
     this.db.setStateVersion(newVersion, clonedRoot);
-    const { nonce } = this.db.getAccountNonceAndTimestamp(this.account.address);
-    this.nonce = nonce;
     return true;
   }
 
@@ -219,30 +206,69 @@ class BlockchainNode {
 
   updateSnapshots(blockNumber) {
     if (blockNumber > 0 && blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
-      const snapshot = this.dumpFinalVersion(false);
+      const snapshot = this.dumpFinalDbStates();
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
           this.snapshotDir, blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
   }
 
-  dumpFinalVersion(withDetails) {
-    return this.stateManager.getFinalRoot().toJsObject(withDetails);
+  dumpFinalDbStates(options) {
+    return this.stateManager.getFinalRoot().toJsObject(options);
   }
 
-  getNonceForAddr(address, fromPending, fromDb = false) {
+  getTransactionByHash(hash) {
+    const transactionInfo = this.tp.transactionTracker[hash];
+    if (!transactionInfo) {
+      return null;
+    }
+
+    if (transactionInfo.state === TransactionStates.IN_BLOCK) {
+      const block = this.bc.getBlockByNumber(transactionInfo.number);
+      const index = transactionInfo.index;
+      if (!block) {
+        // TODO(liayoo): Ask peers for the transaction / block
+      } else if (index >= 0) {
+        transactionInfo.transaction = block.transactions[index];
+      } else {
+        transactionInfo.transaction =
+            _.find(block.last_votes, (tx) => tx.hash === hash) || null;
+      }
+    } else if (transactionInfo.state === TransactionStates.EXECUTED ||
+        transactionInfo.state === TransactionStates.PENDING) {
+      const address = transactionInfo.address;
+      transactionInfo.transaction =
+          _.find(this.tp.transactions[address], (tx) => tx.hash === hash) || null;
+    }
+    return transactionInfo;
+  }
+
+  getNonce(fromPending = true) {
+    return this.getNonceForAddr(this.account.address, fromPending);
+  }
+
+  getNonceForAddr(address, fromPending = true) {
     if (!CommonUtil.isValAddr(address)) return -1;
     const cksumAddr = CommonUtil.toCksumAddr(address);
     if (fromPending) {
       const { nonce } = this.db.getAccountNonceAndTimestamp(cksumAddr);
       return nonce;
     }
-    if (!fromDb && cksumAddr === this.account.address) {
-      return this.nonce;
-    }
     const stateRoot = this.stateManager.getFinalRoot();
     const { nonce } = DB.getAccountNonceAndTimestampFromStateRoot(stateRoot, cksumAddr);
     return nonce;
+  }
+
+  getTimestampForAddr(address, fromPending) {
+    if (!CommonUtil.isValAddr(address)) return -1;
+    const cksumAddr = CommonUtil.toCksumAddr(address);
+    if (fromPending) {
+      const { timestamp } = this.db.getAccountNonceAndTimestamp(cksumAddr);
+      return timestamp;
+    }
+    const stateRoot = this.stateManager.getFinalRoot();
+    const { timestamp } = DB.getAccountNonceAndTimestampFromStateRoot(stateRoot, cksumAddr);
+    return timestamp;
   }
 
   getSharding() {
@@ -254,14 +280,19 @@ class BlockchainNode {
         const shardPath = ainUtil.decode(encodedPath);
         shardingInfo[encodedPath] = {
           [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(CommonUtil.appendPath(
-              shardPath, ShardingProperties.SHARD, ShardingProperties.SHARDING_ENABLED)),
+              shardPath, PredefinedDbPaths.DOT_SHARD, ShardingProperties.SHARDING_ENABLED)),
           [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(CommonUtil.appendPath(
-              shardPath, ShardingProperties.SHARD, ShardingProperties.PROOF_HASH_MAP,
+              shardPath, PredefinedDbPaths.DOT_SHARD, ShardingProperties.PROOF_HASH_MAP,
               ShardingProperties.LATEST)),
         };
       }
     }
     return shardingInfo;
+  }
+
+  getStateUsage(appName) {
+    if (!appName) return null;
+    return this.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
   }
 
   getTxPoolSizeUtilization(address) {
@@ -311,8 +342,7 @@ class BlockchainNode {
 
   createSingleTransaction(txBody) {
     if (txBody.nonce === undefined) {
-      const { nonce } = this.db.getAccountNonceAndTimestamp(this.account.address);
-      txBody.nonce = nonce;
+      txBody.nonce = this.getNonce();
     }
     if (txBody.timestamp === undefined) {
       txBody.timestamp = Date.now();
@@ -321,28 +351,6 @@ class BlockchainNode {
       txBody.gas_price = 0;
     }
     return Transaction.fromTxBody(txBody, this.account.private_key);
-  }
-
-  /**
-   * Try to executes a transaction on the node database. If it was not successful, all changes are
-   * rolled back from the database states.
-   * @param {Object} tx transaction
-   */
-  executeOrRollbackTransaction(tx) {
-    const LOG_HEADER = 'executeOrRollbackTransaction';
-    if (!this.db.backupDb()) {
-      return CommonUtil.logAndReturnTxResult(
-          logger, 3,
-          `[${LOG_HEADER}] Failed to backup db for tx: ${JSON.stringify(tx, null, 2)}`);
-    }
-    const result = this.db.executeTransaction(tx, this.bc.lastBlockNumber() + 1);
-    if (CommonUtil.isFailedTx(result)) {
-      if (!this.db.restoreDb()) {
-        logger.error(
-          `[${LOG_HEADER}] Failed to restore db for tx: ${JSON.stringify(tx, null, 2)}`);
-      }
-    }
-    return result;
   }
 
   /**
@@ -376,19 +384,21 @@ class BlockchainNode {
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
           `for account: ${executableTx.address}`);
     }
-    const result = this.executeOrRollbackTransaction(executableTx);
+    const result = this.db.executeTransaction(executableTx, false, true, this.bc.lastBlockNumber() + 1);
     if (CommonUtil.isFailedTx(result)) {
       if (FeatureFlags.enableRichTransactionLogging) {
         logger.error(
             `[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(executableTx, null, 2)}\n ` +
             `WITH RESULT:${JSON.stringify(result)}`);
       }
-      const errorCode = _.get(result, 'code');
-      if (errorCode === TX_NONCE_ERROR_CODE || errorCode === TX_TIMESTAMP_ERROR_CODE) {
+      // NOTE(liayoo): Transactions that don't pass the pre-checks will be rejected instantly and
+      //               will not be included in the tx pool, as they can't be included in a block
+      //               anyway, and may be used for attacks on blockchain nodes.
+      if (!CommonUtil.txPrecheckFailed(result)) {
         this.tp.addTransaction(executableTx);
       }
     } else {
-      this.tp.addTransaction(executableTx);
+      this.tp.addTransaction(executableTx, true);
     }
 
     return result;
@@ -403,16 +413,36 @@ class BlockchainNode {
     return false;
   }
 
+  removeOldReceipts(blockNumber, db) {
+    const LOG_HEADER = 'removeOldReceipts';
+    if (blockNumber > MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
+      const receiptsPrefixFullPath = DB.getFullPath(
+          [PredefinedDbPaths.RECEIPTS], PredefinedDbPaths.VALUES_ROOT);
+      const oldBlock = this.bc.getBlockByNumber(blockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS);
+      if (oldBlock) {
+        oldBlock.transactions.forEach((tx) => {
+          db.writeDatabase([...receiptsPrefixFullPath, tx.hash], null);
+        });
+      } else {
+        logger.error(
+            `[${LOG_HEADER}] Non-existing block ${blockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS}.`);
+      }
+    }
+  }
+
   applyBlocksToDb(blockList, db) {
     const LOG_HEADER = 'applyBlocksToDb';
 
     for (const block of blockList) {
-      if (!db.executeTransactionList(block.last_votes)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
-            `${JSON.stringify(block, null, 2)}`);
-        return false;
+      this.removeOldReceipts(block.number, db);
+      if (block.number > 0) {
+        if (!db.executeTransactionList(block.last_votes, true)) {
+          logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
+              `${JSON.stringify(block, null, 2)}`);
+          return false;
+        }
       }
-      if (!db.executeTransactionList(block.transactions, block.number)) {
+      if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
             `${JSON.stringify(block, null, 2)}`);
         return false;
@@ -438,6 +468,7 @@ class BlockchainNode {
         // TODO(liayoo): Ask the tracker server for another peer.
         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
         this.state = BlockchainNodeStates.SERVING;
+        logger.info(`[${LOG_HEADER}] Now node in SERVING state.`);
       }
       return false;
     }
@@ -453,6 +484,7 @@ class BlockchainNode {
         // TODO(liayoo): Ask the tracker server for another peer.
         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
         this.state = BlockchainNodeStates.SERVING;
+        logger.info(`[${LOG_HEADER}] Now node in SERVING state!`);
       }
       return false;
     }
@@ -462,7 +494,7 @@ class BlockchainNode {
         baseVersion, `${StateVersions.SEGMENT}:${this.bc.lastBlockNumber()}`,
         this.bc.lastBlockNumber());
     if (!tempDb) {
-      logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
+      logger.error(`[${LOG_HEADER}] Failed to create a temp database with state version: ${baseVersion}.`);
       return null;
     }
     const validBlocks = this.bc.getValidBlocksInChainSegment(chainSegment);
@@ -470,14 +502,14 @@ class BlockchainNode {
       if (!this.applyBlocksToDb(validBlocks, tempDb)) {
         logger.error(`[${LOG_HEADER}] Failed to apply valid blocks to database: ` +
             `${JSON.stringify(validBlocks, null, 2)}`);
-        this.destroyDb(tempDb);
+        tempDb.destroyDb();
         return false;
       }
       for (const block of validBlocks) {
         if (!this.bc.addNewBlockToChain(block)) {
           logger.error(`[${LOG_HEADER}] Failed to add new block to chain: ` +
               `${JSON.stringify(block, null, 2)}`);
-          this.destroyDb(tempDb);
+          tempDb.destroyDb();
           return false;
         }
       }
@@ -490,30 +522,73 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] No blocks to apply.`);
       return true;
     }
-    this.destroyDb(tempDb);
+    tempDb.destroyDb();
 
     return true;
   }
 
-  executeChainOnDb(db) {
-    const LOG_HEADER = 'executeChainOnDb';
+  executeBlockOnDb(block, db) {
+    const LOG_HEADER = 'executeBlockOnDb';
 
-    for (const block of this.bc.chain) {
-      if (!db.executeTransactionList(block.last_votes)) {
+    this.removeOldReceipts(block.number, db);
+    if (block.number > 0) {
+      if (!db.executeTransactionList(block.last_votes, true)) {
         logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
-        process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+        // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+        process.exit(1);
       }
-      if (!db.executeTransactionList(block.transactions, block.number)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
-        process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-      }
-      if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
-        logger.error(`[${LOG_HEADER}] Invalid state proof hash (${block.number}): ` +
-            `${db.stateRoot.getProofHash()}, ${block.state_proof_hash}`);
-        process.exit(1); // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-      }
-      this.tp.cleanUpForNewBlock(block);
     }
+    if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number)) {
+      logger.error(`[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
+      // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+      process.exit(1);
+    }
+    if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
+      logger.error(`[${LOG_HEADER}] Invalid state proof hash (${block.number}): ` +
+          `${db.stateRoot.getProofHash()}, ${block.state_proof_hash}`);
+      // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+      process.exit(1);
+    }
+    this.tp.cleanUpForNewBlock(block);
+    logger.info(`[${LOG_HEADER}] Successfully executed block ${block.number} on DB.`);
+  }
+
+  loadAndExecuteChainOnDb(latestSnapshotBlockNumber, deleteLastBlock, db) {
+    const LOG_HEADER = 'loadAndExecuteChainOnDb';
+
+    let lastBlockWithoutProposal = null;
+    const numBlockFiles = this.bc.getNumBlockFiles();
+    const fromBlockNumber = SYNC_MODE === SyncModeOptions.FAST ? latestSnapshotBlockNumber + 1 : 0;
+    let prevBlockNumber = latestSnapshotBlockNumber;
+    let prevBlockHash = null;
+    for (let number = fromBlockNumber; number < numBlockFiles; number++) {
+      const block = this.bc.loadBlock(number);
+      if (!block) {
+        logger.error(`[${LOG_HEADER}] Failed to load block ${number}.`);
+        // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+        process.exit(1);
+      }
+      logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
+      if (!Blockchain.validateBlock(block, prevBlockNumber, prevBlockHash)) {
+        logger.error(`[${LOG_HEADER}] Failed to validate block ${number}.`);
+        // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+        process.exit(1);
+      }
+      // NOTE(minsulee2): Deal with the case the only genesis block was generated.
+      if (deleteLastBlock && number > 0 && number === numBlockFiles - 1) {
+        lastBlockWithoutProposal = block;
+        this.bc.deleteBlock(lastBlockWithoutProposal);
+      } else {
+        this.executeBlockOnDb(block, db);
+        if (numBlockFiles - number <= ON_MEMORY_CHAIN_LENGTH) {
+          this.bc.addBlockToChain(block)
+        }
+      }
+      prevBlockNumber = block.number;
+      prevBlockHash = block.hash;
+    }
+
+    return lastBlockWithoutProposal;
   }
 }
 
