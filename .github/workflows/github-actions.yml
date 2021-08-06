@@ -14,13 +14,11 @@ on:
     types: [opened, synchronize, reopened, closed]
 jobs:
   build_and_test:
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'opened' }}
+    if: ${{ github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'edited') }}
     runs-on: macos-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
       # Setup node environment for testing
       - uses: actions/setup-node@v2
         with:
@@ -31,7 +29,7 @@ jobs:
       - name: run unittest
         run: yarn run test_unit
       - name: run integration test
-        if: github.event.pull_request.base.ref == 'master'   # integration test only run when master merging
+        if: github.event.action == 'opened' && github.event.pull_request.base.ref == 'master'   # integration test only run when master merging
         run: yarn run test_integration
   check_protocol_version:
     if: ${{ github.event_name == 'push' }}
