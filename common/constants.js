@@ -471,19 +471,23 @@ const WriteDbOperations = {
 /**
  * Function result code.
  *
- * @enum {string}
+ * @enum {number}
  */
 const FunctionResultCode = {
-  FAILURE: 'FAILURE',  // Normal failure
-  IN_LOCKUP_PERIOD: 'IN_LOCKUP_PERIOD',
-  INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
-  INTERNAL_ERROR: 'INTERNAL_ERROR',  // Something went wrong but don't know why
-  INVALID_ACCOUNT_NAME: 'INVALID_ACCOUNT_NAME',
-  INVALID_SERVICE_NAME: 'INVALID_SERVICE_NAME',
-  INVALID_TOKEN_BRIDGE_CONFIG: 'INVALID_TOKEN_BRIDGE_CONFIG',
-  INVALID_RECIPIENT: 'INVALID_RECIPIENT',
-  INVALID_CHECKOUT_AMOUNT: 'INVALID_CHECKOUT_AMOUNT',
-  SUCCESS: 'SUCCESS',
+  SUCCESS: 0,
+  FAILURE: 1,  // Normal failure
+  INTERNAL_ERROR: 2,  // Something went wrong but don't know why
+  // Transfer
+  INSUFFICIENT_BALANCE: 100,
+  // Staking
+  IN_LOCKUP_PERIOD: 200,
+  // Create app
+  INVALID_SERVICE_NAME: 300,
+  // Checkout
+  INVALID_ACCOUNT_NAME: 400,
+  INVALID_CHECKOUT_AMOUNT: 401,
+  INVALID_RECIPIENT: 402,
+  INVALID_TOKEN_BRIDGE_CONFIG: 403,
 };
 
 /**
