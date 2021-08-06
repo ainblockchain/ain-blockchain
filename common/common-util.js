@@ -4,7 +4,6 @@ const _ = require('lodash');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
-const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 
 class CommonUtil {
   static hashString(stringData) {
