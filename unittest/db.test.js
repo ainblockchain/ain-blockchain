@@ -2604,7 +2604,7 @@ describe("DB operations", () => {
         const maxHeightTxBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: '/apps/test/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20',
+            ref: '/apps/test/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30',
             value: 'some value',
           },
           gas_price: 0,
@@ -2625,7 +2625,7 @@ describe("DB operations", () => {
             },
             state: {
               app: {
-                test: 2956
+                test: 4596
               },
               service: 8
             }
@@ -2636,7 +2636,7 @@ describe("DB operations", () => {
         const overHeightTxBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: '/apps/test/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21',
+            ref: '/apps/test/4/5/6/7/8/9/10/11/12/13/14/15/16/17/18/19/20/21/22/23/24/25/26/27/28/29/30/31',
             value: 'some value',
           },
           gas_price: 0,
@@ -2646,7 +2646,7 @@ describe("DB operations", () => {
         const overHeightTx = Transaction.fromTxBody(overHeightTxBody, node.account.private_key);
         assert.deepEqual(node.db.executeTransaction(overHeightTx, false, true, node.bc.lastBlockNumber() + 1), {
           code: 23,
-          error_message: "Out of tree height limit (21 > 20)",
+          error_message: "Out of tree height limit (31 > 30)",
           gas_amount_charged: 0,
           bandwidth_gas_amount: 1,
           gas_cost_total: 0,
@@ -2726,7 +2726,7 @@ describe("DB operations", () => {
         const overSizeTree = {};
         for (let i = 0; i < 1000; i++) {
           overSizeTree[i] = {};
-          for (let j = 0; j < 100; j++) {
+          for (let j = 0; j < 75; j++) {
             overSizeTree[i][j] = 'a';
           }
         }
@@ -2743,10 +2743,10 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 26);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for apps (16769332 > 9000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for apps (12619332 > 9000000)");
         assert.deepEqual(res.gas_amount_total, {
           bandwidth: { service: 0, app: { test: 1 } },
-          state: { service: 8, app: { test: 16746108 } }
+          state: { service: 8, app: { test: 12596108 } }
         });
         assert.deepEqual(res.gas_cost_total, 0);
       });
