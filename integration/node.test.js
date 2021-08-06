@@ -23,6 +23,7 @@ const {
   MICRO_AIN,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
+const PathUtil = require('../common/path-util');
 const {
   waitUntilTxFinalized,
   parseOrLog,
@@ -6997,7 +6998,7 @@ describe('Blockchain Node', () => {
       }
 
       const receipt = parseOrLog(syncRequest(
-          'GET', server1 + `/get_value?ref=/receipts/${body.result.tx_hash}`)
+          'GET', server1 + `/get_value?ref=${PathUtil.getReceiptPath(body.result.tx_hash)}`)
           .body.toString('utf-8')).result;
       assert.deepEqual(receipt.address, txSignerAddress);
       assert.deepEqual(receipt.exec_result, {
@@ -7037,7 +7038,7 @@ describe('Blockchain Node', () => {
       }
       for (const tx of oldBlock.transactions) {
         const receipt = parseOrLog(syncRequest(
-          'GET', server1 + `/get_value?ref=/receipts/${tx.hash}`)
+          'GET', server1 + `/get_value?ref=${PathUtil.getReceiptPath(tx.hash)}`)
           .body.toString('utf-8')).result;
         assert.deepEqual(receipt, null);
       }
@@ -7074,7 +7075,7 @@ describe('Blockchain Node', () => {
       // Failed tx's receipt is in state
       const txHash = body.result.tx_hash;
       const receipt = parseOrLog(syncRequest(
-        'GET', server2 + `/get_value?ref=/receipts/${txHash}`).body.toString('utf-8')).result;
+        'GET', server2 + `/get_value?ref=${PathUtil.getReceiptPath(txHash)}`).body.toString('utf-8')).result;
       expect(receipt).to.not.equal(null);
       assert.deepEqual(receipt.exec_result, body.result.result);
 
