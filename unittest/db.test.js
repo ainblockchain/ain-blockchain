@@ -1968,7 +1968,7 @@ describe("DB operations", () => {
                             }
                           }
                         },
-                        "code": "SUCCESS",
+                        "code": 0,
                         "bandwidth_gas_amount": 0,
                       }
                     },
@@ -1977,7 +1977,7 @@ describe("DB operations", () => {
                   }
                 }
               },
-              "code": "SUCCESS",
+              "code": 0,
               "bandwidth_gas_amount": 0
             }
           },
@@ -2073,7 +2073,7 @@ describe("DB operations", () => {
                             }
                           }
                         },
-                        "code": "FAILURE",
+                        "code": 1,
                         "bandwidth_gas_amount": 0,
                       }
                     },
@@ -2082,7 +2082,7 @@ describe("DB operations", () => {
                   }
                 }
               },
-              "code": "FAILURE",
+              "code": 1,
               "bandwidth_gas_amount": 0,
             }
           },
@@ -2383,7 +2383,7 @@ describe("DB operations", () => {
                                 }
                               }
                             },
-                            "code": "SUCCESS",
+                            "code": 0,
                             "bandwidth_gas_amount": 0
                           }
                         },
@@ -2392,7 +2392,7 @@ describe("DB operations", () => {
                       }
                     }
                   },
-                  "code": "SUCCESS",
+                  "code": 0,
                   "bandwidth_gas_amount": 0
                 }
               },
@@ -2507,7 +2507,7 @@ describe("DB operations", () => {
                                 }
                               }
                             },
-                            "code": "FAILURE",
+                            "code": 1,
                             "bandwidth_gas_amount": 0,
                           }
                         },
@@ -2516,7 +2516,7 @@ describe("DB operations", () => {
                       }
                     }
                   },
-                  "code": "FAILURE",
+                  "code": 1,
                   "bandwidth_gas_amount": 0,
                 }
               },
@@ -2694,7 +2694,7 @@ describe("DB operations", () => {
             app: {},
           },
           state: {
-            service: 3550560
+            service: 3541560
           } 
         };
         const overSizeTxBody = {
@@ -2717,9 +2717,9 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (10798694 > 10000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (10782404 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
-        assert.deepEqual(res.gas_cost_total, 3.5550599999999997);
+        assert.deepEqual(res.gas_cost_total, 3.5460599999999998);
       });
 
       it("cannot exceed apps state budget", () => {
