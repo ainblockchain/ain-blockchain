@@ -16,7 +16,7 @@ const {
   buildOwnerPermissions,
   LIGHTWEIGHT,
   TREE_HEIGHT_LIMIT,
-  TREE_SIZE_LIMIT,
+  TREE_SIZE_BUDGET,
   SERVICE_TREE_SIZE_BUDGET,
   APPS_TREE_SIZE_BUDGET,
   FREE_TREE_SIZE_BUDGET,
@@ -984,10 +984,10 @@ class DB {
           error_message: `Out of tree height limit (${treeHeight} > ${TREE_HEIGHT_LIMIT})`
         });
       }
-      if (treeSize > TREE_SIZE_LIMIT) {
+      if (treeSize > TREE_SIZE_BUDGET) {
         return Object.assign(result, {
           code: 24,
-          error_message: `Out of tree size limit (${treeSize} > ${TREE_SIZE_LIMIT})`
+          error_message: `Out of tree size limit (${treeSize} > ${TREE_SIZE_BUDGET})`
         });
       }
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is

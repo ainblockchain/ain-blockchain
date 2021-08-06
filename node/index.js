@@ -28,6 +28,7 @@ const {
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
 const CommonUtil = require('../common/common-util');
+const PathUtil = require('../common/path-util');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
 const StateManager = require('../db/state-manager');
@@ -416,12 +417,14 @@ class BlockchainNode {
   removeOldReceipts(blockNumber, db) {
     const LOG_HEADER = 'removeOldReceipts';
     if (blockNumber > MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
-      const receiptsPrefixFullPath = DB.getFullPath(
-          [PredefinedDbPaths.RECEIPTS], PredefinedDbPaths.VALUES_ROOT);
       const oldBlock = this.bc.getBlockByNumber(blockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS);
       if (oldBlock) {
         oldBlock.transactions.forEach((tx) => {
-          db.writeDatabase([...receiptsPrefixFullPath, tx.hash], null);
+          db.writeDatabase(
+              [
+                PredefinedDbPaths.VALUES_ROOT,
+                ...CommonUtil.parsePath(PathUtil.getReceiptPath(tx.hash))
+              ], null);
         });
       } else {
         logger.error(
