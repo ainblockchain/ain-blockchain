@@ -3927,6 +3927,18 @@ describe('Blockchain Node', () => {
     });
 
     describe('Function execution', () => {
+      before(async () => {
+        const appStakingPath =
+            `/staking/test/${serviceAdmin}/0/stake/${Date.now()}/value`;
+        const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: appStakingPath,
+          value: 1
+        }}).body.toString('utf-8')).result;
+        if (!(await waitUntilTxFinalized(serverList, appStakingRes.tx_hash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+      });
+
       describe('/set_value', () => {
         it("when successful with function triggering", async () => {
           const valuePath = '/apps/test/test_function_triggering/allowed_path1/value';
