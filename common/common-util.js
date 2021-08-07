@@ -686,6 +686,11 @@ class CommonUtil {
     });
     return obj;
   }
+
+  static getDayTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  }
 }
 
 module.exports = CommonUtil;
