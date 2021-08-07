@@ -1,0 +1,18 @@
+{
+  "name": "ShardCoinB0",
+  "symbol": "SHARDCOB0",
+  "total_supply": 100000000000,
+  "bridge": {
+    "AIN": {
+      "0": {
+        "network_id": "1",
+        "token_pool": "0xB0B06EaaB8C02bCD7257e7D790d5085a4D2fBc51",
+        "min_checkout_per_request": 1000,
+        "max_checkout_per_request": 10000,
+        "max_checkout_per_day": 1000000,
+        "token_exchange_rate": 10,
+        "token_exchange_scheme": "FIXED"
+      }
+    }
+  }
+}
