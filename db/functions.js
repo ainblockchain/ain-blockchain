@@ -52,6 +52,8 @@ class Functions {
         func: this._claim.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CLOSE_CHECKIN]: {
         func: this._closeCheckin.bind(this), ownerOnly: true, extraGasAmount: 10 },
+      [NativeFunctionIds.CLOSE_CHECKOUT]: {
+        func: this._closeCheckout.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.COLLECT_FEE]: {
         func: this._collectFee.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CREATE_APP]: {
@@ -64,6 +66,8 @@ class Functions {
         func: this._hold.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.OPEN_CHECKIN]: {
         func: this._openCheckin.bind(this), ownerOnly: true, extraGasAmount: 60 },
+      [NativeFunctionIds.OPEN_CHECKOUT]: {
+        func: this._openCheckout.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.PAY]: {
         func: this._pay.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.RELEASE]: {
@@ -979,6 +983,157 @@ class Functions {
       logger.error(`  => _closeCheckin failed with error: ${err} ${err.stack}`);
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
+  }
+
+  updatePendingCheckout(user, amount, isIncrease, context) {
+    if (isIncrease) {
+      if (CommonUtil.isFailedTx(
+          this.incValueOrLog(PathUtil.getCheckoutPendingAmountForAddrPath(user), amount, context))) {
+        return FunctionResultCode.INTERNAL_ERROR;
+      }
+      if (CommonUtil.isFailedTx(
+          this.incValueOrLog(PathUtil.getCheckoutPendingAmountTotalPath(), amount, context))) {
+        return FunctionResultCode.INTERNAL_ERROR;
+      }
+    } else {
+      if (CommonUtil.isFailedTx(
+          this.decValueOrLog(PathUtil.getCheckoutPendingAmountForAddrPath(user), amount, context))) {
+        return FunctionResultCode.INTERNAL_ERROR;
+      }
+      if (CommonUtil.isFailedTx(
+          this.decValueOrLog(PathUtil.getCheckoutPendingAmountTotalPath(), amount, context))) {
+        return FunctionResultCode.INTERNAL_ERROR;
+      }
+    }
+    return true;
+  }
+
+  updateCompleteCheckout(amount, timestamp, context) {
+    const dayTimestamp = CommonUtil.getDayTimestamp(timestamp);
+    if (CommonUtil.isFailedTx(
+        this.incValueOrLog(PathUtil.getCheckoutCompleteAmountDailyPath(dayTimestamp), amount, context))) {
+      return FunctionResultCode.INTERNAL_ERROR;
+    }
+    if (CommonUtil.isFailedTx(
+        this.incValueOrLog(PathUtil.getCheckoutCompleteAmountTotalPath(), amount, context))) {
+      return FunctionResultCode.INTERNAL_ERROR;
+    }
+    return true;
+  }
+
+  validateTokenBridgeConfig(tokenPool, minCheckoutPerRequest, maxCheckoutPerRequest,
+      maxCheckoutPerDay, tokenExchangeRate, tokenExchangeScheme) {
+    if (tokenPool === undefined || minCheckoutPerRequest === undefined ||
+        maxCheckoutPerRequest === undefined || maxCheckoutPerDay === undefined ||
+        tokenExchangeRate === undefined || tokenExchangeScheme === undefined) {
+      return FunctionResultCode.FAILURE;
+    }
+    return true;
+  }
+
+  validateRecipient(recipient, tokenType) {
+    switch (tokenType) {
+      case 'AIN':
+      case 'ETH':
+        return CommonUtil.isCksumAddr(recipient) ? true : FunctionResultCode.FAILURE;
+    }
+    return FunctionResultCode.FAILURE;
+  }
+
+  validateCheckoutAmount(amount, timestamp, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay) {
+    const pendingTotal = this.db.getValue(PathUtil.getCheckoutPendingAmountTotalPath()) || 0; // includes 'amount'
+    const checkoutCompleteToday = this.db.getValue(
+        PathUtil.getCheckoutCompleteAmountDailyPath(CommonUtil.getDayTimestamp(timestamp))) || 0;
+    if (amount < minCheckoutPerRequest || amount > maxCheckoutPerRequest) {
+      return FunctionResultCode.FAILURE;
+    }
+    if (pendingTotal + checkoutCompleteToday > maxCheckoutPerDay) {
+      return FunctionResultCode.FAILURE;
+    }
+    return true;
+  }
+
+  _openCheckout(value, context) {
+    if (value === null) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    const user = context.params.user_addr;
+    const { amount, type, token_id: tokenId, recipient } = value;
+    // Increase pending amounts
+    const incPendingResultCode = this.updatePendingCheckout(user, amount, true, context);
+    if (incPendingResultCode !== true) {
+      return this.returnFuncResult(context, incPendingResultCode);
+    }
+    const {
+      token_pool: tokenPool,
+      min_checkout_per_request: minCheckoutPerRequest,
+      max_checkout_per_request: maxCheckoutPerRequest,
+      max_checkout_per_day: maxCheckoutPerDay,
+      token_exchange_rate: tokenExchangeRate,
+      token_exchange_scheme: tokenExchangeScheme,
+    } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(type, tokenId));
+    // Perform checks
+    const tokenBridgeValidated = this.validateTokenBridgeConfig(
+        tokenPool, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay,
+        tokenExchangeRate, tokenExchangeScheme);
+    if (tokenBridgeValidated !== true) {
+      return this.returnFuncResult(context, tokenBridgeValidated);
+    }
+    const recipientValidated = this.validateRecipient(recipient, type);
+    if (recipientValidated !== true) {
+      return this.returnFuncResult(context, recipientValidated);
+    }
+    const amountValidated = this.validateCheckoutAmount(
+        amount, context.timestamp, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay);
+    if (amountValidated !== true) {
+      return this.returnFuncResult(context, amountValidated);
+    }
+    // Transfer from user to token_pool
+    const transferRes = this.setServiceAccountTransferOrLog(user, tokenPool, amount, context);
+    if (!CommonUtil.isFailedTx(transferRes)) {
+      // NOTE(liayoo): History will be recorded by a checkout server after processing the request.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      logger.error(`  ===> _openCheckout failed: ${JSON.stringify(transferRes)}`);
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+  }
+
+  _closeCheckout(value, context) {
+    const user = context.params.user_addr;
+    const checkoutId = context.params.checkout_id;
+    const { request, response } = value;
+    if (response.status === FunctionResultCode.FAILURE) {
+      // Refund
+      const tokenPool = this.db.getValue(PathUtil.getTokenBridgeTokenPoolPath(request.type, request.token_id));
+      const transferRes = this.setServiceAccountTransferOrLog(tokenPool, user, request.amount, context);
+      if (CommonUtil.isFailedTx(transferRes)) {
+        return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+      }
+      const setRefundRes = this.setValueOrLog(
+            PathUtil.getCheckoutHistoryRefundPath(user, checkoutId),
+            PathUtil.getTransferPath(tokenPool, user, context.timestamp), context);
+      if (CommonUtil.isFailedTx(setRefundRes)) {
+        return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+      }
+    } else if (response.status === FunctionResultCode.SUCCESS) {
+      // Increase complete amounts
+      const updateStatsResultCode = this.updateCompleteCheckout(request.amount, context.timestamp, context);
+      if (updateStatsResultCode !== true) {
+        return this.returnFuncResult(context, updateStatsResultCode);
+      }
+    }
+    // Remove the original request
+    const removeRes = this.setValueOrLog(PathUtil.getCheckoutRequestPath(user, checkoutId), null, context);
+    if (CommonUtil.isFailedTx(removeRes)) {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+    // Decrease pending amounts
+    const decPendingResultCode = this.updatePendingCheckout(user, request.amount, false, context);
+    if (decPendingResultCode !== true) {
+      return this.returnFuncResult(context, decPendingResultCode);
+    }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
   validateCheckinParams(params) {

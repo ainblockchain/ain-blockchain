@@ -180,6 +180,8 @@ const PredefinedDbPaths = {
   GAS_FEE_AMOUNT: 'amount',
   // Token
   TOKEN: 'token',
+  TOKEN_BRIDGE: 'bridge',
+  TOKEN_BRIDGE_TOKEN_POOL: 'token_pool',
   TOKEN_NAME: 'name',
   TOKEN_SYMBOL: 'symbol',
   TOKEN_TOTAL_SUPPLY: 'total_supply',
@@ -242,6 +244,13 @@ const PredefinedDbPaths = {
   CHECKIN_PAYLOAD: 'payload',
   CHECKIN_PARENT_FINALIZE: 'parent_finalize',
   CHECKOUT: 'checkout',
+  CHECKOUT_HISTORY: 'history',
+  CHECKOUT_HISTORY_REFUND: 'refund',
+  CHECKOUT_REQUEST: 'request',
+  CHECKOUT_STATS: 'stats',
+  CHECKOUT_STATS_COMPLETE: 'complete',
+  CHECKOUT_STATS_PENDING: 'pending',
+  CHECKOUT_STATS_TOTAL: 'total',
 };
 
 /**
@@ -347,12 +356,14 @@ const StateInfoProperties = {
 const NativeFunctionIds = {
   CLAIM: '_claim',
   CLOSE_CHECKIN: '_closeCheckin',
+  CLOSE_CHECKOUT: '_closeCheckout',
   COLLECT_FEE: '_collectFee',
   CREATE_APP: '_createApp',
   DISTRIBUTE_FEE: '_distributeFee',
   ERASE_VALUE: '_eraseValue',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
+  OPEN_CHECKOUT: '_openCheckout',
   PAY: '_pay',
   RELEASE: '_release',
   SAVE_LAST_TX: '_saveLastTx',
@@ -508,6 +519,7 @@ const GasFeeConstants = {
 const SERVICE_TYPES = [
   PredefinedDbPaths.ACCOUNTS,
   PredefinedDbPaths.CHECKIN,
+  PredefinedDbPaths.CHECKOUT,
   PredefinedDbPaths.ESCROW,
   PredefinedDbPaths.GAS_FEE,
   PredefinedDbPaths.MANAGE_APP,
