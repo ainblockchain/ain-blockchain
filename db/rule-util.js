@@ -34,6 +34,10 @@ class RuleUtil {
         (this.isDict(value) && Object.keys(value).length === 0);
   }
 
+  isValidHash(value) {
+    return this.isString(value) && /^0x([A-Fa-f0-9]{64})$/.test(value);
+  }
+
   keys(value) {
     if (this.isDict(value)) {
       return Object.keys(value);

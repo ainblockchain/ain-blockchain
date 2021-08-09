@@ -98,6 +98,10 @@ class CommonUtil {
     return ruleUtil.isEmpty(value);
   }
 
+  static isValidHash(value) {
+    return ruleUtil.isValidHash(value);
+  }
+
   static isValAddr(value) {
     return ruleUtil.isValAddr(value);
   }
