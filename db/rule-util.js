@@ -265,7 +265,7 @@ class RuleUtil {
     if (!_.isEqual(request, data.request, { strict: true })) {
       return false;
     }
-    return this.isDict(data.response) && this.isString(data.response.tx_hash) &&
+    return this.isDict(data.response) && this.isValidHash(data.response.tx_hash) &&
         (data.response.status === FunctionResultCode.SUCCESS ||
         data.response.status === FunctionResultCode.FAILURE);
   }
