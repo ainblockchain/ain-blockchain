@@ -2717,7 +2717,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (10800590 > 10000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (10798694 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
         assert.deepEqual(res.gas_cost_total, 3.5550599999999997);
       });
@@ -2743,7 +2743,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 26);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for apps (12619332 > 9000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for apps (12621228 > 9000000)");
         assert.deepEqual(res.gas_amount_total, {
           bandwidth: { service: 0, app: { test: 1 } },
           state: { service: 8, app: { test: 12596108 } }
