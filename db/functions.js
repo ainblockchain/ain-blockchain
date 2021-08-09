@@ -1123,8 +1123,8 @@ class Functions {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }
     }
-    }
-    // Remove the original request
+    // NOTE(liayoo): Remove the original request to avoid keeping the processed requests in the
+    //               /checkout/requests and having to read and filter from the growing list.
     const removeRes = this.setValueOrLog(PathUtil.getCheckoutRequestPath(user, checkoutId), null, context);
     if (CommonUtil.isFailedTx(removeRes)) {
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
