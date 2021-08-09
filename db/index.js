@@ -1054,7 +1054,7 @@ class DB {
     const usageList = [
       this.getStateInfo(`/${PredefinedDbPaths.VALUES_ROOT}/${path}`),
       this.getStateInfo(`/${PredefinedDbPaths.RULES_ROOT}/${path}`),
-      this.getStateInfo(`/${PredefinedDbPaths.FUNCIONS_ROOT}/${path}`),
+      this.getStateInfo(`/${PredefinedDbPaths.FUNCTIONS_ROOT}/${path}`),
       this.getStateInfo(`/${PredefinedDbPaths.OWNERS_ROOT}/${path}`)
     ];
     const usage = usageList.reduce((acc, cur) => {
