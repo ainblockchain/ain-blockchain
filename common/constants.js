@@ -262,6 +262,21 @@ const TokenProperties = {
   NAME: 'name',
   SYMBOL: 'symbol',
   TOTAL_SUPPLY: 'total_supply',
+  BRIDGE: 'bridge',
+};
+
+/**
+ * Properties of token bridge configs.
+ *
+ * @enum {string}
+ */
+ const TokenBridgeProperties = {
+  TOKEN_POOL: 'token_pool',
+  MIN_CHECKOUT_PER_REQUEST: 'min_checkout_per_request',
+  MAX_CHECKOUT_PER_REQUEST: 'max_checkout_per_request',
+  MAX_CHECKOUT_PER_DAY: 'max_checkout_per_day',
+  TOKEN_EXCH_RATE: 'token_exchange_rate',
+  TOKEN_EXCH_SCHEME: 'token_exchange_scheme',
 };
 
 /**
@@ -844,6 +859,7 @@ module.exports = {
   BlockchainNodeStates,
   PredefinedDbPaths,
   TokenProperties,
+  TokenBridgeProperties,
   AccountProperties,
   OwnerProperties,
   RuleProperties,

@@ -13,8 +13,8 @@ const {
   ShardingProtocols,
   GenesisAccounts,
   AccountProperties,
+  TokenBridgeProperties,
   TokenExchangeSchemes,
-  FunctionProperties,
   OwnerProperties,
   GasFeeConstants,
   REST_FUNCTION_CALL_TIMEOUT_MS,
@@ -1065,12 +1065,12 @@ class Functions {
       return this.returnFuncResult(context, incPendingResultCode);
     }
     const {
-      token_pool: tokenPool,
-      min_checkout_per_request: minCheckoutPerRequest,
-      max_checkout_per_request: maxCheckoutPerRequest,
-      max_checkout_per_day: maxCheckoutPerDay,
-      token_exchange_rate: tokenExchangeRate,
-      token_exchange_scheme: tokenExchangeScheme,
+      [TokenBridgeProperties.TOKEN_POOL]: tokenPool,
+      [TokenBridgeProperties.MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
+      [TokenBridgeProperties.MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
+      [TokenBridgeProperties.MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
+      [TokenBridgeProperties.TOKEN_EXCH_RATE]: tokenExchangeRate,
+      [TokenBridgeProperties.TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(type, tokenId));
     // Perform checks
     const tokenBridgeValidated = this.validateTokenBridgeConfig(
