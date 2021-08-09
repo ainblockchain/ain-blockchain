@@ -254,16 +254,16 @@ describe('Sharding', async () => {
     await setUpApp('afan', parentServerList, { admin: { [shardOwnerAddr]: true } });
     
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
-    await CommonUtil.sleep(2000);
+    await CommonUtil.sleep(3000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2], true);
-    await CommonUtil.sleep(2000);
+    await CommonUtil.sleep(10000);
     await waitUntilShardReporterStarts();
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[3], true);
-    await CommonUtil.sleep(2000);
+    await CommonUtil.sleep(3000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], true);
-    await CommonUtil.sleep(2000);
+    await CommonUtil.sleep(3000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], true);
-    await CommonUtil.sleep(2000);
+    await CommonUtil.sleep(3000);
   });
 
   after(() => {
@@ -2083,7 +2083,7 @@ describe('Sharding', async () => {
           "code": 0,
           "func_results": {
             "_updateLatestShardReport": {
-              "code": "SUCCESS",
+              "code": 0,
               "bandwidth_gas_amount": 0,
               "op_results": {
                 "0": {
@@ -2150,7 +2150,7 @@ describe('Sharding', async () => {
               "code": 0,
               "func_results": {
                 "_updateLatestShardReport": {
-                  "code": "SUCCESS",
+                  "code": 0,
                   "bandwidth_gas_amount": 0,
                   "op_results": {
                     "0": {
@@ -2169,7 +2169,7 @@ describe('Sharding', async () => {
               "code": 0,
               "func_results": {
                 "_updateLatestShardReport": {
-                  "code": "SUCCESS",
+                  "code": 0,
                   "bandwidth_gas_amount": 0,
                 }
               },

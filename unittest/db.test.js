@@ -2658,6 +2658,9 @@ describe("DB operations", () => {
               service: 0
             },
             state: {
+              app: {
+                test: 164
+              },
               service: 0
             }
           }
