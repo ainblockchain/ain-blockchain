@@ -6,7 +6,7 @@ function buildOpenCheckoutTxBody(fromAddr, tokenAmount, checkoutId) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/checkout/request/${fromAddr}/${checkoutId}`,
+      ref: `/checkout/requests/${fromAddr}/${checkoutId}`,
       value: {
         amount: tokenAmount,
         type: 'ETH',

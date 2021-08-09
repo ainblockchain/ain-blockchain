@@ -6645,7 +6645,7 @@ describe('Blockchain Node', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/request/${serviceUser}/0`,
+          ref: `/checkout/requests/${serviceUser}/0`,
           value: {
             amount: minCheckoutPerRequest - 1,
             type: tokenType,
@@ -6658,7 +6658,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/request/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -6676,7 +6676,7 @@ describe('Blockchain Node', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/request/${serviceUser}/0`,
+          ref: `/checkout/requests/${serviceUser}/0`,
           value: {
             amount: maxCheckoutPerRequest + 1,
             type: tokenType,
@@ -6689,7 +6689,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/request/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -6707,7 +6707,7 @@ describe('Blockchain Node', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/request/${serviceUser}/0`,
+          ref: `/checkout/requests/${serviceUser}/0`,
           value: {
             amount: checkoutAmount,
             type: 'AIN',
@@ -6720,7 +6720,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/request/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -6738,7 +6738,7 @@ describe('Blockchain Node', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/request/${serviceUser}/0`,
+          ref: `/checkout/requests/${serviceUser}/0`,
           value: {
             amount: checkoutAmount,
             type: tokenType,
@@ -6751,7 +6751,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/request/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -6769,7 +6769,7 @@ describe('Blockchain Node', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/request/${serviceUser}/0`,
+          ref: `/checkout/requests/${serviceUser}/0`,
           value: {
             amount: checkoutAmount,
             type: tokenType,
@@ -6782,7 +6782,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/request/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -6800,7 +6800,7 @@ describe('Blockchain Node', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/request/${serviceUser}/0`,
+          ref: `/checkout/requests/${serviceUser}/0`,
           value: {
             amount: beforeBalance + 1,
             type: tokenType,
@@ -6813,7 +6813,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/request/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -6831,7 +6831,7 @@ describe('Blockchain Node', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/request/${serviceUser}/0`,
+          ref: `/checkout/requests/${serviceUser}/0`,
           value: {
             amount: checkoutAmount,
             type: tokenType,
@@ -7013,7 +7013,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "2": {
-                  "path": "/checkout/request/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
+                  "path": "/checkout/requests/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
                   "result": {
                     "bandwidth_gas_amount": 1,
                     "code": 0,
@@ -7074,7 +7074,7 @@ describe('Blockchain Node', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/request/${serviceUser}/1`,
+          ref: `/checkout/requests/${serviceUser}/1`,
           value: {
             amount: checkoutAmount,
             type: tokenType,
@@ -7180,7 +7180,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "2": {
-                  "path": "/checkout/request/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
+                  "path": "/checkout/requests/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
                   "result": {
                     "func_results": {
                       "_openCheckout": {

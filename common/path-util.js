@@ -202,7 +202,7 @@ class PathUtil {
 
   static getCheckoutRequestPath(address, checkoutId) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_REQUEST, address, checkoutId]);
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_REQUESTS, address, checkoutId]);
   }
 
   static getCheckoutHistoryPath(address, checkoutId) {

@@ -254,7 +254,7 @@ class RuleUtil {
 
   validateCheckoutHistoryData(userAddr, checkoutId, data, getValue) {
     const { FunctionResultCode } = require('../common/constants');
-    const request = getValue(`/checkout/request/${userAddr}/${checkoutId}`);
+    const request = getValue(`/checkout/requests/${userAddr}/${checkoutId}`);
     if (!request || !this.isDict(request) || !this.isDict(data)) {
       return false;
     }
