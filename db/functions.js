@@ -1026,18 +1026,18 @@ class Functions {
     if (tokenPool === undefined || minCheckoutPerRequest === undefined ||
         maxCheckoutPerRequest === undefined || maxCheckoutPerDay === undefined ||
         tokenExchangeRate === undefined || tokenExchangeScheme === undefined) {
-      return FunctionResultCode.FAILURE;
+      return FunctionResultCode.INVALID_TOKEN_BRIDGE_CONFIG;
     }
     return true;
   }
 
   validateRecipient(recipient, tokenType) {
     switch (tokenType) {
-      case 'AIN':
       case 'ETH':
-        return CommonUtil.isCksumAddr(recipient) ? true : FunctionResultCode.FAILURE;
+        return CommonUtil.isCksumAddr(recipient) ? true : FunctionResultCode.INVALID_RECIPIENT;
+      // TODO(liayoo): add 'AIN' case for shards
     }
-    return FunctionResultCode.FAILURE;
+    return FunctionResultCode.INVALID_RECIPIENT;
   }
 
   validateCheckoutAmount(amount, timestamp, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay) {
@@ -1045,10 +1045,10 @@ class Functions {
     const checkoutCompleteToday = this.db.getValue(
         PathUtil.getCheckoutCompleteAmountDailyPath(CommonUtil.getDayTimestamp(timestamp))) || 0;
     if (amount < minCheckoutPerRequest || amount > maxCheckoutPerRequest) {
-      return FunctionResultCode.FAILURE;
+      return FunctionResultCode.INVALID_CHECKOUT_AMOUNT;
     }
     if (pendingTotal + checkoutCompleteToday > maxCheckoutPerDay) {
-      return FunctionResultCode.FAILURE;
+      return FunctionResultCode.INVALID_CHECKOUT_AMOUNT;
     }
     return true;
   }
@@ -1103,7 +1103,13 @@ class Functions {
     const user = context.params.user_addr;
     const checkoutId = context.params.checkout_id;
     const { request, response } = value;
-    if (response.status === FunctionResultCode.FAILURE) {
+    if (response.status === FunctionResultCode.SUCCESS) {
+      // Increase complete amounts
+      const updateStatsResultCode = this.updateCompleteCheckout(request.amount, context.timestamp, context);
+      if (updateStatsResultCode !== true) {
+        return this.returnFuncResult(context, updateStatsResultCode);
+      }
+    } else {
       // Refund
       const tokenPool = this.db.getValue(PathUtil.getTokenBridgeTokenPoolPath(request.type, request.token_id));
       const transferRes = this.setServiceAccountTransferOrLog(tokenPool, user, request.amount, context);
@@ -1116,12 +1122,7 @@ class Functions {
       if (CommonUtil.isFailedTx(setRefundRes)) {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }
-    } else if (response.status === FunctionResultCode.SUCCESS) {
-      // Increase complete amounts
-      const updateStatsResultCode = this.updateCompleteCheckout(request.amount, context.timestamp, context);
-      if (updateStatsResultCode !== true) {
-        return this.returnFuncResult(context, updateStatsResultCode);
-      }
+    }
     }
     // Remove the original request
     const removeRes = this.setValueOrLog(PathUtil.getCheckoutRequestPath(user, checkoutId), null, context);
