@@ -46,7 +46,7 @@
         }
       }
     },
-    "request": {
+    "requests": {
       "$user_addr": {
         "$checkout_id": {
           ".rule": {

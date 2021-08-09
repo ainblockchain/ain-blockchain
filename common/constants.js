@@ -246,7 +246,7 @@ const PredefinedDbPaths = {
   CHECKOUT: 'checkout',
   CHECKOUT_HISTORY: 'history',
   CHECKOUT_HISTORY_REFUND: 'refund',
-  CHECKOUT_REQUEST: 'request',
+  CHECKOUT_REQUESTS: 'requests',
   CHECKOUT_STATS: 'stats',
   CHECKOUT_STATS_COMPLETE: 'complete',
   CHECKOUT_STATS_PENDING: 'pending',
