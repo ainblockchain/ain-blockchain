@@ -1323,11 +1323,14 @@ class DB {
     if (!skipFees) {
       this.collectFee(auth, timestamp, tx, blockNumber, executionResult);
       this.recordReceipt(auth, tx, blockNumber, executionResult);
-      if (!CommonUtil.isFailedTx(executionResult)) {
-        const heightCheck = this.checkTreeHeightAndSize();
-        if (CommonUtil.isFailedTx(heightCheck)) {
-          return Object.assign(executionResult, heightCheck);
+    }
+    if (!CommonUtil.isFailedTx(executionResult)) {
+      const heightCheck = this.checkTreeHeightAndSize();
+      if (CommonUtil.isFailedTx(heightCheck)) {
+        if (restoreIfFails) {
+          this.restoreDb();
         }
+        return Object.assign(executionResult, heightCheck);
       }
     }
     return executionResult;
