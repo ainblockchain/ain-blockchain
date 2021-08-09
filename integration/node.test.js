@@ -3216,6 +3216,7 @@ describe('Blockchain Node', () => {
       const res = parseOrLog(syncRequest('POST', server2 + '/set', {
         json: {
           op_list: [
+            // allowed_path_with_fid
             {
               type: 'SET_FUNCTION',
               ref: '/apps/test/test_function_triggering/allowed_path_with_fid/value',
@@ -3246,6 +3247,7 @@ describe('Blockchain Node', () => {
                 }
               }
             },
+            // not_allowed_path_with_fid
             {
               type: 'SET_FUNCTION',
               ref: '/apps/test/test_function_triggering/not_allowed_path_with_fid/value',
@@ -3276,6 +3278,7 @@ describe('Blockchain Node', () => {
                 }
               }
             },
+            // allowed_path_with_fids
             {
               type: 'SET_FUNCTION',
               ref: '/apps/test/test_function_triggering/allowed_path_with_fids/value',
@@ -3306,6 +3309,7 @@ describe('Blockchain Node', () => {
                 }
               }
             },
+            // not_allowed_path_with_fids
             {
               type: 'SET_FUNCTION',
               ref: '/apps/test/test_function_triggering/not_allowed_path_with_fids/value',
@@ -3336,6 +3340,7 @@ describe('Blockchain Node', () => {
                 }
               }
             },
+            // set_owner_allowed_path_with_fid
             {
               type: 'SET_FUNCTION',
               ref: '/apps/test/test_function_triggering/set_owner_allowed_path_with_fid/value',
@@ -3370,6 +3375,7 @@ describe('Blockchain Node', () => {
                 }
               }
             },
+            // set_owner_not_allowed_path_with_fid
             {
               type: 'SET_FUNCTION',
               ref: '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value',
@@ -3404,6 +3410,7 @@ describe('Blockchain Node', () => {
                 }
               }
             },
+            // rest_function_path
             {
               type: 'SET_FUNCTION',
               ref: '/apps/test/test_function_triggering/rest_function_path',
