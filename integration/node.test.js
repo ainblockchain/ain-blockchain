@@ -6933,7 +6933,7 @@ describe('Blockchain Node', () => {
         expect(totalPendingAmount).to.equal(checkoutAmount);
       });
 
-      it('non-authorized address cannot close checkout', async () => {
+      it('cannot close checkout with a non-authorized address', async () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `/checkout/history/${serviceUser}/0`,
           value: {
@@ -6957,7 +6957,7 @@ describe('Blockchain Node', () => {
         expect(checkoutHistory).to.equal(null);
       });
 
-      it('token pool can close a successful checkout', async () => {
+      it('can close a successful checkout with token pool key', async () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -7066,7 +7066,7 @@ describe('Blockchain Node', () => {
         expect(totalCompleteAmount).to.equal(checkoutAmount);
       });
 
-      it('token pool can close a failed checkout and refund', async () => {
+      it('can close a failed checkout and refund with token pool key', async () => {
         // open checkout
         const beforeBalance = parseOrLog(syncRequest('GET',
         server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
