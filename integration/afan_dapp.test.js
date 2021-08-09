@@ -103,15 +103,15 @@ describe('DApp Test', async () => {
   before(async () => {
     rimraf.sync(CHAINS_DIR);
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
-    await CommonUtil.sleep(2000);
+    await CommonUtil.sleep(3000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
-    await CommonUtil.sleep(2000);
+    await CommonUtil.sleep(10000);
     server2_proc = startServer(APP_SERVER, 'server2', ENV_VARIABLES[1], true);
-    await CommonUtil.sleep(2000);
+    await CommonUtil.sleep(3000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
-    await CommonUtil.sleep(2000);
+    await CommonUtil.sleep(3000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    await CommonUtil.sleep(2000);
+    await CommonUtil.sleep(3000);
   });
 
   after(() => {

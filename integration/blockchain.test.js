@@ -239,11 +239,11 @@ describe('Blockchain Cluster', () => {
     // Start up all servers
     trackerProc = new Process(TRACKER_SERVER, { CONSOLE_LOG: false });
     trackerProc.start(true);
-    await CommonUtil.sleep(2000);
+    await CommonUtil.sleep(3000);
     for (let i = 0; i < SERVER_PROCS.length; i++) {
       const proc = SERVER_PROCS[i];
       proc.start(true);
-      await CommonUtil.sleep(2000);
+      await CommonUtil.sleep(i === 1 ? 10000 : 3000);
       const address =
           parseOrLog(syncRequest('GET', serverList[i] + '/get_address').body.toString('utf-8')).result;
       nodeAddressList.push(address);
@@ -418,6 +418,7 @@ describe('Blockchain Cluster', () => {
           }
         }
       }
+      return true;
     });
 
     it('blocks have valid hashes', async () => {
@@ -460,6 +461,7 @@ describe('Blockchain Cluster', () => {
           }
         }
       }
+      return true;
     });
 
     // TODO(platfowner): Uncomment or remove this once find a good solution to flaky test cases.
@@ -513,6 +515,7 @@ describe('Blockchain Cluster', () => {
         ref: 'restricted/path', value: 'anything' 
       }}).body.toString('utf-8'));
       expect(body.code).to.equals(1);
+      return true;
     });
 
     // FIXME(liayoo): This test case is flaky.
