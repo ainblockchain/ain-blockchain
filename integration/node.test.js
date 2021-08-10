@@ -552,9 +552,9 @@ describe('Blockchain Node', () => {
             'GET', server1 + `/get_state_usage?app_name=test`)
                 .body.toString('utf-8'));
         assert.deepEqual(body.result, {
-          "tree_height": 17,
-          "tree_size": 52,
-          "tree_bytes": 10076,
+          "tree_height": 23,
+          "tree_size": 62,
+          "tree_bytes": 11966,
         });
       });
     });
@@ -750,9 +750,9 @@ describe('Blockchain Node', () => {
         .then(res => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
-            "tree_height": 17,
-            "tree_size": 52,
-            "tree_bytes": 10076,
+            "tree_height": 23,
+            "tree_size": 62,
+            "tree_bytes": 11966,
           });
         })
       })
@@ -1494,7 +1494,7 @@ describe('Blockchain Node', () => {
               "bandwidth_gas_amount": 1
             },
           },
-          "gas_amount_charged": 1552,
+          "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
               "app": {
@@ -1504,9 +1504,9 @@ describe('Blockchain Node', () => {
             },
             "state": {
               "app": {
-                "test": 3070
+                "test": 4622
               },
-              "service": 1552
+              "service": 0
             }
           },
           "gas_cost_total": 0
@@ -1879,7 +1879,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
-              "gas_amount_charged": 1552,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -1888,7 +1888,10 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "service": 1552
+                  "app": {
+                    "test": 1552
+                  },
+                  "service": 0
                 }
               },
               "gas_cost_total": 0
@@ -1969,7 +1972,7 @@ describe('Blockchain Node', () => {
                   "bandwidth_gas_amount": 1
                 }
               },
-              "gas_amount_charged": 1552,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -1979,9 +1982,9 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 3070
+                    "test": 4622
                   },
-                  "service": 1552
+                  "service": 0
                 }
               },
               "gas_cost_total": 0
@@ -2275,7 +2278,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
-              "gas_amount_charged": 1552,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2284,7 +2287,10 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "service": 1552
+                  "app": {
+                    "test": 1552
+                  },
+                  "service": 0
                 }
               },
               "gas_cost_total": 0
@@ -2365,7 +2371,7 @@ describe('Blockchain Node', () => {
                   "bandwidth_gas_amount": 1
                 }
               },
-              "gas_amount_charged": 1552,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2375,9 +2381,9 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 3070
+                    "test": 4622
                   },
-                  "service": 1552
+                  "service": 0
                 }
               },
               "gas_cost_total": 0
@@ -6850,7 +6856,7 @@ describe('Blockchain Node', () => {
               "service": 1007
             },
             "state": {
-              "service": 4286
+              "service": 4288
             }
           },
           "gas_cost_total": 0,
@@ -6914,7 +6920,7 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 5293
+          "gas_amount_charged": 5295
         });
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
@@ -6991,7 +6997,7 @@ describe('Blockchain Node', () => {
               "service": 6
             },
             "state": {
-              "service": 1390
+              "service": 1388
             }
           },
           "gas_cost_total": 0,
@@ -7046,7 +7052,7 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 1396
+          "gas_amount_charged": 1394
         });
         const userPendingAmount = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkout/stats/pending/${serviceUser}`)
@@ -7129,7 +7135,7 @@ describe('Blockchain Node', () => {
               "service": 9
             },
             "state": {
-              "service": 2734
+              "service": 2732
             }
           },
           "gas_cost_total": 0,
@@ -7213,7 +7219,7 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 2743
+          "gas_amount_charged": 2741
         });
         const refund = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkout/history/${serviceUser}/1/refund`).body.toString('utf-8')).result;
