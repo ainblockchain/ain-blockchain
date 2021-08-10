@@ -1543,7 +1543,7 @@ describe('Sharding', async () => {
                 "bandwidth_gas_amount": 1
               },
             },
-            "gas_amount_charged": 1548,
+            "gas_amount_charged": 0,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
@@ -1553,9 +1553,9 @@ describe('Sharding', async () => {
               },
               "state": {
                 "app": {
-                  "test": 2874
+                  "test": 4422
                 },
-                "service": 1548
+                "service": 0
               }
             },
             "gas_cost_total": 0
