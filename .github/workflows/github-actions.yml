@@ -29,7 +29,7 @@ jobs:
         run: yarn install
       # - name: run unittest
       #   run: yarn run test_unit
-      # - name: run integration test
+      - name: run integration test
         # if: github.event.action == 'opened' && github.event.pull_request.base.ref == 'master'   # integration test only run when master merging
         run: |
           yarn run test_integration_blockchain
