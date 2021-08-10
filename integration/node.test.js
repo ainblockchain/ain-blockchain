@@ -6969,7 +6969,7 @@ describe('Blockchain Node', () => {
               recipient: ethAddress
             },
             response: {
-              status: 'SUCCESS'
+              status: 0
             }
           }
         }}).body.toString('utf-8'));
@@ -6995,7 +6995,7 @@ describe('Blockchain Node', () => {
                 recipient: ethAddress
               },
               response: {
-                status: 'SUCCESS',
+                status: 0,
                 tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c'
               }
             }
@@ -7016,7 +7016,7 @@ describe('Blockchain Node', () => {
               "service": 6
             },
             "state": {
-              "service": 1388
+              "service": 1382
             }
           },
           "gas_cost_total": 0,
@@ -7071,7 +7071,7 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 1394
+          "gas_amount_charged": 1388
         });
         const userPendingAmount = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkout/stats/pending/${serviceUser}`)
@@ -7132,7 +7132,7 @@ describe('Blockchain Node', () => {
                 recipient: ethAddress
               },
               response: {
-                status: 'FAILURE',
+                status: 1,
                 tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c',
                 error_message: 'Ethereum tx failed'
               }
@@ -7154,7 +7154,7 @@ describe('Blockchain Node', () => {
               "service": 9
             },
             "state": {
-              "service": 2732
+              "service": 2720
             }
           },
           "gas_cost_total": 0,
@@ -7238,7 +7238,7 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 2741
+          "gas_amount_charged": 2729
         });
         const refund = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkout/history/${serviceUser}/1/refund`).body.toString('utf-8')).result;
@@ -7249,8 +7249,8 @@ describe('Blockchain Node', () => {
           "value": 100,
           "result": {
             "timestamp": 1628255843548,
-            "tx_hash": "0x89a1b02058f0d0b7c93957d0ff290cf44cef419d1275afcb430f6e9536e4afb5",
-            "code": "SUCCESS"
+            "tx_hash": "0xbefafa6bb77dc60e4e3856124efff5c122c7d2a56ef305669cdf7f3e1d3aa642",
+            "code": 0
           }
         });
         const afterCloseUserBalance = parseOrLog(syncRequest('GET',

@@ -10,7 +10,7 @@ function buildCloseCheckoutTxBody(fromAddr, tokenAmount, checkoutId, failed = fa
     response.status = 'FAILURE';
     response.error_message = 'Ethereum tx failed..'
   } else {
-    response.status = 'SUCCESS';
+    response.status = 0;
   }
   return {
     operation: {
