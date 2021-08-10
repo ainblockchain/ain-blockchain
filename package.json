@@ -18,7 +18,7 @@
     "lint": "eslint --ext js -c .eslintrc.json .",
     "loadtest": "sh loadtest/load_tester.sh",
     "test_integration": "./node_modules/mocha/bin/mocha --timeout 640000 \"integration/*.test.js\"",
-    "test_integration_blockchain": "./node_modules/mocha/bin/mocha --timeout 160000 integration/blockchain.test.js",
+    "test_integration_blockchain": "./node_modules/mocha/bin/mocha --timeout 320000 integration/blockchain.test.js",
     "test_integration_consensus": "./node_modules/mocha/bin/mocha --timeout 160000 integration/consensus.test.js",
     "test_integration_dapp": "./node_modules/mocha/bin/mocha --timeout 160000 integration/afan_dapp.test.js",
     "test_integration_node": "./node_modules/mocha/bin/mocha --timeout 640000 integration/node.test.js",

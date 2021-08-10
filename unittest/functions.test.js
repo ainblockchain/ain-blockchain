@@ -146,7 +146,7 @@ describe("Functions", () => {
             null, null, null, transaction);
         assert.deepEqual(func_results, {
           "0x11111": {
-            "code": "SUCCESS",
+            "code": 0,
             "bandwidth_gas_amount": 10,
           }
         });
@@ -422,7 +422,7 @@ describe("Functions", () => {
                 }
               }
             },
-            "code": "SUCCESS",
+            "code": 0,
             "bandwidth_gas_amount": 1000
           }
         });
@@ -477,7 +477,7 @@ describe("Functions", () => {
                 }
               }
             },
-            "code": "SUCCESS",
+            "code": 0,
             "bandwidth_gas_amount": 0
           }
         });
@@ -512,7 +512,7 @@ describe("Functions", () => {
             null, null, null, transaction);
         assert.deepEqual(func_results, {
           "0x11111": {
-            "code": "SUCCESS",
+            "code": 0,
             "bandwidth_gas_amount": 10,
           }
         });
