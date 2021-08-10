@@ -6875,7 +6875,7 @@ describe('Blockchain Node', () => {
               "service": 1007
             },
             "state": {
-              "service": 4288
+              "service": 4282
             }
           },
           "gas_cost_total": 0,
@@ -6924,7 +6924,7 @@ describe('Blockchain Node', () => {
                             }
                           }
                         },
-                        "code": "SUCCESS",
+                        "code": 0,
                         "bandwidth_gas_amount": 1000
                       }
                     },
@@ -6933,13 +6933,13 @@ describe('Blockchain Node', () => {
                   }
                 }
               },
-              "code": "SUCCESS",
+              "code": 0,
               "bandwidth_gas_amount": 0
             }
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 5295
+          "gas_amount_charged": 5289
         });
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
@@ -7045,7 +7045,7 @@ describe('Blockchain Node', () => {
                     "func_results": {
                       "_openCheckout": {
                         "bandwidth_gas_amount": 0,
-                        "code": "SUCCESS"
+                        "code": 0
                       }
                     }
                   }
@@ -7065,7 +7065,7 @@ describe('Blockchain Node', () => {
                   }
                 }
               },
-              "code": "SUCCESS",
+              "code": 0,
               "bandwidth_gas_amount": 0
             }
           },
@@ -7189,7 +7189,7 @@ describe('Blockchain Node', () => {
                             }
                           }
                         },
-                        "code": "SUCCESS",
+                        "code": 0,
                         "bandwidth_gas_amount": 0
                       }
                     },
@@ -7209,7 +7209,7 @@ describe('Blockchain Node', () => {
                   "result": {
                     "func_results": {
                       "_openCheckout": {
-                        "code": "SUCCESS",
+                        "code": 0,
                         "bandwidth_gas_amount": 0
                       }
                     },
@@ -7232,7 +7232,7 @@ describe('Blockchain Node', () => {
                   }
                 }
               },
-              "code": "SUCCESS",
+              "code": 0,
               "bandwidth_gas_amount": 0
             }
           },

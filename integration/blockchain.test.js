@@ -418,7 +418,6 @@ describe('Blockchain Cluster', () => {
           }
         }
       }
-      return true;
     });
 
     it('blocks have valid hashes', async () => {
@@ -461,7 +460,6 @@ describe('Blockchain Cluster', () => {
           }
         }
       }
-      return true;
     });
 
     // TODO(platfowner): Uncomment or remove this once find a good solution to flaky test cases.
@@ -515,7 +513,6 @@ describe('Blockchain Cluster', () => {
         ref: 'restricted/path', value: 'anything' 
       }}).body.toString('utf-8'));
       expect(body.code).to.equals(1);
-      return true;
     });
 
     // FIXME(liayoo): This test case is flaky.
