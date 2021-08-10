@@ -171,6 +171,32 @@ describe("RuleUtil", () => {
     })
   })
 
+  describe("isValidHash", () => {
+    it("when invalid input", () => {
+      expect(util.isValidHash(true)).to.equal(false);
+      expect(util.isValidHash(false)).to.equal(false);
+      expect(util.isValidHash(0)).to.equal(false);
+      expect(util.isValidHash(10)).to.equal(false);
+      expect(util.isDict(null)).to.equal(false);
+      expect(util.isDict(undefined)).to.equal(false);
+      expect(util.isValidHash(Infinity)).to.equal(false);
+      expect(util.isValidHash(NaN)).to.equal(false);
+      expect(util.isValidHash('')).to.equal(false);
+      expect(util.isValidHash('abc')).to.equal(false);
+      expect(util.isValidHash('0')).to.equal(false);
+      expect(util.isValidHash([10])).to.equal(false);
+      expect(util.isValidHash({a: 'A'})).to.equal(false);
+      expect(util.isValidHash('0x')).to.equal(false);
+      expect(util.isValidHash('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8')).to.equal(false); // 63 chars
+      expect(util.isValidHash('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8cc')).to.equal(false); // 65 chars
+    })
+
+    it("when valid input", () => {
+      expect(util.isValidHash('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c')).to.equal(true);
+      expect(util.isValidHash('0x89a1b02058f0d0b7c93957d0ff290cf44cef419d1275afcb430f6e9536e4afb5')).to.equal(true);
+    })
+  })
+
   describe("keys", () => {
     it("when invalid input", () => {
       assert.deepEqual(util.keys(true), []);

@@ -98,6 +98,10 @@ class CommonUtil {
     return ruleUtil.isEmpty(value);
   }
 
+  static isValidHash(value) {
+    return ruleUtil.isValidHash(value);
+  }
+
   static isValAddr(value) {
     return ruleUtil.isValAddr(value);
   }
@@ -685,6 +689,11 @@ class CommonUtil {
       obj[index] = item;
     });
     return obj;
+  }
+
+  static getDayTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
   }
 }
 

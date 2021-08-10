@@ -25,6 +25,32 @@
       }
     }
   },
+  "checkout": {
+    "requests": {
+      "$user_addr": {
+        "$checkout_id": {
+          ".function": {
+            "_openCheckout": {
+              "function_type": "NATIVE",
+              "function_id": "_openCheckout"
+            }
+          }
+        }
+      }
+    },
+    "history": {
+      "$user_addr": {
+        "$checkout_id": {
+          ".function": {
+            "_closeCheckout": {
+              "function_type": "NATIVE",
+              "function_id": "_closeCheckout"
+            }
+          }
+        }
+      }
+    }
+  },
   "consensus": {
     "number": {
       "$number": {

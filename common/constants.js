@@ -180,6 +180,8 @@ const PredefinedDbPaths = {
   GAS_FEE_AMOUNT: 'amount',
   // Token
   TOKEN: 'token',
+  TOKEN_BRIDGE: 'bridge',
+  TOKEN_BRIDGE_TOKEN_POOL: 'token_pool',
   TOKEN_NAME: 'name',
   TOKEN_SYMBOL: 'symbol',
   TOKEN_TOTAL_SUPPLY: 'total_supply',
@@ -242,6 +244,13 @@ const PredefinedDbPaths = {
   CHECKIN_PAYLOAD: 'payload',
   CHECKIN_PARENT_FINALIZE: 'parent_finalize',
   CHECKOUT: 'checkout',
+  CHECKOUT_HISTORY: 'history',
+  CHECKOUT_HISTORY_REFUND: 'refund',
+  CHECKOUT_REQUESTS: 'requests',
+  CHECKOUT_STATS: 'stats',
+  CHECKOUT_STATS_COMPLETE: 'complete',
+  CHECKOUT_STATS_PENDING: 'pending',
+  CHECKOUT_STATS_TOTAL: 'total',
 };
 
 /**
@@ -253,6 +262,21 @@ const TokenProperties = {
   NAME: 'name',
   SYMBOL: 'symbol',
   TOTAL_SUPPLY: 'total_supply',
+  BRIDGE: 'bridge',
+};
+
+/**
+ * Properties of token bridge configs.
+ *
+ * @enum {string}
+ */
+ const TokenBridgeProperties = {
+  TOKEN_POOL: 'token_pool',
+  MIN_CHECKOUT_PER_REQUEST: 'min_checkout_per_request',
+  MAX_CHECKOUT_PER_REQUEST: 'max_checkout_per_request',
+  MAX_CHECKOUT_PER_DAY: 'max_checkout_per_day',
+  TOKEN_EXCH_RATE: 'token_exchange_rate',
+  TOKEN_EXCH_SCHEME: 'token_exchange_scheme',
 };
 
 /**
@@ -347,12 +371,14 @@ const StateInfoProperties = {
 const NativeFunctionIds = {
   CLAIM: '_claim',
   CLOSE_CHECKIN: '_closeCheckin',
+  CLOSE_CHECKOUT: '_closeCheckout',
   COLLECT_FEE: '_collectFee',
   CREATE_APP: '_createApp',
   DISTRIBUTE_FEE: '_distributeFee',
   ERASE_VALUE: '_eraseValue',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
+  OPEN_CHECKOUT: '_openCheckout',
   PAY: '_pay',
   RELEASE: '_release',
   SAVE_LAST_TX: '_saveLastTx',
@@ -454,6 +480,9 @@ const FunctionResultCode = {
   INTERNAL_ERROR: 'INTERNAL_ERROR',  // Something went wrong but don't know why
   INVALID_ACCOUNT_NAME: 'INVALID_ACCOUNT_NAME',
   INVALID_SERVICE_NAME: 'INVALID_SERVICE_NAME',
+  INVALID_TOKEN_BRIDGE_CONFIG: 'INVALID_TOKEN_BRIDGE_CONFIG',
+  INVALID_RECIPIENT: 'INVALID_RECIPIENT',
+  INVALID_CHECKOUT_AMOUNT: 'INVALID_CHECKOUT_AMOUNT',
   SUCCESS: 'SUCCESS',
 };
 
@@ -508,6 +537,7 @@ const GasFeeConstants = {
 const SERVICE_TYPES = [
   PredefinedDbPaths.ACCOUNTS,
   PredefinedDbPaths.CHECKIN,
+  PredefinedDbPaths.CHECKOUT,
   PredefinedDbPaths.ESCROW,
   PredefinedDbPaths.GAS_FEE,
   PredefinedDbPaths.MANAGE_APP,
@@ -832,6 +862,7 @@ module.exports = {
   BlockchainNodeStates,
   PredefinedDbPaths,
   TokenProperties,
+  TokenBridgeProperties,
   AccountProperties,
   OwnerProperties,
   RuleProperties,

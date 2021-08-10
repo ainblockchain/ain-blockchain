@@ -37,12 +37,25 @@ class PathUtil {
     return `${PathUtil.getServiceAccountPathFromAccountName(accountName)}/${PredefinedDbPaths.BALANCE}`;
   }
 
+  static getTokenBridgeConfigPath(type, tokenId) {
+    return CommonUtil.formatPath([PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE, type, tokenId]);
+  }
+
+  static getTokenBridgeTokenPoolPath(type, tokenId) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE, type, tokenId, PredefinedDbPaths.TOKEN_BRIDGE_TOKEN_POOL]);
+  }
+
+  static getTransferPath(from, to, key) {
+    return CommonUtil.formatPath([PredefinedDbPaths.TRANSFER, from, to, key]);
+  }
+
   static getTransferValuePath(from, to, key) {
-    return CommonUtil.formatPath([PredefinedDbPaths.TRANSFER, from, to, key, PredefinedDbPaths.TRANSFER_VALUE]);
+    return CommonUtil.appendPath(PathUtil.getTransferPath(from, to, key), PredefinedDbPaths.TRANSFER_VALUE);
   }
 
   static getTransferResultPath(from, to, key) {
-    return CommonUtil.formatPath([PredefinedDbPaths.TRANSFER, from, to, key, PredefinedDbPaths.TRANSFER_RESULT]);
+    return CommonUtil.appendPath(PathUtil.getTransferPath(from, to, key), PredefinedDbPaths.TRANSFER_RESULT);
   }
 
   static getCreateAppRecordPath(appName, recordId) {
@@ -185,6 +198,45 @@ class PathUtil {
   static getCheckinPayloadPathFromValuePath(valuePath) {
     const branchPath = CommonUtil.formatPath(valuePath.slice(0, -3));
     return PathUtil.getCheckinPayloadPath(branchPath);
+  }
+
+  static getCheckoutRequestPath(address, checkoutId) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_REQUESTS, address, checkoutId]);
+  }
+
+  static getCheckoutHistoryPath(address, checkoutId) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_HISTORY, address, checkoutId]);
+  }
+
+  static getCheckoutHistoryRefundPath(address, checkoutId) {
+    return CommonUtil.appendPath(
+        PathUtil.getCheckoutHistoryPath(address, checkoutId), PredefinedDbPaths.CHECKOUT_HISTORY_REFUND);
+  }
+
+  static getCheckoutPendingAmountTotalPath() {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_STATS,
+        PredefinedDbPaths.CHECKOUT_STATS_PENDING, PredefinedDbPaths.CHECKOUT_STATS_TOTAL]);
+  }
+
+  static getCheckoutPendingAmountForAddrPath(address) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_STATS,
+        PredefinedDbPaths.CHECKOUT_STATS_PENDING, address]);
+  }
+
+  static getCheckoutCompleteAmountTotalPath() {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_STATS,
+        PredefinedDbPaths.CHECKOUT_STATS_COMPLETE, PredefinedDbPaths.CHECKOUT_STATS_TOTAL]);
+  }
+
+  static getCheckoutCompleteAmountDailyPath(dayTimestamp) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_STATS,
+        PredefinedDbPaths.CHECKOUT_STATS_COMPLETE, dayTimestamp]);
   }
 
   static getConsensusWhitelistPath() {

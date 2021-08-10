@@ -1,7 +1,7 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 
-// NOTE(platfowner): To keep the blockchain deterministic as much as possibble over time,
+// NOTE(platfowner): To keep the blockchain deterministic as much as possible over time,
 //                   we keep util functions here self-contained as much as possible.
 class RuleUtil {
   isBool(value) {
@@ -32,6 +32,10 @@ class RuleUtil {
     return value === null || value === undefined ||
         (this.isArray(value) && value.length === 0) ||
         (this.isDict(value) && Object.keys(value).length === 0);
+  }
+
+  isValidHash(value) {
+    return this.isString(value) && /^0x([A-Fa-f0-9]{64})$/.test(value);
   }
 
   keys(value) {
@@ -222,6 +226,48 @@ class RuleUtil {
   getMinNumValidators() {
     const { MIN_NUM_VALIDATORS } = require('../common/constants');
     return MIN_NUM_VALIDATORS;
+  }
+
+  getTokenBridgeConfig(type, tokenId, getValue) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    return getValue(`/${PredefinedDbPaths.TOKEN}/${PredefinedDbPaths.TOKEN_BRIDGE}/${type}/${tokenId}`);
+  }
+
+  getTokenPoolAddr(type, tokenId, getValue) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    return getValue(
+        `/${PredefinedDbPaths.TOKEN}/${PredefinedDbPaths.TOKEN_BRIDGE}/${type}/${tokenId}/` +
+        `${PredefinedDbPaths.TOKEN_BRIDGE_TOKEN_POOL}`);
+  }
+
+  getTokenPoolAddrFromHistoryData(userAddr, checkoutId, getValue) {
+    const request = getValue(`/checkout/history/${userAddr}/${checkoutId}/request`);
+    if (!request || !request.type || !request.token_id) {
+      return null;
+    }
+    return this.getTokenPoolAddr(request.type, request.token_id, getValue);
+  }
+
+  validateCheckoutRequestData(data, getValue) {
+    if (!this.isDict(data) || !this.isNumber(data.amount) || data.amount <= 0 ||
+        !this.isString(data.type) || !this.isString(data.token_id) || !this.isString(data.recipient)) {
+      return false;
+    }
+    return this.isDict(this.getTokenBridgeConfig(data.type, data.token_id, getValue));
+  }
+
+  validateCheckoutHistoryData(userAddr, checkoutId, data, getValue) {
+    const { FunctionResultCode } = require('../common/constants');
+    const request = getValue(`/checkout/requests/${userAddr}/${checkoutId}`);
+    if (!request || !this.isDict(request) || !this.isDict(data)) {
+      return false;
+    }
+    if (!_.isEqual(request, data.request, { strict: true })) {
+      return false;
+    }
+    return this.isDict(data.response) && this.isValidHash(data.response.tx_hash) &&
+        (data.response.status === FunctionResultCode.SUCCESS ||
+        data.response.status === FunctionResultCode.FAILURE);
   }
 }
 
