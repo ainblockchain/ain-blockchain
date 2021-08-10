@@ -974,6 +974,10 @@ class DB {
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
     DB.updateGasAmountTotal(tx, gasAmountTotal, result);
     if (!CommonUtil.isFailedTx(result)) {
+      const heightCheck = this.checkTreeHeightAndSize();
+      if (CommonUtil.isFailedTx(heightCheck)) {
+        return Object.assign(result, heightCheck);
+      }
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
       const allStateUsageAfter = this.getAllStateUsages();
@@ -1323,15 +1327,6 @@ class DB {
     if (!skipFees) {
       this.collectFee(auth, timestamp, tx, blockNumber, executionResult);
       this.recordReceipt(auth, tx, blockNumber, executionResult);
-    }
-    if (!CommonUtil.isFailedTx(executionResult)) {
-      const heightCheck = this.checkTreeHeightAndSize();
-      if (CommonUtil.isFailedTx(heightCheck)) {
-        if (restoreIfFails) {
-          this.restoreDb();
-        }
-        return Object.assign(executionResult, heightCheck);
-      }
     }
     return executionResult;
   }
