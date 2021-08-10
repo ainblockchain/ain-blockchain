@@ -76,7 +76,7 @@ function addBlock(node, txs, votes, validators) {
 }
 
 async function waitUntilTxFinalized(servers, txHash) {
-  const MAX_ITERATION = 200;
+  const MAX_ITERATION = 20;
   let iterCount = 0;
   const unchecked = new Set(servers);
   while (true) {
@@ -95,7 +95,7 @@ async function waitUntilTxFinalized(servers, txHash) {
         unchecked.delete(server);
       }
     }
-    await CommonUtil.sleep(500);
+    await CommonUtil.sleep(3000);
     iterCount++;
   }
 }

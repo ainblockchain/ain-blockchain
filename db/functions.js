@@ -163,10 +163,10 @@ class Functions {
                     `  ==>| Execution result of NATIVE function [[ ${functionEntry.function_id} ]] ` +
                     `with call stack ${JSON.stringify(this.getFids())}:\n` +
                     `${JSON.stringify(result, null, 2)}`;
-                if (result.code === FunctionResultCode.SUCCESS) {
-                  logger.info(formattedResult);
-                } else {
+                if (CommonUtil.isFailedFuncResultCode(result.code)) {
                   logger.error(formattedResult);
+                } else {
+                  logger.info(formattedResult);
                 }
               }
             } finally {

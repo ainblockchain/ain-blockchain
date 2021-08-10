@@ -15,7 +15,7 @@ const {
   StateVersions,
   buildOwnerPermissions,
   LIGHTWEIGHT,
-  TREE_HEIGHT_LIMIT,
+  STATE_TREE_HEIGHT_LIMIT,
   TREE_SIZE_BUDGET,
   SERVICE_TREE_SIZE_BUDGET,
   APPS_TREE_SIZE_BUDGET,
@@ -974,21 +974,9 @@ class DB {
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
     DB.updateGasAmountTotal(tx, gasAmountTotal, result);
     if (!CommonUtil.isFailedTx(result)) {
-      const {
-        [StateInfoProperties.TREE_HEIGHT]: treeHeight,
-        [StateInfoProperties.TREE_SIZE]: treeSize
-      } = this.getStateInfo('/');
-      if (treeHeight > TREE_HEIGHT_LIMIT) {
-        return Object.assign(result, {
-          code: 23,
-          error_message: `Out of tree height limit (${treeHeight} > ${TREE_HEIGHT_LIMIT})`
-        });
-      }
-      if (treeSize > TREE_SIZE_BUDGET) {
-        return Object.assign(result, {
-          code: 24,
-          error_message: `Out of tree size limit (${treeSize} > ${TREE_SIZE_BUDGET})`
-        });
+      const heightCheck = this.checkTreeHeightAndSize();
+      if (CommonUtil.isFailedTx(heightCheck)) {
+        return Object.assign(result, heightCheck);
       }
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
@@ -1359,6 +1347,28 @@ class DB {
       resList.push(res);
     }
     return resList;
+  }
+
+  checkTreeHeightAndSize() {
+    const {
+      [StateInfoProperties.TREE_HEIGHT]: treeHeight,
+      [StateInfoProperties.TREE_SIZE]: treeSize,
+    } = this.getStateInfo('/');
+    if (treeHeight > STATE_TREE_HEIGHT_LIMIT) {
+      return {
+        code: 23,
+        error_message: `Out of tree height limit (${treeHeight} > ${STATE_TREE_HEIGHT_LIMIT})`
+      };
+    }
+    if (treeSize > TREE_SIZE_BUDGET) {
+      return {
+        code: 24,
+        error_message: `Out of tree size budget (${treeSize} > ${TREE_SIZE_BUDGET})`
+      };
+    }
+    return {
+      code: 0
+    }
   }
 
   addPathToValue(value, matchedValuePath, closestConfigDepth) {

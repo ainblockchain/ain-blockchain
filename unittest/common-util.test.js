@@ -421,7 +421,7 @@ describe("CommonUtil", () => {
                           }
                         }
                       },
-                      "code": "SUCCESS",
+                      "code": 0,
                       "bandwidth_gas_amount": 0,
                     }
                   },
@@ -430,7 +430,7 @@ describe("CommonUtil", () => {
                 }
               }
             },
-            "code": "SUCCESS",
+            "code": 0,
             "bandwidth_gas_amount": 0,
           }
         },
@@ -456,7 +456,7 @@ describe("CommonUtil", () => {
                           }
                         }
                       },
-                      "code": "SUCCESS",
+                      "code": 0,
                       "bandwidth_gas_amount": 0,
                     }
                   },
@@ -465,7 +465,7 @@ describe("CommonUtil", () => {
                 }
               }
             },
-            "code": "SUCCESS",
+            "code": 0,
             "bandwidth_gas_amount": 0,
           }
         },
@@ -493,7 +493,7 @@ describe("CommonUtil", () => {
                           }
                         }
                       },
-                      "code": "SUCCESS",
+                      "code": 0,
                       "bandwidth_gas_amount": 0,
                     }
                   },
@@ -502,7 +502,7 @@ describe("CommonUtil", () => {
                 }
               }
             },
-            "code": "SUCCESS",
+            "code": 0,
             "bandwidth_gas_amount": 0,
           }
         },
@@ -528,7 +528,7 @@ describe("CommonUtil", () => {
                           }
                         }
                       },
-                      "code": "FAILURE",  // A function failed.
+                      "code": 1,  // A function failed.
                       "bandwidth_gas_amount": 0,
                     }
                   },
@@ -537,7 +537,7 @@ describe("CommonUtil", () => {
                 }
               }
             },
-            "code": "SUCCESS",
+            "code": 0,
             "bandwidth_gas_amount": 0,
           }
         },
@@ -551,7 +551,7 @@ describe("CommonUtil", () => {
         "code": 0,
         "func_results": {
           "0x11111": {
-            "code": "SUCCESS",
+            "code": 0,
             "bandwidth_gas_amount": 10,
           }
         },
@@ -627,7 +627,7 @@ describe("CommonUtil", () => {
                               }
                             }
                           },
-                          "code": "SUCCESS",
+                          "code": 0,
                           "bandwidth_gas_amount": 0,
                         }
                       },
@@ -636,7 +636,7 @@ describe("CommonUtil", () => {
                     }
                   }
                 },
-                "code": "SUCCESS",
+                "code": 0,
                 "bandwidth_gas_amount": 0,
               }
             },
@@ -674,7 +674,7 @@ describe("CommonUtil", () => {
                               }
                             }
                           },
-                          "code": "SUCCESS",
+                          "code": 0,
                           "bandwidth_gas_amount": 0,
                         }
                       },
@@ -683,7 +683,7 @@ describe("CommonUtil", () => {
                     }
                   }
                 },
-                "code": "SUCCESS",
+                "code": 0,
                 "bandwidth_gas_amount": 0,
               }
             },
@@ -723,7 +723,7 @@ describe("CommonUtil", () => {
                               }
                             }
                           },
-                          "code": "SUCCESS",
+                          "code": 0,
                           "bandwidth_gas_amount": 0,
                         }
                       },
@@ -732,7 +732,7 @@ describe("CommonUtil", () => {
                     }
                   }
                 },
-                "code": "SUCCESS",
+                "code": 0,
                 "bandwidth_gas_amount": 0,
               }
             },
@@ -779,7 +779,7 @@ describe("CommonUtil", () => {
                     }
                   }
                 },
-                "code": "SUCCESS",
+                "code": 0,
                 "bandwidth_gas_amount": 0,
               }
             },
@@ -811,7 +811,7 @@ describe("CommonUtil", () => {
             "code": 0,
             "func_results": {
               "0x11111": {
-                "code": "SUCCESS",
+                "code": 0,
                 "bandwidth_gas_amount": 10,
               }
             },
@@ -873,7 +873,7 @@ describe("CommonUtil", () => {
                           }
                         }
                       },
-                      "code": "SUCCESS",
+                      "code": 0,
                       "bandwidth_gas_amount": 10
                     }
                   },
@@ -882,7 +882,7 @@ describe("CommonUtil", () => {
                 }
               }
             },
-            "code": "SUCCESS",
+            "code": 0,
             "bandwidth_gas_amount": 20,
           }
         },
@@ -913,7 +913,7 @@ describe("CommonUtil", () => {
                           }
                         }
                       },
-                      "code": "SUCCESS",
+                      "code": 0,
                       "bandwidth_gas_amount": 10
                     }
                   },
@@ -922,7 +922,7 @@ describe("CommonUtil", () => {
                 }
               }
             },
-            "code": "SUCCESS",
+            "code": 0,
             "bandwidth_gas_amount": 20,
           }
         },
@@ -956,7 +956,7 @@ describe("CommonUtil", () => {
                           }
                         }
                       },
-                      "code": "SUCCESS",
+                      "code": 0,
                       "bandwidth_gas_amount": 10
                     }
                   },
@@ -965,7 +965,7 @@ describe("CommonUtil", () => {
                 }
               }
             },
-            "code": "SUCCESS",
+            "code": 0,
             "bandwidth_gas_amount": 20,
           }
         },
@@ -1002,7 +1002,7 @@ describe("CommonUtil", () => {
                               }
                             }
                           },
-                          "code": "SUCCESS",
+                          "code": 0,
                           "bandwidth_gas_amount": 10
                         }
                       },
@@ -1011,7 +1011,7 @@ describe("CommonUtil", () => {
                     }
                   }
                 },
-                "code": "SUCCESS",
+                "code": 0,
                 "bandwidth_gas_amount": 20
               }
             },
@@ -1051,7 +1051,7 @@ describe("CommonUtil", () => {
                               }
                             }
                           },
-                          "code": "SUCCESS",
+                          "code": 0,
                           "bandwidth_gas_amount": 10
                         }
                       },
@@ -1060,7 +1060,7 @@ describe("CommonUtil", () => {
                     }
                   }
                 },
-                "code": "SUCCESS",
+                "code": 0,
                 "bandwidth_gas_amount": 20
               }
             },
@@ -1103,7 +1103,7 @@ describe("CommonUtil", () => {
                               }
                             }
                           },
-                          "code": "SUCCESS",
+                          "code": 0,
                           "bandwidth_gas_amount": 10
                         }
                       },
@@ -1112,7 +1112,7 @@ describe("CommonUtil", () => {
                     }
                   }
                 },
-                "code": "SUCCESS",
+                "code": 0,
                 "bandwidth_gas_amount": 20
               }
             },
