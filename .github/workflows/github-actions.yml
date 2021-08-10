@@ -32,11 +32,11 @@ jobs:
       - name: run integration test
         # if: github.event.action == 'opened' && github.event.pull_request.base.ref == 'master'   # integration test only run when master merging
         run: |
-          yarn run test_integration_blockchain
-          yarn run test_integration_consensus
-          yarn run test_integration_dapp
+          # yarn run test_integration_blockchain
+          # yarn run test_integration_consensus
+          # yarn run test_integration_dapp
           yarn run test_integration_node
-          yarn run test_integration_sharding
+          # yarn run test_integration_sharding
   check_protocol_version:
     if: ${{ github.event_name == 'push' }}
     runs-on: macos-latest
