@@ -101,7 +101,7 @@ const main = async () => {
   const insightVersion = getVersion(`${INSIGHT}/src/data/constants`, 'const.js', 'VERSION', 1);
   const faucetVersion = getVersionFromAinJs(ainJsVersion, FAUCET);
   const connectVersion = faucetVersion;
-  const pipelineVersion = getVersion(`${PIPELINE}/constants`, 'const.js', 'AIN_PROTOCOL_VERSION', 1);
+  const pipelineVersion = getVersion(`${PIPELINE}/constants`, 'const.js', 'AIN_PROTOCOL_VERSION', 3);
   const dataVersion = getVersionFromAinJs(ainJsVersion, DATA);
   const exporterVersion = GPT2Version;
 
