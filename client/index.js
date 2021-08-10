@@ -133,7 +133,7 @@ app.get('/get_state_info', (req, res, next) => {
 /**
  * Returns the state usage of the given app.
  */
- app.get('/get_state_usage', (req, res, next) => {
+app.get('/get_state_usage', (req, res, next) => {
   const result = node.getStateUsage(req.query.app_name);
   res.status(200)
     .set('Content-Type', 'application/json')

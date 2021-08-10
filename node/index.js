@@ -577,7 +577,8 @@ class BlockchainNode {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
         process.exit(1);
       }
-      // NOTE(minsulee2): Deal with the case the only genesis block was generated.
+      // NOTE(liayoo): we don't have the votes for the last block, so remove it and try to
+      //               receive from peers.
       if (deleteLastBlock && number > 0 && number === numBlockFiles - 1) {
         lastBlockWithoutProposal = block;
         this.bc.deleteBlock(lastBlockWithoutProposal);

@@ -552,9 +552,9 @@ describe('Blockchain Node', () => {
             'GET', server1 + `/get_state_usage?app_name=test`)
                 .body.toString('utf-8'));
         assert.deepEqual(body.result, {
-          "tree_height": 17,
-          "tree_size": 52,
-          "tree_bytes": 10076,
+          "tree_height": 23,
+          "tree_size": 62,
+          "tree_bytes": 11966,
         });
       });
     });
@@ -750,9 +750,9 @@ describe('Blockchain Node', () => {
         .then(res => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
-            "tree_height": 17,
-            "tree_size": 52,
-            "tree_bytes": 10076,
+            "tree_height": 23,
+            "tree_size": 62,
+            "tree_bytes": 11966,
           });
         })
       })
@@ -1494,7 +1494,7 @@ describe('Blockchain Node', () => {
               "bandwidth_gas_amount": 1
             },
           },
-          "gas_amount_charged": 1552,
+          "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
               "app": {
@@ -1504,9 +1504,9 @@ describe('Blockchain Node', () => {
             },
             "state": {
               "app": {
-                "test": 3070
+                "test": 4622
               },
-              "service": 1552
+              "service": 0
             }
           },
           "gas_cost_total": 0
@@ -1879,7 +1879,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
-              "gas_amount_charged": 1552,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -1888,7 +1888,10 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "service": 1552
+                  "app": {
+                    "test": 1552
+                  },
+                  "service": 0
                 }
               },
               "gas_cost_total": 0
@@ -1969,7 +1972,7 @@ describe('Blockchain Node', () => {
                   "bandwidth_gas_amount": 1
                 }
               },
-              "gas_amount_charged": 1552,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -1979,9 +1982,9 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 3070
+                    "test": 4622
                   },
-                  "service": 1552
+                  "service": 0
                 }
               },
               "gas_cost_total": 0
@@ -2275,7 +2278,7 @@ describe('Blockchain Node', () => {
             "result": {
               "code": 0,
               "bandwidth_gas_amount": 1,
-              "gas_amount_charged": 1552,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2284,7 +2287,10 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "state": {
-                  "service": 1552
+                  "app": {
+                    "test": 1552
+                  },
+                  "service": 0
                 }
               },
               "gas_cost_total": 0
@@ -2365,7 +2371,7 @@ describe('Blockchain Node', () => {
                   "bandwidth_gas_amount": 1
                 }
               },
-              "gas_amount_charged": 1552,
+              "gas_amount_charged": 0,
               "gas_amount_total": {
                 "bandwidth": {
                   "service": 0,
@@ -2375,9 +2381,9 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 3070
+                    "test": 4622
                   },
-                  "service": 1552
+                  "service": 0
                 }
               },
               "gas_cost_total": 0
@@ -6621,6 +6627,636 @@ describe('Blockchain Node', () => {
               `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
           expect(adminBalanceAfter).to.equals(adminBalanceBefore + escrowServiceAccountBalanceBefore / 2);
         });
+      });
+    });
+
+    describe('Checkout: _openCheckout, _closeCheckout', () => {
+      const client = jayson.client.http(server1 + '/json-rpc');
+      const tokenType = 'ETH';
+      const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
+      const tokenBridgeConfig = require('../genesis-configs/base/genesis_token.json')['bridge'][tokenType][tokenId];
+      const {
+        token_pool: tokenPoolAddr,
+        min_checkout_per_request: minCheckoutPerRequest,
+        max_checkout_per_request: maxCheckoutPerRequest,
+        max_checkout_per_day: maxCheckoutPerDay,
+       } = tokenBridgeConfig;
+      const checkoutAmount = 100;
+      const ethAddress = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1';
+
+      it('cannot open checkout with invalid params: amount < min_checkout_per_request', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/checkout/requests/${serviceUser}/0`,
+          value: {
+            amount: minCheckoutPerRequest - 1,
+            type: tokenType,
+            token_id: tokenId,
+            recipient: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkoutRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkoutRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('cannot open checkout with invalid params: amount > max_checkout_per_request', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/checkout/requests/${serviceUser}/0`,
+          value: {
+            amount: maxCheckoutPerRequest + 1,
+            type: tokenType,
+            token_id: tokenId,
+            recipient: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkoutRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkoutRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('cannot open checkout with invalid params: type', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+        server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/checkout/requests/${serviceUser}/0`,
+          value: {
+            amount: checkoutAmount,
+            type: 'AIN',
+            token_id: tokenId,
+            recipient: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkoutRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkoutRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('cannot open checkout with invalid params: token_id', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+        server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/checkout/requests/${serviceUser}/0`,
+          value: {
+            amount: checkoutAmount,
+            type: tokenType,
+            token_id: '',
+            recipient: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkoutRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkoutRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('cannot open checkout with invalid params: recipient', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+        server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/checkout/requests/${serviceUser}/0`,
+          value: {
+            amount: checkoutAmount,
+            type: tokenType,
+            token_id: tokenId,
+            recipient: ethAddress.toLowerCase()
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkoutRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkoutRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('cannot open checkout with insufficient funds', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+        server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/checkout/requests/${serviceUser}/0`,
+          value: {
+            amount: beforeBalance + 1,
+            type: tokenType,
+            token_id: tokenId,
+            recipient: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkoutRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkoutRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('can open checkout', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+        server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/checkout/requests/${serviceUser}/0`,
+          value: {
+            amount: checkoutAmount,
+            type: tokenType,
+            token_id: tokenId,
+            recipient: ethAddress
+          },
+          timestamp: 1628255843548
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(_.get(body, 'result.result'), {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1007
+            },
+            "state": {
+              "service": 4288
+            }
+          },
+          "gas_cost_total": 0,
+          "func_results": {
+            "_openCheckout": {
+              "op_results": {
+                "0": {
+                  "path": "/checkout/stats/pending/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "1": {
+                  "path": "/checkout/stats/pending/total",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "2": {
+                  "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/1628255843548/value",
+                  "result": {
+                    "func_results": {
+                      "_transfer": {
+                        "op_results": {
+                          "0": {
+                            "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
+                            "result": {
+                              "code": 0,
+                              "bandwidth_gas_amount": 1
+                            }
+                          },
+                          "1": {
+                            "path": "/accounts/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/balance",
+                            "result": {
+                              "code": 0,
+                              "bandwidth_gas_amount": 1
+                            }
+                          },
+                          "2": {
+                            "path": "/transfer/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/1628255843548/result",
+                            "result": {
+                              "code": 0,
+                              "bandwidth_gas_amount": 1
+                            }
+                          }
+                        },
+                        "code": "SUCCESS",
+                        "bandwidth_gas_amount": 1000
+                      }
+                    },
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                }
+              },
+              "code": "SUCCESS",
+              "bandwidth_gas_amount": 0
+            }
+          },
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 5295
+        });
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        const userPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/pending/${serviceUser}`)
+            .body.toString('utf-8')).result;
+        const totalPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/pending/total`)
+            .body.toString('utf-8')).result;
+        expect(afterRequestUserBalance).to.equal(beforeBalance - checkoutAmount);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance + checkoutAmount);
+        expect(userPendingAmount).to.equal(checkoutAmount);
+        expect(totalPendingAmount).to.equal(checkoutAmount);
+      });
+
+      it('cannot close checkout with a non-authorized address', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/checkout/history/${serviceUser}/0`,
+          value: {
+            request: {
+              amount: checkoutAmount,
+              type: tokenType,
+              token_id: tokenId,
+              recipient: ethAddress
+            },
+            response: {
+              status: 'SUCCESS'
+            }
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkoutHistory = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/history/${serviceUser}/0`).body.toString('utf-8')).result;
+        expect(checkoutHistory).to.equal(null);
+      });
+
+      it('can close a successful checkout with token pool key', async () => {
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/checkout/history/${serviceUser}/0`,
+            value: {
+              request: {
+                amount: checkoutAmount,
+                type: tokenType,
+                token_id: tokenId,
+                recipient: ethAddress
+              },
+              response: {
+                status: 'SUCCESS',
+                tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c'
+              }
+            }
+          },
+          timestamp: 1628255843548,
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
+        const res = await client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        });
+        assert.deepEqual(_.get(res, 'result.result.result', null), {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 6
+            },
+            "state": {
+              "service": 1388
+            }
+          },
+          "gas_cost_total": 0,
+          "func_results": {
+            "_closeCheckout": {
+              "op_results": {
+                "0": {
+                  "path": "/checkout/stats/complete/1628208000000",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "1": {
+                  "path": "/checkout/stats/complete/total",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "2": {
+                  "path": "/checkout/requests/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
+                  "result": {
+                    "bandwidth_gas_amount": 1,
+                    "code": 0,
+                    "func_results": {
+                      "_openCheckout": {
+                        "bandwidth_gas_amount": 0,
+                        "code": "SUCCESS"
+                      }
+                    }
+                  }
+                },
+                "3": {
+                  "path": "/checkout/stats/pending/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
+                  "result": {
+                    "bandwidth_gas_amount": 1,
+                    "code": 0
+                  }
+                },
+                "4": {
+                  "path": "/checkout/stats/pending/total",
+                  "result": {
+                    "bandwidth_gas_amount": 1,
+                    "code": 0
+                  }
+                }
+              },
+              "code": "SUCCESS",
+              "bandwidth_gas_amount": 0
+            }
+          },
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1394
+        });
+        const userPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/pending/${serviceUser}`)
+            .body.toString('utf-8')).result;
+        const totalPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/pending/total`)
+            .body.toString('utf-8')).result;
+        const todayCompleteAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/complete/${CommonUtil.getDayTimestamp(1628255843548)}`)
+            .body.toString('utf-8')).result;
+        const totalCompleteAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/complete/total`)
+            .body.toString('utf-8')).result;
+        expect(userPendingAmount).to.equal(0);
+        expect(totalPendingAmount).to.equal(0);
+        expect(todayCompleteAmount).to.equal(checkoutAmount);
+        expect(totalCompleteAmount).to.equal(checkoutAmount);
+      });
+
+      it('can close a failed checkout and refund with token pool key', async () => {
+        // open checkout
+        const beforeBalance = parseOrLog(syncRequest('GET',
+        server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/checkout/requests/${serviceUser}/1`,
+          value: {
+            amount: checkoutAmount,
+            type: tokenType,
+            token_id: tokenId,
+            recipient: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        expect(_.get(body, 'result.result.code')).to.equal(0);
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(afterRequestUserBalance).to.equal(beforeBalance - checkoutAmount);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance + checkoutAmount);
+        // close failed checkout
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/checkout/history/${serviceUser}/1`,
+            value: {
+              request: {
+                amount: checkoutAmount,
+                type: tokenType,
+                token_id: tokenId,
+                recipient: ethAddress
+              },
+              response: {
+                status: 'FAILURE',
+                tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c',
+                error_message: 'Ethereum tx failed'
+              }
+            }
+          },
+          timestamp: 1628255843548,
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
+        const res = await client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        });
+        assert.deepEqual(_.get(res, 'result.result.result'), {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 9
+            },
+            "state": {
+              "service": 2732
+            }
+          },
+          "gas_cost_total": 0,
+          "func_results": {
+            "_closeCheckout": {
+              "op_results": {
+                "0": {
+                  "path": "/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548/value",
+                  "result": {
+                    "func_results": {
+                      "_transfer": {
+                        "op_results": {
+                          "0": {
+                            "path": "/accounts/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/balance",
+                            "result": {
+                              "code": 0,
+                              "bandwidth_gas_amount": 1
+                            }
+                          },
+                          "1": {
+                            "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
+                            "result": {
+                              "code": 0,
+                              "bandwidth_gas_amount": 1
+                            }
+                          },
+                          "2": {
+                            "path": "/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548/result",
+                            "result": {
+                              "code": 0,
+                              "bandwidth_gas_amount": 1
+                            }
+                          }
+                        },
+                        "code": "SUCCESS",
+                        "bandwidth_gas_amount": 0
+                      }
+                    },
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "1": {
+                  "path": "/checkout/history/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1/refund",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "2": {
+                  "path": "/checkout/requests/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
+                  "result": {
+                    "func_results": {
+                      "_openCheckout": {
+                        "code": "SUCCESS",
+                        "bandwidth_gas_amount": 0
+                      }
+                    },
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "3": {
+                  "path": "/checkout/stats/pending/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "4": {
+                  "path": "/checkout/stats/pending/total",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                }
+              },
+              "code": "SUCCESS",
+              "bandwidth_gas_amount": 0
+            }
+          },
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 2741
+        });
+        const refund = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/history/${serviceUser}/1/refund`).body.toString('utf-8')).result;
+        assert.deepEqual(refund, '/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548');
+        const refundTransfer = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${refund}`).body.toString('utf-8')).result;
+        assert.deepEqual(refundTransfer, {
+          "value": 100,
+          "result": {
+            "timestamp": 1628255843548,
+            "tx_hash": "0x89a1b02058f0d0b7c93957d0ff290cf44cef419d1275afcb430f6e9536e4afb5",
+            "code": "SUCCESS"
+          }
+        });
+        const afterCloseUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterCloseTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        const userPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/pending/${serviceUser}`)
+            .body.toString('utf-8')).result;
+        const totalPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/pending/total`)
+            .body.toString('utf-8')).result;
+        const todayCompleteAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/complete/${CommonUtil.getDayTimestamp(1628255843548)}`)
+            .body.toString('utf-8')).result;
+        const totalCompleteAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/complete/total`)
+            .body.toString('utf-8')).result;
+        expect(afterCloseUserBalance).to.equal(beforeBalance);
+        expect(afterCloseTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+        expect(userPendingAmount).to.equal(0);
+        expect(totalPendingAmount).to.equal(0);
+        expect(todayCompleteAmount).to.equal(checkoutAmount);
+        expect(totalCompleteAmount).to.equal(checkoutAmount);
       });
     });
   });
