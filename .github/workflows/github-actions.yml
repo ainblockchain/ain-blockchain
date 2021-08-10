@@ -14,7 +14,8 @@ on:
     types: [opened, synchronize, reopened, closed]
 jobs:
   build_and_test:
-    if: ${{ github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'edited') }}
+    # if: ${{ github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'edited') }}
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: macos-latest
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -26,11 +27,16 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: yarn install
         run: yarn install
-      - name: run unittest
-        run: yarn run test_unit
-      - name: run integration test
-        if: github.event.action == 'opened' && github.event.pull_request.base.ref == 'master'   # integration test only run when master merging
-        run: yarn run test_integration
+      # - name: run unittest
+      #   run: yarn run test_unit
+      # - name: run integration test
+        # if: github.event.action == 'opened' && github.event.pull_request.base.ref == 'master'   # integration test only run when master merging
+        run: |
+          yarn run test_integration_blockchain
+          yarn run test_integration_consensus
+          yarn run test_integration_dapp
+          yarn run test_integration_node
+          yarn run test_integration_sharding
   check_protocol_version:
     if: ${{ github.event_name == 'push' }}
     runs-on: macos-latest
