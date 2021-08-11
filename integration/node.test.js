@@ -161,22 +161,27 @@ async function cleanUp() {
       op_list: [
         {
           type: 'SET_VALUE',
-          ref: '/apps/test/test_value/some/path',
+          ref: '/apps/test/test_value',
+          value: null
+        },
+        {
+          type: 'SET_VALUE',
+          ref: '/apps/test/test_state_info',
           value: null
         },
         {
           type: 'SET_RULE',
-          ref: '/apps/test/test_rule/some/path',
+          ref: '/apps/test/test_rule',
           value: null
         },
         {
           type: 'SET_FUNCTION',
-          ref: '/apps/test/test_function/some/path',
+          ref: '/apps/test/test_function',
           value: null
         },
         {
           type: 'SET_OWNER',
-          ref: '/apps/test/test_owner/some/path',
+          ref: '/apps/test/test_owner',
           value: null
         },
       ],
@@ -3449,74 +3454,24 @@ describe('Blockchain Node', () => {
         json: {
           op_list: [
             {
-              type: 'SET_FUNCTION',
-              ref: '/apps/test/test_function_triggering/allowed_path_with_fid/value',
+              type: 'SET_VALUE',
+              ref: '/apps/test/test_function_triggering',
               value: null
             },
             {
               type: 'SET_RULE',
-              ref: '/apps/test/test_function_triggering/allowed_path_with_fid/value',
+              ref: '/apps/test/test_function_triggering',
               value: null
             },
             {
               type: 'SET_FUNCTION',
-              ref: '/apps/test/test_function_triggering/not_allowed_path_with_fid/value',
-              value: null
-            },
-            {
-              type: 'SET_RULE',
-              ref: '/apps/test/test_function_triggering/not_allowed_path_with_fid/value',
-              value: null
-            },
-            {
-              type: 'SET_FUNCTION',
-              ref: '/apps/test/test_function_triggering/allowed_path_with_fids/value',
-              value: null
-            },
-            {
-              type: 'SET_RULE',
-              ref: '/apps/test/test_function_triggering/allowed_path_with_fids/value',
-              value: null
-            },
-            {
-              type: 'SET_FUNCTION',
-              ref: '/apps/test/test_function_triggering/not_allowed_path_with_fids/value',
-              value: null
-            },
-            {
-              type: 'SET_RULE',
-              ref: '/apps/test/test_function_triggering/not_allowed_path_with_fids/value',
-              value: null
-            },
-            {
-              type: 'SET_FUNCTION',
-              ref: '/apps/test/test_function_triggering/set_owner_allowed_path_with_fid/value',
+              ref: '/apps/test/test_function_triggering',
               value: null
             },
             {
               type: 'SET_OWNER',
-              ref: '/apps/test/test_function_triggering/set_owner_allowed_path_with_fid',
+              ref: '/apps/test/test_function_triggering',
               value: null
-            },
-            {
-              type: 'SET_FUNCTION',
-              ref: '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value',
-              value: null
-            },
-            {
-              type: 'SET_OWNER',
-              ref: '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid',
-              value: null
-            },
-            {
-              type: 'SET_FUNCTION',
-              ref: '/apps/test/test_function_triggering/rest_function_path',
-              value: null,
-            },
-            {
-              type: 'SET_RULE',
-              ref: '/apps/test/test_function_triggering/rest_function_path',
-              value: null,
             },
           ],
           nonce: -1,
@@ -3694,7 +3649,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 0,
+            "gas_amount_charged": 8,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
@@ -3704,9 +3659,9 @@ describe('Blockchain Node', () => {
               },
               "state": {
                 "app": {
-                  "test": 1252
+                  "test": 1412
                 },
-                "service": 0
+                "service": 8
               }
             },
             "gas_cost_total": 0,
@@ -3797,7 +3752,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 0,
+            "gas_amount_charged": 8,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
@@ -3807,9 +3762,9 @@ describe('Blockchain Node', () => {
               },
               "state": {
                 "app": {
-                  "test": 1046
+                  "test": 1414
                 },
-                "service": 0
+                "service": 8
               }
             },
             "gas_cost_total": 0,
@@ -3903,7 +3858,7 @@ describe('Blockchain Node', () => {
               }
             },
             "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 0,
+            "gas_amount_charged": 8,
             "gas_amount_total": {
               "bandwidth": {
                 "app": {
@@ -3913,9 +3868,9 @@ describe('Blockchain Node', () => {
               },
               "state": {
                 "app": {
-                  "test": 2832
+                  "test": 3200
                 },
-                "service": 0
+                "service": 8
               }
             },
             "gas_cost_total": 0,
@@ -4858,7 +4813,7 @@ describe('Blockchain Node', () => {
             },
             "state": {
               "app": {
-                "test": 216
+                "test": 424
               },
               "service": 0
             }
@@ -7094,10 +7049,11 @@ describe('Blockchain Node', () => {
       it('can close a failed checkout and refund with token pool key', async () => {
         // open checkout
         const beforeBalance = parseOrLog(syncRequest('GET',
-        server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
-            .body.toString('utf-8')).result;
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result || 0;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result || 0;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `/checkout/requests/${serviceUser}/1`,
           value: {
@@ -7113,10 +7069,11 @@ describe('Blockchain Node', () => {
         }
         expect(_.get(body, 'result.result.code')).to.equal(0);
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result || 0;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
-            .body.toString('utf-8')).result;
+            .body.toString('utf-8')).result || 0;
         expect(afterRequestUserBalance).to.equal(beforeBalance - checkoutAmount);
         expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance + checkoutAmount);
         // close failed checkout
@@ -7254,10 +7211,11 @@ describe('Blockchain Node', () => {
           }
         });
         const afterCloseUserBalance = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result || 0;
         const afterCloseTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
-            .body.toString('utf-8')).result;
+            .body.toString('utf-8')).result || 0;
         const userPendingAmount = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkout/stats/pending/${serviceUser}`)
             .body.toString('utf-8')).result;
@@ -7657,24 +7615,24 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8')).result;
       assert.deepEqual(receipt.address, txSignerAddress);
       assert.deepEqual(receipt.exec_result, {
-        bandwidth_gas_amount: 1,
-        code: 0,
-        gas_amount_charged: 0,
-        gas_amount_total: {
-          bandwidth: {
-            app: {
-              test: 1
+        "bandwidth_gas_amount": 1,
+        "code": 0,
+        "gas_amount_charged": 0,
+        "gas_amount_total": {
+          "bandwidth": {
+            "app": {
+              "test": 1
             },
-            service: 0
+            "service": 0
           },
-          state: {
-            app: {
-              test: 188
+          "state": {
+            "app": {
+              "test": 536
             },
-            service: 0
+            "service": 0
           },
         },
-        gas_cost_total: 0
+        "gas_cost_total": 0
       });
     });
 
