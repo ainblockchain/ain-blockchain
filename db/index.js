@@ -1192,12 +1192,21 @@ class DB {
     }
   }
 
+  static trimExecutionResult(executionResult) {
+    return _.pick(executionResult, [
+      PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
+      PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
+      PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_AMOUNT_CHARGED,
+      PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_COST_TOTAL,
+    ]);
+  }
+
   recordReceipt(auth, tx, blockNumber, executionResult) {
     const receiptPath = PathUtil.getReceiptPath(tx.hash);
     const receipt = {
       [PredefinedDbPaths.RECEIPTS_ADDRESS]: auth.addr,
       [PredefinedDbPaths.RECEIPTS_BLOCK_NUMBER]: blockNumber,
-      [PredefinedDbPaths.RECEIPTS_EXEC_RESULT]: executionResult
+      [PredefinedDbPaths.RECEIPTS_EXEC_RESULT]: DB.trimExecutionResult(executionResult)
     };
     if (tx.tx_body.billing) {
       receipt[PredefinedDbPaths.RECEIPTS_BILLING] = tx.tx_body.billing;
