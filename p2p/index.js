@@ -14,7 +14,8 @@ const {
   DEFAULT_MAX_OUTBOUND,
   DEFAULT_MAX_INBOUND,
   MAX_OUTBOUND_LIMIT,
-  MAX_INBOUND_LIMIT
+  MAX_INBOUND_LIMIT,
+  NETWORK_ID
 } = require('../common/constants');
 const { sleep } = require('../common/common-util');
 const {
@@ -25,7 +26,8 @@ const {
   verifySignedMessage,
   checkTimestamp,
   closeSocketSafe,
-  encapsulateMessage
+  encapsulateMessage,
+  isValidNetworkId
 } = require('./util');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -271,9 +273,16 @@ class P2pClient {
     const LOG_HEADER = 'setClientSidePeerEventHandlers';
     socket.on('message', (message) => {
       const parsedMessage = JSON.parse(message);
+      const networkId = _.get(parsedMessage, 'networkId');
+      const address = getAddressFromSocket(this.outbound, socket);
+      if (!isValidNetworkId(networkId)) {
+        logger.error(`The given network ID(${networkId}) of the node(${address}) is MISSING or ` +
+          `DIFFERENT from mine(${NETWORK_ID}). Disconnect the connection.`);
+        closeSocketSafe(this.outbound, socket);
+        return;
+      }
       const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
       if (!VersionUtil.isValidProtocolVersion(dataProtoVer)) {
-        const address = getAddressFromSocket(this.outbound, socket);
         logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
         closeSocketSafe(this.outbound, socket);
