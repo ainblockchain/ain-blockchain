@@ -116,9 +116,7 @@ function checkTimestamp(timestamp) {
 }
 
 function isValidNetworkId(networkId) {
-  if (!CommonUtil.isNumber(networkId)) {
-    return false;
-  } else if (networkId !== NETWORK_ID) {
+  if (networkId !== NETWORK_ID) {
     return false;
   } else {
     return true;
