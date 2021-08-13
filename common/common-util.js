@@ -20,12 +20,12 @@ class CommonUtil {
     return '0x' + ainUtil.hashTransaction(txBody).toString('hex');
   }
 
-  static signTransaction(txBody, privateKey) {
+  static signTransaction(txBody, privateKey, chainId) {
     if (!privateKey) {
       return null;
     }
     const keyBuffer = Buffer.from(privateKey, 'hex');
-    const sig = ainUtil.ecSignTransaction(txBody, keyBuffer);
+    const sig = ainUtil.ecSignTransaction(txBody, keyBuffer, chainId);
     const sigBuffer = ainUtil.toBuffer(sig);
     const lenHash = sigBuffer.length - 65;
     const hashedData = sigBuffer.slice(0, lenHash);
