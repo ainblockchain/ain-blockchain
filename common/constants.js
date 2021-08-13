@@ -172,7 +172,10 @@ const PredefinedDbPaths = {
   RECEIPTS_BILLING: 'billing',
   RECEIPTS_BLOCK_NUMBER: 'block_number',
   RECEIPTS_EXEC_RESULT: 'exec_result',
-  RECEIPTS_GAS_COST_TOTAL: 'gas_cost_total',
+  RECEIPTS_EXEC_RESULT_CODE: 'code',
+  RECEIPTS_EXEC_RESULT_ERROR_MESSAGE: 'error_message',
+  RECEIPTS_EXEC_RESULT_GAS_AMOUNT_CHARGED: 'gas_amount_charged',
+  RECEIPTS_EXEC_RESULT_GAS_COST_TOTAL: 'gas_cost_total',
   // Gas fee
   GAS_FEE: 'gas_fee',
   COLLECT: 'collect',

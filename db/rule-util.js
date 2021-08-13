@@ -189,7 +189,8 @@ class RuleUtil {
   isGasFeeCollected(address, newData, txHash, getValue) {
     const { PredefinedDbPaths } = require('../common/constants');
     const blockNumber = newData[PredefinedDbPaths.RECEIPTS_BLOCK_NUMBER];
-    const gasCost = _.get(newData, `${PredefinedDbPaths.RECEIPTS_EXEC_RESULT}.${PredefinedDbPaths.RECEIPTS_GAS_COST_TOTAL}`);
+    const gasCost = _.get(newData, `${PredefinedDbPaths.RECEIPTS_EXEC_RESULT}.` +
+        `${PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_COST_TOTAL}`);
     if (gasCost === undefined) {
       return false;
     }
