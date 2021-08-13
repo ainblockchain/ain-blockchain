@@ -8,6 +8,7 @@ const {
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
   NETWORK_ID,
+  CHAIN_ID,
   BlockchainNodeStates,
   ReadDbOperations,
   PredefinedDbPaths,
@@ -393,6 +394,10 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
 
     net_getNetworkId: function (args, done) {
       done(null, addProtocolVersion({ result: NETWORK_ID }));
+    },
+
+    net_getChainId: function (args, done) {
+      done(null, addProtocolVersion({ result: CHAIN_ID }));
     },
 
     net_consensusStatus: function (args, done) {
