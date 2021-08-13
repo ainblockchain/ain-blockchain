@@ -32,6 +32,7 @@ const {
   waitForNewBlocks,
   getBlockByNumber,
 } = require('../unittest/test-util');
+const DB = require('../db');
 
 const ENV_VARIABLES = [
   {
@@ -7615,23 +7616,8 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8')).result;
       assert.deepEqual(receipt.address, txSignerAddress);
       assert.deepEqual(receipt.exec_result, {
-        "bandwidth_gas_amount": 1,
         "code": 0,
         "gas_amount_charged": 0,
-        "gas_amount_total": {
-          "bandwidth": {
-            "app": {
-              "test": 1
-            },
-            "service": 0
-          },
-          "state": {
-            "app": {
-              "test": 536
-            },
-            "service": 0
-          },
-        },
         "gas_cost_total": 0
       });
     });
@@ -7690,7 +7676,7 @@ describe('Blockchain Node', () => {
       const receipt = parseOrLog(syncRequest(
         'GET', server2 + `/get_value?ref=${PathUtil.getReceiptPath(txHash)}`).body.toString('utf-8')).result;
       expect(receipt).to.not.equal(null);
-      assert.deepEqual(receipt.exec_result, body.result.result);
+      assert.deepEqual(receipt.exec_result, DB.trimExecutionResult(body.result.result));
 
       // Failed tx's gas fees have been collected
       const blockNumber = receipt.block_number;
