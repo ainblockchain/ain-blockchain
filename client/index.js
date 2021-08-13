@@ -15,7 +15,8 @@ const {
   PORT,
   BlockchainNodeStates,
   WriteDbOperations,
-  PredefinedDbPaths,
+  NETWORK_ID,
+  CHAIN_ID
 } = require('../common/constants');
 const { ConsensusStates } = require('../consensus/constants');
 
@@ -467,6 +468,22 @@ app.get('/get_consensus_status', (req, res) => {
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({code: 0, result})
+    .end();
+});
+
+app.get('/get_network_id', (req, res) => {
+  const networkId = NETWORK_ID;
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: 0, result: networkId })
+    .end();
+});
+
+app.get('/get_chain_id', (req, res) => {
+  const chainId = CHAIN_ID;
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: 0, result: chainId })
     .end();
 });
 
