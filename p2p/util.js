@@ -11,6 +11,7 @@ const {
   CURRENT_PROTOCOL_VERSION,
   DATA_PROTOCOL_VERSION,
   P2P_MESSAGE_TIMEOUT_MS,
+  NETWORK_ID
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
@@ -95,6 +96,7 @@ function encapsulateMessage(type, dataObj) {
     data: dataObj,
     protoVer: CURRENT_PROTOCOL_VERSION,
     dataProtoVer: DATA_PROTOCOL_VERSION,
+    networkId: NETWORK_ID,
     timestamp: Date.now()
   };
   return message;
@@ -113,6 +115,16 @@ function checkTimestamp(timestamp) {
   }
 }
 
+function isValidNetworkId(networkId) {
+  if (!CommonUtil.isNumber(networkId)) {
+    return false;
+  } else if (networkId !== NETWORK_ID) {
+    return false;
+  } else {
+    return true;
+  }
+}
+
 module.exports = {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
@@ -121,5 +133,6 @@ module.exports = {
   verifySignedMessage,
   closeSocketSafe,
   checkTimestamp,
-  encapsulateMessage
+  encapsulateMessage,
+  isValidNetworkId
 };
