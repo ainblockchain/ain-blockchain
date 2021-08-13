@@ -5,7 +5,8 @@ const expect = chai.expect;
 const assert = chai.assert;
 const {
   CURRENT_PROTOCOL_VERSION,
-  DATA_PROTOCOL_VERSION
+  DATA_PROTOCOL_VERSION,
+  NETWORK_ID
 } = require('../common/constants');
 
 describe("P2P Util", () => {
@@ -107,6 +108,7 @@ describe("P2P Util", () => {
         data: mockDataObj,
         protoVer: CURRENT_PROTOCOL_VERSION,
         dataProtoVer: DATA_PROTOCOL_VERSION,
+        networkId: NETWORK_ID,
         timestamp: encapsulatedMessage.timestamp
       });
     });
