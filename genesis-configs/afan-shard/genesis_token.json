@@ -5,7 +5,7 @@
   "bridge": {
     "AIN": {
       "0": {
-        "network_id": 0,
+        "network_id": 1,
         "token_pool": "0xBBB2219cD5eACc54Ce95deF7a67dDe71C8241891",
         "min_checkout_per_request": 1000,
         "max_checkout_per_request": 10000,
