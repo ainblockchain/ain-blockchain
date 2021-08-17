@@ -5,7 +5,7 @@
   "bridge": {
     "ETH": {
       "0xB16c0C80a81f73204d454426fC413CAe455525A7": {
-        "network_id": "3",
+        "network_id": 3,
         "token_pool": "0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
         "min_checkout_per_request": 10,
         "max_checkout_per_request": 10000,

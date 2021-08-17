@@ -5,6 +5,7 @@ const {
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
   WriteDbOperations,
+  CHAIN_ID
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
@@ -51,7 +52,7 @@ class Transaction {
     // A devel method for bypassing the transaction verification.
     let signature = '';
     if (!txBody.address) {
-      const signed = CommonUtil.signTransaction(txBody, privateKey);
+      const signed = CommonUtil.signTransaction(txBody, privateKey, CHAIN_ID);
       const sig = _.get(signed, 'signedTx.signature', null);
       if (!sig) {
         return null;
