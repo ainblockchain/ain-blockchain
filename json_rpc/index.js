@@ -8,6 +8,7 @@ const {
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
   NETWORK_ID,
+  CHAIN_ID,
   BlockchainNodeStates,
   ReadDbOperations,
   PredefinedDbPaths,
@@ -374,35 +375,40 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     // Network API
-    net_listening: function(args, done) {
+    net_listening: function (args, done) {
       const peerCount = Object.keys(p2pServer.inbound).length;
-      done(null, addProtocolVersion({result: !!peerCount}));
+      done(null, addProtocolVersion({ result: !!peerCount }));
     },
 
-    net_peerCount: function(args, done) {
+    net_peerCount: function (args, done) {
       const peerCount = Object.keys(p2pServer.inbound).length;
-      done(null, addProtocolVersion({result: peerCount}));
+      done(null, addProtocolVersion({ result: peerCount }));
     },
 
-    net_syncing: function(args, done) {
+    net_syncing: function (args, done) {
       // TODO(liayoo): Return { starting, latest } with block numbers
       // if the node is currently syncing.
-      done(null, addProtocolVersion(
-          {result: p2pServer.node.state === BlockchainNodeStates.SYNCING}));
+      done(null, addProtocolVersion({
+        result: p2pServer.node.state === BlockchainNodeStates.SYNCING
+      }));
     },
 
-    net_getNetworkId: function(args, done) {
-      done(null, addProtocolVersion({result: NETWORK_ID}));
+    net_getNetworkId: function (args, done) {
+      done(null, addProtocolVersion({ result: NETWORK_ID }));
     },
 
-    net_consensusStatus: function(args, done) {
+    net_getChainId: function (args, done) {
+      done(null, addProtocolVersion({ result: CHAIN_ID }));
+    },
+
+    net_consensusStatus: function (args, done) {
       const result = p2pServer.consensus.getStatus();
-      done(null, addProtocolVersion({result}));
+      done(null, addProtocolVersion({ result }));
     },
 
-    net_rawConsensusStatus: function(args, done) {
+    net_rawConsensusStatus: function (args, done) {
       const result = p2pServer.consensus.getRawStatus();
-      done(null, addProtocolVersion({result}));
+      done(null, addProtocolVersion({ result }));
     }
   };
 };
