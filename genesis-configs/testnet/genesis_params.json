@@ -2,8 +2,8 @@
   "blockchain": {
     "TRANSACTION_POOL_TIMEOUT_MS": 3600000,
     "TRANSACTION_TRACKER_TIMEOUT_MS": 86400000,
-    "NETWORK_ID": 2,
-    "CHAIN_ID": 2,
+    "NETWORK_ID": 0,
+    "CHAIN_ID": 0,
     "HOSTING_ENV": "gcp",
     "COMCOM_HOST_INTERNAL_IP_MAP": {
       "aincom1": "192.168.1.13",
