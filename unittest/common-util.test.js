@@ -60,6 +60,31 @@ describe("CommonUtil", () => {
     })
   })
 
+  describe("toHexString", () => {
+    it("when non-string input", () => {
+      expect(CommonUtil.toHexString(0)).to.equal('0x');
+      expect(CommonUtil.toHexString(10)).to.equal('0x');
+      expect(CommonUtil.toHexString(-1)).to.equal('0x');
+      expect(CommonUtil.toHexString(15.5)).to.equal('0x');
+      expect(CommonUtil.toHexString(null)).to.equal('0x');
+      expect(CommonUtil.toHexString(undefined)).to.equal('0x');
+      expect(CommonUtil.toHexString(Infinity)).to.equal('0x');
+      expect(CommonUtil.toHexString(NaN)).to.equal('0x');
+      expect(CommonUtil.toHexString({})).to.equal('0x');
+      expect(CommonUtil.toHexString({a: 'A'})).to.equal('0x');
+      expect(CommonUtil.toHexString([])).to.equal('0x');
+      expect(CommonUtil.toHexString([10])).to.equal('0x');
+      expect(CommonUtil.toHexString(false)).to.equal('0x');
+    })
+
+    it("when string input", () => {
+      expect(CommonUtil.toHexString('')).to.equal('0x');
+      expect(CommonUtil.toHexString('0x0123456789abcdef')).to.equal('0x0123456789abcdef');
+      expect(CommonUtil.toHexString('0x0123456789ABCDEF')).to.equal('0x0123456789abcdef');
+      expect(CommonUtil.toHexString('aAzZ')).to.equal('0x61417a5a');
+    })
+  })
+
   describe("parseJsonOrNull", () => {
     it("when abnormal input", () => {
       assert.deepEqual(CommonUtil.parseJsonOrNull(''), null);
