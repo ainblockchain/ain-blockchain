@@ -129,6 +129,14 @@ class RadixNode {
   numChildren() {
     return this.childMap.size;
   }
+
+  toJsObject() {
+    const obj = {};
+    for (const child of this.getChildNodes()) {
+      obj[child.getLabelRadix() + child.getLabelSuffix()] = child.toJsObject();
+    }
+    return obj;
+  }
 }
 
 module.exports = RadixNode;
