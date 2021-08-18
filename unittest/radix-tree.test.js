@@ -1,5 +1,6 @@
 const RadixTree = require('../db/radix-tree');
 const RadixNode = require('../db/radix-node');
+const StateNode = require('../db/state-node');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
@@ -13,33 +14,33 @@ describe("radix-tree", () => {
 
     it("_matchLabelSuffix with empty label suffix", () => {
       const hexLabel = '1234567890abcdef';
-      const node = new RadixNode();
-      node.setLabelSuffix('');
-      expect(RadixTree._matchLabelSuffix(node, hexLabel, 0)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(node, hexLabel, 9)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(node, hexLabel, 10)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(node, hexLabel, 11)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(node, '', 0)).to.equal(true);
+      const radixNode = new RadixNode();
+      radixNode.setLabelSuffix('');
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 0)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 9)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 10)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 11)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, '', 0)).to.equal(true);
     });
 
     it("_matchLabelSuffix with non-empty label suffix", () => {
       const hexLabel = '1234567890abcdef';
-      const node = new RadixNode();
+      const radixNode = new RadixNode();
       // a shorter length
-      node.setLabelSuffix('abc');
-      expect(RadixTree._matchLabelSuffix(node, hexLabel, 9)).to.equal(false);
-      expect(RadixTree._matchLabelSuffix(node, hexLabel, 10)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(node, hexLabel, 11)).to.equal(false);
+      radixNode.setLabelSuffix('abc');
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 9)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 10)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 11)).to.equal(false);
 
       // the same length
-      node.setLabelSuffix('abcdef');
-      expect(RadixTree._matchLabelSuffix(node, hexLabel, 9)).to.equal(false);
-      expect(RadixTree._matchLabelSuffix(node, hexLabel, 10)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(node, hexLabel, 11)).to.equal(false);
+      radixNode.setLabelSuffix('abcdef');
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 9)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 10)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 11)).to.equal(false);
 
       // a longer length
-      node.setLabelSuffix('abcdef123');
-      expect(RadixTree._matchLabelSuffix(node, hexLabel, 10)).to.equal(false);
+      radixNode.setLabelSuffix('abcdef123');
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 10)).to.equal(false);
     });
 
     it("_getCommonPrefix", () => {
@@ -66,8 +67,8 @@ describe("radix-tree", () => {
     })
 
     describe("_setInMap / _deleteFromMap / _hasInMap / _getFromMap / labels / stateNodes / size", () => {
-      const child1 = new RadixNode();
-      const child2 = new RadixNode();
+      const stateNode1 = new StateNode();
+      const stateNode2 = new StateNode();
 
       it("with non-empty label suffices", () => {
         const label1 = '0x000111aaa';
@@ -82,36 +83,36 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.size(), 0);
 
         // set first child
-        tree._setInMap(label1, child1);
+        tree._setInMap(label1, stateNode1);
 
-        expect(tree._getFromMap(label1)).to.equal(child1);
+        expect(tree._getFromMap(label1)).to.equal(stateNode1);
         expect(tree._getFromMap(label2)).to.equal(null);
         expect(tree._hasInMap(label1)).to.equal(true);
         expect(tree._hasInMap(label2)).to.equal(false);
         assert.deepEqual(tree.labels(), [label1]);
-        assert.deepEqual(tree.stateNodes(), [child1]);
+        assert.deepEqual(tree.stateNodes(), [stateNode1]);
         assert.deepEqual(tree.size(), 1);
 
         // set second child
-        tree._setInMap(label2, child2);
+        tree._setInMap(label2, stateNode2);
 
-        expect(tree._getFromMap(label1)).to.equal(child1);
-        expect(tree._getFromMap(label2)).to.equal(child2);
+        expect(tree._getFromMap(label1)).to.equal(stateNode1);
+        expect(tree._getFromMap(label2)).to.equal(stateNode2);
         expect(tree._hasInMap(label1)).to.equal(true);
         expect(tree._hasInMap(label2)).to.equal(true);
         assert.deepEqual(tree.labels(), [label1, label2]);
-        assert.deepEqual(tree.stateNodes(), [child1, child2]);
+        assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
         assert.deepEqual(tree.size(), 2);
 
         // delete first child
         tree._deleteFromMap(label1);
 
         expect(tree._getFromMap(label1)).to.equal(null);
-        expect(tree._getFromMap(label2)).to.equal(child2);
+        expect(tree._getFromMap(label2)).to.equal(stateNode2);
         expect(tree._hasInMap(label1)).to.equal(false);
         expect(tree._hasInMap(label2)).to.equal(true);
         assert.deepEqual(tree.labels(), [label2]);
-        assert.deepEqual(tree.stateNodes(), [child2]);
+        assert.deepEqual(tree.stateNodes(), [stateNode2]);
         assert.deepEqual(tree.size(), 1);
 
         // delete second child
@@ -136,10 +137,10 @@ describe("radix-tree", () => {
     })
 
     describe("_setInTree / _deleteFromTree / _hasInTree / _getFromTree", () => {
-      const child1 = new RadixNode();
-      const child2 = new RadixNode();
-      const child21 = new RadixNode();
-      const child22 = new RadixNode();
+      const stateNode1 = new StateNode();
+      const stateNode2 = new StateNode();
+      const stateNode21 = new StateNode();
+      const stateNode22 = new StateNode();
 
       it("set / delete without common label prefix", () => {
         const label1 = '0xa';
@@ -147,34 +148,54 @@ describe("radix-tree", () => {
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(), {});
 
         // set first child
-        tree._setInTree(label1, child1);
+        tree._setInTree(label1, stateNode1);
 
         expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
         expect(tree._hasInTree(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(), {
+          "a:": {
+            "->": true
+          },
+        });
 
         // set second child
-        tree._setInTree(label2, child2);
+        tree._setInTree(label2, stateNode2);
 
         expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
         expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(child2);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(), {
+          "a:": {
+            "->": true
+          },
+          "b:": {
+            "->": true
+          }
+        });
 
         // delete first child
         tree._deleteFromTree(label1);
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(child2);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(), {
+          "b:": {
+            "->": true
+          }
+        });
 
         // delete second child
         tree._deleteFromTree(label2);
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(), {});
       });
 
       it("set / delete with common label prefix", () => {
@@ -183,34 +204,57 @@ describe("radix-tree", () => {
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(), {});
 
         // set first child
-        tree._setInTree(label1, child1);
+        tree._setInTree(label1, stateNode1);
 
         expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
         expect(tree._hasInTree(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00a": {
+            "->": true
+          }
+        });
 
         // set second child
-        tree._setInTree(label2, child2);
+        tree._setInTree(label2, stateNode2);
 
         expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
         expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(child2);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00": {
+            "->": false,
+            "a:": {
+              "->": true
+            },
+            "b:": {
+              "->": true
+            }
+          }
+        });
 
         // delete first child
         tree._deleteFromTree(label1);
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(child2);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00b": {
+            "->": true
+          }
+        });
 
         // delete second child
         tree._deleteFromTree(label2);
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(), {});
       });
 
       it("set / delete with non-empty label suffices", () => {
@@ -219,34 +263,57 @@ describe("radix-tree", () => {
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(), {});
 
         // set first child
-        tree._setInTree(label1, child1);
+        tree._setInTree(label1, stateNode1);
 
         expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
         expect(tree._hasInTree(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00aaa": {
+            "->": true
+          }
+        });
 
         // set second child
-        tree._setInTree(label2, child2);
+        tree._setInTree(label2, stateNode2);
 
         expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
         expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(child2);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00": {
+            "->": false,
+            "a:aa": {
+              "->": true
+            },
+            "b:bb": {
+              "->": true
+            }
+          }
+        });
 
         // delete first child
         tree._deleteFromTree(label1);
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(child2);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00bbb": {
+            "->": true
+          }
+        });
 
         // delete second child
         tree._deleteFromTree(label2);
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(), {});
       });
 
       it("set / delete with grand children", () => {
@@ -256,32 +323,95 @@ describe("radix-tree", () => {
         const label22 = '0x000bbb222';
 
         // set first child
-        tree._setInTree(label1, child1);
+        tree._setInTree(label1, stateNode1);
         // set second child
-        tree._setInTree(label2, child2);
+        tree._setInTree(label2, stateNode2);
         // set grand children
-        tree._setInTree(label21, child21);
-        tree._setInTree(label22, child22);
+        tree._setInTree(label21, stateNode21);
+        tree._setInTree(label22, stateNode22);
 
         expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
         expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(child2);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
         expect(tree._hasInTree(label21)).to.equal(true);
-        expect(tree._getFromTree(label21)).to.equal(child21);
+        expect(tree._getFromTree(label21)).to.equal(stateNode21);
         expect(tree._hasInTree(label22)).to.equal(true);
-        expect(tree._getFromTree(label22)).to.equal(child22);
+        expect(tree._getFromTree(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00": {
+            "->": false,
+            "a:aa": {
+              "->": true
+            },
+            "b:bb": {
+              "->": true,
+              "1:11": {
+                "->": true
+              },
+              "2:22": {
+                "->": true
+              }
+            }
+          }
+        });
 
         // delete first child
         tree._deleteFromTree(label1);
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(child2);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
         expect(tree._hasInTree(label21)).to.equal(true);
-        expect(tree._getFromTree(label21)).to.equal(child21);
+        expect(tree._getFromTree(label21)).to.equal(stateNode21);
         expect(tree._hasInTree(label22)).to.equal(true);
-        expect(tree._getFromTree(label22)).to.equal(child22);
+        expect(tree._getFromTree(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00bbb": {
+            "->": true,
+            "1:11": {
+              "->": true
+            },
+            "2:22": {
+              "->": true
+            }
+          }
+        });
+      });
+
+      it("set / delete with only one child", () => {
+        const label2 = '0x000bbb';
+        const label21 = '0x000bbb111';
+
+        // set a child
+        tree._setInTree(label2, stateNode2);
+        // set a grand child
+        tree._setInTree(label21, stateNode21);
+
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree._hasInTree(label21)).to.equal(true);
+        expect(tree._getFromTree(label21)).to.equal(stateNode21);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00bbb": {
+            "->": true,
+            "1:11": {
+              "->": true
+            }
+          }
+        });
+
+        // delete the child
+        tree._deleteFromTree(label2);
+
+        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree._hasInTree(label21)).to.equal(true);
+        expect(tree._getFromTree(label21)).to.equal(stateNode21);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00bbb111": {
+            "->": true
+          }
+        });
       });
     });
   });
@@ -294,10 +424,10 @@ describe("radix-tree", () => {
     })
 
     describe("set / deletep / has / get / labels / stateNodes / size", () => {
-      const child1 = new RadixNode();
-      const child2 = new RadixNode();
-      const child21 = new RadixNode();
-      const child22 = new RadixNode();
+      const stateNode1 = new StateNode();
+      const stateNode2 = new StateNode();
+      const stateNode21 = new StateNode();
+      const stateNode22 = new StateNode();
 
       it("set / delete without common label prefix", () => {
         const label1 = '0xa';
@@ -308,37 +438,56 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.labels(), []);
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
+        assert.deepEqual(tree.toJsObject(), {});
 
         // set first child
-        tree.set(label1, child1);
+        tree.set(label1, stateNode1);
 
         expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(child1);
+        expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.labels(), [label1]);
-        assert.deepEqual(tree.stateNodes(), [child1]);
+        assert.deepEqual(tree.stateNodes(), [stateNode1]);
         assert.deepEqual(tree.size(), 1);
+        assert.deepEqual(tree.toJsObject(), {
+          "a:": {
+            "->": true
+          }
+        });
 
         // set second child
-        tree.set(label2, child2);
+        tree.set(label2, stateNode2);
 
         expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(child1);
+        expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(child2);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.labels(), [label1, label2]);
-        assert.deepEqual(tree.stateNodes(), [child1, child2]);
+        assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
         assert.deepEqual(tree.size(), 2);
+        assert.deepEqual(tree.toJsObject(), {
+          "a:": {
+            "->": true
+          },
+          "b:": {
+            "->": true
+          }
+        });
 
         // delete first child
         tree.delete(label1);
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(child2);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.labels(), [label2]);
-        assert.deepEqual(tree.stateNodes(), [child2]);
+        assert.deepEqual(tree.stateNodes(), [stateNode2]);
         assert.deepEqual(tree.size(), 1);
+        assert.deepEqual(tree.toJsObject(), {
+          "b:": {
+            "->": true
+          }
+        });
 
         // delete second child
         tree.delete(label2);
@@ -348,6 +497,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.labels(), []);
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
+        assert.deepEqual(tree.toJsObject(), {});
       });
 
       it("set / delete with common label prefix", () => {
@@ -359,37 +509,59 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.labels(), []);
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
+        assert.deepEqual(tree.toJsObject(), {});
 
         // set first child
-        tree.set(label1, child1);
+        tree.set(label1, stateNode1);
 
         expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(child1);
+        expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.labels(), [label1]);
-        assert.deepEqual(tree.stateNodes(), [child1]);
+        assert.deepEqual(tree.stateNodes(), [stateNode1]);
         assert.deepEqual(tree.size(), 1);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00a": {
+            "->": true
+          }
+        });
 
         // set second child
-        tree.set(label2, child2);
+        tree.set(label2, stateNode2);
 
         expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(child1);
+        expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(child2);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.labels(), [label1, label2]);
-        assert.deepEqual(tree.stateNodes(), [child1, child2]);
+        assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
         assert.deepEqual(tree.size(), 2);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00": {
+            "->": false,
+            "a:": {
+              "->": true
+            },
+            "b:": {
+              "->": true
+            }
+          }
+        });
 
         // delete first child
         tree.delete(label1);
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(child2);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.labels(), [label2]);
-        assert.deepEqual(tree.stateNodes(), [child2]);
+        assert.deepEqual(tree.stateNodes(), [stateNode2]);
         assert.deepEqual(tree.size(), 1);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00b": {
+            "->": true
+          }
+        });
 
         // delete second child
         tree.delete(label2);
@@ -399,6 +571,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.labels(), []);
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
+        assert.deepEqual(tree.toJsObject(), {});
       });
 
       it("set / delete with non-empty label suffices", () => {
@@ -410,37 +583,59 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.labels(), []);
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
+        assert.deepEqual(tree.toJsObject(), {});
 
         // set first child
-        tree.set(label1, child1);
+        tree.set(label1, stateNode1);
 
         expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(child1);
+        expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.labels(), [label1]);
-        assert.deepEqual(tree.stateNodes(), [child1]);
+        assert.deepEqual(tree.stateNodes(), [stateNode1]);
         assert.deepEqual(tree.size(), 1);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00aaa": {
+            "->": true
+          }
+        });
 
         // set second child
-        tree.set(label2, child2);
+        tree.set(label2, stateNode2);
 
         expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(child1);
+        expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(child2);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.labels(), [label1, label2]);
-        assert.deepEqual(tree.stateNodes(), [child1, child2]);
+        assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
         assert.deepEqual(tree.size(), 2);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00": {
+            "->": false,
+            "a:aa": {
+              "->": true
+            },
+            "b:bb": {
+              "->": true
+            }
+          }
+        });
 
         // delete first child
         tree.delete(label1);
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(child2);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.labels(), [label2]);
-        assert.deepEqual(tree.stateNodes(), [child2]);
+        assert.deepEqual(tree.stateNodes(), [stateNode2]);
         assert.deepEqual(tree.size(), 1);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00bbb": {
+            "->": true
+          }
+        });
 
         // delete second child
         tree.delete(label2);
@@ -450,6 +645,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.labels(), []);
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
+        assert.deepEqual(tree.toJsObject(), {});
       });
 
       it("set / delete with grand children", () => {
@@ -459,38 +655,107 @@ describe("radix-tree", () => {
         const label22 = '0x000bbb222';
 
         // set first child
-        tree.set(label1, child1);
+        tree.set(label1, stateNode1);
         // set second child
-        tree.set(label2, child2);
+        tree.set(label2, stateNode2);
         // set grand children
-        tree.set(label21, child21);
-        tree.set(label22, child22);
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
 
         expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(child1);
+        expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(child2);
+        expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(label21)).to.equal(true);
-        expect(tree.get(label21)).to.equal(child21);
+        expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
-        expect(tree.get(label22)).to.equal(child22);
+        expect(tree.get(label22)).to.equal(stateNode22);
         assert.deepEqual(tree.labels(), [label1, label2, label21, label22]);
-        assert.deepEqual(tree.stateNodes(), [child1, child2, child21, child22]);
+        assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2, stateNode21, stateNode22]);
         assert.deepEqual(tree.size(), 4);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00": {
+            "->": false,
+            "a:aa": {
+              "->": true,
+            },
+            "b:bb": {
+              "->": true,
+              "1:11": {
+                "->": true
+              },
+              "2:22": {
+                "->": true
+              }
+            }
+          }
+        });
 
         // delete first child
         tree.delete(label1);
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(child2);
+        expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(label21)).to.equal(true);
-        expect(tree.get(label21)).to.equal(child21);
+        expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
-        expect(tree.get(label22)).to.equal(child22);
+        expect(tree.get(label22)).to.equal(stateNode22);
         assert.deepEqual(tree.labels(), [label2, label21, label22]);
-        assert.deepEqual(tree.stateNodes(), [child2, child21, child22]);
+        assert.deepEqual(tree.stateNodes(), [stateNode2, stateNode21, stateNode22]);
         assert.deepEqual(tree.size(), 3);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00bbb": {
+            "->": true,
+            "1:11": {
+              "->": true
+            },
+            "2:22": {
+              "->": true
+            }
+          }
+        });
+      });
+
+      it("set / delete with only one child", () => {
+        const label2 = '0x000bbb';
+        const label21 = '0x000bbb111';
+
+        // set a child
+        tree.set(label2, stateNode2);
+        // set a grand child
+        tree.set(label21, stateNode21);
+
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        assert.deepEqual(tree.labels(), [label2, label21]);
+        assert.deepEqual(tree.stateNodes(), [stateNode2, stateNode21]);
+        assert.deepEqual(tree.size(), 2);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00bbb": {
+            "->": true,
+            "1:11": {
+              "->": true
+            }
+          }
+        });
+
+        // delete the child
+        tree.delete(label2);
+
+        expect(tree.has(label2)).to.equal(false);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        assert.deepEqual(tree.labels(), [label21]);
+        assert.deepEqual(tree.stateNodes(), [stateNode21]);
+        assert.deepEqual(tree.size(), 1);
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00bbb111": {
+            "->": true
+          }
+        });
       });
     });
   });

@@ -195,8 +195,13 @@ class RadixTree {
       // Does nothing.
       return false;
     }
+    if (!node.hasParent()) {
+      logger.error(`[${LOG_HEADER}] Deleting the root node with label: ${label}?`);
+      // Does nothing.
+      return false;
+    }
     node.resetStateNode();
-    if (node.numChildren() === 1 && node.hasParent()) {
+    if (node.numChildren() === 1) {
       return this._mergeToChild(node);
     } else if (node.numChildren() === 0) {
       if (!node.hasParent()) {
@@ -236,6 +241,10 @@ class RadixTree {
     return this.stateNodeMap.size;
   }
 
+  /**
+   * Converts the tree to a javascript object.
+   * This is for testing / debugging purpose.
+   */
   toJsObject() {
     return this.root.toJsObject();
   }
