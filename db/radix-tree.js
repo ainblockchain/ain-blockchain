@@ -14,7 +14,7 @@ class RadixTree {
     this.stateNodeMap = new Map();
   }
 
-  static toHexLabel(label) {
+  static _toHexLabel(label) {
     const hexLabel = CommonUtil.toHexString(label);
     if (hexLabel.length < 2) {
       return hexLabel;
@@ -22,14 +22,14 @@ class RadixTree {
     return hexLabel.slice(2);
   }
 
-  static matchLabelSuffix(radixNode, hexLabel, index) {
+  static _matchLabelSuffix(radixNode, hexLabel, index) {
     const labelSuffix = radixNode.getLabelSuffix();
     return labelSuffix.length === 0 ||
         (labelSuffix.length <= hexLabel.length - index &&
         labelSuffix === hexLabel.slice(index, index + labelSuffix.length));
   }
 
-  static getCommonPrefix(label1, label2) {
+  static _getCommonPrefix(label1, label2) {
     let labelIndex = 0;
     while (labelIndex < Math.min(label1.length, label2.length)) {
       if (label1.charAt(labelIndex) !== label2.charAt(labelIndex)) {
@@ -40,7 +40,7 @@ class RadixTree {
     return label1.slice(0, labelIndex);
   }
 
-  getRadixNodeForReading(hexLabel) {
+  _getRadixNodeForReading(hexLabel) {
     let curNode = this.root
     let labelIndex = 0;
     while (labelIndex < hexLabel.length) {
@@ -49,7 +49,7 @@ class RadixTree {
         return null;
       }
       const child = curNode.getChild(labelRadix);
-      if (!RadixTree.matchLabelSuffix(child, hexLabel, labelIndex + 1)) {
+      if (!RadixTree._matchLabelSuffix(child, hexLabel, labelIndex + 1)) {
         return null;
       }
       curNode = child;
@@ -58,7 +58,7 @@ class RadixTree {
     return curNode;
   }
 
-  getRadixNodeForWriting(hexLabel) {
+  _getRadixNodeForWriting(hexLabel) {
     let curNode = this.root
     let labelIndex = 0;
     while (labelIndex < hexLabel.length) {
@@ -75,10 +75,10 @@ class RadixTree {
 
       // Case 2: Has a child with the label radix but no match with the label suffix.
       const child = curNode.getChild(labelRadix);
-      if (!RadixTree.matchLabelSuffix(child, hexLabel, labelIndex + 1)) {
+      if (!RadixTree._matchLabelSuffix(child, hexLabel, labelIndex + 1)) {
         const labelSuffix = hexLabel.slice(labelIndex + 1);
         const childLabelSuffix = child.getLabelSuffix();
-        const commonPrefix = RadixTree.getCommonPrefix(labelSuffix, childLabelSuffix);
+        const commonPrefix = RadixTree._getCommonPrefix(labelSuffix, childLabelSuffix);
 
         // Insert new internal node between curNode and child.
         const newInternal = new RadixNode();
@@ -103,16 +103,16 @@ class RadixTree {
     return curNode;
   }
 
-  getFromTree(label) {
-    const hexLabel = RadixTree.toHexLabel(label);
-    const node = this.getRadixNodeForReading(hexLabel);
+  _getFromTree(label) {
+    const hexLabel = RadixTree._toHexLabel(label);
+    const node = this._getRadixNodeForReading(hexLabel);
     if (node === null) {
       return null;
     }
     return node.getStateNode();
   }
 
-  getFromMap(label) {
+  _getFromMap(label) {
     const child = this.stateNodeMap.get(label);
     if (child === undefined) {
       return null;
@@ -122,46 +122,46 @@ class RadixTree {
 
   get(label) {
     // NOTE(platfowner): Use hash map instead of radix tree as it faster.
-    return this.getFromMap(label);
+    return this._getFromMap(label);
   }
 
-  setInTree(label, stateNode) {
-    const hexLabel = RadixTree.toHexLabel(label);
-    const node = this.getRadixNodeForWriting(hexLabel);
+  _setInTree(label, stateNode) {
+    const hexLabel = RadixTree._toHexLabel(label);
+    const node = this._getRadixNodeForWriting(hexLabel);
     node.setStateNode(stateNode);
   }
 
-  setInMap(label, stateNode) {
+  _setInMap(label, stateNode) {
     this.stateNodeMap.set(label, stateNode);
   }
 
   set(label, stateNode) {
     // 1. Set in the radix tree.
-    this.setInTree(label, stateNode);
+    this._setInTree(label, stateNode);
     // 2. Set in the hash map.
-    this.setInMap(label, stateNode);
+    this._setInMap(label, stateNode);
   }
 
-  hasInTree(label) {
-    const hexLabel = RadixTree.toHexLabel(label);
-    const node = this.getRadixNodeForReading(hexLabel);
+  _hasInTree(label) {
+    const hexLabel = RadixTree._toHexLabel(label);
+    const node = this._getRadixNodeForReading(hexLabel);
     if (node === null) {
       return false;
     }
     return true;
   }
 
-  hasInMap(label) {
+  _hasInMap(label) {
     return this.stateNodeMap.has(label);
   }
 
   has(label) {
     // NOTE(platfowner): Use hash map instead of radix tree as it faster.
-    return this.hasInMap(label);
+    return this._hasInMap(label);
   }
 
-  mergeToChild(node) {
-    const LOG_HEADER = 'mergeToChild';
+  _mergeToChild(node) {
+    const LOG_HEADER = '_mergeToChild';
 
     if (node.numChildren() !== 1) {
       logger.error(`[${LOG_HEADER}] Trying to merge a node with children: ` +
@@ -188,11 +188,11 @@ class RadixTree {
     return true;
   }
 
-  deleteFromTree(label) {
-    const LOG_HEADER = 'deleteFromTree';
+  _deleteFromTree(label) {
+    const LOG_HEADER = '_deleteFromTree';
 
-    const hexLabel = RadixTree.toHexLabel(label);
-    const node = this.getRadixNodeForReading(hexLabel);
+    const hexLabel = RadixTree._toHexLabel(label);
+    const node = this._getRadixNodeForReading(hexLabel);
     if (node === null || !node.hasStateNode()) {
       logger.error(`[${LOG_HEADER}] Deleting a non-existing child with label: ${label}.`);
       // Does nothing.
@@ -200,7 +200,7 @@ class RadixTree {
     }
     node.resetStateNode();
     if (node.numChildren() === 1 && node.hasParent()) {
-      this.mergeToChild(node);
+      this._mergeToChild(node);
     } else if (node.numChildren() === 0) {
       if (!node.hasParent()) {
         logger.error(`[${LOG_HEADER}] Deleting a child without parent with label: ${label}.`);
@@ -210,20 +210,20 @@ class RadixTree {
       const parent = node.getParent();
       parent.deleteChild(node.getLabelRadix());
       if (parent.numChildren() === 1 && !parent.hasStateNode() && parent.hasParent()) {
-        this.mergeToChild(parent);
+        this._mergeToChild(parent);
       }
     }
   }
 
-  deleteFromMap(label) {
+  _deleteFromMap(label) {
     this.stateNodeMap.delete(label);
   }
 
   delete(label) {
     // 1. Delete from the radix tree.
-    this.deleteFromTree(label);
+    this._deleteFromTree(label);
     // 2. Delete from the hash map.
-    this.deleteFromMap(label);
+    this._deleteFromMap(label);
   }
 
   labels() {

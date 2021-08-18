@@ -6,54 +6,54 @@ const assert = chai.assert;
 
 describe("radix-tree", () => {
   describe("Static utils", () => {
-    it("toHexLabel", () => {
-      expect(RadixTree.toHexLabel('0x1234567890abcdef')).to.equal('1234567890abcdef');
-      expect(RadixTree.toHexLabel('aAzZ')).to.equal('61417a5a');
+    it("_toHexLabel", () => {
+      expect(RadixTree._toHexLabel('0x1234567890abcdef')).to.equal('1234567890abcdef');
+      expect(RadixTree._toHexLabel('aAzZ')).to.equal('61417a5a');
     });
 
-    it("matchLabelSuffix with empty label suffix", () => {
+    it("_matchLabelSuffix with empty label suffix", () => {
       const hexLabel = '1234567890abcdef';
       const node = new RadixNode();
       node.setLabelSuffix('');
-      expect(RadixTree.matchLabelSuffix(node, hexLabel, 0)).to.equal(true);
-      expect(RadixTree.matchLabelSuffix(node, hexLabel, 9)).to.equal(true);
-      expect(RadixTree.matchLabelSuffix(node, hexLabel, 10)).to.equal(true);
-      expect(RadixTree.matchLabelSuffix(node, hexLabel, 11)).to.equal(true);
-      expect(RadixTree.matchLabelSuffix(node, '', 0)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(node, hexLabel, 0)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(node, hexLabel, 9)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(node, hexLabel, 10)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(node, hexLabel, 11)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(node, '', 0)).to.equal(true);
     });
 
-    it("matchLabelSuffix with non-empty label suffix", () => {
+    it("_matchLabelSuffix with non-empty label suffix", () => {
       const hexLabel = '1234567890abcdef';
       const node = new RadixNode();
       // a shorter length
       node.setLabelSuffix('abc');
-      expect(RadixTree.matchLabelSuffix(node, hexLabel, 9)).to.equal(false);
-      expect(RadixTree.matchLabelSuffix(node, hexLabel, 10)).to.equal(true);
-      expect(RadixTree.matchLabelSuffix(node, hexLabel, 11)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(node, hexLabel, 9)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(node, hexLabel, 10)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(node, hexLabel, 11)).to.equal(false);
 
       // the same length
       node.setLabelSuffix('abcdef');
-      expect(RadixTree.matchLabelSuffix(node, hexLabel, 9)).to.equal(false);
-      expect(RadixTree.matchLabelSuffix(node, hexLabel, 10)).to.equal(true);
-      expect(RadixTree.matchLabelSuffix(node, hexLabel, 11)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(node, hexLabel, 9)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(node, hexLabel, 10)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(node, hexLabel, 11)).to.equal(false);
 
       // a longer length
       node.setLabelSuffix('abcdef123');
-      expect(RadixTree.matchLabelSuffix(node, hexLabel, 10)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(node, hexLabel, 10)).to.equal(false);
     });
 
-    it("getCommonPrefix", () => {
-      expect(RadixTree.getCommonPrefix('1234567890abcdef', '1234567890abcdef'))
+    it("_getCommonPrefix", () => {
+      expect(RadixTree._getCommonPrefix('1234567890abcdef', '1234567890abcdef'))
           .to.equal('1234567890abcdef');
-      expect(RadixTree.getCommonPrefix('1234567890000000', '1234567890abcdef'))
+      expect(RadixTree._getCommonPrefix('1234567890000000', '1234567890abcdef'))
           .to.equal('1234567890');
-      expect(RadixTree.getCommonPrefix('1234567890abcdef', '1234567890000000'))
+      expect(RadixTree._getCommonPrefix('1234567890abcdef', '1234567890000000'))
           .to.equal('1234567890');
-      expect(RadixTree.getCommonPrefix('1234567890', '1234567890abcdef'))
+      expect(RadixTree._getCommonPrefix('1234567890', '1234567890abcdef'))
           .to.equal('1234567890');
-      expect(RadixTree.getCommonPrefix('1234567890abcdef', '1234567890'))
+      expect(RadixTree._getCommonPrefix('1234567890abcdef', '1234567890'))
           .to.equal('1234567890');
-      expect(RadixTree.getCommonPrefix('1234567890abcdef', '01234567890abcdef'))
+      expect(RadixTree._getCommonPrefix('1234567890abcdef', '01234567890abcdef'))
           .to.equal('');
     });
   });
@@ -65,7 +65,7 @@ describe("radix-tree", () => {
       tree = new RadixTree();
     })
 
-    describe("setInMap / deleteFromMap / hasInMap / getFromMap / labels / stateNodes / size", () => {
+    describe("_setInMap / _deleteFromMap / _hasInMap / _getFromMap / labels / stateNodes / size", () => {
       const child1 = new RadixNode();
       const child2 = new RadixNode();
 
@@ -73,54 +73,54 @@ describe("radix-tree", () => {
         const label1 = '0x000111aaa';
         const label2 = '0x000111bbb';
 
-        expect(tree.getFromMap(label1)).to.equal(null);
-        expect(tree.getFromMap(label2)).to.equal(null);
-        expect(tree.hasInMap(label1)).to.equal(false);
-        expect(tree.hasInMap(label2)).to.equal(false);
+        expect(tree._getFromMap(label1)).to.equal(null);
+        expect(tree._getFromMap(label2)).to.equal(null);
+        expect(tree._hasInMap(label1)).to.equal(false);
+        expect(tree._hasInMap(label2)).to.equal(false);
         assert.deepEqual(tree.labels(), []);
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
 
         // set first child
-        tree.setInMap(label1, child1);
+        tree._setInMap(label1, child1);
 
-        expect(tree.getFromMap(label1)).to.equal(child1);
-        expect(tree.getFromMap(label2)).to.equal(null);
-        expect(tree.hasInMap(label1)).to.equal(true);
-        expect(tree.hasInMap(label2)).to.equal(false);
+        expect(tree._getFromMap(label1)).to.equal(child1);
+        expect(tree._getFromMap(label2)).to.equal(null);
+        expect(tree._hasInMap(label1)).to.equal(true);
+        expect(tree._hasInMap(label2)).to.equal(false);
         assert.deepEqual(tree.labels(), [label1]);
         assert.deepEqual(tree.stateNodes(), [child1]);
         assert.deepEqual(tree.size(), 1);
 
         // set second child
-        tree.setInMap(label2, child2);
+        tree._setInMap(label2, child2);
 
-        expect(tree.getFromMap(label1)).to.equal(child1);
-        expect(tree.getFromMap(label2)).to.equal(child2);
-        expect(tree.hasInMap(label1)).to.equal(true);
-        expect(tree.hasInMap(label2)).to.equal(true);
+        expect(tree._getFromMap(label1)).to.equal(child1);
+        expect(tree._getFromMap(label2)).to.equal(child2);
+        expect(tree._hasInMap(label1)).to.equal(true);
+        expect(tree._hasInMap(label2)).to.equal(true);
         assert.deepEqual(tree.labels(), [label1, label2]);
         assert.deepEqual(tree.stateNodes(), [child1, child2]);
         assert.deepEqual(tree.size(), 2);
 
         // delete first child
-        tree.deleteFromMap(label1);
+        tree._deleteFromMap(label1);
 
-        expect(tree.getFromMap(label1)).to.equal(null);
-        expect(tree.getFromMap(label2)).to.equal(child2);
-        expect(tree.hasInMap(label1)).to.equal(false);
-        expect(tree.hasInMap(label2)).to.equal(true);
+        expect(tree._getFromMap(label1)).to.equal(null);
+        expect(tree._getFromMap(label2)).to.equal(child2);
+        expect(tree._hasInMap(label1)).to.equal(false);
+        expect(tree._hasInMap(label2)).to.equal(true);
         assert.deepEqual(tree.labels(), [label2]);
         assert.deepEqual(tree.stateNodes(), [child2]);
         assert.deepEqual(tree.size(), 1);
 
         // delete second child
-        tree.deleteFromMap(label2);
+        tree._deleteFromMap(label2);
 
-        expect(tree.getFromMap(label1)).to.equal(null);
-        expect(tree.getFromMap(label2)).to.equal(null);
-        expect(tree.hasInMap(label1)).to.equal(false);
-        expect(tree.hasInMap(label2)).to.equal(false);
+        expect(tree._getFromMap(label1)).to.equal(null);
+        expect(tree._getFromMap(label2)).to.equal(null);
+        expect(tree._hasInMap(label1)).to.equal(false);
+        expect(tree._hasInMap(label2)).to.equal(false);
         assert.deepEqual(tree.labels(), []);
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
@@ -135,7 +135,7 @@ describe("radix-tree", () => {
       tree = new RadixTree();
     })
 
-    describe("setInTree / deleteFromTree / hasInTree / getFromTree", () => {
+    describe("_setInTree / _deleteFromTree / _hasInTree / _getFromTree", () => {
       const child1 = new RadixNode();
       const child2 = new RadixNode();
       const child21 = new RadixNode();
@@ -145,108 +145,108 @@ describe("radix-tree", () => {
         const label1 = '0xa';
         const label2 = '0xb';
 
-        expect(tree.hasInTree(label1)).to.equal(false);
-        expect(tree.hasInTree(label2)).to.equal(false);
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(false);
 
         // set first child
-        tree.setInTree(label1, child1);
+        tree._setInTree(label1, child1);
 
-        expect(tree.hasInTree(label1)).to.equal(true);
-        expect(tree.getFromTree(label1)).to.equal(child1);
-        expect(tree.hasInTree(label2)).to.equal(false);
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._hasInTree(label2)).to.equal(false);
 
         // set second child
-        tree.setInTree(label2, child2);
+        tree._setInTree(label2, child2);
 
-        expect(tree.hasInTree(label1)).to.equal(true);
-        expect(tree.getFromTree(label1)).to.equal(child1);
-        expect(tree.hasInTree(label2)).to.equal(true);
-        expect(tree.getFromTree(label2)).to.equal(child2);
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(child2);
 
         // delete first child
-        tree.deleteFromTree(label1);
+        tree._deleteFromTree(label1);
 
-        expect(tree.hasInTree(label1)).to.equal(false);
-        expect(tree.hasInTree(label2)).to.equal(true);
-        expect(tree.getFromTree(label2)).to.equal(child2);
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(child2);
 
         // delete second child
-        tree.deleteFromTree(label2);
+        tree._deleteFromTree(label2);
 
-        expect(tree.hasInTree(label1)).to.equal(false);
-        expect(tree.hasInTree(label2)).to.equal(false);
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(false);
       });
 
       it("set / delete with common label prefix", () => {
         const label1 = '0x000a';
         const label2 = '0x000b';
 
-        expect(tree.hasInTree(label1)).to.equal(false);
-        expect(tree.hasInTree(label2)).to.equal(false);
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(false);
 
         // set first child
-        tree.setInTree(label1, child1);
+        tree._setInTree(label1, child1);
 
-        expect(tree.hasInTree(label1)).to.equal(true);
-        expect(tree.getFromTree(label1)).to.equal(child1);
-        expect(tree.hasInTree(label2)).to.equal(false);
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._hasInTree(label2)).to.equal(false);
 
         // set second child
-        tree.setInTree(label2, child2);
+        tree._setInTree(label2, child2);
 
-        expect(tree.hasInTree(label1)).to.equal(true);
-        expect(tree.getFromTree(label1)).to.equal(child1);
-        expect(tree.hasInTree(label2)).to.equal(true);
-        expect(tree.getFromTree(label2)).to.equal(child2);
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(child2);
 
         // delete first child
-        tree.deleteFromTree(label1);
+        tree._deleteFromTree(label1);
 
-        expect(tree.hasInTree(label1)).to.equal(false);
-        expect(tree.hasInTree(label2)).to.equal(true);
-        expect(tree.getFromTree(label2)).to.equal(child2);
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(child2);
 
         // delete second child
-        tree.deleteFromTree(label2);
+        tree._deleteFromTree(label2);
 
-        expect(tree.hasInTree(label1)).to.equal(false);
-        expect(tree.hasInTree(label2)).to.equal(false);
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(false);
       });
 
       it("set / delete with non-empty label suffices", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
 
-        expect(tree.hasInTree(label1)).to.equal(false);
-        expect(tree.hasInTree(label2)).to.equal(false);
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(false);
 
         // set first child
-        tree.setInTree(label1, child1);
+        tree._setInTree(label1, child1);
 
-        expect(tree.hasInTree(label1)).to.equal(true);
-        expect(tree.getFromTree(label1)).to.equal(child1);
-        expect(tree.hasInTree(label2)).to.equal(false);
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._hasInTree(label2)).to.equal(false);
 
         // set second child
-        tree.setInTree(label2, child2);
+        tree._setInTree(label2, child2);
 
-        expect(tree.hasInTree(label1)).to.equal(true);
-        expect(tree.getFromTree(label1)).to.equal(child1);
-        expect(tree.hasInTree(label2)).to.equal(true);
-        expect(tree.getFromTree(label2)).to.equal(child2);
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(child2);
 
         // delete first child
-        tree.deleteFromTree(label1);
+        tree._deleteFromTree(label1);
 
-        expect(tree.hasInTree(label1)).to.equal(false);
-        expect(tree.hasInTree(label2)).to.equal(true);
-        expect(tree.getFromTree(label2)).to.equal(child2);
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(child2);
 
         // delete second child
-        tree.deleteFromTree(label2);
+        tree._deleteFromTree(label2);
 
-        expect(tree.hasInTree(label1)).to.equal(false);
-        expect(tree.hasInTree(label2)).to.equal(false);
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(false);
       });
 
       it("set / delete with grand children", () => {
@@ -256,32 +256,32 @@ describe("radix-tree", () => {
         const label22 = '0x000bbb222';
 
         // set first child
-        tree.setInTree(label1, child1);
+        tree._setInTree(label1, child1);
         // set second child
-        tree.setInTree(label2, child2);
+        tree._setInTree(label2, child2);
         // set grand children
-        tree.setInTree(label21, child21);
-        tree.setInTree(label22, child22);
+        tree._setInTree(label21, child21);
+        tree._setInTree(label22, child22);
 
-        expect(tree.hasInTree(label1)).to.equal(true);
-        expect(tree.getFromTree(label1)).to.equal(child1);
-        expect(tree.hasInTree(label2)).to.equal(true);
-        expect(tree.getFromTree(label2)).to.equal(child2);
-        expect(tree.hasInTree(label21)).to.equal(true);
-        expect(tree.getFromTree(label21)).to.equal(child21);
-        expect(tree.hasInTree(label22)).to.equal(true);
-        expect(tree.getFromTree(label22)).to.equal(child22);
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(child1);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(child2);
+        expect(tree._hasInTree(label21)).to.equal(true);
+        expect(tree._getFromTree(label21)).to.equal(child21);
+        expect(tree._hasInTree(label22)).to.equal(true);
+        expect(tree._getFromTree(label22)).to.equal(child22);
 
         // delete first child
-        tree.deleteFromTree(label1);
+        tree._deleteFromTree(label1);
 
-        expect(tree.hasInTree(label1)).to.equal(false);
-        expect(tree.hasInTree(label2)).to.equal(true);
-        expect(tree.getFromTree(label2)).to.equal(child2);
-        expect(tree.hasInTree(label21)).to.equal(true);
-        expect(tree.getFromTree(label21)).to.equal(child21);
-        expect(tree.hasInTree(label22)).to.equal(true);
-        expect(tree.getFromTree(label22)).to.equal(child22);
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(child2);
+        expect(tree._hasInTree(label21)).to.equal(true);
+        expect(tree._getFromTree(label21)).to.equal(child21);
+        expect(tree._hasInTree(label22)).to.equal(true);
+        expect(tree._getFromTree(label22)).to.equal(child22);
       });
     });
   });
