@@ -6,7 +6,7 @@ class RadixNode {
     this.labelRadix = '';
     this.labelSuffix = '';
     this.parent = null;
-    this.childMap = new Map();
+    this.radixChildMap = new Map();
   }
 
   getStateNode() {
@@ -74,7 +74,7 @@ class RadixNode {
   }
 
   getChild(labelRadix) {
-    const child = this.childMap.get(labelRadix);
+    const child = this.radixChildMap.get(labelRadix);
     if (child === undefined) {
       return null;
     }
@@ -89,7 +89,7 @@ class RadixNode {
       // Does nothing.
       return false;
     }
-    this.childMap.set(labelRadix, child);
+    this.radixChildMap.set(labelRadix, child);
     child.setLabelRadix(labelRadix);
     child.setLabelSuffix(labelSuffix);
     child.setParent(this);
@@ -100,7 +100,7 @@ class RadixNode {
     if (!labelRadix) {
       return this.numChildren() > 0;
     }
-    return this.childMap.has(labelRadix);
+    return this.radixChildMap.has(labelRadix);
   }
 
   deleteChild(labelRadix) {
@@ -111,7 +111,7 @@ class RadixNode {
       return false;
     }
     const child = this.getChild(labelRadix);
-    this.childMap.delete(labelRadix);
+    this.radixChildMap.delete(labelRadix);
     child.resetLabelRadix();
     child.resetLabelSuffix();
     child.resetParent();
@@ -119,15 +119,15 @@ class RadixNode {
   }
 
   getChildLabelRadices() {
-    return [...this.childMap.keys()];
+    return [...this.radixChildMap.keys()];
   }
 
   getChildNodes() {
-    return [...this.childMap.values()];
+    return [...this.radixChildMap.values()];
   }
 
   numChildren() {
-    return this.childMap.size;
+    return this.radixChildMap.size;
   }
 
   toJsObject() {
