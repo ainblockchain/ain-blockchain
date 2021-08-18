@@ -18,7 +18,7 @@ describe("radix-node", () => {
       expect(node.labelRadix).to.equal('');
       expect(node.labelSuffix).to.equal('');
       expect(node.parent).to.equal(null);
-      expect(node.childMap.size).to.equal(0);
+      expect(node.radixChildMap.size).to.equal(0);
     });
   });
 

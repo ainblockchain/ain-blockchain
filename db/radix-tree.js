@@ -3,10 +3,15 @@ const logger = require('../logger')('RADIX_TREE');
 const CommonUtil = require('../common/common-util');
 const RadixNode = require('./radix-node');
 
+/**
+ * A database for (label, stateNode) pairs. For efficient update and retrieval of proof hashes,
+ * it uses a radix tree internally.
+ */
+// TODO(platfowner): Add access methods for proof hashes.
 class RadixTree {
   constructor() {
     this.root = new RadixNode();
-    this.childMap = new Map();
+    this.stateNodeMap = new Map();
   }
 
   static toHexLabel(label) {
@@ -35,7 +40,7 @@ class RadixTree {
     return label1.slice(0, labelIndex);
   }
 
-  getNodeForReading(hexLabel) {
+  getRadixNodeForReading(hexLabel) {
     let curNode = this.root
     let labelIndex = 0;
     while (labelIndex < hexLabel.length) {
@@ -53,7 +58,7 @@ class RadixTree {
     return curNode;
   }
 
-  getNodeForWriting(hexLabel) {
+  getRadixNodeForWriting(hexLabel) {
     let curNode = this.root
     let labelIndex = 0;
     while (labelIndex < hexLabel.length) {
@@ -100,7 +105,7 @@ class RadixTree {
 
   getFromTree(label) {
     const hexLabel = RadixTree.toHexLabel(label);
-    const node = this.getNodeForReading(hexLabel);
+    const node = this.getRadixNodeForReading(hexLabel);
     if (node === null) {
       return null;
     }
@@ -108,7 +113,7 @@ class RadixTree {
   }
 
   getFromMap(label) {
-    const child = this.childMap.get(label);
+    const child = this.stateNodeMap.get(label);
     if (child === undefined) {
       return null;
     }
@@ -122,12 +127,12 @@ class RadixTree {
 
   setInTree(label, stateNode) {
     const hexLabel = RadixTree.toHexLabel(label);
-    const node = this.getNodeForWriting(hexLabel);
+    const node = this.getRadixNodeForWriting(hexLabel);
     node.setStateNode(stateNode);
   }
 
   setInMap(label, stateNode) {
-    this.childMap.set(label, stateNode);
+    this.stateNodeMap.set(label, stateNode);
   }
 
   set(label, stateNode) {
@@ -139,7 +144,7 @@ class RadixTree {
 
   hasInTree(label) {
     const hexLabel = RadixTree.toHexLabel(label);
-    const node = this.getNodeForReading(hexLabel);
+    const node = this.getRadixNodeForReading(hexLabel);
     if (node === null) {
       return false;
     }
@@ -147,7 +152,7 @@ class RadixTree {
   }
 
   hasInMap(label) {
-    return this.childMap.has(label);
+    return this.stateNodeMap.has(label);
   }
 
   has(label) {
@@ -187,14 +192,14 @@ class RadixTree {
     const LOG_HEADER = 'deleteFromTree';
 
     const hexLabel = RadixTree.toHexLabel(label);
-    const node = this.getNodeForReading(hexLabel);
+    const node = this.getRadixNodeForReading(hexLabel);
     if (node === null || !node.hasStateNode()) {
       logger.error(`[${LOG_HEADER}] Deleting a non-existing child with label: ${label}.`);
       // Does nothing.
       return false;
     }
     node.resetStateNode();
-    if (node.numChildren() === 1) {
+    if (node.numChildren() === 1 && node.hasParent()) {
       this.mergeToChild(node);
     } else if (node.numChildren() === 0) {
       if (!node.hasParent()) {
@@ -211,7 +216,7 @@ class RadixTree {
   }
 
   deleteFromMap(label) {
-    this.childMap.delete(label);
+    this.stateNodeMap.delete(label);
   }
 
   delete(label) {
@@ -222,15 +227,15 @@ class RadixTree {
   }
 
   labels() {
-    return [...this.childMap.keys()];
+    return [...this.stateNodeMap.keys()];
   }
 
   stateNodes() {
-    return [...this.childMap.values()];
+    return [...this.stateNodeMap.values()];
   }
 
   size() {
-    return this.childMap.size;
+    return this.stateNodeMap.size;
   }
 
   toJsObject() {
