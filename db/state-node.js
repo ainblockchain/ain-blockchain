@@ -12,11 +12,11 @@ class StateNode {
   constructor(version) {
     this.version = version || null;
     this.isLeaf = true;
+    // Used for leaf nodes only.
+    this.value = null;
     this.parentSet = new Set();
     // Used for internal nodes only.
     this.childMap = new Map();
-    // Used for leaf nodes only.
-    this.value = null;
     this.proofHash = null;
     this.treeHeight = 0;
     this.treeSize = 0;
