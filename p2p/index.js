@@ -6,6 +6,7 @@ const logger = require('../logger')('P2P_CLIENT');
 const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const {
+  HOSTING_ENV,
   PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
@@ -15,7 +16,7 @@ const {
   DEFAULT_MAX_INBOUND,
   MAX_OUTBOUND_LIMIT,
   MAX_INBOUND_LIMIT,
-  NETWORK_ID
+  NETWORK_ID,
 } = require('../common/constants');
 const { sleep } = require('../common/common-util');
 const {
@@ -96,14 +97,16 @@ class P2pClient {
   }
 
   getNetworkStatus() {
+    const intIp = this.server.getInternalIp();
     const extIp = this.server.getExternalIp();
-    const url = new URL(`ws://${extIp}:${P2P_PORT}`);
-    const p2pUrl = url.toString();
-    url.protocol = 'http:';
-    url.port = PORT;
-    const clientApiUrl = url.toString();
-    url.pathname = 'json-rpc';
-    const jsonRpcUrl = url.toString();
+    const intUrl = new URL(`ws://${intIp}:${P2P_PORT}`);
+    const extUrl = new URL(`ws://${extIp}:${P2P_PORT}`);
+    const p2pUrl = HOSTING_ENV === 'comcom' ? intUrl.toString() : extUrl.toString();
+    extUrl.protocol = 'http:';
+    extUrl.port = PORT;
+    const clientApiUrl = extUrl.toString();
+    extUrl.pathname = 'json-rpc';
+    const jsonRpcUrl = extUrl.toString();
     return {
       ip: extIp,
       p2p: {
