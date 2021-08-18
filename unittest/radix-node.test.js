@@ -1,9 +1,8 @@
 const RadixNode = require('../db/radix-node');
+const StateNode = require('../db/state-node');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
-
-const StateNode = require('../db/state-node');
 
 describe("radix-node", () => {
   let node;
@@ -259,4 +258,36 @@ describe("radix-node", () => {
       expect(child2.numChildren()).to.equal(0);
     });
   });
+
+  describe("utils", () => {
+    it("toJsObject", () => {
+      const child1 = new RadixNode();
+      const child2 = new RadixNode();
+      const grandChild21 = new RadixNode();
+      const grandChild22 = new RadixNode();
+      const stateNode1 = new StateNode();
+      const stateNode22 = new RadixNode();
+      node.setChild('0', '001', child1);
+      node.setChild('1', '002', child2);
+      child2.setChild('2', '021', grandChild21);
+      child2.setChild('3', '022', grandChild22);
+      child1.setStateNode(stateNode1);
+      grandChild22.setStateNode(stateNode22);
+      assert.deepEqual(node.toJsObject(), {
+        "0:001": {
+          "->": true
+        },
+        "1:002": {
+          "->": false,
+          "2:021": {
+            "->": false
+          },
+          "3:022": {
+            "->": true
+          }
+        }
+      });
+    });
+  });
+
 });

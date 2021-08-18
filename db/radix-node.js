@@ -133,10 +133,17 @@ class RadixNode {
     return this.radixChildMap.size;
   }
 
+  /**
+   * Converts the subtree to a js object.
+   * This is for testing / debugging purpose.
+   */
   toJsObject() {
     const obj = {};
+    if (this.hasParent()) {
+      obj['->'] = this.hasStateNode();
+    }
     for (const child of this.getChildNodes()) {
-      obj[child.getLabelRadix() + child.getLabelSuffix()] = child.toJsObject();
+      obj[child.getLabelRadix() + ':' + child.getLabelSuffix()] = child.toJsObject();
     }
     return obj;
   }
