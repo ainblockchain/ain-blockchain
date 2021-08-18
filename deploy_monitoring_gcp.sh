@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 if [[ "$#" -lt 2 ]]; then
-    echo "Usage: sh deploy_monitoring_gcp.sh [dev|staging|spring|summer] <GCP Username>"
-    echo "Example: sh deploy_monitoring_gcp.sh dev seo"
+    echo "Usage: bash deploy_monitoring_gcp.sh [dev|staging|spring|summer] <GCP Username>"
+    echo "Example: bash deploy_monitoring_gcp.sh dev seo"
     exit
 fi
 
