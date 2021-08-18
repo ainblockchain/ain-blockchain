@@ -5,10 +5,6 @@
     "NETWORK_ID": 0,
     "CHAIN_ID": 0,
     "HOSTING_ENV": "local",
-    "COMCOM_HOST_INTERNAL_IP_MAP": {
-      "aincom1": "192.168.1.13",
-      "aincom2": "192.168.1.14"
-    },
     "TRACKER_WS_ADDR": "ws://localhost:6000",
     "MAX_SHARD_REPORT": 100,
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
