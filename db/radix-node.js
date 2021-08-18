@@ -1,5 +1,8 @@
 const logger = require('../logger')('RADIX_NODE');
 
+/**
+ * Implements a radix node, which is used as a component of RadixTree.
+ */
 class RadixNode {
   constructor() {
     this.stateNode = null;
