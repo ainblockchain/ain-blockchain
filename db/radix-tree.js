@@ -145,10 +145,7 @@ class RadixTree {
   _hasInTree(label) {
     const hexLabel = RadixTree._toHexLabel(label);
     const node = this._getRadixNodeForReading(hexLabel);
-    if (node === null) {
-      return false;
-    }
-    return true;
+    return node !== null;
   }
 
   _hasInMap(label) {
@@ -200,7 +197,7 @@ class RadixTree {
     }
     node.resetStateNode();
     if (node.numChildren() === 1 && node.hasParent()) {
-      this._mergeToChild(node);
+      return this._mergeToChild(node);
     } else if (node.numChildren() === 0) {
       if (!node.hasParent()) {
         logger.error(`[${LOG_HEADER}] Deleting a child without parent with label: ${label}.`);
@@ -210,9 +207,10 @@ class RadixTree {
       const parent = node.getParent();
       parent.deleteChild(node.getLabelRadix());
       if (parent.numChildren() === 1 && !parent.hasStateNode() && parent.hasParent()) {
-        this._mergeToChild(parent);
+        return this._mergeToChild(parent);
       }
     }
+    return true;
   }
 
   _deleteFromMap(label) {
