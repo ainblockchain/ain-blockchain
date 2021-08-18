@@ -34,8 +34,12 @@ class RuleUtil {
         (this.isDict(value) && Object.keys(value).length === 0);
   }
 
+  isHexString(value) {
+    return this.isString(value) && /^0x[0-9A-Fa-f]*$/.test(value);
+  }
+
   isValidHash(value) {
-    return this.isString(value) && /^0x([A-Fa-f0-9]{64})$/.test(value);
+    return this.isHexString(value) && value.length === 66;
   }
 
   keys(value) {

@@ -97,6 +97,10 @@ class CommonUtil {
     return ruleUtil.isEmpty(value);
   }
 
+  static isHexString(value) {
+    return ruleUtil.isHexString(value);
+  }
+
   static isValidHash(value) {
     return ruleUtil.isValidHash(value);
   }
@@ -141,6 +145,31 @@ class CommonUtil {
     return ruleUtil.toNumberOrNaN(value);
   }
 
+  static toString(value) {
+    if (CommonUtil.isBool(value)) {
+      return value.toString();
+    } else if (CommonUtil.isNumber(value)) {
+      return value.toString();
+    } else if (CommonUtil.isString(value)) {
+      return value;
+    } else if (value === undefined) {
+      return '';
+    } else {
+      return JSON.stringify(value);
+    }
+  }
+
+  /**
+   * Converts the given string to a hex string (with lower case).
+   */
+  static toHexString(str) {
+    if (this.isHexString(str)) {
+      return str.toLowerCase();
+    }
+    const hexStr = this.isString(str) ? Buffer.from(str).toString('hex') : '';
+    return '0x' + hexStr;
+  }
+
   static toCksumAddr(addr) {
     return ruleUtil.toCksumAddr(addr);
   }
@@ -165,20 +194,6 @@ class CommonUtil {
 
   static toEscrowAccountName(source, target, escrowKey) {
     return ruleUtil.toEscrowAccountName(source, target, escrowKey);
-  }
-
-  static toString(value) {
-    if (CommonUtil.isBool(value)) {
-      return value.toString();
-    } else if (CommonUtil.isNumber(value)) {
-      return value.toString();
-    } else if (CommonUtil.isString(value)) {
-      return value;
-    } else if (value === undefined) {
-      return '';
-    } else {
-      return JSON.stringify(value);
-    }
   }
 
   static toGetOptions(args) {
