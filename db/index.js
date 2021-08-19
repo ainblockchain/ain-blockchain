@@ -1181,7 +1181,7 @@ class DB {
     executionResult.gas_amount_charged = gasAmountChargedByTransfer;
     executionResult.gas_cost_total = CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged);
     if (executionResult.gas_cost_total <= 0) return;
-    const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(billedTo, blockNumber, tx.hash);
+    const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(blockNumber, billedTo, tx.hash);
     const gasFeeCollectRes = this.setValue(
         gasFeeCollectPath, { amount: executionResult.gas_cost_total }, auth, timestamp, tx);
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) { // Should not happend

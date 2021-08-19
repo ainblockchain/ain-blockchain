@@ -274,6 +274,21 @@ class RuleUtil {
         (data.response.status === FunctionResultCode.SUCCESS ||
         data.response.status === FunctionResultCode.FAILURE);
   }
+
+  validateClaimRewardData(userAddr, data, getValue) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    if (!this.isDict(data) || !this.isNumber(data.amount) || data.amount <= 0) {
+      return false;
+    }
+    const unclaimed = getValue(`/${PredefinedDbPaths.CONSENSUS}/${PredefinedDbPaths.REWARDS}/` +
+        `${userAddr}/${PredefinedDbPaths.REWARDS_UNCLAIMED}`) || 0;
+    return data.amount <= unclaimed;
+  }
+
+  validateCollectFeeData(data, newData, from, getValue) {
+    return data === null && this.isDict(newData) && this.isNumber(newData.amount) &&
+        newData.amount <= this.getBalance(from, getValue);
+  }
 }
 
 module.exports = RuleUtil;

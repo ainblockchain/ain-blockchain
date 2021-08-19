@@ -94,9 +94,21 @@
     }
   },
   "gas_fee": {
+    "claim": {
+      "$user_addr": {
+        "$record_id": {
+          ".function": {
+            "_claimReward": {
+              "function_type": "NATIVE",
+              "function_id": "_claimReward"
+            }
+          }
+        }
+      }
+    },
     "collect": {
-      "$from": {
-        "$block_number": {
+      "$block_number": {
+        "$from": {
           "$tx_hash": {
             ".function": {
               "_collectFee": {

@@ -164,6 +164,9 @@ const PredefinedDbPaths = {
   BLOCK_HASH: 'block_hash',
   STAKE: 'stake',
   PROPOSAL_RIGHT: 'proposal_right',
+  REWARDS: 'rewards',
+  REWARDS_UNCLAIMED: 'unclaimed',
+  REWARDS_CUMULATIVE: 'cumulative',
   // Receipts
   RECEIPTS: 'receipts',
   RECEIPTS_ADDRESS: 'address',
@@ -174,11 +177,14 @@ const PredefinedDbPaths = {
   RECEIPTS_EXEC_RESULT_ERROR_MESSAGE: 'error_message',
   RECEIPTS_EXEC_RESULT_GAS_AMOUNT_CHARGED: 'gas_amount_charged',
   RECEIPTS_EXEC_RESULT_GAS_COST_TOTAL: 'gas_cost_total',
+  RECEIPTS_EXEC_RESULT_RESULT_LIST: 'result_list',
   // Gas fee
   GAS_FEE: 'gas_fee',
+  CLAIM: 'claim',
   COLLECT: 'collect',
   BILLING: 'billing',
   GAS_FEE_AMOUNT: 'amount',
+  GAS_FEE_UNCLAIMED: 'unclaimed',
   // Token
   TOKEN: 'token',
   TOKEN_BRIDGE: 'bridge',
@@ -371,6 +377,7 @@ const StateInfoProperties = {
  */
 const NativeFunctionIds = {
   CLAIM: '_claim',
+  CLAIM_REWARD: '_claimReward',
   CLOSE_CHECKIN: '_closeCheckin',
   CLOSE_CHECKOUT: '_closeCheckout',
   COLLECT_FEE: '_collectFee',
@@ -489,6 +496,8 @@ const FunctionResultCode = {
   INVALID_CHECKOUT_AMOUNT: 401,
   INVALID_RECIPIENT: 402,
   INVALID_TOKEN_BRIDGE_CONFIG: 403,
+  // Claim reward
+  INVALID_AMOUNT: 500,
 };
 
 /**

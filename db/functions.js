@@ -50,6 +50,8 @@ class Functions {
     this.nativeFunctionMap = {
       [NativeFunctionIds.CLAIM]: {
         func: this._claim.bind(this), ownerOnly: true, extraGasAmount: 0 },
+      [NativeFunctionIds.CLAIM_REWARD]: {
+        func: this._claimReward.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CLOSE_CHECKIN]: {
         func: this._closeCheckin.bind(this), ownerOnly: true, extraGasAmount: 10 },
       [NativeFunctionIds.CLOSE_CHECKOUT]: {
@@ -612,9 +614,8 @@ class Functions {
 
   _collectFee(value, context) {
     const from = context.params.from;
-    const blockNumber = context.params.block_number;
     const gasFeeServiceAccountName = CommonUtil.toServiceAccountName(
-        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, blockNumber);
+        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE_UNCLAIMED);
     const result =
         this.setServiceAccountTransferOrLog(from, gasFeeServiceAccountName, value.amount, context);
     if (!CommonUtil.isFailedTx(result)) {
@@ -625,23 +626,59 @@ class Functions {
     }
   }
 
+  incrementConsensusRewards(address, amount, context) {
+    const rewardsPath = PathUtil.getConsensusRewardsPath(address);
+    const prevRewards = this.db.getValue(rewardsPath) || {};
+    return this.setValueOrLog(rewardsPath, {
+      [PredefinedDbPaths.REWARDS_UNCLAIMED]: (prevRewards[PredefinedDbPaths.REWARDS_UNCLAIMED] || 0) + amount,
+      [PredefinedDbPaths.REWARDS_CUMULATIVE]: (prevRewards[PredefinedDbPaths.REWARDS_CUMULATIVE] || 0) + amount
+    }, context);
+  }
+
   _distributeFee(value, context) {
     const blockNumber = context.params.number;
-    const gasCostTotal = value.gas_cost_total;
-    const proposer = value.proposer;
+    if (blockNumber <= 1) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    const lastConsensusRound = this.db.getValue(PathUtil.getConsensusNumberPath(blockNumber - 1));
+    const gasCostTotal = lastConsensusRound.propose.gas_cost_total;
     if (gasCostTotal <= 0) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
+    const proposer = lastConsensusRound.propose.proposer;
+    const totalAtStake = Object.values(lastConsensusRound.vote).reduce((acc, cur) => acc + cur.stake, 0);
+    const validators = Object.keys(lastConsensusRound.vote);
+    const proposerReward = gasCostTotal / 2;
+    const validatorRewardTotal = gasCostTotal - proposerReward;
+    this.incrementConsensusRewards(proposer, proposerReward, context);
+    for (const validator of validators) {
+      const validatorStake = lastConsensusRound.vote[validator].stake;
+      this.incrementConsensusRewards(
+          validator, validatorRewardTotal * (validatorStake / totalAtStake), context);
+    }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+  }
+
+  _claimReward(value, context) {
+    const addr = context.params.user_addr;
+    const unclaimedRewardsPath = PathUtil.getConsensusRewardsUnclaimedPath(addr);
+    const unclaimedRewards = this.db.getValue(unclaimedRewardsPath) || 0;
+    if (unclaimedRewards < value.amount) {
+      return this.returnFuncResult(context, FunctionResultCode.INVALID_AMOUNT);
+    }
     const gasFeeServiceAccountName = CommonUtil.toServiceAccountName(
-        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, blockNumber);
-    const result = this.setServiceAccountTransferOrLog(
-        gasFeeServiceAccountName, proposer, gasCostTotal, context);
-    if (!CommonUtil.isFailedTx(result)) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    } else {
-      logger.error(`  ===> _distributeFee failed: ${JSON.stringify(result)}`);
+      PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE_UNCLAIMED);
+    const transferRes = this.setServiceAccountTransferOrLog(gasFeeServiceAccountName, addr, value.amount, context);
+    if (CommonUtil.isFailedTx(transferRes)) {
+      logger.error(`  ===> _claimReward failed: ${JSON.stringify(transferRes)}`);
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
+    const updateUnclaimedRes = this.setValueOrLog(unclaimedRewardsPath, unclaimedRewards - value.amount, context);
+    if (CommonUtil.isFailedTx(updateUnclaimedRes)) {
+      logger.error(`  ===> _claimReward failed: ${JSON.stringify(updateUnclaimedRes)}`);
+      return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
+    }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
   _stake(value, context) {
