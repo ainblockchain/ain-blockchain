@@ -128,7 +128,7 @@ class RadixTree {
   _setInTree(label, stateNode) {
     const hexLabel = RadixTree._toHexLabel(label);
     const node = this._getRadixNodeForWriting(hexLabel);
-    node.setStateNode(stateNode);
+    return node.setStateNode(stateNode);
   }
 
   _setInMap(label, stateNode) {
@@ -137,9 +137,12 @@ class RadixTree {
 
   set(label, stateNode) {
     // 1. Set in the radix tree.
-    this._setInTree(label, stateNode);
+    if (!this._setInTree(label, stateNode)) {
+      return false;
+    }
     // 2. Set in the hash map.
     this._setInMap(label, stateNode);
+    return true;
   }
 
   _hasInTree(label) {

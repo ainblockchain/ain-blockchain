@@ -26,12 +26,21 @@ describe("radix-node", () => {
       const stateNode = new StateNode();
       expect(node.getStateNode()).to.equal(null);
       expect(node.hasStateNode()).to.equal(false);
-      node.setStateNode(stateNode);
+      expect(node.setStateNode(stateNode)).to.equal(true);
       expect(node.getStateNode()).to.equal(stateNode);
       expect(node.hasStateNode()).to.equal(true);
       node.resetStateNode();
       expect(node.getStateNode()).to.equal(null);
       expect(node.hasStateNode()).to.equal(false);
+    });
+
+    it("set with invalid state node", () => {
+      const invalidStateNode = new RadixNode();
+      expect(node.setStateNode(invalidStateNode)).to.equal(false);
+      expect(node.setStateNode('')).to.equal(false);
+      expect(node.setStateNode(true)).to.equal(false);
+      expect(node.setStateNode(null)).to.equal(false);
+      expect(node.setStateNode(undefined)).to.equal(false);
     });
   });
 
@@ -266,7 +275,7 @@ describe("radix-node", () => {
       const grandChild21 = new RadixNode();
       const grandChild22 = new RadixNode();
       const stateNode1 = new StateNode();
-      const stateNode22 = new RadixNode();
+      const stateNode22 = new StateNode();
       node.setChild('0', '001', child1);
       node.setChild('1', '002', child2);
       child2.setChild('2', '021', grandChild21);
