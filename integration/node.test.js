@@ -7106,6 +7106,9 @@ describe('Blockchain Node', () => {
           signature,
           protoVer: CURRENT_PROTOCOL_VERSION
         });
+        if (!(await waitUntilTxFinalized(serverList, _.get(res, 'result.result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
         assert.deepEqual(_.get(res, 'result.result.result'), {
           "gas_amount_total": {
             "bandwidth": {
@@ -7352,7 +7355,7 @@ describe('Blockchain Node', () => {
       const tx = parseOrLog(syncRequest('GET', server2 + `/get_transaction?hash=${txRes.tx_hash}`).body.toString('utf-8')).result;
       const gasFeeCollected = parseOrLog(syncRequest(
         'GET',
-        `${server2}/get_value?ref=/gas_fee/collect/${billingUserA}/${tx.number}/${txRes.tx_hash}/amount`
+        `${server2}/get_value?ref=/gas_fee/collect/${tx.number}/${billingUserA}/${txRes.tx_hash}/amount`
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
@@ -7430,7 +7433,7 @@ describe('Blockchain Node', () => {
       const tx = parseOrLog(syncRequest('GET', server2 + `/get_transaction?hash=${txRes.tx_hash}`).body.toString('utf-8')).result;
       const gasFeeCollected = parseOrLog(syncRequest(
         'GET',
-        `${server2}/get_value?ref=/gas_fee/collect/${billingUserA}/${tx.number}/${txRes.tx_hash}/amount`
+        `${server2}/get_value?ref=/gas_fee/collect/${tx.number}/${billingUserA}/${txRes.tx_hash}/amount`
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
@@ -7490,7 +7493,7 @@ describe('Blockchain Node', () => {
       const tx = parseOrLog(syncRequest('GET', server2 + `/get_transaction?hash=${txRes.tx_hash}`).body.toString('utf-8')).result;
       const gasFeeCollected = parseOrLog(syncRequest(
         'GET',
-        `${server2}/get_value?ref=/gas_fee/collect/${billingUserA}/${tx.number}/${txRes.tx_hash}/amount`
+        `${server2}/get_value?ref=/gas_fee/collect/${tx.number}/${billingUserA}/${txRes.tx_hash}/amount`
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
@@ -7681,7 +7684,7 @@ describe('Blockchain Node', () => {
       // Failed tx's gas fees have been collected
       const blockNumber = receipt.block_number;
       const gasFeeCollected = parseOrLog(syncRequest(
-        'GET', server2 + `/get_value?ref=/gas_fee/collect/${server1Address}/${blockNumber}/${txHash}/amount`
+        'GET', server2 + `/get_value?ref=/gas_fee/collect/${blockNumber}/${server1Address}/${txHash}/amount`
       ).body.toString('utf-8')).result;
       assert.deepEqual(gasFeeCollected, body.result.result.gas_cost_total);
 
