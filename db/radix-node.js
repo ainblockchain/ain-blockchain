@@ -1,6 +1,10 @@
 const logger = require('../logger')('RADIX_NODE');
 
+const CommonUtil = require('../common/common-util');
 const StateNode = require('./state-node');
+const {
+  HASH_DELIMITER,
+} = require('../common/constants');
 
 /**
  * Implements a radix node, which is used as a component of RadixTree.
@@ -142,6 +146,43 @@ class RadixNode {
 
   numChildren() {
     return this.radixChildMap.size;
+  }
+
+  getProofHash() {
+    return this.proofHash;
+  }
+
+  setProofHash(proofHash) {
+    this.proofHash = proofHash;
+  }
+
+  hasProofHash() {
+    return this.getProofHash() !== null;
+  }
+
+  resetProofHash() {
+    this.setProofHash(null);
+  }
+
+  _buildProofHash() {
+    let preimage = '';
+    if (this.hasStateNode()) {
+      preimage = this.getStateNode().getProofHash();
+    }
+    preimage += `${HASH_DELIMITER}${HASH_DELIMITER}`;
+    preimage += this.getChildNodes().map((child) => {
+      const childLabel = `${child.getLabelRadix()}${child.getLabelSuffix()}`;
+      return `${childLabel}${HASH_DELIMITER}${child.getProofHash()}`;
+    }, '').join(HASH_DELIMITER);
+    return CommonUtil.hashString(preimage);
+  }
+
+  verifyProofHash() {
+    return this.getProofHash() === this._buildProofHash();
+  }
+
+  updateProofHash() {
+    this.setProofHash(this._buildProofHash());
   }
 
   /**
