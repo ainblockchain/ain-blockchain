@@ -779,6 +779,94 @@ describe("radix-tree", () => {
           }
         });
       });
+
+      it("get / has / set / update / verify proof hash", () => {
+        const label1 = '0x000aaa';
+        const stateNode1 = new StateNode();
+        const stateNodePH1 = 'childStateNodePH1';
+        stateNode1.setProofHash(stateNodePH1);
+
+        const label11 = '0x000aaa111';
+        const stateNodePH11 = 'childStateNodePH11';
+        const stateNode11 = new StateNode();
+        stateNode11.setProofHash(stateNodePH11);
+
+        const label12 = '0x000aaa212';
+        const stateNodePH12 = 'childStateNodePH12';
+        const stateNode12 = new StateNode();
+        stateNode12.setProofHash(stateNodePH12);
+
+        const label21 = '0x000bbb121';
+        const stateNodePH21 = 'childStateNodePH21';
+        const stateNode21 = new StateNode();
+        stateNode21.setProofHash(stateNodePH21);
+
+        const label22 = '0x000bbb222';
+        const stateNodePH22 = 'childStateNodePH22';
+        const stateNode22 = new StateNode();
+        stateNode22.setProofHash(stateNodePH22);
+
+        const label3 = '0x111ccc';
+        const stateNode3 = new StateNode();
+        const stateNodePH3 = 'childStateNodePH3';
+        stateNode3.setProofHash(stateNodePH3);
+
+        tree.set(label1, stateNode1);
+        tree.set(label11, stateNode11);
+        tree.set(label12, stateNode12);
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
+        tree.set(label3, stateNode3);
+
+        assert.deepEqual(tree.toJsObject(), {
+          "0:00": {
+            "->": false,
+            "a:aa": {
+              "->": true,
+              "1:11": {
+                "->": true
+              },
+              "2:12": {
+                "->": true
+              }
+            },
+            "b:bb": {
+              "->": false,
+              "1:21": {
+                "->": true
+              },
+              "2:22": {
+                "->": true
+              }
+            }
+          },
+          "1:11ccc": {
+            "->": true
+          }
+        });
+
+        // initial status
+        expect(tree.hasRootProofHash()).to.equal(false);
+        expect(tree.getRootProofHash()).to.equal(null);
+        expect(tree.verifyProofHashForRadixTree()).to.equal(false);
+
+        // set
+        expect(tree.setProofHashForRadixTree()).to.equal(9);
+        expect(tree.hasRootProofHash()).to.equal(true);
+        expect(tree.getRootProofHash()).to.equal(
+            '0xbc310c6c1b9d339951756d3c0f90bb25e70be0c0a261e04564917ce6c57016d5');
+        expect(tree.verifyProofHashForRadixTree()).to.equal(true);
+
+        // change of a state node's proof hash
+        stateNode21.setProofHash('another PH');
+        expect(tree.verifyProofHashForRadixTree()).to.equal(false);
+
+        // update
+        expect(tree.updateProofHashForRootPath(label21)).to.equal(4);
+        expect(tree.getRootProofHash()).to.equal(
+            '0x20520d0c668099565300affd3c4b288fb59dc37b9fbf31702e99a37b564d12d5');
+        expect(tree.verifyProofHashForRadixTree()).to.equal(true);
+      });
     });
   });
 });

@@ -185,6 +185,42 @@ class RadixNode {
     this.setProofHash(this._buildProofHash());
   }
 
+  setProofHashForRadixTree() {
+    let numAffectedNodes = 0;
+    for (const child of this.getChildNodes()) {
+      numAffectedNodes += child.setProofHashForRadixTree();
+    }
+    this.updateProofHash();
+    numAffectedNodes++;
+
+    return numAffectedNodes;
+  }
+
+  updateProofHashForRootPath() {
+    let numAffectedNodes = 0;
+    let curNode = this;
+    curNode.updateProofHash();
+    numAffectedNodes++;
+    while (curNode.hasParent()) {
+      curNode = curNode.getParent();
+      curNode.updateProofHash();
+      numAffectedNodes++;
+    }
+    return numAffectedNodes;
+  }
+
+  verifyProofHashForRadixTree() {
+    if (!this.verifyProofHash()) {
+      return false;
+    }
+    for (const child of this.getChildNodes()) {
+      if (!child.verifyProofHashForRadixTree()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /**
    * Converts the subtree to a js object.
    * This is for testing / debugging purpose.
