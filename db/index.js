@@ -1193,12 +1193,22 @@ class DB {
   }
 
   static trimExecutionResult(executionResult) {
-    return _.pick(executionResult, [
+    const trimmed = _.pick(executionResult, [
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_AMOUNT_CHARGED,
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_COST_TOTAL,
     ]);
+    if (executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST]) {
+      trimmed[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST] = {};
+      for (const [key, val] of Object.entries(executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST])) {
+        trimmed[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST][key] = _.pick(val, [
+          PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
+          PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
+        ]);
+      }
+    }
+    return trimmed;
   }
 
   recordReceipt(auth, tx, blockNumber, executionResult) {
