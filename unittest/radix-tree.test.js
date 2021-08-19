@@ -142,6 +142,17 @@ describe("radix-tree", () => {
       const stateNode21 = new StateNode();
       const stateNode22 = new StateNode();
 
+      it("set with invalid state node", () => {
+        const invalidStateNode = new RadixNode();
+        const label = '0x000aaa';
+
+        expect(tree._setInTree(label, invalidStateNode)).to.equal(false);
+        expect(tree._setInTree(label, '')).to.equal(false);
+        expect(tree._setInTree(label, true)).to.equal(false);
+        expect(tree._setInTree(label, null)).to.equal(false);
+        expect(tree._setInTree(label, undefined)).to.equal(false);
+      });
+
       it("set / delete without common label prefix", () => {
         const label1 = '0xa';
         const label2 = '0xb';
@@ -428,6 +439,17 @@ describe("radix-tree", () => {
       const stateNode2 = new StateNode();
       const stateNode21 = new StateNode();
       const stateNode22 = new StateNode();
+
+      it("set with invalid state node", () => {
+        const invalidStateNode = new RadixNode();
+        const label = '0x000aaa';
+
+        expect(tree.set(label, invalidStateNode)).to.equal(false);
+        expect(tree.set(label, '')).to.equal(false);
+        expect(tree.set(label, true)).to.equal(false);
+        expect(tree.set(label, null)).to.equal(false);
+        expect(tree.set(label, undefined)).to.equal(false);
+      });
 
       it("set / delete without common label prefix", () => {
         const label1 = '0xa';

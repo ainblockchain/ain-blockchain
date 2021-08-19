@@ -1,5 +1,7 @@
 const logger = require('../logger')('RADIX_NODE');
 
+const StateNode = require('./state-node');
+
 /**
  * Implements a radix node, which is used as a component of RadixTree.
  */
@@ -10,6 +12,7 @@ class RadixNode {
     this.labelSuffix = '';
     this.parent = null;
     this.radixChildMap = new Map();
+    this.proofHash = null;
   }
 
   getStateNode() {
@@ -17,7 +20,15 @@ class RadixNode {
   }
 
   setStateNode(stateNode) {
+    const LOG_HEADER = 'setStateNode';
+    if (!(stateNode instanceof StateNode)) {
+      logger.error(
+          `[${LOG_HEADER}] Setting with a non-StateNode instance.`);
+      // Does nothing.
+      return false;
+    }
     this.stateNode = stateNode;
+    return true;
   }
 
   hasStateNode() {
@@ -25,7 +36,7 @@ class RadixNode {
   }
 
   resetStateNode() {
-    this.setStateNode(null);
+    this.stateNode = null;
   }
 
   getLabelRadix() {
