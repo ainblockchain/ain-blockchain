@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 echo 'Killing jobs..'
 killall node

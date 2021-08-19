@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [[ "$#" -lt 4 ]] || [[ "$#" -gt 4 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full]\n"
-    printf "Example: bash start_node_incremental_gcp.sh spring 0 0 fast\n"
+    printf "Usage: bash restart_node_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full]\n"
+    printf "Example: bash restart_node_gcp.sh spring 0 0 fast\n"
     exit
 fi
 
@@ -107,45 +107,16 @@ export LIGHTWEIGHT=false
 export STAKE=100000
 export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
 
-date=$(date '+%Y-%m-%dT%H:%M')
-printf "date=$date\n"
-NEW_DIR_PATH="../ain-blockchain-$date"
-printf "NEW_DIR_PATH=$NEW_DIR_PATH\n"
-
-# 2. Get currently used directory
-printf "\n#### [Step 2] Get currently used directory ####\n\n"
-
-OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
-printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
-
-# 3. Create a new directory
-printf "\n#### [Step 3] Create a new directory ####\n\n"
-
-MKDIR_CMD="sudo mkdir $NEW_DIR_PATH"
-printf "MKDIR_CMD=$MKDIR_CMD\n"
-eval $MKDIR_CMD
-
-sudo chmod 777 $NEW_DIR_PATH
-mv * $NEW_DIR_PATH
-sudo mkdir -p $BLOCKCHAIN_DATA_DIR
-sudo chmod 777 $BLOCKCHAIN_DATA_DIR
-
-# 4. Install dependencies
-printf "\n#### [Step 4] Install dependencies ####\n\n"
-
-cd $NEW_DIR_PATH
-npm install
-
-# 5. Kill old node server 
-printf "\n#### [Step 5] Kill old node server ####\n\n"
+# 2. Kill the existing node server 
+printf "\n#### [Step 2] Kill the existing node server ####\n\n"
 
 KILL_CMD="sudo killall node"
 printf "KILL_CMD='$KILL_CMD'\n\n"
 eval $KILL_CMD
 sleep 10
 
-# 6. Start a new node server
-printf "\n#### [Step 6] Start new node server ####\n\n"
+# 3. Restart the node server
+printf "\n#### [Step 3] Restart the node server ####\n\n"
 
 MAX_OLD_SPACE_SIZE_MB=6000
 
@@ -153,8 +124,8 @@ START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_S
 printf "START_CMD='$START_CMD'\n"
 eval $START_CMD
 
-# 7. Wait until the new node server catches up
-printf "\n#### [Step 7] Wait until the new node server catches up ####\n\n"
+# 4. Wait until the node server catches up
+printf "\n#### [Step 4] Wait until the node server catches up ####\n\n"
 
 SECONDS=0
 loopCount=0
@@ -181,12 +152,5 @@ do
     printf "\nLoop count: ${loopCount}\n"
     sleep 20
 done
-
-# 8. Remove old directory keeping the chain data
-printf "\n#### [Step 8] Remove old directory keeping the chain data ####\n\n"
-
-RM_CMD="sudo rm -rf $OLD_DIR_PATH"
-printf "RM_CMD='$RM_CMD'\n"
-eval $RM_CMD
 
 printf "\n* << Node server successfully deployed! ***************************************\n\n"

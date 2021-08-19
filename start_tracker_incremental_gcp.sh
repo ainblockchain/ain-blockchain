@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 if [[ "$#" -lt 1 ]] || [[ "$#" -gt 1 ]]; then
-    printf "Usage: sh start_tracker_incremental_gcp.sh <Number of Nodes>\n"
-    printf "Example: sh start_tracker_incremental_gcp.sh 5\n"
+    printf "Usage: bash start_tracker_incremental_gcp.sh <Number of Nodes>\n"
+    printf "Example: bash start_tracker_incremental_gcp.sh 5\n"
     exit
 fi
 
@@ -44,11 +44,11 @@ printf "\n#### [Step 5] Kill old tracker server ####\n\n"
 KILL_CMD="sudo killall node"
 printf "KILL_CMD='$KILL_CMD'\n\n"
 eval $KILL_CMD
+sleep 10
 
 # 6. Start new tracker server
 printf "\n#### [Step 6] Start new tracker server ####\n\n"
 
-sleep 10
 export CONSOLE_LOG=false 
 
 START_CMD="nohup node --async-stack-traces tracker-server/index.js >/dev/null 2>error_logs.txt &"
