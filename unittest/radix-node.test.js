@@ -1,5 +1,9 @@
 const RadixNode = require('../db/radix-node');
+const CommonUtil = require('../common/common-util');
 const StateNode = require('../db/state-node');
+const {
+  HASH_DELIMITER,
+} = require('../common/constants');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
@@ -18,6 +22,7 @@ describe("radix-node", () => {
       expect(node.labelSuffix).to.equal('');
       expect(node.parent).to.equal(null);
       expect(node.radixChildMap.size).to.equal(0);
+      expect(node.proofHash).to.equal(null);
     });
   });
 
@@ -265,6 +270,69 @@ describe("radix-node", () => {
       assert.deepEqual(child2.getChildLabelRadices(), []);
       assert.deepEqual(child2.getChildNodes(), []);
       expect(child2.numChildren()).to.equal(0);
+    });
+  });
+
+  describe("proofHash", () => {
+    const labelRadix1 = '0';
+    const labelSuffix1 = '0000';
+    const child1 = new RadixNode();
+    const childPH1 = 'childPH1';
+
+    const labelRadix2 = '1';
+    const labelSuffix2 = '1111';
+    const child2 = new RadixNode();
+    const childPH2 = 'childPH2';
+
+    const stateNode = new StateNode();
+    const stateNodePH = 'stateNodePH';
+
+    it("get / set / has / reset", () => {
+      const proofHash = 'proofHash';
+      expect(node.getProofHash()).to.equal(null);
+      expect(node.hasProofHash()).to.equal(false);
+      node.setProofHash(proofHash);
+      expect(node.getProofHash()).to.equal(proofHash);
+      expect(node.hasProofHash()).to.equal(true);
+      node.resetProofHash();
+      expect(node.getProofHash()).to.equal(null);
+      expect(node.hasProofHash()).to.equal(false);
+    });
+
+    it("build", () => {
+      child1.setProofHash(childPH1);
+      child2.setProofHash(childPH2);
+      stateNode.setProofHash(stateNodePH);
+
+      node.setChild(labelRadix1, labelSuffix1, child1);
+      node.setChild(labelRadix2, labelSuffix2, child2);
+
+      // Without stateNode
+      const preimage1 = `${HASH_DELIMITER}${HASH_DELIMITER}${labelRadix1}${labelSuffix1}${HASH_DELIMITER}${childPH1}${HASH_DELIMITER}${labelRadix2}${labelSuffix2}${HASH_DELIMITER}${childPH2}`;
+      const proofHash1 = CommonUtil.hashString(preimage1);
+      expect(node._buildProofHash()).to.equal(proofHash1)
+
+      // With stateNode
+      node.setStateNode(stateNode);
+      const preimage2 = `${stateNodePH}${HASH_DELIMITER}${HASH_DELIMITER}${labelRadix1}${labelSuffix1}${HASH_DELIMITER}${childPH1}${HASH_DELIMITER}${labelRadix2}${labelSuffix2}${HASH_DELIMITER}${childPH2}`;
+      const proofHash2 = CommonUtil.hashString(preimage2);
+      expect(node._buildProofHash()).to.equal(proofHash2)
+    });
+
+    it("update / verify", () => {
+      child1.setProofHash(childPH1);
+      child2.setProofHash(childPH2);
+      stateNode.setProofHash(stateNodePH);
+
+      node.setChild(labelRadix1, labelSuffix1, child1);
+      node.setChild(labelRadix2, labelSuffix2, child2);
+      node.setStateNode(stateNode);
+
+      node.resetProofHash();
+      expect(node.verifyProofHash()).to.equal(false);
+      node.updateProofHash();
+      expect(node.verifyProofHash()).to.equal(true);
+      expect(node.getProofHash()).to.equal(node._buildProofHash());
     });
   });
 
