@@ -13,6 +13,7 @@ class StateNode {
   // NOTE(seo): Once new member variables are added, computeNodeBytes() should be updated.
   constructor(version) {
     this.version = version || null;
+    this.label = null;
     this.isLeaf = true;
     // Used for leaf nodes only.
     this.value = null;
@@ -54,23 +55,25 @@ class StateNode {
     if (!that) {
       return false;
     }
-    return (that.isLeaf === this.isLeaf &&
+    return (that.version === this.version &&
+        that.label === this.label &&
+        that.isLeaf === this.isLeaf &&
+        that.value === this.value &&
         that.numParents && typeof that.numParents === 'function' &&
         // NOTE: Compare only numParents() values.
         that.numParents() === this.numParents() &&
         that.getChildLabels && typeof that.getChildLabels === 'function' &&
         // NOTE: The child label order matters.
         JSON.stringify(that.getChildLabels()) === JSON.stringify(this.getChildLabels()) &&
-        that.value === this.value &&
         that.proofHash === this.proofHash &&
-        that.version === this.version &&
         that.treeHeight === this.treeHeight &&
         that.treeSize === this.treeSize &&
         that.treeBytes === this.treeBytes);
   }
 
   // NOTE(liayoo): Bytes for some data (e.g. parents & children references, version) are excluded
-  //               from this calculation, since their sizes can vary and affect the gas costs and state proof hashes.
+  // from this calculation, since their sizes can vary and affect the gas costs and
+  // state proof hashes.
   computeNodeBytes() {
     return sizeof(this.isLeaf) +
         sizeof(this.value) +
@@ -136,6 +139,24 @@ class StateNode {
     }
 
     return obj;
+  }
+
+  getLabel() {
+    return this.label;
+  }
+
+  _setLabel(label) {
+    const LOG_HEADER = '_setLabel';
+
+    const curLabel = this.getLabel();
+    if (curLabel !== null && curLabel !== label) {
+      logger.error(`[${LOG_HEADER}] Overwriting label ${curLabel} with ${label}.`);
+    }
+    this.label = label;
+  }
+
+  _resetLabel() {
+    this._setLabel(null);
   }
 
   getIsLeaf() {
@@ -225,6 +246,7 @@ class StateNode {
       this.childMap.set(label, node);
     }
     node._addParent(this);
+    node._setLabel(label);
     if (this.getIsLeaf()) {
       this.setIsLeaf(false);
     }
@@ -251,6 +273,9 @@ class StateNode {
       this.radixTree.delete(label);
     } else {
       this.childMap.delete(label);
+    }
+    if (child.numParents() === 0) {
+      child._resetLabel();
     }
     if (this.numChildren() === 0) {
       this.setIsLeaf(true);
