@@ -651,11 +651,18 @@ class Functions {
     const proposerReward = gasCostTotal / 2;
     const validatorRewardTotal = gasCostTotal - proposerReward;
     this.incrementConsensusRewards(proposer, proposerReward, context);
-    for (const validator of validators) {
+    let rewardSum = 0;
+    validators.forEach((validator, index) => {
       const validatorStake = lastConsensusRound.vote[validator].stake;
-      this.incrementConsensusRewards(
-          validator, validatorRewardTotal * (validatorStake / totalAtStake), context);
-    }
+      let validatorReward = 0;
+      if (index === validators.length - 1) {
+        validatorReward = validatorRewardTotal - rewardSum;
+      } else {
+        validatorReward = validatorRewardTotal * (validatorStake / totalAtStake);
+        rewardSum += validatorReward;
+      }
+      this.incrementConsensusRewards(validator, validatorReward, context);
+    });
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 

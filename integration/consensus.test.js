@@ -315,15 +315,24 @@ describe('Consensus', () => {
       const proposerReward = gasCostTotal / 2;
       const validatorRewardTotal = gasCostTotal - proposerReward;
       const totalAtStake = Object.values(consensusRound.vote).reduce((acc, cur) => acc + cur.stake, 0);
-      for (const validator of validators) {
+      let rewardSum = 0;
+      validators.forEach((validator, index) => {
         const validatorStake = consensusRound.vote[validator].stake;
-        const validatorReward = validatorRewardTotal * (validatorStake / totalAtStake) +
-            (validator === proposer ? proposerReward : 0);
+        let validatorReward = 0;
+        if (index === validators.length - 1) {
+          validatorReward = validatorRewardTotal - rewardSum;
+        } else {
+          validatorReward = validatorRewardTotal * (validatorStake / totalAtStake);
+          rewardSum += validatorReward;
+        }
+        if (validator === proposer) {
+          validatorReward += proposerReward;
+        }
         assert.deepEqual(_.get(rewardsBefore, `${validator}.unclaimed`, 0) + validatorReward,
             rewardsAfter[validator].unclaimed);
         assert.deepEqual(_.get(rewardsBefore, `${validator}.cumulative`, 0) + validatorReward,
             rewardsAfter[validator].cumulative);
-      }
+      });
       assert.deepEqual(txWithGasFee.result.gas_cost_total, consensusRound.propose.gas_cost_total);
     });
 
