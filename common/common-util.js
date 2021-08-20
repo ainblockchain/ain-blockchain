@@ -189,7 +189,7 @@ class CommonUtil {
   // NOTE(liayoo): billing is in the form <app name>|<billing id>
   static toBillingAccountName(billing) {
     const { PredefinedDbPaths } = require('../common/constants');
-    return `${PredefinedDbPaths.BILLING}|${billing}`;
+    return `${PredefinedDbPaths.GAS_FEE_BILLING}|${billing}`;
   }
 
   static toEscrowAccountName(source, target, escrowKey) {

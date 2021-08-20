@@ -20,6 +20,7 @@ const {
   waitForNewBlocks,
   parseOrLog,
   getLastBlock,
+  getBlockByNumber,
 } = require('../unittest/test-util');
 
 const MAX_NUM_VALIDATORS = 4;
@@ -188,13 +189,13 @@ describe('Consensus', () => {
         iterCount++;
         await CommonUtil.sleep(200);
       }
-      assert.deepEqual(lastBlock.validators[server4Addr][PredefinedDbPaths.PROPOSAL_RIGHT], false);
+      assert.deepEqual(lastBlock.validators[server4Addr][PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT], false);
       await waitForNewBlocks(server1, 1);
       const server4Voted = parseOrLog(syncRequest(
         'GET',
         `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote/${server4Addr}`
       ).body.toString('utf-8')).result;
-      assert.deepEqual(server4Voted[PredefinedDbPaths.STAKE], 100000);
+      assert.deepEqual(server4Voted[PredefinedDbPaths.CONSENSUS_STAKE], 100000);
       // 3. server5 stakes 100000
       const server5StakeRes = parseOrLog(syncRequest('POST', server5 + '/set_value', {json: {
         ref: `/staking/consensus/${server5Addr}/0/stake/${Date.now()}/value`,
@@ -217,14 +218,14 @@ describe('Consensus', () => {
         iterCount++;
         await CommonUtil.sleep(200);
       }
-      assert.deepEqual(lastBlock.validators[server5Addr][PredefinedDbPaths.PROPOSAL_RIGHT], false);
+      assert.deepEqual(lastBlock.validators[server5Addr][PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT], false);
       await waitForNewBlocks(server1, 1);
       const votes = parseOrLog(syncRequest(
         'GET',
         `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote`
       ).body.toString('utf-8')).result;
       assert.deepEqual(votes[server4Addr], undefined);
-      assert.deepEqual(votes[server5Addr][PredefinedDbPaths.STAKE], 100000);
+      assert.deepEqual(votes[server5Addr][PredefinedDbPaths.CONSENSUS_STAKE], 100000);
     });
 
     it('When more than MAX_NUM_VALIDATORS validators exist, validatators with bigger stakes get prioritized', async () => {
@@ -255,7 +256,7 @@ describe('Consensus', () => {
         `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote`
       ).body.toString('utf-8')).result;
       assert.deepEqual(votes[server5Addr], undefined);
-      assert.deepEqual(votes[server4Addr][PredefinedDbPaths.STAKE], 100010);
+      assert.deepEqual(votes[server4Addr][PredefinedDbPaths.CONSENSUS_STAKE], 100010);
       // 3. server5 stakes 20 more AIN
       const server5StakeRes = parseOrLog(syncRequest('POST', server5 + '/set_value', {json: {
         ref: `/staking/consensus/${server5Addr}/0/stake/${Date.now()}/value`,
@@ -284,7 +285,164 @@ describe('Consensus', () => {
         `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote`
       ).body.toString('utf-8')).result;
       assert.deepEqual(votes[server4Addr], undefined);
-      assert.deepEqual(votes[server5Addr][PredefinedDbPaths.STAKE], 100020);
+      assert.deepEqual(votes[server5Addr][PredefinedDbPaths.CONSENSUS_STAKE], 100020);
     });
-  })
+  });
+
+  describe('Rewards', () => {
+    it('consensus rewards are updated', async () => {
+      const rewardsBefore = parseOrLog(syncRequest('GET',
+          server2 + `/get_value?ref=/consensus/rewards`).body.toString('utf-8')).result || {};
+      const txWithGasFee = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+        ref: `/transfer/${server1Addr}/${server2Addr}/0/value`,
+        value: 1,
+        gas_price: 1000000
+      }}).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, txWithGasFee.tx_hash))) {
+        console.error(`Failed to check finalization of tx.`);
+      }
+      await waitForNewBlocks(server2); // Make sure 1 more block is finalized
+      const rewardsAfter = parseOrLog(syncRequest('GET',
+          server2 + `/get_value?ref=/consensus/rewards`).body.toString('utf-8')).result;
+      const txInfo = parseOrLog(syncRequest('GET',
+          server2 + `/get_transaction?hash=${txWithGasFee.tx_hash}`).body.toString('utf-8')).result;
+      const blockNumber = txInfo.number;
+      const consensusRound = parseOrLog(syncRequest('GET',
+          server2 + `/get_value?ref=/consensus/number/${blockNumber}`).body.toString('utf-8')).result;
+      const proposer = consensusRound.propose.proposer;
+      const validators = Object.keys(consensusRound.vote);
+      const gasCostTotal = consensusRound.propose.gas_cost_total;
+      const proposerReward = gasCostTotal / 2;
+      const validatorRewardTotal = gasCostTotal - proposerReward;
+      const totalAtStake = Object.values(consensusRound.vote).reduce((acc, cur) => acc + cur.stake, 0);
+      let rewardSum = 0;
+      validators.forEach((validator, index) => {
+        const validatorStake = consensusRound.vote[validator].stake;
+        let validatorReward = 0;
+        if (index === validators.length - 1) {
+          validatorReward = validatorRewardTotal - rewardSum;
+        } else {
+          validatorReward = validatorRewardTotal * (validatorStake / totalAtStake);
+          rewardSum += validatorReward;
+        }
+        if (validator === proposer) {
+          validatorReward += proposerReward;
+        }
+        assert.deepEqual(_.get(rewardsBefore, `${validator}.unclaimed`, 0) + validatorReward,
+            rewardsAfter[validator].unclaimed);
+        assert.deepEqual(_.get(rewardsBefore, `${validator}.cumulative`, 0) + validatorReward,
+            rewardsAfter[validator].cumulative);
+      });
+      assert.deepEqual(txWithGasFee.result.gas_cost_total, consensusRound.propose.gas_cost_total);
+    });
+
+    it('cannot claim more than unclaimed rewards', async () => {
+      const unclaimed = parseOrLog(syncRequest('GET',
+          server2 + `/get_value?ref=/consensus/rewards/${server1Addr}/unclaimed`).body.toString('utf-8')).result;
+      const claimTx = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+        ref: `/gas_fee/claim/${server1Addr}/0`,
+        value: {
+          amount: unclaimed + 1
+        }
+      }}).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, claimTx.tx_hash))) {
+        console.error(`Failed to check finalization of tx.`);
+      }
+      assert.deepEqual(claimTx.result, {
+        "gas_amount_total":{
+          "bandwidth":{
+            "service":1
+          },
+          "state":{
+            "service":0
+          }
+        },
+        "gas_cost_total":0,
+        "error_message":"No write permission on: /gas_fee/claim/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/0",
+        "code":103,
+        "bandwidth_gas_amount":1,
+        "gas_amount_charged":1
+      });
+    });
+
+    it('can claim unclaimed rewards', async () => {
+      const unclaimed = parseOrLog(syncRequest('GET',
+          server2 + `/get_value?ref=/consensus/rewards/${server1Addr}/unclaimed`).body.toString('utf-8')).result;
+      const claimTx = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+        ref: `/gas_fee/claim/${server1Addr}/1`,
+        value: {
+          amount: unclaimed
+        },
+        timestamp: 1629377509815
+      }}).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, claimTx.tx_hash))) {
+        console.error(`Failed to check finalization of tx.`);
+      }
+      assert.deepEqual(claimTx.result, {
+        "gas_amount_total": {
+          "bandwidth": {
+            "service": 6
+          },
+          "state": {
+            "service": 2414
+          }
+        },
+        "gas_cost_total": 0,
+        "func_results": {
+          "_claimReward": {
+            "op_results": {
+              "0": {
+                "path": "/transfer/gas_fee|gas_fee|unclaimed/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/1629377509815/value",
+                "result": {
+                  "func_results": {
+                    "_transfer": {
+                      "op_results": {
+                        "0": {
+                          "path": "/service_accounts/gas_fee/gas_fee/unclaimed/balance",
+                          "result": {
+                            "code": 0,
+                            "bandwidth_gas_amount": 1
+                          }
+                        },
+                        "1": {
+                          "path": "/accounts/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance",
+                          "result": {
+                            "code": 0,
+                            "bandwidth_gas_amount": 1
+                          }
+                        },
+                        "2": {
+                          "path": "/transfer/gas_fee|gas_fee|unclaimed/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/1629377509815/result",
+                          "result": {
+                            "code": 0,
+                            "bandwidth_gas_amount": 1
+                          }
+                        }
+                      },
+                      "code": 0,
+                      "bandwidth_gas_amount": 0
+                    }
+                  },
+                  "code": 0,
+                  "bandwidth_gas_amount": 1
+                }
+              },
+              "1": {
+                "path": "/consensus/rewards/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/unclaimed",
+                "result": {
+                  "code": 0,
+                  "bandwidth_gas_amount": 1
+                }
+              }
+            },
+            "code": 0,
+            "bandwidth_gas_amount": 0
+          }
+        },
+        "code": 0,
+        "bandwidth_gas_amount": 1,
+        "gas_amount_charged": 2420
+      });
+    });
+  });
 });
