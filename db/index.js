@@ -386,7 +386,7 @@ class DB {
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
     const stateTree = StateNode.fromJsObject(stateObj, stateVersion);
-    const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
+    const pathToParent = fullPath.slice(0, fullPath.length - 1);
     if (fullPath.length === 0) {
       stateRoot = stateTree;
     } else {
