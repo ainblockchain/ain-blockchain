@@ -297,7 +297,7 @@ class StateNode {
     } else {
       preimage = this.getChildLabels().map((label) => {
         return `${label}${HASH_DELIMITER}${this.getChild(label).getProofHash()}`;
-      }, '').join(HASH_DELIMITER);
+      }).join(HASH_DELIMITER);
     }
     return CommonUtil.hashString(CommonUtil.toString(preimage));
   }

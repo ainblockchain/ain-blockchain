@@ -1,5 +1,11 @@
 const logger = require('../logger')('RADIX_NODE');
 
+const CommonUtil = require('../common/common-util');
+const StateNode = require('./state-node');
+const {
+  HASH_DELIMITER,
+} = require('../common/constants');
+
 /**
  * Implements a radix node, which is used as a component of RadixTree.
  */
@@ -10,6 +16,7 @@ class RadixNode {
     this.labelSuffix = '';
     this.parent = null;
     this.radixChildMap = new Map();
+    this.proofHash = null;
   }
 
   getStateNode() {
@@ -17,7 +24,15 @@ class RadixNode {
   }
 
   setStateNode(stateNode) {
+    const LOG_HEADER = 'setStateNode';
+    if (!(stateNode instanceof StateNode)) {
+      logger.error(
+          `[${LOG_HEADER}] Setting with a non-StateNode instance.`);
+      // Does nothing.
+      return false;
+    }
     this.stateNode = stateNode;
+    return true;
   }
 
   hasStateNode() {
@@ -25,7 +40,7 @@ class RadixNode {
   }
 
   resetStateNode() {
-    this.setStateNode(null);
+    this.stateNode = null;
   }
 
   getLabelRadix() {
@@ -58,6 +73,10 @@ class RadixNode {
 
   resetLabelSuffix() {
     this.setLabelSuffix('');
+  }
+
+  getLabel() {
+    return this.getLabelRadix() + this.getLabelSuffix();
   }
 
   getParent() {
@@ -131,6 +150,80 @@ class RadixNode {
 
   numChildren() {
     return this.radixChildMap.size;
+  }
+
+  getProofHash() {
+    return this.proofHash;
+  }
+
+  setProofHash(proofHash) {
+    this.proofHash = proofHash;
+  }
+
+  hasProofHash() {
+    return this.getProofHash() !== null;
+  }
+
+  resetProofHash() {
+    this.setProofHash(null);
+  }
+
+  _buildProofHash() {
+    let preimage = '';
+    if (this.hasStateNode()) {
+      preimage = this.getStateNode().getProofHash();
+    }
+    // NOTE(platfowner): Put delimiter twice to distinguish the state node proof hash and
+    // the radix child proof hash.
+    preimage += `${HASH_DELIMITER}${HASH_DELIMITER}`;
+    preimage += this.getChildNodes().map((child) => {
+      return `${child.getLabel()}${HASH_DELIMITER}${child.getProofHash()}`;
+    }).join(HASH_DELIMITER);
+    return CommonUtil.hashString(preimage);
+  }
+
+  verifyProofHash() {
+    return this.getProofHash() === this._buildProofHash();
+  }
+
+  updateProofHash() {
+    this.setProofHash(this._buildProofHash());
+  }
+
+  setProofHashForRadixTree() {
+    let numAffectedNodes = 0;
+    for (const child of this.getChildNodes()) {
+      numAffectedNodes += child.setProofHashForRadixTree();
+    }
+    this.updateProofHash();
+    numAffectedNodes++;
+
+    return numAffectedNodes;
+  }
+
+  updateProofHashForRootPath() {
+    let numAffectedNodes = 0;
+    let curNode = this;
+    curNode.updateProofHash();
+    numAffectedNodes++;
+    while (curNode.hasParent()) {
+      curNode = curNode.getParent();
+      curNode.updateProofHash();
+      numAffectedNodes++;
+    }
+    return numAffectedNodes;
+  }
+
+  verifyProofHashForRadixTree() {
+    if (!this.verifyProofHash()) {
+      return false;
+    }
+    for (const child of this.getChildNodes()) {
+      if (!child.verifyProofHashForRadixTree()) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /**
