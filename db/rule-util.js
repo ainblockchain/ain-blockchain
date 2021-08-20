@@ -199,9 +199,9 @@ class RuleUtil {
       return false;
     }
     const billing = _.get(newData, `${PredefinedDbPaths.RECEIPTS_BILLING}`);
-    const collectedFrom = billing ? `${PredefinedDbPaths.BILLING}|${billing}` : address;
+    const collectedFrom = billing ? `${PredefinedDbPaths.GAS_FEE_BILLING}|${billing}` : address;
     const feeCollected = getValue(
-        `/${PredefinedDbPaths.GAS_FEE}/${PredefinedDbPaths.COLLECT}/${collectedFrom}` +
+        `/${PredefinedDbPaths.GAS_FEE}/${PredefinedDbPaths.GAS_FEE_COLLECT}/${collectedFrom}` +
         `/${blockNumber}/${txHash}/${PredefinedDbPaths.GAS_FEE_AMOUNT}`) || 0;
     return feeCollected === gasCost;
   }
@@ -280,8 +280,8 @@ class RuleUtil {
     if (!this.isDict(data) || !this.isNumber(data.amount) || data.amount <= 0) {
       return false;
     }
-    const unclaimed = getValue(`/${PredefinedDbPaths.CONSENSUS}/${PredefinedDbPaths.REWARDS}/` +
-        `${userAddr}/${PredefinedDbPaths.REWARDS_UNCLAIMED}`) || 0;
+    const unclaimed = getValue(`/${PredefinedDbPaths.CONSENSUS}/${PredefinedDbPaths.CONSENSUS_REWARDS}/` +
+        `${userAddr}/${PredefinedDbPaths.CONSENSUS_REWARDS_UNCLAIMED}`) || 0;
     return data.amount <= unclaimed;
   }
 

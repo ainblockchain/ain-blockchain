@@ -25,7 +25,7 @@ describe("BlockPool", () => {
   function createAndAddBlock(node, blockPool, lastBlock, number, epoch) {
     const block = Block.create(
         lastBlock.hash, [], [], number, epoch, '', node.account.address,
-        {[node.account.address]: { [PredefinedDbPaths.STAKE]: 100000, [PredefinedDbPaths.PROPOSAL_RIGHT]: true } }, 0, 0);
+        {[node.account.address]: { [PredefinedDbPaths.CONSENSUS_STAKE]: 100000, [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true } }, 0, 0);
     const proposal = getTransaction(node, {
         operation: {
           type: 'SET_VALUE',
@@ -33,7 +33,7 @@ describe("BlockPool", () => {
           value: {
             number: block.number,
             epoch: block.epoch,
-            validators: { [node.account.address]: { [PredefinedDbPaths.STAKE]: 100000, [PredefinedDbPaths.PROPOSAL_RIGHT]: true } },
+            validators: { [node.account.address]: { [PredefinedDbPaths.CONSENSUS_STAKE]: 100000, [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true } },
             total_at_stake: 100000,
             proposer: node.account.address,
             block_hash: block.hash
@@ -66,7 +66,7 @@ describe("BlockPool", () => {
     const addr = node1.account.address;
     const block = Block.create(
         lastBlock.hash, [], [], lastBlock.number + 1, lastBlock.epoch + 1, '', addr,
-        {[addr]: { [PredefinedDbPaths.STAKE]: 100000, [PredefinedDbPaths.PROPOSAL_RIGHT]: true }}, 0, 0);
+        {[addr]: { [PredefinedDbPaths.CONSENSUS_STAKE]: 100000, [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true }}, 0, 0);
     const proposalTx = getTransaction(node1, {
         operation: {
           type: 'SET_VALUE',
@@ -74,7 +74,7 @@ describe("BlockPool", () => {
           value: {
             number: block.number,
             epoch: block.epoch,
-            validators: {[addr]: { [PredefinedDbPaths.STAKE]: 100000, [PredefinedDbPaths.PROPOSAL_RIGHT]: true } },
+            validators: {[addr]: { [PredefinedDbPaths.CONSENSUS_STAKE]: 100000, [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true } },
             total_at_stake: 100000,
             proposer: addr,
             block_hash: block.hash
@@ -95,7 +95,7 @@ describe("BlockPool", () => {
     const lastBlock = node1.bc.lastBlock();
     const block = Block.create(
         lastBlock.hash, [], [], lastBlock.number + 1, lastBlock.epoch + 1, '', addr,
-        {[addr]: { [PredefinedDbPaths.STAKE]: 100000, [PredefinedDbPaths.PROPOSAL_RIGHT]: true }}, 0, 0);
+        {[addr]: { [PredefinedDbPaths.CONSENSUS_STAKE]: 100000, [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true }}, 0, 0);
     const proposalTx = getTransaction(node1, {
         operation: {
           type: 'SET_VALUE',
@@ -103,7 +103,7 @@ describe("BlockPool", () => {
           value: {
             number: block.number,
             epoch: block.epoch,
-            validators: {[addr]: { [PredefinedDbPaths.STAKE]: 100000, [PredefinedDbPaths.PROPOSAL_RIGHT]: true } },
+            validators: {[addr]: { [PredefinedDbPaths.CONSENSUS_STAKE]: 100000, [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true } },
             total_at_stake: 100000,
             proposer: addr,
             block_hash: block.hash

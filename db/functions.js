@@ -630,8 +630,8 @@ class Functions {
     const rewardsPath = PathUtil.getConsensusRewardsPath(address);
     const prevRewards = this.db.getValue(rewardsPath) || {};
     return this.setValueOrLog(rewardsPath, {
-      [PredefinedDbPaths.REWARDS_UNCLAIMED]: (prevRewards[PredefinedDbPaths.REWARDS_UNCLAIMED] || 0) + amount,
-      [PredefinedDbPaths.REWARDS_CUMULATIVE]: (prevRewards[PredefinedDbPaths.REWARDS_CUMULATIVE] || 0) + amount
+      [PredefinedDbPaths.CONSENSUS_REWARDS_UNCLAIMED]: (prevRewards[PredefinedDbPaths.CONSENSUS_REWARDS_UNCLAIMED] || 0) + amount,
+      [PredefinedDbPaths.CONSENSUS_REWARDS_CUMULATIVE]: (prevRewards[PredefinedDbPaths.CONSENSUS_REWARDS_CUMULATIVE] || 0) + amount
     }, context);
   }
 
