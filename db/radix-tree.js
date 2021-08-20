@@ -7,7 +7,6 @@ const RadixNode = require('./radix-node');
  * A database for (label, stateNode) pairs. For efficient update and retrieval of proof hashes,
  * it uses a radix tree internally.
  */
-// TODO(platfowner): Add access methods for proof hashes.
 class RadixTree {
   constructor() {
     this.root = new RadixNode();
@@ -128,7 +127,7 @@ class RadixTree {
   _setInTree(label, stateNode) {
     const hexLabel = RadixTree._toHexLabel(label);
     const node = this._getRadixNodeForWriting(hexLabel);
-    node.setStateNode(stateNode);
+    return node.setStateNode(stateNode);
   }
 
   _setInMap(label, stateNode) {
@@ -137,9 +136,12 @@ class RadixTree {
 
   set(label, stateNode) {
     // 1. Set in the radix tree.
-    this._setInTree(label, stateNode);
+    if (!this._setInTree(label, stateNode)) {
+      return false;
+    }
     // 2. Set in the hash map.
     this._setInMap(label, stateNode);
+    return true;
   }
 
   _hasInTree(label) {
@@ -239,6 +241,34 @@ class RadixTree {
 
   size() {
     return this.stateNodeMap.size;
+  }
+
+  getRootProofHash() {
+    return this.root.getProofHash();
+  }
+
+  hasRootProofHash() {
+    return this.root.hasProofHash();
+  }
+
+  setProofHashForRadixTree() {
+    return this.root.setProofHashForRadixTree();
+  }
+
+  updateProofHashForRootPath(label) {
+    const hexLabel = RadixTree._toHexLabel(label);
+    const node = this._getRadixNodeForReading(hexLabel);
+    if (node === null) {
+      logger.error(
+          `[${LOG_HEADER}] Updating proof hash for non-existing child with label: ${label}.`);
+      // Does nothing.
+      return 0;
+    }
+    return node.updateProofHashForRootPath();
+  }
+
+  verifyProofHashForRadixTree() {
+    return this.root.verifyProofHashForRadixTree();
   }
 
   /**
