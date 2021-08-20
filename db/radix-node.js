@@ -176,7 +176,7 @@ class RadixNode {
     preimage += `${HASH_DELIMITER}${HASH_DELIMITER}`;
     preimage += this.getChildNodes().map((child) => {
       return `${child.getLabel()}${HASH_DELIMITER}${child.getProofHash()}`;
-    }, '').join(HASH_DELIMITER);
+    }).join(HASH_DELIMITER);
     return CommonUtil.hashString(preimage);
   }
 
