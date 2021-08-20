@@ -240,11 +240,11 @@ class PathUtil {
   }
 
   static getConsensusWhitelistPath() {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST]);
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST]);
   }
 
   static getConsensusWhitelistAddrPath(address) {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST, address]);
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST, address]);
   }
 
   static getConsensusStakingAccountPath(address) {
@@ -257,39 +257,39 @@ class PathUtil {
   }
 
   static getConsensusRewardsPath(address) {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.REWARDS, address]);
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_REWARDS, address]);
   }
 
   static getConsensusRewardsUnclaimedPath(address) {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.REWARDS, address, PredefinedDbPaths.REWARDS_UNCLAIMED]);
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_REWARDS, address, PredefinedDbPaths.CONSENSUS_REWARDS_UNCLAIMED]);
   }
 
   static getConsensusRewardsCumulativePath(address) {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.REWARDS, address, PredefinedDbPaths.REWARDS_CUMULATIVE]);
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_REWARDS, address, PredefinedDbPaths.CONSENSUS_REWARDS_CUMULATIVE]);
   }
 
   static getConsensusNumberPath(blockNumber) {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.NUMBER, blockNumber]);
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER, blockNumber]);
   }
 
   static getConsensusProposePath(blockNumber) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.NUMBER, blockNumber, PredefinedDbPaths.PROPOSE]);
+        PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER, blockNumber, PredefinedDbPaths.CONSENSUS_PROPOSE]);
   }
 
   static getConsensusVotePath(blockNumber, address) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.NUMBER, blockNumber, PredefinedDbPaths.VOTE, address]);
+        PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER, blockNumber, PredefinedDbPaths.CONSENSUS_VOTE, address]);
   }
 
   static getGasFeeClaimPath(userAddr, recordId) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.CLAIM, userAddr, recordId]);
+        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE_CLAIM, userAddr, recordId]);
   }
 
   static getGasFeeCollectPath(blockNumber, userAddr, txHash) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.COLLECT, blockNumber, userAddr, txHash]);
+        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE_COLLECT, blockNumber, userAddr, txHash]);
   }
 
   static getReceiptPath(txHash) {

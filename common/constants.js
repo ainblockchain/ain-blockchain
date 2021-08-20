@@ -154,19 +154,19 @@ const PredefinedDbPaths = {
   DOT_SHARD: '.shard',
   // Consensus
   CONSENSUS: 'consensus',
-  WHITELIST: 'whitelist',
-  NUMBER: 'number',
-  PROPOSE: 'propose',
-  PROPOSER: 'proposer',
-  VALIDATORS: 'validators',
-  TOTAL_AT_STAKE: 'total_at_stake',
-  VOTE: 'vote',
-  BLOCK_HASH: 'block_hash',
-  STAKE: 'stake',
-  PROPOSAL_RIGHT: 'proposal_right',
-  REWARDS: 'rewards',
-  REWARDS_UNCLAIMED: 'unclaimed',
-  REWARDS_CUMULATIVE: 'cumulative',
+  CONSENSUS_BLOCK_HASH: 'block_hash',
+  CONSENSUS_NUMBER: 'number',
+  CONSENSUS_PROPOSAL_RIGHT: 'proposal_right',
+  CONSENSUS_PROPOSE: 'propose',
+  CONSENSUS_PROPOSER: 'proposer',
+  CONSENSUS_REWARDS: 'rewards',
+  CONSENSUS_REWARDS_UNCLAIMED: 'unclaimed',
+  CONSENSUS_REWARDS_CUMULATIVE: 'cumulative',
+  CONSENSUS_STAKE: 'stake',
+  CONSENSUS_TOTAL_AT_STAKE: 'total_at_stake',
+  CONSENSUS_VALIDATORS: 'validators',
+  CONSENSUS_VOTE: 'vote',
+  CONSENSUS_WHITELIST: 'whitelist',
   // Receipts
   RECEIPTS: 'receipts',
   RECEIPTS_ADDRESS: 'address',
@@ -180,10 +180,10 @@ const PredefinedDbPaths = {
   RECEIPTS_EXEC_RESULT_RESULT_LIST: 'result_list',
   // Gas fee
   GAS_FEE: 'gas_fee',
-  CLAIM: 'claim',
-  COLLECT: 'collect',
-  BILLING: 'billing',
   GAS_FEE_AMOUNT: 'amount',
+  GAS_FEE_BILLING: 'billing',
+  GAS_FEE_CLAIM: 'claim',
+  GAS_FEE_COLLECT: 'collect',
   GAS_FEE_UNCLAIMED: 'unclaimed',
   // Token
   TOKEN: 'token',
@@ -570,7 +570,7 @@ function isServiceType(type) {
  * Service types allowed to create service accounts.
  */
 const SERVICE_ACCOUNT_SERVICE_TYPES = [
-  PredefinedDbPaths.BILLING,
+  PredefinedDbPaths.GAS_FEE_BILLING,
   PredefinedDbPaths.ESCROW,
   PredefinedDbPaths.GAS_FEE,
   PredefinedDbPaths.PAYMENTS,
@@ -627,8 +627,8 @@ function overwriteGenesisParams(overwritingParams, type) {
       const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
       CommonUtil.setJsObject(whitelist, [addr], true);
       CommonUtil.setJsObject(validators, [addr], {
-          [PredefinedDbPaths.STAKE]: GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR,
-          [PredefinedDbPaths.PROPOSAL_RIGHT]: true
+          [PredefinedDbPaths.CONSENSUS_STAKE]: GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR,
+          [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
         });
     }
     GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
@@ -735,7 +735,7 @@ function getGenesisValues() {
   CommonUtil.setJsObject(
       values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
   CommonUtil.setJsObject(
-      values, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
+      values, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
   return values;
 }
 
@@ -754,7 +754,7 @@ function getGenesisRules() {
 }
 
 function getGenesisOwners() {
-  let owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
+  const owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
   CommonUtil.setJsObject(owners, [], getRootOwner());
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     CommonUtil.setJsObject(
@@ -762,7 +762,7 @@ function getGenesisOwners() {
         getShardingOwner());
   }
   CommonUtil.setJsObject(
-      owners, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST], getWhitelistOwner());
+      owners, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST], getWhitelistOwner());
   return owners;
 }
 

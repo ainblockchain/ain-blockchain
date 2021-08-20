@@ -354,8 +354,8 @@ class Consensus {
           const stake = tempDb.getValue(PathUtil.getConsensusStakingAccountBalancePath(address));
           if (stake && MIN_STAKE_PER_VALIDATOR <= stake && stake <= MAX_STAKE_PER_VALIDATOR) {
             validators[address] = {
-              [PredefinedDbPaths.STAKE]: stake,
-              [PredefinedDbPaths.PROPOSAL_RIGHT]: true
+              [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
+              [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
             };
           }
         }
@@ -374,7 +374,7 @@ class Consensus {
       throw Error(`Not enough validators: ${JSON.stringify(validators)}`);
     }
     const totalAtStake = Object.values(validators).reduce((acc, cur) => {
-      return acc + cur[PredefinedDbPaths.STAKE];
+      return acc + cur[PredefinedDbPaths.CONSENSUS_STAKE];
     }, 0);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.create(
@@ -410,7 +410,7 @@ class Consensus {
             type: WriteDbOperations.SET_VALUE,
             ref: CommonUtil.formatPath([
               PredefinedDbPaths.CONSENSUS,
-              PredefinedDbPaths.NUMBER,
+              PredefinedDbPaths.CONSENSUS_NUMBER,
               blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB
             ]),
             value: null
@@ -757,8 +757,8 @@ class Consensus {
       type: WriteDbOperations.SET_VALUE,
       ref: PathUtil.getConsensusVotePath(block.number, myAddr),
       value: {
-        [PredefinedDbPaths.BLOCK_HASH]: block.hash,
-        [PredefinedDbPaths.STAKE]: isValidator.stake
+        [PredefinedDbPaths.CONSENSUS_BLOCK_HASH]: block.hash,
+        [PredefinedDbPaths.CONSENSUS_STAKE]: isValidator.stake
       }
     };
     const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
@@ -964,8 +964,8 @@ class Consensus {
         if (whitelist[address] === true) {
           if (MIN_STAKE_PER_VALIDATOR <= stake && stake <= MAX_STAKE_PER_VALIDATOR) {
             validators[address] = {
-              [PredefinedDbPaths.STAKE]: stake,
-              [PredefinedDbPaths.PROPOSAL_RIGHT]: true
+              [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
+              [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
             };
           }
         } else {
@@ -982,8 +982,8 @@ class Consensus {
     for (const candidate of candidates) {
       if (Object.keys(validators).length < MAX_NUM_VALIDATORS) {
         validators[candidate.address] = {
-          [PredefinedDbPaths.STAKE]: candidate.stake,
-          [PredefinedDbPaths.PROPOSAL_RIGHT]: false
+          [PredefinedDbPaths.CONSENSUS_STAKE]: candidate.stake,
+          [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: false
         };
       } else {
         break;
@@ -1206,18 +1206,18 @@ class Consensus {
     const LOG_HEADER = 'selectProposer';
     logger.debug(`[${LOG_HEADER}] seed: ${seed}, validators: ${JSON.stringify(validators)}`);
     const validatorsWithProducingRights = _.pickBy(validators, (x) => {
-      return _.get(x, PredefinedDbPaths.PROPOSAL_RIGHT) === true;
+      return _.get(x, PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT) === true;
     });
     const alphabeticallyOrderedValidators = Object.keys(validatorsWithProducingRights).sort();
     const totalAtStake = Object.values(validatorsWithProducingRights).reduce((acc, cur) => {
-      return acc + cur[PredefinedDbPaths.STAKE];
+      return acc + cur[PredefinedDbPaths.CONSENSUS_STAKE];
     }, 0);
     const randomNumGenerator = seedrandom(seed);
     const targetValue = randomNumGenerator() * totalAtStake;
     let cumulative = 0;
     for (let i = 0; i < alphabeticallyOrderedValidators.length; i++) {
       const addr = alphabeticallyOrderedValidators[i];
-      cumulative += validatorsWithProducingRights[addr][PredefinedDbPaths.STAKE];
+      cumulative += validatorsWithProducingRights[addr][PredefinedDbPaths.CONSENSUS_STAKE];
       if (cumulative > targetValue) {
         logger.info(`Proposer is ${addr}`);
         return addr;
@@ -1233,7 +1233,7 @@ class Consensus {
   static isValidConsensusTx(tx) {
     if (!tx.tx_body.operation) return false;
     const consensusTxPrefix = CommonUtil.formatPath(
-        [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.NUMBER]);
+        [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER]);
     if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
       return tx.tx_body.operation.ref.startsWith(consensusTxPrefix);
     } else if (tx.tx_body.operation.type === WriteDbOperations.SET) {
