@@ -637,6 +637,10 @@ class Functions {
 
   _distributeFee(value, context) {
     const blockNumber = context.params.number;
+    // NOTE(liayoo): Because we need to have the votes to determine which validators to give the
+    //               rewards to, we're distributing the rewards from the (N-1)th block when a
+    //               proposal for the Nth block is written. Genesis block doesn't have rewards,
+    //               so we can start from block number 2 (= processing block number 1) and so on.
     if (blockNumber <= 1) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
