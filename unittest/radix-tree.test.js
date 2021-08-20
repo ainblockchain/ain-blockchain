@@ -846,13 +846,11 @@ describe("radix-tree", () => {
         });
 
         // initial status
-        expect(tree.hasRootProofHash()).to.equal(false);
         expect(tree.getRootProofHash()).to.equal(null);
         expect(tree.verifyProofHashForRadixTree()).to.equal(false);
 
         // set
         expect(tree.setProofHashForRadixTree()).to.equal(9);
-        expect(tree.hasRootProofHash()).to.equal(true);
         expect(tree.getRootProofHash()).to.equal(
             '0xbc310c6c1b9d339951756d3c0f90bb25e70be0c0a261e04564917ce6c57016d5');
         expect(tree.verifyProofHashForRadixTree()).to.equal(true);

@@ -247,10 +247,6 @@ class RadixTree {
     return this.root.getProofHash();
   }
 
-  hasRootProofHash() {
-    return this.root.hasProofHash();
-  }
-
   setProofHashForRadixTree() {
     return this.root.setProofHashForRadixTree();
   }

@@ -52,10 +52,6 @@ class RadixNode {
     this.labelRadix = labelRadix;
   }
 
-  hasLabelRadix() {
-    return this.getLabelRadix() !== '';
-  }
-
   resetLabelRadix() {
     this.setLabelRadix('');
   }
@@ -66,10 +62,6 @@ class RadixNode {
 
   setLabelSuffix(labelSuffix) {
     this.labelSuffix = labelSuffix;
-  }
-
-  hasLabelSuffix() {
-    return this.getLabelSuffix() !== '';
   }
 
   resetLabelSuffix() {
@@ -159,10 +151,6 @@ class RadixNode {
 
   setProofHash(proofHash) {
     this.proofHash = proofHash;
-  }
-
-  hasProofHash() {
-    return this.getProofHash() !== null;
   }
 
   resetProofHash() {
