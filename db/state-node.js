@@ -2,7 +2,9 @@ const logger = require('../logger')('STATE_NODE');
 
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
+const RadixTree = require('./radix-tree');
 const {
+  FeatureFlags,
   HASH_DELIMITER,
   StateInfoProperties,
 } = require('../common/constants');
@@ -16,7 +18,11 @@ class StateNode {
     this.value = null;
     this.parentSet = new Set();
     // Used for internal nodes only.
-    this.childMap = new Map();
+    if (FeatureFlags.enableRadixTreeLayers) {
+      this.radixTree = new RadixTree();
+    } else {
+      this.childMap = new Map();
+    }
     this.proofHash = null;
     this.treeHeight = 0;
     this.treeSize = 0;
@@ -187,7 +193,12 @@ class StateNode {
   }
 
   getChild(label) {
-    const child = this.childMap.get(label);
+    let child;
+    if (FeatureFlags.enableRadixTreeLayers) {
+      child = this.radixTree.get(label);
+    } else {
+      child = this.childMap.get(label);
+    }
     if (child === undefined) {
       return null;
     }
@@ -208,7 +219,11 @@ class StateNode {
       //                   to keep the order of children.
       child._deleteParent(this);
     }
-    this.childMap.set(label, node);
+    if (FeatureFlags.enableRadixTreeLayers) {
+      this.radixTree.set(label, node);
+    } else {
+      this.childMap.set(label, node);
+    }
     node._addParent(this);
     if (this.getIsLeaf()) {
       this.setIsLeaf(false);
@@ -216,7 +231,11 @@ class StateNode {
   }
 
   hasChild(label) {
-    return this.childMap.has(label);
+    if (FeatureFlags.enableRadixTreeLayers) {
+      return this.radixTree.has(label);
+    } else {
+      return this.childMap.has(label);
+    }
   }
 
   deleteChild(label) {
@@ -228,22 +247,38 @@ class StateNode {
     }
     const child = this.getChild(label);
     child._deleteParent(this);
-    this.childMap.delete(label);
+    if (FeatureFlags.enableRadixTreeLayers) {
+      this.radixTree.delete(label);
+    } else {
+      this.childMap.delete(label);
+    }
     if (this.numChildren() === 0) {
       this.setIsLeaf(true);
     }
   }
 
   getChildLabels() {
-    return [...this.childMap.keys()];
+    if (FeatureFlags.enableRadixTreeLayers) {
+      return [...this.radixTree.labels()];
+    } else {
+      return [...this.childMap.keys()];
+    }
   }
 
   getChildNodes() {
-    return [...this.childMap.values()];
+    if (FeatureFlags.enableRadixTreeLayers) {
+      return [...this.radixTree.stateNodes()];
+    } else {
+      return [...this.childMap.values()];
+    }
   }
 
   numChildren() {
-    return this.childMap.size;
+    if (FeatureFlags.enableRadixTreeLayers) {
+      return this.radixTree.size();
+    } else {
+      return this.childMap.size;
+    }
   }
 
   getProofHash() {

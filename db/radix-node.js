@@ -1,7 +1,6 @@
 const logger = require('../logger')('RADIX_NODE');
 
 const CommonUtil = require('../common/common-util');
-const StateNode = require('./state-node');
 const {
   HASH_DELIMITER,
 } = require('../common/constants');
@@ -25,6 +24,8 @@ class RadixNode {
 
   setStateNode(stateNode) {
     const LOG_HEADER = 'setStateNode';
+    const StateNode = require('./state-node');
+
     if (!(stateNode instanceof StateNode)) {
       logger.error(
           `[${LOG_HEADER}] Setting with a non-StateNode instance.`);
