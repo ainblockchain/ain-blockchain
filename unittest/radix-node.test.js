@@ -53,13 +53,10 @@ describe("radix-node", () => {
     it("get / set / has / reset", () => {
       const labelRadix = '0';
       expect(node.getLabelRadix()).to.equal('');
-      expect(node.hasLabelRadix()).to.equal(false);
       node.setLabelRadix(labelRadix);
       expect(node.getLabelRadix()).to.equal(labelRadix);
-      expect(node.hasLabelRadix()).to.equal(true);
       node.resetLabelRadix();
       expect(node.getLabelRadix()).to.equal('');
-      expect(node.hasLabelRadix()).to.equal(false);
     });
   });
 
@@ -67,13 +64,11 @@ describe("radix-node", () => {
     it("get / set / has / reset", () => {
       const labelSuffix = 'ffff';
       expect(node.getLabelSuffix()).to.equal('');
-      expect(node.hasLabelSuffix()).to.equal(false);
+      expect(node.getLabelSuffix()).to.equal('');
       node.setLabelSuffix(labelSuffix);
       expect(node.getLabelSuffix()).to.equal(labelSuffix);
-      expect(node.hasLabelSuffix()).to.equal(true);
       node.resetLabelSuffix();
       expect(node.getLabelSuffix()).to.equal('');
-      expect(node.hasLabelSuffix()).to.equal(false);
     });
   });
 
@@ -114,8 +109,8 @@ describe("radix-node", () => {
       const child = new RadixNode();
 
       expect(node.hasStateNode()).to.equal(false);
-      expect(node.hasLabelRadix()).to.equal(false);
-      expect(node.hasLabelSuffix()).to.equal(false);
+      expect(node.getLabelRadix()).to.equal('');
+      expect(node.getLabelSuffix()).to.equal('');
       expect(node.hasParent()).to.equal(false);
       expect(node.hasChild()).to.equal(false);
       expect(node.getChild(labelRadix)).to.equal(null);
@@ -124,8 +119,8 @@ describe("radix-node", () => {
       expect(node.numChildren()).to.equal(0);
 
       expect(child.hasStateNode()).to.equal(false);
-      expect(child.hasLabelRadix()).to.equal(false);
-      expect(child.hasLabelSuffix()).to.equal(false);
+      expect(child.getLabelRadix()).to.equal('');
+      expect(child.getLabelSuffix()).to.equal('');
       expect(child.hasParent()).to.equal(false);
       expect(child.hasChild()).to.equal(false);
       assert.deepEqual(child.getChildLabelRadices(), []);
@@ -136,8 +131,8 @@ describe("radix-node", () => {
       node.setChild(labelRadix, labelSuffix, child);
 
       expect(node.hasStateNode()).to.equal(false);
-      expect(node.hasLabelRadix()).to.equal(false);
-      expect(node.hasLabelSuffix()).to.equal(false);
+      expect(node.getLabelRadix()).to.equal('');
+      expect(node.getLabelSuffix()).to.equal('');
       expect(node.hasParent()).to.equal(false);
       expect(node.hasChild()).to.equal(true);
       expect(node.getChild(labelRadix)).to.equal(child);
@@ -146,9 +141,7 @@ describe("radix-node", () => {
       expect(node.numChildren()).to.equal(1);
 
       expect(child.hasStateNode()).to.equal(false);
-      expect(child.hasLabelRadix()).to.equal(true);
       expect(child.getLabelRadix()).to.equal(labelRadix);
-      expect(child.hasLabelSuffix()).to.equal(true);
       expect(child.getLabelSuffix()).to.equal(labelSuffix);
       expect(child.hasParent()).to.equal(true);
       expect(child.getParent()).to.equal(node);
@@ -161,8 +154,8 @@ describe("radix-node", () => {
       node.deleteChild(labelRadix);
 
       expect(node.hasStateNode()).to.equal(false);
-      expect(node.hasLabelRadix()).to.equal(false);
-      expect(node.hasLabelSuffix()).to.equal(false);
+      expect(node.getLabelRadix()).to.equal('');
+      expect(node.getLabelSuffix()).to.equal('');
       expect(node.hasParent()).to.equal(false);
       expect(node.hasChild()).to.equal(false);
       expect(node.getChild(labelRadix)).to.equal(null);
@@ -171,8 +164,8 @@ describe("radix-node", () => {
       expect(node.numChildren()).to.equal(0);
 
       expect(child.hasStateNode()).to.equal(false);
-      expect(child.hasLabelRadix()).to.equal(false);
-      expect(child.hasLabelSuffix()).to.equal(false);
+      expect(child.getLabelRadix()).to.equal('');
+      expect(child.getLabelSuffix()).to.equal('');
       expect(child.hasParent()).to.equal(false);
       expect(child.hasChild()).to.equal(false);
       assert.deepEqual(child.getChildLabelRadices(), []);
@@ -192,8 +185,8 @@ describe("radix-node", () => {
       // setChild() with child1
       node.setChild(labelRadix1, labelSuffix1, child1);
       expect(node.hasStateNode()).to.equal(false);
-      expect(node.hasLabelRadix()).to.equal(false);
-      expect(node.hasLabelSuffix()).to.equal(false);
+      expect(node.getLabelRadix()).to.equal('');
+      expect(node.getLabelSuffix()).to.equal('');
       expect(node.hasParent()).to.equal(false);
       expect(node.hasChild()).to.equal(true);
       expect(node.getChild(labelRadix1)).to.equal(child1);
@@ -203,9 +196,7 @@ describe("radix-node", () => {
       expect(node.numChildren()).to.equal(1);
 
       expect(child1.hasStateNode()).to.equal(false);
-      expect(child1.hasLabelRadix()).to.equal(true);
       expect(child1.getLabelRadix()).to.equal(labelRadix1);
-      expect(child1.hasLabelSuffix()).to.equal(true);
       expect(child1.getLabelSuffix()).to.equal(labelSuffix1);
       expect(child1.hasParent()).to.equal(true);
       expect(child1.getParent()).to.equal(node);
@@ -218,8 +209,8 @@ describe("radix-node", () => {
       node.setChild(labelRadix2, labelSuffix2, child2);
 
       expect(node.hasStateNode()).to.equal(false);
-      expect(node.hasLabelRadix()).to.equal(false);
-      expect(node.hasLabelSuffix()).to.equal(false);
+      expect(node.getLabelRadix()).to.equal('');
+      expect(node.getLabelSuffix()).to.equal('');
       expect(node.hasParent()).to.equal(false);
       expect(node.hasChild()).to.equal(true);
       expect(node.getChild(labelRadix1)).to.equal(child1);
@@ -229,9 +220,7 @@ describe("radix-node", () => {
       expect(node.numChildren()).to.equal(2);
 
       expect(child1.hasStateNode()).to.equal(false);
-      expect(child1.hasLabelRadix()).to.equal(true);
       expect(child1.getLabelRadix()).to.equal(labelRadix1);
-      expect(child1.hasLabelSuffix()).to.equal(true);
       expect(child1.getLabelSuffix()).to.equal(labelSuffix1);
       expect(child1.hasParent()).to.equal(true);
       expect(child1.getParent()).to.equal(node);
@@ -241,9 +230,7 @@ describe("radix-node", () => {
       expect(child1.numChildren()).to.equal(0);
 
       expect(child2.hasStateNode()).to.equal(false);
-      expect(child2.hasLabelRadix()).to.equal(true);
       expect(child1.getLabelRadix()).to.equal(labelRadix1);
-      expect(child2.hasLabelSuffix()).to.equal(true);
       expect(child1.getLabelSuffix()).to.equal(labelSuffix1);
       expect(child2.hasParent()).to.equal(true);
       expect(child2.getParent()).to.equal(node);
@@ -256,8 +243,8 @@ describe("radix-node", () => {
       node.deleteChild(labelRadix1);
 
       expect(node.hasStateNode()).to.equal(false);
-      expect(node.hasLabelRadix()).to.equal(false);
-      expect(node.hasLabelSuffix()).to.equal(false);
+      expect(node.getLabelRadix()).to.equal('');
+      expect(node.getLabelSuffix()).to.equal('');
       expect(node.hasParent()).to.equal(false);
       expect(node.getChild(labelRadix1)).to.equal(null);
       expect(node.getChild(labelRadix2)).to.equal(child2);
@@ -267,8 +254,8 @@ describe("radix-node", () => {
       expect(node.numChildren()).to.equal(1);
 
       expect(child1.hasStateNode()).to.equal(false);
-      expect(child1.hasLabelRadix()).to.equal(false);
-      expect(child1.hasLabelSuffix()).to.equal(false);
+      expect(child1.getLabelRadix()).to.equal('');
+      expect(child1.getLabelSuffix()).to.equal('');
       expect(child1.hasParent()).to.equal(false);
       expect(child1.hasChild()).to.equal(false);
       assert.deepEqual(child1.getChildLabelRadices(), []);
@@ -276,9 +263,7 @@ describe("radix-node", () => {
       expect(child1.numChildren()).to.equal(0);
 
       expect(child2.hasStateNode()).to.equal(false);
-      expect(child2.hasLabelRadix()).to.equal(true);
       expect(child2.getLabelRadix()).to.equal(labelRadix2);
-      expect(child2.hasLabelSuffix()).to.equal(true);
       expect(child2.getLabelSuffix()).to.equal(labelSuffix2);
       expect(child2.hasParent()).to.equal(true);
       expect(child2.getParent()).to.equal(node);
@@ -375,13 +360,10 @@ describe("radix-node", () => {
     it("get / set / has / reset", () => {
       const proofHash = 'proofHash';
 
-      expect(node.hasProofHash()).to.equal(false);
       expect(node.getProofHash()).to.equal(null);
       node.setProofHash(proofHash);
-      expect(node.hasProofHash()).to.equal(true);
       expect(node.getProofHash()).to.equal(proofHash);
       node.resetProofHash();
-      expect(node.hasProofHash()).to.equal(false);
       expect(node.getProofHash()).to.equal(null);
     });
 
