@@ -173,6 +173,8 @@ class RadixNode {
     if (this.hasStateNode()) {
       preimage = this.getStateNode().getProofHash();
     }
+    // NOTE(platfowner): Put delimiter twice to distinguish the state node proof hash and
+    // the radix child proof hash.
     preimage += `${HASH_DELIMITER}${HASH_DELIMITER}`;
     preimage += this.getChildNodes().map((child) => {
       return `${child.getLabel()}${HASH_DELIMITER}${child.getProofHash()}`;
