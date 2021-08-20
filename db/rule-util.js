@@ -155,9 +155,8 @@ class RuleUtil {
   }
 
   isAppAdmin(appName, address, getValue) {
-    const { PredefinedDbPaths } = require('../common/constants');
-    return getValue(`/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
-        `${PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN}/${address}`) === true;
+    const PathUtil = require('../common/path-util');
+    return getValue(`${PathUtil.getManageAppConfigAdminPath(appName)}/${address}`) === true;
   }
 
   isAppAdminFromServAcntName(accountName, address, getValue) {
@@ -166,12 +165,12 @@ class RuleUtil {
   }
 
   getBalancePath(addrOrServAcnt) {
-    const { PredefinedDbPaths } = require('../common/constants');
+    const PathUtil = require('../common/path-util');
     if (this.isServAcntName(addrOrServAcnt)) {
       const parsed = this.parseServAcntName(addrOrServAcnt);
-      return `/${PredefinedDbPaths.SERVICE_ACCOUNTS}/${parsed[0]}/${parsed[1]}/${parsed[2]}/${PredefinedDbPaths.BALANCE}`;
+      return PathUtil.getServiceAccountBalancePath(parsed[0], parsed[1], parsed[2]);
     } else {
-      return `/${PredefinedDbPaths.ACCOUNTS}/${addrOrServAcnt}/${PredefinedDbPaths.BALANCE}`;
+      return PathUtil.getAccountBalancePath(addrOrServAcnt);
     }
   }
 
@@ -180,37 +179,16 @@ class RuleUtil {
   }
 
   isBillingUser(billingServAcntName, userAddr, getValue) {
-    const { PredefinedDbPaths } = require('../common/constants');
+    const PathUtil = require('../common/path-util');
     const parsed = this.parseServAcntName(billingServAcntName);
     const appName = parsed[1];
     const billingId = parsed[2];
-    return getValue(
-        `/${PredefinedDbPaths.MANAGE_APP}/${appName}/${PredefinedDbPaths.MANAGE_APP_CONFIG}/` +
-        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING}/${billingId}/` +
-        `${PredefinedDbPaths.MANAGE_APP_CONFIG_BILLING_USERS}/${userAddr}`) === true;
-  }
-
-  isGasFeeCollected(address, newData, txHash, getValue) {
-    const { PredefinedDbPaths } = require('../common/constants');
-    const blockNumber = newData[PredefinedDbPaths.RECEIPTS_BLOCK_NUMBER];
-    const gasCost = _.get(newData, `${PredefinedDbPaths.RECEIPTS_EXEC_RESULT}.` +
-        `${PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_COST_TOTAL}`);
-    if (gasCost === undefined) {
-      return false;
-    }
-    const billing = _.get(newData, `${PredefinedDbPaths.RECEIPTS_BILLING}`);
-    const collectedFrom = billing ? `${PredefinedDbPaths.GAS_FEE_BILLING}|${billing}` : address;
-    const feeCollected = getValue(
-        `/${PredefinedDbPaths.GAS_FEE}/${PredefinedDbPaths.GAS_FEE_COLLECT}/${collectedFrom}` +
-        `/${blockNumber}/${txHash}/${PredefinedDbPaths.GAS_FEE_AMOUNT}`) || 0;
-    return feeCollected === gasCost;
+    return getValue(`${PathUtil.getManageAppBillingUsersPath(appName, billingId)}/${userAddr}`) === true;
   }
 
   getConsensusStakeBalance(address, getValue) {
-    const { PredefinedDbPaths } = require('../common/constants');
-    return getValue(
-        `/${PredefinedDbPaths.SERVICE_ACCOUNTS}/${PredefinedDbPaths.STAKING}/` +
-        `${PredefinedDbPaths.CONSENSUS}/${address}|0/${PredefinedDbPaths.BALANCE}`) || 0;
+    const PathUtil = require('../common/path-util');
+    return getValue(PathUtil.getConsensusStakingAccountBalancePath(address)) || 0;
   }
 
   getOwnerAddr() {
@@ -234,15 +212,13 @@ class RuleUtil {
   }
 
   getTokenBridgeConfig(type, tokenId, getValue) {
-    const { PredefinedDbPaths } = require('../common/constants');
-    return getValue(`/${PredefinedDbPaths.TOKEN}/${PredefinedDbPaths.TOKEN_BRIDGE}/${type}/${tokenId}`);
+    const PathUtil = require('../common/path-util');
+    return getValue(PathUtil.getTokenBridgeConfigPath(type, tokenId));
   }
 
   getTokenPoolAddr(type, tokenId, getValue) {
-    const { PredefinedDbPaths } = require('../common/constants');
-    return getValue(
-        `/${PredefinedDbPaths.TOKEN}/${PredefinedDbPaths.TOKEN_BRIDGE}/${type}/${tokenId}/` +
-        `${PredefinedDbPaths.TOKEN_BRIDGE_TOKEN_POOL}`);
+    const PathUtil = require('../common/path-util');
+    return getValue(PathUtil.getTokenBridgeTokenPoolPath(type, tokenId));
   }
 
   getTokenPoolAddrFromHistoryData(userAddr, checkoutId, getValue) {
@@ -276,12 +252,11 @@ class RuleUtil {
   }
 
   validateClaimRewardData(userAddr, data, getValue) {
-    const { PredefinedDbPaths } = require('../common/constants');
+    const PathUtil = require('../common/path-util');
     if (!this.isDict(data) || !this.isNumber(data.amount) || data.amount <= 0) {
       return false;
     }
-    const unclaimed = getValue(`/${PredefinedDbPaths.CONSENSUS}/${PredefinedDbPaths.CONSENSUS_REWARDS}/` +
-        `${userAddr}/${PredefinedDbPaths.CONSENSUS_REWARDS_UNCLAIMED}`) || 0;
+    const unclaimed = getValue(PathUtil.getConsensusRewardsUnclaimedPath(userAddr)) || 0;
     return data.amount <= unclaimed;
   }
 
