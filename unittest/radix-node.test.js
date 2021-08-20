@@ -77,6 +77,22 @@ describe("radix-node", () => {
     });
   });
 
+  describe("label", () => {
+    it("get", () => {
+      const labelRadix = '0';
+      const labelSuffix = 'ffff';
+      expect(node.getLabel()).to.equal('');
+      node.setLabelRadix(labelRadix);
+      expect(node.getLabel()).to.equal(labelRadix);
+      node.setLabelSuffix(labelSuffix);
+      expect(node.getLabel()).to.equal(labelRadix + labelSuffix);
+      node.resetLabelSuffix();
+      expect(node.getLabel()).to.equal(labelRadix);
+      node.resetLabelRadix();
+      expect(node.getLabel()).to.equal('');
+    });
+  });
+
   describe("parent", () => {
     it("get / set / has / reset", () => {
       const parent = new RadixNode();

@@ -75,6 +75,10 @@ class RadixNode {
     this.setLabelSuffix('');
   }
 
+  getLabel() {
+    return this.getLabelRadix() + this.getLabelSuffix();
+  }
+
   getParent() {
     return this.parent;
   }
@@ -171,8 +175,7 @@ class RadixNode {
     }
     preimage += `${HASH_DELIMITER}${HASH_DELIMITER}`;
     preimage += this.getChildNodes().map((child) => {
-      const childLabel = `${child.getLabelRadix()}${child.getLabelSuffix()}`;
-      return `${childLabel}${HASH_DELIMITER}${child.getProofHash()}`;
+      return `${child.getLabel()}${HASH_DELIMITER}${child.getProofHash()}`;
     }, '').join(HASH_DELIMITER);
     return CommonUtil.hashString(preimage);
   }
