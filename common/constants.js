@@ -29,6 +29,8 @@ const FeatureFlags = {
   enableRichTxSelectionLogging: false,
   // Enables receipt path's prefix layers.
   enableReceiptPathPrefixLayers: true,
+  // Enables radix layers.
+  enableRadixTreeLayers: true,
 };
 
 // ** Environment variables **
