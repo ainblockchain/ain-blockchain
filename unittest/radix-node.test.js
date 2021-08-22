@@ -302,23 +302,23 @@ describe("radix-node", () => {
     let stateNode;
     const stateNodePH = 'stateNodePH';
 
-    let childStateNode1;
-    const childStateNodePH1 = 'childStateNodePH1';
+    let stateNode1;
+    const stateNodePH1 = 'stateNodePH1';
 
-    let childStateNode2;
-    const childStateNodePH2 = 'childStateNodePH2';
+    let stateNode2;
+    const stateNodePH2 = 'stateNodePH2';
 
-    let childStateNode11;
-    const childStateNodePH11 = 'childStateNodePH11';
+    let stateNode11;
+    const stateNodePH11 = 'stateNodePH11';
 
-    let childStateNode12;
-    const childStateNodePH12 = 'childStateNodePH12';
+    let stateNode12;
+    const stateNodePH12 = 'stateNodePH12';
 
-    let childStateNode21;
-    const childStateNodePH21 = 'childStateNodePH21';
+    let stateNode21;
+    const stateNodePH21 = 'stateNodePH21';
 
-    let childStateNode22;
-    const childStateNodePH22 = 'childStateNodePH22';
+    let stateNode22;
+    const stateNodePH22 = 'stateNodePH22';
 
     beforeEach(() => {
       child1 = new RadixNode();
@@ -332,29 +332,29 @@ describe("radix-node", () => {
       stateNode.setProofHash(stateNodePH);
       node.setStateNode(stateNode);
 
-      childStateNode1 = new StateNode();
-      childStateNode1.setProofHash(childStateNodePH1);
-      child1.setStateNode(childStateNode1);
+      stateNode1 = new StateNode();
+      stateNode1.setProofHash(stateNodePH1);
+      child1.setStateNode(stateNode1);
 
-      childStateNode2 = new StateNode();
-      childStateNode2.setProofHash(childStateNodePH2);
-      child2.setStateNode(childStateNode2);
+      stateNode2 = new StateNode();
+      stateNode2.setProofHash(stateNodePH2);
+      child2.setStateNode(stateNode2);
 
-      childStateNode11 = new StateNode();
-      childStateNode11.setProofHash(childStateNodePH11);
-      child11.setStateNode(childStateNode11);
+      stateNode11 = new StateNode();
+      stateNode11.setProofHash(stateNodePH11);
+      child11.setStateNode(stateNode11);
 
-      childStateNode12 = new StateNode();
-      childStateNode12.setProofHash(childStateNodePH12);
-      child12.setStateNode(childStateNode12);
+      stateNode12 = new StateNode();
+      stateNode12.setProofHash(stateNodePH12);
+      child12.setStateNode(stateNode12);
 
-      childStateNode21 = new StateNode();
-      childStateNode21.setProofHash(childStateNodePH21);
-      child21.setStateNode(childStateNode21);
+      stateNode21 = new StateNode();
+      stateNode21.setProofHash(stateNodePH21);
+      child21.setStateNode(stateNode21);
 
-      childStateNode22 = new StateNode();
-      childStateNode22.setProofHash(childStateNodePH22);
-      child22.setStateNode(childStateNode22);
+      stateNode22 = new StateNode();
+      stateNode22.setProofHash(stateNodePH22);
+      child22.setStateNode(stateNode22);
     })
 
     it("get / set / has / reset", () => {
@@ -377,11 +377,18 @@ describe("radix-node", () => {
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
 
-      assert.deepEqual(node.toJsObject(), {
+      assert.deepEqual(node.toJsObject(true), {
+        "proof_hash": null,
+        "->": true,
+        "-> proof_hash": "stateNodePH",
         "1:100": {
+          "proof_hash": "childPH1",
+          "-> proof_hash": "stateNodePH1",
           "->": true
         },
         "2:200": {
+          "proof_hash": "childPH2",
+          "-> proof_hash": "stateNodePH2",
           "->": true
         }
       });
@@ -413,11 +420,18 @@ describe("radix-node", () => {
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
 
-      assert.deepEqual(node.toJsObject(), {
+      assert.deepEqual(node.toJsObject(true), {
+        "proof_hash": null,
+        "->": true,
+        "-> proof_hash": "stateNodePH",
         "1:100": {
+          "proof_hash": "childPH1",
+          "-> proof_hash": "stateNodePH1",
           "->": true
         },
         "2:200": {
+          "proof_hash": "childPH2",
+          "-> proof_hash": "stateNodePH2",
           "->": true
         }
       });
@@ -438,22 +452,37 @@ describe("radix-node", () => {
       child2.setChild(labelRadix21, labelSuffix21, child21);
       child2.setChild(labelRadix22, labelSuffix22, child22);
 
-      assert.deepEqual(node.toJsObject(), {
+      assert.deepEqual(node.toJsObject(true), {
+        "proof_hash": null,
+        "->": true,
+        "-> proof_hash": "stateNodePH",
         "1:100": {
+          "proof_hash": null,
+          "-> proof_hash": "stateNodePH1",
           "->": true,
           "1:110": {
+            "proof_hash": null,
+            "-> proof_hash": "stateNodePH11",
             "->": true
           },
           "2:120": {
+            "proof_hash": null,
+            "-> proof_hash": "stateNodePH12",
             "->": true
           }
         },
         "2:200": {
+          "proof_hash": null,
+          "-> proof_hash": "stateNodePH2",
           "->": true,
           "1:210": {
+            "proof_hash": null,
+            "-> proof_hash": "stateNodePH21",
             "->": true
           },
           "2:220": {
+            "proof_hash": null,
+            "-> proof_hash": "stateNodePH22",
             "->": true
           }
         }
@@ -479,7 +508,7 @@ describe("radix-node", () => {
       expect(child22.verifyProofHash()).to.equal(true);
 
       // change of a state node's proof hash
-      childStateNode12.setProofHash('another PH');
+      stateNode12.setProofHash('another PH');
       expect(node.verifyProofHash()).to.equal(true);
       expect(child1.verifyProofHash()).to.equal(true);
       expect(child2.verifyProofHash()).to.equal(true);
@@ -498,22 +527,37 @@ describe("radix-node", () => {
       child2.setChild(labelRadix21, labelSuffix21, child21);
       child2.setChild(labelRadix22, labelSuffix22, child22);
 
-      assert.deepEqual(node.toJsObject(), {
+      assert.deepEqual(node.toJsObject(true), {
+        "proof_hash": null,
+        "->": true,
+        "-> proof_hash": "stateNodePH",
         "1:100": {
+          "proof_hash": null,
+          "-> proof_hash": "stateNodePH1",
           "->": true,
           "1:110": {
-            "->": true
+            "proof_hash": null,
+            "-> proof_hash": "stateNodePH11",
+            "->": true,
           },
           "2:120": {
+            "proof_hash": null,
+            "-> proof_hash": "stateNodePH12",
             "->": true
           }
         },
         "2:200": {
+          "proof_hash": null,
+          "-> proof_hash": "stateNodePH2",
           "->": true,
           "1:210": {
+            "proof_hash": null,
+            "-> proof_hash": "stateNodePH21",
             "->": true
           },
           "2:220": {
+            "proof_hash": null,
+            "-> proof_hash": "stateNodePH22",
             "->": true
           }
         }
@@ -548,22 +592,37 @@ describe("radix-node", () => {
       child2.setChild(labelRadix21, labelSuffix21, child21);
       child2.setChild(labelRadix22, labelSuffix22, child22);
 
-      assert.deepEqual(node.toJsObject(), {
+      assert.deepEqual(node.toJsObject(true), {
+        "proof_hash": null,
+        "->": true,
+        "-> proof_hash": "stateNodePH",
         "1:100": {
+          "proof_hash": null,
+          "-> proof_hash": "stateNodePH1",
           "->": true,
           "1:110": {
+            "proof_hash": null,
+            "-> proof_hash": "stateNodePH11",
             "->": true
           },
           "2:120": {
+            "proof_hash": null,
+            "-> proof_hash": "stateNodePH12",
             "->": true
-          }
+          },
         },
         "2:200": {
+          "proof_hash": null,
+          "-> proof_hash": "stateNodePH2",
           "->": true,
           "1:210": {
+            "proof_hash": null,
+            "-> proof_hash": "stateNodePH21",
             "->": true
           },
           "2:220": {
+            "proof_hash": null,
+            "-> proof_hash": "stateNodePH22",
             "->": true
           }
         }
@@ -577,7 +636,7 @@ describe("radix-node", () => {
       expect(node.verifyProofHashForRadixTree()).to.equal(true);
 
       // change of a state node's proof hash
-      childStateNode21.setProofHash('another PH');
+      stateNode21.setProofHash('another PH');
       expect(node.verifyProofHashForRadixTree()).to.equal(false);
 
       // update
@@ -587,27 +646,59 @@ describe("radix-node", () => {
   });
 
   describe("utils", () => {
-    it("toJsObject", () => {
-      const child1 = new RadixNode();
-      const child2 = new RadixNode();
-      const grandChild21 = new RadixNode();
-      const grandChild22 = new RadixNode();
-      const stateNode1 = new StateNode();
-      const stateNode22 = new StateNode();
+    let stateNode1;
+    let stateNode2;
+    let stateNode21;
+    let stateNode22;
+    let child1;
+    let child2;
+    let child21;
+    let child22;
+
+    beforeEach(() => {
+      stateNode1 = new StateNode();
+      stateNode1.setProofHash('stateNodePH1');
+      stateNode2 = new StateNode();
+      stateNode2.setProofHash('stateNodePH2');
+      stateNode21 = new StateNode();
+      stateNode21.setProofHash('stateNodePH21');
+      stateNode22 = new StateNode();
+      stateNode22.setProofHash('stateNodePH22');
+
+      child1 = new RadixNode();
+      child1.setProofHash('childPH1');
+      child1.setStateNode(stateNode1);
+
+      child2 = new RadixNode();
+      child2.setProofHash('childPH2');
+      child2.setStateNode(stateNode2);
+
+      child21 = new RadixNode();
+      child21.setProofHash('childPH21');
+      child21.setStateNode(stateNode21);
+
+      child22 = new RadixNode();
+      child22.setProofHash('childPH22');
+      child22.setStateNode(stateNode22);
+
       node.setChild('0', '001', child1);
       node.setChild('1', '002', child2);
-      child2.setChild('2', '021', grandChild21);
-      child2.setChild('3', '022', grandChild22);
-      child1.setStateNode(stateNode1);
-      grandChild22.setStateNode(stateNode22);
-      assert.deepEqual(node.toJsObject(), {
+      child2.setChild('2', '021', child21);
+      child2.setChild('3', '022', child22);
+    });
+
+    it("copyFrom", () => {
+      const newNode = new RadixNode();
+      newNode.copyFrom(node);
+      assert.deepEqual(newNode.toJsObject(), {
+        "->": false,
         "0:001": {
           "->": true
         },
         "1:002": {
-          "->": false,
+          "->": true,
           "2:021": {
-            "->": false
+            "->": true
           },
           "3:022": {
             "->": true
@@ -615,6 +706,48 @@ describe("radix-node", () => {
         }
       });
     });
-  });
 
+    it("toJsObject", () => {
+      assert.deepEqual(node.toJsObject(), {
+        "->": false,
+        "0:001": {
+          "->": true
+        },
+        "1:002": {
+          "->": true,
+          "2:021": {
+            "->": true
+          },
+          "3:022": {
+            "->": true
+          }
+        }
+      });
+      assert.deepEqual(node.toJsObject(true, true), {
+        "proof_hash": null,
+        "->": null,
+        "-> proof_hash": null,
+        "0:001": {
+          "proof_hash": "childPH1",
+          "-> proof_hash": "stateNodePH1",
+          "->": null
+        },
+        "1:002": {
+          "proof_hash": "childPH2",
+          "-> proof_hash": "stateNodePH2",
+          "->": null,
+          "2:021": {
+            "proof_hash": "childPH21",
+            "->": null,
+            "-> proof_hash": "stateNodePH21"
+          },
+          "3:022": {
+            "proof_hash": "childPH22",
+            "->": null,
+            "-> proof_hash": "stateNodePH22"
+          }
+        }
+      });
+    });
+  });
 });

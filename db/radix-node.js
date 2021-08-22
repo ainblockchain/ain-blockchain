@@ -28,7 +28,8 @@ class RadixNode {
 
     if (!(stateNode instanceof StateNode)) {
       logger.error(
-          `[${LOG_HEADER}] Setting with a non-StateNode instance.`);
+          `[${LOG_HEADER}] Setting with a non-StateNode instance: ` +
+          `${JSON.stringify(stateNode, null, 2)} at: ${new Error().stack}.`);
       // Does nothing.
       return false;
     }
@@ -215,17 +216,40 @@ class RadixNode {
     return true;
   }
 
+  copyFrom(radixNode, newParentStateNode) {
+    if (radixNode.hasStateNode()) {
+      const stateNode = radixNode.getStateNode();
+      this.setStateNode(stateNode);
+      stateNode.addParent(newParentStateNode);
+    }
+    this.setLabelRadix(radixNode.getLabelRadix());
+    this.setLabelSuffix(radixNode.getLabelSuffix());
+    this.setProofHash(radixNode.getProofHash());
+    for (const child of radixNode.getChildNodes()) {
+      const clonedChild = new RadixNode();
+      this.setChild(child.getLabelRadix(), child.getLabelSuffix(), clonedChild);
+      clonedChild.copyFrom(child, newParentStateNode);
+    }
+  }
+
   /**
    * Converts the subtree to a js object.
    * This is for testing / debugging purpose.
    */
-  toJsObject() {
+  toJsObject(withProofHash = false, withStateNodeDetails = false) {
     const obj = {};
-    if (this.hasParent()) {
+    if (withProofHash) {
+      obj['proof_hash'] = this.getProofHash();
+      obj['-> proof_hash'] = this.hasStateNode() ? this.getStateNode().getProofHash() : null;
+    }
+    if (withStateNodeDetails) {
+      obj['->'] = this.hasStateNode() ? this.getStateNode().toJsObject() : null;
+    } else {
       obj['->'] = this.hasStateNode();
     }
     for (const child of this.getChildNodes()) {
-      obj[child.getLabelRadix() + ':' + child.getLabelSuffix()] = child.toJsObject();
+      obj[child.getLabelRadix() + ':' + child.getLabelSuffix()] =
+          child.toJsObject(withProofHash, withStateNodeDetails);
     }
     return obj;
   }
