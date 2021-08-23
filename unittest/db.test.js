@@ -414,55 +414,55 @@ describe("DB operations", () => {
 
       it('when retrieving value with include_proof', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { includeProof: true }), {
-          ".proof_hash": "0x753458b0796af84a76e4256ec295c65a7563f5ef2c855f2ecc3e15f47887b8bf",
+          ".proof_hash": "0xf1f51cb458ef3881fefbecf91db5450e601d462099e43776863f2cbb78642286",
           "ai": {
-            ".proof_hash": "0x475a10041bd4a36132a63b16f5ba0a2b528642f01a8d00923969507289239c44",
+            ".proof_hash": "0xc49ca014a4d5328cfdb74164bcb8c00578719335194b07a8b91af1db0048f0bb",
             ".proof_hash:baz": "0x74e6d7e9818333ef5d6f4eb74dc0ee64537c9e142e4fe55e583476a62b539edf",
             ".proof_hash:comcom": "0x90840252cdaacaf90d95c14f9d366f633fd53abf7a2c359f7abfb7f651b532b5",
             ".proof_hash:foo": "0xea86f62ccb8ed9240afb6c9090be001ef7859bf40e0782f2b8d3579b3d8310a4",
             "baz": "qux",
             "comcom": 123,
-            "foo": "bar",
+            "foo": "bar"
           },
           "decrement": {
-            ".proof_hash": "0x875a06d5687f3fe01ddee9a76b48c5439a233ad4753980d239e7b91793f4b2a3",
+            ".proof_hash": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
             ".proof_hash:value": "0xc3c28ad8a683cb7f3d8cf05420651e08e14564e18a1805fe33720cd9d7d2deb2",
-            "value": 20,
+            "value": 20
           },
           "increment": {
-            ".proof_hash": "0x875a06d5687f3fe01ddee9a76b48c5439a233ad4753980d239e7b91793f4b2a3",
+            ".proof_hash": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
             ".proof_hash:value": "0xc3c28ad8a683cb7f3d8cf05420651e08e14564e18a1805fe33720cd9d7d2deb2",
-            "value": 20,
+            "value": 20
           },
           "nested": {
-            ".proof_hash": "0xb2d436a46347f073c9fbbc6daf074c6020493d39bbcf6219f483d80ba4fcba12",
+            ".proof_hash": "0x8763e301c728729e38c1f5500a2af7163783bdf0948a7baf7bc87b35f33b347f",
             "far": {
-              ".proof_hash": "0xdb10e1d3b0aa83908d4414d79940160b4ee59fab7363c3223685829b31c9912d",
+              ".proof_hash": "0xc8b9114b37d8ece398eb8dde73b00bf5037f6b11d97eff11b5212b5f30f32417",
               ".proof_hash:down": "0x4611868537ffbffa17f70f8ddb7cf5aacc6b4d1b32817315f631a2c7d6b6481d",
-              "down": 456,
-            },
+              "down": 456
+            }
           },
           "shards": {
-            ".proof_hash": "0xca7a8628678dd40de218e17a9df8acbbf31e596397ffcf94af36c2134be31e16",
+            ".proof_hash": "0x8ab46f23c6dddce173709cbc935a33d816825ffebabc4f23d02c3d2aea85fba3",
             "disabled_shard": {
-              ".proof_hash": "0xd05c3b7418eedc09e24d61376ddffabc28245006150e8ade7ee586109821c3f9",
+              ".proof_hash": "0xc0d5ac161046ecbf67ae597b3e1d96e53e78d71c0193234f78f2514dbf952161",
               ".proof_hash:path": "0xd024945cba75febe35837d24c977a187a6339888d99d505c1be63251fec52279",
               ".shard": {
-                ".proof_hash": "0xc1def4354bd8f269460896e38f288dba21d77d2c115a02285f6cce8f7e646fca",
+                ".proof_hash": "0x1908ddba2acbc0181cdc29b035c7ce371d3ed38f39b39cad3eb7e0704ccaa57b",
                 ".proof_hash:sharding_enabled": "0x055600b34c3a8a69ea5dfc2cd2f92336933be237c8b265089f3114b38b4a540a",
-                "sharding_enabled": false,
+                "sharding_enabled": false
               },
-              "path": 10,
+              "path": 10
             },
             "enabled_shard": {
-              ".proof_hash": "0xb9ab65702643eccef3d025b650a02af574b22fa52be1ac9272f20b382e21e84d",
+              ".proof_hash": "0x4b754c4a1a1f99d1ad9bc4a1edbeb7e2ceec6828313b52f8b880ee1cded3e4d3",
               ".proof_hash:path": "0xd024945cba75febe35837d24c977a187a6339888d99d505c1be63251fec52279",
               ".shard": {
-                ".proof_hash": "0xca256dadfca4c89edbc3de62b0732eac55d792b4661fdbb1c1455bfc1ef9048b",
+                ".proof_hash": "0xc308394fc297eb293cbef148c58665e9208a96e3664e86695db9d29c273dae96",
                 ".proof_hash:sharding_enabled": "0x1eafc1e61d5b7b28f90a34330bf62265eeb466e012aa7318098003f37e4c61cc",
-                "sharding_enabled": true,
+                "sharding_enabled": true
               },
-              "path": 10,
+              "path": 10
             }
           }
         })
@@ -4542,11 +4542,11 @@ describe("State info (getStateInfo)", () => {
 
       // Existing paths.
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
-        "proof_hash": "0x213304021f1ea1e8f7954c815d49207c0a42ab4bdf09929263369fa5f4d77c8b",
+        "proof_hash": "0xe4fd1f81f45b74ccd16540efa905abde37b6660d3fe9fb18eb3bf6b3e7cd215a",
         "tree_bytes": 922,
         "tree_height": 2,
         "tree_size": 5,
-        "version": "NODE:0",
+        "version": "NODE:0"
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label11'), {
         "proof_hash": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
@@ -4556,7 +4556,7 @@ describe("State info (getStateInfo)", () => {
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12'), {
-        "proof_hash": "0xbc8b6e1e9e369b5af09e14fea3769c348d66e453b3a2fc6dbec0d00278e094e7",
+        "proof_hash": "0x19037329315c0182c0f965a786e6d0659bb374e907a3937f885f0da3984cfa6e",
         "tree_bytes": 560,
         "tree_height": 1,
         "tree_size": 3,
@@ -4577,7 +4577,7 @@ describe("State info (getStateInfo)", () => {
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2'), {
-        "proof_hash": "0x7b614d2449c2ce477ac040c52b78798e5ff36a20b83115b6af8688f5e88a813f",
+        "proof_hash": "0x0088bff9a36081510c230f5fd6b6581b81966b185414e625df7553693d6517e3",
         "tree_bytes": 536,
         "tree_height": 1,
         "tree_size": 3,
@@ -4609,11 +4609,11 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(result.code, 0);
 
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
-        "proof_hash": "0x1b8f144f5692c88c242776485c0cafc184d4724942578752d083c615d84a1caa",
+        "proof_hash": "0xc751739c3275e0b4c143835fcc0342b80af43a74cf338a8571c17e727643bbe7",
         "tree_bytes": 348,
         "tree_height": 1,
         "tree_size": 2,
-        "version": "NODE:0",
+        "version": "NODE:0"
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label11'), {
         "proof_hash": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
@@ -4624,7 +4624,7 @@ describe("State info (getStateInfo)", () => {
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12'), null);
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2'), {
-        "proof_hash": "0x7b614d2449c2ce477ac040c52b78798e5ff36a20b83115b6af8688f5e88a813f",
+        "proof_hash": "0x0088bff9a36081510c230f5fd6b6581b81966b185414e625df7553693d6517e3",
         "tree_bytes": 536,
         "tree_height": 1,
         "tree_size": 3,
@@ -4642,21 +4642,21 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(result.code, 0);
 
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
-        "proof_hash": "0x052b9dbac10fca45626652f264b9896216da0ce6f1b55d10934b7e9cb9141871",
+        "proof_hash": "0xc751739c3275e0b4c143835fcc0342b80af43a74cf338a8571c17e727643bbe7",
         "tree_bytes": 906,
         "tree_height": 2,
         "tree_size": 5,
-        "version": "NODE:0",
+        "version": "NODE:0"
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2'), {
-        "proof_hash": "0x7da207e739139a3fabbcb53c9a2b91f786441b903ffd1de445e69d921f9f30af",
+        "proof_hash": "0xdd1c06ba6d6ff93fea2f2a1a3a026692858cd3528424b2f86197e1761539b0e4",
         "tree_bytes": 906,
         "tree_height": 2,
         "tree_size": 5,
         "version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21'), {
-        "proof_hash": "0x805586e32d13b938808c5e283c027d0fa7f8b496bdb6fdc8cd5a57d0b12c72af",
+        "proof_hash": "0xdfe61d4a6c026b34261bc83f4c9d5d24deaed1671177fee24a889930588edd89",
         "tree_bytes": 544,
         "tree_height": 1,
         "tree_size": 3,
