@@ -108,7 +108,7 @@ describe("state-util", () => {
           })), {isValid: false, invalidPath: '/some'});
     })
 
-    it("when writable path w/o shard config", () => {
+    it("when writable path without shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
           StateNode.fromJsObject({
@@ -2238,7 +2238,7 @@ describe("state-util", () => {
         ".num_parents": 1,
         ".num_parents:label1": 1,
         ".num_parents:label2": 1,
-        ".proof_hash": "0xa540d9d1906f4579604302acdee0b4c9742f537eb5f8397fb9a43ed458dad439",
+        ".proof_hash": "0x4ef3be0ba4fd9c5bc7994d3ed87ec958e11f97f1c974fba94037711e058328d6",
         ".proof_hash:label1": "0xb41f4a6e100333ddd8e8dcc01ca1fed23662d9faaec359ed255d21a900cecd08",
         ".proof_hash:label2": "0x7597bdc763c23c44e90f26c63d7eac963cc0d0aa8a0a3268e7f5691c5361d942",
         ".tree_height": 1,
@@ -2480,261 +2480,184 @@ describe("state-util", () => {
     })
   })
 
-  describe("setProofHashForStateTree", () => {
-    it("generates a proof hash along with the given stateTree", () => {
-      const jsObject = {
-        level0: {
-          level1: {
-            foo: 'bar',
-            baz: 'caz'
+  describe("proof hash", () => {
+    const label1 = 'L0001';
+    const label11 = 'L0011';
+    const label111 = 'L0111';
+    const label1111 = 'L1111';
+    const label1112 = 'L1112';
+    const label2 = 'L0002';
+    const label21 = 'L0021';
+    let stateTree;
+    let child1;
+    let child11;
+    let child111;
+    let child1111;
+    let child1112;
+    let child2;
+    let child21;
+    const jsObject = {
+      [label1]: {
+        [label11]: {
+          [label111]: {
+            [label1111]: 'V1111',
+            [label1112]: 'V1112'
           }
-        },
-        another_route: {
-          test: 10
         }
-      };
-      const stateTree = StateNode.fromJsObject(jsObject);
-      const level0Node = stateTree.getChild('level0');
-      const level1Node = level0Node.getChild('level1');
-      const fooNode = level1Node.getChild('foo');
-      const bazNode = level1Node.getChild('baz');
-      const anotherNode = stateTree.getChild('another_route');
-      const testNode = anotherNode.getChild('test');
+      },
+      [label2]: {
+        [label21]: 'V0021'
+      }
+    };
 
-      const numAffectedNodes = setProofHashForStateTree(level0Node);
+    beforeEach(() => {
+      stateTree = StateNode.fromJsObject(jsObject);
+      child1 = stateTree.getChild(label1);
+      child11 = child1.getChild(label11);
+      child111 = child11.getChild(label111);
+      child1111 = child111.getChild(label1111);
+      child1112 = child111.getChild(label1112);
+      child2 = stateTree.getChild(label2);
+      child21 = child2.getChild(label21);
+    });
+
+    it("setProofHashForStateTree", () => {
+      const numAffectedNodes = setProofHashForStateTree(child1);
+      expect(numAffectedNodes).to.equal(5);
+      // Checks proof hashes.
+      expect(child1111.verifyProofHash()).to.equal(true);
+      expect(child1112.verifyProofHash()).to.equal(true);
+      expect(child111.verifyProofHash()).to.equal(true);
+      expect(child11.verifyProofHash()).to.equal(true);
+      expect(child1.verifyProofHash()).to.equal(true);
+      expect(child21.verifyProofHash()).to.equal(false);
+      expect(child2.verifyProofHash()).to.equal(false);
+      expect(stateTree.verifyProofHash()).to.equal(false);
+      // Checks tree heights.
+      expect(child1111.getTreeHeight()).to.equal(0);
+      expect(child1112.getTreeHeight()).to.equal(0);
+      expect(child111.getTreeHeight()).to.equal(1);
+      expect(child11.getTreeHeight()).to.equal(2);
+      expect(child1.getTreeHeight()).to.equal(3);
+      expect(child21.getTreeHeight()).to.equal(0);
+      expect(child2.getTreeHeight()).to.equal(0);
+      expect(stateTree.getTreeHeight()).to.equal(0);
+      // Checks tree sizes.
+      expect(child1111.getTreeSize()).to.equal(1);
+      expect(child1112.getTreeSize()).to.equal(1);
+      expect(child111.getTreeSize()).to.equal(3);
+      expect(child11.getTreeSize()).to.equal(4);
+      expect(child1.getTreeSize()).to.equal(5);
+      expect(child21.getTreeSize()).to.equal(0);
+      expect(child2.getTreeSize()).to.equal(0);
+      expect(stateTree.getTreeSize()).to.equal(0);
+      // Checks tree bytes.
+      expect(child1111.getTreeBytes()).to.equal(170);
+      expect(child1112.getTreeBytes()).to.equal(170);
+      expect(child111.getTreeBytes()).to.equal(520);
+      expect(child11.getTreeBytes()).to.equal(690);
+      expect(child1.getTreeBytes()).to.equal(860);
+      expect(child21.getTreeBytes()).to.equal(0);
+      expect(child2.getTreeBytes()).to.equal(0);
+      expect(stateTree.getTreeBytes()).to.equal(0);
+    });
+
+    it("updateProofHashForAllRootPaths with a single root path", () => {
+      const numAffectedNodes =
+          updateProofHashForAllRootPaths([label1, label11, label111, label1112], stateTree);
       expect(numAffectedNodes).to.equal(4);
       // Checks proof hashes.
-      expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
-      expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
-      expect(fooNode.getProofHash()).to.equal(fooNode.buildProofHash());
-      expect(bazNode.getProofHash()).to.equal(bazNode.buildProofHash());
-      expect(stateTree.getChild('another_route').getChild('test').getProofHash()).to.equal(null);
-      expect(stateTree.getChild('another_route').getProofHash()).to.equal(null);
-      expect(stateTree.getProofHash()).to.equal(null);
+      expect(child1111.verifyProofHash()).to.equal(false);
+      expect(child1112.verifyProofHash()).to.equal(false);
+      expect(child111.verifyProofHash(label1112)).to.equal(true);  // verified
+      expect(child11.verifyProofHash()).to.equal(true);  // verified
+      expect(child21.verifyProofHash()).to.equal(false);
+      expect(child2.verifyProofHash()).to.equal(false);
+      expect(child1.verifyProofHash()).to.equal(true);  // verified
+      expect(stateTree.verifyProofHash(label1)).to.equal(true);  // verified
+
       // Checks tree heights.
-      expect(fooNode.getTreeHeight()).to.equal(0);
-      expect(bazNode.getTreeHeight()).to.equal(0);
-      expect(level1Node.getTreeHeight()).to.equal(1);
-      expect(level0Node.getTreeHeight()).to.equal(2);
-      expect(anotherNode.getTreeHeight()).to.equal(0);
-      expect(testNode.getTreeHeight()).to.equal(0);
+      expect(child1111.getTreeHeight()).to.equal(0);
+      expect(child1112.getTreeHeight()).to.equal(0);
+      expect(child111.getTreeHeight()).to.equal(child111.computeTreeHeight());
+      expect(child11.getTreeHeight()).to.equal(child11.computeTreeHeight());
+      expect(child1.getTreeHeight()).to.equal(child1.computeTreeHeight());
+      expect(child21.getTreeHeight()).to.equal(0);
+      expect(child2.getTreeHeight()).to.equal(0);
+      expect(stateTree.getTreeHeight()).to.equal(stateTree.computeTreeHeight());
+
       // Checks tree sizes.
-      expect(fooNode.getTreeSize()).to.equal(1);
-      expect(bazNode.getTreeSize()).to.equal(1);
-      expect(level1Node.getTreeSize()).to.equal(3);
-      expect(level0Node.getTreeSize()).to.equal(4);
-      expect(anotherNode.getTreeSize()).to.equal(0);
-      expect(testNode.getTreeSize()).to.equal(0);
+      expect(child1111.getTreeSize()).to.equal(0);
+      expect(child1112.getTreeSize()).to.equal(0);
+      expect(child111.getTreeSize()).to.equal(child111.computeTreeSize());
+      expect(child11.getTreeSize()).to.equal(child11.computeTreeSize());
+      expect(child1.getTreeSize()).to.equal(child1.computeTreeSize());
+      expect(child21.getTreeSize()).to.equal(0);
+      expect(child2.getTreeSize()).to.equal(0);
+      expect(stateTree.getTreeSize()).to.equal(stateTree.computeTreeSize());
+
       // Checks tree bytes.
-      expect(fooNode.getTreeBytes()).to.equal(166);
-      expect(bazNode.getTreeBytes()).to.equal(166);
-      expect(level1Node.getTreeBytes()).to.equal(504);
-      expect(level0Node.getTreeBytes()).to.equal(676);
-      expect(anotherNode.getTreeBytes()).to.equal(0);
-      expect(testNode.getTreeBytes()).to.equal(0);
-    });
-  });
-
-  describe("updateProofHashForAllRootPaths", () => {
-    it("updates proof hashes for a single root path", () => {
-      const jsObject = {
-        level0: {
-          level1: {
-            level2: {
-              foo: 'bar',
-              baz: 'caz'
-            }
-          },
-          another_route: {
-            test: -1000
-          }
-        }
-      };
-      const rootNode = StateNode.fromJsObject(jsObject);
-      const level0Node = rootNode.getChild('level0');
-      const level1Node = level0Node.getChild('level1');
-      const level2Node = level1Node.getChild('level2');
-      const anotherNode = level0Node.getChild('another_route');
-
-      level2Node.setTreeHeight(1);
-      level2Node.setTreeSize(3);
-      level2Node.setTreeBytes(150);  // An arbitrary value
-      anotherNode.setTreeHeight(1);
-      anotherNode.setTreeSize(2);
-      anotherNode.setTreeBytes(100);  // An arbitrary value
-
-      const numAffectedNodes = updateProofHashForAllRootPaths(['level0', 'level1'], rootNode);
-      expect(numAffectedNodes).to.equal(3);
-      // Checks proof hashes.
-      expect(level2Node.getChild('foo').getProofHash()).to.equal(null);
-      expect(level2Node.getChild('baz').getProofHash()).to.equal(null);
-      expect(level2Node.getProofHash()).to.equal(null);
-      expect(anotherNode.getChild('test').getProofHash()).to.equal(null);
-      expect(anotherNode.getProofHash()).to.equal(null);
-      expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
-      expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
-      expect(rootNode.getProofHash()).to.equal(rootNode.buildProofHash());
-      // Checks tree heights.
-      expect(level1Node.getTreeHeight()).to.equal(2);
-      expect(level0Node.getTreeHeight()).to.equal(3);
-      expect(rootNode.getTreeHeight()).to.equal(4);
-      // Checks tree sizes.
-      expect(level1Node.getTreeSize()).to.equal(4);
-      expect(level0Node.getTreeSize()).to.equal(7);
-      expect(rootNode.getTreeSize()).to.equal(8);
-      // Checks tree bytes.
-      expect(level1Node.getTreeBytes()).to.equal(322);
-      expect(level0Node.getTreeBytes()).to.equal(620);
-      expect(rootNode.getTreeBytes()).to.equal(792);
+      expect(child1111.getTreeBytes()).to.equal(0);
+      expect(child1112.getTreeBytes()).to.equal(0);
+      expect(child111.getTreeBytes()).to.equal(child111.computeTreeBytes());
+      expect(child11.getTreeBytes()).to.equal(child11.computeTreeBytes());
+      expect(child1.getTreeBytes()).to.equal(child1.computeTreeBytes());
+      expect(child21.getTreeBytes()).to.equal(0);
+      expect(child2.getTreeBytes()).to.equal(0);
+      expect(stateTree.getTreeBytes()).to.equal(stateTree.computeTreeBytes());
     });
 
-    it("updates proof hashes for multiple root paths", () => {
-      const jsObject = {
-        level0: {
-          level1: {
-            level2: {
-              foo: 'bar',
-              baz: 'caz'
-            }
-          },
-          another_route: {
-            test: -1000
-          }
-        }
-      };
-      const rootNode = StateNode.fromJsObject(jsObject);
-      const level0Node = rootNode.getChild('level0');
-      const level1Node = level0Node.getChild('level1');
-      const level2Node = level1Node.getChild('level2');
-      const anotherNode = level0Node.getChild('another_route');
-      const rootClone = rootNode.clone();
-      const level0Clone = level0Node.clone();
-      const level1Clone = level1Node.clone();
-      const level2Clone = level2Node.clone();
-      const anotherClone = anotherNode.clone();
+    it("updateProofHashForAllRootPaths with multiple root paths", () => {
+      const stateTreeClone = stateTree.clone();
+      const child1Clone = child1.clone();
+      const child11Clone = child11.clone();
+      const child111Clone = child111.clone();
+      const child2Clone = child2.clone();
 
-      const numAffectedNodes = updateProofHashForAllRootPaths(['level0', 'level1'], rootNode);
-      expect(numAffectedNodes).to.equal(5);
+      const numAffectedNodes =
+          updateProofHashForAllRootPaths([label1, label11, label111, label1112], stateTree);
+      expect(numAffectedNodes).to.equal(7);
 
       // Checks proof hashes.
-      expect(level2Node.getChild('foo').getProofHash()).to.equal(null);
-      expect(level2Node.getChild('baz').getProofHash()).to.equal(null);
-      expect(level2Node.getProofHash()).to.equal(null);
-      expect(level2Clone.getProofHash()).to.equal(null);
-
-      expect(anotherNode.getChild('test').getProofHash()).to.equal(null);
-      expect(anotherNode.getProofHash()).to.equal(null);
-      expect(anotherClone.getProofHash()).to.equal(null);
-
-      expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
-      expect(level1Clone.getProofHash()).to.equal(null);
-
-      expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
-      expect(level0Clone.getProofHash()).to.equal(level0Clone.buildProofHash());
-      expect(level0Clone.getProofHash()).to.equal(level0Node.getProofHash());
-
-      expect(rootNode.getProofHash()).to.equal(rootNode.buildProofHash());
-      expect(rootClone.getProofHash()).to.equal(rootClone.buildProofHash());
-      expect(rootClone.getProofHash()).to.equal(rootNode.getProofHash());
+      expect(child1111.verifyProofHash()).to.equal(false);
+      expect(child1112.verifyProofHash()).to.equal(false);
+      expect(child111.verifyProofHash(label1112)).to.equal(true);  // verified
+      expect(child111Clone.verifyProofHash(label1112)).to.equal(false);  // not verified!!
+      expect(child11.verifyProofHash()).to.equal(true);  // verified
+      expect(child11Clone.verifyProofHash()).to.equal(true);  // verified
+      expect(child11Clone.getProofHash()).to.equal(child11.getProofHash());
+      expect(child1.verifyProofHash()).to.equal(true);  // verified
+      expect(child1Clone.verifyProofHash()).to.equal(true);  // verified
+      expect(child1Clone.getProofHash()).to.equal(child1.getProofHash());
+      expect(child21.verifyProofHash()).to.equal(false);
+      expect(child2.verifyProofHash()).to.equal(false);
+      expect(child2Clone.verifyProofHash()).to.equal(false);
+      expect(stateTree.verifyProofHash(label1)).to.equal(true);  // verified
+      expect(stateTreeClone.verifyProofHash(label1)).to.equal(true);  // verified
+      expect(stateTreeClone.getProofHash()).to.equal(stateTree.getProofHash());
     });
 
-    it("updates proof hashes for multiple root paths with deleted nodes", () => {
-      const jsObject = {
-        level0: {
-          level1: {
-            level2: {
-              foo: 'bar',
-              baz: 'caz'
-            }
-          },
-          another_route: {
-            test: -1000
-          }
-        }
-      };
-      const rootNode = StateNode.fromJsObject(jsObject);
-      const level0Node = rootNode.getChild('level0');
-      const level1Node = level0Node.getChild('level1');
-      const level2Node = level1Node.getChild('level2');
-      const anotherNode = level0Node.getChild('another_route');
-      const rootClone = rootNode.clone();
-      const level0Clone = level0Node.clone();
-      const level1Clone = level1Node.clone();
-      const level2Clone = level2Node.clone();
-      const anotherClone = anotherNode.clone();
-
+    it("updateProofHashForAllRootPaths with deleted nodes", () => {
       const numAffectedNodes = updateProofHashForAllRootPaths(
-          ['level0', 'level1', 'deleted1', 'deleted2'], rootNode);  // with deleted nodes
-      expect(numAffectedNodes).to.equal(5);
+          [label1, label11, label111, 'deleted1', 'deleted2'], stateTree);  // with deleted nodes
+      expect(numAffectedNodes).to.equal(4);
 
       // Checks proof hashes.
-      expect(level2Node.getChild('foo').getProofHash()).to.equal(null);
-      expect(level2Node.getChild('baz').getProofHash()).to.equal(null);
-      expect(level2Node.getProofHash()).to.equal(null);
-      expect(level2Clone.getProofHash()).to.equal(null);
-
-      expect(anotherNode.getChild('test').getProofHash()).to.equal(null);
-      expect(anotherNode.getProofHash()).to.equal(null);
-      expect(anotherClone.getProofHash()).to.equal(null);
-
-      expect(level1Node.getProofHash()).to.equal(level1Node.buildProofHash());
-      expect(level1Clone.getProofHash()).to.equal(null);
-
-      expect(level0Node.getProofHash()).to.equal(level0Node.buildProofHash());
-      expect(level0Clone.getProofHash()).to.equal(level0Clone.buildProofHash());
-      expect(level0Clone.getProofHash()).to.equal(level0Node.getProofHash());
-
-      expect(rootNode.getProofHash()).to.equal(rootNode.buildProofHash());
-      expect(rootClone.getProofHash()).to.equal(rootClone.buildProofHash());
-      expect(rootClone.getProofHash()).to.equal(rootNode.getProofHash());
-    });
-  });
-
-  describe("verifyProofHashForStateTree", () => {
-    it("verify correct proof hashes as true", () => {
-      const jsObject = {
-        level0: {
-          level1: {
-            level2: {
-              foo: 'bar',
-              baz: 'caz'
-            }
-          },
-          another_route: {
-            test: -1000
-          }
-        }
-      };
-      const rootNode = StateNode.fromJsObject(jsObject);
-      setProofHashForStateTree(rootNode);
-      expect(verifyProofHashForStateTree(rootNode)).to.equal(true);
+      expect(child1111.verifyProofHash()).to.equal(false);
+      expect(child1112.verifyProofHash()).to.equal(false);
+      expect(child111.verifyProofHash(label1112)).to.equal(true);  // verified!!
+      expect(child11.verifyProofHash()).to.equal(true);  // verified
+      expect(child21.verifyProofHash()).to.equal(false);
+      expect(child2.verifyProofHash()).to.equal(false);
+      expect(child1.verifyProofHash()).to.equal(true);  // verified
+      expect(stateTree.verifyProofHash(label1)).to.equal(true);  // verified
     });
 
-    it("verify wrong proof hashes as false", () => {
-      const jsObject = {
-        level0: {
-          level11: {
-            level2: {
-              foo: 'bar',
-              baz: 'caz'
-            }
-          },
-          level12: {
-            level2: {
-              foo2: 'bar2'
-            }
-          },
-          another_route: {
-            test: -1000
-          }
-        }
-      };
-      const rootNode = StateNode.fromJsObject(jsObject);
-      const level0Node = rootNode.getChild('level0');
-      const level12Node = level0Node.getChild('level12');
-      setProofHashForStateTree(rootNode);
-      level12Node.setProofHash('0xdeadbeaf');
-      expect(verifyProofHashForStateTree(rootNode)).to.equal(false);
+    it("verifyProofHashForStateTree", () => {
+      setProofHashForStateTree(stateTree);
+      expect(verifyProofHashForStateTree(stateTree)).to.equal(true);
+      child111.setProofHash('new ph');
+      expect(verifyProofHashForStateTree(stateTree)).to.equal(false);
     });
   });
 })

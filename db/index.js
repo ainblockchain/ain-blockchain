@@ -385,22 +385,22 @@ class DB {
   }
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
-    const stateTree = StateNode.fromJsObject(stateObj, stateVersion);
-    const pathToParent = fullPath.slice(0, fullPath.length - 1);
+    const tree = StateNode.fromJsObject(stateObj, stateVersion);
     if (fullPath.length === 0) {
-      stateRoot = stateTree;
+      stateRoot = tree;
     } else {
-      const label = fullPath[fullPath.length - 1];
+      const pathToParent = fullPath.slice(0, fullPath.length - 1);
+      const treeLabel = fullPath[fullPath.length - 1];
       const parent = DB.getRefForWritingToStateRoot(stateRoot, pathToParent);
-      parent.setChild(label, stateTree);
+      parent.setChild(treeLabel, tree);
     }
-    if (isEmptyNode(stateTree)) {
+    if (isEmptyNode(tree)) {
       DB.removeEmptyNodesFromStateRoot(stateRoot, fullPath);
     } else if (!LIGHTWEIGHT) {
-      setProofHashForStateTree(stateTree);
+      setProofHashForStateTree(tree);
     }
     if (!LIGHTWEIGHT) {
-      updateProofHashForAllRootPaths(pathToParent, stateRoot);
+      updateProofHashForAllRootPaths(fullPath, stateRoot);
     }
     return stateRoot;
   }
