@@ -509,25 +509,13 @@ describe('Blockchain Node', () => {
       it('get_state_proof', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/')
             .body.toString('utf-8'));
-        const ownersBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/owners`)
-            .body.toString('utf-8'));
-        const rulesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/rules`)
-            .body.toString('utf-8'));
-        const valuesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/values`)
-            .body.toString('utf-8'));
-        const functionsBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_state_proof?ref=/functions`)
-            .body.toString('utf-8'));
-        const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
-        const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
-        const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
-        const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
-        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
-            `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
-            `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
-            `functions${HASH_DELIMITER}${functionProof}`;
-        const proofHash = CommonUtil.hashString(CommonUtil.toString(preimage));
-        assert.deepEqual(body, { code: 0, result: { '.proof_hash': proofHash } });
+        body.result['.proof_hash'] = 'erased';
+        assert.deepEqual(body, {
+          "code": 0,
+          "result": {
+            ".proof_hash": "erased"
+          }
+        });
       });
     });
 
@@ -538,12 +526,13 @@ describe('Blockchain Node', () => {
                 .body.toString('utf-8'));
         // Erase some properties for stable comparison.
         infoBody.result.tree_bytes = 0;
+        infoBody.result.proof_hash = 'erased';
         infoBody.result.version = 'erased';
         assert.deepEqual(
             infoBody, {
               code: 0,
               result: {
-                "proof_hash": "0x972cc2f16c7b20173eb9426d2698459a9351d38b5bca7d2af70124cd617bbeac",
+                "proof_hash": "erased",
                 "tree_bytes": 0,
                 "tree_height": 2,
                 "tree_size": 5,
@@ -700,30 +689,14 @@ describe('Blockchain Node', () => {
 
     describe('ain_getStateProof', () => {
       it('returns correct value', () => {
-        const ownersBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/owners`)
-            .body.toString('utf-8'));
-        const rulesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/rules`)
-            .body.toString('utf-8'));
-        const valuesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/values`)
-            .body.toString('utf-8'));
-        const functionsBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_state_proof?ref=/functions`)
-            .body.toString('utf-8'));
-        const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
-        const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
-        const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
-        const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
-        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
-            `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
-            `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
-            `functions${HASH_DELIMITER}${functionProof}`;
-        const proofHash = CommonUtil.hashString(CommonUtil.toString(preimage));
-
         const ref = '/';
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
         .then(res => {
-          assert.deepEqual(res.result.result, { '.proof_hash': proofHash });
+          res.result.result['.proof_hash'] = 'erased';
+          assert.deepEqual(res.result.result, {
+            ".proof_hash": "erased"
+          });
         })
       })
     })
@@ -737,9 +710,10 @@ describe('Blockchain Node', () => {
           const stateInfo = res.result.result;
           // Erase some properties for stable comparison.
           stateInfo.tree_bytes = 0;
+          stateInfo.proof_hash = 'erased';
           stateInfo.version = 'erased';
           assert.deepEqual(stateInfo, {
-            "proof_hash": "0x972cc2f16c7b20173eb9426d2698459a9351d38b5bca7d2af70124cd617bbeac",
+            "proof_hash": "erased",
             "tree_height": 2,
             "tree_size": 5,
             "tree_bytes": 0,
