@@ -250,7 +250,7 @@ class RadixTree {
   }
 
   setProofHashForRadixTree() {
-    return this.root.setProofHashForRadixTree();
+    return this.root.setProofHashForRadixSubtree();
   }
 
   updateProofHashForRadixPath(updatedNodeLabel) {
@@ -269,7 +269,7 @@ class RadixTree {
   }
 
   verifyProofHashForRadixTree() {
-    return this.root.verifyProofHashForRadixTree();
+    return this.root.verifyProofHashForRadixSubtree();
   }
 
   getProofOfState(stateLabel, stateProof) {
