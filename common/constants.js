@@ -355,7 +355,9 @@ const FunctionTypes = {
  * @enum {string}
  */
 const ProofProperties = {
+  LABEL: '.label',
   PROOF_HASH: '.proof_hash',
+  RADIX_PROOF_HASH: '.radix_ph',
 };
 
 /**

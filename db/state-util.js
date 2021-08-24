@@ -677,24 +677,24 @@ function verifyProofHashForStateTree(stateTree) {
   return true;
 }
 
-function getProofOfStateRecursive(node, fullPath, labelIndex) {
+function getProofOfStatePathRecursive(node, fullPath, labelIndex) {
   if (labelIndex > fullPath.length - 1) {
-    return node.getProof();
+    return node.getProofOfState();
   }
   const childLabel = fullPath[labelIndex];
   if (!node.hasChild(childLabel)) {
     return null;
   }
   const child = node.getChild(childLabel);
-  const childProof = getProofOfStateRecursive(child, fullPath, labelIndex + 1);
+  const childProof = getProofOfStatePathRecursive(child, fullPath, labelIndex + 1);
   if (childProof === null) {
     return null;
   }
-  return node.getProof(childLabel, childProof);
+  return node.getProofOfState(childLabel, childProof);
 }
 
-function getProofOfState(root, fullPath) {
-  return getProofOfStateRecursive(root, fullPath, 0);
+function getProofOfStatePath(root, fullPath) {
+  return getProofOfStatePathRecursive(root, fullPath, 0);
 }
 
 module.exports = {
@@ -732,5 +732,5 @@ module.exports = {
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
   verifyProofHashForStateTree,
-  getProofOfState,
+  getProofOfStatePath,
 };

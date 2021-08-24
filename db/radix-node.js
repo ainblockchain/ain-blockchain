@@ -3,6 +3,7 @@ const logger = require('../logger')('RADIX_NODE');
 const CommonUtil = require('../common/common-util');
 const {
   HASH_DELIMITER,
+  ProofProperties,
 } = require('../common/constants');
 
 /**
@@ -191,7 +192,7 @@ class RadixNode {
     return numAffectedNodes;
   }
 
-  updateProofHashForRootPath() {
+  updateProofHashForRadixPath() {
     let numAffectedNodes = 0;
     let curNode = this;
     curNode.updateProofHash();
@@ -214,6 +215,29 @@ class RadixNode {
       }
     }
     return true;
+  }
+
+  getProofOfRadixNode(childLabel = null, childProof = null, stateLabel = null, stateProof = null) {
+    const proof = { [ProofProperties.RADIX_PROOF_HASH]: this.getProofHash() };
+    if (this.hasStateNode()) {
+      Object.assign(proof, {
+        [ProofProperties.LABEL]: stateLabel,
+        [ProofProperties.PROOF_HASH]: stateProof !== null ?
+            stateProof : this.getStateNode().getProofHash()
+      });
+    }
+    if (childLabel === null && stateProof !== null) {
+      return proof;
+    }
+    this.getChildNodes().forEach((child) => {
+      const label = child.getLabel();
+      Object.assign(proof, {
+        [label]: label === childLabel ? childProof : {
+          [ProofProperties.RADIX_PROOF_HASH]: child.getProofHash()
+        }
+      });
+    });
+    return proof;
   }
 
   copyFrom(radixNode, newParentStateNode) {
