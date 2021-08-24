@@ -4465,31 +4465,31 @@ describe("Proof hash", () => {
       const rulesNode = node.db.getRefForReading(['rules']);
       const valuesNode = node.db.getRefForReading(['values']);
       const functionNode = node.db.getRefForReading(['functions']);
-      const rootProof = { [ProofProperties.PROOF_HASH]: rootNode.getProofHash() };
+      const rootProof = { ['.proof_hash']: rootNode.getProofHash() };
       const secondLevelProof = JSON.parse(JSON.stringify(rootProof));
       rootNode.getChildLabels().forEach(label => {
         Object.assign(secondLevelProof,
-          { [label]: { [ProofProperties.PROOF_HASH]: rootNode.getChild(label).getProofHash() } });
+          { [label]: { ['.proof_hash']: rootNode.getChild(label).getProofHash() } });
       });
       const ownersProof = JSON.parse(JSON.stringify(secondLevelProof));
       ownersNode.getChildLabels().forEach(label => {
         Object.assign(ownersProof.owners,
-          { [label]: { [ProofProperties.PROOF_HASH]: ownersNode.getChild(label).getProofHash() } });
+          { [label]: { ['.proof_hash']: ownersNode.getChild(label).getProofHash() } });
       });
       const rulesProof = JSON.parse(JSON.stringify(secondLevelProof));
       rulesNode.getChildLabels().forEach(label => {
         Object.assign(rulesProof.rules,
-          { [label]: { [ProofProperties.PROOF_HASH]: rulesNode.getChild(label).getProofHash() } });
+          { [label]: { ['.proof_hash']: rulesNode.getChild(label).getProofHash() } });
       });
       const valuesProof = JSON.parse(JSON.stringify(secondLevelProof));
       valuesNode.getChildLabels().forEach(label => {
         Object.assign(valuesProof.values,
-          { [label]: { [ProofProperties.PROOF_HASH]: valuesNode.getChild(label).getProofHash() } });
+          { [label]: { ['.proof_hash']: valuesNode.getChild(label).getProofHash() } });
       });
       const functionsProof = JSON.parse(JSON.stringify(secondLevelProof));
       functionNode.getChildLabels().forEach(label => {
         Object.assign(functionsProof.functions,
-          { [label]: { [ProofProperties.PROOF_HASH]: functionNode.getChild(label).getProofHash() } });
+          { [label]: { ['.proof_hash']: functionNode.getChild(label).getProofHash() } });
       });
       assert.deepEqual(rootProof, node.db.getStateProof('/'));
       assert.deepEqual(ownersProof, node.db.getStateProof('/owners/apps'));

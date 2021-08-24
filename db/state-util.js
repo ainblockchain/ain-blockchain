@@ -7,6 +7,7 @@ const CommonUtil = require('../common/common-util');
 const {
   PredefinedDbPaths,
   FunctionProperties,
+  ProofProperties,
   FunctionTypes,
   isNativeFunctionId,
   RuleProperties,
@@ -677,6 +678,25 @@ function verifyProofHashForStateTree(stateTree) {
   return true;
 }
 
+function getProofOfState(root, fullPath) {
+  let node = root;
+  const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
+  let proof = rootProof;
+  for (const label of fullPath) {
+    if (node.hasChild(label)) {
+      node.getChildLabels().forEach((label) => {
+        Object.assign(proof,
+            {[label]: {[ProofProperties.PROOF_HASH]: node.getChild(label).getProofHash()}});
+      });
+      proof = proof[label];
+      node = node.getChild(label);
+    } else {
+      return null;
+    }
+  }
+  return rootProof;
+}
+
 module.exports = {
   isEmptyNode,
   hasShardConfig,
@@ -711,5 +731,6 @@ module.exports = {
   equalStateTrees,
   setProofHashForStateTree,
   updateProofHashForAllRootPaths,
-  verifyProofHashForStateTree
+  verifyProofHashForStateTree,
+  getProofOfState,
 };
