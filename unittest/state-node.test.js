@@ -17,10 +17,10 @@ describe("state-node", () => {
   let child2;
   let child3;
   let child4;
-  const label1 = '00aaaa';
-  const label2 = '11bbbb';
-  const label3 = '11bb00';
-  const label4 = '11bb11';
+  const label1 = '0x00aaaa';
+  const label2 = '0x11bbbb';
+  const label3 = '0x11bb00';
+  const label4 = '0x11bb11';
   let stateTree;
 
   beforeEach(() => {
@@ -1305,8 +1305,8 @@ describe("state-node", () => {
       child2.setTreeBytes(20);
       child3.setTreeBytes(30);
       child4.setTreeBytes(40);
-      // 36 + 6(label1) * 2 + 10 + 6(label2) * 2 + 20 + 6(label3) * 2 + 30 + 6(label4) * 2 + 40 = 184
-      expect(stateTree.computeTreeBytes()).to.equal(184);
+      // 36 + 8(label1) * 2 + 10 + 8(label2) * 2 + 20 + 8(label3) * 2 + 30 + 8(label4) * 2 + 40 = 200
+      expect(stateTree.computeTreeBytes()).to.equal(200);
     });
   });
 
@@ -1418,6 +1418,77 @@ describe("state-node", () => {
       expect(stateTree.verifyProofHash(label2)).to.equal(true);
       // verify without updatedChildLabel
       expect(stateTree.verifyProofHash()).to.equal(false);
+    });
+  });
+
+  describe("getProofOfState", () => {
+    it("leaf node", () => {
+      node.setValue(true);  // leaf node
+      node.setProofHash('proofHash');
+      assert.deepEqual(node.getProofOfState(), {
+        ".proof_hash": "proofHash"
+      });
+    });
+
+    it("internal node", () => {
+      child1.setProofHash('proofHash1');
+      child2.setProofHash('proofHash2');
+      child3.setProofHash('proofHash3');
+      child4.setProofHash('proofHash4');
+      stateTree.setProofHash('proofHash');
+
+      stateTree.updateProofHashAndStateInfo();
+      assert.deepEqual(stateTree.radixTree.toJsObject(true), {
+        "->": false,
+        "-> proof_hash": null,
+        "0:0aaaa": {
+          "->": true,
+          "-> proof_hash": "proofHash1",
+          "proof_hash": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c"
+        },
+        "1:1bb": {
+          "->": false,
+          "-> proof_hash": null,
+          "0:0": {
+            "->": true,
+            "-> proof_hash": "proofHash3",
+            "proof_hash": "0x3dfb52c0d974feb0559c9efafa996fb286717785e98871336e68ffb52d04bdf4"
+          },
+          "1:1": {
+            "->": true,
+            "-> proof_hash": "proofHash4",
+            "proof_hash": "0x741ba4788b06907f8c99c60a6f483f885cc1b4fb27f9e1bed71dfd1d8a213214"
+          },
+          "b:b": {
+            "->": true,
+            "-> proof_hash": "proofHash2",
+            "proof_hash": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184"
+          },
+          "proof_hash": "0x099ad81295e3257147362606afc34b47757dd5c1508d441e248302be8577ed44"
+        },
+        "proof_hash": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6"
+      });
+
+      assert.deepEqual(stateTree.getProofOfState(label2, 'childProof2'), {
+        ".radix_ph": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6",
+        "00aaaa": {
+          ".radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c"
+        },
+        "11bb": {
+          "11": {
+            ".radix_ph": "0x741ba4788b06907f8c99c60a6f483f885cc1b4fb27f9e1bed71dfd1d8a213214"
+          },
+          ".radix_ph": "0x099ad81295e3257147362606afc34b47757dd5c1508d441e248302be8577ed44",
+          "00": {
+            ".radix_ph": "0x3dfb52c0d974feb0559c9efafa996fb286717785e98871336e68ffb52d04bdf4"
+          },
+          "bb": {
+            ".label": "0x11bbbb",
+            ".proof_hash": "childProof2",
+            ".radix_ph": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184"
+          }
+        }
+      });
     });
   });
 });

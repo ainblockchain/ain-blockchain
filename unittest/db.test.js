@@ -4460,88 +4460,49 @@ describe("Proof hash", () => {
     });
 
     it("tests proof with owners, rules, values and functions", () => {
-      /*
-      const rootNode = node.db.stateRoot;
-      const ownersNode = node.db.getRefForReading(['owners']);
-      const rulesNode = node.db.getRefForReading(['rules']);
-      const valuesNode = node.db.getRefForReading(['values']);
-      const functionNode = node.db.getRefForReading(['functions']);
-      const rootProof = { ['.proof_hash']: rootNode.getProofHash() };
-      const secondLevelProof = JSON.parse(JSON.stringify(rootProof));
-      rootNode.getChildLabels().forEach(label => {
-        Object.assign(secondLevelProof,
-          { [label]: { ['.proof_hash']: rootNode.getChild(label).getProofHash() } });
-      });
-      const ownersProof = JSON.parse(JSON.stringify(secondLevelProof));
-      ownersNode.getChildLabels().forEach(label => {
-        Object.assign(ownersProof.owners,
-          { [label]: { ['.proof_hash']: ownersNode.getChild(label).getProofHash() } });
-      });
-      const rulesProof = JSON.parse(JSON.stringify(secondLevelProof));
-      rulesNode.getChildLabels().forEach(label => {
-        Object.assign(rulesProof.rules,
-          { [label]: { ['.proof_hash']: rulesNode.getChild(label).getProofHash() } });
-      });
-      const valuesProof = JSON.parse(JSON.stringify(secondLevelProof));
-      valuesNode.getChildLabels().forEach(label => {
-        Object.assign(valuesProof.values,
-          { [label]: { ['.proof_hash']: valuesNode.getChild(label).getProofHash() } });
-      });
-      const functionsProof = JSON.parse(JSON.stringify(secondLevelProof));
-      functionNode.getChildLabels().forEach(label => {
-        Object.assign(functionsProof.functions,
-          { [label]: { ['.proof_hash']: functionNode.getChild(label).getProofHash() } });
-      });
-      assert.deepEqual(rootProof, node.db.getStateProof('/'));
-      assert.deepEqual(ownersProof, node.db.getStateProof('/owners/apps'));
-      assert.deepEqual(rulesProof, node.db.getStateProof('/rules/apps'));
-      assert.deepEqual(valuesProof, node.db.getStateProof('/values/apps'));
-      assert.deepEqual(functionsProof, node.db.getStateProof('/functions/apps'));
-      */
       assert.deepEqual(node.db.getStateProof('/'), {
         ".proof_hash": "0xa2efa4a6d5a3533a8a3aa9a15e82dfe25d13faf07c4567f2fcbb2074786d0c15"
       });
       assert.deepEqual(node.db.getStateProof('/values/token'), {
-        ".proof_hash": "0xa2efa4a6d5a3533a8a3aa9a15e82dfe25d13faf07c4567f2fcbb2074786d0c15",
-        "functions": {
-          ".proof_hash": "0x47827fc6acbf19135d43a3d1e166aa9330af632fdec998aac3a2d8fcde9691f9"
+        "6": {
+          ".radix_ph": "0xc2518d707e6d40bf36e3bb6896a7ccd8dfb5896d0f952de4dee969f37fe294d2"
         },
-        "owners": {
-          ".proof_hash": "0xfdd26c76fa3b0baa2d9ce277534f27a93c06c6f5cbb2bc31bfdd15069642386f"
-        },
-        "rules": {
-          ".proof_hash": "0x032a5f3bc858a584a41cdff5b4bb3c33e1f6b963e00a32870375fd32edcc1380"
-        },
-        "values": {
-          ".proof_hash": "0x272e4df282d629ce1e2dee115a955dec12edf183bb0e1feefeca03b139834701",
-          "accounts": {
-            ".proof_hash": "0x89f002f1b05d11100131bf8f431265542943145642bd9f9ff79e51109b958a3a"
+        "7": {
+          ".radix_ph": "0xa3412836a2b275621ecd4ae1f78cffc77edd6c303a54b1116aafdee3bf44c36d",
+          "2756c6573": {
+            ".radix_ph": "0xd4c4e6ae0b690d8fb1289e399d97d99e85d82dc24dac9f53770efa5f5fdcf109"
           },
-          "apps": {
-            ".proof_hash": "0xe712bc8f0eb92f34f21c0b548fe49e1ab37b270f1a86b7fdd957a61d50e10fe4"
-          },
-          "consensus": {
-            ".proof_hash": "0xe7d934b312112ccadc76ae8b2083842f25d90498f83481b5e77a313d57a91f67"
-          },
-          "manage_app": {
-            ".proof_hash": "0xacacb0304144c360106cd2bd92255ad305f957b79eff4566743375b22f96b125"
-          },
-          "service_accounts": {
-            ".proof_hash": "0xf78d57d130be238f6157267c9399c59d4e81eafc9605a5c59f3797a2efa8799c"
-          },
-          "sharding": {
-            ".proof_hash": "0xf59d43840200aedf4208ceecfd463a0e041a8be022bd63ae9938153e9b92236e"
-          },
-          "staking": {
-            ".proof_hash": "0x0c2f593c52e3cc73d7634b2e0fb980c8f41a609b0039e05da6a5785743453782"
-          },
-          "token": {
-            ".proof_hash": "0xc61156b92c5536f250cb7d1cdbf94e18fadf92b9f13144462f22fba28d70fd94"
-          },
-          "transfer": {
-            ".proof_hash": "0xd3b87ec07d35d7110d23b3078f8a483003b37d1f4a0364e443ca66c980ba393a"
+          "6616c756573": {
+            ".label": "values",
+            ".proof_hash": {
+              "6": {
+                ".radix_ph": "0x421cdf7ad181f161fe7633cda2b788181d0268ef087a358660a747d810fd698a"
+              },
+              "7": {
+                "3": {
+                  ".radix_ph": "0xf0f007c4e28e8129c768065c93e108cc3b3251d35b5d68a95058c4fbdcc0e9b3"
+                },
+                "4": {
+                  ".radix_ph": "0x7c14b8b6b20658f9d59d95798b70564368c378c4a813460fefc1b2c562e0fc6c",
+                  "6f6b656e": {
+                    ".label": "token",
+                    ".proof_hash": {
+                      ".proof_hash": "0xc61156b92c5536f250cb7d1cdbf94e18fadf92b9f13144462f22fba28d70fd94"
+                    },
+                    ".radix_ph": "0x1d1865481199e69922cbb3c8ad79cf1342e66fe7944d95aef45bf6fea9a2e1e2"
+                  },
+                  "72616e73666572": {
+                    ".radix_ph": "0x3c28e16b666913f7de34b6bd4fff94e55efda954f2689f64715aa2ab9c5a2d6b"
+                  }
+                },
+                ".radix_ph": "0x4f0ac55d4524687d01841758d8262b79d081abbb30c8bf3b205dcd473cec68e5"
+              },
+              ".radix_ph": "0x272e4df282d629ce1e2dee115a955dec12edf183bb0e1feefeca03b139834701"
+            },
+            ".radix_ph": "0xc5fb0dcb9ca56e723c08dd18586c4f33e41ef244826ca2511461ef08776fc670"
           }
-        }
+        },
+        ".radix_ph": "0xa2efa4a6d5a3533a8a3aa9a15e82dfe25d13faf07c4567f2fcbb2074786d0c15"
       });
     });
   });

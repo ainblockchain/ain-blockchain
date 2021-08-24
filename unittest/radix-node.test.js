@@ -336,10 +336,6 @@ describe("radix-node", () => {
       stateNode1.setProofHash(stateNodePH1);
       child1.setStateNode(stateNode1);
 
-      stateNode2 = new StateNode();
-      stateNode2.setProofHash(stateNodePH2);
-      child2.setStateNode(stateNode2);
-
       stateNode11 = new StateNode();
       stateNode11.setProofHash(stateNodePH11);
       child11.setStateNode(stateNode11);
@@ -388,8 +384,8 @@ describe("radix-node", () => {
         },
         "2:200": {
           "proof_hash": "childPH2",
-          "-> proof_hash": "stateNodePH2",
-          "->": true
+          "-> proof_hash": null,
+          "->": false
         }
       });
 
@@ -431,8 +427,8 @@ describe("radix-node", () => {
         },
         "2:200": {
           "proof_hash": "childPH2",
-          "-> proof_hash": "stateNodePH2",
-          "->": true
+          "-> proof_hash": null,
+          "->": false
         }
       });
 
@@ -473,8 +469,8 @@ describe("radix-node", () => {
         },
         "2:200": {
           "proof_hash": null,
-          "-> proof_hash": "stateNodePH2",
-          "->": true,
+          "-> proof_hash": null,
+          "->": false,
           "1:210": {
             "proof_hash": null,
             "-> proof_hash": "stateNodePH21",
@@ -518,7 +514,7 @@ describe("radix-node", () => {
       expect(child22.verifyProofHash()).to.equal(true);
     });
 
-    it("updateProofHashForRootPath", () => {
+    it("updateProofHashForRadixPath", () => {
       node.setStateNode(stateNode);
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
@@ -548,8 +544,8 @@ describe("radix-node", () => {
         },
         "2:200": {
           "proof_hash": null,
-          "-> proof_hash": "stateNodePH2",
-          "->": true,
+          "-> proof_hash": null,
+          "->": false,
           "1:210": {
             "proof_hash": null,
             "-> proof_hash": "stateNodePH21",
@@ -573,7 +569,7 @@ describe("radix-node", () => {
       expect(child22.verifyProofHash()).to.equal(false);
 
       // update
-      expect(child21.updateProofHashForRootPath()).to.equal(3);
+      expect(child21.updateProofHashForRadixPath()).to.equal(3);
       expect(node.verifyProofHash()).to.equal(true);
       expect(child1.verifyProofHash()).to.equal(false);
       expect(child2.verifyProofHash()).to.equal(true);
@@ -613,8 +609,8 @@ describe("radix-node", () => {
         },
         "2:200": {
           "proof_hash": null,
-          "-> proof_hash": "stateNodePH2",
-          "->": true,
+          "-> proof_hash": null,
+          "->": false,
           "1:210": {
             "proof_hash": null,
             "-> proof_hash": "stateNodePH21",
@@ -640,8 +636,91 @@ describe("radix-node", () => {
       expect(node.verifyProofHashForRadixTree()).to.equal(false);
 
       // update
-      expect(child21.updateProofHashForRootPath()).to.equal(3);
+      expect(child21.updateProofHashForRadixPath()).to.equal(3);
       expect(node.verifyProofHashForRadixTree()).to.equal(true);
+    });
+
+    it("getProofOfRadixNode", () => {
+      node.setStateNode(stateNode);
+      node.setChild(labelRadix1, labelSuffix1, child1);
+      node.setChild(labelRadix2, labelSuffix2, child2);
+      child1.setChild(labelRadix11, labelSuffix11, child11);
+      child1.setChild(labelRadix12, labelSuffix12, child12);
+      child2.setChild(labelRadix21, labelSuffix21, child21);
+      child2.setChild(labelRadix22, labelSuffix22, child22);
+
+      expect(node.setProofHashForRadixTree()).to.equal(7);
+
+      assert.deepEqual(node.toJsObject(true), {
+        "->": true,
+        "-> proof_hash": "stateNodePH",
+        "proof_hash": "0xf29196bc2c6609216445dc878baf97143463a00c9e03c6af0ba6d38a2817b3b3",
+        "1:100": {
+          "->": true,
+          "-> proof_hash": "stateNodePH1",
+          "proof_hash": "0x58b89a07baf039f5a5420aeafed213b7abe18c3f1537e9626628719f56ab5434",
+          "1:110": {
+            "->": true,
+            "-> proof_hash": "stateNodePH11",
+            "proof_hash": "0xac8e0ca829cea8d80a79260078fb8e1b38a05b6d087c72a1c92f63849a47b96b"
+          },
+          "2:120": {
+            "->": true,
+            "-> proof_hash": "stateNodePH12",
+            "proof_hash": "0x7fc53637a6ff6b7efa8cf7c9ba95552ed7479262ad8c07a61b4d2b1e8002d360"
+          }
+        },
+        "2:200": {
+          "->": false,
+          "-> proof_hash": null,
+          "proof_hash": "0xb822c6a20a4128f025019f9f03cb802f86998f48073118b132fd40fbd1620fed",
+          "1:210": {
+            "->": true,
+            "-> proof_hash": "stateNodePH21",
+            "proof_hash": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7"
+          },
+          "2:220": {
+            "->": true,
+            "-> proof_hash": "stateNodePH22",
+            "proof_hash": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2"
+          }
+        }
+      });
+
+      const label11 = labelRadix11 + labelSuffix11;
+      const label21 = labelRadix21 + labelSuffix21;
+
+      // on a node with state node value with child label and child proof
+      assert.deepEqual(child1.getProofOfRadixNode(label11, 'childProof1'), {
+        "1110": "childProof1",
+        "2120": {
+          ".radix_ph": "0x7fc53637a6ff6b7efa8cf7c9ba95552ed7479262ad8c07a61b4d2b1e8002d360"
+        },
+        ".label": null,
+        ".proof_hash": "stateNodePH1",
+        ".radix_ph": "0x58b89a07baf039f5a5420aeafed213b7abe18c3f1537e9626628719f56ab5434"
+      });
+
+      // on a node without state node value with child label and child proof
+      assert.deepEqual(child2.getProofOfRadixNode(label21, 'childProof2'), {
+        "1210": "childProof2",
+        "2220": {
+          ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2"
+        },
+        ".radix_ph": "0xb822c6a20a4128f025019f9f03cb802f86998f48073118b132fd40fbd1620fed"
+      });
+
+      // on a node with state node value with state label/proof
+      assert.deepEqual(child1.getProofOfRadixNode(null, null, 'stateLabel1', 'stateProof1'), {
+        ".label": "stateLabel1",
+        ".proof_hash": "stateProof1",
+        ".radix_ph": "0x58b89a07baf039f5a5420aeafed213b7abe18c3f1537e9626628719f56ab5434"
+      });
+
+      // on a node without state node value with state label/proof
+      assert.deepEqual(child2.getProofOfRadixNode(null, null, 'stateLabel1', 'stateProof2'), {
+        ".radix_ph": "0xb822c6a20a4128f025019f9f03cb802f86998f48073118b132fd40fbd1620fed"
+      });
     });
   });
 

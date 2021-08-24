@@ -13,8 +13,8 @@ class RadixTree {
     this.stateNodeMap = new Map();
   }
 
-  static _toHexLabel(label) {
-    const hexLabel = CommonUtil.toHexString(label);
+  static _toHexLabel(stateLabel) {
+    const hexLabel = CommonUtil.toHexString(stateLabel);
     if (hexLabel.length < 2) {
       return hexLabel;
     }
@@ -104,8 +104,8 @@ class RadixTree {
     return curNode;
   }
 
-  _getFromTree(label) {
-    const hexLabel = RadixTree._toHexLabel(label);
+  _getFromTree(stateLabel) {
+    const hexLabel = RadixTree._toHexLabel(stateLabel);
     const node = this._getRadixNodeForReading(hexLabel);
     if (node === null) {
       return null;
@@ -126,8 +126,8 @@ class RadixTree {
     return this._getFromMap(label);
   }
 
-  _setInTree(label, stateNode) {
-    const hexLabel = RadixTree._toHexLabel(label);
+  _setInTree(stateLabel, stateNode) {
+    const hexLabel = RadixTree._toHexLabel(stateLabel);
     const node = this._getRadixNodeForWriting(hexLabel);
     return node.setStateNode(stateNode);
   }
@@ -146,8 +146,8 @@ class RadixTree {
     return true;
   }
 
-  _hasInTree(label) {
-    const hexLabel = RadixTree._toHexLabel(label);
+  _hasInTree(stateLabel) {
+    const hexLabel = RadixTree._toHexLabel(stateLabel);
     const node = this._getRadixNodeForReading(hexLabel);
     return node !== null;
   }
@@ -189,18 +189,18 @@ class RadixTree {
     return true;
   }
 
-  _deleteFromTree(label) {
+  _deleteFromTree(stateLabel) {
     const LOG_HEADER = '_deleteFromTree';
 
-    const hexLabel = RadixTree._toHexLabel(label);
+    const hexLabel = RadixTree._toHexLabel(stateLabel);
     const node = this._getRadixNodeForReading(hexLabel);
     if (node === null || !node.hasStateNode()) {
-      logger.error(`[${LOG_HEADER}] Deleting a non-existing child with label: ${label}.`);
+      logger.error(`[${LOG_HEADER}] Deleting a non-existing child of label: ${stateLabel}.`);
       // Does nothing.
       return false;
     }
     if (!node.hasParent()) {
-      logger.error(`[${LOG_HEADER}] Deleting the root node with label: ${label}?`);
+      logger.error(`[${LOG_HEADER}] Deleting the root node of label: ${stateLabel}?`);
       // Does nothing.
       return false;
     }
@@ -209,7 +209,7 @@ class RadixTree {
       return this._mergeToChild(node);
     } else if (node.numChildren() === 0) {
       if (!node.hasParent()) {
-        logger.error(`[${LOG_HEADER}] Deleting a child without parent with label: ${label}.`);
+        logger.error(`[${LOG_HEADER}] Deleting a child without parent of label: ${stateLabel}.`);
         // Does nothing.
         return false;
       }
@@ -222,15 +222,15 @@ class RadixTree {
     return true;
   }
 
-  _deleteFromMap(label) {
-    this.stateNodeMap.delete(label);
+  _deleteFromMap(stateLabel) {
+    this.stateNodeMap.delete(stateLabel);
   }
 
-  delete(label) {
+  delete(stateLabel) {
     // 1. Delete from the radix tree.
-    this._deleteFromTree(label);
+    this._deleteFromTree(stateLabel);
     // 2. Delete from the hash map.
-    this._deleteFromMap(label);
+    this._deleteFromMap(stateLabel);
   }
 
   labels() {
@@ -253,8 +253,8 @@ class RadixTree {
     return this.root.setProofHashForRadixTree();
   }
 
-  updateProofHashForRootPath(updatedNodeLabel) {
-    const LOG_HEADER = 'updateProofHashForRootPath';
+  updateProofHashForRadixPath(updatedNodeLabel) {
+    const LOG_HEADER = 'updateProofHashForRadixPath';
 
     const hexLabel = RadixTree._toHexLabel(updatedNodeLabel);
     const node = this._getRadixNodeForReading(hexLabel);
@@ -265,12 +265,34 @@ class RadixTree {
       // Does nothing.
       return 0;
     }
-    return node.updateProofHashForRootPath();
+    return node.updateProofHashForRadixPath();
   }
 
   verifyProofHashForRadixTree() {
     return this.root.verifyProofHashForRadixTree();
   }
+
+  getProofOfState(stateLabel, stateProof) {
+    const hexLabel = RadixTree._toHexLabel(stateLabel);
+    let curNode = this._getRadixNodeForReading(hexLabel);
+    if (curNode === null || !curNode.hasStateNode()) {
+      return null;
+    }
+    let proof = curNode.getProofOfRadixNode(null, null, stateLabel, stateProof);
+    if (proof === null) {
+      return null;
+    }
+    while (curNode.hasParent()) {
+      const label = curNode.getLabel();
+      curNode = curNode.getParent();
+      proof = curNode.getProofOfRadixNode(label, proof);
+      if (proof === null) {
+        return null;
+      }
+    }
+    return proof;
+  }
+
 
   _copyTreeFrom(radixTree, newParentStateNode) {
     this.root.copyFrom(radixTree.root, newParentStateNode);
