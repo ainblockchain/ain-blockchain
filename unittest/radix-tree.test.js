@@ -181,9 +181,7 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": null
+          ".radix_ph": null
         });
 
         // set first node
@@ -193,14 +191,12 @@ describe("radix-tree", () => {
         expect(tree._getFromTree(label1)).to.equal(stateNode1);
         expect(tree._hasInTree(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "a:": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "a": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // set second node
@@ -211,19 +207,17 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label2)).to.equal(true);
         expect(tree._getFromTree(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "a:": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
+          ".radix_ph": null,
+          "a": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
           },
-          "b:": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          "b": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // delete first node
@@ -233,14 +227,12 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label2)).to.equal(true);
         expect(tree._getFromTree(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "b:": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "b": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // delete second node
@@ -249,9 +241,7 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": null
+          ".radix_ph": null
         });
       });
 
@@ -262,9 +252,7 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": null
+          ".radix_ph": null
         });
 
         // set first node
@@ -274,14 +262,12 @@ describe("radix-tree", () => {
         expect(tree._getFromTree(label1)).to.equal(stateNode1);
         expect(tree._hasInTree(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00a": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "000a": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // set second node
@@ -292,24 +278,20 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label2)).to.equal(true);
         expect(tree._getFromTree(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": false,
-            "-> proof_hash": null,
-            "a:": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "a": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "b:": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
-            },
-            "proof_hash": null
-          },
-          "proof_hash": null
+            "b": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
         });
 
         // delete first node
@@ -319,14 +301,12 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label2)).to.equal(true);
         expect(tree._getFromTree(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00b": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "000b": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // delete second node
@@ -335,9 +315,7 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": null
+          ".radix_ph": null
         });
       });
 
@@ -348,9 +326,7 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": null
+          ".radix_ph": null
         });
 
         // set first node
@@ -360,14 +336,12 @@ describe("radix-tree", () => {
         expect(tree._getFromTree(label1)).to.equal(stateNode1);
         expect(tree._hasInTree(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00aaa": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "000aaa": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // set second node
@@ -378,24 +352,20 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label2)).to.equal(true);
         expect(tree._getFromTree(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": false,
-            "-> proof_hash": null,
-            "a:aa": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "aaa": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "b:bb": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
-            },
-            "proof_hash": null
-          },
-          "proof_hash": null
+            "bbb": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
         });
 
         // delete first node
@@ -405,14 +375,12 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label2)).to.equal(true);
         expect(tree._getFromTree(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00bbb": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "000bbb": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // delete second node
@@ -421,9 +389,7 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": null
+          ".radix_ph": null
         });
       });
 
@@ -441,24 +407,20 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label2)).to.equal(true);
         expect(tree._getFromTree(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": false,  // hasStateNode() = false
-            "-> proof_hash": null,
-            "a:aa": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "aaa": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "b:bb": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
-            },
-            "proof_hash": null
-          },
-          "proof_hash": null
+            "bbb": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
         });
 
         // set on the internal node
@@ -471,24 +433,22 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(labelInternal)).to.equal(true);
         expect(tree._getFromTree(labelInternal)).to.equal(stateNodeInternal);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": true,  // hasStateNode() = true
-            "-> proof_hash": null,
-            "a:aa": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            "aaa": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "b:bb": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
-            },
-            "proof_hash": null
-          },
-          "proof_hash": null
+            "bbb": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
         });
       });
 
@@ -515,34 +475,30 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label22)).to.equal(true);
         expect(tree._getFromTree(label22)).to.equal(stateNode22);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": false,
-            "-> proof_hash": null,
-            "a:aa": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "aaa": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "b:bb": {
-              "->": true,
-              "-> proof_hash": null,
-              "1:11": {
-                "->": true,
-                "-> proof_hash": null,
-                "proof_hash": null
+            "bbb": {
+              "111": {
+                ".label": null,
+                ".proof_hash": null,
+                ".radix_ph": null
               },
-              "2:22": {
-                "->": true,
-                "-> proof_hash": null,
-                "proof_hash": null
+              "222": {
+                ".label": null,
+                ".proof_hash": null,
+                ".radix_ph": null
               },
-              "proof_hash": null
-            },
-            "proof_hash": null
-          },
-          "proof_hash": null
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
         });
 
         // delete first node
@@ -556,24 +512,22 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label22)).to.equal(true);
         expect(tree._getFromTree(label22)).to.equal(stateNode22);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00bbb": {
-            "->": true,
-            "-> proof_hash": null,
-            "1:11": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "2:22": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+            "222": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "proof_hash": null
-          },
-          "proof_hash": null
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
       });
 
@@ -591,19 +545,17 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label21)).to.equal(true);
         expect(tree._getFromTree(label21)).to.equal(stateNode21);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00bbb": {
-            "->": true,
-            "-> proof_hash": null,
-            "1:11": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "proof_hash": null
-          },
-          "proof_hash": null
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // delete the node
@@ -613,14 +565,12 @@ describe("radix-tree", () => {
         expect(tree._hasInTree(label21)).to.equal(true);
         expect(tree._getFromTree(label21)).to.equal(stateNode21);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00bbb111": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "000bbb111": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
       });
     });
@@ -654,34 +604,30 @@ describe("radix-tree", () => {
         expect(newTree._hasInTree(label22)).to.equal(true);
         expect(newTree._getFromTree(label22)).to.equal(stateNode22);
         assert.deepEqual(newTree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": false,
-            "-> proof_hash": null,
-            "a:aa": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "aaa": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "b:bb": {
-              "->": true,
-              "-> proof_hash": null,
-              "1:11": {
-                "->": true,
-                "-> proof_hash": null,
-                "proof_hash": null
+            "bbb": {
+              "111": {
+                ".label": null,
+                ".proof_hash": null,
+                ".radix_ph": null
               },
-              "2:22": {
-                "->": true,
-                "-> proof_hash": null,
-                "proof_hash": null
+              "222": {
+                ".label": null,
+                ".proof_hash": null,
+                ".radix_ph": null
               },
-              "proof_hash": null
-            },
-            "proof_hash": null
-          },
-          "proof_hash": null
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
         });
       });
     });
@@ -722,9 +668,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": null
+          ".radix_ph": null
         });
 
         // set first node
@@ -737,14 +681,12 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode1]);
         assert.deepEqual(tree.size(), 1);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "a:": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "a": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // set second node
@@ -758,19 +700,17 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
         assert.deepEqual(tree.size(), 2);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "a:": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
+          ".radix_ph": null,
+          "a": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
           },
-          "b:": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          "b": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // delete first node
@@ -783,14 +723,12 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode2]);
         assert.deepEqual(tree.size(), 1);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "b:": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "b": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // delete second node
@@ -802,9 +740,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": null
+          ".radix_ph": null
         });
       });
 
@@ -818,9 +754,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": null
+          ".radix_ph": null
         });
 
         // set first node
@@ -833,14 +767,12 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode1]);
         assert.deepEqual(tree.size(), 1);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00a": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "000a": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // set second node
@@ -854,24 +786,20 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
         assert.deepEqual(tree.size(), 2);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": false,
-            "-> proof_hash": null,
-            "a:": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "a": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "b:": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
-            },
-            "proof_hash": null
-          },
-          "proof_hash": null
+            "b": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
         });
 
         // delete first node
@@ -884,14 +812,12 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode2]);
         assert.deepEqual(tree.size(), 1);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00b": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "000b": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // delete second node
@@ -903,9 +829,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": null
+          ".radix_ph": null
         });
       });
 
@@ -926,24 +850,20 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
         assert.deepEqual(tree.size(), 2);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": false,  // hasStateNode() = false
-            "-> proof_hash": null,
-            "a:": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "a": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "b:": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
-            },
-            "proof_hash": null
-          },
-          "proof_hash": null
+            "b": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
         });
 
         // set on the internal node
@@ -959,24 +879,22 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2, stateNodeInternal]);
         assert.deepEqual(tree.size(), 3);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": true,  // hasStateNode() = true
-            "-> proof_hash": null,
-            "a:": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            "a": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "b:": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
-            },
-            "proof_hash": null
-          },
-          "proof_hash": null
+            "b": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
         });
       });
 
@@ -990,9 +908,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": null
+          ".radix_ph": null
         });
 
         // set first node
@@ -1005,14 +921,12 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode1]);
         assert.deepEqual(tree.size(), 1);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00aaa": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "000aaa": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // set second node
@@ -1026,24 +940,20 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
         assert.deepEqual(tree.size(), 2);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": false,
-            "-> proof_hash": null,
-            "a:aa": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "aaa": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "b:bb": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
-            },
-            "proof_hash": null
-          },
-          "proof_hash": null
+            "bbb": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
         });
 
         // delete first node
@@ -1056,14 +966,12 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode2]);
         assert.deepEqual(tree.size(), 1);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00bbb": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "000bbb": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // delete second node
@@ -1075,9 +983,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), []);
         assert.deepEqual(tree.size(), 0);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": null
+          ".radix_ph": null
         });
       });
 
@@ -1107,34 +1013,30 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2, stateNode21, stateNode22]);
         assert.deepEqual(tree.size(), 4);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": false,
-            "-> proof_hash": null,
-            "a:aa": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "aaa": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "b:bb": {
-              "->": true,
-              "-> proof_hash": null,
-              "1:11": {
-                "->": true,
-                "-> proof_hash": null,
-                "proof_hash": null
+            "bbb": {
+              "111": {
+                ".label": null,
+                ".proof_hash": null,
+                ".radix_ph": null
               },
-              "2:22": {
-                "->": true,
-                "-> proof_hash": null,
-                "proof_hash": null
+              "222": {
+                ".label": null,
+                ".proof_hash": null,
+                ".radix_ph": null
               },
-              "proof_hash": null
-            },
-            "proof_hash": null
-          },
-          "proof_hash": null
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
         });
 
         // delete first node
@@ -1151,24 +1053,22 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode2, stateNode21, stateNode22]);
         assert.deepEqual(tree.size(), 3);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00bbb": {
-            "->": true,
-            "-> proof_hash": null,
-            "1:11": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "2:22": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+            "222": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "proof_hash": null
-          },
-          "proof_hash": null
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
       });
 
@@ -1189,19 +1089,17 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode2, stateNode21]);
         assert.deepEqual(tree.size(), 2);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00bbb": {
-            "->": true,
-            "-> proof_hash": null,
-            "1:11": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "proof_hash": null
-          },
-          "proof_hash": null
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
 
         // delete the node
@@ -1214,14 +1112,12 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.stateNodes(), [stateNode21]);
         assert.deepEqual(tree.size(), 1);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00bbb111": {
-            "->": true,
-            "-> proof_hash": null,
-            "proof_hash": null
-          },
-          "proof_hash": null
+          ".radix_ph": null,
+          "000bbb111": {
+            ".label": null,
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
       });
 
@@ -1264,49 +1160,43 @@ describe("radix-tree", () => {
         tree.set(label3, stateNode3);
 
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": false,
-            "-> proof_hash": null,
-            "a:aa": {
-              "->": true,
-              "-> proof_hash": "childStateNodePH1",
-              "1:11": {
-                "->": true,
-                "-> proof_hash": "childStateNodePH11",
-                "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "aaa": {
+              "111": {
+                ".label": null,
+                ".proof_hash": "childStateNodePH11",
+                ".radix_ph": null
               },
-              "2:12": {
-                "->": true,
-                "-> proof_hash": "childStateNodePH12",
-                "proof_hash": null
+              "212": {
+                ".label": null,
+                ".proof_hash": "childStateNodePH12",
+                ".radix_ph": null
               },
-              "proof_hash": null
+              ".label": null,
+              ".proof_hash": "childStateNodePH1",
+              ".radix_ph": null
             },
-            "b:bb": {
-              "->": false,
-              "-> proof_hash": null,
-              "1:21": {
-                "->": true,
-                "-> proof_hash": "childStateNodePH21",
-                "proof_hash": null
+            "bbb": {
+              "121": {
+                ".label": null,
+                ".proof_hash": "childStateNodePH21",
+                ".radix_ph": null
               },
-              "2:22": {
-                "->": true,
-                "-> proof_hash": "childStateNodePH22",
-                "proof_hash": null
+              "222": {
+                ".label": null,
+                ".proof_hash": "childStateNodePH22",
+                ".radix_ph": null
               },
-              "proof_hash": null
-            },
-            "proof_hash": null
+              ".radix_ph": null
+            }
           },
-          "1:11ccc": {
-            "->": true,
-            "-> proof_hash": "childStateNodePH3",
-            "proof_hash": null
-          },
-          "proof_hash": null
+          "111ccc": {
+            ".label": null,
+            ".proof_hash": "childStateNodePH3",
+            ".radix_ph": null
+          }
         });
 
         // initial status
@@ -1364,42 +1254,36 @@ describe("radix-tree", () => {
 
         expect(tree.setProofHashForRadixTree()).to.equal(8);
         assert.deepEqual(tree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "proof_hash": "0x890e6c975c63529362955c359c0b7552bf1f88c4945f12a18458f8acafb17b25",
-          "0:00": {
-            "->": false,
-            "-> proof_hash": null,
-            "proof_hash": "0x7de885f5d5ecdd9e059584874ae468ba9d1ecdebb3c320fa02e6a2ac58413386",
-            "a:aa": {
-              "->": true,
-              "-> proof_hash": "childStateNodePH1",
-              "proof_hash": "0x47f652dd768456603c8bb25c5ab7157d43e3edafc51837038f42a6026bf6bb44",
-              "1:11": {
-                "->": true,
-                "-> proof_hash": "childStateNodePH11",
-                "proof_hash": "0x9fb9b2e6c1dc7fed76964029cb13fb1cdc115dc0a9cef54fe052533ab992a58c"
+          ".radix_ph": "0x890e6c975c63529362955c359c0b7552bf1f88c4945f12a18458f8acafb17b25",
+          "000": {
+            ".radix_ph": "0x7de885f5d5ecdd9e059584874ae468ba9d1ecdebb3c320fa02e6a2ac58413386",
+            "aaa": {
+              "111": {
+                ".label": null,
+                ".proof_hash": "childStateNodePH11",
+                ".radix_ph": "0x9fb9b2e6c1dc7fed76964029cb13fb1cdc115dc0a9cef54fe052533ab992a58c"
               },
-              "2:12": {
-                "->": true,
-                "-> proof_hash": "childStateNodePH12",
-                "proof_hash": "0xbde6ad92fee46f223375703e8376c3c8d75989d3b9867520442e63e0836ff596"
-              }
+              "212": {
+                ".label": null,
+                ".proof_hash": "childStateNodePH12",
+                ".radix_ph": "0xbde6ad92fee46f223375703e8376c3c8d75989d3b9867520442e63e0836ff596"
+              },
+              ".label": null,
+              ".proof_hash": "childStateNodePH1",
+              ".radix_ph": "0x47f652dd768456603c8bb25c5ab7157d43e3edafc51837038f42a6026bf6bb44"
             },
-            "b:bb": {
-              "->": false,
-              "-> proof_hash": null,
-              "proof_hash": "0x35286cd28c53fbe623eed76d4c09246645451b92cdded41ce9952436dc4656c3",
-              "1:21": {
-                "->": true,
-                "-> proof_hash": "childStateNodePH21",
-                "proof_hash": "0x68971271b6018c8827230bb696d7d2661ebb286f95851e72da889e1af6b22721"
+            "bbb": {
+              "121": {
+                ".label": null,
+                ".proof_hash": "childStateNodePH21",
+                ".radix_ph": "0x68971271b6018c8827230bb696d7d2661ebb286f95851e72da889e1af6b22721"
               },
-              "2:22": {
-                "->": true,
-                "-> proof_hash": "childStateNodePH22",
-                "proof_hash": "0xba9d1dcddd02911d1d260f8acd4e3857174d98a57e6b3c7e0577c8a07056b057"
-              }
+              "222": {
+                ".label": null,
+                ".proof_hash": "childStateNodePH22",
+                ".radix_ph": "0xba9d1dcddd02911d1d260f8acd4e3857174d98a57e6b3c7e0577c8a07056b057"
+              },
+              ".radix_ph": "0x35286cd28c53fbe623eed76d4c09246645451b92cdded41ce9952436dc4656c3"
             }
           }
         });
@@ -1477,34 +1361,30 @@ describe("radix-tree", () => {
         assert.deepEqual(newTree.stateNodes(), [stateNode1, stateNode2, stateNode21, stateNode22]);
         assert.deepEqual(newTree.size(), 4);
         assert.deepEqual(newTree.toJsObject(true), {
-          "->": false,
-          "-> proof_hash": null,
-          "0:00": {
-            "->": false,
-            "-> proof_hash": null,
-            "a:aa": {
-              "->": true,
-              "-> proof_hash": null,
-              "proof_hash": null
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "aaa": {
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
             },
-            "b:bb": {
-              "->": true,
-              "-> proof_hash": null,
-              "1:11": {
-                "->": true,
-                "-> proof_hash": null,
-                "proof_hash": null
+            "bbb": {
+              "111": {
+                ".label": null,
+                ".proof_hash": null,
+                ".radix_ph": null
               },
-              "2:22": {
-                "->": true,
-                "-> proof_hash": null,
-                "proof_hash": null
+              "222": {
+                ".label": null,
+                ".proof_hash": null,
+                ".radix_ph": null
               },
-              "proof_hash": null
-            },
-            "proof_hash": null
-          },
-          "proof_hash": null
+              ".label": null,
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
         });
       });
     });
