@@ -7,6 +7,7 @@ const {
   FeatureFlags,
   HASH_DELIMITER,
   StateInfoProperties,
+  ProofProperties,
 } = require('../common/constants');
 
 class StateNode {
@@ -423,6 +424,22 @@ class StateNode {
     this.setTreeHeight(this.computeTreeHeight());
     this.setTreeSize(this.computeTreeSize());
     this.setTreeBytes(this.computeTreeBytes());
+  }
+
+  getProof(childLabel = null, childProof = null) {
+    const proof = { [ProofProperties.PROOF_HASH]: this.getProofHash() };
+    if (childLabel === null) {
+      return proof;
+    }
+    this.getChildLabels().forEach((label) => {
+      const child = this.getChild(label);
+      Object.assign(proof, {
+        [label]: label === childLabel ? childProof : {
+          [ProofProperties.PROOF_HASH]: child.getProofHash()
+        }
+      });
+    });
+    return proof;
   }
 }
 

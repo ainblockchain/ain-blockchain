@@ -4460,6 +4460,7 @@ describe("Proof hash", () => {
     });
 
     it("tests proof with owners, rules, values and functions", () => {
+      /*
       const rootNode = node.db.stateRoot;
       const ownersNode = node.db.getRefForReading(['owners']);
       const rulesNode = node.db.getRefForReading(['rules']);
@@ -4496,6 +4497,52 @@ describe("Proof hash", () => {
       assert.deepEqual(rulesProof, node.db.getStateProof('/rules/apps'));
       assert.deepEqual(valuesProof, node.db.getStateProof('/values/apps'));
       assert.deepEqual(functionsProof, node.db.getStateProof('/functions/apps'));
+      */
+      assert.deepEqual(node.db.getStateProof('/'), {
+        ".proof_hash": "0xa2efa4a6d5a3533a8a3aa9a15e82dfe25d13faf07c4567f2fcbb2074786d0c15"
+      });
+      assert.deepEqual(node.db.getStateProof('/values/token'), {
+        ".proof_hash": "0xa2efa4a6d5a3533a8a3aa9a15e82dfe25d13faf07c4567f2fcbb2074786d0c15",
+        "functions": {
+          ".proof_hash": "0x47827fc6acbf19135d43a3d1e166aa9330af632fdec998aac3a2d8fcde9691f9"
+        },
+        "owners": {
+          ".proof_hash": "0xfdd26c76fa3b0baa2d9ce277534f27a93c06c6f5cbb2bc31bfdd15069642386f"
+        },
+        "rules": {
+          ".proof_hash": "0x032a5f3bc858a584a41cdff5b4bb3c33e1f6b963e00a32870375fd32edcc1380"
+        },
+        "values": {
+          ".proof_hash": "0x272e4df282d629ce1e2dee115a955dec12edf183bb0e1feefeca03b139834701",
+          "accounts": {
+            ".proof_hash": "0x89f002f1b05d11100131bf8f431265542943145642bd9f9ff79e51109b958a3a"
+          },
+          "apps": {
+            ".proof_hash": "0xe712bc8f0eb92f34f21c0b548fe49e1ab37b270f1a86b7fdd957a61d50e10fe4"
+          },
+          "consensus": {
+            ".proof_hash": "0xe7d934b312112ccadc76ae8b2083842f25d90498f83481b5e77a313d57a91f67"
+          },
+          "manage_app": {
+            ".proof_hash": "0xacacb0304144c360106cd2bd92255ad305f957b79eff4566743375b22f96b125"
+          },
+          "service_accounts": {
+            ".proof_hash": "0xf78d57d130be238f6157267c9399c59d4e81eafc9605a5c59f3797a2efa8799c"
+          },
+          "sharding": {
+            ".proof_hash": "0xf59d43840200aedf4208ceecfd463a0e041a8be022bd63ae9938153e9b92236e"
+          },
+          "staking": {
+            ".proof_hash": "0x0c2f593c52e3cc73d7634b2e0fb980c8f41a609b0039e05da6a5785743453782"
+          },
+          "token": {
+            ".proof_hash": "0xc61156b92c5536f250cb7d1cdbf94e18fadf92b9f13144462f22fba28d70fd94"
+          },
+          "transfer": {
+            ".proof_hash": "0xd3b87ec07d35d7110d23b3078f8a483003b37d1f4a0364e443ca66c980ba393a"
+          }
+        }
+      });
     });
   });
 });

@@ -7,7 +7,6 @@ const CommonUtil = require('../common/common-util');
 const {
   PredefinedDbPaths,
   FunctionProperties,
-  ProofProperties,
   FunctionTypes,
   isNativeFunctionId,
   RuleProperties,
@@ -678,23 +677,24 @@ function verifyProofHashForStateTree(stateTree) {
   return true;
 }
 
-function getProofOfState(root, fullPath) {
-  let node = root;
-  const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
-  let proof = rootProof;
-  for (const label of fullPath) {
-    if (node.hasChild(label)) {
-      node.getChildLabels().forEach((label) => {
-        Object.assign(proof,
-            {[label]: {[ProofProperties.PROOF_HASH]: node.getChild(label).getProofHash()}});
-      });
-      proof = proof[label];
-      node = node.getChild(label);
-    } else {
-      return null;
-    }
+function getProofOfStateRecursive(node, fullPath, labelIndex) {
+  if (labelIndex > fullPath.length - 1) {
+    return node.getProof();
   }
-  return rootProof;
+  const childLabel = fullPath[labelIndex];
+  if (!node.hasChild(childLabel)) {
+    return null;
+  }
+  const child = node.getChild(childLabel);
+  const childProof = getProofOfStateRecursive(child, fullPath, labelIndex + 1);
+  if (childProof === null) {
+    return null;
+  }
+  return node.getProof(childLabel, childProof);
+}
+
+function getProofOfState(root, fullPath) {
+  return getProofOfStateRecursive(root, fullPath, 0);
 }
 
 module.exports = {
