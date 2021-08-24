@@ -260,20 +260,18 @@ class RadixNode {
    * Converts the subtree to a js object.
    * This is for testing / debugging purpose.
    */
-  toJsObject(withProofHash = false, withStateNodeDetails = false) {
+  toJsObject(withProofHash = false) {
     const obj = {};
     if (withProofHash) {
-      obj['proof_hash'] = this.getProofHash();
-      obj['-> proof_hash'] = this.hasStateNode() ? this.getStateNode().getProofHash() : null;
+      obj[ProofProperties.RADIX_PROOF_HASH] = this.getProofHash();
     }
-    if (withStateNodeDetails) {
-      obj['->'] = this.hasStateNode() ? this.getStateNode().toJsObject() : null;
-    } else {
-      obj['->'] = this.hasStateNode();
+    if (this.hasStateNode()) {
+      const stateNode = this.getStateNode();
+      obj[ProofProperties.LABEL] = stateNode.getLabel();
+      obj[ProofProperties.PROOF_HASH] = stateNode.getProofHash();
     }
     for (const child of this.getChildNodes()) {
-      obj[child.getLabelRadix() + ':' + child.getLabelSuffix()] =
-          child.toJsObject(withProofHash, withStateNodeDetails);
+      obj[child.getLabel()] = child.toJsObject(withProofHash);
     }
     return obj;
   }
