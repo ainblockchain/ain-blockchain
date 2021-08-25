@@ -12,7 +12,6 @@ const {
   GenesisFunctions,
   GenesisRules,
   GenesisOwners,
-  ProofProperties,
   PredefinedDbPaths,
   StateInfoProperties,
   SERVICE_STATE_BUDGET,
