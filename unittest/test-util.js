@@ -165,6 +165,13 @@ function getBlockByNumber(server, number) {
       .body.toString('utf-8')).result;
 }
 
+function getErasedCopyOfTxResult(result) {
+  const erased = JSON.parse(JSON.stringify(result));
+  erased.gas_amount_charged = 'erased';
+  erased.gas_amount_total.state.service = 'erased';
+  return erased;
+}
+
 module.exports = {
   GET_OPTIONS_INCLUDE_ALL,
   readConfigFile,
@@ -179,4 +186,5 @@ module.exports = {
   getLastBlock,
   getLastBlockNumber,
   getBlockByNumber,
+  getErasedCopyOfTxResult,
 };
