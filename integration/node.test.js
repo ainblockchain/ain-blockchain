@@ -13,10 +13,8 @@ const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
   CURRENT_PROTOCOL_VERSION,
   CHAINS_DIR,
-  HASH_DELIMITER,
   FunctionResultCode,
   GenesisAccounts,
-  ProofProperties,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
@@ -31,6 +29,7 @@ const {
   getLastBlockNumber,
   waitForNewBlocks,
   getBlockByNumber,
+  getErasedCopyOfTxResult,
 } = require('../unittest/test-util');
 const DB = require('../db');
 
@@ -509,25 +508,13 @@ describe('Blockchain Node', () => {
       it('get_state_proof', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/')
             .body.toString('utf-8'));
-        const ownersBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/owners`)
-            .body.toString('utf-8'));
-        const rulesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/rules`)
-            .body.toString('utf-8'));
-        const valuesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/values`)
-            .body.toString('utf-8'));
-        const functionsBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_state_proof?ref=/functions`)
-            .body.toString('utf-8'));
-        const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
-        const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
-        const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
-        const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
-        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
-            `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
-            `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
-            `functions${HASH_DELIMITER}${functionProof}`;
-        const proofHash = CommonUtil.hashString(CommonUtil.toString(preimage));
-        assert.deepEqual(body, { code: 0, result: { '.proof_hash': proofHash } });
+        body.result['.proof_hash'] = 'erased';
+        assert.deepEqual(body, {
+          "code": 0,
+          "result": {
+            ".proof_hash": "erased"
+          }
+        });
       });
     });
 
@@ -538,12 +525,13 @@ describe('Blockchain Node', () => {
                 .body.toString('utf-8'));
         // Erase some properties for stable comparison.
         infoBody.result.tree_bytes = 0;
+        infoBody.result.proof_hash = 'erased';
         infoBody.result.version = 'erased';
         assert.deepEqual(
             infoBody, {
               code: 0,
               result: {
-                "proof_hash": "0x972cc2f16c7b20173eb9426d2698459a9351d38b5bca7d2af70124cd617bbeac",
+                "proof_hash": "erased",
                 "tree_bytes": 0,
                 "tree_height": 2,
                 "tree_size": 5,
@@ -700,30 +688,14 @@ describe('Blockchain Node', () => {
 
     describe('ain_getStateProof', () => {
       it('returns correct value', () => {
-        const ownersBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/owners`)
-            .body.toString('utf-8'));
-        const rulesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/rules`)
-            .body.toString('utf-8'));
-        const valuesBody = parseOrLog(syncRequest('GET', server1 + `/get_state_proof?ref=/values`)
-            .body.toString('utf-8'));
-        const functionsBody = parseOrLog(syncRequest(
-            'GET', server1 + `/get_state_proof?ref=/functions`)
-            .body.toString('utf-8'));
-        const ownersProof = ownersBody.result.owners[ProofProperties.PROOF_HASH];
-        const rulesProof = rulesBody.result.rules[ProofProperties.PROOF_HASH];
-        const valuesProof = valuesBody.result.values[ProofProperties.PROOF_HASH];
-        const functionProof = functionsBody.result.functions[ProofProperties.PROOF_HASH];
-        const preimage = `owners${HASH_DELIMITER}${ownersProof}${HASH_DELIMITER}` +
-            `rules${HASH_DELIMITER}${rulesProof}${HASH_DELIMITER}` +
-            `values${HASH_DELIMITER}${valuesProof}${HASH_DELIMITER}` +
-            `functions${HASH_DELIMITER}${functionProof}`;
-        const proofHash = CommonUtil.hashString(CommonUtil.toString(preimage));
-
         const ref = '/';
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
         .then(res => {
-          assert.deepEqual(res.result.result, { '.proof_hash': proofHash });
+          res.result.result['.proof_hash'] = 'erased';
+          assert.deepEqual(res.result.result, {
+            ".proof_hash": "erased"
+          });
         })
       })
     })
@@ -737,9 +709,10 @@ describe('Blockchain Node', () => {
           const stateInfo = res.result.result;
           // Erase some properties for stable comparison.
           stateInfo.tree_bytes = 0;
+          stateInfo.proof_hash = 'erased';
           stateInfo.version = 'erased';
           assert.deepEqual(stateInfo, {
-            "proof_hash": "0x972cc2f16c7b20173eb9426d2698459a9351d38b5bca7d2af70124cd617bbeac",
+            "proof_hash": "erased",
             "tree_height": 2,
             "tree_size": 5,
             "tree_bytes": 0,
@@ -4263,61 +4236,58 @@ describe('Blockchain Node', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8')).result;
-        assert.deepEqual(createAppRes, {
-          "result": {
-            "code": 0,
-            "func_results": {
-              "_createApp": {
-                "code": 0,
-                "bandwidth_gas_amount": 0,
-                "op_results": {
-                  "0": {
-                    "path": "/apps/test_service_create_app0",
-                    "result": {
-                      "code": 0,
-                      "bandwidth_gas_amount": 1
-                    }
-                  },
-                  "1": {
-                    "path": "/apps/test_service_create_app0",
-                    "result": {
-                      "code": 0,
-                      "bandwidth_gas_amount": 1
-                    }
-                  },
-                  "2": {
-                    "path": "/manage_app/test_service_create_app0/config",
-                    "result": {
-                      "code": 0,
-                      "bandwidth_gas_amount": 1
-                    }
-                  },
-                  "3": {
-                    "path": "/manage_app/test_service_create_app0/create/1/result",
-                    "result": {
-                      "code": 0,
-                      "bandwidth_gas_amount": 1
-                    }
+        assert.deepEqual(getErasedCopyOfTxResult(createAppRes.result), {
+          "func_results": {
+            "_createApp": {
+              "code": 0,
+              "bandwidth_gas_amount": 0,
+              "op_results": {
+                "0": {
+                  "path": "/apps/test_service_create_app0",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "1": {
+                  "path": "/apps/test_service_create_app0",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "2": {
+                  "path": "/manage_app/test_service_create_app0/config",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "3": {
+                  "path": "/manage_app/test_service_create_app0/create/1/result",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
                   }
                 }
               }
-            },
-            "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 2393,
-            "gas_amount_total": {
-              "bandwidth": {
-                "app": {
-                  "test_service_create_app0": 2
-                },
-                "service": 3
-              },
-              "state": {
-                "service": 2390
-              }
-            },
-            "gas_cost_total": 0
+            }
           },
-          "tx_hash": "0x4e2a4bc009347bbaa1a14f1ddecb0f2b06d02d46326d33def7c346c613093079"
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 'erased',
+          "gas_amount_total": {
+            "bandwidth": {
+              "app": {
+                "test_service_create_app0": 2
+              },
+              "service": 3
+            },
+            "state": {
+              "service": 'erased'
+            }
+          },
+          "gas_cost_total": 0
         });
         if (!(await waitUntilTxFinalized(serverList, _.get(createAppRes, 'tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
@@ -4391,61 +4361,58 @@ describe('Blockchain Node', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8')).result;
-        assert.deepEqual(createAppRes, {
-          "result": {
-            "code": 0,
-            "func_results": {
-              "_createApp": {
-                "code": 0,
-                "bandwidth_gas_amount": 0,
-                "op_results": {
-                  "0": {
-                    "path": "/apps/test_service_create_app1",
-                    "result": {
-                      "code": 0,
-                      "bandwidth_gas_amount": 1
-                    }
-                  },
-                  "1": {
-                    "path": "/apps/test_service_create_app1",
-                    "result": {
-                      "code": 0,
-                      "bandwidth_gas_amount": 1
-                    }
-                  },
-                  "2": {
-                    "path": "/manage_app/test_service_create_app1/config",
-                    "result": {
-                      "code": 0,
-                      "bandwidth_gas_amount": 1
-                    }
-                  },
-                  "3": {
-                    "path": "/manage_app/test_service_create_app1/create/0/result",
-                    "result": {
-                      "code": 0,
-                      "bandwidth_gas_amount": 1
-                    }
+        assert.deepEqual(getErasedCopyOfTxResult(createAppRes.result), {
+          "func_results": {
+            "_createApp": {
+              "code": 0,
+              "bandwidth_gas_amount": 0,
+              "op_results": {
+                "0": {
+                  "path": "/apps/test_service_create_app1",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "1": {
+                  "path": "/apps/test_service_create_app1",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "2": {
+                  "path": "/manage_app/test_service_create_app1/config",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "3": {
+                  "path": "/manage_app/test_service_create_app1/create/0/result",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
                   }
                 }
               }
-            },
-            "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 2757,
-            "gas_amount_total": {
-              "bandwidth": {
-                "app": {
-                  "test_service_create_app1": 2
-                },
-                "service": 3
-              },
-              "state": {
-                "service": 2754
-              }
-            },
-            "gas_cost_total": 0
+            }
           },
-          "tx_hash": "0xaa4625dcf4dfa36d6e9a23b64236b88379cac1338d76b915e843fd7cfeda14bb"
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 'erased',
+          "gas_amount_total": {
+            "bandwidth": {
+              "app": {
+                "test_service_create_app1": 2
+              },
+              "service": 3
+            },
+            "state": {
+              "service": 'erased'
+            }
+          },
+          "gas_cost_total": 0
         });
         if (!(await waitUntilTxFinalized(serverList, createAppRes.tx_hash))) {
           console.error(`Failed to check finalization of tx.`);
@@ -4501,7 +4468,7 @@ describe('Blockchain Node', () => {
           timestamp: 1234567890000,
           nonce: -1,
         }}).body.toString('utf-8'));
-        assert.deepEqual(_.get(body, 'result.result'), {
+        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
           "func_results": {
             "_transfer": {
               "op_results": {
@@ -4533,13 +4500,13 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 2854,
+          "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
               "service": 1004
             },
             "state": {
-              "service": 1850
+              "service": 'erased'
             }
           },
           "gas_cost_total": 0,
@@ -4557,7 +4524,7 @@ describe('Blockchain Node', () => {
           timestamp: 1234567890000,
           nonce: -1,
         }}).body.toString('utf-8'));
-        assert.deepEqual(_.get(body, 'result.result'), {
+        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
           "func_results": {
             "_transfer": {
               "op_results": {
@@ -4589,13 +4556,13 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 1184,
+          "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
               "service": 4
             },
             "state": {
-              "service": 1180
+              "service": 'erased'
             }
           },
           "gas_cost_total": 0,
@@ -4613,7 +4580,7 @@ describe('Blockchain Node', () => {
           timestamp: 1234567890000,
           nonce: -1,
         }}).body.toString('utf-8'));
-        assert.deepEqual(_.get(body, 'result.result'), {
+        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
           "func_results": {
             "_stake": {
               "op_results": {
@@ -4681,13 +4648,13 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 4894,
+          "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
               "service": 1008
             },
             "state": {
-              "service": 3886
+              "service": 'erased'
             }
           },
           "gas_cost_total": 0,
@@ -4705,7 +4672,7 @@ describe('Blockchain Node', () => {
           timestamp: 1234567890001,
           nonce: -1,
         }}).body.toString('utf-8'));
-        assert.deepEqual(_.get(body, 'result.result'), {
+        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
           "func_results": {
             "_stake": {
               "op_results": {
@@ -4773,13 +4740,13 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 2396,
+          "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
               "service": 8
             },
             "state": {
-              "service": 2388
+              "service": 'erased'
             }
           },
           "gas_cost_total": 0,
@@ -4982,54 +4949,48 @@ describe('Blockchain Node', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8'));
-        assert.deepEqual(body, {
-          "code": 0,
-          "result": {
-            "result": {
+        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+          "func_results": {
+            "_transfer": {
               "code": 0,
-              "func_results": {
-                "_transfer": {
-                  "code": 0,
-                  "bandwidth_gas_amount": 1000,
-                  "op_results": {
-                    "0": {
-                      "path": "/accounts/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance",
-                      "result": {
-                        "code": 0,
-                        "bandwidth_gas_amount": 1
-                      }
-                    },
-                    "1": {
-                      "path": "/service_accounts/staking/test_service/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
-                      "result": {
-                        "code": 0,
-                        "bandwidth_gas_amount": 1
-                      }
-                    },
-                    "2": {
-                      "path": "/transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/staking|test_service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1/result",
-                      "result": {
-                        "code": 0,
-                        "bandwidth_gas_amount": 1
-                      }
-                    }
+              "bandwidth_gas_amount": 1000,
+              "op_results": {
+                "0": {
+                  "path": "/accounts/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "1": {
+                  "path": "/service_accounts/staking/test_service/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "2": {
+                  "path": "/transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/staking|test_service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1/result",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
                   }
                 }
-              },
-              "bandwidth_gas_amount": 1,
-              "gas_amount_charged": 3088,
-              "gas_amount_total": {
-                "bandwidth": {
-                  "service": 1004
-                },
-                "state": {
-                  "service": 2084
-                }
-              },
-              "gas_cost_total": 0
+              }
+            }
+          },
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 'erased',
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1004
             },
-            "tx_hash": "0x62f01969d903d7a6f184279634249941a2c312e896f045c071afe78ac635fe96"
-          }
+            "state": {
+              "service": 'erased'
+            }
+          },
+          "gas_cost_total": 0
         });
         if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
@@ -5109,8 +5070,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 0,
+          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
             "func_results": {
               "_stake": {
                 "code": 0,
@@ -5176,14 +5136,15 @@ describe('Blockchain Node', () => {
                 }
               }
             },
+            "code": 0,
             "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 4890,
+            "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
                 "service": 1008
               },
               "state": {
-                "service": 3882
+                "service": 'erased'
               }
             },
             "gas_cost_total": 0,
@@ -5411,8 +5372,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 0,
+          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
             "func_results": {
               "_unstake": {
                 "code": 0,
@@ -5471,14 +5431,15 @@ describe('Blockchain Node', () => {
                 }
               }
             },
+            "code": 0,
             "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 3115,
+            "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
                 "service": 7
               },
               "state": {
-                "service": 3108
+                "service": 'erased'
               }
             },
             "gas_cost_total": 0,
@@ -5610,8 +5571,7 @@ describe('Blockchain Node', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8'));
-        assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 0,
+        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
           "func_results": {
             "_pay": {
               "code": 0,
@@ -5663,14 +5623,15 @@ describe('Blockchain Node', () => {
               }
             }
           },
+          "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 5460,
+          "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
               "service": 1006
             },
             "state": {
-              "service": 4454
+              "service": 'erased'
             }
           },
           "gas_cost_total": 0,
@@ -5757,8 +5718,7 @@ describe('Blockchain Node', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8'));
-        assert.deepEqual(_.get(body, 'result.result'), {
-          "code": 0,
+        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
           "func_results": {
             "_claim": {
               "code": 0,
@@ -5810,14 +5770,15 @@ describe('Blockchain Node', () => {
               }
             }
           },
+          "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 3376,
+          "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
               "service": 6
             },
             "state": {
-              "service": 3370
+              "service": 'erased'
             }
           },
           "gas_cost_total": 0,
@@ -5980,16 +5941,16 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result'), {
+          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
             "code": 0,
             "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 1241,
+            "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
                 "service": 1
               },
               "state": {
-                "service": 1240
+                "service": 'erased'
               }
             },
             "gas_cost_total": 0,
@@ -6049,8 +6010,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 0,
+          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
             "func_results": {
               "_hold": {
                 "code": 0,
@@ -6102,14 +6062,15 @@ describe('Blockchain Node', () => {
                 }
               }
             },
+            "code": 0,
             "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 4462,
+            "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
                 "service": 1006
               },
               "state": {
-                "service": 3456
+                "service": 'erased'
               }
             },
             "gas_cost_total": 0,
@@ -6188,8 +6149,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 0,
+          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
             "func_results": {
               "_release": {
                 "code": 0,
@@ -6241,14 +6201,15 @@ describe('Blockchain Node', () => {
                 }
               }
             },
+            "code": 0,
             "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 3194,
+            "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
                 "service": 6
               },
               "state": {
-                "service": 3188
+                "service": 'erased'
               }
             },
             "gas_cost_total": 0,
@@ -6309,16 +6270,16 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result'), {
+          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
             "code": 0,
             "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 1303,
+            "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
                 "service": 1
               },
               "state": {
-                "service": 1302
+                "service": 'erased'
               }
             },
             "gas_cost_total": 0,
@@ -6368,8 +6329,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 0,
+          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
             "func_results": {
               "_hold": {
                 "code": 0,
@@ -6421,14 +6381,15 @@ describe('Blockchain Node', () => {
                 }
               }
             },
+            "code": 0,
             "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 4892,
+            "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
                 "service": 1006
               },
               "state": {
-                "service": 3886
+                "service": 'erased'
               }
             },
             "gas_cost_total": 0,
@@ -6465,8 +6426,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 0,
+          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
             "func_results": {
               "_release": {
                 "code": 0,
@@ -6518,14 +6478,15 @@ describe('Blockchain Node', () => {
                 }
               }
             },
+            "code": 0,
             "bandwidth_gas_amount": 1,
-            "gas_amount_charged": 3318,
+            "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
                 "service": 6
               },
               "state": {
-                "service": 3312
+                "service": 'erased'
               }
             },
             "gas_cost_total": 0,
@@ -6825,16 +6786,7 @@ describe('Blockchain Node', () => {
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
-        assert.deepEqual(_.get(body, 'result.result'), {
-          "gas_amount_total": {
-            "bandwidth": {
-              "service": 1007
-            },
-            "state": {
-              "service": 4282
-            }
-          },
-          "gas_cost_total": 0,
+        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
           "func_results": {
             "_openCheckout": {
               "op_results": {
@@ -6895,7 +6847,16 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 5289
+          "gas_amount_charged": 'erased',
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1007
+            },
+            "state": {
+              "service": 'erased'
+            }
+          },
+          "gas_cost_total": 0
         });
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
@@ -6966,16 +6927,7 @@ describe('Blockchain Node', () => {
           signature,
           protoVer: CURRENT_PROTOCOL_VERSION
         });
-        assert.deepEqual(_.get(res, 'result.result.result', null), {
-          "gas_amount_total": {
-            "bandwidth": {
-              "service": 6
-            },
-            "state": {
-              "service": 1382
-            }
-          },
-          "gas_cost_total": 0,
+        assert.deepEqual(getErasedCopyOfTxResult(_.get(res, 'result.result.result', null)), {
           "func_results": {
             "_closeCheckout": {
               "op_results": {
@@ -7027,7 +6979,16 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 1388
+          "gas_amount_charged": 'erased',
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 6
+            },
+            "state": {
+              "service": 'erased'
+            }
+          },
+          "gas_cost_total": 0
         });
         const userPendingAmount = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkout/stats/pending/${serviceUser}`)
@@ -7109,16 +7070,7 @@ describe('Blockchain Node', () => {
         if (!(await waitUntilTxFinalized(serverList, _.get(res, 'result.result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
-        assert.deepEqual(_.get(res, 'result.result.result'), {
-          "gas_amount_total": {
-            "bandwidth": {
-              "service": 9
-            },
-            "state": {
-              "service": 2720
-            }
-          },
-          "gas_cost_total": 0,
+        assert.deepEqual(getErasedCopyOfTxResult(_.get(res, 'result.result.result')), {
           "func_results": {
             "_closeCheckout": {
               "op_results": {
@@ -7199,7 +7151,16 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 2729
+          "gas_amount_charged": 'erased',
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 9
+            },
+            "state": {
+              "service": 'erased'
+            }
+          },
+          "gas_cost_total": 0
         });
         const refund = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkout/history/${serviceUser}/1/refund`).body.toString('utf-8')).result;

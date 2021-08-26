@@ -46,8 +46,9 @@ const {
   isValidOwnerTree,
   applyFunctionChange,
   applyOwnerChange,
-  setProofHashForStateTree,
+  updateProofHashForStateTree,
   updateProofHashForAllRootPaths,
+  getProofOfStatePath,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -385,22 +386,22 @@ class DB {
   }
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
-    const stateTree = StateNode.fromJsObject(stateObj, stateVersion);
-    const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
+    const tree = StateNode.fromJsObject(stateObj, stateVersion);
     if (fullPath.length === 0) {
-      stateRoot = stateTree;
+      stateRoot = tree;
     } else {
-      const label = fullPath[fullPath.length - 1];
+      const pathToParent = fullPath.slice(0, fullPath.length - 1);
+      const treeLabel = fullPath[fullPath.length - 1];
       const parent = DB.getRefForWritingToStateRoot(stateRoot, pathToParent);
-      parent.setChild(label, stateTree);
+      parent.setChild(treeLabel, tree);
     }
-    if (isEmptyNode(stateTree)) {
+    if (isEmptyNode(tree)) {
       DB.removeEmptyNodesFromStateRoot(stateRoot, fullPath);
     } else if (!LIGHTWEIGHT) {
-      setProofHashForStateTree(stateTree);
+      updateProofHashForStateTree(tree);
     }
     if (!LIGHTWEIGHT) {
-      updateProofHashForAllRootPaths(pathToParent, stateRoot);
+      updateProofHashForAllRootPaths(fullPath, stateRoot);
     }
     return stateRoot;
   }
@@ -475,22 +476,7 @@ class DB {
   // TODO(platfowner): Consider supporting global path for getStateProof().
   getStateProof(statePath) {
     const parsedPath = CommonUtil.parsePath(statePath);
-    let node = this.stateRoot;
-    const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
-    let proof = rootProof;
-    for (const label of parsedPath) {
-      if (node.hasChild(label)) {
-        node.getChildLabels().forEach((label) => {
-          Object.assign(proof,
-              {[label]: {[ProofProperties.PROOF_HASH]: node.getChild(label).getProofHash()}});
-        });
-        proof = proof[label];
-        node = node.getChild(label);
-      } else {
-        return null;
-      }
-    }
-    return rootProof;
+    return getProofOfStatePath(this.stateRoot, parsedPath);
   }
 
   static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
