@@ -364,6 +364,14 @@ class StateNode {
     this.treeBytes = treeBytes;
   }
 
+  /**
+   * Returns newly buildt proof hash. If updatedChildLabel is given, it signifies that
+   * only the child of the given child label among the children is not up-to-date now,
+   * so only the proof hashes of the radix nodes related to the given child label
+   * need to be updated, and this function does so.
+   * 
+   * @param {string} updatedChildLabel label of the child whose proof hash is not up-to-date
+   */
   // NOTE(platfowner): This function changes proof hashes of the radix tree.
   buildProofHash(updatedChildLabel = null) {
     let preimage;
