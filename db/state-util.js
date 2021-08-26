@@ -14,7 +14,6 @@ const {
   ShardingProperties,
   STATE_LABEL_LENGTH_LIMIT,
 } = require('../common/constants');
-const Functions = require('./functions');
 
 function isEmptyNode(node) {
   return node.getIsLeaf() && node.getValue() === null;
@@ -612,11 +611,11 @@ function equalStateTrees(node1, node2) {
   return true;
 }
 
-function setProofHashForStateTree(stateTree) {
+function updateProofHashForStateTree(stateTree) {
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
     for (const node of stateTree.getChildNodes()) {
-      numAffectedNodes += setProofHashForStateTree(node);
+      numAffectedNodes += updateProofHashForStateTree(node);
     }
   }
   stateTree.updateProofHashAndStateInfo();
@@ -625,35 +624,43 @@ function setProofHashForStateTree(stateTree) {
   return numAffectedNodes;
 }
 
-function updateProofHashForAllRootPathsRecursive(node) {
+function updateProofHashForAllRootPathsRecursive(parent, updatedChildLabel) {
   let numAffectedNodes = 0;
-  node.updateProofHashAndStateInfo();
+  parent.updateProofHashAndStateInfo(updatedChildLabel);
   numAffectedNodes++;
-  for (const parent of node.getParentNodes()) {
-    numAffectedNodes += updateProofHashForAllRootPathsRecursive(parent);
+  for (const grandParent of parent.getParentNodes()) {
+    numAffectedNodes += updateProofHashForAllRootPathsRecursive(grandParent, parent.getLabel());
   }
   return numAffectedNodes;
 }
 
 function updateProofHashForAllRootPaths(fullPath, root) {
   const LOG_HEADER = 'updateProofHashForAllRootPaths';
+
+  if (fullPath.length === 0) {
+    // No parents to update.
+    return 0;
+  }
+  const pathToParent = fullPath.slice(0, fullPath.length - 1);
+  let updatedChildLabel = fullPath[fullPath.length - 1];
   if (!root) {
     logger.error(`[${LOG_HEADER}] Trying to update proof hash for invalid root: ${root}.`);
     return 0;
   }
-  let node = root;
-  for (let i = 0; i < fullPath.length; i++) {
-    const label = fullPath[i];
-    const child = node.getChild(label);
+  let parent = root;
+  for (let i = 0; i < pathToParent.length; i++) {
+    const childLabel = pathToParent[i];
+    const child = parent.getChild(childLabel);
     if (child === null) {
       logger.info(
           `[${LOG_HEADER}] Trying to update proof hash for non-existing path: ` +
           `${CommonUtil.formatPath(fullPath.slice(0, i + 1))}.`);
+      updatedChildLabel = null;  // Need to update proof hash for all labels.
       break;
     }
-    node = child;
+    parent = child;
   }
-  return updateProofHashForAllRootPathsRecursive(node);
+  return updateProofHashForAllRootPathsRecursive(parent, updatedChildLabel);
 }
 
 function verifyProofHashForStateTree(stateTree) {
@@ -668,6 +675,26 @@ function verifyProofHashForStateTree(stateTree) {
     }
   }
   return true;
+}
+
+function getProofOfStatePathRecursive(node, fullPath, labelIndex) {
+  if (labelIndex > fullPath.length - 1) {
+    return node.getProofOfState();
+  }
+  const childLabel = fullPath[labelIndex];
+  if (!node.hasChild(childLabel)) {
+    return null;
+  }
+  const child = node.getChild(childLabel);
+  const childProof = getProofOfStatePathRecursive(child, fullPath, labelIndex + 1);
+  if (childProof === null) {
+    return null;
+  }
+  return node.getProofOfState(childLabel, childProof);
+}
+
+function getProofOfStatePath(root, fullPath) {
+  return getProofOfStatePathRecursive(root, fullPath, 0);
 }
 
 module.exports = {
@@ -702,7 +729,8 @@ module.exports = {
   deleteStateTreeVersion,
   makeCopyOfStateTree,
   equalStateTrees,
-  setProofHashForStateTree,
+  updateProofHashForStateTree,
   updateProofHashForAllRootPaths,
-  verifyProofHashForStateTree
+  verifyProofHashForStateTree,
+  getProofOfStatePath,
 };

@@ -1,9 +1,9 @@
 const logger = require('../logger')('RADIX_NODE');
 
 const CommonUtil = require('../common/common-util');
-const StateNode = require('./state-node');
 const {
   HASH_DELIMITER,
+  ProofProperties,
 } = require('../common/constants');
 
 /**
@@ -25,9 +25,12 @@ class RadixNode {
 
   setStateNode(stateNode) {
     const LOG_HEADER = 'setStateNode';
+    const StateNode = require('./state-node');
+
     if (!(stateNode instanceof StateNode)) {
       logger.error(
-          `[${LOG_HEADER}] Setting with a non-StateNode instance.`);
+          `[${LOG_HEADER}] Setting with a non-StateNode instance: ` +
+          `${JSON.stringify(stateNode, null, 2)} at: ${new Error().stack}.`);
       // Does nothing.
       return false;
     }
@@ -51,10 +54,6 @@ class RadixNode {
     this.labelRadix = labelRadix;
   }
 
-  hasLabelRadix() {
-    return this.getLabelRadix() !== '';
-  }
-
   resetLabelRadix() {
     this.setLabelRadix('');
   }
@@ -65,10 +64,6 @@ class RadixNode {
 
   setLabelSuffix(labelSuffix) {
     this.labelSuffix = labelSuffix;
-  }
-
-  hasLabelSuffix() {
-    return this.getLabelSuffix() !== '';
   }
 
   resetLabelSuffix() {
@@ -160,10 +155,6 @@ class RadixNode {
     this.proofHash = proofHash;
   }
 
-  hasProofHash() {
-    return this.getProofHash() !== null;
-  }
-
   resetProofHash() {
     this.setProofHash(null);
   }
@@ -190,10 +181,10 @@ class RadixNode {
     this.setProofHash(this._buildProofHash());
   }
 
-  setProofHashForRadixTree() {
+  updateProofHashForRadixSubtree() {
     let numAffectedNodes = 0;
     for (const child of this.getChildNodes()) {
-      numAffectedNodes += child.setProofHashForRadixTree();
+      numAffectedNodes += child.updateProofHashForRadixSubtree();
     }
     this.updateProofHash();
     numAffectedNodes++;
@@ -201,7 +192,7 @@ class RadixNode {
     return numAffectedNodes;
   }
 
-  updateProofHashForRootPath() {
+  updateProofHashForRadixPath() {
     let numAffectedNodes = 0;
     let curNode = this;
     curNode.updateProofHash();
@@ -214,29 +205,73 @@ class RadixNode {
     return numAffectedNodes;
   }
 
-  verifyProofHashForRadixTree() {
+  verifyProofHashForRadixSubtree() {
     if (!this.verifyProofHash()) {
       return false;
     }
     for (const child of this.getChildNodes()) {
-      if (!child.verifyProofHashForRadixTree()) {
+      if (!child.verifyProofHashForRadixSubtree()) {
         return false;
       }
     }
     return true;
   }
 
+  getProofOfRadixNode(childLabel = null, childProof = null, stateLabel = null, stateProof = null) {
+    const proof = { [ProofProperties.RADIX_PROOF_HASH]: this.getProofHash() };
+    if (this.hasStateNode()) {
+      Object.assign(proof, {
+        [ProofProperties.LABEL]: stateLabel,
+        [ProofProperties.PROOF_HASH]: stateProof !== null ?
+            stateProof : this.getStateNode().getProofHash()
+      });
+    }
+    if (childLabel === null && stateProof !== null) {
+      return proof;
+    }
+    this.getChildNodes().forEach((child) => {
+      const label = child.getLabel();
+      Object.assign(proof, {
+        [label]: label === childLabel ? childProof : {
+          [ProofProperties.RADIX_PROOF_HASH]: child.getProofHash()
+        }
+      });
+    });
+    return proof;
+  }
+
+  copyFrom(radixNode, newParentStateNode) {
+    if (radixNode.hasStateNode()) {
+      const stateNode = radixNode.getStateNode();
+      this.setStateNode(stateNode);
+      stateNode.addParent(newParentStateNode);
+    }
+    this.setLabelRadix(radixNode.getLabelRadix());
+    this.setLabelSuffix(radixNode.getLabelSuffix());
+    this.setProofHash(radixNode.getProofHash());
+    for (const child of radixNode.getChildNodes()) {
+      const clonedChild = new RadixNode();
+      this.setChild(child.getLabelRadix(), child.getLabelSuffix(), clonedChild);
+      clonedChild.copyFrom(child, newParentStateNode);
+    }
+  }
+
   /**
    * Converts the subtree to a js object.
    * This is for testing / debugging purpose.
    */
-  toJsObject() {
+  toJsObject(withProofHash = false) {
     const obj = {};
-    if (this.hasParent()) {
-      obj['->'] = this.hasStateNode();
+    if (withProofHash) {
+      obj[ProofProperties.RADIX_PROOF_HASH] = this.getProofHash();
+    }
+    if (this.hasStateNode()) {
+      const stateNode = this.getStateNode();
+      obj[ProofProperties.LABEL] = stateNode.getLabel();
+      obj[ProofProperties.PROOF_HASH] = stateNode.getProofHash();
     }
     for (const child of this.getChildNodes()) {
-      obj[child.getLabelRadix() + ':' + child.getLabelSuffix()] = child.toJsObject();
+      obj[child.getLabel()] = child.toJsObject(withProofHash);
     }
     return obj;
   }

@@ -28,7 +28,9 @@ const FeatureFlags = {
   // Enables rich logging for tx selection in tx pool.
   enableRichTxSelectionLogging: false,
   // Enables receipt path's prefix layers.
-  enableReceiptPathPrefixLayers: true,
+  enableReceiptPathPrefixLayers: false,  // Some test cases assume this value false.
+  // Enables radix layers.
+  enableRadixTreeLayers: true,  // Some test cases assume this value true.
 };
 
 // ** Environment variables **
@@ -353,7 +355,9 @@ const FunctionTypes = {
  * @enum {string}
  */
 const ProofProperties = {
+  LABEL: '.label',
   PROOF_HASH: '.proof_hash',
+  RADIX_PROOF_HASH: '.radix_ph',
 };
 
 /**

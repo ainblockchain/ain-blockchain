@@ -13,8 +13,8 @@ class RadixTree {
     this.stateNodeMap = new Map();
   }
 
-  static _toHexLabel(label) {
-    const hexLabel = CommonUtil.toHexString(label);
+  static _toHexLabel(stateLabel) {
+    const hexLabel = CommonUtil.toHexString(stateLabel);
     if (hexLabel.length < 2) {
       return hexLabel;
     }
@@ -79,17 +79,19 @@ class RadixTree {
         const childLabelSuffix = child.getLabelSuffix();
         const commonPrefix = RadixTree._getCommonPrefix(labelSuffix, childLabelSuffix);
 
-        // Insert new internal node between curNode and child.
-        const newInternal = new RadixNode();
+        // Delete current child first.
         curNode.deleteChild(labelRadix);
-        curNode.setChild(labelRadix, commonPrefix, newInternal);
+
+        // Insert an internal node between curNode and child.
+        const internalNode = new RadixNode();
+        curNode.setChild(labelRadix, commonPrefix, internalNode);
         const childNewLabel = childLabelSuffix.slice(commonPrefix.length);
-        newInternal.setChild(childNewLabel.charAt(0), childNewLabel.slice(1), child);
+        internalNode.setChild(childNewLabel.charAt(0), childNewLabel.slice(1), child);
 
         // Insert new child node.
         const newChild = new RadixNode();
         const newChildLabel = labelSuffix.slice(commonPrefix.length);
-        newInternal.setChild(newChildLabel.charAt(0), newChildLabel.slice(1), newChild);
+        internalNode.setChild(newChildLabel.charAt(0), newChildLabel.slice(1), newChild);
 
         return newChild;
       }
@@ -102,8 +104,8 @@ class RadixTree {
     return curNode;
   }
 
-  _getFromTree(label) {
-    const hexLabel = RadixTree._toHexLabel(label);
+  _getFromTree(stateLabel) {
+    const hexLabel = RadixTree._toHexLabel(stateLabel);
     const node = this._getRadixNodeForReading(hexLabel);
     if (node === null) {
       return null;
@@ -124,8 +126,8 @@ class RadixTree {
     return this._getFromMap(label);
   }
 
-  _setInTree(label, stateNode) {
-    const hexLabel = RadixTree._toHexLabel(label);
+  _setInTree(stateLabel, stateNode) {
+    const hexLabel = RadixTree._toHexLabel(stateLabel);
     const node = this._getRadixNodeForWriting(hexLabel);
     return node.setStateNode(stateNode);
   }
@@ -144,8 +146,8 @@ class RadixTree {
     return true;
   }
 
-  _hasInTree(label) {
-    const hexLabel = RadixTree._toHexLabel(label);
+  _hasInTree(stateLabel) {
+    const hexLabel = RadixTree._toHexLabel(stateLabel);
     const node = this._getRadixNodeForReading(hexLabel);
     return node !== null;
   }
@@ -187,18 +189,18 @@ class RadixTree {
     return true;
   }
 
-  _deleteFromTree(label) {
+  _deleteFromTree(stateLabel) {
     const LOG_HEADER = '_deleteFromTree';
 
-    const hexLabel = RadixTree._toHexLabel(label);
+    const hexLabel = RadixTree._toHexLabel(stateLabel);
     const node = this._getRadixNodeForReading(hexLabel);
     if (node === null || !node.hasStateNode()) {
-      logger.error(`[${LOG_HEADER}] Deleting a non-existing child with label: ${label}.`);
+      logger.error(`[${LOG_HEADER}] Deleting a non-existing child of label: ${stateLabel}.`);
       // Does nothing.
       return false;
     }
     if (!node.hasParent()) {
-      logger.error(`[${LOG_HEADER}] Deleting the root node with label: ${label}?`);
+      logger.error(`[${LOG_HEADER}] Deleting the root node of label: ${stateLabel}?`);
       // Does nothing.
       return false;
     }
@@ -207,7 +209,7 @@ class RadixTree {
       return this._mergeToChild(node);
     } else if (node.numChildren() === 0) {
       if (!node.hasParent()) {
-        logger.error(`[${LOG_HEADER}] Deleting a child without parent with label: ${label}.`);
+        logger.error(`[${LOG_HEADER}] Deleting a child without parent of label: ${stateLabel}.`);
         // Does nothing.
         return false;
       }
@@ -220,15 +222,15 @@ class RadixTree {
     return true;
   }
 
-  _deleteFromMap(label) {
-    this.stateNodeMap.delete(label);
+  _deleteFromMap(stateLabel) {
+    this.stateNodeMap.delete(stateLabel);
   }
 
-  delete(label) {
+  delete(stateLabel) {
     // 1. Delete from the radix tree.
-    this._deleteFromTree(label);
+    this._deleteFromTree(stateLabel);
     // 2. Delete from the hash map.
-    this._deleteFromMap(label);
+    this._deleteFromMap(stateLabel);
   }
 
   labels() {
@@ -247,36 +249,66 @@ class RadixTree {
     return this.root.getProofHash();
   }
 
-  hasRootProofHash() {
-    return this.root.hasProofHash();
+  updateProofHashForRadixTree() {
+    return this.root.updateProofHashForRadixSubtree();
   }
 
-  setProofHashForRadixTree() {
-    return this.root.setProofHashForRadixTree();
-  }
+  updateProofHashForRadixPath(updatedNodeLabel) {
+    const LOG_HEADER = 'updateProofHashForRadixPath';
 
-  updateProofHashForRootPath(label) {
-    const hexLabel = RadixTree._toHexLabel(label);
+    const hexLabel = RadixTree._toHexLabel(updatedNodeLabel);
     const node = this._getRadixNodeForReading(hexLabel);
     if (node === null) {
       logger.error(
-          `[${LOG_HEADER}] Updating proof hash for non-existing child with label: ${label}.`);
+          `[${LOG_HEADER}] Updating proof hash for non-existing child with label: ` +
+          `${updatedNodeLabel}.`);
       // Does nothing.
       return 0;
     }
-    return node.updateProofHashForRootPath();
+    return node.updateProofHashForRadixPath();
   }
 
   verifyProofHashForRadixTree() {
-    return this.root.verifyProofHashForRadixTree();
+    return this.root.verifyProofHashForRadixSubtree();
+  }
+
+  getProofOfState(stateLabel, stateProof) {
+    const hexLabel = RadixTree._toHexLabel(stateLabel);
+    let curNode = this._getRadixNodeForReading(hexLabel);
+    if (curNode === null || !curNode.hasStateNode()) {
+      return null;
+    }
+    let proof = curNode.getProofOfRadixNode(null, null, stateLabel, stateProof);
+    while (curNode.hasParent()) {
+      const label = curNode.getLabel();
+      curNode = curNode.getParent();
+      proof = curNode.getProofOfRadixNode(label, proof);
+    }
+    return proof;
+  }
+
+
+  _copyTreeFrom(radixTree, newParentStateNode) {
+    this.root.copyFrom(radixTree.root, newParentStateNode);
+  }
+
+  _copyMapFrom(radixTree) {
+    radixTree.stateNodeMap.forEach((value, key) => {
+      this._setInMap(key, value);
+    });
+  }
+
+  copyFrom(radixTree, newParentStateNode) {
+    this._copyTreeFrom(radixTree, newParentStateNode);
+    this._copyMapFrom(radixTree);
   }
 
   /**
    * Converts the tree to a javascript object.
    * This is for testing / debugging purpose.
    */
-  toJsObject() {
-    return this.root.toJsObject();
+  toJsObject(withProofHash = false, withStateNodeDetails = false) {
+    return this.root.toJsObject(withProofHash, withStateNodeDetails);
   }
 }
 
