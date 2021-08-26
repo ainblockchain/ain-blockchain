@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require("fs");
+const _ = require("lodash");
 const syncRequest = require('sync-request');
 const { Block } = require('../blockchain/block');
 const DB = require('../db');
@@ -165,10 +166,13 @@ function getBlockByNumber(server, number) {
       .body.toString('utf-8')).result;
 }
 
-function getErasedCopyOfTxResult(result) {
+function eraseStateGas(result, appNameList = []) {
   const erased = JSON.parse(JSON.stringify(result));
-  erased.gas_amount_charged = 'erased';
-  erased.gas_amount_total.state.service = 'erased';
+  _.set(erased, 'gas_amount_charged', 'erased');
+  _.set(erased, 'gas_amount_total.state.service', 'erased');
+  for (const appName of appNameList) {
+    _.set(erased, `gas_amount_total.state.app.${appName}`, 'erased');
+  }
   return erased;
 }
 
@@ -186,5 +190,5 @@ module.exports = {
   getLastBlock,
   getLastBlockNumber,
   getBlockByNumber,
-  getErasedCopyOfTxResult,
+  eraseStateGas,
 };
