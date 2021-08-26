@@ -372,7 +372,7 @@ class StateNode {
     } else {
       if (FeatureFlags.enableRadixTreeLayers) {
         if (updatedChildLabel === null) {
-          this.radixTree.setProofHashForRadixTree();
+          this.radixTree.updateProofHashForRadixTree();
         } else {
           this.radixTree.updateProofHashForRadixPath(updatedChildLabel);
         }

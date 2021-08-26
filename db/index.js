@@ -46,7 +46,7 @@ const {
   isValidOwnerTree,
   applyFunctionChange,
   applyOwnerChange,
-  setProofHashForStateTree,
+  updateProofHashForStateTree,
   updateProofHashForAllRootPaths,
   getProofOfStatePath,
 } = require('./state-util');
@@ -398,7 +398,7 @@ class DB {
     if (isEmptyNode(tree)) {
       DB.removeEmptyNodesFromStateRoot(stateRoot, fullPath);
     } else if (!LIGHTWEIGHT) {
-      setProofHashForStateTree(tree);
+      updateProofHashForStateTree(tree);
     }
     if (!LIGHTWEIGHT) {
       updateProofHashForAllRootPaths(fullPath, stateRoot);

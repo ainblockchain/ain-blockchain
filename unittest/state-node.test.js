@@ -6,7 +6,7 @@ const assert = chai.assert;
 const CommonUtil = require('../common/common-util');
 const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 const {
-  setProofHashForStateTree,
+  updateProofHashForStateTree,
   verifyProofHashForStateTree,
 } = require('../db/state-util');
 
@@ -109,7 +109,7 @@ describe("state-node", () => {
       assert.deepEqual(child3.getParentNodes(), [stateTree]);
       assert.deepEqual(child4.getParentNodes(), [stateTree]);
       expect(verifyProofHashForStateTree(stateTree)).to.equal(false);
-      setProofHashForStateTree(stateTree);
+      updateProofHashForStateTree(stateTree);
       expect(verifyProofHashForStateTree(stateTree)).to.equal(true);
 
       const clone = stateTree.clone();
@@ -123,7 +123,7 @@ describe("state-node", () => {
       assert.deepEqual(clone.getChildLabels(), stateTree.getChildLabels());
       assert.deepEqual(clone.getChildNodes(), stateTree.getChildNodes());
       assert.deepEqual(clone.numChildren(), stateTree.numChildren());
-      // Proof hash is verified without setProofHashForStateTree() call!
+      // Proof hash is verified without updateProofHashForStateTree() call!
       expect(verifyProofHashForStateTree(clone)).to.equal(true);
       expect(clone.getLabel()).to.equal('label_root');
       expect(clone.getValue()).to.equal(null);

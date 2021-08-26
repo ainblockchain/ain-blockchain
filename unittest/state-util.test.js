@@ -21,7 +21,7 @@ const {
   deleteStateTreeVersion,
   makeCopyOfStateTree,
   equalStateTrees,
-  setProofHashForStateTree,
+  updateProofHashForStateTree,
   updateProofHashForAllRootPaths,
   verifyProofHashForStateTree,
   getProofOfStatePath,
@@ -2086,7 +2086,7 @@ describe("state-util", () => {
       stateTree = new StateNode(ver3);
       stateTree.setChild('label1', child1);
       stateTree.setChild('label2', child2);
-      setProofHashForStateTree(stateTree);
+      updateProofHashForStateTree(stateTree);
     })
 
     it("leaf node", () => {
@@ -2094,7 +2094,7 @@ describe("state-util", () => {
 
       // Delete a leaf node without version.
       const stateNode1 = StateNode.fromJsObject(true);
-      setProofHashForStateTree(stateNode1);
+      updateProofHashForStateTree(stateNode1);
       const numNodes1 = deleteStateTree(stateNode1);
       expect(numNodes1).to.equal(1);
       expect(stateNode1.numChildren()).to.equal(0);
@@ -2104,7 +2104,7 @@ describe("state-util", () => {
 
       // Delete a leaf node with version.
       const stateNode2 = StateNode.fromJsObject(true, ver1);
-      setProofHashForStateTree(stateNode2);
+      updateProofHashForStateTree(stateNode2);
       const numNodes2 = deleteStateTree(stateNode2);
       expect(numNodes2).to.equal(1);
       expect(stateNode2.numChildren()).to.equal(0);
@@ -2148,13 +2148,13 @@ describe("state-util", () => {
       node = new StateNode(ver3);
       node.setChild('label1', child1);
       node.setChild('label2', child2);
-      setProofHashForStateTree(node);
+      updateProofHashForStateTree(node);
     })
 
     it("leaf node", () => {
       // Delete a leaf node without version.
       const stateNode1 = StateNode.fromJsObject(true);
-      setProofHashForStateTree(stateNode1);
+      updateProofHashForStateTree(stateNode1);
       const numNodes1 = deleteStateTreeVersion(stateNode1);
       expect(numNodes1).to.equal(1);
       expect(stateNode1.getValue()).to.equal(null);
@@ -2163,7 +2163,7 @@ describe("state-util", () => {
 
       // Delete a leaf node with a different version.
       const stateNode2 = StateNode.fromJsObject(true, 'ver2');
-      setProofHashForStateTree(stateNode2);
+      updateProofHashForStateTree(stateNode2);
       const numNodes2 = deleteStateTreeVersion(stateNode2);
       expect(numNodes2).to.equal(1);
       expect(stateNode2.getValue()).to.equal(null);
@@ -2172,7 +2172,7 @@ describe("state-util", () => {
 
       // Delete a leaf node with the same version.
       const stateNode3 = StateNode.fromJsObject(true, ver1);
-      setProofHashForStateTree(stateNode3);
+      updateProofHashForStateTree(stateNode3);
       const numNodes3 = deleteStateTreeVersion(stateNode3);
       expect(numNodes3).to.equal(1);
       expect(stateNode3.getValue()).to.equal(null);
@@ -2182,7 +2182,7 @@ describe("state-util", () => {
       // Delete a leaf node with the same version but with non-zero numParents() value.
       const stateNode4 = StateNode.fromJsObject(true, ver1);
       parent.setChild(nodeLabel, stateNode4);
-      setProofHashForStateTree(stateNode4);
+      updateProofHashForStateTree(stateNode4);
       const numNodes4 = deleteStateTreeVersion(stateNode4);
       expect(numNodes4).to.equal(0);
       expect(stateNode4.getValue()).to.equal(true);
@@ -2522,8 +2522,8 @@ describe("state-util", () => {
       child21 = child2.getChild(label21);
     });
 
-    it("setProofHashForStateTree", () => {
-      const numAffectedNodes = setProofHashForStateTree(child1);
+    it("updateProofHashForStateTree", () => {
+      const numAffectedNodes = updateProofHashForStateTree(child1);
       expect(numAffectedNodes).to.equal(5);
       // Checks proof hashes.
       expect(child1111.verifyProofHash()).to.equal(true);
@@ -2655,14 +2655,14 @@ describe("state-util", () => {
     });
 
     it("verifyProofHashForStateTree ", () => {
-      setProofHashForStateTree(stateTree);
+      updateProofHashForStateTree(stateTree);
       expect(verifyProofHashForStateTree(stateTree)).to.equal(true);
       child111.setProofHash('new ph');
       expect(verifyProofHashForStateTree(stateTree)).to.equal(false);
     });
 
     it("getProofOfState", () => {
-      setProofHashForStateTree(stateTree);
+      updateProofHashForStateTree(stateTree);
       assert.deepEqual(getProofOfStatePath(stateTree, [label1, label11]), {
         ".radix_ph": "0xeef6cf891adc1b4755cb54085116c08d7ced1afe8eee3bdaac2259d935b2befe",
         "000": {

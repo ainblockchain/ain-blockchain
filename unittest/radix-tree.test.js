@@ -1204,7 +1204,7 @@ describe("radix-tree", () => {
         expect(tree.verifyProofHashForRadixTree()).to.equal(false);
 
         // set
-        expect(tree.setProofHashForRadixTree()).to.equal(9);
+        expect(tree.updateProofHashForRadixTree()).to.equal(9);
         expect(tree.getRootProofHash()).to.equal(
             '0xbc310c6c1b9d339951756d3c0f90bb25e70be0c0a261e04564917ce6c57016d5');
         expect(tree.verifyProofHashForRadixTree()).to.equal(true);
@@ -1252,7 +1252,7 @@ describe("radix-tree", () => {
         tree.set(label21, stateNode21);
         tree.set(label22, stateNode22);
 
-        expect(tree.setProofHashForRadixTree()).to.equal(8);
+        expect(tree.updateProofHashForRadixTree()).to.equal(8);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": "0x890e6c975c63529362955c359c0b7552bf1f88c4945f12a18458f8acafb17b25",
           "000": {

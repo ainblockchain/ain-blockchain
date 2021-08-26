@@ -249,8 +249,8 @@ class RadixTree {
     return this.root.getProofHash();
   }
 
-  setProofHashForRadixTree() {
-    return this.root.setProofHashForRadixSubtree();
+  updateProofHashForRadixTree() {
+    return this.root.updateProofHashForRadixSubtree();
   }
 
   updateProofHashForRadixPath(updatedNodeLabel) {
