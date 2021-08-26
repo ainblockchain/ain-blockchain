@@ -279,16 +279,10 @@ class RadixTree {
       return null;
     }
     let proof = curNode.getProofOfRadixNode(null, null, stateLabel, stateProof);
-    if (proof === null) {
-      return null;
-    }
     while (curNode.hasParent()) {
       const label = curNode.getLabel();
       curNode = curNode.getParent();
       proof = curNode.getProofOfRadixNode(label, proof);
-      if (proof === null) {
-        return null;
-      }
     }
     return proof;
   }
