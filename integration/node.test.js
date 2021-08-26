@@ -29,7 +29,7 @@ const {
   getLastBlockNumber,
   waitForNewBlocks,
   getBlockByNumber,
-  getErasedCopyOfTxResult,
+  eraseStateGas,
 } = require('../unittest/test-util');
 const DB = require('../db');
 
@@ -4236,7 +4236,7 @@ describe('Blockchain Node', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8')).result;
-        assert.deepEqual(getErasedCopyOfTxResult(createAppRes.result), {
+        assert.deepEqual(eraseStateGas(createAppRes.result), {
           "func_results": {
             "_createApp": {
               "code": 0,
@@ -4361,7 +4361,7 @@ describe('Blockchain Node', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8')).result;
-        assert.deepEqual(getErasedCopyOfTxResult(createAppRes.result), {
+        assert.deepEqual(eraseStateGas(createAppRes.result), {
           "func_results": {
             "_createApp": {
               "code": 0,
@@ -4468,7 +4468,7 @@ describe('Blockchain Node', () => {
           timestamp: 1234567890000,
           nonce: -1,
         }}).body.toString('utf-8'));
-        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+        assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
           "func_results": {
             "_transfer": {
               "op_results": {
@@ -4524,7 +4524,7 @@ describe('Blockchain Node', () => {
           timestamp: 1234567890000,
           nonce: -1,
         }}).body.toString('utf-8'));
-        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+        assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
           "func_results": {
             "_transfer": {
               "op_results": {
@@ -4580,7 +4580,7 @@ describe('Blockchain Node', () => {
           timestamp: 1234567890000,
           nonce: -1,
         }}).body.toString('utf-8'));
-        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+        assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
           "func_results": {
             "_stake": {
               "op_results": {
@@ -4672,7 +4672,7 @@ describe('Blockchain Node', () => {
           timestamp: 1234567890001,
           nonce: -1,
         }}).body.toString('utf-8'));
-        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+        assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
           "func_results": {
             "_stake": {
               "op_results": {
@@ -4949,7 +4949,7 @@ describe('Blockchain Node', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8'));
-        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+        assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
           "func_results": {
             "_transfer": {
               "code": 0,
@@ -5070,7 +5070,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+          assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
             "func_results": {
               "_stake": {
                 "code": 0,
@@ -5372,7 +5372,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+          assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
             "func_results": {
               "_unstake": {
                 "code": 0,
@@ -5571,7 +5571,7 @@ describe('Blockchain Node', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8'));
-        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+        assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
           "func_results": {
             "_pay": {
               "code": 0,
@@ -5718,7 +5718,7 @@ describe('Blockchain Node', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8'));
-        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+        assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
           "func_results": {
             "_claim": {
               "code": 0,
@@ -5941,7 +5941,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+          assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
             "code": 0,
             "bandwidth_gas_amount": 1,
             "gas_amount_charged": 'erased',
@@ -6010,7 +6010,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+          assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
             "func_results": {
               "_hold": {
                 "code": 0,
@@ -6149,7 +6149,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+          assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
             "func_results": {
               "_release": {
                 "code": 0,
@@ -6270,7 +6270,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+          assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
             "code": 0,
             "bandwidth_gas_amount": 1,
             "gas_amount_charged": 'erased',
@@ -6329,7 +6329,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+          assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
             "func_results": {
               "_hold": {
                 "code": 0,
@@ -6426,7 +6426,7 @@ describe('Blockchain Node', () => {
             nonce: -1,
             timestamp: 1234567890000,
           }}).body.toString('utf-8'));
-          assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+          assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
             "func_results": {
               "_release": {
                 "code": 0,
@@ -6786,7 +6786,7 @@ describe('Blockchain Node', () => {
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
-        assert.deepEqual(getErasedCopyOfTxResult(_.get(body, 'result.result')), {
+        assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
           "func_results": {
             "_openCheckout": {
               "op_results": {
@@ -6927,7 +6927,7 @@ describe('Blockchain Node', () => {
           signature,
           protoVer: CURRENT_PROTOCOL_VERSION
         });
-        assert.deepEqual(getErasedCopyOfTxResult(_.get(res, 'result.result.result', null)), {
+        assert.deepEqual(eraseStateGas(_.get(res, 'result.result.result', null)), {
           "func_results": {
             "_closeCheckout": {
               "op_results": {
@@ -7070,7 +7070,7 @@ describe('Blockchain Node', () => {
         if (!(await waitUntilTxFinalized(serverList, _.get(res, 'result.result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
-        assert.deepEqual(getErasedCopyOfTxResult(_.get(res, 'result.result.result')), {
+        assert.deepEqual(eraseStateGas(_.get(res, 'result.result.result')), {
           "func_results": {
             "_closeCheckout": {
               "op_results": {
