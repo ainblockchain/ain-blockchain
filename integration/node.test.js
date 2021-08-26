@@ -4236,7 +4236,7 @@ describe('Blockchain Node', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8')).result;
-        assert.deepEqual(eraseStateGas(createAppRes.result), {
+        assert.deepEqual(eraseStateGas(createAppRes.result, ['test_service_create_app0']), {
           "func_results": {
             "_createApp": {
               "code": 0,
@@ -4284,6 +4284,9 @@ describe('Blockchain Node', () => {
               "service": 3
             },
             "state": {
+              "app": {
+                "test_service_create_app0": 'erased'
+              },
               "service": 'erased'
             }
           },
@@ -4361,7 +4364,7 @@ describe('Blockchain Node', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8')).result;
-        assert.deepEqual(eraseStateGas(createAppRes.result), {
+        assert.deepEqual(eraseStateGas(createAppRes.result, ['test_service_create_app1']), {
           "func_results": {
             "_createApp": {
               "code": 0,
@@ -4409,6 +4412,9 @@ describe('Blockchain Node', () => {
               "service": 3
             },
             "state": {
+              "app": {
+                "test_service_create_app1": 'erased'
+              },
               "service": 'erased'
             }
           },
