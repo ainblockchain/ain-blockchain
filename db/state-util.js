@@ -611,11 +611,11 @@ function equalStateTrees(node1, node2) {
   return true;
 }
 
-function setProofHashForStateTree(stateTree) {
+function updateProofHashForStateTree(stateTree) {
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
     for (const node of stateTree.getChildNodes()) {
-      numAffectedNodes += setProofHashForStateTree(node);
+      numAffectedNodes += updateProofHashForStateTree(node);
     }
   }
   stateTree.updateProofHashAndStateInfo();
@@ -729,7 +729,7 @@ module.exports = {
   deleteStateTreeVersion,
   makeCopyOfStateTree,
   equalStateTrees,
-  setProofHashForStateTree,
+  updateProofHashForStateTree,
   updateProofHashForAllRootPaths,
   verifyProofHashForStateTree,
   getProofOfStatePath,

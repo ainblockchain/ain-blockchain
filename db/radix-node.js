@@ -181,10 +181,10 @@ class RadixNode {
     this.setProofHash(this._buildProofHash());
   }
 
-  setProofHashForRadixSubtree() {
+  updateProofHashForRadixSubtree() {
     let numAffectedNodes = 0;
     for (const child of this.getChildNodes()) {
-      numAffectedNodes += child.setProofHashForRadixSubtree();
+      numAffectedNodes += child.updateProofHashForRadixSubtree();
     }
     this.updateProofHash();
     numAffectedNodes++;
