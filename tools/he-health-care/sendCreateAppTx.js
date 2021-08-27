@@ -1,5 +1,5 @@
 const { signAndSendTx } = require('../util');
-const { healthCareAppName, ainUrl, ainPrivateKey, ainAddress } = require('./config_local');
+const { healthCareAppName, ainUrl, serviceOwnerPrivateKey, serviceOwnerAddr } = require('./config_local');
 
 function buildCreateAppTxBody(appName, timestamp) {
   return {
@@ -8,7 +8,7 @@ function buildCreateAppTxBody(appName, timestamp) {
       ref: `/manage_app/${appName}/create/${timestamp}`,
       value: {
         admin: {
-          [ainAddress]: true,
+          [serviceOwnerAddr]: true,
         },
       },
     },
@@ -19,7 +19,7 @@ function buildCreateAppTxBody(appName, timestamp) {
 
 async function main() {
   const createHealthCareAppTxBody = buildCreateAppTxBody(healthCareAppName, Date.now());
-  const createResult = await signAndSendTx(ainUrl, createHealthCareAppTxBody, ainPrivateKey);
+  const createResult = await signAndSendTx(ainUrl, createHealthCareAppTxBody, serviceOwnerPrivateKey);
   if (!createResult.success) {
     throw Error(`Can't create health care app (${JSON.stringify(createResult, null, 2)})`);
   }
