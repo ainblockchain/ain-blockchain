@@ -1,5 +1,5 @@
 const { signAndSendTx } = require('../util');
-const { healthCareAppName, ainUrl, serviceOwnerPrivateKey, serviceOwnerAddr } = require('./config_local');
+const { healthCareAppName, endpointUrl, serviceOwnerPrivateKey, serviceOwnerAddr } = require('./config_local');
 
 function buildCreateAppTxBody(appName, timestamp) {
   return {
@@ -19,7 +19,7 @@ function buildCreateAppTxBody(appName, timestamp) {
 
 async function main() {
   const createHealthCareAppTxBody = buildCreateAppTxBody(healthCareAppName, Date.now());
-  const createResult = await signAndSendTx(ainUrl, createHealthCareAppTxBody, serviceOwnerPrivateKey);
+  const createResult = await signAndSendTx(endpointUrl, createHealthCareAppTxBody, serviceOwnerPrivateKey);
   if (!createResult.success) {
     throw Error(`Can't create health care app (${JSON.stringify(createResult, null, 2)})`);
   }
