@@ -30,6 +30,7 @@ function buildSetFunctionTxBody(appName, timestamp) {
 }
 
 async function main() {
+  // TODO(sanghee): Support 'node sendSetFunctionTx.js <config_filename>' and check args
   const setFunctionTxBody = buildSetFunctionTxBody(healthCareAppName, Date.now());
   const setFunctionResult = await signAndSendTx(endpointUrl, setFunctionTxBody, serviceOwnerPrivateKey);
   if (!setFunctionResult.success) {
