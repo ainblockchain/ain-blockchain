@@ -1,5 +1,5 @@
 const { signAndSendTx } = require('../util');
-const { healthCareAppName, ainUrl, ainPrivateKey } = require('./constants');
+const { healthCareAppName, ainUrl, ainPrivateKey } = require('./config_local');
 
 function buildSetValueTxBody(appName, timestamp) {
   const dummy = 'a'.repeat(4 * 1024); // 8KB

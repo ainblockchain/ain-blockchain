@@ -1,5 +1,5 @@
 const { signAndSendTx } = require('../util');
-const { healthCareAppName, ainUrl, ainPrivateKey } = require('./constants');
+const { healthCareAppName, ainUrl, ainPrivateKey } = require('./config_local');
 
 const workerTriggerUrl = 'http://localhost:3000/trigger';
 
