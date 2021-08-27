@@ -10,11 +10,17 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const syncRequest = require('sync-request');
 const {
   CURRENT_PROTOCOL_VERSION,
+  CONSENSUS_PROTOCOL_VERSION,
   CHAINS_DIR,
   PredefinedDbPaths,
 } = require('../common/constants');
+const {
+  ConsensusMessageTypes,
+  ConsensusConsts,
+  ValidatorOffenseTypes,
+} = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
-const MAX_ITERATION = 200;
+const PathUtil = require('../common/path-util');
 const {
   waitUntilTxFinalized,
   waitForNewBlocks,
@@ -22,7 +28,11 @@ const {
   getLastBlock,
   getBlockByNumber,
 } = require('../unittest/test-util');
+const { Block } = require('../blockchain/block');
+const ConsensusUtil = require('../consensus/consensus-util');
+const { expect } = require('chai');
 
+const MAX_ITERATION = 200;
 const MAX_NUM_VALIDATORS = 4;
 const ENV_VARIABLES = [
   {
@@ -448,6 +458,104 @@ describe('Consensus', () => {
         "bandwidth_gas_amount": 1,
         "gas_amount_charged": 2420
       });
+    });
+  });
+
+  describe('Penalties', () => {
+    function sendInvalidBlockProposal() {
+      const lastBlock = getLastBlock(server1);
+      const proposalBlock = Block.create(lastBlock.hash, [], {}, [], lastBlock.number + 1,
+          lastBlock.epoch + 1, '', server2Addr, {}, 0, 0);
+      proposalBlock.hash += '0'; // Invalid block hash
+      const proposalTxUnsigned = {
+        operation: {
+          type: 'SET_VALUE',
+          ref: PathUtil.getConsensusProposePath(proposalBlock.number),
+          value: {
+            number: proposalBlock.number,
+            epoch: proposalBlock.epoch,
+            validators: proposalBlock.validators,
+            total_at_stake: 0,
+            proposer: server2Addr,
+            block_hash: proposalBlock.hash,
+            last_hash: proposalBlock.last_hash,
+            timestamp: proposalBlock.timestamp,
+            gas_cost_total: 0
+          }
+        },
+        nonce: -1,
+        timestamp: Date.now(),
+        gas_price: 1,
+      };
+      const proposalTx = parseOrLog(syncRequest('POST', server2 + `/sign_transaction`,
+          {json: proposalTxUnsigned}).body.toString('utf-8')).result;
+      const invalidProposal = {
+        value: { proposalBlock, proposalTx },
+        type: ConsensusMessageTypes.PROPOSE,
+        consensusProtoVer: CONSENSUS_PROTOCOL_VERSION
+      };
+      syncRequest('POST', server1 + '/broadcast_consensus_msg', {json: invalidProposal});
+      return { proposalBlock, proposalTx };
+    }
+
+    async function waitUntilAgainstVotesInBlock(proposalBlock) {
+      let againstVotes = parseOrLog(syncRequest('GET',
+          server2 + `/get_value?ref=/consensus/number/${proposalBlock.number}/${proposalBlock.hash}/vote`)
+          .body.toString('utf-8')).result;
+      while (againstVotes === null) {
+        await CommonUtil.sleep(200);
+        againstVotes = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/consensus/number/${proposalBlock.number}/${proposalBlock.hash}/vote`)
+            .body.toString('utf-8')).result;
+      }
+      // Wait for 1 more block.
+      await waitForNewBlocks(server2, 1);
+      return againstVotes;
+    }
+
+    it('can record an offense and its evidence', async () => {
+      const { proposalBlock, proposalTx } = sendInvalidBlockProposal();
+      const againstVotesFromState = await waitUntilAgainstVotesInBlock(proposalBlock);
+      const blacklist = parseOrLog(syncRequest(
+          'GET', server2 + `/get_value?ref=/consensus/blacklist`).body.toString('utf-8')).result;
+      assert.deepEqual(blacklist, { [server2Addr]: 1 });
+      const blockWithEvidence = (parseOrLog(syncRequest('GET', server2 + `/blocks`)
+          .body.toString('utf-8')).result || [])
+              .find((block) => !CommonUtil.isEmpty(block.evidence));
+      const evidence = blockWithEvidence.evidence[server2Addr][0];
+      assert.deepEqual(blockWithEvidence.evidence[server2Addr].length, 1);
+      assert.deepEqual(evidence.offense_type, ValidatorOffenseTypes.INVALID_PROPOSAL);
+      assert.deepEqual(evidence.block, proposalBlock);
+      assert.deepEqual(evidence.transactions, [proposalTx]);
+      evidence.votes.forEach((vote) => {
+        assert.deepEqual(ConsensusUtil.isAgainstVoteTx(vote), true);
+      });
+      for (const [addr, vote] of Object.entries(againstVotesFromState)) {
+        expect(blockWithEvidence.validators[addr]).to.not.equal(undefined);
+        assert.deepEqual(vote.stake, blockWithEvidence.validators[addr].stake);
+        assert.deepEqual(vote.block_hash, proposalBlock.hash);
+        assert.deepEqual(vote.is_against, true);
+        assert.deepEqual(vote.offense_type, ValidatorOffenseTypes.INVALID_PROPOSAL);
+      }
+      const offenses = parseOrLog(syncRequest(
+        'GET', server2 + `/get_value?ref=/consensus/number/${blockWithEvidence.number}/propose/offenses`)
+        .body.toString('utf-8')).result;
+      assert.deepEqual(offenses, { [server2Addr]: { [ValidatorOffenseTypes.INVALID_PROPOSAL]: 1 } });
+    });
+
+    it('can blacklist and penalize malicious validators ', async () => {
+      const blacklistBefore = parseOrLog(syncRequest(
+          'GET', server2 + `/get_value?ref=/consensus/blacklist/${server2Addr}`).body.toString('utf-8')).result;
+      const stakeBefore = parseOrLog(syncRequest(
+          'GET', server2 + `/get_value?ref=/staking/consensus/${server2Addr}/0/expire_at`).body.toString('utf-8')).result;
+      const { proposalBlock } = sendInvalidBlockProposal();
+      await waitUntilAgainstVotesInBlock(proposalBlock);
+      const blacklistAfter = parseOrLog(syncRequest(
+        'GET', server2 + `/get_value?ref=/consensus/blacklist/${server2Addr}`).body.toString('utf-8')).result;
+      const stakeAfter = parseOrLog(syncRequest(
+          'GET', server2 + `/get_value?ref=/staking/consensus/${server2Addr}/0/expire_at`).body.toString('utf-8')).result;
+      assert.deepEqual(blacklistAfter, blacklistBefore + 1);
+      assert.deepEqual(stakeAfter, stakeBefore + ConsensusConsts.STAKE_LOCKUP_EXTENSION * Math.pow(2, 2 - 1));
     });
   });
 });
