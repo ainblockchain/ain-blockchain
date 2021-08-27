@@ -1,5 +1,5 @@
 const { signAndSendTx } = require('../util');
-const { healthCareAppName, ainUrl, serviceOwnerPrivateKey } = require('./config_local');
+const { healthCareAppName, endpointUrl, serviceOwnerPrivateKey } = require('./config_local');
 
 const workerTriggerUrl = 'http://localhost:3000/trigger';
 
@@ -26,7 +26,7 @@ function buildSetFunctionTxBody(appName, timestamp) {
 
 async function main() {
   const setFunctionTxBody = buildSetFunctionTxBody(healthCareAppName, Date.now());
-  const setFunctionResult = await signAndSendTx(ainUrl, setFunctionTxBody, serviceOwnerPrivateKey);
+  const setFunctionResult = await signAndSendTx(endpointUrl, setFunctionTxBody, serviceOwnerPrivateKey);
   if (!setFunctionResult.success) {
     throw Error(`Can't set function (${JSON.stringify(setFunctionResult, null, 2)})`);
   }
