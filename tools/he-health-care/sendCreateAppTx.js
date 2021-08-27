@@ -18,6 +18,7 @@ function buildCreateAppTxBody(appName, timestamp) {
 }
 
 async function main() {
+  // TODO(sanghee): Support 'node sendCreateAppTx.js <config_filename>' and check args
   const createHealthCareAppTxBody = buildCreateAppTxBody(healthCareAppName, Date.now());
   const createResult = await signAndSendTx(endpointUrl, createHealthCareAppTxBody, serviceOwnerPrivateKey);
   if (!createResult.success) {
