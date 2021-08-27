@@ -1,8 +1,9 @@
-const get = require('lodash/get');
+const _get = require('lodash/get');
 const logger = require('../logger')('BLOCK_POOL');
-const { ConsensusConsts } = require('./constants');
-const { WriteDbOperations } = require('../common/constants');
+const { ConsensusConsts, ValidatorOffenseTypes } = require('./constants');
 const CommonUtil = require('../common/common-util');
+const ConsensusUtil = require('./consensus-util');
+const Transaction = require('../tx-pool/transaction');
 
 class BlockPool {
   constructor(node, lastBlock) {
@@ -10,7 +11,7 @@ class BlockPool {
     const lastFinalizedBlock = this.node.bc.lastBlock();
 
     // Mapping of a block hash to the block's info (block, proposal tx, voting txs)
-    // e.g. { block_hash: { block, proposal, votes: { address: stake } } }
+    // e.g. { block_hash: { block, proposal, votes: { address: stake }, against_votes: { address: stake }, tallied } }
     this.hashToBlockInfo = {};
     // Mapping of a block hash to the new db state
     this.hashToDb = new Map();
@@ -37,7 +38,7 @@ class BlockPool {
       const lastBlockEpoch = lastBlock.epoch;
       const lastBlockNumber = lastBlock.number;
       if (lastFinalizedBlock && lastFinalizedBlock.hash === lastBlock.last_hash) {
-        const proposal = BlockPool.filterProposal(lastBlock.last_votes);
+        const proposal = ConsensusUtil.filterProposalFromVotes(lastBlock.last_votes);
         this.hashToBlockInfo[lastFinalizedBlockHash] = {
           block: lastFinalizedBlock,
           proposal,
@@ -61,7 +62,7 @@ class BlockPool {
   updateLongestNotarizedChains() {
     const LOG_HEADER = 'updateLongestNotarizedChains';
     const currentLongest = this.longestNotarizedChainTips.length ?
-        get(this.hashToBlockInfo[this.longestNotarizedChainTips[0]], 'block.number')
+        _get(this.hashToBlockInfo[this.longestNotarizedChainTips[0]], 'block.number')
         : this.node.bc.lastBlockNumber();
     if (currentLongest == undefined) {
       logger.error(`[${LOG_HEADER}] Notarized block's info is missing: ` +
@@ -220,13 +221,13 @@ class BlockPool {
     return blockInfo && blockInfo.block && (blockInfo.block.number === 0 || blockInfo.proposal);
   }
 
-  addSeenBlock(block, proposalTx) {
+  addSeenBlock(block, proposalTx, isValid = true) {
     const LOG_HEADER = 'addSeenBlock';
 
     logger.info(
-        `[${LOG_HEADER}] Adding seen block to the block pool: ${block.number} / ${block.epoch}`);
+        `[${LOG_HEADER}] Adding seen block to the block pool: ${block.number} / ${block.epoch} / ${isValid}`);
     // Check that there's no other block proposed at the same epoch
-    if (this.epochToBlock[block.epoch] && this.epochToBlock[block.epoch] !== block.hash) {
+    if (isValid && this.epochToBlock[block.epoch] && this.epochToBlock[block.epoch] !== block.hash) {
       const conflict = this.hashToBlockInfo[this.epochToBlock[block.epoch]];
       if (conflict && conflict.notarized) {
         logger.error(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
@@ -237,7 +238,6 @@ class BlockPool {
           `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]}) BUT is not notarized`);
       // FIXME: remove info about the block that's currently this.epochToBlock[block.epoch] ?
     }
-    // Update hashToBlockInfo
     const blockHash = block.hash;
     if (!this.hashToBlockInfo[blockHash]) {
       this.hashToBlockInfo[blockHash] = {};
@@ -247,11 +247,11 @@ class BlockPool {
       this.hashToBlockInfo[blockHash].block = block;
       this.hashToBlockInfo[blockHash].proposal = proposalTx;
       // We might have received some votes before the block itself
-      if (!blockInfo.tallied && blockInfo.votes) {
+      if (isValid && !blockInfo.tallied && blockInfo.votes) {
         this.hashToBlockInfo[blockHash].tallied = 0;
         blockInfo.votes.forEach((vote) => {
           if (block.validators[vote.address]) {
-            this.hashToBlockInfo[blockHash].tallied += get(vote, 'tx_body.operation.value.stake');
+            this.hashToBlockInfo[blockHash].tallied += _get(vote, 'tx_body.operation.value.stake');
           }
         });
         this.tryUpdateNotarized(blockHash);
@@ -263,63 +263,82 @@ class BlockPool {
           `[${LOG_HEADER}] Block already in the block pool: ${block.number} / ${block.epoch}`);
     }
 
-    this.epochToBlock[block.epoch] = blockHash;
-
     if (!this.numberToBlockSet[block.number]) {
       this.numberToBlockSet[block.number] = new Set();
     }
     this.numberToBlockSet[block.number].add(block.hash);
 
-    const lastHash = block.last_hash;
-    if (!this.hashToNextBlockSet[lastHash]) {
-      this.hashToNextBlockSet[lastHash] = new Set();
-    }
-    this.hashToNextBlockSet[lastHash].add(blockHash);
+    if (isValid) {
+      this.epochToBlock[block.epoch] = blockHash;
 
-    // Try updating notarized info for block and next block (if applicable)
-    this.tryUpdateNotarized(blockHash);
-    // FIXME: update all descendants, not just the immediate ones
-    if (this.hashToNextBlockSet[blockHash]) {
-      for (const val of this.hashToNextBlockSet[blockHash]) {
-        this.tryUpdateNotarized(val);
+      const lastHash = block.last_hash;
+      if (!this.hashToNextBlockSet[lastHash]) {
+        this.hashToNextBlockSet[lastHash] = new Set();
+      }
+      this.hashToNextBlockSet[lastHash].add(blockHash);
+
+      // Try updating notarized info for block and next block (if applicable)
+      this.tryUpdateNotarized(blockHash);
+      // FIXME: update all descendants, not just the immediate ones
+      if (this.hashToNextBlockSet[blockHash]) {
+        for (const val of this.hashToNextBlockSet[blockHash]) {
+          this.tryUpdateNotarized(val);
+        }
       }
     }
     return true;
   }
 
-  addSeenVote(voteTx, currentEpoch) {
+  addSeenVote(voteTx) {
     const LOG_HEADER = 'addSeenVote';
-    const blockHash = get(voteTx, 'tx_body.operation.value.block_hash');
-    const stake = get(voteTx, 'tx_body.operation.value.stake');
+    const blockHash = ConsensusUtil.getBlockHashFromConsensusTx(voteTx);
+    const stake = ConsensusUtil.getStakeFromVoteTx(voteTx);
     logger.debug(`[${LOG_HEADER}] voteTx: ${JSON.stringify(voteTx, null, 2)}, ` +
         `blockHash: ${blockHash}, stake: ${stake}`);
     if (!this.hashToBlockInfo[blockHash]) {
       this.hashToBlockInfo[blockHash] = {};
     }
+    if (ConsensusUtil.isAgainstVoteTx(voteTx)) {
+      this.addVoteAgainst(blockHash, voteTx);
+    } else {
+      this.addVoteFor(blockHash, voteTx, stake);
+    }
+  }
+
+  addVoteFor(blockHash, voteTx, stake) {
+    const LOG_HEADER = 'addVoteFor';
     if (!this.hashToBlockInfo[blockHash].votes) {
       this.hashToBlockInfo[blockHash].votes = [];
     }
     if (this.hashToBlockInfo[blockHash].votes.filter((v) => v.hash === voteTx.hash).length) {
-      logger.info(`[${LOG_HEADER}] we've already seen this vote`);
+      logger.debug(`[${LOG_HEADER}] Already have seen this vote`);
       return;
     }
+    this.hashToBlockInfo[blockHash].votes.push(voteTx);
     if (this.hashToBlockInfo[blockHash].tallied === undefined) {
       this.hashToBlockInfo[blockHash].tallied = 0;
     }
-    this.hashToBlockInfo[blockHash].votes.push(voteTx);
     // Only counts if the voter was actually included as a validator in the block.
     // To know this, we need the block itself.
     const block = this.hashToBlockInfo[blockHash].block;
-    if (currentEpoch && block && block.epoch < currentEpoch) {
-      logger.info(`[${LOG_HEADER}] Possibly a stale vote (${block.epoch} / ${currentEpoch})`);
-      // FIXME
-    }
     const voter = voteTx.address;
-    logger.debug(`[${LOG_HEADER}] voted block: ${JSON.stringify(block, null, 2)}`);
-    if (stake > 0 && block && get(block, `validators.${voter}.stake`) === stake) {
+    logger.debug(`[${LOG_HEADER}] voted for block: ${JSON.stringify(block, null, 2)}`);
+    if (stake > 0 && block && _get(block, `validators.${voter}.stake`) === stake) {
       this.hashToBlockInfo[blockHash].tallied += stake;
       this.tryUpdateNotarized(blockHash);
     }
+  }
+
+  addVoteAgainst(blockHash, voteTx) {
+    const LOG_HEADER = 'addVoteAgainst';
+    if (!this.hashToBlockInfo[blockHash].against_votes) {
+      this.hashToBlockInfo[blockHash].against_votes = [];
+    }
+    if (this.hashToBlockInfo[blockHash].against_votes.filter((v) => v.hash === voteTx.hash).length) {
+      logger.debug(`[${LOG_HEADER}] Already have seen this vote`);
+      return;
+    }
+    this.hashToBlockInfo[blockHash].against_votes.push(voteTx);
   }
 
   tryUpdateNotarized(blockHash) {
@@ -336,7 +355,7 @@ class BlockPool {
     if (lastBlockNumber === lastFinalizedBlock.number) {
       prevBlock = lastFinalizedBlock;
     } else if (lastBlockNumber > lastFinalizedBlock.number) {
-      prevBlock = get(this.hashToBlockInfo[lastHash], 'block');
+      prevBlock = _get(this.hashToBlockInfo[lastHash], 'block');
     } else {
       prevBlock = this.node.bc.getBlockByHash(lastHash);
     }
@@ -345,7 +364,7 @@ class BlockPool {
       return;
     }
     const totalAtStake = Object.values(prevBlock.validators).reduce((acc, cur) => {
-      return acc + get(cur, 'stake', 0);
+      return acc + _get(cur, 'stake', 0);
     }, 0);
     if (currentBlockInfo.tallied &&
         currentBlockInfo.tallied >= totalAtStake * ConsensusConsts.MAJORITY) {
@@ -367,14 +386,21 @@ class BlockPool {
   }
 
   // Remove everything that came before lastBlock including lastBlock.
-  cleanUpAfterFinalization(lastBlock) {
+  cleanUpAfterFinalization(lastBlock, recordedInvalidBlocks) {
     const targetNumber = lastBlock.number;
     Object.keys(this.numberToBlockSet).forEach((blockNumber) => {
       if (blockNumber < targetNumber) {
         this.numberToBlockSet[blockNumber].forEach((blockHash) => {
-          this.cleanUpForBlockHash(blockHash);
+          const againstVotes = _get(this.hashToBlockInfo[blockHash], 'against_votes', []);
+          if (!againstVotes.length || recordedInvalidBlocks.has(blockHash) ||
+              blockNumber < targetNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
+            this.cleanUpForBlockHash(blockHash);
+            this.numberToBlockSet[blockNumber].delete(blockHash);
+          }
         });
-        delete this.numberToBlockSet[blockNumber];
+        if (!this.numberToBlockSet[blockNumber].size) {
+          delete this.numberToBlockSet[blockNumber];
+        }
       }
     });
     Object.keys(this.epochToBlock).forEach((epoch) => {
@@ -387,37 +413,53 @@ class BlockPool {
     this.updateLongestNotarizedChains();
   }
 
-  static filterProposal(votes) {
-    if (!votes) return null;
-    const proposalSuffix = 'propose';
-    const proposal = votes.filter((tx) => {
-      if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
-        return tx.tx_body.operation.ref.endsWith(proposalSuffix);
-      } else if (tx.tx_body.operation.type === WriteDbOperations.SET) {
-        return tx.tx_body.operation.op_list[0].ref.endsWith(proposalSuffix);
+  getOffensesAndEvidence(validators, tempDb) {
+    const LOG_HEADER = 'getOffensesAndEvidence';
+    const totalAtStake = Object.values(validators).reduce((acc, cur) => {
+      return acc + _get(cur, 'stake', 0);
+    }, 0);
+    const majority = totalAtStake * ConsensusConsts.MAJORITY;
+    const evidence = {};
+    const offenses = {};
+    Object.values(this.hashToBlockInfo).forEach((blockInfo) => {
+      if (!blockInfo.against_votes || !blockInfo.against_votes.length || !blockInfo.block ||
+          !blockInfo.proposal) {
+        return;
       }
-      return false;
+      const talliedVotes = [];
+      let talliedAgainst = 0;
+      blockInfo.against_votes.forEach((vote) => {
+        const stake = _get(validators, `${vote.address}.stake`, 0);
+        if (stake > 0) {
+          const res = tempDb.executeTransaction(Transaction.toExecutable(vote), true, true);
+          if (CommonUtil.isFailedTx(res)) {
+            logger.debug(`[${LOG_HEADER}] Failed to execute evidence vote:\n${JSON.stringify(vote, null, 2)}\n${JSON.stringify(res, null, 2)})`);
+          } else {
+            talliedAgainst += stake;
+            talliedVotes.push(vote);
+          }
+        }
+      });
+      if (talliedAgainst >= majority) {
+        const offender = blockInfo.block.proposer;
+        if (!evidence[offender]) {
+          evidence[offender] = [];
+        }
+        if (!offenses[offender]) {
+          offenses[offender] = {
+            [ValidatorOffenseTypes.INVALID_PROPOSAL]: 0
+          };
+        }
+        evidence[offender].push({
+          transactions: [blockInfo.proposal],
+          block: blockInfo.block,
+          votes: talliedVotes,
+          offense_type: ValidatorOffenseTypes.INVALID_PROPOSAL
+        });
+        offenses[offender][ValidatorOffenseTypes.INVALID_PROPOSAL] += 1;
+      }
     });
-    return proposal.length ? proposal[0] : null;
-  }
-
-  static getBlockNumberFromTx(tx) {
-    if (!tx || !tx.tx_body.operation) return null;
-    const ref = tx.tx_body.operation.ref ?
-        tx.tx_body.operation.ref : get(tx, 'tx_body.operation.op_list')[0].ref;
-    const refSplit = ref ? ref.split('/') : [];
-    return refSplit.length > 3 ? refSplit[3] : null;
-  }
-
-  static getBlockHashFromTx(tx) {
-    if (!tx || !tx.tx_body.operation) return null;
-    if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
-      return get(tx.tx_body.operation, 'value.block_hash');
-    } else if (tx.tx_body.operation.type === WriteDbOperations.SET) {
-      return get(tx.tx_body.operation.op_list[0], 'value.block_hash');
-    } else {
-      return null;
-    }
+    return { offenses, evidence };
   }
 }
 
