@@ -1,5 +1,10 @@
 const { signAndSendTx } = require('../util');
-const { healthCareAppName, endpointUrl, serviceOwnerPrivateKey } = require('./config_local');
+const {
+  healthCareAppName,
+  endpointUrl,
+  serviceOwnerPrivateKey,
+  healthCareServiceName,
+} = require('./config_local');
 
 const workerTriggerUrl = 'http://localhost:3000/trigger';
 
@@ -13,7 +18,7 @@ function buildSetFunctionTxBody(appName, timestamp) {
           'he-trigger': {
             function_type: 'REST',
             event_listener: workerTriggerUrl,
-            service_name: 'https://ainetwork.ai',
+            service_name: healthCareServiceName,
             function_id: 'he-trigger',
           },
         },
