@@ -1,5 +1,5 @@
 const { signAndSendTx } = require('../util');
-const { healthCareAppName, ainUrl, ainPrivateKey, ainAddress } = require('./constants');
+const { healthCareAppName, ainUrl, ainPrivateKey, ainAddress } = require('./config_local');
 
 function buildCreateAppTxBody(appName, timestamp) {
   return {
