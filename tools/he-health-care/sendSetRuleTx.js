@@ -1,5 +1,5 @@
 const { signAndSendTx } = require('../util');
-const { healthCareAppName, ainUrl, ainPrivateKey } = require('./config_local');
+const { healthCareAppName, ainUrl, serviceOwnerPrivateKey } = require('./config_local');
 
 function buildSetRuleTxBody(appName, timestamp) {
   return {
@@ -19,7 +19,7 @@ function buildSetRuleTxBody(appName, timestamp) {
 
 async function main() {
   const setRuleTxBody = buildSetRuleTxBody(healthCareAppName, Date.now());
-  const setRuleResult = await signAndSendTx(ainUrl, setRuleTxBody, ainPrivateKey);
+  const setRuleResult = await signAndSendTx(ainUrl, setRuleTxBody, serviceOwnerPrivateKey);
   if (!setRuleResult.success) {
     throw Error(`Can't set rule (${JSON.stringify(setRuleResult, null, 2)})`);
   }
