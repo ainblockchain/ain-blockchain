@@ -21,6 +21,7 @@ const {
   buildOwnerPermissions,
   buildRulePermission,
 } = require('../common/constants');
+const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 const {
@@ -48,6 +49,8 @@ class Functions {
     this.db = db;
     this.tp = tp;
     this.nativeFunctionMap = {
+      [NativeFunctionIds.BLACKLIST]: {
+        func: this._blacklist.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CLAIM]: {
         func: this._claim.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CLAIM_REWARD]: {
@@ -650,14 +653,16 @@ class Functions {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
     const proposer = lastConsensusRound.propose.proposer;
-    const totalAtStake = Object.values(lastConsensusRound.vote).reduce((acc, cur) => acc + cur.stake, 0);
-    const validators = Object.keys(lastConsensusRound.vote);
+    const blockHash = lastConsensusRound.propose.block_hash;
+    const votes = lastConsensusRound[blockHash].vote;
+    const totalAtStake = Object.values(votes).reduce((acc, cur) => acc + cur.stake, 0);
+    const validators = Object.keys(votes);
     const proposerReward = gasCostTotal / 2;
     const validatorRewardTotal = gasCostTotal - proposerReward;
     this.incrementConsensusRewards(proposer, proposerReward, context);
     let rewardSum = 0;
     validators.forEach((validator, index) => {
-      const validatorStake = lastConsensusRound.vote[validator].stake;
+      const validatorStake = votes[validator].stake;
       let validatorReward = 0;
       if (index === validators.length - 1) {
         validatorReward = validatorRewardTotal - rewardSum;
@@ -692,6 +697,23 @@ class Functions {
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
+  _blacklist(value, context) {
+    if (CommonUtil.isEmpty(value.offenses)) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    for (const [offender, offenseList] of Object.entries(value.offenses)) {
+      let numOffenses = Object.values(offenseList).reduce((acc, cur) => acc + cur, 0);
+      const blacklistPath = PathUtil.getConsensusBlacklistAddrPath(offender);
+      this.incValueOrLog(blacklistPath, numOffenses, context);
+      numOffenses = this.db.getValue(blacklistPath); // new # of offenses
+      const lockupExtension = ConsensusConsts.STAKE_LOCKUP_EXTENSION * Math.pow(2, numOffenses - 1);
+      const expirationPath = PathUtil.getStakingExpirationPath(PredefinedDbPaths.CONSENSUS, offender, 0);
+      const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), context.timestamp);
+      this.setValueOrLog(expirationPath, currentExpiration + lockupExtension, context);
+    }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+  }
+
   _stake(value, context) {
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
@@ -701,13 +723,14 @@ class Functions {
     const executedAt = context.executedAt;
     const resultPath = PathUtil.getStakingStakeResultPath(serviceName, user, stakingKey, recordId);
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
+    const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), timestamp);
     const lockup = this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName));
     if (timestamp > executedAt) {
       return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
     }
     if (value === 0) {
       // Just update the expiration time
-      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), context);
+      this.setValueOrLog(expirationPath, currentExpiration + Number(lockup), context);
       return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
     }
     const stakingServiceAccountName = CommonUtil.toServiceAccountName(
@@ -715,7 +738,7 @@ class Functions {
     const result =
         this.setServiceAccountTransferOrLog(user, stakingServiceAccountName, value, context);
     if (!CommonUtil.isFailedTx(result)) {
-      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), context);
+      this.setValueOrLog(expirationPath, currentExpiration + Number(lockup), context);
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
       this.incValueOrLog(balanceTotalPath, value, context);
       return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
