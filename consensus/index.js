@@ -32,14 +32,16 @@ const {
   ConsensusMessageTypes,
   ConsensusConsts,
   ConsensusStates,
+  ValidatorOffenseTypes,
 } = require('./constants');
 const {
   signAndSendTx,
   sendGetRequest
 } = require('../common/network-util');
+const ConsensusUtil = require('./consensus-util');
 const PathUtil = require('../common/path-util');
-const DB = require('../db');
 const VersionUtil = require('../common/version-util');
+const DB = require('../db');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
@@ -220,7 +222,7 @@ class Consensus {
           `(${ConsensusStates.RUNNING})`);
       return;
     }
-    if (msg.type !== ConsensusMessageTypes.PROPOSE && msg.type !== ConsensusMessageTypes.VOTE) {
+    if (!Object.values(ConsensusMessageTypes).includes(msg.type)) {
       logger.error(`[${LOG_HEADER}] Invalid message type: ${msg.type}`);
       return;
     }
@@ -256,19 +258,29 @@ class Consensus {
         });
         return;
       }
-      if (Consensus.isValidConsensusTx(proposalTx) &&
-          this.checkProposal(proposalBlock, proposalTx)) {
+      if (!ConsensusUtil.isValidConsensusTx(proposalTx)) {
+        logger.info(`[${LOG_HEADER}] Invalid consensus tx: ${JSON.stringify(proposalTx)}`);
+        return;
+      }
+      const proposalCheck = this.checkProposal(proposalBlock, proposalTx);
+      if (proposalCheck === true) {
         this.server.client.broadcastConsensusMessage(msg);
-        this.tryVote(proposalBlock);
+        this.tryVoteForValidBlock(proposalBlock);
+      } else if (proposalCheck.voteAgainst) {
+        this.blockPool.addSeenBlock(proposalBlock, proposalTx, false);
+        this.server.client.broadcastConsensusMessage(msg);
+        this.tryVoteAgainstInvalidBlock(proposalBlock, proposalTx);
       }
     } else {
       if (this.node.tp.transactionTracker[msg.value.hash]) {
         logger.debug(`[${LOG_HEADER}] Already have the vote in my tx tracker`);
         return;
       }
-      if (Consensus.isValidConsensusTx(msg.value) && this.checkVoteTx(msg.value)) {
-        this.server.client.broadcastConsensusMessage(msg);
+      if (!ConsensusUtil.isValidConsensusTx(msg.value) || !this.checkVoteTx(msg.value)) {
+        logger.info(`[${LOG_HEADER}] Invalid vote tx: ${JSON.stringify(msg.value)}`);
+        return;
       }
+      this.server.client.broadcastConsensusMessage(msg);
     }
   }
 
@@ -303,49 +315,9 @@ class Consensus {
     }
     const lastBlockInfo = this.blockPool.hashToBlockInfo[lastBlock.hash];
     logger.debug(`[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
-    // FIXME(minsulee2 or liayoo): When I am behind and a newly coming node is ahead of me,
-    // then I cannot get lastBlockInfo from the block-pool. So that, it is not able to create
-    // a proper block proposal and also cannot pass checkProposal()
-    // where checking prevBlockInfo.notarized.
-    const lastVotes = blockNumber > 1 && lastBlockInfo.votes ? [...lastBlockInfo.votes] : [];
-    if (lastBlockInfo && lastBlockInfo.proposal) {
-      lastVotes.unshift(lastBlockInfo.proposal);
-    }
-
-    this.node.removeOldReceipts(blockNumber, tempDb);
-
-    for (const voteTx of lastVotes) {
-      if (CommonUtil.isFailedTx(tempDb.executeTransaction(Transaction.toExecutable(voteTx), true))) {
-        logger.debug(`[${LOG_HEADER}] failed to execute last vote: ${JSON.stringify(voteTx, null, 2)}`);
-        tempDb.destroyDb();
-        return null;
-      }
-    }
-
-    const transactions =
-        this.node.tp.getValidTransactions(longestNotarizedChain, tempDb.stateVersion);
-    const validTransactions = [];
-    const invalidTransactions = [];
-    const resList = [];
-    for (const tx of transactions) {
-      const res = tempDb.executeTransaction(Transaction.toExecutable(tx), false, true, blockNumber);
-      if (CommonUtil.txPrecheckFailed(res)) {
-        logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
-        invalidTransactions.push(tx);
-      } else {
-        validTransactions.push(tx);
-        resList.push(res);
-      }
-    }
-    const { gasAmountTotal, gasCostTotal } =
-        CommonUtil.getServiceGasCostTotalFromTxList(validTransactions, resList);
-
-    // Once successfully executed txs (when submitted to tx pool) can become invalid
-    // after some blocks are created. Remove those transactions from tx pool.
-    this.node.tp.removeInvalidTxsFromPool(invalidTransactions);
 
     const myAddr = this.node.account.address;
-    // Need the block#1 to be finalized to have the stakes reflected in the state
+    // Need the block #1 to be finalized to have the stakes reflected in the state
     let validators = {};
     if (this.node.bc.lastBlockNumber() < 1) {
       const whitelist = GENESIS_WHITELIST;
@@ -376,9 +348,49 @@ class Consensus {
     const totalAtStake = Object.values(validators).reduce((acc, cur) => {
       return acc + cur[PredefinedDbPaths.CONSENSUS_STAKE];
     }, 0);
+
+    // FIXME(minsulee2 or liayoo): When I am behind and a newly coming node is ahead of me,
+    // then I cannot get lastBlockInfo from the block-pool. So that, it is not able to create
+    // a proper block proposal and also cannot pass checkProposal()
+    // where checking prevBlockInfo.notarized.
+    const lastVotes = blockNumber > 1 && lastBlockInfo.votes ? [...lastBlockInfo.votes] : [];
+    if (lastBlockInfo && lastBlockInfo.proposal) {
+      lastVotes.unshift(lastBlockInfo.proposal);
+    }
+
+    this.node.removeOldReceipts(blockNumber, tempDb);
+
+    for (const voteTx of lastVotes) {
+      if (CommonUtil.isFailedTx(tempDb.executeTransaction(Transaction.toExecutable(voteTx), true))) {
+        logger.debug(`[${LOG_HEADER}] failed to execute last vote: ${JSON.stringify(voteTx, null, 2)}`);
+        tempDb.destroyDb();
+        return null;
+      }
+    }
+    const { offenses, evidence } = this.blockPool.getOffensesAndEvidence(validators, tempDb);
+    const transactions = this.node.tp.getValidTransactions(longestNotarizedChain, tempDb.stateVersion);
+    const validTransactions = [];
+    const invalidTransactions = [];
+    const resList = [];
+    for (const tx of transactions) {
+      const res = tempDb.executeTransaction(Transaction.toExecutable(tx), false, true, blockNumber);
+      if (CommonUtil.txPrecheckFailed(res)) {
+        logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
+        invalidTransactions.push(tx);
+      } else {
+        validTransactions.push(tx);
+        resList.push(res);
+      }
+    }
+    const { gasAmountTotal, gasCostTotal } =
+        CommonUtil.getServiceGasCostTotalFromTxList(validTransactions, resList);
+
+    // Once successfully executed txs (when submitted to tx pool) can become invalid
+    // after some blocks are created. Remove those transactions from tx pool.
+    this.node.tp.removeInvalidTxsFromPool(invalidTransactions);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.create(
-        lastBlock.hash, lastVotes, validTransactions, blockNumber, this.epoch,
+        lastBlock.hash, lastVotes, evidence, validTransactions, blockNumber, this.epoch,
         stateProofHash, myAddr, validators, gasAmountTotal, gasCostTotal);
 
     let proposalTx;
@@ -396,6 +408,9 @@ class Consensus {
         timestamp: proposalBlock.timestamp,
         gas_cost_total: gasCostTotal
       }
+    }
+    if (!CommonUtil.isEmpty(offenses)) {
+      proposeOp.value.offenses = offenses;
     }
 
     if (blockNumber <= ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
@@ -431,7 +446,7 @@ class Consensus {
     const block = Block.parse(proposalBlock);
     if (!block) {
       logger.error(`[${LOG_HEADER}] Invalid block: ${JSON.stringify(proposalBlock)}`);
-      return false;
+      return { voteAgainst: false };
     }
     const { proposer, number, epoch, hash, last_hash, validators, last_votes, transactions,
         gas_amount_total, gas_cost_total, state_proof_hash } = block;
@@ -439,22 +454,22 @@ class Consensus {
     logger.info(`[${LOG_HEADER}] Checking block proposal: ${number} / ${epoch}`);
     if (this.blockPool.hasSeenBlock(proposalBlock)) {
       logger.info(`[${LOG_HEADER}] Proposal already seen`);
-      return false;
+      return { voteAgainst: false };
     }
     if (proposalTx.address !== proposer) {
       logger.error(`[${LOG_HEADER}] Transaction signer and proposer are different`);
-      return false;
+      return { voteAgainst: false };
     }
-    const blockHash = BlockPool.getBlockHashFromTx(proposalTx);
+    const blockHash = ConsensusUtil.getBlockHashFromConsensusTx(proposalTx);
     if (blockHash !== hash) {
       logger.error(`[${LOG_HEADER}] The block_hash value in proposalTx (${blockHash}) and ` +
           `the actual proposalBlock's hash (${hash}) don't match`);
-      return false;
+      return { voteAgainst: true };
     }
     if (!LIGHTWEIGHT) {
       if (!Block.validateProposedBlock(proposalBlock)) {
         logger.error(`[${LOG_HEADER}] Proposed block didn't pass the basic checks`);
-        return false;
+        return { voteAgainst: true };
       }
     }
     if (number <= this.node.bc.lastBlockNumber()) {
@@ -465,7 +480,7 @@ class Consensus {
         logger.debug(`[${LOG_HEADER}] Adding the proposal to the blockPool for later use`);
         this.blockPool.addSeenBlock(proposalBlock, proposalTx);
       }
-      return false;
+      return { voteAgainst: false };
     }
     // If I don't have enough votes for prevBlock, see last_votes of proposalBlock if
     // those can notarize the prevBlock (verify, execute and add the missing votes)
@@ -475,7 +490,7 @@ class Consensus {
     if (number !== 1 && (!prevBlockInfo || !prevBlockInfo.block)) {
       logger.debug(`[${LOG_HEADER}] No notarized block at number ${number - 1} with ` +
           `hash ${last_hash}`);
-      return;
+      return { voteAgainst: false };
     }
     const prevBlock = number > 1 ? prevBlockInfo.block : prevBlockInfo;
 
@@ -484,16 +499,16 @@ class Consensus {
       logger.error(
           `[${LOG_HEADER}] Invalid validator set size (${JSON.stringify(validators)})\n` +
           `MIN_NUM_VALIDATORS: ${MIN_NUM_VALIDATORS}, MAX_NUM_VALIDATORS: ${MAX_NUM_VALIDATORS}`);
-      return false;
+      return { voteAgainst: true };
     }
 
     if (number !== 1 && !prevBlockInfo.notarized) {
       // Try applying the last_votes of proposalBlock and see if that makes the prev block notarized
-      const prevBlockProposal = BlockPool.filterProposal(last_votes);
+      const prevBlockProposal = ConsensusUtil.filterProposalFromVotes(last_votes);
       if (!prevBlockProposal) {
         logger.error(`[${LOG_HEADER}] Proposal block is missing its prev block's proposal ` +
             'in last_votes');
-        return false;
+        return { voteAgainst: true };
       }
       if (!prevBlockInfo.proposal) {
         if (number === this.node.bc.lastBlockNumber() + 1) {
@@ -501,7 +516,7 @@ class Consensus {
           this.blockPool.addSeenBlock(prevBlockInfo.block, prevBlockProposal);
         } else {
           logger.debug(`[${LOG_HEADER}] Prev block is missing its proposal`);
-          return false;
+          return { voteAgainst: false };
         }
       }
       let baseVersion;
@@ -516,7 +531,7 @@ class Consensus {
         isSnapDb = true;
         if (!prevDb) {
           logger.error(`[${LOG_HEADER}] Previous db state doesn't exist`);
-          return false;
+          return { voteAgainst: false };
         }
         baseVersion = prevDb.stateVersion;
       }
@@ -525,19 +540,19 @@ class Consensus {
           prevBlock.number - 1);
       if (!tempDb) {
         logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
-        return null;
+        return { voteAgainst: false };
       }
       if (isSnapDb) {
         prevDb.destroyDb();
       }
       for (const voteTx of last_votes) {
         if (voteTx.hash === prevBlockProposal.hash) continue;
-        if (!Consensus.isValidConsensusTx(voteTx) ||
+        if (!ConsensusUtil.isValidConsensusTx(voteTx) ||
             CommonUtil.isFailedTx(
                 tempDb.executeTransaction(Transaction.toExecutable(voteTx), true))) {
           logger.error(`[${LOG_HEADER}] voting tx execution for prev block failed`);
           tempDb.destroyDb();
-          return false;
+          return { voteAgainst: true };
         } else {
           this.blockPool.addSeenVote(voteTx);
         }
@@ -548,23 +563,22 @@ class Consensus {
         logger.error(`[${LOG_HEADER}] Block's last_votes don't correctly notarize ` +
             `its previous block of number ${number - 1} with hash ` +
             `${last_hash}:\n${JSON.stringify(this.blockPool.hashToBlockInfo[last_hash], null, 2)}`);
-        return false;
+        return { voteAgainst: true };
       }
     }
 
     if (prevBlock.epoch >= epoch) {
       logger.error(`[${LOG_HEADER}] Previous block's epoch (${prevBlock.epoch}) ` +
           `is greater than or equal to incoming block's (${epoch})`);
-      return false;
+      return { voteAgainst: true };
     }
     const seed = '' + prevBlock.last_votes_hash + epoch;
     const expectedProposer = Consensus.selectProposer(seed, validators);
     if (expectedProposer !== proposer) {
       logger.error(`[${LOG_HEADER}] Proposer is not the expected node (expected: ` +
           `${expectedProposer} / actual: ${proposer})`);
-      return false;
+      return { voteAgainst: true };
     }
-    // TODO(liayoo): Check last_votes if they indeed voted for the previous block.
     let baseVersion;
     let prevDb;
     let isSnapDb = false;
@@ -576,7 +590,7 @@ class Consensus {
       prevDb = this.getSnapDb(prevBlock);
       if (!prevDb) {
         logger.error(`[${LOG_HEADER}] Previous db state doesn't exist`);
-        return false;
+        return { voteAgainst: false };
       }
       isSnapDb = true;
       baseVersion = prevDb.stateVersion;
@@ -585,35 +599,100 @@ class Consensus {
         baseVersion, `${StateVersions.POOL}:${prevBlock.number}:${number}`, prevBlock.number);
     if (!newDb) {
       logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
-      return null;
+      return { voteAgainst: false };
     }
     if (isSnapDb) {
       prevDb.destroyDb();
+    }
+
+    // Check last_votes if they indeed voted for the previous block.
+    const totalAtStake = Object.values(prevBlock.validators).reduce((acc, cur) => {
+      return acc + _.get(cur, 'stake', 0);
+    }, 0);
+    const majority = totalAtStake * ConsensusConsts.MAJORITY;
+    if (number > 1) {
+      const lastVotesTallied = last_votes.reduce((acc, vote) => {
+        if (!ConsensusUtil.isProposalTx(vote) && !ConsensusUtil.isAgainstVoteTx(vote) &&
+            ConsensusUtil.getBlockHashFromConsensusTx(vote) === prevBlock.hash) {
+          return acc + ConsensusUtil.getStakeFromVoteTx(vote);
+        }
+        return acc;
+      }, 0);
+      if (lastVotesTallied < majority) {
+        logger.error(`[${LOG_HEADER}] Last votes don't meet the majority (${lastVotesTallied} < ${majority})\n${JSON.stringify(last_votes, null, 2)}`);
+        newDb.destroyDb();
+        return { voteAgainst: true };
+      }
     }
 
     this.node.removeOldReceipts(number, newDb);
     if (!newDb.executeTransactionList(last_votes, true)) {
       logger.error(`[${LOG_HEADER}] Failed to execute last votes`);
       newDb.destroyDb();
-      return false;
+      return { voteAgainst: true };
     }
+
+    // Cross-check the offenses in proposalTx & the evidence in proposalBlock
+    const offenses = ConsensusUtil.getOffensesFromProposalTx(proposalTx);
+    const evidence = proposalBlock.evidence;
+    if (CommonUtil.isEmpty(offenses) !== CommonUtil.isEmpty(evidence)) {
+      logger.error(`[${LOG_HEADER}] Offenses and evidence don't match: ` +
+          `${JSON.stringify(offenses)} / ${JSON.stringify(evidence)}`);
+      newDb.destroyDb();
+      return { voteAgainst: true };
+    }
+    if (!CommonUtil.isEmpty(evidence)) {
+      for (const [offender, evidenceList] of Object.entries(evidence)) {
+        const tempOffenses = {};
+        for (const evidenceForOffense of evidenceList) {
+          if (!CommonUtil.isValidatorOffenseType(evidenceForOffense.offense_type)) {
+            newDb.destroyDb();
+            return { voteAgainst: true };
+          }
+          const tallied = evidenceForOffense.votes.reduce((acc, vote) => {
+            return acc + _.get(validators, `${vote.address}.stake`, 0);
+          }, 0);
+          if (tallied < majority) {
+            logger.error(`[${LOG_HEADER}] Evidence votes don't meet the majority`);
+            newDb.destroyDb();
+            return { voteAgainst: true };
+          }
+          const txsRes = newDb.executeTransactionList(evidenceForOffense.votes, true);
+          if (!txsRes) {
+            logger.error(`[${LOG_HEADER}] Failed to execute evidence votes`);
+            newDb.destroyDb();
+            return { voteAgainst: true };
+          }
+          if (!tempOffenses[evidenceForOffense.offense_type]) {
+            tempOffenses[evidenceForOffense.offense_type] = 0;
+          }
+          tempOffenses[evidenceForOffense.offense_type] += 1;
+        }
+        if (!_.isEqual(offenses[offender], tempOffenses, { strict: true })) {
+          logger.error(`[${LOG_HEADER}] Invalid offense counts`);
+          newDb.destroyDb();
+          return { voteAgainst: true };
+        }
+      }
+    }
+
     const txsRes = newDb.executeTransactionList(transactions, false, true, number);
     if (!txsRes) {
       logger.error(`[${LOG_HEADER}] Failed to execute transactions`);
       newDb.destroyDb();
-      return false;
+      return { voteAgainst: true };
     }
     const { gasAmountTotal, gasCostTotal } =
         CommonUtil.getServiceGasCostTotalFromTxList(transactions, txsRes);
     if (gasAmountTotal !== gas_amount_total) {
       logger.error(`[${LOG_HEADER}] Invalid gas_amount_total`);
       newDb.destroyDb();
-      return false;
+      return { voteAgainst: true };
     }
     if (gasCostTotal !== gas_cost_total) {
       logger.error(`[${LOG_HEADER}] Invalid gas_cost_total`);
       newDb.destroyDb();
-      return false;
+      return { voteAgainst: true };
     }
 
     // Try executing the proposal tx on the proposal block's db state
@@ -622,7 +701,7 @@ class Consensus {
       logger.error(`[${LOG_HEADER}] Failed to create a transaction with a proposal: ` +
           `${JSON.stringify(proposalTx, null, 2)}`);
       newDb.destroyDb();
-      return false;
+      return { voteAgainst: true };
     }
     const tempDb = this.node.createTempDb(
         newDb.stateVersion, `${StateVersions.CONSENSUS_PROPOSE}:${prevBlock.number}:${number}`,
@@ -630,7 +709,7 @@ class Consensus {
     if (!tempDb) {
       logger.error(`Failed to create a temp database with state version: ${newDb.stateVersion}.`);
       newDb.destroyDb();
-      return null;
+      return { voteAgainst: false };
     }
     const proposalTxExecRes = tempDb.executeTransaction(executableTx, true);
     if (CommonUtil.isFailedTx(proposalTxExecRes)) {
@@ -639,7 +718,7 @@ class Consensus {
           `${JSON.stringify(proposalTxExecRes)}`);
       newDb.destroyDb();
       tempDb.destroyDb();
-      return false;
+      return { voteAgainst: true };
     }
     tempDb.destroyDb();
     this.node.tp.addTransaction(executableTx);
@@ -649,18 +728,18 @@ class Consensus {
         logger.error(`[${LOG_HEADER}] State proof hashes don't match: ` +
             `${newDb.getStateProof('/')[ProofProperties.PROOF_HASH]} / ` +
             `${state_proof_hash}\n\n${JSON.stringify(proposalBlock, null, 2)}`);
-        return false;
+        return { voteAgainst: true };
       }
     }
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
       newDb.destroyDb();
-      return false;
+      return { voteAgainst: true };
     }
     this.blockPool.hashToDb.set(hash, newDb);
     if (!this.blockPool.longestNotarizedChainTips.includes(last_hash)) {
       logger.info(`[${LOG_HEADER}] Block is not extending one of the longest notarized chains ` +
           `(${JSON.stringify(this.blockPool.longestNotarizedChainTips, null, 2)})`);
-      return false;
+      return { voteAgainst: false };
     }
     logger.info(`[${LOG_HEADER}] Verifed block proposal: ${number} / ${epoch}`);
     return true;
@@ -668,8 +747,9 @@ class Consensus {
 
   checkVoteTx(voteTx) {
     const LOG_HEADER = 'checkVoteTx';
-    const blockHash = voteTx.tx_body.operation.value.block_hash;
+    const blockHash = ConsensusUtil.getBlockHashFromConsensusTx(voteTx);
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
+    const isAgainst = ConsensusUtil.isAgainstVoteTx(voteTx);
     let block;
     if (blockInfo && blockInfo.block) {
       block = blockInfo.block;
@@ -677,7 +757,7 @@ class Consensus {
       block = this.node.bc.lastBlock();
     }
     if (!block) {
-      logger.error(`[${LOG_HEADER}] Cannot verify the vote without the block it's voting for: ` +
+      logger.debug(`[${LOG_HEADER}] Cannot verify the vote without the block it's voting for: ` +
           `${blockHash} / ${JSON.stringify(blockInfo, null, 2)}`);
       // FIXME: ask for the block from peers
       return false;
@@ -688,7 +768,19 @@ class Consensus {
           `${JSON.stringify(voteTx, null, 2)}`);
       return false;
     }
-    const tempDb = this.getSnapDb(block);
+    let tempDb;
+    if (isAgainst) {
+      const offenseType = ConsensusUtil.getOffenseTypeFromVoteTx(voteTx);
+      if (!CommonUtil.isValidatorOffenseType(offenseType)) {
+        return false;
+      }
+      const lastBlock = this.node.bc.lastBlock();
+      tempDb = this.node.createTempDb(
+          this.node.stateManager.getFinalVersion(),
+          `${StateVersions.SNAP}:${lastBlock.number}`, lastBlock.number);
+    } else {
+      tempDb = this.getSnapDb(block);
+    }
     if (!tempDb) {
       logger.debug(
           `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(executableTx)}`);
@@ -701,7 +793,7 @@ class Consensus {
       return false;
     }
     this.node.tp.addTransaction(executableTx);
-    this.blockPool.addSeenVote(voteTx, this.epoch);
+    this.blockPool.addSeenVote(voteTx);
     return true;
   }
 
@@ -731,10 +823,10 @@ class Consensus {
     }
   }
 
-  tryVote(proposalBlock) {
-    const LOG_HEADER = 'tryVote';
+  tryVoteForValidBlock(proposalBlock) {
+    const LOG_HEADER = 'tryVoteForValidBlock';
     logger.info(`[${LOG_HEADER}] Trying to vote for ${proposalBlock.number} / ` +
-        `${proposalBlock.epoch} / ${proposalBlock.hash}`)
+        `${proposalBlock.epoch} / ${proposalBlock.hash}`);
     if (this.votedForEpoch(proposalBlock.epoch)) {
       logger.info(`[${LOG_HEADER}] Already voted for epoch ${proposalBlock.epoch}`);
       return;
@@ -742,23 +834,51 @@ class Consensus {
     if (proposalBlock.epoch < this.epoch) {
       logger.info(
           `[${LOG_HEADER}] Possibly a stale proposal (${proposalBlock.epoch} / ${this.epoch})`);
-      // FIXME
     }
-    this.vote(proposalBlock);
-  }
-
-  vote(block) {
     const myAddr = this.node.account.address;
-    const isValidator = block.validators[myAddr];
+    const isValidator = proposalBlock.validators[myAddr];
     if (!isValidator) {
       return;
     }
     const operation = {
       type: WriteDbOperations.SET_VALUE,
-      ref: PathUtil.getConsensusVotePath(block.number, myAddr),
+      ref: PathUtil.getConsensusVotePath(proposalBlock.number, proposalBlock.hash, myAddr),
       value: {
-        [PredefinedDbPaths.CONSENSUS_BLOCK_HASH]: block.hash,
-        [PredefinedDbPaths.CONSENSUS_STAKE]: isValidator.stake
+        [PredefinedDbPaths.CONSENSUS_BLOCK_HASH]: proposalBlock.hash,
+        [PredefinedDbPaths.CONSENSUS_STAKE]: isValidator.stake,
+        [PredefinedDbPaths.CONSENSUS_IS_AGAINST]: false,
+      }
+    };
+    const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
+    const consensusMsg = this.encapsulateConsensusMessage(
+        Transaction.toJsObject(voteTx), ConsensusMessageTypes.VOTE);
+    this.handleConsensusMessage(consensusMsg);
+  }
+
+  tryVoteAgainstInvalidBlock(proposalBlock, proposalTx) {
+    const LOG_HEADER = 'tryVoteAgainstInvalidBlock';
+    logger.info(`[${LOG_HEADER}] Trying to vote against ${proposalBlock.number} / ` +
+        `${proposalBlock.epoch} / ${proposalBlock.hash}`);
+    if (this.votedForBlock(proposalBlock.hash)) {
+      logger.info(`[${LOG_HEADER}] Already voted against block ${proposalBlock.hash}`);
+      return;
+    }
+    const myAddr = this.node.account.address;
+    // NOTE(liayoo): Try voting if I was one of the validators in the last notarized block. However,
+    //               only the votes from the validators in next block's previous block will be counted.
+    const lastNotarizedBlock = this.getLastNotarizedBlock();
+    const isValidator = lastNotarizedBlock.validators[myAddr];
+    if (!isValidator) {
+      return;
+    }
+    const operation = {
+      type: WriteDbOperations.SET_VALUE,
+      ref: PathUtil.getConsensusVotePath(proposalBlock.number, proposalBlock.hash, myAddr),
+      value: {
+        [PredefinedDbPaths.CONSENSUS_BLOCK_HASH]: proposalBlock.hash,
+        [PredefinedDbPaths.CONSENSUS_STAKE]: isValidator.stake,
+        [PredefinedDbPaths.CONSENSUS_IS_AGAINST]: true,
+        [PredefinedDbPaths.CONSENSUS_OFFENSE_TYPE]: ValidatorOffenseTypes.INVALID_PROPOSAL,
       }
     };
     const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
@@ -778,6 +898,7 @@ class Consensus {
       return;
     }
     // Discard the last block (but save it for a future finalization)
+    const recordedInvalidBlocks = new Set();
     for (let i = 0; i < finalizableChain.length - 1; i++) {
       const blockToFinalize = finalizableChain[i];
       if (blockToFinalize.number <= this.node.bc.lastBlockNumber()) {
@@ -788,6 +909,15 @@ class Consensus {
             `hash ${blockToFinalize.hash}`);
         const versionToFinalize = this.blockPool.hashToDb.get(blockToFinalize.hash).stateVersion;
         this.node.cloneAndFinalizeVersion(versionToFinalize, blockToFinalize.number);
+        if (!CommonUtil.isEmpty(blockToFinalize.evidence)) {
+          Object.values(blockToFinalize.evidence).forEach((evidenceList) => {
+            evidenceList.forEach((val) => {
+              if (val.offense_type === ValidatorOffenseTypes.INVALID_PROPOSAL) {
+                recordedInvalidBlocks.add(val.block.hash);
+              }
+            });
+          });
+        }
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
             `${JSON.stringify(blockToFinalize, null, 2)}`);
@@ -795,7 +925,8 @@ class Consensus {
         return;
       }
     }
-    this.blockPool.cleanUpAfterFinalization(finalizableChain[finalizableChain.length - 2]);
+    this.blockPool.cleanUpAfterFinalization(
+        finalizableChain[finalizableChain.length - 2], recordedInvalidBlocks);
     this.reportStateProofHashes();
   }
 
@@ -813,7 +944,7 @@ class Consensus {
           blockInfo.block.number < lastNotarizedBlock.number) {
         return;
       }
-      if (this.checkProposal(blockInfo.block, blockInfo.proposal) ||
+      if (this.checkProposal(blockInfo.block, blockInfo.proposal) === true ||
           this.blockPool.hasSeenBlock(blockInfo.block)) {
         if (blockInfo.votes) {
           blockInfo.votes.forEach((vote) => {
@@ -831,7 +962,7 @@ class Consensus {
     if (lastVerifiedBlock) {
       logger.info(`[${LOG_HEADER}] voting for the last verified block: ` +
           `${lastVerifiedBlock.number} / ${lastVerifiedBlock.epoch}`);
-      this.tryVote(lastVerifiedBlock);
+      this.tryVoteForValidBlock(lastVerifiedBlock);
     }
   }
 
@@ -1007,6 +1138,15 @@ class Consensus {
     if (!blockInfo || !blockInfo.votes) return false;
     const myAddr = this.node.account.address;
     return blockInfo.votes.filter((vote) => vote.address === myAddr).length > 0;
+  }
+
+  votedForBlock(blockHash) {
+    const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
+    if (!blockInfo || !blockInfo.votes) return false;
+    const myAddr = this.node.account.address;
+    const votedFor = blockInfo.votes.filter((vote) => vote.address === myAddr).length > 0;
+    const votedAgainst = blockInfo.against_votes.filter((vote) => vote.address === myAddr).length > 0;
+    return votedFor || votedAgainst;
   }
 
   stake(amount) {
@@ -1228,35 +1368,6 @@ class Consensus {
         `alphabeticallyOrderedValidators: ${alphabeticallyOrderedValidators}\n` +
         `totalAtStake: ${totalAtStake}\nseed: ${seed}\ntargetValue: ${targetValue}`);
     return null;
-  }
-
-  static isValidConsensusTx(tx) {
-    if (!tx.tx_body.operation) return false;
-    const consensusTxPrefix = CommonUtil.formatPath(
-        [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER]);
-    if (tx.tx_body.operation.type === WriteDbOperations.SET_VALUE) {
-      return tx.tx_body.operation.ref.startsWith(consensusTxPrefix);
-    } else if (tx.tx_body.operation.type === WriteDbOperations.SET) {
-      const opList = tx.tx_body.operation.op_list;
-      if (!opList || opList.length !== 2) {
-        return false;
-      }
-      opList.forEach((op) => {
-        if (!op.ref.startsWith(consensusTxPrefix)) return false;
-      })
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  static filterStakeTxs(txs) {
-    return txs.filter((tx) => {
-      const ref = _.get(tx, 'tx_body.operation.ref');
-      return ref &&
-          ref.startsWith(`/${PredefinedDbPaths.STAKING}/${PredefinedDbPaths.CONSENSUS}`) &&
-          _.get(tx, 'tx_body.operation.type') === WriteDbOperations.SET_VALUE;
-    });
   }
 }
 
