@@ -110,6 +110,9 @@ for (let i = 0; i < ENV_VARIABLES.length; i++) {
 describe('Consensus', () => {
   let trackerProc;
   let jsonRpcClient;
+  let server1Addr;
+  let server2Addr;
+  let server3Addr;
   let server4Addr;
   let server5Addr;
   const nodeAddressList = [];
@@ -193,7 +196,7 @@ describe('Consensus', () => {
       await waitForNewBlocks(server1, 1);
       const server4Voted = parseOrLog(syncRequest(
         'GET',
-        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote/${server4Addr}`
+        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/${lastBlock.hash}/vote/${server4Addr}`
       ).body.toString('utf-8')).result;
       assert.deepEqual(server4Voted[PredefinedDbPaths.CONSENSUS_STAKE], 100000);
       // 3. server5 stakes 100000
@@ -222,7 +225,7 @@ describe('Consensus', () => {
       await waitForNewBlocks(server1, 1);
       const votes = parseOrLog(syncRequest(
         'GET',
-        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote`
+        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/${lastBlock.hash}/vote`
       ).body.toString('utf-8')).result;
       assert.deepEqual(votes[server4Addr], undefined);
       assert.deepEqual(votes[server5Addr][PredefinedDbPaths.CONSENSUS_STAKE], 100000);
@@ -253,7 +256,7 @@ describe('Consensus', () => {
       await waitForNewBlocks(server1, 1);
       let votes = parseOrLog(syncRequest(
         'GET',
-        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote`
+        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/${lastBlock.hash}/vote`
       ).body.toString('utf-8')).result;
       assert.deepEqual(votes[server5Addr], undefined);
       assert.deepEqual(votes[server4Addr][PredefinedDbPaths.CONSENSUS_STAKE], 100010);
@@ -282,7 +285,7 @@ describe('Consensus', () => {
       await waitForNewBlocks(server1, 1);
       votes = parseOrLog(syncRequest(
         'GET',
-        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote`
+        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/${lastBlock.hash}/vote`
       ).body.toString('utf-8')).result;
       assert.deepEqual(votes[server4Addr], undefined);
       assert.deepEqual(votes[server5Addr][PredefinedDbPaths.CONSENSUS_STAKE], 100020);
@@ -310,14 +313,16 @@ describe('Consensus', () => {
       const consensusRound = parseOrLog(syncRequest('GET',
           server2 + `/get_value?ref=/consensus/number/${blockNumber}`).body.toString('utf-8')).result;
       const proposer = consensusRound.propose.proposer;
-      const validators = Object.keys(consensusRound.vote);
+      const blockHash = consensusRound.propose.block_hash;
+      const votes = consensusRound[blockHash].vote;
+      const validators = Object.keys(votes);
       const gasCostTotal = consensusRound.propose.gas_cost_total;
       const proposerReward = gasCostTotal / 2;
       const validatorRewardTotal = gasCostTotal - proposerReward;
-      const totalAtStake = Object.values(consensusRound.vote).reduce((acc, cur) => acc + cur.stake, 0);
+      const totalAtStake = Object.values(votes).reduce((acc, cur) => acc + cur.stake, 0);
       let rewardSum = 0;
       validators.forEach((validator, index) => {
-        const validatorStake = consensusRound.vote[validator].stake;
+        const validatorStake = votes[validator].stake;
         let validatorReward = 0;
         if (index === validators.length - 1) {
           validatorReward = validatorRewardTotal - rewardSum;
