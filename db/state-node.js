@@ -2,13 +2,13 @@ const logger = require('../logger')('STATE_NODE');
 
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
-const RadixTree = require('./radix-tree');
 const {
   FeatureFlags,
   HASH_DELIMITER,
   StateInfoProperties,
   ProofProperties,
 } = require('../common/constants');
+const RadixTree = require('./radix-tree');
 
 class StateNode {
   // NOTE(seo): Once new member variables are added, computeNodeBytes() should be updated.
