@@ -38,6 +38,7 @@
     "test_unit_state_manager": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/state-manager.test.js",
     "test_unit_state_node": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/state-node.test.js",
     "test_unit_state_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/state-util.test.js",
+    "test_unit_radix_child_map": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/radix-child-map.test.js",
     "test_unit_radix_node": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/radix-node.test.js",
     "test_unit_radix_tree": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/radix-tree.test.js",
     "test_unit_tx": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/transaction.test.js",
