@@ -716,9 +716,11 @@ class Functions {
       this.incValueOrLog(blacklistPath, numNewOffenses, context);
       const updatedNumOffenses = this.db.getValue(blacklistPath); // new # of offenses
       const lockupExtension = Functions.getBlacklistLockupExtension(numNewOffenses, updatedNumOffenses);
-      const expirationPath = PathUtil.getStakingExpirationPath(PredefinedDbPaths.CONSENSUS, offender, 0);
-      const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), context.timestamp);
-      this.setValueOrLog(expirationPath, currentExpiration + lockupExtension, context);
+      if (lockupExtension > 0) {
+        const expirationPath = PathUtil.getStakingExpirationPath(PredefinedDbPaths.CONSENSUS, offender, 0);
+        const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), context.timestamp);
+        this.setValueOrLog(expirationPath, currentExpiration + lockupExtension, context);
+      }
     }
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
