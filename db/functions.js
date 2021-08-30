@@ -723,22 +723,28 @@ class Functions {
     const executedAt = context.executedAt;
     const resultPath = PathUtil.getStakingStakeResultPath(serviceName, user, stakingKey, recordId);
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
-    const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), timestamp);
-    const lockup = this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName));
+    const currentExpiration = Number(this.db.getValue(expirationPath));
+    const lockup = Number(this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)));
+    const newExpiration = timestamp + lockup;
+    const updateExpiration = currentExpiration <= newExpiration;
     if (timestamp > executedAt) {
       return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
     }
     if (value === 0) {
       // Just update the expiration time
-      this.setValueOrLog(expirationPath, currentExpiration + Number(lockup), context);
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
+      if (updateExpiration) {
+        this.setValueOrLog(expirationPath, newExpiration, context);
+        return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
+      }
     }
     const stakingServiceAccountName = CommonUtil.toServiceAccountName(
           PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
     const result =
         this.setServiceAccountTransferOrLog(user, stakingServiceAccountName, value, context);
     if (!CommonUtil.isFailedTx(result)) {
-      this.setValueOrLog(expirationPath, currentExpiration + Number(lockup), context);
+      if (updateExpiration) {
+        this.setValueOrLog(expirationPath, newExpiration, context);
+      }
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
       this.incValueOrLog(balanceTotalPath, value, context);
       return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
