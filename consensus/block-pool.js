@@ -444,10 +444,11 @@ class BlockPool {
   }
 
   /**
-   * 
-   * @param {Block} lastBlock 
-   * @param {number} blockNumber 
-   * @param {DB} tempDb 
+   * Executes votes for the lastBlock, check that the sum of stakes exceeds the majority,
+   * and returns valid votes.
+   * @param {Block} lastBlock The block to get the votes for
+   * @param {number} blockNumber The block number of the new block
+   * @param {DB} tempDb The DB to execute the votes on
    * @returns Array
    */
   getValidLastVotes(lastBlock, blockNumber, tempDb) {

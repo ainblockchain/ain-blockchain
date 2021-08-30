@@ -774,6 +774,13 @@ class Consensus {
     }
   }
 
+  /**
+   * Performs various checks on the proposalBlock and proposalTx. Throws ConsensusError if a check
+   * fails. If the ConsensusError's code is one of the `ConsensusErrorCodesToVoteAgainst`,
+   * the node will try to vote against the block.
+   * @param {Block} proposalBlock
+   * @param {Transaction} proposalTx
+   */
   checkProposal(proposalBlock, proposalTx) {
     const LOG_HEADER = 'checkProposal';
     const block = Block.parse(proposalBlock);
