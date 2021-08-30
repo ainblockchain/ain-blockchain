@@ -698,9 +698,8 @@ class Functions {
   }
 
   static getBlacklistLockupExtension(numNewOffenses, updatedNumOffenses) {
-    let n = updatedNumOffenses - numNewOffenses + 1;
     let extension = 0;
-    for (n; n <= updatedNumOffenses; n++) {
+    for (let n = updatedNumOffenses - numNewOffenses + 1; n <= updatedNumOffenses; n++) {
       extension += ConsensusConsts.STAKE_LOCKUP_EXTENSION * Math.pow(2, n - 1);
     }
     return extension;
