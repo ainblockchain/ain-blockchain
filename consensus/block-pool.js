@@ -514,6 +514,7 @@ class BlockPool {
             baseDb.stateVersion, `${StateVersions.SNAP}:${blockNumber}`, blockNumber);
       }
     }
+    backupDb.destroyDb();
     return { offenses, evidence };
   }
 }
