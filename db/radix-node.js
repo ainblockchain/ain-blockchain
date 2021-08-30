@@ -2,12 +2,14 @@ const logger = require('../logger')('RADIX_NODE');
 
 const CommonUtil = require('../common/common-util');
 const {
+  FeatureFlags,
   HASH_DELIMITER,
   ProofProperties,
 } = require('../common/constants');
+const RadixChildMap = require('./radix-child-map');
 
 /**
- * Implements a radix node, which is used as a component of RadixTree.
+ * Implements Radix Node, which is used as a component of RadixTree.
  */
 class RadixNode {
   constructor() {
@@ -15,7 +17,11 @@ class RadixNode {
     this.labelRadix = '';
     this.labelSuffix = '';
     this.parent = null;
-    this.radixChildMap = new Map();
+    if (FeatureFlags.enableArrayRadixChildMap) {
+      this.radixChildMap = new RadixChildMap();
+    } else {
+      this.radixChildMap = new Map();
+    }
     this.proofHash = null;
   }
 
@@ -29,8 +35,7 @@ class RadixNode {
 
     if (!(stateNode instanceof StateNode)) {
       logger.error(
-          `[${LOG_HEADER}] Setting with a non-StateNode instance: ` +
-          `${JSON.stringify(stateNode, null, 2)} at: ${new Error().stack}.`);
+          `[${LOG_HEADER}] Setting with a non-StateNode instance at: ${new Error().stack}.`);
       // Does nothing.
       return false;
     }
@@ -102,7 +107,8 @@ class RadixNode {
     const LOG_HEADER = 'setChild';
     if (this.hasChild(labelRadix)) {
       logger.error(
-          `[${LOG_HEADER}] Overwriting a child with radix label ${labelRadix}.`);
+          `[${LOG_HEADER}] Overwriting a child with radix label ${labelRadix} ` +
+          `at: ${new Error().stack}.`);
       // Does nothing.
       return false;
     }
@@ -123,7 +129,9 @@ class RadixNode {
   deleteChild(labelRadix) {
     const LOG_HEADER = 'deleteChild';
     if (!this.hasChild(labelRadix)) {
-      logger.error(`[${LOG_HEADER}] Deleting a non-existing child with label: ${labelRadix}.`);
+      logger.error(
+          `[${LOG_HEADER}] Deleting a non-existing child with label: ${labelRadix} ` +
+          `at: ${new Error().stack}.`);
       // Does nothing.
       return false;
     }
