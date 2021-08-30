@@ -504,8 +504,8 @@ class BlockPool {
         continue;
       }
       const validBlockCandidate = this.hashToBlockInfo[blockHash];
-      const block = blockInfo.block || _.get(validBlockCandidate, 'block');
-      const proposal = blockInfo.proposal || _.get(validBlockCandidate, 'proposal');
+      const block = blockInfo.block || _get(validBlockCandidate, 'block');
+      const proposal = blockInfo.proposal || _get(validBlockCandidate, 'proposal');
       if (!block || !proposal) {
         continue;
       }
