@@ -474,7 +474,7 @@ class Consensus {
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_PREV_BLOCK,
         message: `No notarized block at number ${number - 1} with hash ${lastHash}`,
-        level: 'debug'
+        level: 'error'
       });
     }
     return prevBlockInfo;
@@ -524,7 +524,7 @@ class Consensus {
         isSnapDb = true;
         if (!prevDb) {
           throw new ConsensusError({
-            code: ConsensusErrorCode.MISSING_PREV_DB,
+            code: ConsensusErrorCode.MISSING_DB_FOR_PREV_BLOCK,
             message: `Previous db state doesn't exist`,
             level: 'error'
           });
@@ -596,7 +596,7 @@ class Consensus {
       prevDb = this.getSnapDb(prevBlock);
       if (!prevDb) {
         throw new ConsensusError({
-          code: ConsensusErrorCode.TEMP_DB_CREATION_FAILURE,
+          code: ConsensusErrorCode.MISSING_DB_FOR_PREV_BLOCK,
           message: `Previous db state doesn't exist`,
           level: 'error'
         });
