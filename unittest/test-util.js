@@ -142,10 +142,14 @@ async function waitUntilNetworkIsReady(serverList) {
 async function waitUntilNodeSyncs(server) {
   let isSyncing = true;
   while (isSyncing) {
-    isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
-        {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
-                params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-        .body.toString('utf-8')).result.result;
+    try {
+      isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
+          {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
+                  params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
+          .body.toString('utf-8')).result.result;
+    } catch (e) {
+      // server may not be ready yet
+    }
     await CommonUtil.sleep(1000);
   }
 }
