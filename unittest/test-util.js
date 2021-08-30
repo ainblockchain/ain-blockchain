@@ -110,6 +110,35 @@ async function waitForNewBlocks(server, waitFor = 1) {
   }
 }
 
+async function waitUntilNetworkIsReady(serverList) {
+  const MAX_ITERATION = 40;
+  let iterCount = 0;
+  const unchecked = new Set(serverList);
+  while (true) {
+    if (!unchecked.size) {
+      return true;
+    }
+    if (iterCount >= MAX_ITERATION) {
+      console.log(`Iteration count exceeded its limit before the network is ready (${JSON.stringify([...unchecked])})`);
+      return false;
+    }
+    for (const server of unchecked) {
+      try {
+        const healthCheck = parseOrLog(syncRequest('GET', server + '/health_check')
+            .body
+            .toString('utf-8'));
+        if (healthCheck === true) {
+          unchecked.delete(server);
+        }
+      } catch (e) {
+        // server may not be ready yet
+      }
+    }
+    await CommonUtil.sleep(3000);
+    iterCount++;
+  }
+}
+
 async function waitUntilNodeSyncs(server) {
   let isSyncing = true;
   while (isSyncing) {
@@ -184,6 +213,7 @@ module.exports = {
   addBlock,
   waitUntilTxFinalized,
   waitForNewBlocks,
+  waitUntilNetworkIsReady,
   waitUntilNodeSyncs,
   parseOrLog,
   setUpApp,

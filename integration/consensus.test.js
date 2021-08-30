@@ -23,10 +23,10 @@ const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 const {
   waitUntilTxFinalized,
+  waitUntilNetworkIsReady,
   waitForNewBlocks,
   parseOrLog,
   getLastBlock,
-  getBlockByNumber,
 } = require('../unittest/test-util');
 const { Block } = require('../blockchain/block');
 const ConsensusUtil = require('../consensus/consensus-util');
@@ -143,6 +143,7 @@ describe('Consensus', () => {
           parseOrLog(syncRequest('GET', serverList[i] + '/get_address').body.toString('utf-8')).result;
       nodeAddressList.push(address);
     };
+    await waitUntilNetworkIsReady(serverList);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
       jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK,

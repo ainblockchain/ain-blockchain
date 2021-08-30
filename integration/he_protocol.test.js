@@ -14,6 +14,7 @@ const {
 const CommonUtil = require('../common/common-util');
 const {
   waitUntilTxFinalized,
+  waitUntilNetworkIsReady,
   parseOrLog,
   setUpApp,
   eraseStateGas,
@@ -87,8 +88,7 @@ describe('HE Protocol', () => {
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     await CommonUtil.sleep(3000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    await CommonUtil.sleep(3000);
-
+    await waitUntilNetworkIsReady(serverList);
 
     const server1Addr = parseOrLog(syncRequest(
         'GET', server1 + '/get_address').body.toString('utf-8')).result;

@@ -27,6 +27,7 @@ const {
   parseOrLog,
   setUpApp,
   getLastBlockNumber,
+  waitUntilNetworkIsReady,
   waitForNewBlocks,
   getBlockByNumber,
   eraseStateGas,
@@ -209,8 +210,7 @@ describe('Blockchain Node', () => {
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     await CommonUtil.sleep(3000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    await CommonUtil.sleep(3000);
-
+    await waitUntilNetworkIsReady(serverList);
 
     const server1Addr = parseOrLog(syncRequest(
         'GET', server1 + '/get_address').body.toString('utf-8')).result;
@@ -936,7 +936,7 @@ describe('Blockchain Node', () => {
       it('inc_value', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
-            'GET', server1 + '/get_value?ref=/apps/some/wrong/path2')
+            'GET', server1 + '/get_value?ref=/apps/test/test_value/some/path2')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
 

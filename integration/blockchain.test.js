@@ -23,6 +23,7 @@ const MAX_CHAIN_LENGTH_DIFF = 5;
 const {
   waitUntilTxFinalized,
   waitForNewBlocks,
+  waitUntilNetworkIsReady,
   waitUntilNodeSyncs,
   parseOrLog,
   setUpApp
@@ -248,6 +249,7 @@ describe('Blockchain Cluster', () => {
           parseOrLog(syncRequest('GET', serverList[i] + '/get_address').body.toString('utf-8')).result;
       nodeAddressList.push(address);
     };
+    await waitUntilNetworkIsReady(serverList);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
       jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK,

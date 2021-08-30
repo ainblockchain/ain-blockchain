@@ -7,7 +7,12 @@ const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
 const { CHAINS_DIR } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
-const { waitUntilTxFinalized, parseOrLog, setUpApp } = require('../unittest/test-util');
+const {
+  waitUntilTxFinalized,
+  waitUntilNetworkIsReady,
+  parseOrLog,
+  setUpApp
+} = require('../unittest/test-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
@@ -111,7 +116,7 @@ describe('DApp Test', async () => {
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     await CommonUtil.sleep(3000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    await CommonUtil.sleep(3000);
+    await waitUntilNetworkIsReady(serverList);
   });
 
   after(() => {
