@@ -18,7 +18,7 @@ class RadixChildMap {
   }
 
   static _labelRadixToIndex(labelRadix) {
-    if (!labelRadix || !CommonUtil.isString(labelRadix)) {
+    if (!CommonUtil.isString(labelRadix)) {
       return -1;
     }
     const code = labelRadix.charCodeAt(0);
@@ -57,9 +57,9 @@ class RadixChildMap {
   set(labelRadix, child) {
     const index = RadixChildMap._labelRadixToIndex(labelRadix);
     if (index >= 0 && index < 16) {
-      const isOverwiring = this._has(index);
+      const isOverwriting = this._has(index);
       this.childArray[index] = child;
-      if (!isOverwiring) {
+      if (!isOverwriting) {
         this.size++;
       }
       return true;
