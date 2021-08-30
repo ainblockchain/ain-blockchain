@@ -35,8 +35,7 @@ class RadixNode {
 
     if (!(stateNode instanceof StateNode)) {
       logger.error(
-          `[${LOG_HEADER}] Setting with a non-StateNode instance: ` +
-          `${JSON.stringify(stateNode, null, 2)} at: ${new Error().stack}.`);
+          `[${LOG_HEADER}] Setting with a non-StateNode instance at: ${new Error().stack}.`);
       // Does nothing.
       return false;
     }
@@ -108,7 +107,8 @@ class RadixNode {
     const LOG_HEADER = 'setChild';
     if (this.hasChild(labelRadix)) {
       logger.error(
-          `[${LOG_HEADER}] Overwriting a child with radix label ${labelRadix}.`);
+          `[${LOG_HEADER}] Overwriting a child with radix label ${labelRadix} ` +
+          `at: ${new Error().stack}.`);
       // Does nothing.
       return false;
     }
@@ -129,7 +129,9 @@ class RadixNode {
   deleteChild(labelRadix) {
     const LOG_HEADER = 'deleteChild';
     if (!this.hasChild(labelRadix)) {
-      logger.error(`[${LOG_HEADER}] Deleting a non-existing child with label: ${labelRadix}.`);
+      logger.error(
+          `[${LOG_HEADER}] Deleting a non-existing child with label: ${labelRadix} ` +
+          `at: ${new Error().stack}.`);
       // Does nothing.
       return false;
     }
