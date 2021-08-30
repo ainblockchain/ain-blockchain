@@ -18,7 +18,7 @@ const FeatureFlags = {
   // Enables state version optimization.
   enableStateVersionOpt: true,
   // Enables state tree transfer.
-  enableStateTreeTransfer: true,
+  enableStateTreeTransfer: false,
   // Enables rich logging for functions.
   enableRichFunctionLogging: false,
   // Enables rich logging for transactions.
