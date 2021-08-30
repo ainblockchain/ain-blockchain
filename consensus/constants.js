@@ -36,7 +36,7 @@ const ConsensusErrorCode = {
   INVALID_EPOCH: 300,
   MISSING_PROPOSAL_IN_LAST_VOTES: 301,
   MISSING_PROPOSAL_IN_BLOCK_POOL: 302,
-  MISSING_PREV_DB: 303,
+  MISSING_DB_FOR_PREV_BLOCK: 303,
   EXECUTING_LAST_VOTES_FAILURE: 304,
   INVALID_LAST_VOTES_STAKES: 305,
   INVALID_PROPOSER: 400,
@@ -55,6 +55,7 @@ const ConsensusErrorCode = {
 
 const ConsensusErrorCodesToVoteAgainst = new Set([
   ConsensusErrorCode.ADDING_TO_BLOCK_POOL_FAILURE,
+  ConsensusErrorCode.MISSING_DB_FOR_PREV_BLOCK,
   ConsensusErrorCode.INVALID_EPOCH,
   ConsensusErrorCode.MISSING_PROPOSAL_IN_LAST_VOTES,
   ConsensusErrorCode.EXECUTING_LAST_VOTES_FAILURE,
@@ -63,6 +64,7 @@ const ConsensusErrorCodesToVoteAgainst = new Set([
   ConsensusErrorCode.BLOCK_HASH_MISMATCH,
   ConsensusErrorCode.INVALID_VALIDATORS_SIZE,
   ConsensusErrorCode.ILL_FORMED_BLOCK,
+  ConsensusErrorCode.INVALID_PREV_BLOCK,
   ConsensusErrorCode.INVALID_PROPOSER,
   ConsensusErrorCode.OFFENSES_EVIDENCE_MISMATCH,
   ConsensusErrorCode.INVALID_OFFENSE_TYPE,
