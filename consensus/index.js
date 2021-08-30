@@ -759,16 +759,18 @@ class Consensus {
     newDb.blockNumberSnapshot += 1;
   }
 
-  validateStateProofHash(stateProofHash, newDb) {
-    if (!LIGHTWEIGHT) {
-      if (newDb.getStateProof('/')[ProofProperties.PROOF_HASH] !== stateProofHash) {
-        throw new ConsensusError({
-          code: ConsensusErrorCode.INVALID_STATE_PROOF_HASH,
-          message: `State proof hashes don't match: ` +
-              `${newDb.getStateProof('/')[ProofProperties.PROOF_HASH]} / ${stateProofHash}`,
-          level: 'error'
-        });
-      }
+  validateStateProofHash(expectedStateProofHash, newDb) {
+    if (LIGHTWEIGHT) {
+      return;
+    }
+    const stateProofHash = newDb.getStateProof('/')[ProofProperties.PROOF_HASH];
+    if (stateProofHash !== expectedStateProofHash) {
+      newDb.destroyDb();
+      throw new ConsensusError({
+        code: ConsensusErrorCode.INVALID_STATE_PROOF_HASH,
+        message: `State proof hashes don't match: ${stateProofHash} / ${expectedStateProofHash}`,
+        level: 'error'
+      });
     }
   }
 
