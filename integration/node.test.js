@@ -7274,6 +7274,19 @@ describe('Blockchain Node', () => {
     });
 
     it('app txs are not charged by transfer', async () => {
+      // NOTE(platfowner): A pre-tx to guarantee that the service state delta of the next tx
+      // is zero.
+      const txPreRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: '/apps/test_billing/test_pre',
+          value: 'testing app tx',
+          gas_price: 1,
+          nonce: -1,
+          timestamp: Date.now(),
+        }
+      }).body.toString('utf-8')).result;
+      if (!(await waitUntilTxFinalized(serverList, txPreRes.tx_hash))) {
+        console.error(`Failed to check finalization of app tx.`);
+      }
       const balanceBefore = parseOrLog(syncRequest('GET', server2 + userBalancePathA).body.toString('utf-8')).result;
       const txWithoutBillingRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: '/apps/test_billing/test',

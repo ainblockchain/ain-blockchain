@@ -165,14 +165,16 @@ class RadixTree {
     const LOG_HEADER = '_mergeToChild';
 
     if (node.numChildren() !== 1) {
-      logger.error(`[${LOG_HEADER}] Trying to merge a node with children: ` +
-          `${node.labelRadix}:${node.labelSuffix}.`);
+      logger.error(
+          `[${LOG_HEADER}] Trying to merge a node with children: ${node.getLabel()} ` +
+          `at: ${new Error().stack}.`);
       // Does nothing.
       return false;
     }
     if (node.hasStateNode()) {
-      logger.error(`[${LOG_HEADER}] Trying to merge a node with state node: ` +
-          `${node.labelRadix}:${node.labelSuffix}.`);
+      logger.error(
+          `[${LOG_HEADER}] Trying to merge a node with state node: ${node.getLabel()} ` +
+          `at: ${new Error().stack}.`);
       // Does nothing.
       return false;
     }
@@ -195,12 +197,16 @@ class RadixTree {
     const hexLabel = RadixTree._toHexLabel(stateLabel);
     const node = this._getRadixNodeForReading(hexLabel);
     if (node === null || !node.hasStateNode()) {
-      logger.error(`[${LOG_HEADER}] Deleting a non-existing child of label: ${stateLabel}.`);
+      logger.error(
+          `[${LOG_HEADER}] Deleting a non-existing child of label: ${stateLabel} ` +
+          `at: ${new Error().stack}.`);
       // Does nothing.
       return false;
     }
     if (!node.hasParent()) {
-      logger.error(`[${LOG_HEADER}] Deleting the root node of label: ${stateLabel}?`);
+      logger.error(
+          `[${LOG_HEADER}] Deleting the root node of label: ${stateLabel} ` +
+          `at: ${new Error().stack}.`);
       // Does nothing.
       return false;
     }
@@ -209,7 +215,9 @@ class RadixTree {
       return this._mergeToChild(node);
     } else if (node.numChildren() === 0) {
       if (!node.hasParent()) {
-        logger.error(`[${LOG_HEADER}] Deleting a child without parent of label: ${stateLabel}.`);
+        logger.error(
+            `[${LOG_HEADER}] Deleting a child without parent of label: ${stateLabel} ` +
+            `at: ${new Error().stack}.`);
         // Does nothing.
         return false;
       }
@@ -261,7 +269,7 @@ class RadixTree {
     if (node === null) {
       logger.error(
           `[${LOG_HEADER}] Updating proof hash for non-existing child with label: ` +
-          `${updatedNodeLabel}.`);
+          `${updatedNodeLabel} at: ${new Error().stack}.`);
       // Does nothing.
       return 0;
     }
