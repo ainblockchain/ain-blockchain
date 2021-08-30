@@ -469,7 +469,7 @@ describe('Consensus', () => {
       const proposalBlock = Block.create(lastBlock.hash, [], {}, [], lastBlock.number + 1,
           lastBlock.epoch + 1, '', server2Addr, {}, 0, 0);
       proposalBlock.hash += '0'; // Invalid block hash
-      const proposalTxUnsigned = {
+      const proposalTxBody = {
         operation: {
           type: 'SET_VALUE',
           ref: PathUtil.getConsensusProposePath(proposalBlock.number),
@@ -490,7 +490,7 @@ describe('Consensus', () => {
         gas_price: 1,
       };
       const proposalTx = parseOrLog(syncRequest('POST', server2 + `/sign_transaction`,
-          {json: proposalTxUnsigned}).body.toString('utf-8')).result;
+          {json: proposalTxBody}).body.toString('utf-8')).result;
       const invalidProposal = {
         value: { proposalBlock, proposalTx },
         type: ConsensusMessageTypes.PROPOSE,
