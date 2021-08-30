@@ -748,8 +748,9 @@ class Consensus {
   checkVoteTx(voteTx) {
     const LOG_HEADER = 'checkVoteTx';
     const blockHash = ConsensusUtil.getBlockHashFromConsensusTx(voteTx);
-    const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
     const isAgainst = ConsensusUtil.isAgainstVoteTx(voteTx);
+    const blockInfo = this.blockPool.hashToBlockInfo[blockHash] ||
+        this.blockPool.hashToInvalidBlockInfo[blockHash];
     let block;
     if (blockInfo && blockInfo.block) {
       block = blockInfo.block;
@@ -1137,16 +1138,16 @@ class Consensus {
     const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
     if (!blockInfo || !blockInfo.votes) return false;
     const myAddr = this.node.account.address;
-    return blockInfo.votes.filter((vote) => vote.address === myAddr).length > 0;
+    return blockInfo.votes.find((vote) => vote.address === myAddr) !== undefined;
   }
 
   votedForBlock(blockHash) {
-    const blockInfo = this.blockPool.hashToBlockInfo[blockHash];
+    const blockInfo = this.blockPool.hashToBlockInfo[blockHash] || this.blockPool.hashToInvalidBlockInfo[blockHash];
     if (!blockInfo || !blockInfo.votes) return false;
     const myAddr = this.node.account.address;
-    const votedFor = blockInfo.votes.filter((vote) => vote.address === myAddr).length > 0;
-    const votedAgainst = blockInfo.against_votes.filter((vote) => vote.address === myAddr).length > 0;
-    return votedFor || votedAgainst;
+    const votedFor = blockInfo.votes.find((vote) => vote.address === myAddr);
+    const votedAgainst = blockInfo.against_votes.find((vote) => vote.address === myAddr);
+    return votedFor !== undefined || votedAgainst !== undefined;
   }
 
   stake(amount) {
@@ -1288,6 +1289,7 @@ class Consensus {
     if (this.blockPool) {
       result.block_pool = {
         hashToBlockInfo: this.blockPool.hashToBlockInfo,
+        hashToInvalidBlockInfo: this.blockPool.hashToInvalidBlockInfo,
         hashToDb: Array.from(this.blockPool.hashToDb.keys()),
         hashToNextBlockSet: Object.keys(this.blockPool.hashToNextBlockSet)
           .reduce((acc, curr) => {
