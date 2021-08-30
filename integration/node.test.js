@@ -1781,6 +1781,9 @@ describe('Blockchain Node', () => {
         expect(CommonUtil.isArray(body.result)).to.equal(true);
         for (let i = 0; i < body.result.length; i++) {
           const result = body.result[i];
+          if (!(await waitUntilTxFinalized(serverList, result.tx_hash))) {
+            console.error(`Failed to check finalization of tx.`);
+          }
           result.tx_hash = 'erased';
         }
         assert.deepEqual(body.result, [
@@ -1973,7 +1976,6 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
-        await CommonUtil.sleep(6);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=/apps/test/test_value/some200/path')
             .body.toString('utf-8')).result;
@@ -2008,7 +2010,7 @@ describe('Blockchain Node', () => {
                 value: "some other202 value",
               },
               timestamp: Date.now(),
-              nonce: nonce
+              nonce: -1
             },
             {
               operation: {
@@ -2017,7 +2019,7 @@ describe('Blockchain Node', () => {
                 value: 10
               },
               timestamp: Date.now(),
-              nonce: nonce + 1
+              nonce: -1
             },
             {
               operation: {
@@ -2026,7 +2028,7 @@ describe('Blockchain Node', () => {
                 value: 10
               },
               timestamp: Date.now(),
-              nonce: nonce + 2
+              nonce: -1
             },
             {
               operation: {
@@ -2035,7 +2037,7 @@ describe('Blockchain Node', () => {
                 value: "some other202 value",
               },
               timestamp: Date.now(),
-              nonce: nonce + 3
+              nonce: -1
             },
             {
               operation: {
@@ -2053,7 +2055,7 @@ describe('Blockchain Node', () => {
                 }
               },
               timestamp: Date.now(),
-              nonce: nonce + 3
+              nonce: -1
             },
             {
               operation: {
@@ -2066,7 +2068,7 @@ describe('Blockchain Node', () => {
                 }
               },
               timestamp: Date.now(),
-              nonce: nonce + 4
+              nonce: -1
             },
             {
               operation: {
@@ -2086,7 +2088,7 @@ describe('Blockchain Node', () => {
                 }
               },
               timestamp: Date.now(),
-              nonce: nonce + 5
+              nonce: -1
             },
             {
               operation: {
@@ -2149,7 +2151,7 @@ describe('Blockchain Node', () => {
                 ]
               },
               timestamp: Date.now(),
-              nonce: nonce + 6
+              nonce: -1
             }
           ]
         };
@@ -2159,6 +2161,9 @@ describe('Blockchain Node', () => {
         expect(CommonUtil.isArray(body.result)).to.equal(true);
         for (let i = 0; i < body.result.length; i++) {
           const result = body.result[i];
+          if (!(await waitUntilTxFinalized(serverList, result.tx_hash))) {
+            console.error(`Failed to check finalization of tx.`);
+          }
           result.tx_hash = 'erased';
         }
         assert.deepEqual(body.result, [
@@ -2372,7 +2377,6 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
-        await CommonUtil.sleep(6);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=/apps/test/test_value/some202/path')
             .body.toString('utf-8')).result;
