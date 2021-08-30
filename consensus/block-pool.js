@@ -220,12 +220,12 @@ class BlockPool {
     return blockInfo && blockInfo.block && blockInfo.notarized ? blockInfo.block : null;
   }
 
-  hasSeenBlock(block) {
-    if (this.hashToBlockInfo[block.hash]) {
-      const blockInfo = this.hashToBlockInfo[block.hash];
+  hasSeenBlock(blockHash) {
+    if (this.hashToBlockInfo[blockHash]) {
+      const blockInfo = this.hashToBlockInfo[blockHash];
       return blockInfo && blockInfo.block && (blockInfo.block.number === 0 || !!blockInfo.proposal);
-    } else if (this.hashToInvalidBlockInfo[block.hash]) {
-      const blockInfo = this.hashToInvalidBlockInfo[block.hash];
+    } else if (this.hashToInvalidBlockInfo[blockHash]) {
+      const blockInfo = this.hashToInvalidBlockInfo[blockHash];
       return blockInfo && blockInfo.block && (blockInfo.block.number === 0 || !!blockInfo.proposal);
     }
     return false;
@@ -444,6 +444,43 @@ class BlockPool {
   }
 
   /**
+   * 
+   * @param {Block} lastBlock 
+   * @param {number} blockNumber 
+   * @param {DB} tempDb 
+   * @returns Array
+   */
+  getValidLastVotes(lastBlock, blockNumber, tempDb) {
+    const LOG_HEADER = 'getValidLastVotes';
+    const lastBlockInfo = this.hashToBlockInfo[lastBlock.hash];
+    logger.debug(`[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
+    // FIXME(minsulee2 or liayoo): When I am behind and a newly coming node is ahead of me,
+    // then I cannot get lastBlockInfo from the block-pool. So that, it is not able to create
+    // a proper block proposal and also cannot pass checkProposal()
+    // where checking prevBlockInfo.notarized.
+    const validLastVotes = [];
+    const lastVotes = blockNumber > 1 && lastBlockInfo.votes ? [...lastBlockInfo.votes] : [];
+    if (lastBlockInfo && lastBlockInfo.proposal) {
+      lastVotes.unshift(lastBlockInfo.proposal);
+    }
+    const majority = ConsensusUtil.getTotalAtStake(lastBlock.validators) * ConsensusConsts.MAJORITY;
+    let tallied = 0;
+    for (const vote of lastVotes) {
+      if (CommonUtil.isFailedTx(tempDb.executeTransaction(Transaction.toExecutable(vote), true, true))) {
+        logger.debug(`[${LOG_HEADER}] failed to execute last vote: ${JSON.stringify(vote, null, 2)}`);
+      } else {
+        tallied += _get(lastBlock.validators, `${vote.address}.stake`, 0);
+        validLastVotes.push(vote);
+      }
+    }
+    if (blockNumber <= 1 || tallied >= majority) {
+      return validLastVotes;
+    }
+    tempDb.destroyDb();
+    throw Error(`[${LOG_HEADER}] lastBlock doesn't have enough votes`);
+  }
+
+  /**
    * Checks if there's any evidence in hashToInvalidBlockInfo that can sufficiently
    * (i.e. sum of evidence votes stakes > 2/3 * total stakes) support offenses.
    * Executes the valid evidence votes on baseDb, making changes to the state.
@@ -455,9 +492,7 @@ class BlockPool {
    */
   getOffensesAndEvidence(validators, baseDb) {
     const LOG_HEADER = 'getOffensesAndEvidence';
-    const totalAtStake = Object.values(validators).reduce((acc, cur) => {
-      return acc + _get(cur, 'stake', 0);
-    }, 0);
+    const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
     const blockNumber = baseDb.blockNumberSnapshot;
     let backupDb = this.node.createTempDb(
         baseDb.stateVersion, `${StateVersions.SNAP}:${blockNumber}`, blockNumber);

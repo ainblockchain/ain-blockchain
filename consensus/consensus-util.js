@@ -1,6 +1,7 @@
 const _get = require('lodash/get');
 const { WriteDbOperations, PredefinedDbPaths } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
+const { ConsensusErrorCodesToVoteAgainst } = require('./constants');
 
 class ConsensusUtil {
   static isValidConsensusTx(tx) {
@@ -67,6 +68,16 @@ class ConsensusUtil {
 
   static getOffensesFromProposalTx(tx) {
     return _get(tx, 'tx_body.operation.value.offenses', {});
+  }
+
+  static getTotalAtStake(validators) {
+    return Object.values(validators).reduce((acc, cur) => {
+      return acc + _get(cur, PredefinedDbPaths.CONSENSUS_STAKE, 0);
+    }, 0);
+  }
+
+  static isVoteAgainstBlockError(errorCode) {
+    return ConsensusErrorCodesToVoteAgainst.has(errorCode);
   }
 }
 
