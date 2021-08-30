@@ -29,6 +29,7 @@ const {
   getLastBlock,
 } = require('../unittest/test-util');
 const { Block } = require('../blockchain/block');
+const Functions = require('../db/functions');
 const ConsensusUtil = require('../consensus/consensus-util');
 const { expect } = require('chai');
 
@@ -547,16 +548,19 @@ describe('Consensus', () => {
     it('can blacklist and penalize malicious validators ', async () => {
       const blacklistBefore = parseOrLog(syncRequest(
           'GET', server2 + `/get_value?ref=/consensus/blacklist/${server2Addr}`).body.toString('utf-8')).result;
-      const stakeBefore = parseOrLog(syncRequest(
+      const stakeExpirationBefore = parseOrLog(syncRequest(
           'GET', server2 + `/get_value?ref=/staking/consensus/${server2Addr}/0/expire_at`).body.toString('utf-8')).result;
       const { proposalBlock } = sendInvalidBlockProposal();
       await waitUntilAgainstVotesInBlock(proposalBlock);
       const blacklistAfter = parseOrLog(syncRequest(
         'GET', server2 + `/get_value?ref=/consensus/blacklist/${server2Addr}`).body.toString('utf-8')).result;
-      const stakeAfter = parseOrLog(syncRequest(
+      const stakeExpirationAfter = parseOrLog(syncRequest(
           'GET', server2 + `/get_value?ref=/staking/consensus/${server2Addr}/0/expire_at`).body.toString('utf-8')).result;
       assert.deepEqual(blacklistAfter, blacklistBefore + 1);
-      assert.deepEqual(stakeAfter, stakeBefore + ConsensusConsts.STAKE_LOCKUP_EXTENSION * Math.pow(2, 2 - 1));
+      assert.deepEqual(
+        stakeExpirationAfter,
+        stakeExpirationBefore + Functions.getBlacklistLockupExtension(1, blacklistAfter)
+      );
     });
   });
 });
