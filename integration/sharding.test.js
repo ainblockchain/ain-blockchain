@@ -32,6 +32,7 @@ const {
   waitForNewBlocks,
   waitUntilNodeSyncs,
   waitUntilTxFinalized,
+  waitUntilNetworkIsReady,
   setUpApp,
 } = require('../unittest/test-util');
 
@@ -362,6 +363,7 @@ describe('Sharding', async () => {
 
   describe('Shard chain initialization', () => {
     before(async () => {
+      await waitUntilNetworkIsReady(shardServerList);
       await setUpApp('afan', shardServerList, { admin: { [shardOwnerAddr]: true } });
     });
     
