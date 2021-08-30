@@ -736,7 +736,7 @@ class Functions {
     const currentExpiration = Number(this.db.getValue(expirationPath));
     const lockup = Number(this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)));
     const newExpiration = timestamp + lockup;
-    const updateExpiration = currentExpiration <= newExpiration;
+    const updateExpiration = newExpiration > currentExpiration;
     if (timestamp > executedAt) {
       return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
     }
