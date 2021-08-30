@@ -443,6 +443,16 @@ class BlockPool {
     this.updateLongestNotarizedChains();
   }
 
+  /**
+   * Checks if there's any evidence in hashToInvalidBlockInfo that can sufficiently
+   * (i.e. sum of evidence votes stakes > 2/3 * total stakes) support offenses.
+   * Executes the valid evidence votes on baseDb, making changes to the state.
+   * Resulting `offenses` has the following structure: { [<address>]: { [<offenseType>]: <number> } },
+   * and the `evidence` has the following structure: { [<address>]: [{ transactions, block, votes, offense_type }, ...] }
+   * @param {object} validators The validators of the block that the offenses and evidence will be included in.
+   * @param {DB} baseDb The DB instance should be the base of where evidence votes should be executed on.
+   * @returns { offenses, evidence }
+   */
   getOffensesAndEvidence(validators, baseDb) {
     const LOG_HEADER = 'getOffensesAndEvidence';
     const totalAtStake = Object.values(validators).reduce((acc, cur) => {
