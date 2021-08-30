@@ -1,6 +1,7 @@
 const _get = require('lodash/get');
 const logger = require('../logger')('BLOCK_POOL');
 const { ConsensusConsts, ValidatorOffenseTypes } = require('./constants');
+const { StateVersions } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const ConsensusUtil = require('./consensus-util');
 const Transaction = require('../tx-pool/transaction');
@@ -413,11 +414,14 @@ class BlockPool {
     this.updateLongestNotarizedChains();
   }
 
-  getOffensesAndEvidence(validators, tempDb) {
+  getOffensesAndEvidence(validators, baseDb) {
     const LOG_HEADER = 'getOffensesAndEvidence';
     const totalAtStake = Object.values(validators).reduce((acc, cur) => {
       return acc + _get(cur, 'stake', 0);
     }, 0);
+    const blockNumber = baseDb.blockNumberSnapshot;
+    let backupDb = this.node.createTempDb(
+        baseDb.stateVersion, `${StateVersions.SNAP}:${blockNumber}`, blockNumber);
     const majority = totalAtStake * ConsensusConsts.MAJORITY;
     const evidence = {};
     const offenses = {};
@@ -431,7 +435,7 @@ class BlockPool {
       blockInfo.against_votes.forEach((vote) => {
         const stake = _get(validators, `${vote.address}.stake`, 0);
         if (stake > 0) {
-          const res = tempDb.executeTransaction(Transaction.toExecutable(vote), true, true);
+          const res = baseDb.executeTransaction(Transaction.toExecutable(vote), true, true);
           if (CommonUtil.isFailedTx(res)) {
             logger.debug(`[${LOG_HEADER}] Failed to execute evidence vote:\n${JSON.stringify(vote, null, 2)}\n${JSON.stringify(res, null, 2)})`);
           } else {
@@ -457,6 +461,13 @@ class BlockPool {
           offense_type: ValidatorOffenseTypes.INVALID_PROPOSAL
         });
         offenses[offender][ValidatorOffenseTypes.INVALID_PROPOSAL] += 1;
+      } else {
+        const newBackupDb = this.node.createTempDb(
+            backupDb.stateVersion, `${StateVersions.SNAP}:${blockNumber}`, blockNumber);
+        baseDb.setStateVersion(newBackupDb.stateVersion, newBackupDb.stateRoot);
+        backupDb.destroyDb();
+        backupDb = this.node.createTempDb(
+            baseDb.stateVersion, `${StateVersions.SNAP}:${blockNumber}`, blockNumber);
       }
     });
     return { offenses, evidence };
