@@ -321,15 +321,13 @@ class Consensus {
     let validators = {};
     if (this.node.bc.lastBlockNumber() < 1) {
       const whitelist = GENESIS_WHITELIST;
-      for (const address in whitelist) {
-        if (whitelist[address] === true) {
-          const stake = tempDb.getValue(PathUtil.getConsensusStakingAccountBalancePath(address));
-          if (stake && stake >= MIN_STAKE_PER_VALIDATOR && stake <= MAX_STAKE_PER_VALIDATOR) {
-            validators[address] = {
-              [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
-              [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
-            };
-          }
+      for (const address of Object.keys(whitelist)) {
+        const stake = tempDb.getValue(PathUtil.getConsensusStakingAccountBalancePath(address));
+        if (stake && stake >= MIN_STAKE_PER_VALIDATOR && stake <= MAX_STAKE_PER_VALIDATOR) {
+          validators[address] = {
+            [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
+            [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
+          };
         }
       }
       logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators)}`);
