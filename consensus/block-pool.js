@@ -12,18 +12,21 @@ class BlockPool {
     const lastFinalizedBlock = this.node.bc.lastBlock();
 
     // Mapping of a block hash to the block's info (block, proposal tx, voting txs)
-    // e.g. { block_hash: { block, proposal, votes: { address: stake }, against_votes: { address: stake }, tallied } }
+    // e.g. { [<blockHash>]: { block, proposal, votes: { [<address>]: <number> }, tallied } }
     this.hashToBlockInfo = {};
+    // Mapping of a block hash to the invalid block's info.
+    // e.g. { [<blockHash>]: { block, proposal, votes: { [<address>]: <number> } } }
+    this.hashToInvalidBlockInfo = {};
     // Mapping of a block hash to the new db state
     this.hashToDb = new Map();
     // Mapping of a block hash to a set of block hashes that extend the block.
-    // e.g. { block_hash: Set<block_hash> }
+    // e.g. { [<blockHash>]: Set<blockHash> }
     this.hashToNextBlockSet = {};
     // Mapping of an epoch to the hash of a block proposed at the epoch.
-    // e.g. { epoch: block_hash }
+    // e.g. { [<epoch>]: <blockHash> }
     this.epochToBlock = {};
     // Mapping of a number to a set of block hashes proposed for the number.
-    // e.g. { number: Set<block_hash> }
+    // e.g. { [<blockNumber>]: Set<blockHash> }
     this.numberToBlockSet = {};
 
     this.longestNotarizedChainTips = [lastFinalizedBlock.hash];
@@ -218,8 +221,14 @@ class BlockPool {
   }
 
   hasSeenBlock(block) {
-    const blockInfo = this.hashToBlockInfo[block.hash];
-    return blockInfo && blockInfo.block && (blockInfo.block.number === 0 || blockInfo.proposal);
+    if (this.hashToBlockInfo[block.hash]) {
+      const blockInfo = this.hashToBlockInfo[block.hash];
+      return blockInfo && blockInfo.block && (blockInfo.block.number === 0 || !!blockInfo.proposal);
+    } else if (this.hashToInvalidBlockInfo[block.hash]) {
+      const blockInfo = this.hashToInvalidBlockInfo[block.hash];
+      return blockInfo && blockInfo.block && (blockInfo.block.number === 0 || !!blockInfo.proposal);
+    }
+    return false;
   }
 
   addSeenBlock(block, proposalTx, isValid = true) {
@@ -227,57 +236,53 @@ class BlockPool {
 
     logger.info(
         `[${LOG_HEADER}] Adding seen block to the block pool: ${block.number} / ${block.epoch} / ${isValid}`);
-    // Check that there's no other block proposed at the same epoch
-    if (isValid && this.epochToBlock[block.epoch] && this.epochToBlock[block.epoch] !== block.hash) {
-      const conflict = this.hashToBlockInfo[this.epochToBlock[block.epoch]];
-      if (conflict && conflict.notarized) {
-        logger.error(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
-            `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]})`);
-        return false;
-      }
-      logger.info(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
-          `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]}) BUT is not notarized`);
-      // FIXME: remove info about the block that's currently this.epochToBlock[block.epoch] ?
-    }
     const blockHash = block.hash;
-    if (!this.hashToBlockInfo[blockHash]) {
-      this.hashToBlockInfo[blockHash] = {};
-    }
-    const blockInfo = this.hashToBlockInfo[blockHash];
-    if (CommonUtil.isEmpty(blockInfo.block)) {
-      this.hashToBlockInfo[blockHash].block = block;
-      this.hashToBlockInfo[blockHash].proposal = proposalTx;
-      // We might have received some votes before the block itself
-      if (isValid && !blockInfo.tallied && blockInfo.votes) {
-        this.hashToBlockInfo[blockHash].tallied = 0;
-        blockInfo.votes.forEach((vote) => {
-          if (block.validators[vote.address]) {
-            this.hashToBlockInfo[blockHash].tallied += _get(vote, 'tx_body.operation.value.stake');
-          }
-        });
-        this.tryUpdateNotarized(blockHash);
-      }
-      logger.info(
-          `[${LOG_HEADER}] Block added to the block pool: ${block.number} / ${block.epoch}`);
-    } else {
-      logger.info(
-          `[${LOG_HEADER}] Block already in the block pool: ${block.number} / ${block.epoch}`);
-    }
-
-    if (!this.numberToBlockSet[block.number]) {
-      this.numberToBlockSet[block.number] = new Set();
-    }
-    this.numberToBlockSet[block.number].add(block.hash);
-
     if (isValid) {
+      // Check that there's no other block proposed at the same epoch
+      if (this.epochToBlock[block.epoch] && this.epochToBlock[block.epoch] !== block.hash) {
+        const conflict = this.hashToBlockInfo[this.epochToBlock[block.epoch]];
+        if (conflict && conflict.notarized) {
+          logger.error(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
+              `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]})`);
+          return false;
+        }
+        logger.info(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
+            `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]}) BUT is not notarized`);
+        // FIXME: remove info about the block that's currently this.epochToBlock[block.epoch] ?
+      }
+      if (!this.hashToBlockInfo[blockHash]) {
+        this.hashToBlockInfo[blockHash] = {};
+      }
+      const blockInfo = this.hashToBlockInfo[blockHash];
+      if (CommonUtil.isEmpty(blockInfo.block)) {
+        this.hashToBlockInfo[blockHash].block = block;
+        this.hashToBlockInfo[blockHash].proposal = proposalTx;
+        // We might have received some votes before the block itself
+        if (!blockInfo.tallied && blockInfo.votes) {
+          this.hashToBlockInfo[blockHash].tallied = 0;
+          blockInfo.votes.forEach((vote) => {
+            if (block.validators[vote.address]) {
+              this.hashToBlockInfo[blockHash].tallied += _get(vote, 'tx_body.operation.value.stake');
+            }
+          });
+          this.tryUpdateNotarized(blockHash);
+        }
+        logger.info(
+            `[${LOG_HEADER}] Block added to the block pool: ${block.number} / ${block.epoch}`);
+      } else {
+        logger.info(
+            `[${LOG_HEADER}] Block already in the block pool: ${block.number} / ${block.epoch}`);
+      }
+      if (!this.numberToBlockSet[block.number]) {
+        this.numberToBlockSet[block.number] = new Set();
+      }
+      this.numberToBlockSet[block.number].add(block.hash);
       this.epochToBlock[block.epoch] = blockHash;
-
       const lastHash = block.last_hash;
       if (!this.hashToNextBlockSet[lastHash]) {
         this.hashToNextBlockSet[lastHash] = new Set();
       }
       this.hashToNextBlockSet[lastHash].add(blockHash);
-
       // Try updating notarized info for block and next block (if applicable)
       this.tryUpdateNotarized(blockHash);
       // FIXME: update all descendants, not just the immediate ones
@@ -286,8 +291,24 @@ class BlockPool {
           this.tryUpdateNotarized(val);
         }
       }
+      return true;
+    } else {
+      if (!this.hashToInvalidBlockInfo[blockHash]) {
+        this.hashToInvalidBlockInfo[blockHash] = {};
+      }
+      const blockInfo = this.hashToInvalidBlockInfo[blockHash];
+      if (CommonUtil.isEmpty(blockInfo.block)) {
+        this.hashToInvalidBlockInfo[blockHash].block = block;
+        this.hashToInvalidBlockInfo[blockHash].proposal = proposalTx;
+      }
+      if (!this.numberToBlockSet[block.number]) {
+        this.numberToBlockSet[block.number] = new Set();
+      }
+      this.numberToBlockSet[block.number].add(block.hash);
+      logger.info(
+          `[${LOG_HEADER}] Invalid block added to the block pool: ${block.number} / ${block.epoch}`);
+      return true;
     }
-    return true;
   }
 
   addSeenVote(voteTx) {
@@ -296,9 +317,6 @@ class BlockPool {
     const stake = ConsensusUtil.getStakeFromVoteTx(voteTx);
     logger.debug(`[${LOG_HEADER}] voteTx: ${JSON.stringify(voteTx, null, 2)}, ` +
         `blockHash: ${blockHash}, stake: ${stake}`);
-    if (!this.hashToBlockInfo[blockHash]) {
-      this.hashToBlockInfo[blockHash] = {};
-    }
     if (ConsensusUtil.isAgainstVoteTx(voteTx)) {
       this.addVoteAgainst(blockHash, voteTx);
     } else {
@@ -308,6 +326,9 @@ class BlockPool {
 
   addVoteFor(blockHash, voteTx, stake) {
     const LOG_HEADER = 'addVoteFor';
+    if (!this.hashToBlockInfo[blockHash]) {
+      this.hashToBlockInfo[blockHash] = {};
+    }
     if (!this.hashToBlockInfo[blockHash].votes) {
       this.hashToBlockInfo[blockHash].votes = [];
     }
@@ -332,14 +353,17 @@ class BlockPool {
 
   addVoteAgainst(blockHash, voteTx) {
     const LOG_HEADER = 'addVoteAgainst';
-    if (!this.hashToBlockInfo[blockHash].against_votes) {
-      this.hashToBlockInfo[blockHash].against_votes = [];
+    if (!this.hashToInvalidBlockInfo[blockHash]) {
+      this.hashToInvalidBlockInfo[blockHash] = {};
     }
-    if (this.hashToBlockInfo[blockHash].against_votes.filter((v) => v.hash === voteTx.hash).length) {
+    if (!this.hashToInvalidBlockInfo[blockHash].votes) {
+      this.hashToInvalidBlockInfo[blockHash].votes = [];
+    }
+    if (this.hashToInvalidBlockInfo[blockHash].votes.find((v) => v.hash === voteTx.hash)) {
       logger.debug(`[${LOG_HEADER}] Already have seen this vote`);
       return;
     }
-    this.hashToBlockInfo[blockHash].against_votes.push(voteTx);
+    this.hashToInvalidBlockInfo[blockHash].votes.push(voteTx);
   }
 
   tryUpdateNotarized(blockHash) {
@@ -378,6 +402,7 @@ class BlockPool {
 
   cleanUpForBlockHash(blockHash) {
     delete this.hashToBlockInfo[blockHash];
+    delete this.hashToInvalidBlockInfo[blockHash];
     delete this.hashToNextBlockSet[blockHash];
     const db = this.hashToDb.get(blockHash);
     if (db) {
@@ -392,9 +417,13 @@ class BlockPool {
     Object.keys(this.numberToBlockSet).forEach((blockNumber) => {
       if (blockNumber < targetNumber) {
         this.numberToBlockSet[blockNumber].forEach((blockHash) => {
-          const againstVotes = _get(this.hashToBlockInfo[blockHash], 'against_votes', []);
-          if (!againstVotes.length || recordedInvalidBlocks.has(blockHash) ||
-              blockNumber < targetNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
+          if (this.hashToInvalidBlockInfo[blockHash]) {
+            if (recordedInvalidBlocks.has(blockHash) ||
+                blockNumber < targetNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
+              this.cleanUpForBlockHash(blockHash);
+              this.numberToBlockSet[blockNumber].delete(blockHash);
+            }
+          } else {
             this.cleanUpForBlockHash(blockHash);
             this.numberToBlockSet[blockNumber].delete(blockHash);
           }
@@ -425,14 +454,19 @@ class BlockPool {
     const majority = totalAtStake * ConsensusConsts.MAJORITY;
     const evidence = {};
     const offenses = {};
-    Object.values(this.hashToBlockInfo).forEach((blockInfo) => {
-      if (!blockInfo.against_votes || !blockInfo.against_votes.length || !blockInfo.block ||
-          !blockInfo.proposal) {
-        return;
+    for (const [blockHash, blockInfo] of Object.entries(this.hashToInvalidBlockInfo)) {
+      if (!blockInfo.votes || !blockInfo.votes.length) {
+        continue;
+      }
+      const validBlockCandidate = this.hashToBlockInfo[blockHash];
+      const block = blockInfo.block || _.get(validBlockCandidate, 'block');
+      const proposal = blockInfo.proposal || _.get(validBlockCandidate, 'proposal');
+      if (!block || !proposal) {
+        continue;
       }
       const talliedVotes = [];
       let talliedAgainst = 0;
-      blockInfo.against_votes.forEach((vote) => {
+      for (const vote of blockInfo.votes) {
         const stake = _get(validators, `${vote.address}.stake`, 0);
         if (stake > 0) {
           const res = baseDb.executeTransaction(Transaction.toExecutable(vote), true, true);
@@ -443,9 +477,9 @@ class BlockPool {
             talliedVotes.push(vote);
           }
         }
-      });
+      }
       if (talliedAgainst >= majority) {
-        const offender = blockInfo.block.proposer;
+        const offender = block.proposer;
         if (!evidence[offender]) {
           evidence[offender] = [];
         }
@@ -455,8 +489,8 @@ class BlockPool {
           };
         }
         evidence[offender].push({
-          transactions: [blockInfo.proposal],
-          block: blockInfo.block,
+          transactions: [proposal],
+          block: block,
           votes: talliedVotes,
           offense_type: ValidatorOffenseTypes.INVALID_PROPOSAL
         });
@@ -469,7 +503,7 @@ class BlockPool {
         backupDb = this.node.createTempDb(
             baseDb.stateVersion, `${StateVersions.SNAP}:${blockNumber}`, blockNumber);
       }
-    });
+    }
     return { offenses, evidence };
   }
 }
