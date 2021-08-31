@@ -1,6 +1,9 @@
 const logger = require('../logger')('RADIX_TREE');
 
 const CommonUtil = require('../common/common-util');
+const {
+  FeatureFlags,
+} = require('../common/constants');
 const RadixNode = require('./radix-node');
 
 /**
@@ -11,14 +14,23 @@ class RadixTree {
   constructor() {
     this.root = new RadixNode();
     this.stateNodeMap = new Map();
+    if (FeatureFlags.enableHexLabelCache) {
+      this.hexLabelCache = new Map();
+    }
   }
 
-  static _toHexLabel(stateLabel) {
-    const hexLabel = CommonUtil.toHexString(stateLabel);
-    if (hexLabel.length < 2) {
-      return hexLabel;
+  _toHexLabel(stateLabel) {
+    if (FeatureFlags.enableHexLabelCache) {
+      if (this.hexLabelCache.has(stateLabel)) {
+        return this.hexLabelCache.get(stateLabel);
+      }
     }
-    return hexLabel.slice(2);
+    const hexLabelWithPrefix = CommonUtil.toHexString(stateLabel);
+    const hexLabel = hexLabelWithPrefix.length >= 2 ? hexLabelWithPrefix.slice(2) : '';
+    if (FeatureFlags.enableHexLabelCache) {
+      this.hexLabelCache.set(stateLabel, hexLabel);
+    }
+    return hexLabel;
   }
 
   static _matchLabelSuffix(radixNode, hexLabel, index) {
@@ -105,7 +117,7 @@ class RadixTree {
   }
 
   _getFromTree(stateLabel) {
-    const hexLabel = RadixTree._toHexLabel(stateLabel);
+    const hexLabel = this._toHexLabel(stateLabel);
     const node = this._getRadixNodeForReading(hexLabel);
     if (node === null) {
       return null;
@@ -127,7 +139,7 @@ class RadixTree {
   }
 
   _setInTree(stateLabel, stateNode) {
-    const hexLabel = RadixTree._toHexLabel(stateLabel);
+    const hexLabel = this._toHexLabel(stateLabel);
     const node = this._getRadixNodeForWriting(hexLabel);
     return node.setStateNode(stateNode);
   }
@@ -147,7 +159,7 @@ class RadixTree {
   }
 
   _hasInTree(stateLabel) {
-    const hexLabel = RadixTree._toHexLabel(stateLabel);
+    const hexLabel = this._toHexLabel(stateLabel);
     const node = this._getRadixNodeForReading(hexLabel);
     return node !== null;
   }
@@ -194,7 +206,7 @@ class RadixTree {
   _deleteFromTree(stateLabel) {
     const LOG_HEADER = '_deleteFromTree';
 
-    const hexLabel = RadixTree._toHexLabel(stateLabel);
+    const hexLabel = this._toHexLabel(stateLabel);
     const node = this._getRadixNodeForReading(hexLabel);
     if (node === null || !node.hasStateNode()) {
       logger.error(
@@ -226,6 +238,9 @@ class RadixTree {
       if (parent.numChildren() === 1 && !parent.hasStateNode() && parent.hasParent()) {
         return this._mergeToChild(parent);
       }
+    }
+    if (FeatureFlags.enableHexLabelCache) {
+      this.hexLabelCache.delete(stateLabel);
     }
     return true;
   }
@@ -264,7 +279,7 @@ class RadixTree {
   updateProofHashForRadixPath(updatedNodeLabel) {
     const LOG_HEADER = 'updateProofHashForRadixPath';
 
-    const hexLabel = RadixTree._toHexLabel(updatedNodeLabel);
+    const hexLabel = this._toHexLabel(updatedNodeLabel);
     const node = this._getRadixNodeForReading(hexLabel);
     if (node === null) {
       logger.error(
@@ -281,7 +296,7 @@ class RadixTree {
   }
 
   getProofOfState(stateLabel, stateProof) {
-    const hexLabel = RadixTree._toHexLabel(stateLabel);
+    const hexLabel = this._toHexLabel(stateLabel);
     let curNode = this._getRadixNodeForReading(hexLabel);
     if (curNode === null || !curNode.hasStateNode()) {
       return null;
