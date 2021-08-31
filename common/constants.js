@@ -31,6 +31,8 @@ const FeatureFlags = {
   enableReceiptPathPrefixLayers: false,  // Some test cases assume this value false.
   // Enables radix layers.
   enableRadixTreeLayers: true,  // Some test cases assume this value true.
+  // Enables hex label map.
+  enableHexLabelMap: true,
   // Enables array radix child map.
   enableArrayRadixChildMap: true,
 };
