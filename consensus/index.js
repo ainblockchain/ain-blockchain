@@ -366,7 +366,7 @@ class Consensus {
   //    4. verify block
   //    5. execute propose tx
   //    6. Nth propose tx should be included in the N+1th block's last_votes
-  createProposal() {
+  createProposal(epoch) {
     const LOG_HEADER = 'createProposal';
     const longestNotarizedChain = this.getLongestNotarizedChain();
     const lastBlock = longestNotarizedChain && longestNotarizedChain.length ?
@@ -402,7 +402,7 @@ class Consensus {
         longestNotarizedChain, blockNumber, tempDb);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.create(
-        lastBlock.hash, lastVotes, evidence, transactions, blockNumber, this.epoch,
+        lastBlock.hash, lastVotes, evidence, transactions, blockNumber, epoch,
         stateProofHash, this.node.account.address, validators, gasAmountTotal, gasCostTotal);
     const proposalTx = this.getProposalTx(blockNumber, validators, totalAtStake, gasCostTotal, offenses, proposalBlock);
     if (LIGHTWEIGHT) {
@@ -888,17 +888,18 @@ class Consensus {
   tryPropose() {
     const LOG_HEADER = 'tryPropose';
 
-    if (this.votedForEpoch(this.epoch)) {
+    const epoch = this.epoch;
+    if (this.votedForEpoch(epoch)) {
       logger.info(
-          `[${LOG_HEADER}] Already voted for ${this.blockPool.epochToBlock[this.epoch]} ` +
-          `at epoch ${this.epoch} but trying to propose at the same epoch`);
+          `[${LOG_HEADER}] Already voted for ${this.blockPool.epochToBlock[epoch]} ` +
+          `at epoch ${epoch} but trying to propose at the same epoch`);
       return;
     }
     if (this.proposer && CommonUtil.areSameAddrs(this.proposer, this.node.account.address)) {
       logger.info(`[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
       try {
         const consensusMsg = this.encapsulateConsensusMessage(
-            this.createProposal(), ConsensusMessageTypes.PROPOSE);
+            this.createProposal(epoch), ConsensusMessageTypes.PROPOSE);
         this.handleConsensusMessage(consensusMsg);
       } catch (err) {
         logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${err.stack}`);
