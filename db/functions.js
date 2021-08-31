@@ -49,8 +49,6 @@ class Functions {
     this.db = db;
     this.tp = tp;
     this.nativeFunctionMap = {
-      [NativeFunctionIds.BLACKLIST]: {
-        func: this._blacklist.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CLAIM]: {
         func: this._claim.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CLAIM_REWARD]: {
@@ -67,6 +65,8 @@ class Functions {
         func: this._distributeFee.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.ERASE_VALUE]: {
         func: this._eraseValue.bind(this), ownerOnly: false, extraGasAmount: 0 },
+      [NativeFunctionIds.HANDLE_OFFENSES]: {
+        func: this._handleOffenses.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.HOLD]: {
         func: this._hold.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.OPEN_CHECKIN]: {
@@ -705,7 +705,7 @@ class Functions {
     return extension;
   }
 
-  _blacklist(value, context) {
+  _handleOffenses(value, context) {
     if (CommonUtil.isEmpty(value.offenses)) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
