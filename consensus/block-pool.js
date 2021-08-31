@@ -535,7 +535,7 @@ class BlockPool {
    * (i.e. sum of evidence votes stakes > 2/3 * total stakes) support offenses.
    * Executes the valid evidence votes on baseDb, making changes to the state.
    * Resulting `offenses` has the following structure: { [<address>]: { [<offenseType>]: <number> } },
-   * and the `evidence` has the following structure: { [<address>]: [{ transactions, block, votes, offense_type }, ...] }
+   * and the `evidence` has the following structure: { [<address>]: [{ offense_type, transactions, block, votes }, ...] }
    * @param {object} validators The validators of the block that the offenses and evidence will be included in.
    * @param {Set} recordedInvalidBlockHashSet A set of invalid block hashes that have been alraedy included in the chain that new block will extend.
    * @param {DB} baseDb The DB instance should be the base of where evidence votes should be executed on.
