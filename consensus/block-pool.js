@@ -231,59 +231,97 @@ class BlockPool {
     return false;
   }
 
+  checkEpochToBlockMap(block) {
+    const LOG_HEADER = 'checkEpochToBlockMap';
+    // Check that there's no other block proposed at the same epoch
+    if (this.epochToBlock[block.epoch] && this.epochToBlock[block.epoch] !== block.hash) {
+      const conflict = this.hashToBlockInfo[this.epochToBlock[block.epoch]];
+      if (conflict && conflict.notarized) {
+        logger.error(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
+            `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]})`);
+        return false;
+      }
+      logger.info(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
+          `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]}) BUT is not notarized`);
+      // FIXME: remove info about the block that's currently this.epochToBlock[block.epoch] ?
+    }
+    return true;
+  }
+
+  addToHashBlockInfoMap(block, proposalTx) {
+    const LOG_HEADER = 'addToHashBlockInfoMap';
+    const blockHash = block.hash;
+    if (!this.hashToBlockInfo[blockHash]) {
+      this.hashToBlockInfo[blockHash] = {};
+    }
+    const blockInfo = this.hashToBlockInfo[blockHash];
+    if (CommonUtil.isEmpty(blockInfo.block)) {
+      this.hashToBlockInfo[blockHash].block = block;
+      this.hashToBlockInfo[blockHash].proposal = proposalTx;
+      // We might have received some votes before the block itself
+      if (!blockInfo.tallied && blockInfo.votes) {
+        this.hashToBlockInfo[blockHash].tallied = 0;
+        blockInfo.votes.forEach((vote) => {
+          if (block.validators[vote.address]) {
+            this.hashToBlockInfo[blockHash].tallied += _get(vote, 'tx_body.operation.value.stake');
+          }
+        });
+        this.tryUpdateNotarized(blockHash);
+      }
+      logger.info(
+          `[${LOG_HEADER}] Block added to the block pool: ${block.number} / ${block.epoch}`);
+    } else {
+      logger.info(
+          `[${LOG_HEADER}] Block already in the block pool: ${block.number} / ${block.epoch}`);
+    }
+  }
+
+  addToInvalidBlockInfoMap(block, proposalTx) {
+    const LOG_HEADER = 'addToInvalidBlockInfoMap';
+    const blockHash = block.hash;
+    if (!this.hashToInvalidBlockInfo[blockHash]) {
+      this.hashToInvalidBlockInfo[blockHash] = {};
+    }
+    const blockInfo = this.hashToInvalidBlockInfo[blockHash];
+    if (CommonUtil.isEmpty(blockInfo.block)) {
+      this.hashToInvalidBlockInfo[blockHash].block = block;
+      this.hashToInvalidBlockInfo[blockHash].proposal = proposalTx;
+      logger.info(
+          `[${LOG_HEADER}] Invalid block added to the block pool: ${block.number} / ${block.epoch}`);
+    } else {
+      logger.info(
+          `[${LOG_HEADER}] Invalid block already in the block pool: ${block.number} / ${block.epoch}`);
+    }
+  }
+
+  addToNumberToBlockSet(block) {
+    if (!this.numberToBlockSet[block.number]) {
+      this.numberToBlockSet[block.number] = new Set();
+    }
+    this.numberToBlockSet[block.number].add(block.hash);
+  }
+
+  addToNextBlockSet(block) {
+    const lastHash = block.last_hash;
+    if (!this.hashToNextBlockSet[lastHash]) {
+      this.hashToNextBlockSet[lastHash] = new Set();
+    }
+    this.hashToNextBlockSet[lastHash].add(block.hash);
+  }
+
   addSeenBlock(block, proposalTx, isValid = true) {
     const LOG_HEADER = 'addSeenBlock';
-
     logger.info(
         `[${LOG_HEADER}] Adding seen block to the block pool: ${block.number} / ${block.epoch} / ${isValid}`);
     const blockHash = block.hash;
     if (isValid) {
-      // Check that there's no other block proposed at the same epoch
-      if (this.epochToBlock[block.epoch] && this.epochToBlock[block.epoch] !== block.hash) {
-        const conflict = this.hashToBlockInfo[this.epochToBlock[block.epoch]];
-        if (conflict && conflict.notarized) {
-          logger.error(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
-              `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]})`);
-          return false;
-        }
-        logger.info(`[${LOG_HEADER}] Multiple blocks proposed for epoch ` +
-            `${block.epoch} (${block.hash}, ${this.epochToBlock[block.epoch]}) BUT is not notarized`);
-        // FIXME: remove info about the block that's currently this.epochToBlock[block.epoch] ?
+      if (!this.checkEpochToBlockMap(block)) {
+        return false;
       }
-      if (!this.hashToBlockInfo[blockHash]) {
-        this.hashToBlockInfo[blockHash] = {};
-      }
-      const blockInfo = this.hashToBlockInfo[blockHash];
-      if (CommonUtil.isEmpty(blockInfo.block)) {
-        this.hashToBlockInfo[blockHash].block = block;
-        this.hashToBlockInfo[blockHash].proposal = proposalTx;
-        // We might have received some votes before the block itself
-        if (!blockInfo.tallied && blockInfo.votes) {
-          this.hashToBlockInfo[blockHash].tallied = 0;
-          blockInfo.votes.forEach((vote) => {
-            if (block.validators[vote.address]) {
-              this.hashToBlockInfo[blockHash].tallied += _get(vote, 'tx_body.operation.value.stake');
-            }
-          });
-          this.tryUpdateNotarized(blockHash);
-        }
-        logger.info(
-            `[${LOG_HEADER}] Block added to the block pool: ${block.number} / ${block.epoch}`);
-      } else {
-        logger.info(
-            `[${LOG_HEADER}] Block already in the block pool: ${block.number} / ${block.epoch}`);
-      }
-      if (!this.numberToBlockSet[block.number]) {
-        this.numberToBlockSet[block.number] = new Set();
-      }
-      this.numberToBlockSet[block.number].add(block.hash);
+      this.addToHashBlockInfoMap(block, proposalTx);
+      this.addToNumberToBlockSet(block);
       this.epochToBlock[block.epoch] = blockHash;
-      const lastHash = block.last_hash;
-      if (!this.hashToNextBlockSet[lastHash]) {
-        this.hashToNextBlockSet[lastHash] = new Set();
-      }
-      this.hashToNextBlockSet[lastHash].add(blockHash);
-      // Try updating notarized info for block and next block (if applicable)
+      this.addToNextBlockSet(block);
       this.tryUpdateNotarized(blockHash);
       // FIXME: update all descendants, not just the immediate ones
       if (this.hashToNextBlockSet[blockHash]) {
@@ -291,24 +329,11 @@ class BlockPool {
           this.tryUpdateNotarized(val);
         }
       }
-      return true;
     } else {
-      if (!this.hashToInvalidBlockInfo[blockHash]) {
-        this.hashToInvalidBlockInfo[blockHash] = {};
-      }
-      const blockInfo = this.hashToInvalidBlockInfo[blockHash];
-      if (CommonUtil.isEmpty(blockInfo.block)) {
-        this.hashToInvalidBlockInfo[blockHash].block = block;
-        this.hashToInvalidBlockInfo[blockHash].proposal = proposalTx;
-      }
-      if (!this.numberToBlockSet[block.number]) {
-        this.numberToBlockSet[block.number] = new Set();
-      }
-      this.numberToBlockSet[block.number].add(block.hash);
-      logger.info(
-          `[${LOG_HEADER}] Invalid block added to the block pool: ${block.number} / ${block.epoch}`);
-      return true;
+      this.addToInvalidBlockInfoMap(block, proposalTx);
+      this.addToNumberToBlockSet(block);
     }
+    return true;
   }
 
   addSeenVote(voteTx) {
