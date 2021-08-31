@@ -697,7 +697,7 @@ class Functions {
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
-  static getBlacklistLockupExtension(numNewOffenses, updatedNumOffenses) {
+  static getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses) {
     let extension = 0;
     for (let n = updatedNumOffenses - numNewOffenses + 1; n <= updatedNumOffenses; n++) {
       extension += ConsensusConsts.STAKE_LOCKUP_EXTENSION * Math.pow(2, n - 1);
@@ -711,10 +711,10 @@ class Functions {
     }
     for (const [offender, offenseList] of Object.entries(value.offenses)) {
       const numNewOffenses = Object.values(offenseList).reduce((acc, cur) => acc + cur, 0);
-      const blacklistPath = PathUtil.getConsensusBlacklistAddrPath(offender);
-      this.incValueOrLog(blacklistPath, numNewOffenses, context);
-      const updatedNumOffenses = this.db.getValue(blacklistPath); // new # of offenses
-      const lockupExtension = Functions.getBlacklistLockupExtension(numNewOffenses, updatedNumOffenses);
+      const offenseRecordsPath = PathUtil.getConsensusOffenseRecordsAddrPath(offender);
+      this.incValueOrLog(offenseRecordsPath, numNewOffenses, context);
+      const updatedNumOffenses = this.db.getValue(offenseRecordsPath); // new # of offenses
+      const lockupExtension = Functions.getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses);
       if (lockupExtension > 0) {
         const expirationPath = PathUtil.getStakingExpirationPath(PredefinedDbPaths.CONSENSUS, offender, 0);
         const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), context.timestamp);

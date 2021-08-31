@@ -62,7 +62,7 @@
     }
   },
   "consensus": {
-    "blacklist": {
+    "offense_records": {
       "$user_addr": {
         ".rule": {
           "write": "auth.fid === '_handleOffenses'"

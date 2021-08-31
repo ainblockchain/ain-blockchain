@@ -243,12 +243,12 @@ class PathUtil {
         PredefinedDbPaths.CHECKOUT_STATS_COMPLETE, dayTimestamp]);
   }
 
-  static getConsensusBlacklistPath() {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_BLACKLIST]);
+  static getConsensusOffenseRecordsPath() {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_OFFENSE_RECORDS]);
   }
 
-  static getConsensusBlacklistAddrPath(address) {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_BLACKLIST, address]);
+  static getConsensusOffenseRecordsAddrPath(address) {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_OFFENSE_RECORDS, address]);
   }
 
   static getConsensusWhitelistPath() {

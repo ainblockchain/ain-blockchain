@@ -518,9 +518,9 @@ describe('Consensus', () => {
     it('can record an offense and its evidence', async () => {
       const { proposalBlock, proposalTx } = sendInvalidBlockProposal();
       const againstVotesFromState = await waitUntilAgainstVotesInBlock(proposalBlock);
-      const blacklist = parseOrLog(syncRequest(
-          'GET', server2 + `/get_value?ref=/consensus/blacklist`).body.toString('utf-8')).result;
-      assert.deepEqual(blacklist, { [server2Addr]: 1 });
+      const offenseRecords = parseOrLog(syncRequest(
+          'GET', server2 + `/get_value?ref=/consensus/offense_records`).body.toString('utf-8')).result;
+      assert.deepEqual(offenseRecords, { [server2Addr]: 1 });
       const blockWithEvidence = (parseOrLog(syncRequest('GET', server2 + `/blocks`)
           .body.toString('utf-8')).result || [])
               .find((block) => !CommonUtil.isEmpty(block.evidence));
@@ -545,21 +545,21 @@ describe('Consensus', () => {
       assert.deepEqual(offenses, { [server2Addr]: { [ValidatorOffenseTypes.INVALID_PROPOSAL]: 1 } });
     });
 
-    it('can blacklist and penalize malicious validators ', async () => {
-      const blacklistBefore = parseOrLog(syncRequest(
-          'GET', server2 + `/get_value?ref=/consensus/blacklist/${server2Addr}`).body.toString('utf-8')).result;
+    it('can penalize malicious validators ', async () => {
+      const offenseRecordsBefore = parseOrLog(syncRequest(
+          'GET', server2 + `/get_value?ref=/consensus/offense_records/${server2Addr}`).body.toString('utf-8')).result;
       const stakeExpirationBefore = parseOrLog(syncRequest(
           'GET', server2 + `/get_value?ref=/staking/consensus/${server2Addr}/0/expire_at`).body.toString('utf-8')).result;
       const { proposalBlock } = sendInvalidBlockProposal();
       await waitUntilAgainstVotesInBlock(proposalBlock);
-      const blacklistAfter = parseOrLog(syncRequest(
-        'GET', server2 + `/get_value?ref=/consensus/blacklist/${server2Addr}`).body.toString('utf-8')).result;
+      const offenseRecordsAfter = parseOrLog(syncRequest(
+        'GET', server2 + `/get_value?ref=/consensus/offense_records/${server2Addr}`).body.toString('utf-8')).result;
       const stakeExpirationAfter = parseOrLog(syncRequest(
           'GET', server2 + `/get_value?ref=/staking/consensus/${server2Addr}/0/expire_at`).body.toString('utf-8')).result;
-      assert.deepEqual(blacklistAfter, blacklistBefore + 1);
+      assert.deepEqual(offenseRecordsAfter, offenseRecordsBefore + 1);
       assert.deepEqual(
         stakeExpirationAfter,
-        stakeExpirationBefore + Functions.getBlacklistLockupExtension(1, blacklistAfter)
+        stakeExpirationBefore + Functions.getLockupExtensionForNewOffenses(1, offenseRecordsAfter)
       );
     });
   });
