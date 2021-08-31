@@ -85,7 +85,7 @@ class ConsensusUtil {
     if (CommonUtil.isEmpty(block.evidence)) {
       return [];
     }
-    for (const evidenceList of Object.values(evidence)) {
+    for (const evidenceList of Object.values(block.evidence)) {
       for (const evidenceForOffense of evidenceList) {
         invalidBlockHashList.push(_.get(evidenceForOffense, 'block.hash'));
       }
