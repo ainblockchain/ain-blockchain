@@ -385,7 +385,6 @@ const StateInfoProperties = {
  * @enum {string}
  */
 const NativeFunctionIds = {
-  BLACKLIST: '_blacklist',
   CLAIM: '_claim',
   CLAIM_REWARD: '_claimReward',
   CLOSE_CHECKIN: '_closeCheckin',
@@ -394,6 +393,7 @@ const NativeFunctionIds = {
   CREATE_APP: '_createApp',
   DISTRIBUTE_FEE: '_distributeFee',
   ERASE_VALUE: '_eraseValue',
+  HANDLE_OFFENSES: '_handleOffenses',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
   OPEN_CHECKOUT: '_openCheckout',

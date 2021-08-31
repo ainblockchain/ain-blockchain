@@ -65,7 +65,7 @@
     "blacklist": {
       "$user_addr": {
         ".rule": {
-          "write": "auth.fid === '_blacklist'"
+          "write": "auth.fid === '_handleOffenses'"
         }
       }
     },
@@ -253,7 +253,7 @@
         "$staking_key": {
           "expire_at": {
             ".rule": {
-              "write": "auth.fid === '_stake' || auth.fid === '_blacklist'"
+              "write": "auth.fid === '_stake' || auth.fid === '_handleOffenses'"
             }
           },
           "stake": {
