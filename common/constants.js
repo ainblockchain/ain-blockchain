@@ -158,10 +158,10 @@ const PredefinedDbPaths = {
   DOT_SHARD: '.shard',
   // Consensus
   CONSENSUS: 'consensus',
-  CONSENSUS_BLACKLIST: 'blacklist',
   CONSENSUS_BLOCK_HASH: 'block_hash',
   CONSENSUS_IS_AGAINST: 'is_against',
   CONSENSUS_NUMBER: 'number',
+  CONSENSUS_OFFENSE_RECORDS: 'offense_records',
   CONSENSUS_OFFENSE_TYPE: 'offense_type',
   CONSENSUS_PROPOSAL_RIGHT: 'proposal_right',
   CONSENSUS_PROPOSE: 'propose',

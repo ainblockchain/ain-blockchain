@@ -270,6 +270,10 @@ class Consensus {
         logger.debug(`[${LOG_HEADER}] Already have the proposal in my tx tracker`);
         return;
       }
+      if (this.blockPool.hasSeenBlock(proposalBlock.hash)) {
+        logger.debug(`[${LOG_HEADER}] Already have the block in my block pool`);
+        return;
+      }
       if (proposalBlock.number > lastNotarizedBlock.number + 1) {
         logger.info(`[${LOG_HEADER}] Trying to sync. Current last block number: ` +
             `${lastNotarizedBlock.number}, proposal block number ${proposalBlock.number}`);
@@ -439,13 +443,6 @@ class Consensus {
       throw new ConsensusError({
         code: ConsensusErrorCode.RECEIVED_PROPOSAL,
         message: `Already have seen this proposal`,
-        level: 'info'
-      });
-    }
-    if (number <= this.node.bc.lastBlockNumber()) {
-      throw new ConsensusError({
-        code: ConsensusErrorCode.OUTDATED_BLOCK,
-        message: `A block of number ${number} is already finalized`,
         level: 'info'
       });
     }

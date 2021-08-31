@@ -96,7 +96,9 @@ class BlockPool {
       const block = currBlockWithInfo.block;
       chain.unshift(withInfo ? currBlockWithInfo : block);
       if (withRecordedInvalidBlockHashSet) {
-        recordedInvalidBlockHashSet.add(ConsensusUtil.getInvalidBlockHashesFromBlock(block));
+        for (const invalidBlockHash of ConsensusUtil.getInvalidBlockHashesFromBlock(block)) {
+          recordedInvalidBlockHashSet.add(invalidBlockHash);
+        }
       }
       currBlockWithInfo = this.hashToBlockInfo[block.last_hash];
     }
@@ -550,6 +552,7 @@ class BlockPool {
     const majority = totalAtStake * ConsensusConsts.MAJORITY;
     const evidence = {};
     const offenses = {};
+    logger.error(`[${LOG_HEADER}] recordedInvalidBlockHashSet: ${JSON.stringify([...recordedInvalidBlockHashSet])}`)
     for (const [blockHash, blockInfo] of Object.entries(this.hashToInvalidBlockInfo)) {
       if (recordedInvalidBlockHashSet.has(blockHash)) {
         continue;

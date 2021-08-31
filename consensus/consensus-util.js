@@ -87,7 +87,7 @@ class ConsensusUtil {
     }
     for (const evidenceList of Object.values(block.evidence)) {
       for (const evidenceForOffense of evidenceList) {
-        invalidBlockHashList.push(_.get(evidenceForOffense, 'block.hash'));
+        invalidBlockHashList.push(_get(evidenceForOffense, 'block.hash'));
       }
     }
     return invalidBlockHashList;
