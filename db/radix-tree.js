@@ -25,7 +25,7 @@ class RadixTree {
     const labelSuffix = radixNode.getLabelSuffix();
     return labelSuffix.length === 0 ||
         (labelSuffix.length <= hexLabel.length - index &&
-        labelSuffix === hexLabel.slice(index, index + labelSuffix.length));
+        hexLabel.startsWith(labelSuffix, index));
   }
 
   static _getCommonPrefix(label1, label2) {
