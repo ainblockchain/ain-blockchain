@@ -79,6 +79,19 @@ class ConsensusUtil {
   static isVoteAgainstBlockError(errorCode) {
     return ConsensusErrorCodesToVoteAgainst.has(errorCode);
   }
+
+  static getInvalidBlockHashesFromBlock(block) {
+    const invalidBlockHashList = [];
+    if (CommonUtil.isEmpty(block.evidence)) {
+      return [];
+    }
+    for (const evidenceList of Object.values(evidence)) {
+      for (const evidenceForOffense of evidenceList) {
+        invalidBlockHashList.push(_.get(evidenceForOffense, 'block.hash'));
+      }
+    }
+    return invalidBlockHashList;
+  }
 }
 
 module.exports = ConsensusUtil;
