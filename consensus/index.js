@@ -878,8 +878,8 @@ class Consensus {
           `[${LOG_HEADER}] Possibly a stale proposal (${proposalBlock.epoch} / ${this.epoch})`);
     }
     const myAddr = this.node.account.address;
-    const isValidator = proposalBlock.validators[myAddr];
-    if (!isValidator) {
+    const validatorInfo = proposalBlock.validators[myAddr];
+    if (!validatorInfo) {
       return;
     }
     const operation = {
@@ -887,7 +887,7 @@ class Consensus {
       ref: PathUtil.getConsensusVotePath(proposalBlock.number, proposalBlock.hash, myAddr),
       value: {
         [PredefinedDbPaths.CONSENSUS_BLOCK_HASH]: proposalBlock.hash,
-        [PredefinedDbPaths.CONSENSUS_STAKE]: isValidator.stake,
+        [PredefinedDbPaths.CONSENSUS_STAKE]: validatorInfo.stake,
         [PredefinedDbPaths.CONSENSUS_IS_AGAINST]: false,
       }
     };
@@ -909,8 +909,8 @@ class Consensus {
     // NOTE(liayoo): Try voting if I was one of the validators in the last notarized block. However,
     //               only the votes from the validators in next block's previous block will be counted.
     const lastNotarizedBlock = this.getLastNotarizedBlock();
-    const isValidator = lastNotarizedBlock.validators[myAddr];
-    if (!isValidator) {
+    const validatorInfo = lastNotarizedBlock.validators[myAddr];
+    if (!validatorInfo) {
       return;
     }
     const operation = {
@@ -918,7 +918,7 @@ class Consensus {
       ref: PathUtil.getConsensusVotePath(proposalBlock.number, proposalBlock.hash, myAddr),
       value: {
         [PredefinedDbPaths.CONSENSUS_BLOCK_HASH]: proposalBlock.hash,
-        [PredefinedDbPaths.CONSENSUS_STAKE]: isValidator.stake,
+        [PredefinedDbPaths.CONSENSUS_STAKE]: validatorInfo.stake,
         [PredefinedDbPaths.CONSENSUS_IS_AGAINST]: true,
         [PredefinedDbPaths.CONSENSUS_OFFENSE_TYPE]: ValidatorOffenseTypes.INVALID_PROPOSAL,
       }
