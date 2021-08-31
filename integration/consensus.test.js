@@ -139,7 +139,7 @@ describe('Consensus', () => {
     for (let i = 0; i < SERVER_PROCS.length; i++) {
       const proc = SERVER_PROCS[i];
       proc.start(true);
-      await CommonUtil.sleep(i === 1 ? 100000 : 3000);
+      await CommonUtil.sleep(i === 0 ? 100000 : 3000);
       const address =
           parseOrLog(syncRequest('GET', serverList[i] + '/get_address').body.toString('utf-8')).result;
       nodeAddressList.push(address);
