@@ -366,7 +366,7 @@ class Consensus {
   //    6. Nth propose tx should be included in the N+1th block's last_votes
   createProposal(epoch) {
     const LOG_HEADER = 'createProposal';
-    const longestNotarizedChain = this.getLongestNotarizedChain();
+    const { chain: longestNotarizedChain, recordedInvalidBlockHashSet } = this.getLongestNotarizedChain();
     const lastBlock = longestNotarizedChain && longestNotarizedChain.length ?
         longestNotarizedChain[longestNotarizedChain.length - 1] : this.node.bc.lastBlock();
     const blockNumber = lastBlock.number + 1;
@@ -395,7 +395,7 @@ class Consensus {
     }
     const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
     this.node.removeOldReceipts(blockNumber, tempDb);
-    const { offenses, evidence } = this.blockPool.getOffensesAndEvidence(validators, tempDb);
+    const { offenses, evidence } = this.blockPool.getOffensesAndEvidence(validators, recordedInvalidBlockHashSet, tempDb);
     const { transactions, gasAmountTotal, gasCostTotal } = this.getValidTransactions(
         longestNotarizedChain, blockNumber, tempDb);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
@@ -419,10 +419,6 @@ class Consensus {
       });
     }
     if (number <= this.node.bc.lastBlockNumber()) {
-      // if (!this.blockPool.hasSeenBlock(proposalBlock)) {
-      //   logger.debug(`[${LOG_HEADER}] Adding the proposal to the blockPool for later use`);
-      //   this.blockPool.addSeenBlock(proposalBlock, proposalTx);
-      // }
       throw new ConsensusError({
         code: ConsensusErrorCode.OUTDATED_BLOCK,
         message: `A block of number ${number} is already finalized`,

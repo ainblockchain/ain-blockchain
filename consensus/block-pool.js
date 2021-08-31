@@ -81,19 +81,24 @@ class BlockPool {
     }, []);
   }
 
-  getExtendingChain(blockHash, withInfo = false) {
+  getExtendingChain(blockHash, withInfo = false, withRecordedInvalidBlockHashSet = false) {
     const LOG_HEADER = 'getExtendingChain';
     const chain = [];
+    const recordedInvalidBlockHashSet = new Set();
     const finalizedBlock = this.node.bc.lastBlock();
     let currBlockWithInfo = this.hashToBlockInfo[blockHash];
     if (!currBlockWithInfo || !currBlockWithInfo.block ||
         currBlockWithInfo.block.number <= finalizedBlock.number) {
-      return [];
+      return { chain, recordedInvalidBlockHashSet };
     }
     while (currBlockWithInfo && currBlockWithInfo.block &&
         currBlockWithInfo.block.number > finalizedBlock.number) {
-      chain.unshift(withInfo ? currBlockWithInfo : currBlockWithInfo.block);
-      currBlockWithInfo = this.hashToBlockInfo[currBlockWithInfo.block.last_hash];
+      const block = currBlockWithInfo.block;
+      chain.unshift(withInfo ? currBlockWithInfo : block);
+      if (withRecordedInvalidBlockHashSet) {
+        recordedInvalidBlockHashSet.add(ConsensusUtil.getInvalidBlockHashesFromBlock(block));
+      }
+      currBlockWithInfo = this.hashToBlockInfo[block.last_hash];
     }
     logger.debug(`[${LOG_HEADER}] currBlockWithInfo: ` +
         `${JSON.stringify(currBlockWithInfo, null, 2)}` +
@@ -106,7 +111,7 @@ class BlockPool {
       logger.error(`[${LOG_HEADER}] Incorrect chain`);
       return [];
     }
-    return chain;
+    return { chain, recordedInvalidBlockHashSet };
   }
 
   getLongestNotarizedChainList(fromBlock, withInfo = false) {
@@ -336,6 +341,25 @@ class BlockPool {
     return true;
   }
 
+  hasVote(voteTx, blockHash) {
+    if (ConsensusUtil.isAgainstVoteTx(voteTx)) {
+      if (!this.hashToBlockInfo[blockHash] || !this.hashToBlockInfo[blockHash].votes) {
+        return false;
+      }
+      if (this.hashToBlockInfo[blockHash].votes.find((v) => v.hash === voteTx.hash)) {
+        return true;
+      }
+    } else {
+      if (!this.hashToInvalidBlockInfo[blockHash] || !this.hashToInvalidBlockInfo[blockHash].votes) {
+        return false;
+      }
+      if (this.hashToInvalidBlockInfo[blockHash].votes.find((v) => v.hash === voteTx.hash)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   addSeenVote(voteTx) {
     const LOG_HEADER = 'addSeenVote';
     const blockHash = ConsensusUtil.getBlockHashFromConsensusTx(voteTx);
@@ -357,7 +381,7 @@ class BlockPool {
     if (!this.hashToBlockInfo[blockHash].votes) {
       this.hashToBlockInfo[blockHash].votes = [];
     }
-    if (this.hashToBlockInfo[blockHash].votes.filter((v) => v.hash === voteTx.hash).length) {
+    if (this.hasVote(voteTx, blockHash)) {
       logger.debug(`[${LOG_HEADER}] Already have seen this vote`);
       return;
     }
@@ -384,7 +408,7 @@ class BlockPool {
     if (!this.hashToInvalidBlockInfo[blockHash].votes) {
       this.hashToInvalidBlockInfo[blockHash].votes = [];
     }
-    if (this.hashToInvalidBlockInfo[blockHash].votes.find((v) => v.hash === voteTx.hash)) {
+    if (this.hasVote(voteTx, blockHash)) {
       logger.debug(`[${LOG_HEADER}] Already have seen this vote`);
       return;
     }
@@ -513,10 +537,11 @@ class BlockPool {
    * Resulting `offenses` has the following structure: { [<address>]: { [<offenseType>]: <number> } },
    * and the `evidence` has the following structure: { [<address>]: [{ transactions, block, votes, offense_type }, ...] }
    * @param {object} validators The validators of the block that the offenses and evidence will be included in.
+   * @param {Set} recordedInvalidBlockHashSet A set of invalid block hashes that have been alraedy included in the chain that new block will extend.
    * @param {DB} baseDb The DB instance should be the base of where evidence votes should be executed on.
    * @returns { offenses, evidence }
    */
-  getOffensesAndEvidence(validators, baseDb) {
+  getOffensesAndEvidence(validators, recordedInvalidBlockHashSet, baseDb) {
     const LOG_HEADER = 'getOffensesAndEvidence';
     const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
     const blockNumber = baseDb.blockNumberSnapshot;
@@ -526,6 +551,9 @@ class BlockPool {
     const evidence = {};
     const offenses = {};
     for (const [blockHash, blockInfo] of Object.entries(this.hashToInvalidBlockInfo)) {
+      if (recordedInvalidBlockHashSet.has(blockHash)) {
+        continue;
+      }
       if (!blockInfo.votes || !blockInfo.votes.length) {
         continue;
       }
