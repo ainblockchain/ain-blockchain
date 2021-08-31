@@ -175,12 +175,10 @@ class Consensus {
     if (!lastNotarizedBlock) {
       logger.error(`[${LOG_HEADER}] Empty lastNotarizedBlock (${this.epoch})`);
     }
-    // Need the block#1 to be finalized to have the stakes reflected in the state
-    const validators = this.node.bc.lastBlockNumber() < 1 ? lastNotarizedBlock.validators
-        : this.getValidators(lastNotarizedBlock.hash, lastNotarizedBlock.number);
+    const validators = this.getValidators(
+        lastNotarizedBlock.hash, lastNotarizedBlock.number, this.node.stateManager.getFinalVersion());
 
     // FIXME(liayoo): Make the seeds more secure and unpredictable.
-    // const seed = '' + this.genesisHash + this.epoch;
     const seed = '' + lastNotarizedBlock.last_votes_hash + this.epoch;
     this.proposer = Consensus.selectProposer(seed, validators);
     logger.debug(`[${LOG_HEADER}] proposer for epoch ${this.epoch}: ${this.proposer}`);
@@ -385,7 +383,7 @@ class Consensus {
       throw Error(`[${LOG_HEADER}] Failed to create a temp database with state version: ${baseVersion}.`);
     }
     const lastVotes = this.blockPool.getValidLastVotes(lastBlock, blockNumber, tempDb);
-    const validators = this.getValidators(lastBlock.hash, lastBlock.number, tempDb);
+    const validators = this.getValidators(lastBlock.hash, lastBlock.number, tempDb.stateVersion);
     const numValidators = Object.keys(validators).length;
     if (!validators || !numValidators) {
       tempDb.destroyDb();
@@ -1170,14 +1168,14 @@ class Consensus {
     return whitelist || {};
   }
 
-  getValidators(blockHash, blockNumber, tempDb) {
+  getValidators(blockHash, blockNumber, stateVersion) {
     const LOG_HEADER = 'getValidators';
     let candidates = [];
     const validators = {};
     // Need the block #1 to be finalized to have the stakes reflected in the state.
     if (this.node.bc.lastBlockNumber() < 1) {
       for (const address of Object.keys(GENESIS_WHITELIST)) {
-        const stake = this.getConsensusStakeFromAddr(tempDb.stateVersion, address);
+        const stake = this.getConsensusStakeFromAddr(stateVersion, address);
         if (stake && stake >= MIN_STAKE_PER_VALIDATOR && stake <= MAX_STAKE_PER_VALIDATOR) {
           validators[address] = {
             [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
@@ -1189,7 +1187,7 @@ class Consensus {
       return validators;
     }
     const db = this.blockPool.hashToDb.get(blockHash);
-    const stateVersion = this.node.bc.lastBlock().hash === blockHash ?
+    stateVersion = this.node.bc.lastBlock().hash === blockHash ?
         this.node.stateManager.getFinalVersion() : (db ? db.stateVersion : null);
     if (!stateVersion) {
       const err = `[${LOG_HEADER}] No stateVersion found for block ${blockHash}, ${blockNumber}`;
