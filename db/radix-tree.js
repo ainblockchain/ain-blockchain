@@ -14,21 +14,21 @@ class RadixTree {
   constructor() {
     this.root = new RadixNode();
     this.stateNodeMap = new Map();
-    if (FeatureFlags.enableHexLabelMap) {
-      this.hexLabelMap = new Map();
+    if (FeatureFlags.enableHexLabelCache) {
+      this.hexLabelCache = new Map();
     }
   }
 
   _toHexLabel(stateLabel) {
-    if (FeatureFlags.enableHexLabelMap) {
-      if (this.hexLabelMap.has(stateLabel)) {
-        return this.hexLabelMap.get(stateLabel);
+    if (FeatureFlags.enableHexLabelCache) {
+      if (this.hexLabelCache.has(stateLabel)) {
+        return this.hexLabelCache.get(stateLabel);
       }
     }
     const hexLabelWithPrefix = CommonUtil.toHexString(stateLabel);
     const hexLabel = hexLabelWithPrefix.length >= 2 ? hexLabelWithPrefix.slice(2) : '';
-    if (FeatureFlags.enableHexLabelMap) {
-      this.hexLabelMap.set(stateLabel, hexLabel);
+    if (FeatureFlags.enableHexLabelCache) {
+      this.hexLabelCache.set(stateLabel, hexLabel);
     }
     return hexLabel;
   }
@@ -239,8 +239,8 @@ class RadixTree {
         return this._mergeToChild(parent);
       }
     }
-    if (FeatureFlags.enableHexLabelMap) {
-      this.hexLabelMap.delete(stateLabel);
+    if (FeatureFlags.enableHexLabelCache) {
+      this.hexLabelCache.delete(stateLabel);
     }
     return true;
   }
