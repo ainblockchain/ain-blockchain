@@ -50,6 +50,30 @@ const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
 const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
 const txSizeThreshold = TX_BYTES_LIMIT * 0.9;
 
+
+class ConsensusError extends Error {
+  constructor({ code, level, message }) {
+    super(message);
+    this.name = 'ConsensusException';
+    this.code = code;
+    this.level = level;
+    this.message = message;
+  }
+
+  log() {
+    switch (this.level) {
+      case 'info':
+        logger.info(this.message);
+        return;
+      case 'debug':
+        logger.debug(this.message);
+        return;
+      default:
+        logger.error(this.message);
+    }
+  }
+}
+
 class Consensus {
   constructor(server, node) {
     this.server = server;
@@ -1432,28 +1456,6 @@ class Consensus {
         `alphabeticallyOrderedValidators: ${alphabeticallyOrderedValidators}\n` +
         `totalAtStake: ${totalAtStake}\nseed: ${seed}\ntargetValue: ${targetValue}`);
     return null;
-  }
-}
-class ConsensusError extends Error {
-  constructor({ code, level, message }) {
-    super(message);
-    this.name = 'ConsensusException';
-    this.code = code;
-    this.level = level;
-    this.message = message;
-  }
-
-  log() {
-    switch (this.level) {
-      case 'info':
-        logger.info(this.message);
-        return;
-      case 'debug':
-        logger.debug(this.message);
-        return;
-      default:
-        logger.error(this.message);
-    }
   }
 }
 
