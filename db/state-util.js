@@ -653,31 +653,31 @@ function removeEmptyNodesForAllRootPaths(fullPath, root) {
   return removeEmptyNodesForAllRootPathsRecursive(curNode);
 }
 
-function updateProofHashForStateTree(stateTree) {
+function updateStateInfoForStateTree(stateTree) {
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
     for (const node of stateTree.getChildNodes()) {
-      numAffectedNodes += updateProofHashForStateTree(node);
+      numAffectedNodes += updateStateInfoForStateTree(node);
     }
   }
-  stateTree.updateProofHashAndStateInfo();
+  stateTree.updateStateInfo();
   numAffectedNodes++;
 
   return numAffectedNodes;
 }
 
-function updateProofHashForAllRootPathsRecursive(parent, updatedChildLabel) {
+function updateStateInfoForAllRootPathsRecursive(parent, updatedChildLabel) {
   let numAffectedNodes = 0;
-  parent.updateProofHashAndStateInfo(updatedChildLabel);
+  parent.updateStateInfo(updatedChildLabel);
   numAffectedNodes++;
   for (const grandParent of parent.getParentNodes()) {
-    numAffectedNodes += updateProofHashForAllRootPathsRecursive(grandParent, parent.getLabel());
+    numAffectedNodes += updateStateInfoForAllRootPathsRecursive(grandParent, parent.getLabel());
   }
   return numAffectedNodes;
 }
 
-function updateProofHashForAllRootPaths(fullPath, root) {
-  const LOG_HEADER = 'updateProofHashForAllRootPaths';
+function updateStateInfoForAllRootPaths(fullPath, root) {
+  const LOG_HEADER = 'updateStateInfoForAllRootPaths';
 
   if (fullPath.length === 0) {
     // No parents to update.
@@ -702,7 +702,7 @@ function updateProofHashForAllRootPaths(fullPath, root) {
     }
     parent = child;
   }
-  return updateProofHashForAllRootPathsRecursive(parent, updatedChildLabel);
+  return updateStateInfoForAllRootPathsRecursive(parent, updatedChildLabel);
 }
 
 function verifyProofHashForStateTree(stateTree) {
@@ -772,8 +772,8 @@ module.exports = {
   makeCopyOfStateTree,
   equalStateTrees,
   removeEmptyNodesForAllRootPaths,
-  updateProofHashForStateTree,
-  updateProofHashForAllRootPaths,
+  updateStateInfoForStateTree,
+  updateStateInfoForAllRootPaths,
   verifyProofHashForStateTree,
   getProofOfStatePath,
 };

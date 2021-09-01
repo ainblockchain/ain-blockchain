@@ -46,8 +46,8 @@ const {
   applyFunctionChange,
   applyOwnerChange,
   removeEmptyNodesForAllRootPaths,
-  updateProofHashForStateTree,
-  updateProofHashForAllRootPaths,
+  updateStateInfoForStateTree,
+  updateStateInfoForAllRootPaths,
   getProofOfStatePath,
 } = require('./state-util');
 const Functions = require('./functions');
@@ -398,10 +398,10 @@ class DB {
     if (isEmptyNode(tree)) {
       removeEmptyNodesForAllRootPaths(fullPath, stateRoot);
     } else if (!LIGHTWEIGHT) {
-      updateProofHashForStateTree(tree);
+      updateStateInfoForStateTree(tree);
     }
     if (!LIGHTWEIGHT) {
-      updateProofHashForAllRootPaths(fullPath, stateRoot);
+      updateStateInfoForAllRootPaths(fullPath, stateRoot);
     }
     return stateRoot;
   }
