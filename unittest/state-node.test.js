@@ -853,7 +853,7 @@ describe("state-node", () => {
       assert.deepEqual(child2.getParentNodes(), [parent]);
       expect(child1.numParents()).to.equal(0);
       expect(child2.numParents()).to.equal(1);
-      expect(child1.hasLabel()).to.equal(false);
+      expect(child1.hasLabel()).to.equal(true);
       expect(child2.hasLabel()).to.equal(true);
       expect(child2.getLabel()).to.equal(label2);
       expect(parent.getIsLeaf()).to.equal(false);
@@ -867,8 +867,8 @@ describe("state-node", () => {
       assert.deepEqual(child2.getParentNodes(), []);
       expect(child1.numParents()).to.equal(0);
       expect(child2.numParents()).to.equal(0);
-      expect(child1.hasLabel()).to.equal(false);
-      expect(child2.hasLabel()).to.equal(false);
+      expect(child1.hasLabel()).to.equal(true);
+      expect(child2.hasLabel()).to.equal(true);
       expect(parent.getIsLeaf()).to.equal(true);
     });
 
@@ -975,8 +975,8 @@ describe("state-node", () => {
       assert.deepEqual(child2.getParentNodes(), []);
       expect(child1.numParents()).to.equal(0);
       expect(child2.numParents()).to.equal(0);
-      expect(child1.hasLabel()).to.equal(false);
-      expect(child2.hasLabel()).to.equal(false);
+      expect(child1.hasLabel()).to.equal(true);
+      expect(child2.hasLabel()).to.equal(true);
       expect(parent1.getIsLeaf()).to.equal(true);
       expect(parent2.getIsLeaf()).to.equal(true);
     });
