@@ -611,24 +611,28 @@ function equalStateTrees(node1, node2) {
   return true;
 }
 
-function removeEmptyNodesForAllRootPathsRecursive(curNode) {
+function updateStateInfoForAllRootPathsRecursive(
+    curNode, needToUpdate, updatedChildLabel = null) {
   let numAffectedNodes = 0;
-  if (!isEmptyNode(curNode)) {
-    return numAffectedNodes;
-  }
+  const curLabel = curNode.getLabel();
   const parentNodes = curNode.getParentNodes();
-  for (const parent of parentNodes) {
-    parent.deleteChild(curNode.getLabel());
+  if (isEmptyNode(curNode)) {
+    for (const parent of parentNodes) {
+      parent.deleteChild(curLabel);
+      numAffectedNodes++;
+    }
+  } else if (needToUpdate) {  // Update state info of only parents.
+    curNode.updateStateInfo(updatedChildLabel);
     numAffectedNodes++;
   }
   for (const parent of parentNodes) {
-    numAffectedNodes += removeEmptyNodesForAllRootPathsRecursive(parent);
+    numAffectedNodes += updateStateInfoForAllRootPathsRecursive(parent, true, curLabel);
   }
   return numAffectedNodes;
 }
 
-function removeEmptyNodesForAllRootPaths(fullPath, root) {
-  const LOG_HEADER = 'removeEmptyNodesForAllRootPaths';
+function updateStateInfoForAllRootPaths(fullPath, root) {
+  const LOG_HEADER = 'updateStateInfoForAllRootPaths';
 
   if (fullPath.length === 0) {
     // No parents to update.
@@ -639,6 +643,7 @@ function removeEmptyNodesForAllRootPaths(fullPath, root) {
     return 0;
   }
   let curNode = root;
+  let needToUpdate = false;
   for (let i = 0; i < fullPath.length; i++) {
     const childLabel = fullPath[i];
     const child = curNode.getChild(childLabel);
@@ -646,11 +651,12 @@ function removeEmptyNodesForAllRootPaths(fullPath, root) {
       logger.info(
           `[${LOG_HEADER}] Trying to remove empty nodes for non-existing path: ` +
           `${CommonUtil.formatPath(fullPath.slice(0, i + 1))}.`);
+      needToUpdate = true;
       break;
     }
     curNode = child;
   }
-  return removeEmptyNodesForAllRootPathsRecursive(curNode);
+  return updateStateInfoForAllRootPathsRecursive(curNode, needToUpdate, null);
 }
 
 function updateStateInfoForStateTree(stateTree) {
@@ -664,45 +670,6 @@ function updateStateInfoForStateTree(stateTree) {
   numAffectedNodes++;
 
   return numAffectedNodes;
-}
-
-function updateStateInfoForAllRootPathsRecursive(parent, updatedChildLabel) {
-  let numAffectedNodes = 0;
-  parent.updateStateInfo(updatedChildLabel);
-  numAffectedNodes++;
-  for (const grandParent of parent.getParentNodes()) {
-    numAffectedNodes += updateStateInfoForAllRootPathsRecursive(grandParent, parent.getLabel());
-  }
-  return numAffectedNodes;
-}
-
-function updateStateInfoForAllRootPaths(fullPath, root) {
-  const LOG_HEADER = 'updateStateInfoForAllRootPaths';
-
-  if (fullPath.length === 0) {
-    // No parents to update.
-    return 0;
-  }
-  const pathToParent = fullPath.slice(0, fullPath.length - 1);
-  let updatedChildLabel = fullPath[fullPath.length - 1];
-  if (!root) {
-    logger.error(`[${LOG_HEADER}] Trying to update proof hash for invalid root: ${root}.`);
-    return 0;
-  }
-  let parent = root;
-  for (let i = 0; i < pathToParent.length; i++) {
-    const childLabel = pathToParent[i];
-    const child = parent.getChild(childLabel);
-    if (child === null) {
-      logger.info(
-          `[${LOG_HEADER}] Trying to update proof hash for non-existing path: ` +
-          `${CommonUtil.formatPath(fullPath.slice(0, i + 1))}.`);
-      updatedChildLabel = null;  // Need to update proof hash for all labels.
-      break;
-    }
-    parent = child;
-  }
-  return updateStateInfoForAllRootPathsRecursive(parent, updatedChildLabel);
 }
 
 function verifyProofHashForStateTree(stateTree) {
@@ -771,9 +738,8 @@ module.exports = {
   deleteStateTreeVersion,
   makeCopyOfStateTree,
   equalStateTrees,
-  removeEmptyNodesForAllRootPaths,
-  updateStateInfoForStateTree,
   updateStateInfoForAllRootPaths,
+  updateStateInfoForStateTree,
   verifyProofHashForStateTree,
   getProofOfStatePath,
 };
