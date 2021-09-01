@@ -45,9 +45,8 @@ const {
   isValidOwnerTree,
   applyFunctionChange,
   applyOwnerChange,
-  removeEmptyNodesForAllRootPaths,
-  updateStateInfoForStateTree,
   updateStateInfoForAllRootPaths,
+  updateStateInfoForStateTree,
   getProofOfStatePath,
 } = require('./state-util');
 const Functions = require('./functions');
@@ -387,6 +386,9 @@ class DB {
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
     const tree = StateNode.fromJsObject(stateObj, stateVersion);
+    if (!LIGHTWEIGHT) {
+      updateStateInfoForStateTree(tree);
+    }
     if (fullPath.length === 0) {
       stateRoot = tree;
     } else {
@@ -395,14 +397,7 @@ class DB {
       const parent = DB.getRefForWritingToStateRoot(stateRoot, pathToParent);
       parent.setChild(treeLabel, tree);
     }
-    if (isEmptyNode(tree)) {
-      removeEmptyNodesForAllRootPaths(fullPath, stateRoot);
-    } else if (!LIGHTWEIGHT) {
-      updateStateInfoForStateTree(tree);
-    }
-    if (!LIGHTWEIGHT) {
-      updateStateInfoForAllRootPaths(fullPath, stateRoot);
-    }
+    updateStateInfoForAllRootPaths(fullPath, stateRoot);
     return stateRoot;
   }
 

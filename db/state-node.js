@@ -7,6 +7,7 @@ const {
   HASH_DELIMITER,
   StateInfoProperties,
   ProofProperties,
+  LIGHTWEIGHT,
 } = require('../common/constants');
 const RadixTree = require('./radix-tree');
 
@@ -452,7 +453,9 @@ class StateNode {
   }
 
   updateStateInfo(updatedChildLabel = null) {
-    this.setProofHash(this.buildProofHash(updatedChildLabel));
+    if (!LIGHTWEIGHT) {
+      this.setProofHash(this.buildProofHash(updatedChildLabel));
+    }
     this.setTreeHeight(this.computeTreeHeight());
     this.setTreeSize(this.computeTreeSize());
     this.setTreeBytes(this.computeTreeBytes());
