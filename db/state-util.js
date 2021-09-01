@@ -611,6 +611,29 @@ function equalStateTrees(node1, node2) {
   return true;
 }
 
+function removeEmptyNodesRecursive(fullPath, depth, curNode) {
+  let childOnPath = null;
+  let childRemoved = false;
+  if (depth < fullPath.length - 1) {
+    childOnPath = curNode.getChild(fullPath[depth]);
+    if (childOnPath === null) {
+      logger.error(`Unavailable path in the database: ${CommonUtil.formatPath(fullPath)}`);
+    } else {
+      childRemoved = DB.removeEmptyNodesRecursive(fullPath, depth + 1, childOnPath);
+    }
+  }
+  for (const label of curNode.getChildLabels()) {
+    const child = curNode.getChild(label);
+    if (isEmptyNode(child)) {
+      curNode.deleteChild(label);
+    }
+  }
+}
+
+function removeEmptyNodesFromStateRoot(stateRoot, fullPath) {
+  return removeEmptyNodesRecursive(fullPath, 0, stateRoot);
+}
+
 function updateProofHashForStateTree(stateTree) {
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
@@ -729,6 +752,7 @@ module.exports = {
   deleteStateTreeVersion,
   makeCopyOfStateTree,
   equalStateTrees,
+  removeEmptyNodesFromStateRoot,
   updateProofHashForStateTree,
   updateProofHashForAllRootPaths,
   verifyProofHashForStateTree,
