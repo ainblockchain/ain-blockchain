@@ -8,7 +8,10 @@ const { v4: uuidv4 } = require('uuid');
 const disk = require('diskusage');
 const os = require('os');
 const v8 = require('v8');
-const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
+const {
+  CURRENT_PROTOCOL_VERSION,
+  LIMIT_NUMBER_OF_CANDIDATES_AT_ONCE
+} = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const logger = require('../logger')('TRACKER_SERVER');
 
@@ -161,12 +164,12 @@ function getNumNodes() {
 }
 
 function getMaxNumberOfNewPeers(nodeInfo) {
-  const numOfNecessaryCandidates = nodeInfo.networkStatus.connectionStatus.maxOutbound -
+  const numOfCandidates = nodeInfo.networkStatus.connectionStatus.maxOutbound -
       nodeInfo.networkStatus.connectionStatus.outgoingPeers.length;
-  if (numOfNecessaryCandidates >= 2) {
-    return 2;
+  if (numOfCandidates >= LIMIT_NUMBER_OF_CANDIDATES_AT_ONCE) {
+    return LIMIT_NUMBER_OF_CANDIDATES_AT_ONCE;
   } else {
-    return numOfNecessaryCandidates;
+    return numOfCandidates;
   }
 }
 

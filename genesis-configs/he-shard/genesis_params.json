@@ -20,8 +20,6 @@
   },
   "network": {
     "P2P_MESSAGE_TIMEOUT_MS": 600000,
-    "MAX_OUTBOUND_LIMIT": 2,
-    "MAX_INBOUND_LIMIT": 3,
     "DEFAULT_MAX_OUTBOUND": 2,
     "DEFAULT_MAX_INBOUND": 3
   },
