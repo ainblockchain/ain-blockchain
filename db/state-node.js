@@ -454,7 +454,7 @@ class StateNode {
     }
   }
 
-  updateProofHashAndStateInfo(updatedChildLabel = null) {
+  updateStateInfo(updatedChildLabel = null) {
     this.setProofHash(this.buildProofHash(updatedChildLabel));
     this.setTreeHeight(this.computeTreeHeight());
     this.setTreeSize(this.computeTreeSize());
