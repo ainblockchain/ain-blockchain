@@ -616,7 +616,8 @@ function updateStateInfoForAllRootPathsRecursive(
   let numAffectedNodes = 0;
   const curLabel = curNode.getLabel();
   const parentNodes = curNode.getParentNodes();
-  if (isEmptyNode(curNode)) {
+  const isEmpty = isEmptyNode(curNode);
+  if (isEmpty) {
     for (const parent of parentNodes) {
       parent.deleteChild(curLabel);
       numAffectedNodes++;
@@ -626,7 +627,8 @@ function updateStateInfoForAllRootPathsRecursive(
     numAffectedNodes++;
   }
   for (const parent of parentNodes) {
-    numAffectedNodes += updateStateInfoForAllRootPathsRecursive(parent, true, curLabel);
+    numAffectedNodes +=
+        updateStateInfoForAllRootPathsRecursive(parent, true, isEmpty ? null : curLabel);
   }
   return numAffectedNodes;
 }
