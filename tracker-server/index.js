@@ -160,7 +160,7 @@ function getNumNodes() {
   return Object.keys(peerNodes).length;
 }
 
-function getNecessaryCandidateNumber(nodeInfo) {
+function getMaxNumberOfNewPeers(nodeInfo) {
   const numOfNecessaryCandidates = nodeInfo.networkStatus.connectionStatus.maxOutbound -
       nodeInfo.networkStatus.connectionStatus.outgoingPeers.length;
   if (numOfNecessaryCandidates >= 2) {
@@ -171,7 +171,7 @@ function getNecessaryCandidateNumber(nodeInfo) {
 }
 
 function assignRandomPeers(nodeInfo) {
-  const numOfNecessaryCandidates = getNecessaryCandidateNumber(nodeInfo);
+  const numOfNecessaryCandidates = getMaxNumberOfNewPeers(nodeInfo);
   if (numOfNecessaryCandidates) {
     const candidates = Object.values(peerNodes)
     .filter(peer =>
