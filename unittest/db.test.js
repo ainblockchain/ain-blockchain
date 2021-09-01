@@ -2861,7 +2861,6 @@ describe("DB operations", () => {
         "terminal_1c": "",
         "node_1a": {
           "node_2": {
-            "terminal_3": null,
             "node_3": "a value"
           }
         },
@@ -2953,7 +2952,6 @@ describe("DB operations", () => {
         "terminal_1c": "",
         "node_1a": {
           "node_2": {
-            "terminal_3": null,
             "node_3": "another value"
           }
         },
@@ -2967,6 +2965,8 @@ describe("DB operations", () => {
       expect(node.db.setValue(
           "/apps/test/empty_values/node_0/node_1a/node_2/node_3", null).code).to.equal(0);
       assert.deepEqual(node.db.getValue("/apps/test/empty_values/node_0"), {
+        "terminal_1a": null,
+        "terminal_1b": null,
         "terminal_1c": "",
         "node_1b": {
           "terminal_2": null,
