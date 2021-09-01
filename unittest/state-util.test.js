@@ -21,6 +21,7 @@ const {
   deleteStateTreeVersion,
   makeCopyOfStateTree,
   equalStateTrees,
+  removeEmptyNodesForAllRootPaths,
   updateProofHashForStateTree,
   updateProofHashForAllRootPaths,
   verifyProofHashForStateTree,
@@ -2480,6 +2481,155 @@ describe("state-util", () => {
       expect(equalStateTrees(root1, root2)).to.equal(false);
     })
   })
+
+  describe("empty nodes", () => {
+    const label1 = '0x0001';
+    const label11 = '0x0011';
+    const label111 = '0x0111';
+    const label1111 = '0x1111';
+    const label2 = '0x0002';
+    const label21 = '0x0021';
+    let stateTree;
+    let child1;
+    let child11;
+    let child111;
+    let child1111;
+    const jsObject = {
+      [label1]: {
+        [label11]: {
+          [label111]: {
+            [label1111]: null,
+          }
+        }
+      },
+      [label2]: {
+        [label21]: 'V0021'
+      }
+    };
+
+    beforeEach(() => {
+      stateTree = StateNode.fromJsObject(jsObject);
+      child1 = stateTree.getChild(label1);
+      child11 = child1.getChild(label11);
+      child111 = child11.getChild(label111);
+      child1111 = child111.getChild(label1111);
+    });
+
+    it("removeEmptyNodesForAllRootPaths on empty node with a single root path", () => {
+      assert.deepEqual(stateTree.toJsObject(), {
+        "0x0001": {
+          "0x0011": {
+            "0x0111": {
+              "0x1111": null
+            }
+          }
+        },
+        "0x0002": {
+          "0x0021": "V0021"
+        }
+      });
+      const numAffectedNodes =
+          removeEmptyNodesForAllRootPaths([label1, label11, label111, label1111], stateTree);
+      expect(numAffectedNodes).to.equal(4);
+      assert.deepEqual(stateTree.toJsObject(), {
+        "0x0002": {
+          "0x0021": "V0021"
+        }
+      });
+    });
+
+    it("removeEmptyNodesForAllRootPaths on empty node with multiple root paths", () => {
+      const child111Clone = child111.clone();
+      const child11Clone = new StateNode();
+      child11Clone.setChild(label111, child111Clone);
+      const child1Clone = new StateNode();
+      child1Clone.setChild(label11, child11Clone);
+      const stateTreeClone = new StateNode();
+      stateTreeClone.setChild(label1, child1Clone);
+      const child3 = new StateNode();
+      child3.setValue('V0003');
+      const label3 = '0x003';
+      stateTreeClone.setChild(label3, child3);
+
+
+      assert.deepEqual(stateTree.toJsObject(), {
+        "0x0001": {
+          "0x0011": {
+            "0x0111": {
+              "0x1111": null
+            }
+          }
+        },
+        "0x0002": {
+          "0x0021": "V0021"
+        }
+      });
+      assert.deepEqual(stateTreeClone.toJsObject(), {
+        "0x0001": {
+          "0x0011": {
+            "0x0111": {
+              "0x1111": null
+            }
+          }
+        },
+        "0x003": "V0003"
+      });
+      assert.deepEqual(child1111.getParentNodes(), [child111, child111Clone]);
+      const numAffectedNodes =
+          removeEmptyNodesForAllRootPaths([label1, label11, label111, label1111], stateTree);
+      expect(numAffectedNodes).to.equal(8);
+      assert.deepEqual(stateTree.toJsObject(), {
+        "0x0002": {
+          "0x0021": "V0021"
+        }
+      });
+      assert.deepEqual(stateTreeClone.toJsObject(), {
+        "0x003": "V0003"
+      });
+    });
+
+    it("removeEmptyNodesForAllRootPaths on non-empty node", () => {
+      assert.deepEqual(stateTree.toJsObject(), {
+        "0x0001": {
+          "0x0011": {
+            "0x0111": {
+              "0x1111": null
+            }
+          }
+        },
+        "0x0002": {
+          "0x0021": "V0021"
+        }
+      });
+      const numAffectedNodes =
+          removeEmptyNodesForAllRootPaths([label1, label11, label111], stateTree);
+      expect(numAffectedNodes).to.equal(0);
+      assert.deepEqual(stateTree.toJsObject(), {
+        "0x0001": {
+          "0x0011": {
+            "0x0111": {
+              "0x1111": null
+            }
+          }
+        },
+        "0x0002": {
+          "0x0021": "V0021"
+        }
+      });
+    });
+
+    it("removeEmptyNodesForAllRootPaths with deleted nodes", () => {
+      // with deleted nodes
+      const numAffectedNodes = removeEmptyNodesForAllRootPaths(
+          [label1, label11, label111, label1111, 'deleted1', 'deleted2'], stateTree);
+      expect(numAffectedNodes).to.equal(4);
+      assert.deepEqual(stateTree.toJsObject(), {
+        "0x0002": {
+          "0x0021": "V0021"
+        }
+      });
+    })
+  });
 
   describe("proof hash", () => {
     const label1 = '0x0001';
