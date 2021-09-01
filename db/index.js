@@ -46,6 +46,7 @@ const {
   isValidOwnerTree,
   applyFunctionChange,
   applyOwnerChange,
+  removeEmptyNodesFromStateRoot,
   updateProofHashForStateTree,
   updateProofHashForAllRootPaths,
   getProofOfStatePath,
@@ -396,7 +397,7 @@ class DB {
       parent.setChild(treeLabel, tree);
     }
     if (isEmptyNode(tree)) {
-      DB.removeEmptyNodesFromStateRoot(stateRoot, fullPath);
+      removeEmptyNodesFromStateRoot(stateRoot, fullPath);
     } else if (!LIGHTWEIGHT) {
       updateProofHashForStateTree(tree);
     }
@@ -408,27 +409,6 @@ class DB {
 
   writeDatabase(fullPath, stateObj) {
     this.stateRoot = DB.writeToStateRoot(this.stateRoot, this.stateVersion, fullPath, stateObj);
-  }
-
-  static removeEmptyNodesRecursive(fullPath, depth, curDbNode) {
-    if (depth < fullPath.length - 1) {
-      const nextDbNode = curDbNode.getChild(fullPath[depth]);
-      if (nextDbNode === null) {
-        logger.error(`Unavailable path in the database: ${CommonUtil.formatPath(fullPath)}`);
-      } else {
-        DB.removeEmptyNodesRecursive(fullPath, depth + 1, nextDbNode);
-      }
-    }
-    for (const label of curDbNode.getChildLabels()) {
-      const childNode = curDbNode.getChild(label);
-      if (isEmptyNode(childNode)) {
-        curDbNode.deleteChild(label);
-      }
-    }
-  }
-
-  static removeEmptyNodesFromStateRoot(stateRoot, fullPath) {
-    return DB.removeEmptyNodesRecursive(fullPath, 0, stateRoot);
   }
 
   static readFromStateRoot(stateRoot, rootLabel, refPath, options, shardingPath) {
