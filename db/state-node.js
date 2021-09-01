@@ -294,9 +294,6 @@ class StateNode {
     } else {
       this.childMap.delete(label);
     }
-    if (child.numParents() === 0) {
-      child._resetLabel();
-    }
     if (this.numChildren() === 0) {
       this.setIsLeaf(true);
     }
