@@ -7,7 +7,6 @@ const {
   PredefinedDbPaths,
   OwnerProperties,
   RuleProperties,
-  ProofProperties,
   StateInfoProperties,
   ShardingProperties,
   GenesisAccounts,
@@ -46,7 +45,7 @@ const {
   isValidOwnerTree,
   applyFunctionChange,
   applyOwnerChange,
-  removeEmptyNodesFromStateRoot,
+  removeEmptyNodesForAllRootPaths,
   updateProofHashForStateTree,
   updateProofHashForAllRootPaths,
   getProofOfStatePath,
@@ -397,7 +396,7 @@ class DB {
       parent.setChild(treeLabel, tree);
     }
     if (isEmptyNode(tree)) {
-      removeEmptyNodesFromStateRoot(stateRoot, fullPath);
+      removeEmptyNodesForAllRootPaths(fullPath, stateRoot);
     } else if (!LIGHTWEIGHT) {
       updateProofHashForStateTree(tree);
     }
