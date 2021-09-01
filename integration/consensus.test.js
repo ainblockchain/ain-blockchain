@@ -37,31 +37,31 @@ const MAX_ITERATION = 200;
 const MAX_NUM_VALIDATORS = 4;
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, EPOCH_MS: 1000, DEBUG: false,
+    ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, EPOCH_MS: 1000, DEBUG: false,
+    ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, EPOCH_MS: 1000, DEBUG: false,
+    ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, EPOCH_MS: 1000, DEBUG: false,
+    ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 4, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, EPOCH_MS: 1000, DEBUG: false,
+    ACCOUNT_INDEX: 4, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
