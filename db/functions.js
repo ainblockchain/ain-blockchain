@@ -104,7 +104,7 @@ class Functions {
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction) {
+  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction, blockTime) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
@@ -119,7 +119,7 @@ class Functions {
 
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
-          parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction);
+          parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction, blockTime);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
           continue;  // Does nothing.
@@ -158,6 +158,7 @@ class Functions {
                     timestamp,
                     executedAt,
                     transaction,
+                    blockTime,
                     auth: newAuth,
                     opResultList: [],
                     otherGasAmount: 0,
@@ -277,13 +278,14 @@ class Functions {
   }
 
   static formatFunctionParams(
-      parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction) {
+      parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction, blockTime) {
     return `valuePath: '${CommonUtil.formatPath(parsedValuePath)}', ` +
       `functionPath: '${CommonUtil.formatPath(functionPath)}', ` +
       `timestamp: '${timestamp}', executedAt: '${executedAt}', ` +
       `params: ${JSON.stringify(params, null, 2)}, ` +
       `value: '${JSON.stringify(value, null, 2)}', ` +
-      `transaction: ${JSON.stringify(transaction, null, 2)}`;
+      `transaction: ${JSON.stringify(transaction, null, 2)}, ` +
+      `blockTime: ${blockTime}`;
   }
 
   static getFunctionList(functionMap) {
@@ -709,6 +711,7 @@ class Functions {
     if (CommonUtil.isEmpty(value.offenses)) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
+    const now = context.blockTime === null ? context.timestamp : context.blockTime;
     for (const [offender, offenseList] of Object.entries(value.offenses)) {
       const numNewOffenses = Object.values(offenseList).reduce((acc, cur) => acc + cur, 0);
       const offenseRecordsPath = PathUtil.getConsensusOffenseRecordsAddrPath(offender);
@@ -717,7 +720,7 @@ class Functions {
       const lockupExtension = Functions.getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses);
       if (lockupExtension > 0) {
         const expirationPath = PathUtil.getStakingExpirationPath(PredefinedDbPaths.CONSENSUS, offender, 0);
-        const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), context.timestamp);
+        const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), now);
         this.setValueOrLog(expirationPath, currentExpiration + lockupExtension, context);
       }
     }
@@ -729,17 +732,13 @@ class Functions {
     const user = context.params.user_addr;
     const stakingKey = context.params.staking_key;
     const recordId = context.params.record_id;
-    const timestamp = context.timestamp;
-    const executedAt = context.executedAt;
+    const now = context.blockTime === null ? context.timestamp : context.blockTime;
     const resultPath = PathUtil.getStakingStakeResultPath(serviceName, user, stakingKey, recordId);
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
     const currentExpiration = Number(this.db.getValue(expirationPath));
     const lockup = Number(this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)));
-    const newExpiration = timestamp + lockup;
+    const newExpiration = now + lockup;
     const updateExpiration = newExpiration > currentExpiration;
-    if (timestamp > executedAt) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
-    }
     if (value === 0) {
       // Just update the expiration time
       if (updateExpiration) {
