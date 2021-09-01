@@ -2487,8 +2487,8 @@ describe("state-util", () => {
     const label11 = '0x0011';
     const label111 = '0x0111';
     const label1111 = '0x1111';
-    const label2 = '0x0002';
-    const label21 = '0x0021';
+    const label12 = '0x0012';
+    const label121 = '0x0121';
     let stateTree;
     let child1;
     let child11;
@@ -2500,10 +2500,10 @@ describe("state-util", () => {
           [label111]: {
             [label1111]: null,
           }
+        },
+        [label12]: {
+          [label121]: 'V0121'
         }
-      },
-      [label2]: {
-        [label21]: 'V0021'
       }
     };
 
@@ -2522,18 +2522,20 @@ describe("state-util", () => {
             "0x0111": {
               "0x1111": null
             }
+          },
+          "0x0012": {
+            "0x0121": "V0121"
           }
-        },
-        "0x0002": {
-          "0x0021": "V0021"
         }
       });
       const numAffectedNodes =
           removeEmptyNodesForAllRootPaths([label1, label11, label111, label1111], stateTree);
-      expect(numAffectedNodes).to.equal(4);
+      expect(numAffectedNodes).to.equal(3);
       assert.deepEqual(stateTree.toJsObject(), {
-        "0x0002": {
-          "0x0021": "V0021"
+        "0x0001": {
+          "0x0012": {
+            "0x0121": "V0121"
+          }
         }
       });
     });
@@ -2551,17 +2553,16 @@ describe("state-util", () => {
       const label3 = '0x003';
       stateTreeClone.setChild(label3, child3);
 
-
       assert.deepEqual(stateTree.toJsObject(), {
         "0x0001": {
           "0x0011": {
             "0x0111": {
               "0x1111": null
             }
+          },
+          "0x0012": {
+            "0x0121": "V0121"
           }
-        },
-        "0x0002": {
-          "0x0021": "V0021"
         }
       });
       assert.deepEqual(stateTreeClone.toJsObject(), {
@@ -2577,10 +2578,12 @@ describe("state-util", () => {
       assert.deepEqual(child1111.getParentNodes(), [child111, child111Clone]);
       const numAffectedNodes =
           removeEmptyNodesForAllRootPaths([label1, label11, label111, label1111], stateTree);
-      expect(numAffectedNodes).to.equal(8);
+      expect(numAffectedNodes).to.equal(7);
       assert.deepEqual(stateTree.toJsObject(), {
-        "0x0002": {
-          "0x0021": "V0021"
+        "0x0001": {
+          "0x0012": {
+            "0x0121": "V0121"
+          }
         }
       });
       assert.deepEqual(stateTreeClone.toJsObject(), {
@@ -2595,10 +2598,10 @@ describe("state-util", () => {
             "0x0111": {
               "0x1111": null
             }
+          },
+          "0x0012": {
+            "0x0121": "V0121"
           }
-        },
-        "0x0002": {
-          "0x0021": "V0021"
         }
       });
       const numAffectedNodes =
@@ -2610,10 +2613,10 @@ describe("state-util", () => {
             "0x0111": {
               "0x1111": null
             }
+          },
+          "0x0012": {
+            "0x0121": "V0121"
           }
-        },
-        "0x0002": {
-          "0x0021": "V0021"
         }
       });
     });
@@ -2622,10 +2625,12 @@ describe("state-util", () => {
       // with deleted nodes
       const numAffectedNodes = removeEmptyNodesForAllRootPaths(
           [label1, label11, label111, label1111, 'deleted1', 'deleted2'], stateTree);
-      expect(numAffectedNodes).to.equal(4);
+      expect(numAffectedNodes).to.equal(3);
       assert.deepEqual(stateTree.toJsObject(), {
-        "0x0002": {
-          "0x0021": "V0021"
+        "0x0001": {
+          "0x0012": {
+            "0x0121": "V0121"
+          }
         }
       });
     })
