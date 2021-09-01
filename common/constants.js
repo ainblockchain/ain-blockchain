@@ -161,7 +161,10 @@ const PredefinedDbPaths = {
   // Consensus
   CONSENSUS: 'consensus',
   CONSENSUS_BLOCK_HASH: 'block_hash',
+  CONSENSUS_IS_AGAINST: 'is_against',
   CONSENSUS_NUMBER: 'number',
+  CONSENSUS_OFFENSE_RECORDS: 'offense_records',
+  CONSENSUS_OFFENSE_TYPE: 'offense_type',
   CONSENSUS_PROPOSAL_RIGHT: 'proposal_right',
   CONSENSUS_PROPOSE: 'propose',
   CONSENSUS_PROPOSER: 'proposer',
@@ -392,6 +395,7 @@ const NativeFunctionIds = {
   CREATE_APP: '_createApp',
   DISTRIBUTE_FEE: '_distributeFee',
   ERASE_VALUE: '_eraseValue',
+  HANDLE_OFFENSES: '_handleOffenses',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
   OPEN_CHECKOUT: '_openCheckout',

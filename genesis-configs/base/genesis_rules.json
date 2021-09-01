@@ -62,6 +62,13 @@
     }
   },
   "consensus": {
+    "offense_records": {
+      "$user_addr": {
+        ".rule": {
+          "write": "auth.fid === '_handleOffenses'"
+        }
+      }
+    },
     "number": {
       "$number": {
         ".rule": {
@@ -72,10 +79,12 @@
             "write": "util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || (getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount() && getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') <= util.getMaxStakeAmount())) && util.isNumber(newData.gas_cost_total)"
           }
         },
-        "vote": {
-          "$user_addr": {
-            ".rule": {
-              "write": "auth.addr === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && (lastBlockNumber < 1 || util.getConsensusStakeBalance(auth.addr, getValue) === newData.stake)"
+        "$block_hash": {
+          "vote": {
+            "$user_addr": {
+              ".rule": {
+                "write": "auth.addr === $user_addr && data === null && util.validateConsensusVoteData(newData, auth.addr, $block_hash, lastBlockNumber, getValue) === true"
+              }
             }
           }
         }
@@ -244,7 +253,7 @@
         "$staking_key": {
           "expire_at": {
             ".rule": {
-              "write": "auth.fid === '_stake'"
+              "write": "auth.fid === '_stake' || auth.fid === '_handleOffenses'"
             }
           },
           "stake": {

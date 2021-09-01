@@ -281,6 +281,21 @@ if (ENABLE_DEV_SET_CLIENT_API) {
       .send({ code: 0, result })
       .end();
   });
+
+  app.post('/broadcast_consensus_msg', (req, res) => {
+    p2pClient.broadcastConsensusMessage(req.body);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({ code: 0, result: true })
+      .end();
+  });
+
+  app.post('/sign_transaction', (req, res) => {
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({ code: 0, result: node.createTransaction(req.body) })
+      .end();
+  })
 }
 
 app.get('/status', (req, res, next) => {

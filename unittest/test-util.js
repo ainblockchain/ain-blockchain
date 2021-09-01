@@ -72,7 +72,7 @@ function addBlock(node, txs, votes, validators) {
   finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1);
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   node.addNewBlock(Block.create(
-      lastBlock.hash, votes, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
+      lastBlock.hash, votes, {}, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
       node.account.address, validators, 0, 0));
 }
 
@@ -110,13 +110,46 @@ async function waitForNewBlocks(server, waitFor = 1) {
   }
 }
 
+async function waitUntilNetworkIsReady(serverList) {
+  const MAX_ITERATION = 40;
+  let iterCount = 0;
+  const unchecked = new Set(serverList);
+  while (true) {
+    if (!unchecked.size) {
+      return true;
+    }
+    if (iterCount >= MAX_ITERATION) {
+      console.log(`Iteration count exceeded its limit before the network is ready (${JSON.stringify([...unchecked])})`);
+      return false;
+    }
+    for (const server of unchecked) {
+      try {
+        const healthCheck = parseOrLog(syncRequest('GET', server + '/health_check')
+            .body
+            .toString('utf-8'));
+        if (healthCheck === true) {
+          unchecked.delete(server);
+        }
+      } catch (e) {
+        // server may not be ready yet
+      }
+    }
+    await CommonUtil.sleep(3000);
+    iterCount++;
+  }
+}
+
 async function waitUntilNodeSyncs(server) {
   let isSyncing = true;
   while (isSyncing) {
-    isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
-        {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
-                params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-        .body.toString('utf-8')).result.result;
+    try {
+      isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
+          {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
+                  params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
+          .body.toString('utf-8')).result.result;
+    } catch (e) {
+      // server may not be ready yet
+    }
     await CommonUtil.sleep(1000);
   }
 }
@@ -184,6 +217,7 @@ module.exports = {
   addBlock,
   waitUntilTxFinalized,
   waitForNewBlocks,
+  waitUntilNetworkIsReady,
   waitUntilNodeSyncs,
   parseOrLog,
   setUpApp,

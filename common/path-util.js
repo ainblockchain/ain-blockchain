@@ -243,6 +243,14 @@ class PathUtil {
         PredefinedDbPaths.CHECKOUT_STATS_COMPLETE, dayTimestamp]);
   }
 
+  static getConsensusOffenseRecordsPath() {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_OFFENSE_RECORDS]);
+  }
+
+  static getConsensusOffenseRecordsAddrPath(address) {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_OFFENSE_RECORDS, address]);
+  }
+
   static getConsensusWhitelistPath() {
     return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST]);
   }
@@ -281,9 +289,10 @@ class PathUtil {
         PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER, blockNumber, PredefinedDbPaths.CONSENSUS_PROPOSE]);
   }
 
-  static getConsensusVotePath(blockNumber, address) {
+  static getConsensusVotePath(blockNumber, blockHash, address) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER, blockNumber, PredefinedDbPaths.CONSENSUS_VOTE, address]);
+        PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER, blockNumber, blockHash,
+        PredefinedDbPaths.CONSENSUS_VOTE, address]);
   }
 
   static getGasFeeClaimPath(userAddr, recordId) {

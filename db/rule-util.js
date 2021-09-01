@@ -264,6 +264,21 @@ class RuleUtil {
     return data === null && this.isDict(newData) && this.isNumber(newData.amount) &&
         newData.amount <= this.getBalance(from, getValue);
   }
+
+  validateConsensusVoteData(data, userAddr, blockHash, lastBlockNumber, getValue) {
+    if (!this.isDict(data) || !this.isBool(data.is_against) || !this.isNumber(data.stake) || data.block_hash !== blockHash) {
+      return false;
+    }
+    if (data.is_against && !this.isValidatorOffenseType(data.offense_type)) {
+      return false;
+    }
+    return lastBlockNumber < 1 || this.getConsensusStakeBalance(userAddr, getValue) === data.stake;
+  }
+
+  isValidatorOffenseType(type) {
+    const { ValidatorOffenseTypes } = require('../consensus/constants');
+    return !!ValidatorOffenseTypes[type];
+  }
 }
 
 module.exports = RuleUtil;

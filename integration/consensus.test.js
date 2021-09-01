@@ -10,47 +10,58 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const syncRequest = require('sync-request');
 const {
   CURRENT_PROTOCOL_VERSION,
+  CONSENSUS_PROTOCOL_VERSION,
   CHAINS_DIR,
   PredefinedDbPaths,
 } = require('../common/constants');
+const {
+  ConsensusMessageTypes,
+  ConsensusConsts,
+  ValidatorOffenseTypes,
+} = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
-const MAX_ITERATION = 200;
+const PathUtil = require('../common/path-util');
 const {
   waitUntilTxFinalized,
+  waitUntilNetworkIsReady,
   waitForNewBlocks,
   parseOrLog,
   getLastBlock,
-  getBlockByNumber,
 } = require('../unittest/test-util');
+const { Block } = require('../blockchain/block');
+const Functions = require('../db/functions');
+const ConsensusUtil = require('../consensus/consensus-util');
+const { expect } = require('chai');
 
+const MAX_ITERATION = 200;
 const MAX_NUM_VALIDATORS = 4;
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, EPOCH_MS: 1000, DEBUG: false,
+    ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, EPOCH_MS: 1000, DEBUG: false,
+    ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, EPOCH_MS: 1000, DEBUG: false,
+    ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, EPOCH_MS: 1000, DEBUG: false,
+    ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    ACCOUNT_INDEX: 4, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, EPOCH_MS: 1000, DEBUG: false,
+    ACCOUNT_INDEX: 4, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
@@ -110,6 +121,9 @@ for (let i = 0; i < ENV_VARIABLES.length; i++) {
 describe('Consensus', () => {
   let trackerProc;
   let jsonRpcClient;
+  let server1Addr;
+  let server2Addr;
+  let server3Addr;
   let server4Addr;
   let server5Addr;
   const nodeAddressList = [];
@@ -125,11 +139,12 @@ describe('Consensus', () => {
     for (let i = 0; i < SERVER_PROCS.length; i++) {
       const proc = SERVER_PROCS[i];
       proc.start(true);
-      await CommonUtil.sleep(i === 1 ? 100000 : 3000);
+      await CommonUtil.sleep(i === 0 ? 100000 : 3000);
       const address =
           parseOrLog(syncRequest('GET', serverList[i] + '/get_address').body.toString('utf-8')).result;
       nodeAddressList.push(address);
     };
+    await waitUntilNetworkIsReady(serverList);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
       jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK,
@@ -193,7 +208,7 @@ describe('Consensus', () => {
       await waitForNewBlocks(server1, 1);
       const server4Voted = parseOrLog(syncRequest(
         'GET',
-        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote/${server4Addr}`
+        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/${lastBlock.hash}/vote/${server4Addr}`
       ).body.toString('utf-8')).result;
       assert.deepEqual(server4Voted[PredefinedDbPaths.CONSENSUS_STAKE], 100000);
       // 3. server5 stakes 100000
@@ -222,7 +237,7 @@ describe('Consensus', () => {
       await waitForNewBlocks(server1, 1);
       const votes = parseOrLog(syncRequest(
         'GET',
-        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote`
+        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/${lastBlock.hash}/vote`
       ).body.toString('utf-8')).result;
       assert.deepEqual(votes[server4Addr], undefined);
       assert.deepEqual(votes[server5Addr][PredefinedDbPaths.CONSENSUS_STAKE], 100000);
@@ -253,7 +268,7 @@ describe('Consensus', () => {
       await waitForNewBlocks(server1, 1);
       let votes = parseOrLog(syncRequest(
         'GET',
-        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote`
+        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/${lastBlock.hash}/vote`
       ).body.toString('utf-8')).result;
       assert.deepEqual(votes[server5Addr], undefined);
       assert.deepEqual(votes[server4Addr][PredefinedDbPaths.CONSENSUS_STAKE], 100010);
@@ -282,7 +297,7 @@ describe('Consensus', () => {
       await waitForNewBlocks(server1, 1);
       votes = parseOrLog(syncRequest(
         'GET',
-        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/vote`
+        `${server1}/get_value?ref=/consensus/number/${lastBlock.number}/${lastBlock.hash}/vote`
       ).body.toString('utf-8')).result;
       assert.deepEqual(votes[server4Addr], undefined);
       assert.deepEqual(votes[server5Addr][PredefinedDbPaths.CONSENSUS_STAKE], 100020);
@@ -310,14 +325,16 @@ describe('Consensus', () => {
       const consensusRound = parseOrLog(syncRequest('GET',
           server2 + `/get_value?ref=/consensus/number/${blockNumber}`).body.toString('utf-8')).result;
       const proposer = consensusRound.propose.proposer;
-      const validators = Object.keys(consensusRound.vote);
+      const blockHash = consensusRound.propose.block_hash;
+      const votes = consensusRound[blockHash].vote;
+      const validators = Object.keys(votes);
       const gasCostTotal = consensusRound.propose.gas_cost_total;
       const proposerReward = gasCostTotal / 2;
       const validatorRewardTotal = gasCostTotal - proposerReward;
-      const totalAtStake = Object.values(consensusRound.vote).reduce((acc, cur) => acc + cur.stake, 0);
+      const totalAtStake = Object.values(votes).reduce((acc, cur) => acc + cur.stake, 0);
       let rewardSum = 0;
       validators.forEach((validator, index) => {
-        const validatorStake = consensusRound.vote[validator].stake;
+        const validatorStake = votes[validator].stake;
         let validatorReward = 0;
         if (index === validators.length - 1) {
           validatorReward = validatorRewardTotal - rewardSum;
@@ -443,6 +460,107 @@ describe('Consensus', () => {
         "bandwidth_gas_amount": 1,
         "gas_amount_charged": 2420
       });
+    });
+  });
+
+  describe('Penalties', () => {
+    function sendInvalidBlockProposal() {
+      const lastBlock = getLastBlock(server1);
+      const proposalBlock = Block.create(lastBlock.hash, [], {}, [], lastBlock.number + 1,
+          lastBlock.epoch + 1, '', server2Addr, {}, 0, 0);
+      proposalBlock.hash += '0'; // Invalid block hash
+      const proposalTxBody = {
+        operation: {
+          type: 'SET_VALUE',
+          ref: PathUtil.getConsensusProposePath(proposalBlock.number),
+          value: {
+            number: proposalBlock.number,
+            epoch: proposalBlock.epoch,
+            validators: proposalBlock.validators,
+            total_at_stake: 0,
+            proposer: server2Addr,
+            block_hash: proposalBlock.hash,
+            last_hash: proposalBlock.last_hash,
+            timestamp: proposalBlock.timestamp,
+            gas_cost_total: 0
+          }
+        },
+        nonce: -1,
+        timestamp: Date.now(),
+        gas_price: 1,
+      };
+      const proposalTx = parseOrLog(syncRequest('POST', server2 + `/sign_transaction`,
+          {json: proposalTxBody}).body.toString('utf-8')).result;
+      const invalidProposal = {
+        value: { proposalBlock, proposalTx },
+        type: ConsensusMessageTypes.PROPOSE,
+        consensusProtoVer: CONSENSUS_PROTOCOL_VERSION
+      };
+      syncRequest('POST', server1 + '/broadcast_consensus_msg', {json: invalidProposal});
+      return { proposalBlock, proposalTx };
+    }
+
+    async function waitUntilAgainstVotesInBlock(proposalBlock) {
+      let againstVotes = parseOrLog(syncRequest('GET',
+          server2 + `/get_value?ref=/consensus/number/${proposalBlock.number}/${proposalBlock.hash}/vote`)
+          .body.toString('utf-8')).result;
+      while (againstVotes === null) {
+        await CommonUtil.sleep(200);
+        againstVotes = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/consensus/number/${proposalBlock.number}/${proposalBlock.hash}/vote`)
+            .body.toString('utf-8')).result;
+      }
+      // Wait for 1 more block.
+      await waitForNewBlocks(server2, 1);
+      return againstVotes;
+    }
+
+    it('can record an offense and its evidence', async () => {
+      const { proposalBlock, proposalTx } = sendInvalidBlockProposal();
+      const againstVotesFromState = await waitUntilAgainstVotesInBlock(proposalBlock);
+      const offenseRecords = parseOrLog(syncRequest(
+          'GET', server2 + `/get_value?ref=/consensus/offense_records`).body.toString('utf-8')).result;
+      assert.deepEqual(offenseRecords, { [server2Addr]: 1 });
+      const blockWithEvidence = (parseOrLog(syncRequest('GET', server2 + `/blocks`)
+          .body.toString('utf-8')).result || [])
+              .find((block) => !CommonUtil.isEmpty(block.evidence));
+      const evidence = blockWithEvidence.evidence[server2Addr][0];
+      assert.deepEqual(blockWithEvidence.evidence[server2Addr].length, 1);
+      assert.deepEqual(evidence.offense_type, ValidatorOffenseTypes.INVALID_PROPOSAL);
+      assert.deepEqual(evidence.block, proposalBlock);
+      assert.deepEqual(evidence.transactions, [proposalTx]);
+      evidence.votes.forEach((vote) => {
+        assert.deepEqual(ConsensusUtil.isAgainstVoteTx(vote), true);
+      });
+      for (const [addr, vote] of Object.entries(againstVotesFromState)) {
+        expect(blockWithEvidence.validators[addr]).to.not.equal(undefined);
+        assert.deepEqual(vote.stake, blockWithEvidence.validators[addr].stake);
+        assert.deepEqual(vote.block_hash, proposalBlock.hash);
+        assert.deepEqual(vote.is_against, true);
+        assert.deepEqual(vote.offense_type, ValidatorOffenseTypes.INVALID_PROPOSAL);
+      }
+      const offenses = parseOrLog(syncRequest(
+        'GET', server2 + `/get_value?ref=/consensus/number/${blockWithEvidence.number}/propose/offenses`)
+        .body.toString('utf-8')).result;
+      assert.deepEqual(offenses, { [server2Addr]: { [ValidatorOffenseTypes.INVALID_PROPOSAL]: 1 } });
+    });
+
+    it('can penalize malicious validators ', async () => {
+      const offenseRecordsBefore = parseOrLog(syncRequest(
+          'GET', server2 + `/get_value?ref=/consensus/offense_records/${server2Addr}`).body.toString('utf-8')).result;
+      const stakeExpirationBefore = parseOrLog(syncRequest(
+          'GET', server2 + `/get_value?ref=/staking/consensus/${server2Addr}/0/expire_at`).body.toString('utf-8')).result;
+      const { proposalBlock } = sendInvalidBlockProposal();
+      await waitUntilAgainstVotesInBlock(proposalBlock);
+      const offenseRecordsAfter = parseOrLog(syncRequest(
+        'GET', server2 + `/get_value?ref=/consensus/offense_records/${server2Addr}`).body.toString('utf-8')).result;
+      const stakeExpirationAfter = parseOrLog(syncRequest(
+          'GET', server2 + `/get_value?ref=/staking/consensus/${server2Addr}/0/expire_at`).body.toString('utf-8')).result;
+      assert.deepEqual(offenseRecordsAfter, offenseRecordsBefore + 1);
+      assert.deepEqual(
+        stakeExpirationAfter,
+        stakeExpirationBefore + Functions.getLockupExtensionForNewOffenses(1, offenseRecordsAfter)
+      );
     });
   });
 });
