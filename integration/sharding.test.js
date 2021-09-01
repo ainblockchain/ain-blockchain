@@ -32,6 +32,7 @@ const {
   waitForNewBlocks,
   waitUntilNodeSyncs,
   waitUntilTxFinalized,
+  waitUntilNetworkIsReady,
   setUpApp,
 } = require('../unittest/test-util');
 
@@ -263,7 +264,7 @@ describe('Sharding', async () => {
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], true);
     await CommonUtil.sleep(3000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], true);
-    await CommonUtil.sleep(3000);
+    await CommonUtil.sleep(3000); // Before shard reporting begins
   });
 
   after(() => {
@@ -362,6 +363,7 @@ describe('Sharding', async () => {
 
   describe('Shard chain initialization', () => {
     before(async () => {
+      await waitUntilNetworkIsReady(shardServerList);
       await setUpApp('afan', shardServerList, { admin: { [shardOwnerAddr]: true } });
     });
     

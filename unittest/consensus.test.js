@@ -42,8 +42,8 @@ describe("Consensus", () => {
     const voteTx = getTransaction(node2, {
         operation: { 
           type: 'SET_VALUE', 
-          ref: `/consensus/number/1/vote/${node2.account.address}`,
-          value: { block_hash: lastBlock.hash, stake: 100000 }
+          ref: `/consensus/number/1/${lastBlock.hash}/vote/${node2.account.address}`,
+          value: { block_hash: lastBlock.hash, stake: 100000, is_against: false }
         },
         nonce: -1,
         gas_price: 1
@@ -69,8 +69,8 @@ describe("Consensus", () => {
     const voteTx = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE', 
-          ref: `/consensus/number/${lastBlock.number}/vote/${addr}`,
-          value: { block_hash: lastBlock.hash, stake: 100000 }
+          ref: `/consensus/number/${lastBlock.number}/${lastBlock.hash}/vote/${addr}`,
+          value: { block_hash: lastBlock.hash, stake: 100000, is_against: false }
         },
         nonce: -1,
         gas_price: 1

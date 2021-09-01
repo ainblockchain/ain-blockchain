@@ -27,6 +27,7 @@ const {
   parseOrLog,
   setUpApp,
   getLastBlockNumber,
+  waitUntilNetworkIsReady,
   waitForNewBlocks,
   getBlockByNumber,
   eraseStateGas,
@@ -35,29 +36,29 @@ const DB = require('../db');
 
 const ENV_VARIABLES = [
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, DEBUG: false, CONSOLE_LOG: false,
+    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
+    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
+    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, EPOCH_MS: 1000, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, DEBUG: false, CONSOLE_LOG: false,
+    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
@@ -209,8 +210,7 @@ describe('Blockchain Node', () => {
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     await CommonUtil.sleep(3000);
     server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
-    await CommonUtil.sleep(3000);
-
+    await waitUntilNetworkIsReady(serverList);
 
     const server1Addr = parseOrLog(syncRequest(
         'GET', server1 + '/get_address').body.toString('utf-8')).result;
@@ -936,7 +936,7 @@ describe('Blockchain Node', () => {
       it('inc_value', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
-            'GET', server1 + '/get_value?ref=/apps/some/wrong/path2')
+            'GET', server1 + '/get_value?ref=/apps/test/test_value/some/path2')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultBefore, null);
 
@@ -1781,6 +1781,9 @@ describe('Blockchain Node', () => {
         expect(CommonUtil.isArray(body.result)).to.equal(true);
         for (let i = 0; i < body.result.length; i++) {
           const result = body.result[i];
+          if (!(await waitUntilTxFinalized(serverList, result.tx_hash))) {
+            console.error(`Failed to check finalization of tx.`);
+          }
           result.tx_hash = 'erased';
         }
         assert.deepEqual(body.result, [
@@ -1973,7 +1976,6 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
-        await CommonUtil.sleep(6);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=/apps/test/test_value/some200/path')
             .body.toString('utf-8')).result;
@@ -2008,7 +2010,7 @@ describe('Blockchain Node', () => {
                 value: "some other202 value",
               },
               timestamp: Date.now(),
-              nonce: nonce
+              nonce: -1
             },
             {
               operation: {
@@ -2017,7 +2019,7 @@ describe('Blockchain Node', () => {
                 value: 10
               },
               timestamp: Date.now(),
-              nonce: nonce + 1
+              nonce: -1
             },
             {
               operation: {
@@ -2026,7 +2028,7 @@ describe('Blockchain Node', () => {
                 value: 10
               },
               timestamp: Date.now(),
-              nonce: nonce + 2
+              nonce: -1
             },
             {
               operation: {
@@ -2035,7 +2037,7 @@ describe('Blockchain Node', () => {
                 value: "some other202 value",
               },
               timestamp: Date.now(),
-              nonce: nonce + 3
+              nonce: -1
             },
             {
               operation: {
@@ -2053,7 +2055,7 @@ describe('Blockchain Node', () => {
                 }
               },
               timestamp: Date.now(),
-              nonce: nonce + 3
+              nonce: -1
             },
             {
               operation: {
@@ -2066,7 +2068,7 @@ describe('Blockchain Node', () => {
                 }
               },
               timestamp: Date.now(),
-              nonce: nonce + 4
+              nonce: -1
             },
             {
               operation: {
@@ -2086,7 +2088,7 @@ describe('Blockchain Node', () => {
                 }
               },
               timestamp: Date.now(),
-              nonce: nonce + 5
+              nonce: -1
             },
             {
               operation: {
@@ -2149,7 +2151,7 @@ describe('Blockchain Node', () => {
                 ]
               },
               timestamp: Date.now(),
-              nonce: nonce + 6
+              nonce: -1
             }
           ]
         };
@@ -2159,6 +2161,9 @@ describe('Blockchain Node', () => {
         expect(CommonUtil.isArray(body.result)).to.equal(true);
         for (let i = 0; i < body.result.length; i++) {
           const result = body.result[i];
+          if (!(await waitUntilTxFinalized(serverList, result.tx_hash))) {
+            console.error(`Failed to check finalization of tx.`);
+          }
           result.tx_hash = 'erased';
         }
         assert.deepEqual(body.result, [
@@ -2372,7 +2377,6 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equal(0);
 
         // Confirm that the value is set properly.
-        await CommonUtil.sleep(6);
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=/apps/test/test_value/some202/path')
             .body.toString('utf-8')).result;
@@ -4719,20 +4723,13 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "1": {
-                  "path": "/staking/test_service_gas_fee/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0/expire_at",
-                  "result": {
-                    "code": 0,
-                    "bandwidth_gas_amount": 1
-                  }
-                },
-                "2": {
                   "path": "/staking/test_service_gas_fee/balance_total",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 },
-                "3": {
+                "2": {
                   "path": "/staking/test_service_gas_fee/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0/stake/101/result",
                   "result": {
                     "code": 0,
@@ -4749,7 +4746,7 @@ describe('Blockchain Node', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 8
+              "service": 7
             },
             "state": {
               "service": 'erased'
@@ -5216,71 +5213,6 @@ describe('Blockchain Node', () => {
               server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
           expect(stakeRequest).to.equal(null);
           expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance);
-        });
-
-        it('stake: stake with invalid timestamp', async () => {
-          const account = {
-            "address": "0x07A43138CC760C85A5B1F115aa60eADEaa0bf417",
-            "private_key": "0e9876c7e7966fb0237892eb2e890b4738d0e50adfcfe089ef31f5a1579d65cd",
-            "public_key": "1cc01c94edce1d5807685dc04de0a0e445b560090eb421fc087f95080eb7a12a41145cc17cf4476a1d2ec0c1f737f5d84e5d0fecbfb370869845714e4ecfdd53"
-          };
-          const transferPath = `/transfer/${transferFrom}/${account.address}`;
-          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
-            ref: transferPath + '/100/value',
-            value: 1000
-          }}).body.toString('utf-8'));
-          expect(body.code).to.equals(0);
-          if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
-            console.error(`Failed to check finalization of tx.`);
-          }
-          const txBody = {
-            operation: {
-              type: 'SET_VALUE',
-              value: stakeAmount,
-              ref: `/staking/test_service_staking/${account.address}/0/stake/1/value`
-            },
-            timestamp: Date.now() + 100000,
-            nonce: 0
-          }
-          const signature =
-              ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
-
-          const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-          return jsonRpcClient.request('ain_sendSignedTransaction', {
-            tx_body: txBody,
-            signature,
-            protoVer: CURRENT_PROTOCOL_VERSION
-          }).then(res => {
-            assert.deepEqual(_.get(res, 'result.result.result'), {
-              "code": 0,
-              "func_results": {
-                "_stake": {
-                  "code": 1,
-                  "bandwidth_gas_amount": 0,
-                  "op_results": {
-                    "0": {
-                      "path": "/staking/test_service_staking/0x07A43138CC760C85A5B1F115aa60eADEaa0bf417/0/stake/1/result",
-                      "result": {
-                        "code": 0,
-                        "bandwidth_gas_amount": 1,
-                      }
-                    }
-                  }
-                }
-              },
-              "bandwidth_gas_amount": 1,
-              "gas_amount_charged": 2,
-              "gas_amount_total": {
-                "bandwidth": {
-                  "service": 2
-                },
-                "state": {
-                  "service": 0
-                }
-              },
-              "gas_cost_total": 0,
-            });
-          });
         });
 
         it('stake: stake with the same record_id', async () => {

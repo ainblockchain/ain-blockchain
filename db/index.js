@@ -672,7 +672,7 @@ class DB {
   // TODO(platfowner): Define error code explicitly.
   // TODO(platfowner): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
   //                   and setOwner() as well.
-  setValue(valuePath, value, auth, timestamp, transaction, options) {
+  setValue(valuePath, value, auth, timestamp, transaction, blockTime, options) {
     const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
@@ -707,14 +707,14 @@ class DB {
     let funcResults = null;
     if (auth && (auth.addr || auth.fid)) {
       const { func_results } =
-          this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
+          this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction, blockTime);
       funcResults = func_results;
     }
 
     return CommonUtil.returnTxResult(0, null, 1, funcResults);
   }
 
-  incValue(valuePath, delta, auth, timestamp, transaction, options) {
+  incValue(valuePath, delta, auth, timestamp, transaction, blockTime, options) {
     const isGlobal = options && options.isGlobal;
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -722,10 +722,10 @@ class DB {
       return CommonUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`, 1);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) + delta;
-    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, options);
+    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, blockTime, options);
   }
 
-  decValue(valuePath, delta, auth, timestamp, transaction, options) {
+  decValue(valuePath, delta, auth, timestamp, transaction, blockTime, options) {
     const isGlobal = options && options.isGlobal;
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -733,7 +733,7 @@ class DB {
       return CommonUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`, 1);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, options);
+    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, blockTime, options);
   }
 
   setFunction(functionPath, func, auth, options) {
@@ -874,18 +874,18 @@ class DB {
     return globalPath;
   }
 
-  executeSingleSetOperation(op, auth, timestamp, tx) {
+  executeSingleSetOperation(op, auth, timestamp, tx, blockTime) {
     let result;
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        result = this.setValue(op.ref, op.value, auth, timestamp, tx, CommonUtil.toSetOptions(op));
+        result = this.setValue(op.ref, op.value, auth, timestamp, tx, blockTime, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.INC_VALUE:
-        result = this.incValue(op.ref, op.value, auth, timestamp, tx, CommonUtil.toSetOptions(op));
+        result = this.incValue(op.ref, op.value, auth, timestamp, tx, blockTime, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.DEC_VALUE:
-        result = this.decValue(op.ref, op.value, auth, timestamp, tx, CommonUtil.toSetOptions(op));
+        result = this.decValue(op.ref, op.value, auth, timestamp, tx, blockTime, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_FUNCTION:
         result = this.setFunction(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
@@ -902,11 +902,11 @@ class DB {
     return result;
   }
 
-  executeMultiSetOperation(opList, auth, timestamp, tx) {
+  executeMultiSetOperation(opList, auth, timestamp, tx, blockTime) {
     const resultList = {};
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
-      const result = this.executeSingleSetOperation(op, auth, timestamp, tx);
+      const result = this.executeSingleSetOperation(op, auth, timestamp, tx, blockTime);
       resultList[i] = result;
       if (CommonUtil.isFailedTx(result)) {
         break;
@@ -921,7 +921,7 @@ class DB {
     tx.setExtraField('gas', gasAmountTotal);
   }
 
-  executeOperation(op, auth, timestamp, tx) {
+  executeOperation(op, auth, timestamp, tx, blockTime) {
     const gasAmountTotal = {
       bandwidth: { service: 0 },
       state: { service: 0 }
@@ -955,7 +955,7 @@ class DB {
     if (op.type === WriteDbOperations.SET) {
       Object.assign(result, this.executeMultiSetOperation(op.op_list, auth, timestamp, tx));
     } else {
-      Object.assign(result, this.executeSingleSetOperation(op, auth, timestamp, tx));
+      Object.assign(result, this.executeSingleSetOperation(op, auth, timestamp, tx, blockTime));
     }
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
     DB.updateGasAmountTotal(tx, gasAmountTotal, result);
@@ -1169,7 +1169,7 @@ class DB {
     if (executionResult.gas_cost_total <= 0) return;
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(blockNumber, billedTo, tx.hash);
     const gasFeeCollectRes = this.setValue(
-        gasFeeCollectPath, { amount: executionResult.gas_cost_total }, auth, timestamp, tx);
+        gasFeeCollectPath, { amount: executionResult.gas_cost_total }, auth, timestamp, tx, null);
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) { // Should not happend
       Object.assign(executionResult, {
         code: 18,
@@ -1302,7 +1302,7 @@ class DB {
     return true;
   }
 
-  executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0) {
+  executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
     const LOG_HEADER = 'executeTransaction';
     const precheckResult = this.precheckTransaction(tx, blockNumber);
     if (precheckResult !== true) {
@@ -1321,7 +1321,7 @@ class DB {
     // NOTE(platfowner): It's not allowed for users to send transactions with auth.fid.
     const auth = { addr: tx.address };
     const timestamp = txBody.timestamp;
-    const executionResult = this.executeOperation(txBody.operation, auth, timestamp, tx, blockNumber);
+    const executionResult = this.executeOperation(txBody.operation, auth, timestamp, tx, blockTime);
     if (CommonUtil.isFailedTx(executionResult)) {
       if (restoreIfFails) {
         this.restoreDb();
@@ -1336,12 +1336,12 @@ class DB {
     return executionResult;
   }
 
-  executeTransactionList(txList, skipFees = false, restoreIfFails = false, blockNumber = 0) {
+  executeTransactionList(txList, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
       const executableTx = Transaction.toExecutable(tx);
-      const res = this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber);
+      const res = this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime);
       if (CommonUtil.isFailedTx(res)) {
         logger.debug(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);

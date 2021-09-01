@@ -125,6 +125,10 @@ class CommonUtil {
     return ruleUtil.isValShardProto(value);
   }
 
+  static isValidatorOffenseType(type) {
+    return ruleUtil.isValidatorOffenseType(type);
+  }
+
   static boolOrFalse(value) {
     return ruleUtil.boolOrFalse(value);
   }

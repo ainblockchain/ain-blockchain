@@ -21,6 +21,7 @@ const {
   buildOwnerPermissions,
   buildRulePermission,
 } = require('../common/constants');
+const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 const {
@@ -64,6 +65,8 @@ class Functions {
         func: this._distributeFee.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.ERASE_VALUE]: {
         func: this._eraseValue.bind(this), ownerOnly: false, extraGasAmount: 0 },
+      [NativeFunctionIds.HANDLE_OFFENSES]: {
+        func: this._handleOffenses.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.HOLD]: {
         func: this._hold.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.OPEN_CHECKIN]: {
@@ -101,7 +104,7 @@ class Functions {
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction) {
+  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction, blockTime) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
@@ -116,7 +119,7 @@ class Functions {
 
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
-          parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction);
+          parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction, blockTime);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
           continue;  // Does nothing.
@@ -155,6 +158,7 @@ class Functions {
                     timestamp,
                     executedAt,
                     transaction,
+                    blockTime,
                     auth: newAuth,
                     opResultList: [],
                     otherGasAmount: 0,
@@ -274,13 +278,14 @@ class Functions {
   }
 
   static formatFunctionParams(
-      parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction) {
+      parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction, blockTime) {
     return `valuePath: '${CommonUtil.formatPath(parsedValuePath)}', ` +
       `functionPath: '${CommonUtil.formatPath(functionPath)}', ` +
       `timestamp: '${timestamp}', executedAt: '${executedAt}', ` +
       `params: ${JSON.stringify(params, null, 2)}, ` +
       `value: '${JSON.stringify(value, null, 2)}', ` +
-      `transaction: ${JSON.stringify(transaction, null, 2)}`;
+      `transaction: ${JSON.stringify(transaction, null, 2)}, ` +
+      `blockTime: ${blockTime}`;
   }
 
   static getFunctionList(functionMap) {
@@ -650,14 +655,16 @@ class Functions {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
     const proposer = lastConsensusRound.propose.proposer;
-    const totalAtStake = Object.values(lastConsensusRound.vote).reduce((acc, cur) => acc + cur.stake, 0);
-    const validators = Object.keys(lastConsensusRound.vote);
+    const blockHash = lastConsensusRound.propose.block_hash;
+    const votes = lastConsensusRound[blockHash].vote;
+    const totalAtStake = Object.values(votes).reduce((acc, cur) => acc + cur.stake, 0);
+    const validators = Object.keys(votes);
     const proposerReward = gasCostTotal / 2;
     const validatorRewardTotal = gasCostTotal - proposerReward;
     this.incrementConsensusRewards(proposer, proposerReward, context);
     let rewardSum = 0;
     validators.forEach((validator, index) => {
-      const validatorStake = lastConsensusRound.vote[validator].stake;
+      const validatorStake = votes[validator].stake;
       let validatorReward = 0;
       if (index === validators.length - 1) {
         validatorReward = validatorRewardTotal - rewardSum;
@@ -692,30 +699,61 @@ class Functions {
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
+  static getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses) {
+    let extension = 0;
+    for (let n = updatedNumOffenses - numNewOffenses + 1; n <= updatedNumOffenses; n++) {
+      extension += ConsensusConsts.STAKE_LOCKUP_EXTENSION * Math.pow(2, n - 1);
+    }
+    return extension;
+  }
+
+  _handleOffenses(value, context) {
+    if (CommonUtil.isEmpty(value.offenses)) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    const now = context.blockTime === null ? context.timestamp : context.blockTime;
+    for (const [offender, offenseList] of Object.entries(value.offenses)) {
+      const numNewOffenses = Object.values(offenseList).reduce((acc, cur) => acc + cur, 0);
+      const offenseRecordsPath = PathUtil.getConsensusOffenseRecordsAddrPath(offender);
+      this.incValueOrLog(offenseRecordsPath, numNewOffenses, context);
+      const updatedNumOffenses = this.db.getValue(offenseRecordsPath); // new # of offenses
+      const lockupExtension = Functions.getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses);
+      if (lockupExtension > 0) {
+        const expirationPath = PathUtil.getStakingExpirationPath(PredefinedDbPaths.CONSENSUS, offender, 0);
+        const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), now);
+        this.setValueOrLog(expirationPath, currentExpiration + lockupExtension, context);
+      }
+    }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+  }
+
   _stake(value, context) {
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const stakingKey = context.params.staking_key;
     const recordId = context.params.record_id;
-    const timestamp = context.timestamp;
-    const executedAt = context.executedAt;
+    const now = context.blockTime === null ? context.timestamp : context.blockTime;
     const resultPath = PathUtil.getStakingStakeResultPath(serviceName, user, stakingKey, recordId);
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
-    const lockup = this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName));
-    if (timestamp > executedAt) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
-    }
+    const currentExpiration = Number(this.db.getValue(expirationPath));
+    const lockup = Number(this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)));
+    const newExpiration = now + lockup;
+    const updateExpiration = newExpiration > currentExpiration;
     if (value === 0) {
       // Just update the expiration time
-      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), context);
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
+      if (updateExpiration) {
+        this.setValueOrLog(expirationPath, newExpiration, context);
+        return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
+      }
     }
     const stakingServiceAccountName = CommonUtil.toServiceAccountName(
           PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
     const result =
         this.setServiceAccountTransferOrLog(user, stakingServiceAccountName, value, context);
     if (!CommonUtil.isFailedTx(result)) {
-      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), context);
+      if (updateExpiration) {
+        this.setValueOrLog(expirationPath, newExpiration, context);
+      }
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
       this.incValueOrLog(balanceTotalPath, value, context);
       return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
