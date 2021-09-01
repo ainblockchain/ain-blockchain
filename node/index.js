@@ -439,13 +439,13 @@ class BlockchainNode {
     for (const block of blockList) {
       this.removeOldReceipts(block.number, db);
       if (block.number > 0) {
-        if (!db.executeTransactionList(block.last_votes, true)) {
+        if (!db.executeTransactionList(block.last_votes, true, false, 0, block.timestamp)) {
           logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
               `${JSON.stringify(block, null, 2)}`);
           return false;
         }
       }
-      if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number)) {
+      if (!db.executeTransactionList(block.transactions, block.number === 0, false, block.number, block.timestamp)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
             `${JSON.stringify(block, null, 2)}`);
         return false;
@@ -535,13 +535,13 @@ class BlockchainNode {
 
     this.removeOldReceipts(block.number, db);
     if (block.number > 0) {
-      if (!db.executeTransactionList(block.last_votes, true)) {
+      if (!db.executeTransactionList(block.last_votes, true, false, block.number, block.timestamp)) {
         logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
         process.exit(1);
       }
     }
-    if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number)) {
+    if (!db.executeTransactionList(block.transactions, block.number === 0, false, block.number, block.timestamp)) {
       logger.error(`[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
       process.exit(1);

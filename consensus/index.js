@@ -321,13 +321,13 @@ class Consensus {
     }
   }
 
-  getValidTransactions(longestNotarizedChain, blockNumber, tempDb) {
+  getValidTransactions(longestNotarizedChain, blockNumber, blockTime, tempDb) {
     const candidates = this.node.tp.getValidTransactions(longestNotarizedChain, tempDb.stateVersion);
     const transactions = [];
     const invalidTransactions = [];
     const resList = [];
     for (const tx of candidates) {
-      const res = tempDb.executeTransaction(Transaction.toExecutable(tx), false, true, blockNumber);
+      const res = tempDb.executeTransaction(Transaction.toExecutable(tx), false, true, blockNumber, blockTime);
       if (CommonUtil.txPrecheckFailed(res)) {
         logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
         invalidTransactions.push(tx);
@@ -410,7 +410,8 @@ class Consensus {
     if (!tempDb) {
       throw Error(`[${LOG_HEADER}] Failed to create a temp database with state version: ${baseVersion}.`);
     }
-    const lastVotes = this.blockPool.getValidLastVotes(lastBlock, blockNumber, tempDb);
+    const blockTime = Date.now();
+    const lastVotes = this.blockPool.getValidLastVotes(lastBlock, blockNumber, blockTime, tempDb);
     const validators = this.getValidators(lastBlock.hash, lastBlock.number, tempDb.stateVersion);
     const numValidators = Object.keys(validators).length;
     if (!validators || !numValidators) {
@@ -423,13 +424,14 @@ class Consensus {
     }
     const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
     this.node.removeOldReceipts(blockNumber, tempDb);
-    const { offenses, evidence } = this.blockPool.getOffensesAndEvidence(validators, recordedInvalidBlockHashSet, tempDb);
+    const { offenses, evidence } = this.blockPool.getOffensesAndEvidence(
+        validators, recordedInvalidBlockHashSet, blockTime, tempDb);
     const { transactions, gasAmountTotal, gasCostTotal } = this.getValidTransactions(
-        longestNotarizedChain, blockNumber, tempDb);
+        longestNotarizedChain, blockNumber, blockTime, tempDb);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.create(
         lastBlock.hash, lastVotes, evidence, transactions, blockNumber, epoch,
-        stateProofHash, this.node.account.address, validators, gasAmountTotal, gasCostTotal);
+        stateProofHash, this.node.account.address, validators, gasAmountTotal, gasCostTotal, blockTime);
     const proposalTx = this.getProposalTx(blockNumber, validators, totalAtStake, gasCostTotal, offenses, proposalBlock);
     if (LIGHTWEIGHT) {
       this.cache[blockNumber] = proposalBlock.hash;
@@ -582,8 +584,8 @@ class Consensus {
     return newDb;
   }
 
-  validateLastVotesAndExecuteOnNewDb(lastVotes, lastHash, number, newDb) {
-    if (!newDb.executeTransactionList(lastVotes, true)) {
+  validateLastVotesAndExecuteOnNewDb(lastVotes, lastHash, number, blockTime, newDb) {
+    if (!newDb.executeTransactionList(lastVotes, true, false, 0, blockTime)) {
       newDb.destroyDb();
       throw new ConsensusError({
         code: ConsensusErrorCode.EXECUTING_LAST_VOTES_FAILURE,
@@ -606,7 +608,7 @@ class Consensus {
   }
 
   // Cross-check the offenses in proposalTx & the evidence in proposalBlock
-  validateOffensesAndEvidence(proposalBlock, proposalTx, validators, prevBlockMajority, newDb) {
+  validateOffensesAndEvidence(proposalBlock, proposalTx, validators, prevBlockMajority, blockTime, newDb) {
     const offenses = ConsensusUtil.getOffensesFromProposalTx(proposalTx);
     const evidence = proposalBlock.evidence;
     if (CommonUtil.isEmpty(offenses) !== CommonUtil.isEmpty(evidence)) {
@@ -643,7 +645,7 @@ class Consensus {
             level: 'error'
           });
         }
-        const txsRes = newDb.executeTransactionList(evidenceForOffense.votes, true);
+        const txsRes = newDb.executeTransactionList(evidenceForOffense.votes, true, false, 0, blockTime);
         if (!txsRes) {
           newDb.destroyDb();
           throw new ConsensusError({
@@ -668,8 +670,8 @@ class Consensus {
     }
   }
 
-  validateTransactions(transactions, number, expectedGasAmountTotal, expectedGasCostTotal, newDb) {
-    const txsRes = newDb.executeTransactionList(transactions, false, true, number);
+  validateTransactions(transactions, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, newDb) {
+    const txsRes = newDb.executeTransactionList(transactions, false, true, number, blockTime);
     if (!txsRes) {
       newDb.destroyDb();
       throw new ConsensusError({
@@ -698,7 +700,7 @@ class Consensus {
     }
   }
 
-  validateProposalTx(proposalTx, number, newDb) {
+  validateProposalTx(proposalTx, number, blockTime, newDb) {
     const executableTx = Transaction.toExecutable(proposalTx);
     if (!executableTx) {
       newDb.destroyDb();
@@ -720,7 +722,7 @@ class Consensus {
       });
     }
     // Try executing the proposal tx on the proposal block's db state
-    const proposalTxExecRes = tempDb.executeTransaction(executableTx, true);
+    const proposalTxExecRes = tempDb.executeTransaction(executableTx, true, false, 0, blockTime);
     if (CommonUtil.isFailedTx(proposalTxExecRes)) {
       newDb.destroyDb();
       tempDb.destroyDb();
@@ -768,7 +770,7 @@ class Consensus {
       });
     }
     const { proposer, number, epoch, hash, last_hash, validators, last_votes, transactions,
-        gas_amount_total, gas_cost_total, state_proof_hash } = block;
+        gas_amount_total, gas_cost_total, state_proof_hash, timestamp } = block;
     logger.info(`[${LOG_HEADER}] Checking block proposal: ${number} / ${epoch}`);
     this.precheckProposal(block, proposalTx, proposer, hash, number, validators);
 
@@ -782,10 +784,10 @@ class Consensus {
     const prevBlockTotalAtStake = ConsensusUtil.getTotalAtStake(prevBlock.validators);
     const prevBlockMajority = prevBlockTotalAtStake * ConsensusConsts.MAJORITY;
     this.node.removeOldReceipts(number, newDb);
-    this.validateLastVotesAndExecuteOnNewDb(last_votes, last_hash, number, newDb);
-    this.validateOffensesAndEvidence(block, proposalTx, validators, prevBlockMajority, newDb);
-    this.validateTransactions(transactions, number, gas_amount_total, gas_cost_total, newDb);
-    this.validateProposalTx(proposalTx, number, newDb);
+    this.validateLastVotesAndExecuteOnNewDb(last_votes, last_hash, number, timestamp, newDb);
+    this.validateOffensesAndEvidence(block, proposalTx, validators, prevBlockMajority, timestamp, newDb);
+    this.validateTransactions(transactions, number, timestamp, gas_amount_total, gas_cost_total, newDb);
+    this.validateProposalTx(proposalTx, number, timestamp, newDb);
     this.validateStateProofHash(state_proof_hash, newDb);
 
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
@@ -829,14 +831,14 @@ class Consensus {
     }
     const executableTx = Transaction.toExecutable(voteTx);
     if (!executableTx) {
-      logger.error(`[${LOG_HEADER}] Failed to create a transaction with a vote: ` +
-          `${JSON.stringify(voteTx, null, 2)}`);
+      logger.error(`[${LOG_HEADER}] Ill-formed vote tx: ${JSON.stringify(voteTx, null, 2)}`);
       return false;
     }
     let tempDb;
     if (isAgainst) {
       const offenseType = ConsensusUtil.getOffenseTypeFromVoteTx(voteTx);
       if (!CommonUtil.isValidatorOffenseType(offenseType)) {
+        logger.debug(`[${LOG_HEADER}] Invalid offense type: ${offenseType}`);
         return false;
       }
       const lastBlock = this.node.bc.lastBlock();
@@ -851,7 +853,7 @@ class Consensus {
           `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(executableTx)}`);
       return false;
     }
-    const voteTxRes = tempDb.executeTransaction(executableTx, true);
+    const voteTxRes = tempDb.executeTransaction(executableTx, true, false, 0, block.timestamp);
     tempDb.destroyDb();
     if (CommonUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);

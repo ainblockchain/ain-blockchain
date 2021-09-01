@@ -93,9 +93,10 @@ class Block {
   }
 
   static create(lastHash, lastVotes, evidence, transactions, number, epoch,
-      stateProofHash, proposer, validators, gasAmountTotal, gasCostTotal) {
-    return new Block(lastHash, lastVotes, evidence, transactions, number, epoch, Date.now(),
-        stateProofHash, proposer, validators, gasAmountTotal, gasCostTotal);
+      stateProofHash, proposer, validators, gasAmountTotal, gasCostTotal, timestamp) {
+    return new Block(lastHash, lastVotes, evidence, transactions, number, epoch,
+        timestamp ? timestamp : Date.now(), stateProofHash, proposer, validators, gasAmountTotal,
+        gasCostTotal);
   }
 
   static parse(blockInfo) {
@@ -324,13 +325,13 @@ class Block {
     return [firstTx, secondTx, thirdTx, ...stakingTxs];
   }
 
-  static executeGenesisTxsAndGetData(genesisTxs) {
+  static executeGenesisTxsAndGetData(genesisTxs, genesisTime) {
     const tempGenesisDb = new DB(
         new StateNode(StateVersions.EMPTY), StateVersions.EMPTY, null, null, false, -1, null);
     tempGenesisDb.initDbStates();
     const resList = [];
     for (const tx of genesisTxs) {
-      const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx), true);
+      const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx), true, false, 0, genesisTime);
       if (CommonUtil.isFailedTx(res)) {
         logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
             `\nRESULT: ${JSON.stringify(res)}`)
@@ -360,7 +361,7 @@ class Block {
     const epoch = 0;
     const proposer = ownerAddress;
     const validators = GENESIS_VALIDATORS;
-    const { stateProofHash, gasAmountTotal, gasCostTotal } = Block.executeGenesisTxsAndGetData(transactions);
+    const { stateProofHash, gasAmountTotal, gasCostTotal } = Block.executeGenesisTxsAndGetData(transactions, genesisTime);
     return new Block(lastHash, lastVotes, evidence, transactions, number, epoch, genesisTime,
         stateProofHash, proposer, validators, gasAmountTotal, gasCostTotal);
   }
