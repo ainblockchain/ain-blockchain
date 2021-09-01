@@ -611,15 +611,18 @@ function equalStateTrees(node1, node2) {
   return true;
 }
 
-function removeEmptyNodesForAllRootPathsRecursive(parent, updatedChildLabel) {
+function removeEmptyNodesForAllRootPathsRecursive(curNode) {
   let numAffectedNodes = 0;
-  const updatedChild = parent.getChild(updatedChildLabel);
-  if (isEmptyNode(updatedChild)) {
-    parent.deleteChild(updatedChildLabel);
+  if (!isEmptyNode(curNode)) {
+    return numAffectedNodes;
+  }
+  const parentNodes = curNode.getParentNodes();
+  for (const parent of parentNodes) {
+    parent.deleteChild(curNode.getLabel());
     numAffectedNodes++;
   }
-  for (const grandParent of parent.getParentNodes()) {
-    numAffectedNodes += removeEmptyNodesForAllRootPathsRecursive(grandParent, parent.getLabel());
+  for (const parent of parentNodes) {
+    numAffectedNodes += removeEmptyNodesForAllRootPathsRecursive(parent);
   }
   return numAffectedNodes;
 }
@@ -631,26 +634,23 @@ function removeEmptyNodesForAllRootPaths(fullPath, root) {
     // No parents to update.
     return 0;
   }
-  const pathToParent = fullPath.slice(0, fullPath.length - 1);
-  let updatedChildLabel = fullPath[fullPath.length - 1];
   if (!root) {
     logger.error(`[${LOG_HEADER}] Trying to remove empty nodes for invalid root: ${root}.`);
     return 0;
   }
-  let parent = root;
-  for (let i = 0; i < pathToParent.length; i++) {
-    const childLabel = pathToParent[i];
-    const child = parent.getChild(childLabel);
+  let curNode = root;
+  for (let i = 0; i < fullPath.length; i++) {
+    const childLabel = fullPath[i];
+    const child = curNode.getChild(childLabel);
     if (child === null) {
       logger.info(
           `[${LOG_HEADER}] Trying to remove empty nodes for non-existing path: ` +
           `${CommonUtil.formatPath(fullPath.slice(0, i + 1))}.`);
-      updatedChildLabel = null;  // Need to update proof hash for all labels.
       break;
     }
-    parent = child;
+    curNode = child;
   }
-  return removeEmptyNodesForAllRootPathsRecursive(parent, updatedChildLabel);
+  return removeEmptyNodesForAllRootPathsRecursive(curNode);
 }
 
 function updateProofHashForStateTree(stateTree) {
