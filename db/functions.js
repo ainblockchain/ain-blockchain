@@ -700,7 +700,7 @@ class Functions {
     if (CommonUtil.isEmpty(value.offenses)) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
-    const now = context.blockTime === null ? context.timestamp : context.blockTime;
+    const now = context.blockTime !== null ? context.blockTime : this.db.lastBlockTimestamp();
     for (const [offender, offenseList] of Object.entries(value.offenses)) {
       const numNewOffenses = Object.values(offenseList).reduce((acc, cur) => acc + cur, 0);
       const offenseRecordsPath = PathUtil.getConsensusOffenseRecordsAddrPath(offender);
@@ -720,9 +720,7 @@ class Functions {
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const stakingKey = context.params.staking_key;
-    const recordId = context.params.record_id;
-    const now = context.blockTime === null ? context.timestamp : context.blockTime;
-    const resultPath = PathUtil.getStakingStakeResultPath(serviceName, user, stakingKey, recordId);
+    const now = context.blockTime !== null ? context.blockTime : this.db.lastBlockTimestamp();
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
     const currentExpiration = Number(this.db.getValue(expirationPath));
     const lockup = Number(this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)));
@@ -779,10 +777,8 @@ class Functions {
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
-    const timestamp = context.timestamp;
-    const executedAt = context.executedAt;
     const transaction = context.transaction;
-    if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
+    if (!this.validatePaymentRecord(transaction.address, value)) {
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     const userServiceAccountName = CommonUtil.toServiceAccountName(
@@ -800,10 +796,8 @@ class Functions {
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
-    const timestamp = context.timestamp;
-    const executedAt = context.executedAt;
     const transaction = context.transaction;
-    if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
+    if (!this.validatePaymentRecord(transaction.address, value)) {
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
 
@@ -814,7 +808,8 @@ class Functions {
     // transferred directly to the admin account.
     if (value.escrow_key !== undefined) {
       const escrowHoldPath = PathUtil.getEscrowHoldRecordPath(
-          userServiceAccountName, value.target, value.escrow_key, timestamp);
+          userServiceAccountName, value.target, value.escrow_key,
+          context.blockTime !== null ? context.blockTime : this.db.lastBlockTimestamp());
       result = this.setValueOrLog(escrowHoldPath, { amount: value.amount }, context);
     } else {
       result = this.setServiceAccountTransferOrLog(
@@ -827,14 +822,11 @@ class Functions {
     }
   }
 
-  validatePaymentRecord(adminAddr, value, timestamp, executedAt) {
+  validatePaymentRecord(adminAddr, value) {
     if (!adminAddr) {
       return false;
     }
     if (!value || !value.amount || !CommonUtil.isNumber(value.amount)) {
-      return false;
-    }
-    if (timestamp > executedAt) {
       return false;
     }
     return true;
@@ -1059,8 +1051,9 @@ class Functions {
     return true;
   }
 
-  updateCompleteCheckout(amount, timestamp, context) {
-    const dayTimestamp = CommonUtil.getDayTimestamp(timestamp);
+  updateCompleteCheckout(amount, blockTime, context) {
+    const dayTimestamp = CommonUtil.getDayTimestamp(
+        blockTime !== null ? blockTime : this.db.lastBlockTimestamp());
     if (CommonUtil.isFailedTx(
         this.incValueOrLog(PathUtil.getCheckoutCompleteAmountDailyPath(dayTimestamp), amount, context))) {
       return FunctionResultCode.INTERNAL_ERROR;
@@ -1091,8 +1084,9 @@ class Functions {
     return FunctionResultCode.INVALID_RECIPIENT;
   }
 
-  validateCheckoutAmount(amount, timestamp, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay) {
+  validateCheckoutAmount(amount, blockTime, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay) {
     const pendingTotal = this.db.getValue(PathUtil.getCheckoutPendingAmountTotalPath()) || 0; // includes 'amount'
+    const timestamp = blockTime !== null ? blockTime : this.db.lastBlockTimestamp();
     const checkoutCompleteToday = this.db.getValue(
         PathUtil.getCheckoutCompleteAmountDailyPath(CommonUtil.getDayTimestamp(timestamp))) || 0;
     if (amount < minCheckoutPerRequest || amount > maxCheckoutPerRequest) {
@@ -1135,7 +1129,7 @@ class Functions {
       return this.returnFuncResult(context, recipientValidated);
     }
     const amountValidated = this.validateCheckoutAmount(
-        amount, context.timestamp, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay);
+        amount, context.blockTime, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay);
     if (amountValidated !== true) {
       return this.returnFuncResult(context, amountValidated);
     }
@@ -1156,7 +1150,7 @@ class Functions {
     const { request, response } = value;
     if (response.status === FunctionResultCode.SUCCESS) {
       // Increase complete amounts
-      const updateStatsResultCode = this.updateCompleteCheckout(request.amount, context.timestamp, context);
+      const updateStatsResultCode = this.updateCompleteCheckout(request.amount, context.blockTime, context);
       if (updateStatsResultCode !== true) {
         return this.returnFuncResult(context, updateStatsResultCode);
       }

@@ -1722,6 +1722,10 @@ class DB {
     return this.bc ? this.bc.lastBlockNumber() : this.blockNumberSnapshot;
   }
 
+  lastBlockTimestamp() {
+    return this.bc ? this.bc.lastBlockTimestamp() : Date.now();
+  }
+
   matchOwnerPathRecursive(parsedRefPath, depth, curOwnerNode) {
     // Maximum depth reached.
     if (depth === parsedRefPath.length) {
