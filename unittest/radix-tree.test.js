@@ -65,6 +65,26 @@ describe("radix-tree", () => {
       expect(RadixTree._getCommonPrefix('1234567890abcdef', '01234567890abcdef'))
           .to.equal('');
     });
+
+    it("_setChildWithLabel with empty label suffix", () => {
+      const node = new RadixNode();
+      const child = new RadixNode();
+
+      expect(RadixTree._setChildWithLabel(node, '1', child)).to.equal(true);
+      assert.deepEqual(node.getChild('1'), child);
+      expect(child.getLabelRadix()).to.equal('1');
+      expect(child.getLabelSuffix()).to.equal('');
+    });
+
+    it("_setChildWithLabel with non-empty label suffix", () => {
+      const node = new RadixNode();
+      const child = new RadixNode();
+
+      expect(RadixTree._setChildWithLabel(node, '1234567890abcdef', child)).to.equal(true);
+      assert.deepEqual(node.getChild('1234567890abcdef'), child);
+      expect(child.getLabelRadix()).to.equal('1');
+      expect(child.getLabelSuffix()).to.equal('234567890abcdef');
+    });
   });
 
   describe("Map APIs", () => {

@@ -51,11 +51,17 @@ class RadixTree {
     return label1.slice(0, labelIndex);
   }
 
+  static _setChildWithLabel(node, childLabel, child) {
+    const labelRadix = childLabel.charAt(0);
+    const labelSuffix = childLabel.slice(1);
+    return node.setChild(labelRadix, labelSuffix, child);
+  }
+
   _getRadixNodeForReading(hexLabel) {
     let curNode = this.root
     let labelIndex = 0;
     while (labelIndex < hexLabel.length) {
-      const labelRadix = hexLabel.slice(labelIndex, labelIndex + 1);
+      const labelRadix = hexLabel.charAt(labelIndex);
       if (!curNode.hasChild(labelRadix)) {
         return null;
       }
@@ -73,7 +79,7 @@ class RadixTree {
     let curNode = this.root
     let labelIndex = 0;
     while (labelIndex < hexLabel.length) {
-      const labelRadix = hexLabel.slice(labelIndex, labelIndex + 1);
+      const labelRadix = hexLabel.charAt(labelIndex);
 
       // Case 1: No child with the label radix.
       if (!curNode.hasChild(labelRadix)) {
@@ -101,9 +107,7 @@ class RadixTree {
 
           // Insert the existing child node as a child of the internal node.
           const childNewLabel = childLabelSuffix.slice(commonPrefix.length);
-          const childNewLabelRadix = childNewLabel.slice(0, 1);
-          const childNewLabelSuffix = childNewLabel.slice(1);
-          internalNode.setChild(childNewLabelRadix, childNewLabelSuffix, child);
+          RadixTree._setChildWithLabel(internalNode, childNewLabel, child);
 
           // Return the new internal node
           return internalNode;
@@ -114,16 +118,12 @@ class RadixTree {
 
           // Insert the existing child node as a child of the internal node.
           const childNewLabel = childLabelSuffix.slice(commonPrefix.length);
-          const childNewLabelRadix = childNewLabel.slice(0, 1);
-          const childNewLabelSuffix = childNewLabel.slice(1);
-          internalNode.setChild(childNewLabelRadix, childNewLabelSuffix, child);
+          RadixTree._setChildWithLabel(internalNode, childNewLabel, child);
 
           // Insert new child node as a child of the internal node.
           const newChild = new RadixNode();
           const newChildLabel = labelSuffix.slice(commonPrefix.length);
-          const newChildLabelRadix = newChildLabel.slice(0, 1);
-          const newChildLabelSuffix = newChildLabel.slice(1);
-          internalNode.setChild(newChildLabelRadix, newChildLabelSuffix, newChild);
+          RadixTree._setChildWithLabel(internalNode, newChildLabel, newChild);
 
           return newChild;
         }
