@@ -801,6 +801,14 @@ describe("radix-node", () => {
           ".proof_hash": "stateNodePH1"
         }
       });
+      assert.deepEqual(newNode.getChild('0').getStateNode(), node.getChild('0').getStateNode());
+      assert.deepEqual(newNode.getChild('1').getStateNode(), node.getChild('1').getStateNode());
+      assert.deepEqual(
+          newNode.getChild('1').getChild('2').getStateNode(),
+          node.getChild('1').getChild('2').getStateNode());
+      assert.deepEqual(
+          newNode.getChild('1').getChild('3').getStateNode(),
+          node.getChild('1').getChild('3').getStateNode());
     });
 
     it("toJsObject", () => {
