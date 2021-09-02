@@ -14,34 +14,41 @@ describe("radix-tree", () => {
     });
 
     it("_matchLabelSuffix with empty label suffix", () => {
-      const hexLabel = '1234567890abcdef';
+      const hexLabel = '1234abcd';
       const radixNode = new RadixNode();
       radixNode.setLabelSuffix('');
       expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 0)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 9)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 10)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 11)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 1)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 2)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 3)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 4)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 5)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 6)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 7)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 8)).to.equal(true);
       expect(RadixTree._matchLabelSuffix(radixNode, '', 0)).to.equal(true);
     });
 
     it("_matchLabelSuffix with non-empty label suffix", () => {
-      const hexLabel = '1234567890abcdef';
+      const hexLabel = '1234abcd';
       const radixNode = new RadixNode();
       // a shorter length
-      radixNode.setLabelSuffix('abc');
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 9)).to.equal(false);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 10)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 11)).to.equal(false);
+      radixNode.setLabelSuffix('ab');
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 3)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 4)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 5)).to.equal(false);
 
       // the same length
-      radixNode.setLabelSuffix('abcdef');
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 9)).to.equal(false);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 10)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 11)).to.equal(false);
+      radixNode.setLabelSuffix('abcd');
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 3)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 4)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 5)).to.equal(false);
 
       // a longer length
-      radixNode.setLabelSuffix('abcdef123');
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 10)).to.equal(false);
+      radixNode.setLabelSuffix('abcd123');
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 3)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 4)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 5)).to.equal(false);
     });
 
     it("_getCommonPrefix", () => {
@@ -57,6 +64,26 @@ describe("radix-tree", () => {
           .to.equal('1234567890');
       expect(RadixTree._getCommonPrefix('1234567890abcdef', '01234567890abcdef'))
           .to.equal('');
+    });
+
+    it("_setChildWithLabel with empty label suffix", () => {
+      const node = new RadixNode();
+      const child = new RadixNode();
+
+      expect(RadixTree._setChildWithLabel(node, '1', child)).to.equal(true);
+      assert.deepEqual(node.getChild('1'), child);
+      expect(child.getLabelRadix()).to.equal('1');
+      expect(child.getLabelSuffix()).to.equal('');
+    });
+
+    it("_setChildWithLabel with non-empty label suffix", () => {
+      const node = new RadixNode();
+      const child = new RadixNode();
+
+      expect(RadixTree._setChildWithLabel(node, '1234567890abcdef', child)).to.equal(true);
+      assert.deepEqual(node.getChild('1234567890abcdef'), child);
+      expect(child.getLabelRadix()).to.equal('1');
+      expect(child.getLabelSuffix()).to.equal('234567890abcdef');
     });
   });
 
@@ -158,11 +185,19 @@ describe("radix-tree", () => {
     })
 
     describe("_setInTree / _deleteFromTree / _hasInTree / _getFromTree", () => {
-      const stateNode1 = new StateNode();
-      const stateNode2 = new StateNode();
-      const stateNode21 = new StateNode();
-      const stateNode22 = new StateNode();
-      const stateNodeInternal = new StateNode();
+      let stateNode1;
+      let stateNode2;
+      let stateNode21;
+      let stateNode22;
+      let stateNodeInternal;
+
+      beforeEach(() => {
+        stateNode1 = new StateNode();
+        stateNode2 = new StateNode();
+        stateNode21 = new StateNode();
+        stateNode22 = new StateNode();
+        stateNodeInternal = new StateNode();
+      })
 
       it("set with invalid state node", () => {
         const invalidStateNode = new RadixNode();
@@ -175,9 +210,12 @@ describe("radix-tree", () => {
         expect(tree._setInTree(label, undefined)).to.equal(false);
       });
 
-      it("set / delete without common label prefix", () => {
+      it("set / delete without common label prefix - without label suffices", () => {
         const label1 = '0xa';
         const label2 = '0xb';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
@@ -194,7 +232,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "a": {
-            ".label": null,
+            ".label": "0xa",
             ".proof_hash": null,
             ".radix_ph": null
           }
@@ -210,12 +248,12 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "a": {
-            ".label": null,
+            ".label": "0xa",
             ".proof_hash": null,
             ".radix_ph": null
           },
           "b": {
-            ".label": null,
+            ".label": "0xb",
             ".proof_hash": null,
             ".radix_ph": null
           }
@@ -230,7 +268,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "b": {
-            ".label": null,
+            ".label": "0xb",
             ".proof_hash": null,
             ".radix_ph": null
           }
@@ -246,9 +284,292 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix", () => {
+      it("set / delete without common label prefix - with label suffices", () => {
+        const label1 = '0xaaa';
+        const label2 = '0xbbb';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null
+        });
+
+        // set first node
+        tree._setInTree(label1, stateNode1);
+
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
+        expect(tree._hasInTree(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "aaa": {
+            ".label": "0xaaa",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
+        });
+
+        // set second node
+        tree._setInTree(label2, stateNode2);
+
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "aaa": {
+            ".label": "0xaaa",
+            ".proof_hash": null,
+            ".radix_ph": null
+          },
+          "bbb": {
+            ".label": "0xbbb",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
+        });
+
+        // delete first node
+        tree._deleteFromTree(label1);
+
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "bbb": {
+            ".label": "0xbbb",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
+        });
+
+        // delete second node
+        tree._deleteFromTree(label2);
+
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null
+        });
+      });
+
+      it("set / delete without common label prefix - set with substring label suffix", () => {
+        const label1 = '0xaabb';
+        const label2 = '0xaa';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+
+        tree._setInTree(label1, stateNode1);
+        tree._setInTree(label2, stateNode2);
+
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "aa": {
+            ".label": "0xaa",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            "bb": {
+              ".label": "0xaabb",
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
+        });
+      });
+
+      it("set / delete without common label prefix - set with superstring label suffix", () => {
+        const label1 = '0xaa';
+        const label2 = '0xaabb';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+
+        tree._setInTree(label1, stateNode1);
+        tree._setInTree(label2, stateNode2);
+
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "aa": {
+            ".label": "0xaa",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            "bb": {
+              ".label": "0xaabb",
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
+        });
+      });
+
+      it("set / delete without common label prefix - set with exact-matched label suffix", () => {
+        const label = '0xaa';
+
+        stateNode1._setLabel(label);
+        stateNode2._setLabel(label + '_');  // tweak in order to distinguish
+
+        tree._setInTree(label, stateNode1);
+        tree._setInTree(label, stateNode2);
+
+        expect(tree._hasInTree(label)).to.equal(true);
+        expect(tree._getFromTree(label)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "aa": {
+            ".label": "0xaa_",
+            ".proof_hash": null,
+            ".radix_ph": null,
+          }
+        });
+      });
+
+      it("set / delete without common label prefix - set / delete with children", () => {
+        const label1 = '0xaaa';
+        const label2 = '0xbbb';
+        const label21 = '0xbbb111';
+        const label22 = '0xbbb222';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+        stateNode21._setLabel(label21);
+        stateNode22._setLabel(label22);
+
+        // set first node
+        tree._setInTree(label1, stateNode1);
+        // set second node
+        tree._setInTree(label2, stateNode2);
+        // set children
+        tree._setInTree(label21, stateNode21);
+        tree._setInTree(label22, stateNode22);
+
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree._hasInTree(label21)).to.equal(true);
+        expect(tree._getFromTree(label21)).to.equal(stateNode21);
+        expect(tree._hasInTree(label22)).to.equal(true);
+        expect(tree._getFromTree(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "aaa": {
+            ".label": "0xaaa",
+            ".proof_hash": null,
+            ".radix_ph": null
+          },
+          "bbb": {
+            "111": {
+              ".label": "0xbbb111",
+              ".proof_hash": null,
+              ".radix_ph": null
+            },
+            "222": {
+              ".label": "0xbbb222",
+              ".proof_hash": null,
+              ".radix_ph": null
+            },
+            ".label": "0xbbb",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
+        });
+
+        // delete first node
+        tree._deleteFromTree(label1);
+
+        expect(tree._hasInTree(label1)).to.equal(false);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree._hasInTree(label21)).to.equal(true);
+        expect(tree._getFromTree(label21)).to.equal(stateNode21);
+        expect(tree._hasInTree(label22)).to.equal(true);
+        expect(tree._getFromTree(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "bbb": {
+            "111": {
+              ".label": "0xbbb111",
+              ".proof_hash": null,
+              ".radix_ph": null
+            },
+            "222": {
+              ".label": "0xbbb222",
+              ".proof_hash": null,
+              ".radix_ph": null
+            },
+            ".label": "0xbbb",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
+        });
+      });
+
+      it("set / delete without common label prefix - delete with only one child", () => {
+        const label2 = '0xbbb';
+        const label21 = '0xbbb111';
+
+        stateNode2._setLabel(label2);
+        stateNode21._setLabel(label21);
+
+        // set a node
+        tree._setInTree(label2, stateNode2);
+        // set a child
+        tree._setInTree(label21, stateNode21);
+
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree._hasInTree(label21)).to.equal(true);
+        expect(tree._getFromTree(label21)).to.equal(stateNode21);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "bbb": {
+            "111": {
+              ".label": "0xbbb111",
+              ".proof_hash": null,
+              ".radix_ph": null
+            },
+            ".label": "0xbbb",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
+        });
+
+        // delete the node
+        tree._deleteFromTree(label2);
+
+        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree._hasInTree(label21)).to.equal(true);
+        expect(tree._getFromTree(label21)).to.equal(stateNode21);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "bbb111": {
+            ".label": "0xbbb111",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
+        });
+      });
+
+      it("set / delete with common label prefix - without label suffices", () => {
         const label1 = '0x000a';
         const label2 = '0x000b';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
@@ -265,7 +586,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000a": {
-            ".label": null,
+            ".label": "0x000a",
             ".proof_hash": null,
             ".radix_ph": null
           }
@@ -283,12 +604,12 @@ describe("radix-tree", () => {
           "000": {
             ".radix_ph": null,
             "a": {
-              ".label": null,
+              ".label": "0x000a",
               ".proof_hash": null,
               ".radix_ph": null
             },
             "b": {
-              ".label": null,
+              ".label": "0x000b",
               ".proof_hash": null,
               ".radix_ph": null
             }
@@ -304,7 +625,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000b": {
-            ".label": null,
+            ".label": "0x000b",
             ".proof_hash": null,
             ".radix_ph": null
           }
@@ -320,9 +641,12 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with label suffices", () => {
+      it("set / delete with common label prefix - with label suffices", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
 
         expect(tree._hasInTree(label1)).to.equal(false);
         expect(tree._hasInTree(label2)).to.equal(false);
@@ -339,7 +663,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000aaa": {
-            ".label": null,
+            ".label": "0x000aaa",
             ".proof_hash": null,
             ".radix_ph": null
           }
@@ -357,12 +681,12 @@ describe("radix-tree", () => {
           "000": {
             ".radix_ph": null,
             "aaa": {
-              ".label": null,
+              ".label": "0x000aaa",
               ".proof_hash": null,
               ".radix_ph": null
             },
             "bbb": {
-              ".label": null,
+              ".label": "0x000bbb",
               ".proof_hash": null,
               ".radix_ph": null
             }
@@ -378,7 +702,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000bbb": {
-            ".label": null,
+            ".label": "0x000bbb",
             ".proof_hash": null,
             ".radix_ph": null
           }
@@ -394,10 +718,14 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set on an internal node", () => {
+      it("set / delete with common label prefix - set on an internal node", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
         const labelInternal = '0x000';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+        stateNodeInternal._setLabel(labelInternal);
 
         // add terminal nodes
         tree._setInTree(label1, stateNode1);
@@ -412,12 +740,12 @@ describe("radix-tree", () => {
           "000": {
             ".radix_ph": null,
             "aaa": {
-              ".label": null,
+              ".label": "0x000aaa",
               ".proof_hash": null,
               ".radix_ph": null
             },
             "bbb": {
-              ".label": null,
+              ".label": "0x000bbb",
               ".proof_hash": null,
               ".radix_ph": null
             }
@@ -436,16 +764,16 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000": {
-            ".label": null,
+            ".label": "0x000",
             ".proof_hash": null,
             ".radix_ph": null,
             "aaa": {
-              ".label": null,
+              ".label": "0x000aaa",
               ".proof_hash": null,
               ".radix_ph": null
             },
             "bbb": {
-              ".label": null,
+              ".label": "0x000bbb",
               ".proof_hash": null,
               ".radix_ph": null
             }
@@ -453,11 +781,95 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with children", () => {
+      it("set / delete with common label prefix - set with substring label suffix", () => {
+        const label1 = '0x000aabb';
+        const label2 = '0x000aa';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+
+        tree._setInTree(label1, stateNode1);
+        tree._setInTree(label2, stateNode2);
+
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "000aa": {
+            ".label": "0x000aa",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            "bb": {
+              ".label": "0x000aabb",
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
+        });
+      });
+
+      it("set / delete with common label prefix - set with superstring label suffix", () => {
+        const label1 = '0x000aa';
+        const label2 = '0x000aabb';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+
+        tree._setInTree(label1, stateNode1);
+        tree._setInTree(label2, stateNode2);
+
+        expect(tree._hasInTree(label1)).to.equal(true);
+        expect(tree._getFromTree(label1)).to.equal(stateNode1);
+        expect(tree._hasInTree(label2)).to.equal(true);
+        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "000aa": {
+            ".label": "0x000aa",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            "bb": {
+              ".label": "0x000aabb",
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
+        });
+      });
+
+      it("set / delete with common label prefix - set with exact-matched label suffix", () => {
+        const label = '0x000aa';
+
+        stateNode1._setLabel(label);
+        stateNode2._setLabel(label + '_');  // tweak in order to distinguish
+
+        tree._setInTree(label, stateNode1);
+        tree._setInTree(label, stateNode2);
+
+        expect(tree._hasInTree(label)).to.equal(true);
+        expect(tree._getFromTree(label)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "000aa": {
+            ".label": "0x000aa_",
+            ".proof_hash": null,
+            ".radix_ph": null,
+          }
+        });
+      });
+
+      it("set / delete with common label prefix - set / delete with children", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
         const label22 = '0x000bbb222';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+        stateNode21._setLabel(label21);
+        stateNode22._setLabel(label22);
 
         // set first node
         tree._setInTree(label1, stateNode1);
@@ -480,22 +892,22 @@ describe("radix-tree", () => {
           "000": {
             ".radix_ph": null,
             "aaa": {
-              ".label": null,
+              ".label": "0x000aaa",
               ".proof_hash": null,
               ".radix_ph": null
             },
             "bbb": {
               "111": {
-                ".label": null,
+                ".label": "0x000bbb111",
                 ".proof_hash": null,
                 ".radix_ph": null
               },
               "222": {
-                ".label": null,
+                ".label": "0x000bbb222",
                 ".proof_hash": null,
                 ".radix_ph": null
               },
-              ".label": null,
+              ".label": "0x000bbb",
               ".proof_hash": null,
               ".radix_ph": null
             }
@@ -516,25 +928,28 @@ describe("radix-tree", () => {
           ".radix_ph": null,
           "000bbb": {
             "111": {
-              ".label": null,
+              ".label": "0x000bbb111",
               ".proof_hash": null,
               ".radix_ph": null
             },
             "222": {
-              ".label": null,
+              ".label": "0x000bbb222",
               ".proof_hash": null,
               ".radix_ph": null
             },
-            ".label": null,
+            ".label": "0x000bbb",
             ".proof_hash": null,
             ".radix_ph": null
           }
         });
       });
 
-      it("delete with only one child", () => {
+      it("set / delete with common label prefix - delete with only one child", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
+
+        stateNode2._setLabel(label2);
+        stateNode21._setLabel(label21);
 
         // set a node
         tree._setInTree(label2, stateNode2);
@@ -549,11 +964,11 @@ describe("radix-tree", () => {
           ".radix_ph": null,
           "000bbb": {
             "111": {
-              ".label": null,
+              ".label": "0x000bbb111",
               ".proof_hash": null,
               ".radix_ph": null
             },
-            ".label": null,
+            ".label": "0x000bbb",
             ".proof_hash": null,
             ".radix_ph": null
           }
@@ -568,7 +983,7 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000bbb111": {
-            ".label": null,
+            ".label": "0x000bbb111",
             ".proof_hash": null,
             ".radix_ph": null
           }
@@ -587,6 +1002,11 @@ describe("radix-tree", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
         const label22 = '0x000bbb222';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+        stateNode21._setLabel(label21);
+        stateNode22._setLabel(label22);
 
         // set state nodes
         tree._setInTree(label1, stateNode1);
@@ -609,22 +1029,22 @@ describe("radix-tree", () => {
           "000": {
             ".radix_ph": null,
             "aaa": {
-              ".label": null,
+              ".label": "0x000aaa",
               ".proof_hash": null,
               ".radix_ph": null
             },
             "bbb": {
               "111": {
-                ".label": null,
+                ".label": "0x000bbb111",
                 ".proof_hash": null,
                 ".radix_ph": null
               },
               "222": {
-                ".label": null,
+                ".label": "0x000bbb222",
                 ".proof_hash": null,
                 ".radix_ph": null
               },
-              ".label": null,
+              ".label": "0x000bbb",
               ".proof_hash": null,
               ".radix_ph": null
             }

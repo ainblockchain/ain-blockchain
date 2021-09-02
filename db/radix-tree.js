@@ -51,6 +51,12 @@ class RadixTree {
     return label1.slice(0, labelIndex);
   }
 
+  static _setChildWithLabel(node, childLabel, child) {
+    const labelRadix = childLabel.charAt(0);
+    const labelSuffix = childLabel.slice(1);
+    return node.setChild(labelRadix, labelSuffix, child);
+  }
+
   _getRadixNodeForReading(hexLabel) {
     let curNode = this.root
     let labelIndex = 0;
@@ -91,21 +97,36 @@ class RadixTree {
         const childLabelSuffix = child.getLabelSuffix();
         const commonPrefix = RadixTree._getCommonPrefix(labelSuffix, childLabelSuffix);
 
-        // Delete current child first.
+        // Delete existing child first.
         curNode.deleteChild(labelRadix);
 
-        // Insert an internal node between curNode and child.
-        const internalNode = new RadixNode();
-        curNode.setChild(labelRadix, commonPrefix, internalNode);
-        const childNewLabel = childLabelSuffix.slice(commonPrefix.length);
-        internalNode.setChild(childNewLabel.charAt(0), childNewLabel.slice(1), child);
+        if (commonPrefix.length === labelSuffix.length) {
+          // Insert an internal node between curNode and the existing child.
+          const internalNode = new RadixNode();
+          curNode.setChild(labelRadix, commonPrefix, internalNode);
 
-        // Insert new child node.
-        const newChild = new RadixNode();
-        const newChildLabel = labelSuffix.slice(commonPrefix.length);
-        internalNode.setChild(newChildLabel.charAt(0), newChildLabel.slice(1), newChild);
+          // Insert the existing child node as a child of the internal node.
+          const childNewLabel = childLabelSuffix.slice(commonPrefix.length);
+          RadixTree._setChildWithLabel(internalNode, childNewLabel, child);
 
-        return newChild;
+          // Return the new internal node
+          return internalNode;
+        } else {
+          // Insert an internal node between curNode and two child nodes.
+          const internalNode = new RadixNode();
+          curNode.setChild(labelRadix, commonPrefix, internalNode);
+
+          // Insert the existing child node as a child of the internal node.
+          const childNewLabel = childLabelSuffix.slice(commonPrefix.length);
+          RadixTree._setChildWithLabel(internalNode, childNewLabel, child);
+
+          // Insert new child node as a child of the internal node.
+          const newChild = new RadixNode();
+          const newChildLabel = labelSuffix.slice(commonPrefix.length);
+          RadixTree._setChildWithLabel(internalNode, newChildLabel, newChild);
+
+          return newChild;
+        }
       }
 
       // Case 3: Has a child with matching label suffix.
