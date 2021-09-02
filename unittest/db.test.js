@@ -413,9 +413,9 @@ describe("DB operations", () => {
 
       it('when retrieving value with include_proof', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { includeProof: true }), {
-          ".proof_hash": "0x147ecaf6c56166b504cce1cbe690bc1d14c8e2f68c7937416eac32aaf97ecf2c",
+          ".proof_hash": "0xf1f51cb458ef3881fefbecf91db5450e601d462099e43776863f2cbb78642286",
           "ai": {
-            ".proof_hash": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec",
+            ".proof_hash": "0xc49ca014a4d5328cfdb74164bcb8c00578719335194b07a8b91af1db0048f0bb",
             ".proof_hash:baz": "0x74e6d7e9818333ef5d6f4eb74dc0ee64537c9e142e4fe55e583476a62b539edf",
             ".proof_hash:comcom": "0x90840252cdaacaf90d95c14f9d366f633fd53abf7a2c359f7abfb7f651b532b5",
             ".proof_hash:foo": "0xea86f62ccb8ed9240afb6c9090be001ef7859bf40e0782f2b8d3579b3d8310a4",
@@ -442,7 +442,7 @@ describe("DB operations", () => {
             }
           },
           "shards": {
-            ".proof_hash": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223",
+            ".proof_hash": "0x8ab46f23c6dddce173709cbc935a33d816825ffebabc4f23d02c3d2aea85fba3",
             "disabled_shard": {
               ".proof_hash": "0xc0d5ac161046ecbf67ae597b3e1d96e53e78d71c0193234f78f2514dbf952161",
               ".proof_hash:path": "0xd024945cba75febe35837d24c977a187a6339888d99d505c1be63251fec52279",

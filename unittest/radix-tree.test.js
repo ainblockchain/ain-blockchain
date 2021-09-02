@@ -81,7 +81,8 @@ describe("radix-tree", () => {
       const child = new RadixNode();
 
       expect(RadixTree._setChildWithLabel(node, '1234567890abcdef', child)).to.equal(true);
-      assert.deepEqual(node.getChild('1234567890abcdef'), child);
+      expect(node.hasChild('1')).to.equal(true);
+      assert.deepEqual(node.getChild('1'), child);
       expect(child.getLabelRadix()).to.equal('1');
       expect(child.getLabelSuffix()).to.equal('234567890abcdef');
     });

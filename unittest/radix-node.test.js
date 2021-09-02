@@ -114,6 +114,7 @@ describe("radix-node", () => {
       expect(node.setChild(true, labelSuffix, child)).to.equal(false);
       expect(node.setChild(1, labelSuffix, child)).to.equal(false);
       expect(node.setChild('', labelSuffix, child)).to.equal(false);
+      expect(node.setChild('00', labelSuffix, child)).to.equal(false);
 
       // setChild() with invalid label suffix
       expect(node.setChild(labelRadix, undefined, child)).to.equal(false);

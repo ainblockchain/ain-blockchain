@@ -51,7 +51,7 @@ class RadixChildMap {
     if (index >= 0 && index < 16) {
       return this.childArray[index];
     }
-    return null;
+    return undefined;  // Keep compatable with Map.
   }
 
   set(labelRadix, child) {
