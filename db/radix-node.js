@@ -105,9 +105,23 @@ class RadixNode {
 
   setChild(labelRadix, labelSuffix, child) {
     const LOG_HEADER = 'setChild';
+    if (!CommonUtil.isString(labelRadix) || labelRadix.length === 0) {
+      logger.error(
+          `[${LOG_HEADER}] Setting a child with invalid label radix ${labelRadix} ` +
+          `at: ${new Error().stack}.`);
+      // Does nothing.
+      return false;
+    }
+    if (!CommonUtil.isString(labelSuffix)) {
+      logger.error(
+          `[${LOG_HEADER}] Setting a child with invalid label suffix ${labelRadix} ` +
+          `at: ${new Error().stack}.`);
+      // Does nothing.
+      return false;
+    }
     if (this.hasChild(labelRadix)) {
       logger.error(
-          `[${LOG_HEADER}] Overwriting a child with radix label ${labelRadix} ` +
+          `[${LOG_HEADER}] Overwriting a child with label radix ${labelRadix} ` +
           `at: ${new Error().stack}.`);
       // Does nothing.
       return false;
@@ -128,9 +142,16 @@ class RadixNode {
 
   deleteChild(labelRadix) {
     const LOG_HEADER = 'deleteChild';
+    if (!CommonUtil.isString(labelRadix) || labelRadix.length === 0) {
+      logger.error(
+          `[${LOG_HEADER}] Deleting a child with invalid label radix ${labelRadix} ` +
+          `at: ${new Error().stack}.`);
+      // Does nothing.
+      return false;
+    }
     if (!this.hasChild(labelRadix)) {
       logger.error(
-          `[${LOG_HEADER}] Deleting a non-existing child with label: ${labelRadix} ` +
+          `[${LOG_HEADER}] Deleting a non-existing child with label radix: ${labelRadix} ` +
           `at: ${new Error().stack}.`);
       // Does nothing.
       return false;
