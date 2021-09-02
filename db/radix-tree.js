@@ -314,6 +314,7 @@ class RadixTree {
       this.set(stateLabel, stateNode);
       stateNode.addParent(newParentStateNode);
     }
+    this.updateProofHashForRadixTree();
   }
 
   /**
