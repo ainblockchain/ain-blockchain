@@ -32,9 +32,9 @@ const FeatureFlags = {
   // Enables radix layers.
   enableRadixTreeLayers: true,  // Some test cases assume this value true.
   // Enables hex label cache.
-  enableHexLabelCache: true,
+  enableHexLabelCache: false,
   // Enables array radix child map.
-  enableArrayRadixChildMap: true,
+  enableArrayRadixChildMap: false,
 };
 
 // ** Environment variables **
