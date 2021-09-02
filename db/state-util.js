@@ -612,55 +612,34 @@ function equalStateTrees(node1, node2) {
 }
 
 function updateStateInfoForAllRootPathsRecursive(
-    curNode, needToUpdate, updatedChildLabel = null) {
+    curNode, updatedChildLabel = null, updatedChildEmpty = false) {
   let numAffectedNodes = 0;
-  const curLabel = curNode.getLabel();
-  const parentNodes = curNode.getParentNodes();
-  const isEmpty = isEmptyNode(curNode);
-  if (isEmpty) {
-    for (const parent of parentNodes) {
-      parent.deleteChild(curLabel);
-      numAffectedNodes++;
-    }
-  } else if (needToUpdate) {  // Update state info of only parents.
-    curNode.updateStateInfo(updatedChildLabel);
-    numAffectedNodes++;
+  if (updatedChildEmpty) {
+    curNode.deleteChild(updatedChildLabel);
   }
-  for (const parent of parentNodes) {
+  const curLabel = curNode.getLabel();
+  const curNodeEmpty = updatedChildEmpty && isEmptyNode(curNode);
+  curNode.updateStateInfo(updatedChildEmpty ? null : updatedChildLabel);
+  numAffectedNodes++;
+  for (const parent of curNode.getParentNodes()) {
     numAffectedNodes +=
-        updateStateInfoForAllRootPathsRecursive(parent, true, isEmpty ? null : curLabel);
+        updateStateInfoForAllRootPathsRecursive(parent, curLabel, curNodeEmpty);
   }
   return numAffectedNodes;
 }
 
-function updateStateInfoForAllRootPaths(fullPath, root) {
+function updateStateInfoForAllRootPaths(curNode, updatedChildLabel = null) {
   const LOG_HEADER = 'updateStateInfoForAllRootPaths';
 
-  if (fullPath.length === 0) {
-    // No parents to update.
+  if (!curNode.hasChild(updatedChildLabel)) {
+    logger.error(
+        `[${LOG_HEADER}] Updating state info with non-existing label: ${updatedChildLabel} ` +
+        `at: ${new Error().stack}.`);
     return 0;
   }
-  if (!root) {
-    logger.error(`[${LOG_HEADER}] Updating state info for invalid root: ${root} ` +
-    `at: ${new Error().stack}.`);
-    return 0;
-  }
-  let curNode = root;
-  let needToUpdate = false;
-  for (let i = 0; i < fullPath.length; i++) {
-    const childLabel = fullPath[i];
-    const child = curNode.getChild(childLabel);
-    if (child === null) {
-      logger.debug(
-          `[${LOG_HEADER}] Updating state info for non-existing path: ` +
-          `${CommonUtil.formatPath(fullPath.slice(0, i + 1))} ` +
-          `at: ${new Error().stack}.`);
-      needToUpdate = true;
-      break;
-    }
-    curNode = child;
-  }
-  return updateStateInfoForAllRootPathsRecursive(curNode, needToUpdate, null);
+  const childNode = curNode.getChild(updatedChildLabel);
+  return updateStateInfoForAllRootPathsRecursive(
+      curNode, updatedChildLabel, isEmptyNode(childNode));
 }
 
 function updateStateInfoForStateTree(stateTree) {
