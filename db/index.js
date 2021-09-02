@@ -683,6 +683,9 @@ class DB {
       const { func_results } =
           this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction, blockTime);
       funcResults = func_results;
+      if (CommonUtil.isFailedFuncTrigger(funcResults)) {
+        return CommonUtil.returnTxResult(105, `Triggered function call failed`, 1, funcResults);
+      }
     }
 
     return CommonUtil.returnTxResult(0, null, 1, funcResults);
