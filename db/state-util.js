@@ -641,7 +641,8 @@ function updateStateInfoForAllRootPaths(fullPath, root) {
     return 0;
   }
   if (!root) {
-    logger.error(`[${LOG_HEADER}] Trying to remove empty nodes for invalid root: ${root}.`);
+    logger.error(`[${LOG_HEADER}] Trying to update proof hash for invalid root: ${root} ` +
+    `at: ${new Error().stack}.`);
     return 0;
   }
   let curNode = root;
@@ -650,9 +651,10 @@ function updateStateInfoForAllRootPaths(fullPath, root) {
     const childLabel = fullPath[i];
     const child = curNode.getChild(childLabel);
     if (child === null) {
-      logger.info(
-          `[${LOG_HEADER}] Trying to remove empty nodes for non-existing path: ` +
-          `${CommonUtil.formatPath(fullPath.slice(0, i + 1))}.`);
+      logger.debug(
+          `[${LOG_HEADER}] Trying to update proof hash for non-existing path: ` +
+          `${CommonUtil.formatPath(fullPath.slice(0, i + 1))} ` +
+          `at: ${new Error().stack}.`);
       needToUpdate = true;
       break;
     }
