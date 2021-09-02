@@ -103,7 +103,32 @@ describe("radix-node", () => {
   });
 
   describe("child", () => {
-    it("get / set / has / delete with a child", () => {
+    it("set / delete with a child with invalid labels", () => {
+      const labelRadix = '0';
+      const labelSuffix = 'ffff';
+      const child = new RadixNode();
+
+      // setChild() with invalid label radix
+      expect(node.setChild(undefined, labelSuffix, child)).to.equal(false);
+      expect(node.setChild(null, labelSuffix, child)).to.equal(false);
+      expect(node.setChild(true, labelSuffix, child)).to.equal(false);
+      expect(node.setChild(1, labelSuffix, child)).to.equal(false);
+      expect(node.setChild('', labelSuffix, child)).to.equal(false);
+
+      // setChild() with invalid label suffix
+      expect(node.setChild(labelRadix, undefined, child)).to.equal(false);
+      expect(node.setChild(labelRadix, null, child)).to.equal(false);
+      expect(node.setChild(labelRadix, true, child)).to.equal(false);
+      expect(node.setChild(labelRadix, 1, child)).to.equal(false);
+
+      // deleteChild() with invalid label radix
+      expect(node.deleteChild(undefined)).to.equal(false);
+      expect(node.deleteChild(null)).to.equal(false);
+      expect(node.deleteChild(true)).to.equal(false);
+      expect(node.deleteChild(1)).to.equal(false);
+    });
+
+    it("get / set / has / delete with a child with valid labels", () => {
       const labelRadix = '0';
       const labelSuffix = 'ffff';
       const child = new RadixNode();
@@ -173,7 +198,7 @@ describe("radix-node", () => {
       expect(child.numChildren()).to.equal(0);
     });
 
-    it("get / set / has / delete with children", () => {
+    it("get / set / has / delete with children with valid labels", () => {
       const labelRadix1 = '0';
       const labelSuffix1 = '0000';
       const child1 = new RadixNode();
