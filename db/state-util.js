@@ -611,56 +611,67 @@ function equalStateTrees(node1, node2) {
   return true;
 }
 
-function updateProofHashForStateTree(stateTree) {
+function updateStateInfoForAllRootPathsRecursive(
+    curNode, needToUpdate, updatedChildLabel = null) {
   let numAffectedNodes = 0;
-  if (!stateTree.getIsLeaf()) {
-    for (const node of stateTree.getChildNodes()) {
-      numAffectedNodes += updateProofHashForStateTree(node);
+  const curLabel = curNode.getLabel();
+  const parentNodes = curNode.getParentNodes();
+  const isEmpty = isEmptyNode(curNode);
+  if (isEmpty) {
+    for (const parent of parentNodes) {
+      parent.deleteChild(curLabel);
+      numAffectedNodes++;
     }
+  } else if (needToUpdate) {  // Update state info of only parents.
+    curNode.updateStateInfo(updatedChildLabel);
+    numAffectedNodes++;
   }
-  stateTree.updateProofHashAndStateInfo();
-  numAffectedNodes++;
-
-  return numAffectedNodes;
-}
-
-function updateProofHashForAllRootPathsRecursive(parent, updatedChildLabel) {
-  let numAffectedNodes = 0;
-  parent.updateProofHashAndStateInfo(updatedChildLabel);
-  numAffectedNodes++;
-  for (const grandParent of parent.getParentNodes()) {
-    numAffectedNodes += updateProofHashForAllRootPathsRecursive(grandParent, parent.getLabel());
+  for (const parent of parentNodes) {
+    numAffectedNodes +=
+        updateStateInfoForAllRootPathsRecursive(parent, true, isEmpty ? null : curLabel);
   }
   return numAffectedNodes;
 }
 
-function updateProofHashForAllRootPaths(fullPath, root) {
-  const LOG_HEADER = 'updateProofHashForAllRootPaths';
+function updateStateInfoForAllRootPaths(fullPath, root) {
+  const LOG_HEADER = 'updateStateInfoForAllRootPaths';
 
   if (fullPath.length === 0) {
     // No parents to update.
     return 0;
   }
-  const pathToParent = fullPath.slice(0, fullPath.length - 1);
-  let updatedChildLabel = fullPath[fullPath.length - 1];
   if (!root) {
-    logger.error(`[${LOG_HEADER}] Trying to update proof hash for invalid root: ${root}.`);
+    logger.error(`[${LOG_HEADER}] Trying to remove empty nodes for invalid root: ${root}.`);
     return 0;
   }
-  let parent = root;
-  for (let i = 0; i < pathToParent.length; i++) {
-    const childLabel = pathToParent[i];
-    const child = parent.getChild(childLabel);
+  let curNode = root;
+  let needToUpdate = false;
+  for (let i = 0; i < fullPath.length; i++) {
+    const childLabel = fullPath[i];
+    const child = curNode.getChild(childLabel);
     if (child === null) {
       logger.info(
-          `[${LOG_HEADER}] Trying to update proof hash for non-existing path: ` +
+          `[${LOG_HEADER}] Trying to remove empty nodes for non-existing path: ` +
           `${CommonUtil.formatPath(fullPath.slice(0, i + 1))}.`);
-      updatedChildLabel = null;  // Need to update proof hash for all labels.
+      needToUpdate = true;
       break;
     }
-    parent = child;
+    curNode = child;
   }
-  return updateProofHashForAllRootPathsRecursive(parent, updatedChildLabel);
+  return updateStateInfoForAllRootPathsRecursive(curNode, needToUpdate, null);
+}
+
+function updateStateInfoForStateTree(stateTree) {
+  let numAffectedNodes = 0;
+  if (!stateTree.getIsLeaf()) {
+    for (const node of stateTree.getChildNodes()) {
+      numAffectedNodes += updateStateInfoForStateTree(node);
+    }
+  }
+  stateTree.updateStateInfo();
+  numAffectedNodes++;
+
+  return numAffectedNodes;
 }
 
 function verifyProofHashForStateTree(stateTree) {
@@ -729,8 +740,8 @@ module.exports = {
   deleteStateTreeVersion,
   makeCopyOfStateTree,
   equalStateTrees,
-  updateProofHashForStateTree,
-  updateProofHashForAllRootPaths,
+  updateStateInfoForAllRootPaths,
+  updateStateInfoForStateTree,
   verifyProofHashForStateTree,
   getProofOfStatePath,
 };

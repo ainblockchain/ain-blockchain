@@ -7,6 +7,7 @@ const {
   HASH_DELIMITER,
   StateInfoProperties,
   ProofProperties,
+  LIGHTWEIGHT,
 } = require('../common/constants');
 const RadixTree = require('./radix-tree');
 
@@ -294,9 +295,6 @@ class StateNode {
     } else {
       this.childMap.delete(label);
     }
-    if (child.numParents() === 0) {
-      child._resetLabel();
-    }
     if (this.numChildren() === 0) {
       this.setIsLeaf(true);
     }
@@ -454,8 +452,10 @@ class StateNode {
     }
   }
 
-  updateProofHashAndStateInfo(updatedChildLabel = null) {
-    this.setProofHash(this.buildProofHash(updatedChildLabel));
+  updateStateInfo(updatedChildLabel = null) {
+    if (!LIGHTWEIGHT) {
+      this.setProofHash(this.buildProofHash(updatedChildLabel));
+    }
     this.setTreeHeight(this.computeTreeHeight());
     this.setTreeSize(this.computeTreeSize());
     this.setTreeBytes(this.computeTreeBytes());
