@@ -749,6 +749,8 @@ describe("radix-node", () => {
     let child22;
 
     beforeEach(() => {
+      node.setProofHash('nodePH');
+
       stateNode1 = new StateNode();
       stateNode1.setProofHash('stateNodePH1');
       stateNode2 = new StateNode();
@@ -778,46 +780,93 @@ describe("radix-node", () => {
       node.setChild('1', '002', child2);
       child2.setChild('2', '021', child21);
       child2.setChild('3', '022', child22);
+
+      stateNode1._setLabel('0001');
+      stateNode2._setLabel('1002');
+      stateNode21._setLabel('2021');
+      stateNode22._setLabel('3022');
+    });
+
+    it("copyFrom", () => {
+      const newParentStateNode = new StateNode();
+      const terminalNodeMap = new Map();
+      const newNode = new RadixNode();
+      newNode.copyFrom(node, newParentStateNode, terminalNodeMap);
+      assert.deepEqual(newNode.toJsObject(true), {
+        "1002": {
+          "2021": {
+            ".label": "2021",
+            ".proof_hash": "stateNodePH21",
+            ".radix_ph": "childPH21"
+          },
+          "3022": {
+            ".label": "3022",
+            ".proof_hash": "stateNodePH22",
+            ".radix_ph": "childPH22"
+          },
+          ".label": "1002",
+          ".proof_hash": "stateNodePH2",
+          ".radix_ph": "childPH2"
+        },
+        ".radix_ph": "nodePH",
+        "0001": {
+          ".label": "0001",
+          ".proof_hash": "stateNodePH1",
+          ".radix_ph": "childPH1"
+        }
+      });
+      assert.deepEqual(newNode.toJsObject(true), node.toJsObject(true));
+      // Check terminalNodeMap
+      expect(terminalNodeMap.size).to.equal(4);
+      expect(terminalNodeMap.has('0001')).to.equal(true);
+      expect(terminalNodeMap.has('1002')).to.equal(true);
+      expect(terminalNodeMap.has('2021')).to.equal(true);
+      expect(terminalNodeMap.has('3022')).to.equal(true);
+      // Check parents
+      assert.deepEqual(stateNode1.getParentNodes(), [newParentStateNode]);
+      assert.deepEqual(stateNode2.getParentNodes(), [newParentStateNode]);
+      assert.deepEqual(stateNode21.getParentNodes(), [newParentStateNode]);
+      assert.deepEqual(stateNode22.getParentNodes(), [newParentStateNode]);
     });
 
     it("toJsObject", () => {
       assert.deepEqual(node.toJsObject(), {
         "1002": {
           "2021": {
-            ".label": null,
+            ".label": "2021",
             ".proof_hash": "stateNodePH21"
           },
           "3022": {
-            ".label": null,
+            ".label": "3022",
             ".proof_hash": "stateNodePH22"
           },
-          ".label": null,
+          ".label": "1002",
           ".proof_hash": "stateNodePH2"
         },
         "0001": {
-          ".label": null,
+          ".label": "0001",
           ".proof_hash": "stateNodePH1"
         }
       });
       assert.deepEqual(node.toJsObject(true, true), {
         "1002": {
           "2021": {
-            ".label": null,
+            ".label": "2021",
             ".proof_hash": "stateNodePH21",
             ".radix_ph": "childPH21"
           },
           "3022": {
-            ".label": null,
+            ".label": "3022",
             ".proof_hash": "stateNodePH22",
             ".radix_ph": "childPH22"
           },
-          ".label": null,
+          ".label": "1002",
           ".proof_hash": "stateNodePH2",
           ".radix_ph": "childPH2"
         },
-        ".radix_ph": null,
+        ".radix_ph": "nodePH",
         "0001": {
-          ".label": null,
+          ".label": "0001",
           ".proof_hash": "stateNodePH1",
           ".radix_ph": "childPH1"
         }

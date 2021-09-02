@@ -296,12 +296,21 @@ class RadixTree {
   }
 
   copyFrom(radixTree, newParentStateNode) {
+    const LOG_HEADER = 'copyFrom';
+
+    const terminalNodeMap = new Map();
+    this.root.copyFrom(radixTree.root, newParentStateNode, terminalNodeMap);
+    // Keep the same order.
     for (const stateLabel of radixTree.labels()) {
-      const stateNode = radixTree.get(stateLabel);
-      this.set(stateLabel, stateNode);
-      stateNode.addParent(newParentStateNode);
+      const terminalNode = terminalNodeMap.get(stateLabel);
+      if (terminalNode === undefined) {
+        logger.error(
+            `[${LOG_HEADER}] Non-existing terminal radix node with label: ${stateLabel} ` +
+            `at: ${new Error().stack}.`);
+        continue;
+      }
+      this.terminalNodeMap.set(stateLabel, terminalNode);
     }
-    this.updateProofHashForRadixTree();
   }
 
   /**
