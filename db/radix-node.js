@@ -105,7 +105,7 @@ class RadixNode {
 
   setChild(labelRadix, labelSuffix, child) {
     const LOG_HEADER = 'setChild';
-    if (!CommonUtil.isString(labelRadix) || labelRadix.length === 0) {
+    if (!CommonUtil.isString(labelRadix) || labelRadix.length !== 1) {
       logger.error(
           `[${LOG_HEADER}] Setting a child with invalid label radix ${labelRadix} ` +
           `at: ${new Error().stack}.`);
@@ -142,7 +142,7 @@ class RadixNode {
 
   deleteChild(labelRadix) {
     const LOG_HEADER = 'deleteChild';
-    if (!CommonUtil.isString(labelRadix) || labelRadix.length === 0) {
+    if (!CommonUtil.isString(labelRadix) || labelRadix.length !== 1) {
       logger.error(
           `[${LOG_HEADER}] Deleting a child with invalid label radix ${labelRadix} ` +
           `at: ${new Error().stack}.`);
