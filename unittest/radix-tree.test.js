@@ -906,33 +906,27 @@ describe("radix-tree", () => {
       it("get / has / set / update / verify proof hash", () => {
         const label1 = '0x000aaa';
         const stateNode1 = new StateNode();
-        const stateNodePH1 = 'childStateNodePH1';
-        stateNode1.setProofHash(stateNodePH1);
+        stateNode1.setProofHash('stateNodePH1');
 
         const label11 = '0x000aaa111';
-        const stateNodePH11 = 'childStateNodePH11';
         const stateNode11 = new StateNode();
-        stateNode11.setProofHash(stateNodePH11);
+        stateNode11.setProofHash('stateNodePH11');
 
         const label12 = '0x000aaa212';
-        const stateNodePH12 = 'childStateNodePH12';
         const stateNode12 = new StateNode();
-        stateNode12.setProofHash(stateNodePH12);
+        stateNode12.setProofHash('stateNodePH12');
 
         const label21 = '0x000bbb121';
-        const stateNodePH21 = 'childStateNodePH21';
         const stateNode21 = new StateNode();
-        stateNode21.setProofHash(stateNodePH21);
+        stateNode21.setProofHash('stateNodePH21');
 
         const label22 = '0x000bbb222';
-        const stateNodePH22 = 'childStateNodePH22';
         const stateNode22 = new StateNode();
-        stateNode22.setProofHash(stateNodePH22);
+        stateNode22.setProofHash('stateNodePH22');
 
         const label3 = '0x111ccc';
         const stateNode3 = new StateNode();
-        const stateNodePH3 = 'childStateNodePH3';
-        stateNode3.setProofHash(stateNodePH3);
+        stateNode3.setProofHash('stateNodePH3');
 
         tree.set(label1, stateNode1);
         tree.set(label11, stateNode11);
@@ -948,27 +942,27 @@ describe("radix-tree", () => {
             "aaa": {
               "111": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH11",
+                ".proof_hash": "stateNodePH11",
                 ".radix_ph": null
               },
               "212": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH12",
+                ".proof_hash": "stateNodePH12",
                 ".radix_ph": null
               },
               ".label": null,
-              ".proof_hash": "childStateNodePH1",
+              ".proof_hash": "stateNodePH1",
               ".radix_ph": null
             },
             "bbb": {
               "121": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH21",
+                ".proof_hash": "stateNodePH21",
                 ".radix_ph": null
               },
               "222": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH22",
+                ".proof_hash": "stateNodePH22",
                 ".radix_ph": null
               },
               ".radix_ph": null
@@ -976,7 +970,7 @@ describe("radix-tree", () => {
           },
           "111ccc": {
             ".label": null,
-            ".proof_hash": "childStateNodePH3",
+            ".proof_hash": "stateNodePH3",
             ".radix_ph": null
           }
         });
@@ -988,7 +982,7 @@ describe("radix-tree", () => {
         // set
         expect(tree.updateProofHashForRadixTree()).to.equal(9);
         expect(tree.getRootProofHash()).to.equal(
-            '0xbc310c6c1b9d339951756d3c0f90bb25e70be0c0a261e04564917ce6c57016d5');
+            '0x3dac16e69a2dfa5ae4a448cda25da5542949b905d2bf8a07c389d77019c56c01');
         expect(tree.verifyProofHashForRadixTree()).to.equal(true);
 
         // change of a state node's proof hash
@@ -998,35 +992,31 @@ describe("radix-tree", () => {
         // update
         expect(tree.updateProofHashForRadixPath(label21)).to.equal(4);
         expect(tree.getRootProofHash()).to.equal(
-            '0x20520d0c668099565300affd3c4b288fb59dc37b9fbf31702e99a37b564d12d5');
+            '0x8070aef5df264e5ecea35dd84822e69f7bf65102a06f5765d62bd76265cadff5');
         expect(tree.verifyProofHashForRadixTree()).to.equal(true);
       });
 
       it("getProofOfState", () => {
         const label1 = '0x000aaa';
         const stateNode1 = new StateNode();
-        const stateNodePH1 = 'childStateNodePH1';
-        stateNode1.setProofHash(stateNodePH1);
+        const stateNodePH1 = 'stateNodePH1';
+        stateNode1.setProofHash('stateNodePH1');
 
         const label11 = '0x000aaa111';
-        const stateNodePH11 = 'childStateNodePH11';
         const stateNode11 = new StateNode();
-        stateNode11.setProofHash(stateNodePH11);
+        stateNode11.setProofHash('stateNodePH11');
 
         const label12 = '0x000aaa212';
-        const stateNodePH12 = 'childStateNodePH12';
         const stateNode12 = new StateNode();
-        stateNode12.setProofHash(stateNodePH12);
+        stateNode12.setProofHash('stateNodePH12');
 
         const label21 = '0x000bbb121';
-        const stateNodePH21 = 'childStateNodePH21';
         const stateNode21 = new StateNode();
-        stateNode21.setProofHash(stateNodePH21);
+        stateNode21.setProofHash('stateNodePH21');
 
         const label22 = '0x000bbb222';
-        const stateNodePH22 = 'childStateNodePH22';
         const stateNode22 = new StateNode();
-        stateNode22.setProofHash(stateNodePH22);
+        stateNode22.setProofHash('stateNodePH22');
 
         tree.set(label1, stateNode1);
         tree.set(label11, stateNode11);
@@ -1036,74 +1026,74 @@ describe("radix-tree", () => {
 
         expect(tree.updateProofHashForRadixTree()).to.equal(8);
         assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": "0x890e6c975c63529362955c359c0b7552bf1f88c4945f12a18458f8acafb17b25",
+          ".radix_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
           "000": {
-            ".radix_ph": "0x7de885f5d5ecdd9e059584874ae468ba9d1ecdebb3c320fa02e6a2ac58413386",
+            ".radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
             "aaa": {
               "111": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH11",
-                ".radix_ph": "0x9fb9b2e6c1dc7fed76964029cb13fb1cdc115dc0a9cef54fe052533ab992a58c"
+                ".proof_hash": "stateNodePH11",
+                ".radix_ph": "0xac8e0ca829cea8d80a79260078fb8e1b38a05b6d087c72a1c92f63849a47b96b"
               },
               "212": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH12",
-                ".radix_ph": "0xbde6ad92fee46f223375703e8376c3c8d75989d3b9867520442e63e0836ff596"
+                ".proof_hash": "stateNodePH12",
+                ".radix_ph": "0x7fc53637a6ff6b7efa8cf7c9ba95552ed7479262ad8c07a61b4d2b1e8002d360"
               },
               ".label": null,
-              ".proof_hash": "childStateNodePH1",
-              ".radix_ph": "0x47f652dd768456603c8bb25c5ab7157d43e3edafc51837038f42a6026bf6bb44"
+              ".proof_hash": "stateNodePH1",
+              ".radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0"
             },
             "bbb": {
               "121": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH21",
-                ".radix_ph": "0x68971271b6018c8827230bb696d7d2661ebb286f95851e72da889e1af6b22721"
+                ".proof_hash": "stateNodePH21",
+                ".radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7"
               },
               "222": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH22",
-                ".radix_ph": "0xba9d1dcddd02911d1d260f8acd4e3857174d98a57e6b3c7e0577c8a07056b057"
+                ".proof_hash": "stateNodePH22",
+                ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2"
               },
-              ".radix_ph": "0x35286cd28c53fbe623eed76d4c09246645451b92cdded41ce9952436dc4656c3"
+              ".radix_ph": "0x78d50ec884283d1759dc14ae88aa3e832199ff650b450da3b45cd507c2cd8474"
             }
           }
         });
 
         // on an internal radix node
         assert.deepEqual(tree.getProofOfState(label1, 'state_proof1'), {
-          ".radix_ph": "0x890e6c975c63529362955c359c0b7552bf1f88c4945f12a18458f8acafb17b25",
+          ".radix_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
           "000": {
-            ".radix_ph": "0x7de885f5d5ecdd9e059584874ae468ba9d1ecdebb3c320fa02e6a2ac58413386",
+            ".radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
             "aaa": {
               ".label": "0x000aaa",
               ".proof_hash": "state_proof1",
-              ".radix_ph": "0x47f652dd768456603c8bb25c5ab7157d43e3edafc51837038f42a6026bf6bb44"
+              ".radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0"
             },
             "bbb": {
-              ".radix_ph": "0x35286cd28c53fbe623eed76d4c09246645451b92cdded41ce9952436dc4656c3"
+              ".radix_ph": "0x78d50ec884283d1759dc14ae88aa3e832199ff650b450da3b45cd507c2cd8474"
             }
           }
         });
 
         // on a terminal radix node
         assert.deepEqual(tree.getProofOfState(label22, 'state_proof22'), {
-          ".radix_ph": "0x890e6c975c63529362955c359c0b7552bf1f88c4945f12a18458f8acafb17b25",
+          ".radix_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
           "000": {
-            ".radix_ph": "0x7de885f5d5ecdd9e059584874ae468ba9d1ecdebb3c320fa02e6a2ac58413386",
+            ".radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
             "aaa": {
-              ".radix_ph": "0x47f652dd768456603c8bb25c5ab7157d43e3edafc51837038f42a6026bf6bb44"
+              ".radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0"
             },
             "bbb": {
-              ".radix_ph": "0x35286cd28c53fbe623eed76d4c09246645451b92cdded41ce9952436dc4656c3",
               "121": {
-                ".radix_ph": "0x68971271b6018c8827230bb696d7d2661ebb286f95851e72da889e1af6b22721"
+                ".radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7"
               },
               "222": {
                 ".label": "0x000bbb222",
                 ".proof_hash": "state_proof22",
-                ".radix_ph": "0xba9d1dcddd02911d1d260f8acd4e3857174d98a57e6b3c7e0577c8a07056b057"
-              }
+                ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2"
+              },
+              ".radix_ph": "0x78d50ec884283d1759dc14ae88aa3e832199ff650b450da3b45cd507c2cd8474"
             }
           }
         });
@@ -1112,9 +1102,13 @@ describe("radix-tree", () => {
 
     describe("copyFrom", () => {
       const stateNode1 = new StateNode();
+      stateNode1.setProofHash('stateNodePH1');
       const stateNode2 = new StateNode();
+      stateNode2.setProofHash('stateNodePH2');
       const stateNode21 = new StateNode();
+      stateNode21.setProofHash('stateNodePH21');
       const stateNode22 = new StateNode();
+      stateNode22.setProofHash('stateNodePH22');
 
       it("copy with children", () => {
         const label1 = '0x000aaa';
@@ -1127,6 +1121,8 @@ describe("radix-tree", () => {
         tree.set(label2, stateNode2);
         tree.set(label21, stateNode21);
         tree.set(label22, stateNode22);
+
+        expect(tree.updateProofHashForRadixTree()).to.equal(6);
 
         const newTree = new RadixTree();
         newTree.copyFrom(tree);
@@ -1143,31 +1139,32 @@ describe("radix-tree", () => {
         assert.deepEqual(newTree.stateNodes(), [stateNode1, stateNode2, stateNode21, stateNode22]);
         assert.deepEqual(newTree.size(), 4);
         assert.deepEqual(newTree.toJsObject(true), {
-          ".radix_ph": null,
+          ".radix_ph": "0x6fb64a2130ffc6c39c3c90e2e623594e7818647f93caf25d5c741ffdb6998c5f",
           "000": {
-            ".radix_ph": null,
+            ".radix_ph": "0x13f3860a6d7505b383ef8f966bd5e0bcaa546298616a850c7dfaf20311fc271b",
             "aaa": {
               ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
+              ".proof_hash": "stateNodePH1",
+              ".radix_ph": "0xc6b77f2d527751603d41b89bb7bac0d2a51dfdb3636b37f6d0792676bbe48795"
             },
             "bbb": {
               "111": {
                 ".label": null,
-                ".proof_hash": null,
-                ".radix_ph": null
+                ".proof_hash": "stateNodePH21",
+                ".radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7"
               },
               "222": {
                 ".label": null,
-                ".proof_hash": null,
-                ".radix_ph": null
+                ".proof_hash": "stateNodePH22",
+                ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2"
               },
               ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
+              ".proof_hash": "stateNodePH2",
+              ".radix_ph": "0xc247352aedb1ef374ff55c219d525d882d158e32c134de5eade6e24c51d3b680"
             }
           }
         });
+        assert.deepEqual(newTree.toJsObject(true), tree.toJsObject(true));
       });
     });
   });
