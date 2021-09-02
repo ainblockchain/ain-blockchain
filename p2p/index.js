@@ -14,8 +14,6 @@ const {
   BlockchainNodeStates,
   DEFAULT_MAX_OUTBOUND,
   DEFAULT_MAX_INBOUND,
-  MAX_OUTBOUND_LIMIT,
-  MAX_INBOUND_LIMIT,
   NETWORK_ID,
 } = require('../common/constants');
 const { sleep } = require('../common/common-util');
@@ -55,12 +53,10 @@ class P2pClient {
   // maxOutbound is for now limited equal or less than 2.
   // maxInbound is a rest of connection after maxOutbound is set.
   initConnections() {
-    const numOutbound = process.env.MAX_OUTBOUND ?
+    this.maxOutbound = process.env.MAX_OUTBOUND ?
         Number(process.env.MAX_OUTBOUND) : DEFAULT_MAX_OUTBOUND;
-    const numInbound = process.env.MAX_INBOUND ?
+    this.maxInbound = process.env.MAX_INBOUND ?
         Number(process.env.MAX_INBOUND) : DEFAULT_MAX_INBOUND;
-    this.maxOutbound = Math.min(numOutbound, MAX_OUTBOUND_LIMIT);
-    this.maxInbound = Math.min(numInbound, MAX_INBOUND_LIMIT);
   }
 
   getConnectionStatus() {
