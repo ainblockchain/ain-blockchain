@@ -1118,9 +1118,13 @@ describe("radix-tree", () => {
 
         // set state nodes
         tree.set(label1, stateNode1);
+        stateNode1._setLabel(label1);
         tree.set(label2, stateNode2);
+        stateNode2._setLabel(label2);
         tree.set(label21, stateNode21);
+        stateNode21._setLabel(label21);
         tree.set(label22, stateNode22);
+        stateNode22._setLabel(label22);
 
         expect(tree.updateProofHashForRadixTree()).to.equal(6);
 
@@ -1143,22 +1147,22 @@ describe("radix-tree", () => {
           "000": {
             ".radix_ph": "0x13f3860a6d7505b383ef8f966bd5e0bcaa546298616a850c7dfaf20311fc271b",
             "aaa": {
-              ".label": null,
+              ".label": "0x000aaa",
               ".proof_hash": "stateNodePH1",
               ".radix_ph": "0xc6b77f2d527751603d41b89bb7bac0d2a51dfdb3636b37f6d0792676bbe48795"
             },
             "bbb": {
               "111": {
-                ".label": null,
+                ".label": "0x000bbb111",
                 ".proof_hash": "stateNodePH21",
                 ".radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7"
               },
               "222": {
-                ".label": null,
+                ".label": "0x000bbb222",
                 ".proof_hash": "stateNodePH22",
                 ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2"
               },
-              ".label": null,
+              ".label": "0x000bbb",
               ".proof_hash": "stateNodePH2",
               ".radix_ph": "0xc247352aedb1ef374ff55c219d525d882d158e32c134de5eade6e24c51d3b680"
             }

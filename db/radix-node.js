@@ -269,6 +269,23 @@ class RadixNode {
     return proof;
   }
 
+  copyFrom(radixNode, newParentStateNode, terminalNodeMap) {
+    if (radixNode.hasStateNode()) {
+      const stateNode = radixNode.getStateNode();
+      this.setStateNode(stateNode);
+      stateNode.addParent(newParentStateNode);  // Add new parent state node.
+      terminalNodeMap.set(stateNode.getLabel(), this);
+    }
+    this.setLabelRadix(radixNode.getLabelRadix());
+    this.setLabelSuffix(radixNode.getLabelSuffix());
+    this.setProofHash(radixNode.getProofHash());
+    for (const child of radixNode.getChildNodes()) {
+      const clonedChild = new RadixNode();
+      this.setChild(child.getLabelRadix(), child.getLabelSuffix(), clonedChild);
+      clonedChild.copyFrom(child, newParentStateNode, terminalNodeMap);
+    }
+  }
+
   /**
    * Converts the subtree to a js object.
    * This is for testing / debugging purpose.
