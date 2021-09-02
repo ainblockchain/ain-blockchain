@@ -57,22 +57,12 @@ class RadixTree {
     return node.setChild(labelRadix, labelSuffix, child);
   }
 
-  _getRadixNodeForReading(hexLabel) {
-    let curNode = this.root
-    let labelIndex = 0;
-    while (labelIndex < hexLabel.length) {
-      const labelRadix = hexLabel.charAt(labelIndex);
-      if (!curNode.hasChild(labelRadix)) {
-        return null;
-      }
-      const child = curNode.getChild(labelRadix);
-      if (!RadixTree._matchLabelSuffix(child, hexLabel, labelIndex + 1)) {
-        return null;
-      }
-      curNode = child;
-      labelIndex += 1 + child.getLabelSuffix().length;
+  _getRadixNodeForReading(stateLabel) {
+    const terminalNode = this.terminalNodeMap.get(stateLabel);
+    if (terminalNode === undefined) {
+      return null;
     }
-    return curNode;
+    return terminalNode;
   }
 
   _getRadixNodeForWriting(hexLabel) {
@@ -200,8 +190,7 @@ class RadixTree {
   delete(stateLabel) {
     const LOG_HEADER = '_deleteFromTree';
 
-    const hexLabel = this._toHexLabel(stateLabel);
-    const node = this._getRadixNodeForReading(hexLabel);
+    const node = this._getRadixNodeForReading(stateLabel);
     if (node === null || !node.hasStateNode()) {
       logger.error(
           `[${LOG_HEADER}] Deleting a non-existing child of label: ${stateLabel} ` +
@@ -277,8 +266,7 @@ class RadixTree {
   updateProofHashForRadixPath(updatedNodeLabel) {
     const LOG_HEADER = 'updateProofHashForRadixPath';
 
-    const hexLabel = this._toHexLabel(updatedNodeLabel);
-    const node = this._getRadixNodeForReading(hexLabel);
+    const node = this._getRadixNodeForReading(updatedNodeLabel);
     if (node === null) {
       logger.error(
           `[${LOG_HEADER}] Updating proof hash for non-existing child with label: ` +
@@ -294,8 +282,7 @@ class RadixTree {
   }
 
   getProofOfState(stateLabel, stateProof) {
-    const hexLabel = this._toHexLabel(stateLabel);
-    let curNode = this._getRadixNodeForReading(hexLabel);
+    let curNode = this._getRadixNodeForReading(stateLabel);
     if (curNode === null || !curNode.hasStateNode()) {
       return null;
     }

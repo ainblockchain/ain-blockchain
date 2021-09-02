@@ -2808,8 +2808,7 @@ describe("state-util", () => {
       const child111Clone = child111.clone();
       const child2Clone = child2.clone();
 
-      const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1112);
-      expect(numAffectedNodes).to.equal(7);
+      expect(updateStateInfoForAllRootPaths(child111, label1112)).to.equal(7);
 
       // Checks proof hashes.
       expect(child1111.verifyProofHash()).to.equal(false);
