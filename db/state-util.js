@@ -641,7 +641,7 @@ function updateStateInfoForAllRootPaths(fullPath, root) {
     return 0;
   }
   if (!root) {
-    logger.error(`[${LOG_HEADER}] Trying to update proof hash for invalid root: ${root} ` +
+    logger.error(`[${LOG_HEADER}] Updating state info for invalid root: ${root} ` +
     `at: ${new Error().stack}.`);
     return 0;
   }
@@ -652,7 +652,7 @@ function updateStateInfoForAllRootPaths(fullPath, root) {
     const child = curNode.getChild(childLabel);
     if (child === null) {
       logger.debug(
-          `[${LOG_HEADER}] Trying to update proof hash for non-existing path: ` +
+          `[${LOG_HEADER}] Updating state info for non-existing path: ` +
           `${CommonUtil.formatPath(fullPath.slice(0, i + 1))} ` +
           `at: ${new Error().stack}.`);
       needToUpdate = true;
