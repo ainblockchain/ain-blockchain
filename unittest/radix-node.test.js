@@ -780,37 +780,6 @@ describe("radix-node", () => {
       child2.setChild('3', '022', child22);
     });
 
-    it("copyFrom", () => {
-      const newNode = new RadixNode();
-      newNode.copyFrom(node);
-      assert.deepEqual(newNode.toJsObject(), {
-        "1002": {
-          "2021": {
-            ".label": null,
-            ".proof_hash": "stateNodePH21"
-          },
-          "3022": {
-            ".label": null,
-            ".proof_hash": "stateNodePH22"
-          },
-          ".label": null,
-          ".proof_hash": "stateNodePH2"
-        },
-        "0001": {
-          ".label": null,
-          ".proof_hash": "stateNodePH1"
-        }
-      });
-      assert.deepEqual(newNode.getChild('0').getStateNode(), node.getChild('0').getStateNode());
-      assert.deepEqual(newNode.getChild('1').getStateNode(), node.getChild('1').getStateNode());
-      assert.deepEqual(
-          newNode.getChild('1').getChild('2').getStateNode(),
-          node.getChild('1').getChild('2').getStateNode());
-      assert.deepEqual(
-          newNode.getChild('1').getChild('3').getStateNode(),
-          node.getChild('1').getChild('3').getStateNode());
-    });
-
     it("toJsObject", () => {
       assert.deepEqual(node.toJsObject(), {
         "1002": {
