@@ -11,7 +11,9 @@ const {
   CONSENSUS_PROTOCOL_VERSION,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
-  DATA_PROTOCOL_VERSION
+  DATA_PROTOCOL_VERSION,
+  GenesisAccounts,
+  AccountProperties,
 } = require('../common/constants');
 
 const expect = chai.expect;
@@ -110,7 +112,7 @@ describe("p2p", () => {
 
     describe("getBlockStatus", () => {
       it("gets initial block status", () => {
-        const actual = { number: -1, epoch: -1, timestamp: -1 };
+        const actual = { number: -1, epoch: -1, timestamp: GenesisAccounts[AccountProperties.TIMESTAMP] };
         const expected = p2pServer.getBlockStatus();
         delete expected.elapsedTimeMs;
         assert.deepEqual(actual, expected);
