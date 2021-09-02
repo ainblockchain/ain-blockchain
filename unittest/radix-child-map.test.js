@@ -142,11 +142,11 @@ describe("radix-child-map", () => {
         expect(map.has(0)).to.equal(false);
         expect(map.has('A')).to.equal(false);
 
-        expect(map.get(undefined)).to.equal(null);
-        expect(map.get(null)).to.equal(null);
-        expect(map.get(false)).to.equal(null);
-        expect(map.get(0)).to.equal(null);
-        expect(map.get('A')).to.equal(null);
+        expect(map.get(undefined)).to.equal(undefined);
+        expect(map.get(null)).to.equal(undefined);
+        expect(map.get(false)).to.equal(undefined);
+        expect(map.get(0)).to.equal(undefined);
+        expect(map.get('A')).to.equal(undefined);
 
         expect(map.set(undefined, child1)).to.equal(false);
         expect(map.set(null, child1)).to.equal(false);
