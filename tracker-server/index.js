@@ -10,7 +10,7 @@ const os = require('os');
 const v8 = require('v8');
 const {
   CURRENT_PROTOCOL_VERSION,
-  LIMIT_NUMBER_OF_CANDIDATES_AT_ONCE
+  MAX_NUM_PEER_CANDIDATES_AT_ONCE
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const logger = require('../logger')('TRACKER_SERVER');
@@ -166,16 +166,16 @@ function getNumNodes() {
 function getMaxNumberOfNewPeers(nodeInfo) {
   const numOfCandidates = nodeInfo.networkStatus.connectionStatus.maxOutbound -
       nodeInfo.networkStatus.connectionStatus.outgoingPeers.length;
-  if (numOfCandidates >= LIMIT_NUMBER_OF_CANDIDATES_AT_ONCE) {
-    return LIMIT_NUMBER_OF_CANDIDATES_AT_ONCE;
+  if (numOfCandidates >= MAX_NUM_PEER_CANDIDATES_AT_ONCE) {
+    return MAX_NUM_PEER_CANDIDATES_AT_ONCE;
   } else {
     return numOfCandidates;
   }
 }
 
 function assignRandomPeers(nodeInfo) {
-  const numOfNecessaryCandidates = getMaxNumberOfNewPeers(nodeInfo);
-  if (numOfNecessaryCandidates) {
+  const maxNumberOfNewPeers = getMaxNumberOfNewPeers(nodeInfo);
+  if (maxNumberOfNewPeers) {
     const candidates = Object.values(peerNodes)
     .filter(peer =>
       peer.address !== nodeInfo.address &&
@@ -186,7 +186,7 @@ function assignRandomPeers(nodeInfo) {
     .map(peer => ({ address: peer.address, url: peer.networkStatus.p2p.url }));
 
     const shuffled = _.shuffle(candidates);
-    return shuffled.slice(0, numOfNecessaryCandidates);
+    return shuffled.slice(0, maxNumberOfNewPeers);
   } else {
     return [];
   }

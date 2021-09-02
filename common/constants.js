@@ -651,7 +651,7 @@ function initializeNetworkEnvronments() {
   } else {
     return {
       P2P_MESSAGE_TIMEOUT_MS: 600000,
-      LIMIT_NUMBER_OF_CANDIDATES_AT_ONCE: 2,
+      MAX_NUM_PEER_CANDIDATES_AT_ONCE: 2,
       DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
       DEFAULT_MAX_INBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1
     }
