@@ -2527,9 +2527,8 @@ describe("state-util", () => {
           }
         }
       });
-      const numAffectedNodes =
-          updateStateInfoForAllRootPaths([label1, label11, label111, label1111], stateTree);
-      expect(numAffectedNodes).to.equal(5);
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1111);
+      expect(numAffectedNodes).to.equal(4);
       assert.deepEqual(stateTree.toJsObject(), {
         "0x0001": {
           "0x0012": {
@@ -2539,7 +2538,7 @@ describe("state-util", () => {
       });
     });
 
-    it("updateStateInfoForAllRootPaths on empty node with multiple root paths", () => {
+    it("updateStateInfoForAllRootPaths on empty node with multiple root paths from empty node", () => {
       const child111Clone = child111.clone();
       const child11Clone = new StateNode();
       child11Clone.setChild(label111, child111Clone);
@@ -2575,9 +2574,64 @@ describe("state-util", () => {
         "0x003": "V0003"
       });
       assert.deepEqual(child1111.getParentNodes(), [child111, child111Clone]);
-      const numAffectedNodes =
-          updateStateInfoForAllRootPaths([label1, label11, label111, label1111], stateTree);
-      expect(numAffectedNodes).to.equal(10);
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1111);
+      expect(numAffectedNodes).to.equal(4);
+      assert.deepEqual(stateTree.toJsObject(), {
+        "0x0001": {
+          "0x0012": {
+            "0x0121": "V0121"
+          }
+        }
+      });
+      assert.deepEqual(stateTreeClone.toJsObject(), {
+        "0x0001": {
+          "0x0011": {
+            "0x0111": {
+              "0x1111": null
+            }
+          }
+        },
+        "0x003": "V0003"
+      });
+    });
+
+
+    it("updateStateInfoForAllRootPaths on empty node with multiple root paths from parent node", () => {
+      const child11Clone = child11.clone()
+      const child1Clone = new StateNode();
+      child1Clone.setChild(label11, child11Clone);
+      const stateTreeClone = new StateNode();
+      stateTreeClone.setChild(label1, child1Clone);
+      const child3 = new StateNode();
+      child3.setValue('V0003');
+      const label3 = '0x003';
+      stateTreeClone.setChild(label3, child3);
+
+      assert.deepEqual(stateTree.toJsObject(), {
+        "0x0001": {
+          "0x0011": {
+            "0x0111": {
+              "0x1111": null
+            }
+          },
+          "0x0012": {
+            "0x0121": "V0121"
+          }
+        }
+      });
+      assert.deepEqual(stateTreeClone.toJsObject(), {
+        "0x0001": {
+          "0x0011": {
+            "0x0111": {
+              "0x1111": null
+            }
+          }
+        },
+        "0x003": "V0003"
+      });
+      assert.deepEqual(child111.getParentNodes(), [child11, child11Clone]);
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1111);
+      expect(numAffectedNodes).to.equal(7);
       assert.deepEqual(stateTree.toJsObject(), {
         "0x0001": {
           "0x0012": {
@@ -2604,7 +2658,7 @@ describe("state-util", () => {
         }
       });
       const numAffectedNodes =
-          updateStateInfoForAllRootPaths([label1, label11, label111], stateTree);
+          updateStateInfoForAllRootPaths(child11, label111, false);
       expect(numAffectedNodes).to.equal(3);
       assert.deepEqual(stateTree.toJsObject(), {
         "0x0001": {
@@ -2619,20 +2673,6 @@ describe("state-util", () => {
         }
       });
     });
-
-    it("updateStateInfoForAllRootPaths with deleted nodes", () => {
-      // with deleted nodes
-      const numAffectedNodes = updateStateInfoForAllRootPaths(
-          [label1, label11, label111, label1111, 'deleted1', 'deleted2'], stateTree);
-      expect(numAffectedNodes).to.equal(5);
-      assert.deepEqual(stateTree.toJsObject(), {
-        "0x0001": {
-          "0x0012": {
-            "0x0121": "V0121"
-          }
-        }
-      });
-    })
   });
 
   describe("state info updates", () => {
@@ -2718,8 +2758,7 @@ describe("state-util", () => {
     });
 
     it("updateStateInfoForAllRootPaths with a single root path", () => {
-      const numAffectedNodes =
-          updateStateInfoForAllRootPaths([label1, label11, label111, label1112], stateTree);
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1112);
       expect(numAffectedNodes).to.equal(4);
       // Checks proof hashes.
       expect(child1111.verifyProofHash()).to.equal(false);
@@ -2769,15 +2808,14 @@ describe("state-util", () => {
       const child111Clone = child111.clone();
       const child2Clone = child2.clone();
 
-      const numAffectedNodes =
-          updateStateInfoForAllRootPaths([label1, label11, label111, label1112], stateTree);
-      expect(numAffectedNodes).to.equal(8);
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1112);
+      expect(numAffectedNodes).to.equal(7);
 
       // Checks proof hashes.
       expect(child1111.verifyProofHash()).to.equal(false);
       expect(child1112.verifyProofHash()).to.equal(false);  // not verified!!
       expect(child111.verifyProofHash(label1112)).to.equal(true);  // verified
-      expect(child111Clone.verifyProofHash(label1112)).to.equal(true);  // verified
+      expect(child111Clone.verifyProofHash(label1112)).to.equal(false);  // not verified!!
       expect(child11.verifyProofHash()).to.equal(true);  // verified
       expect(child11Clone.verifyProofHash()).to.equal(true);  // verified
       expect(child11Clone.getProofHash()).to.equal(child11.getProofHash());
@@ -2790,22 +2828,6 @@ describe("state-util", () => {
       expect(stateTree.verifyProofHash(label1)).to.equal(true);  // verified
       expect(stateTreeClone.verifyProofHash(label1)).to.equal(true);  // verified
       expect(stateTreeClone.getProofHash()).to.equal(stateTree.getProofHash());
-    });
-
-    it("updateStateInfoForAllRootPaths with deleted nodes", () => {
-      const numAffectedNodes = updateStateInfoForAllRootPaths(
-          [label1, label11, label111, 'deleted1', 'deleted2'], stateTree);  // with deleted nodes
-      expect(numAffectedNodes).to.equal(4);
-
-      // Checks proof hashes.
-      expect(child1111.verifyProofHash()).to.equal(false);
-      expect(child1112.verifyProofHash()).to.equal(false);
-      expect(child111.verifyProofHash()).to.equal(true);  // verified!!
-      expect(child11.verifyProofHash()).to.equal(true);  // verified
-      expect(child21.verifyProofHash()).to.equal(false);
-      expect(child2.verifyProofHash()).to.equal(false);
-      expect(child1.verifyProofHash()).to.equal(true);  // verified
-      expect(stateTree.verifyProofHash(label1)).to.equal(true);  // verified
     });
 
     it("verifyProofHashForStateTree ", () => {
