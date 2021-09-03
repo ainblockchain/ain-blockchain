@@ -293,7 +293,7 @@ class StateNode {
     if (FeatureFlags.enableRadixTreeLayers) {
       this.radixTree.delete(label, updateStateInfo);  // with updateStateInfo
       if (updateStateInfo) {
-        this.updateStateInfo(null, false);  // rebuildRadixProofHash = false
+        this.updateStateInfo(null, false);  // rebuildRadixInfo = false
       }
     } else {
       this.childMap.delete(label);
@@ -378,16 +378,16 @@ class StateNode {
    * need to be updated, and this function does so.
    * 
    * @param {string} updatedChildLabel label of the child whose proof hash is not up-to-date
-   * @param {boolean} rebuildRadixProofhash rebuild radix proof hash values
+   * @param {boolean} rebuildRadixInfo rebuild radix info
    */
   // NOTE(platfowner): This function changes proof hashes of the radix tree.
-  buildProofHash(updatedChildLabel = null, rebuildRadixProofHash = true) {
+  buildProofHash(updatedChildLabel = null, rebuildRadixInfo = true) {
     let preimage;
     if (this.getIsLeaf()) {
       preimage = this.getValue();
     } else {
       if (FeatureFlags.enableRadixTreeLayers) {
-        if (rebuildRadixProofHash) {
+        if (rebuildRadixInfo) {
           if (updatedChildLabel === null) {
             this.radixTree.updateRadixInfoForRadixTree();
           } else {
@@ -433,8 +433,12 @@ class StateNode {
     if (this.getIsLeaf()) {
       return 0;
     } else {
-      return this.getChildNodes().reduce(
-          (max, cur) => Math.max(max, CommonUtil.numberOrZero(cur.getTreeHeight()) + 1), 0);
+      if (FeatureFlags.enableRadixTreeLayers) {
+        return 1 + this.radixTree.getRootTreeHeight();
+      } else {
+        return this.getChildNodes().reduce(
+            (max, cur) => Math.max(max, CommonUtil.numberOrZero(cur.getTreeHeight()) + 1), 0);
+      }
     }
   }
 
@@ -442,25 +446,34 @@ class StateNode {
     if (this.getIsLeaf()) {
       return 1;
     } else {
-      return this.getChildNodes().reduce(
-          (acc, cur) => acc + CommonUtil.numberOrZero(cur.getTreeSize()), 1);
+      if (FeatureFlags.enableRadixTreeLayers) {
+        return 1 + this.radixTree.getRootTreeSize();
+      } else {
+        return this.getChildNodes().reduce(
+            (acc, cur) => acc + CommonUtil.numberOrZero(cur.getTreeSize()), 1);
+      }
     }
   }
 
   computeTreeBytes() {
+    const nodeBytes = this.computeNodeBytes();
     if (this.getIsLeaf()) {
-      return this.computeNodeBytes();
+      return nodeBytes;
     } else {
-      return this.getChildLabels().reduce((acc, label) => {
-        const child = this.getChild(label);
-        return acc + sizeof(label) + CommonUtil.numberOrZero(child.getTreeBytes());
-      }, this.computeNodeBytes());
+      if (FeatureFlags.enableRadixTreeLayers) {
+        return nodeBytes + this.radixTree.getRootTreeBytes();
+      } else {
+        return this.getChildLabels().reduce((acc, label) => {
+          const child = this.getChild(label);
+          return acc + sizeof(label) + CommonUtil.numberOrZero(child.getTreeBytes());
+        }, nodeBytes);
+      }
     }
   }
 
-  updateStateInfo(updatedChildLabel = null, rebuildRadixProofHash = true) {
+  updateStateInfo(updatedChildLabel = null, rebuildRadixInfo = true) {
     if (!LIGHTWEIGHT) {
-      this.setProofHash(this.buildProofHash(updatedChildLabel, rebuildRadixProofHash));
+      this.setProofHash(this.buildProofHash(updatedChildLabel, rebuildRadixInfo));
     }
     this.setTreeHeight(this.computeTreeHeight());
     this.setTreeSize(this.computeTreeSize());

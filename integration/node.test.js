@@ -4765,7 +4765,7 @@ describe('Blockchain Node', () => {
           ref: triggerRestFunctionPath,
           value: 'some value',
         }}).body.toString('utf-8'));
-        assert.deepEqual(_.get(body, 'result.result'), {
+        assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
           "func_results": {
             "0x11111": {
               "code": 0,
@@ -4774,7 +4774,7 @@ describe('Blockchain Node', () => {
           },
           "code": 0,
           "bandwidth_gas_amount": 1,
-          "gas_amount_charged": 0,
+          "gas_amount_charged": "erased",
           "gas_amount_total": {
             "bandwidth": {
               "app": {
@@ -4784,9 +4784,9 @@ describe('Blockchain Node', () => {
             },
             "state": {
               "app": {
-                "test": 424
+                "test": 584
               },
-              "service": 0
+              "service": "erased"
             }
           },
           "gas_cost_total": 0,

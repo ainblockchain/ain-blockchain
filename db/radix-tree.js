@@ -272,6 +272,18 @@ class RadixTree {
     return this.root.getProofHash();
   }
 
+  getRootTreeHeight() {
+    return this.root.getTreeHeight();
+  }
+
+  getRootTreeSize() {
+    return this.root.getTreeSize();
+  }
+
+  getRootTreeBytes() {
+    return this.root.getTreeBytes();
+  }
+
   updateRadixInfoForRadixTree() {
     return this.root.updateRadixInfoForRadixTree();
   }

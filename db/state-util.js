@@ -617,7 +617,7 @@ function updateStateInfoForAllRootPathsRecursive(
   if (updatedChildEmpty) {
     curNode.deleteChild(updatedChildLabel, true);  // updateStateInfo = true
   } else {
-    curNode.updateStateInfo(updatedChildLabel, true);  // rebuildRadixProofHash = true
+    curNode.updateStateInfo(updatedChildLabel, true);  // rebuildRadixInfo = true
   }
   const curLabel = curNode.getLabel();
   const curNodeEmpty = updatedChildEmpty && isEmptyNode(curNode);
@@ -650,7 +650,7 @@ function updateStateInfoForStateTree(stateTree) {
       numAffectedNodes += updateStateInfoForStateTree(node);
     }
   }
-  stateTree.updateStateInfo(null, true);  // rebuildRadixProofHash = true
+  stateTree.updateStateInfo(null, true);  // rebuildRadixInfo = true
   numAffectedNodes++;
 
   return numAffectedNodes;
