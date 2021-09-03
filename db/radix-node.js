@@ -159,6 +159,7 @@ class RadixNode {
     child.resetLabelRadix();
     child.resetLabelSuffix();
     child.resetParent();
+    child.resetProofHash();
     return true;
   }
 
