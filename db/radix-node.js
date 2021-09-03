@@ -3,11 +3,9 @@ const logger = require('../logger')('RADIX_NODE');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
-  FeatureFlags,
   HASH_DELIMITER,
   ProofProperties,
 } = require('../common/constants');
-const RadixChildMap = require('./radix-child-map');
 
 /**
  * Implements Radix Node, which is used as a component of RadixTree.
@@ -18,11 +16,7 @@ class RadixNode {
     this.labelRadix = '';
     this.labelSuffix = '';
     this.parent = null;
-    if (FeatureFlags.enableArrayRadixChildMap) {
-      this.radixChildMap = new RadixChildMap();
-    } else {
-      this.radixChildMap = new Map();
-    }
+    this.radixChildMap = new Map();
     this.proofHash = null;
     this.treeHeight = 0;
     this.treeSize = 0;
