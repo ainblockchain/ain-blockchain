@@ -454,64 +454,26 @@ describe("radix-node", () => {
       expect(node._buildProofHash()).to.equal(proofHash1)
     });
 
-    it("_computeTreeHeight", () => {
+    it("_buildTreeInfo", () => {
       const stateNodeTH = 12;
       const childTH1 = 10;
       const childTH2 = 11;
+
+      const stateNodeTS = 120;
+      const childTS1 = 100;
+      const childTS2 = 110;
+
+      const stateNodeTB = 3200;
+      const childTB1 = 1000;
+      const childTB2 = 2100;
 
       stateNode.setTreeHeight(stateNodeTH);
       child1.setTreeHeight(childTH1);
       child2.setTreeHeight(childTH2);
 
-      node.setStateNode(stateNode);
-      node.setChild(labelRadix1, labelSuffix1, child1);
-      node.setChild(labelRadix2, labelSuffix2, child2);
-
-      assert.deepEqual(node.toJsObject(), {
-        "1100": {
-          ".label": null,
-          ".proof_hash": "stateNodePH1",
-        },
-        "2200": {
-        },
-        ".label": null,
-        ".proof_hash": "stateNodePH",
-      });
-
-      expect(node._computeTreeHeight()).to.equal(Math.max(stateNodeTH, childTH1, childTH2));
-    });
-
-    it("_computeTreeSize", () => {
-      const stateNodeTS = 120;
-      const childTS1 = 100;
-      const childTS2 = 110;
-
       stateNode.setTreeSize(stateNodeTS);
       child1.setTreeSize(childTS1);
       child2.setTreeSize(childTS2);
-
-      node.setStateNode(stateNode);
-      node.setChild(labelRadix1, labelSuffix1, child1);
-      node.setChild(labelRadix2, labelSuffix2, child2);
-
-      assert.deepEqual(node.toJsObject(), {
-        "1100": {
-          ".label": null,
-          ".proof_hash": "stateNodePH1",
-        },
-        "2200": {
-        },
-        ".label": null,
-        ".proof_hash": "stateNodePH",
-      });
-
-      expect(node._computeTreeSize()).to.equal(stateNodeTS + childTS1 + childTS2);
-    });
-
-    it("_computeTreeBytes", () => {
-      const stateNodeTB = 3200;
-      const childTB1 = 1000;
-      const childTB2 = 2100;
 
       stateNode.setTreeBytes(stateNodeTB);
       child1.setTreeBytes(childTB1);
@@ -532,7 +494,10 @@ describe("radix-node", () => {
         ".proof_hash": "stateNodePH",
       });
 
-      expect(node._computeTreeBytes()).to.equal(stateNodeTB + childTB1 + childTB2);
+      const treeInfo = node._buildTreeInfo();
+      expect(treeInfo.treeHeight).to.equal(Math.max(stateNodeTH, childTH1, childTH2));
+      expect(treeInfo.treeSize).to.equal(stateNodeTS + childTS1 + childTS2);
+      expect(treeInfo.treeBytes).to.equal(stateNodeTB + childTB1 + childTB2);
     });
 
     it("updateRadixInfo / verifyProofHash", () => {
@@ -590,12 +555,11 @@ describe("radix-node", () => {
       node.updateRadixInfo();
       expect(node.verifyProofHash()).to.equal(true);
       expect(node.getProofHash()).to.equal(node._buildProofHash());
-      // Check tree height
-      expect(node._computeTreeHeight()).to.equal(Math.max(stateNodeTH, childTH1, childTH2));
-      // Check tree size
-      expect(node._computeTreeSize()).to.equal(stateNodeTS + childTS1 + childTS2);
-      // Check tree bytes
-      expect(node._computeTreeBytes()).to.equal(stateNodeTB + childTB1 + childTB2);
+      // Check tree info
+      const treeInfo = node._buildTreeInfo();
+      expect(treeInfo.treeHeight).to.equal(Math.max(stateNodeTH, childTH1, childTH2));
+      expect(treeInfo.treeSize).to.equal(stateNodeTS + childTS1 + childTS2);
+      expect(treeInfo.treeBytes).to.equal(stateNodeTB + childTB1 + childTB2);
     });
 
     it("updateRadixInfoForRadixTree", () => {

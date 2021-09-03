@@ -234,36 +234,44 @@ class RadixNode {
     return this.getProofHash() === this._buildProofHash();
   }
 
-  _computeTreeHeight() {
-    const stateNodeTH = this.hasStateNode() ? this.getStateNode().getTreeHeight() : 0
-    return this.getChildNodes().reduce(
-        (max, cur) => Math.max(max, cur.getTreeHeight()), stateNodeTH);
-  }
-
-  _computeTreeSize() {
-    const stateNodeTS = this.hasStateNode() ? this.getStateNode().getTreeSize() : 0
-    return this.getChildNodes().reduce(
-        (acc, cur) => acc + cur.getTreeSize(), stateNodeTS);
-  }
-
-  _computeTreeBytes() {
-    let stateNodeLabel = '';
-    let stateNodeTB = 0;
+  _buildTreeInfo() {
+    let treeHeight;
+    let treeSize;
+    let treeBytes;
     if (this.hasStateNode()) {
       const stateNode = this.getStateNode();
-      stateNodeLabel = CommonUtil.stringOrEmpty(stateNode.getLabel());
-      stateNodeTB = sizeof(stateNodeLabel) + stateNode.getTreeBytes();
+      treeHeight = stateNode.getTreeHeight();
+      treeSize = stateNode.getTreeSize();
+      const stateNodeLabel = CommonUtil.stringOrEmpty(stateNode.getLabel());
+      treeBytes = sizeof(stateNodeLabel) + stateNode.getTreeBytes();
+    } else {
+      treeHeight = 0;
+      treeSize = 0;
+      treeBytes = 0;
     }
-    return this.getChildNodes().reduce(
-        (acc, cur) => acc + cur.getTreeBytes(),
-        stateNodeTB);
+    const initialValues = {
+      treeHeight,
+      treeSize,
+      treeBytes,
+    };
+    return this.getChildNodes().reduce((acc, cur) => {
+      const newTreeHeight = Math.max(acc.treeHeight, cur.getTreeHeight());
+      const newTreeSize = acc.treeSize + cur.getTreeSize();
+      const newTreeBytes = acc.treeBytes + cur.getTreeBytes();
+      return {
+        treeHeight: newTreeHeight,
+        treeSize: newTreeSize,
+        treeBytes: newTreeBytes,
+      };
+    }, initialValues);
   }
 
   updateRadixInfo() {
     this.setProofHash(this._buildProofHash());
-    this.setTreeHeight(this._computeTreeHeight());
-    this.setTreeSize(this._computeTreeSize());
-    this.setTreeBytes(this._computeTreeBytes());
+    const treeInfo = this._buildTreeInfo();
+    this.setTreeHeight(treeInfo.treeHeight);
+    this.setTreeSize(treeInfo.treeSize);
+    this.setTreeBytes(treeInfo.treeBytes);
   }
 
   updateRadixInfoForRadixTree() {
