@@ -219,6 +219,7 @@ class BlockchainNode {
   }
 
   getTransactionByHash(hash) {
+    const LOG_HEADER = 'getTransactionByHash';
     const transactionInfo = this.tp.transactionTracker[hash];
     if (!transactionInfo) {
       return null;
@@ -228,9 +229,11 @@ class BlockchainNode {
       const block = this.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
       if (!block) {
-        // TODO(liayoo): Ask peers for the transaction / block
+        logger.debug(`[${LOG_HEADER}] Block of number ${transactionInfo.number} is missing`);
+        return transactionInfo;
       } else if (index >= 0) {
         transactionInfo.transaction = block.transactions[index];
+        transactionInfo.receipt = block.receipts[index];
       } else {
         transactionInfo.transaction =
             _.find(block.last_votes, (tx) => tx.hash === hash) || null;

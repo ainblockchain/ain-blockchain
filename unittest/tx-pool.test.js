@@ -5,7 +5,7 @@ const shuffleSeed = require('shuffle-seed');
 const CommonUtil = require('../common/common-util');
 const {Block} = require('../blockchain/block');
 const BlockchainNode = require('../node');
-const {setNodeForTesting, getTransaction} = require('./test-util');
+const {setNodeForTesting, getTransaction, txsToDummyReceipts} = require('./test-util');
 const TransactionPool = require('../tx-pool');
 const {
   BANDWIDTH_BUDGET_PER_BLOCK,
@@ -625,8 +625,10 @@ describe('TransactionPool', async () => {
     it('cleanUpForNewBlock()', () => {
       const number = 1;
       const lastBlock = Block.genesis();
+      const transactions = node1.tp.getValidTransactions();
+      const receipts = txsToDummyReceipts(transactions);
       const block = Block.create(
-          lastBlock.hash, [], node.tp.getValidTransactions(), number, lastBlock.epoch + 1, '',
+          lastBlock.hash, [], transactions, receipts, number, lastBlock.epoch + 1, '',
           node.account.address, []);
       const newTransactions = {};
       newTransactions[node.account.address] = [];
