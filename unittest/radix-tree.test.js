@@ -8,9 +8,8 @@ const assert = chai.assert;
 describe("radix-tree", () => {
   describe("Utils", () => {
     it("_toHexLabel", () => {
-      const tree = new RadixTree();
-      expect(tree._toHexLabel('0x1234567890abcdef')).to.equal('1234567890abcdef');
-      expect(tree._toHexLabel('aAzZ')).to.equal('61417a5a');
+      expect(RadixTree._toHexLabel('0x1234567890abcdef')).to.equal('1234567890abcdef');
+      expect(RadixTree._toHexLabel('aAzZ')).to.equal('61417a5a');
     });
 
     it("_matchLabelSuffix with empty label suffix", () => {

@@ -13,7 +13,7 @@ class RadixTree {
     this.terminalNodeMap = new Map();
   }
 
-  _toHexLabel(stateLabel) {
+  static _toHexLabel(stateLabel) {
     const hexLabelWithPrefix = CommonUtil.toHexString(stateLabel);
     const hexLabel = hexLabelWithPrefix.length >= 2 ? hexLabelWithPrefix.slice(2) : '';
     return hexLabel;
@@ -57,7 +57,7 @@ class RadixTree {
       return curNode;
     }
 
-    const hexLabel = this._toHexLabel(stateLabel);
+    const hexLabel = RadixTree._toHexLabel(stateLabel);
     curNode = this.root
     let labelIndex = 0;
     while (labelIndex < hexLabel.length) {
@@ -265,6 +265,23 @@ class RadixTree {
 
   getRootTreeBytes() {
     return this.root.getTreeBytes();
+  }
+
+  deleteRadixTree(parentStateNode) {
+    const LOG_HEADER = 'deleteRadixTree';
+
+    for (const terminalNode of this.terminalNodeMap.values()) {
+      if (!terminalNode.hasStateNode()) {
+        logger.error(
+            `[${LOG_HEADER}] Terminal node without state node with label: ` +
+            `${terminalNode.getLabel()} at: ${new Error().stack}.`);
+        continue;
+      }
+      const childStateNode = terminalNode.getStateNode();
+      childStateNode.deleteParent(parentStateNode);
+    }
+    this.terminalNodeMap.clear();
+    this.root = new RadixNode();
   }
 
   updateRadixInfoForRadixTree() {
