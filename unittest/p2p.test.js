@@ -6,8 +6,8 @@ const P2pClient = require('../p2p');
 const {
   PORT,
   P2P_PORT,
-  DEFAULT_MAX_OUTBOUND,
-  DEFAULT_MAX_INBOUND,
+  TARGET_NUM_OUTBOUND_CONNECTION,
+  MAX_NUM_INBOUND_CONNECTION,
   CONSENSUS_PROTOCOL_VERSION,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
@@ -260,19 +260,19 @@ describe("p2p", () => {
   describe("client status", () => {
     describe("initConnections", () => {
       it("sets maxOutbound", () => {
-        expect(p2pClient.maxOutbound).to.equal(DEFAULT_MAX_OUTBOUND);
+        expect(p2pClient.maxOutbound).to.equal(TARGET_NUM_OUTBOUND_CONNECTION);
       });
 
       it("sets maxInbound", () => {
-        expect(p2pClient.maxInbound).to.equal(DEFAULT_MAX_INBOUND);
+        expect(p2pClient.maxInbound).to.equal(MAX_NUM_INBOUND_CONNECTION);
       });
     });
 
     describe("getConnectionStatus", () => {
       it("shows initial values of connection status", () => {
         const actual = {
-          maxInbound: DEFAULT_MAX_OUTBOUND,
-          maxOutbound: DEFAULT_MAX_INBOUND,
+          maxInbound: TARGET_NUM_OUTBOUND_CONNECTION,
+          maxOutbound: MAX_NUM_INBOUND_CONNECTION,
           numInbound: 0,
           numOutbound: 0,
           incomingPeers: [],
