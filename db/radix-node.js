@@ -206,40 +206,55 @@ class RadixNode {
     return this.getProofHash() === this._buildProofHash();
   }
 
-  updateProofHash() {
+  computeTreeHeight() {
+    return this.getChildNodes().reduce(
+        (max, cur) => Math.max(max, CommonUtil.numberOrZero(cur.getTreeHeight()) + 1), 0);
+  }
+
+  computeTreeSize() {
+    return this.getChildNodes().reduce(
+        (acc, cur) => acc + CommonUtil.numberOrZero(cur.getTreeSize()), 1);
+  }
+
+  computeTreeBytes() {
+    return this.getChildNodes().reduce(
+        (acc, cur) => acc + CommonUtil.numberOrZero(cur.getTreeBytes()), 0);
+  }
+
+  updateRadixInfo() {
     this.setProofHash(this._buildProofHash());
   }
 
-  updateProofHashForRadixSubtree() {
+  updateRadixInfoForRadixTree() {
     let numAffectedNodes = 0;
     for (const child of this.getChildNodes()) {
-      numAffectedNodes += child.updateProofHashForRadixSubtree();
+      numAffectedNodes += child.updateRadixInfoForRadixTree();
     }
-    this.updateProofHash();
+    this.updateRadixInfo();
     numAffectedNodes++;
 
     return numAffectedNodes;
   }
 
-  updateProofHashForRadixPath() {
+  updateRadixInfoForRadixPath() {
     let numAffectedNodes = 0;
     let curNode = this;
-    curNode.updateProofHash();
+    curNode.updateRadixInfo();
     numAffectedNodes++;
     while (curNode.hasParent()) {
       curNode = curNode.getParent();
-      curNode.updateProofHash();
+      curNode.updateRadixInfo();
       numAffectedNodes++;
     }
     return numAffectedNodes;
   }
 
-  verifyProofHashForRadixSubtree() {
+  verifyProofHashForRadixTree() {
     if (!this.verifyProofHash()) {
       return false;
     }
     for (const child of this.getChildNodes()) {
-      if (!child.verifyProofHashForRadixSubtree()) {
+      if (!child.verifyProofHashForRadixTree()) {
         return false;
       }
     }

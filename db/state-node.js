@@ -389,9 +389,9 @@ class StateNode {
       if (FeatureFlags.enableRadixTreeLayers) {
         if (rebuildRadixProofHash) {
           if (updatedChildLabel === null) {
-            this.radixTree.updateProofHashForRadixTree();
+            this.radixTree.updateRadixInfoForRadixTree();
           } else {
-            this.radixTree.updateProofHashForRadixPath(updatedChildLabel);
+            this.radixTree.updateRadixInfoForRadixPath(updatedChildLabel);
           }
         }
         return this.radixTree.getRootProofHash();
