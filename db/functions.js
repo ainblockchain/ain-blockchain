@@ -179,6 +179,9 @@ class Functions {
               // Always pops from the call stack.
               this.popCall();
               triggerCount++;
+              if (CommonUtil.isFailedFuncResultCode(result.code)) {
+                break;
+              }
             }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
@@ -443,12 +446,6 @@ class Functions {
     return funcResultToReturn;
   }
 
-  saveAndReturnFuncResult(context, resultPath, code, extraGasAmount = 0) {
-    const funcResultToSave = this.buildFuncResultToSave(context, code);
-    this.setValueOrLog(resultPath, funcResultToSave, context);
-    return this.returnFuncResult(context, code, extraGasAmount);
-  }
-
   /**
    * Saves the transaction's hash to a sibling path.
    * e.g.) For tx's value path 'path/to/value', it saves the tx hash to 'path/to/.last_tx/value'.
@@ -514,15 +511,12 @@ class Functions {
   _transfer(value, context) {
     const from = context.params.from;
     const to = context.params.to;
-    const key = context.params.key;
     const fromBalancePath = CommonUtil.getBalancePath(from);
     const toBalancePath = CommonUtil.getBalancePath(to);
-    const resultPath = PathUtil.getTransferResultPath(from, to, key);
     let extraGasAmount = 0;
     const fromBalance = this.db.getValue(fromBalancePath);
     if (fromBalance === null || fromBalance < value) {
-      return this.saveAndReturnFuncResult(
-          context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+      return this.returnFuncResult(context, FunctionResultCode.INSUFFICIENT_BALANCE);
     }
     const toBalance = this.db.getValue(toBalancePath);
     if (toBalance === null) {
@@ -530,17 +524,14 @@ class Functions {
     }
     const decResult = this.decValueOrLog(fromBalancePath, value, context);
     if (CommonUtil.isFailedTx(decResult)) {
-      return this.saveAndReturnFuncResult(
-          context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
     }
     // TODO(liayoo): Remove the from entry, if it's a service account && if the new balance === 0.
     const incResult = this.incValueOrLog(toBalancePath, value, context);
     if (CommonUtil.isFailedTx(incResult)) {
-      return this.saveAndReturnFuncResult(
-          context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
     }
-    return this.saveAndReturnFuncResult(
-        context, resultPath, FunctionResultCode.SUCCESS, extraGasAmount);
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS, extraGasAmount);
   }
 
   sanitizeCreateAppConfig(rawVal) {
@@ -579,14 +570,12 @@ class Functions {
   _createApp(value, context) {
     const { isValidServiceName } = require('./state-util');
     const appName = context.params.app_name;
-    const recordId = context.params.record_id;
-    const resultPath = PathUtil.getCreateAppResultPath(appName, recordId);
     if (!isValidServiceName(appName)) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INVALID_SERVICE_NAME);
+      return this.returnFuncResult(context, FunctionResultCode.INVALID_SERVICE_NAME);
     }
     const { sanitizedVal, errorCode } = this.sanitizeCreateAppConfig(value);
     if (errorCode) {
-      return this.saveAndReturnFuncResult(context, resultPath, errorCode);
+      return this.returnFuncResult(context, errorCode);
     }
     let rule;
     const owner = {};
@@ -611,9 +600,9 @@ class Functions {
     const manageAppConfigPath = PathUtil.getManageAppConfigPath(appName);
     const result = this.setValueOrLog(manageAppConfigPath, sanitizedVal, context);
     if (!CommonUtil.isFailedTx(result)) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
   }
 
@@ -711,7 +700,6 @@ class Functions {
     if (CommonUtil.isEmpty(value.offenses)) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
-    const now = context.blockTime === null ? context.timestamp : context.blockTime;
     for (const [offender, offenseList] of Object.entries(value.offenses)) {
       const numNewOffenses = Object.values(offenseList).reduce((acc, cur) => acc + cur, 0);
       const offenseRecordsPath = PathUtil.getConsensusOffenseRecordsAddrPath(offender);
@@ -720,7 +708,7 @@ class Functions {
       const lockupExtension = Functions.getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses);
       if (lockupExtension > 0) {
         const expirationPath = PathUtil.getStakingExpirationPath(PredefinedDbPaths.CONSENSUS, offender, 0);
-        const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), now);
+        const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), context.blockTime);
         this.setValueOrLog(expirationPath, currentExpiration + lockupExtension, context);
       }
     }
@@ -731,19 +719,16 @@ class Functions {
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const stakingKey = context.params.staking_key;
-    const recordId = context.params.record_id;
-    const now = context.blockTime === null ? context.timestamp : context.blockTime;
-    const resultPath = PathUtil.getStakingStakeResultPath(serviceName, user, stakingKey, recordId);
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
     const currentExpiration = Number(this.db.getValue(expirationPath));
     const lockup = Number(this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)));
-    const newExpiration = now + lockup;
+    const newExpiration = context.blockTime + lockup;
     const updateExpiration = newExpiration > currentExpiration;
     if (value === 0) {
       // Just update the expiration time
       if (updateExpiration) {
         this.setValueOrLog(expirationPath, newExpiration, context);
-        return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
+        return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
       }
     }
     const stakingServiceAccountName = CommonUtil.toServiceAccountName(
@@ -756,12 +741,9 @@ class Functions {
       }
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
       this.incValueOrLog(balanceTotalPath, value, context);
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
-    } else if (result.code === 1001) {
-      return this.saveAndReturnFuncResult(
-          context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -769,15 +751,12 @@ class Functions {
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const stakingKey = context.params.staking_key;
-    const recordId = context.params.record_id;
     const executedAt = context.executedAt;
-    const resultPath =
-        PathUtil.getStakingUnstakeResultPath(serviceName, user, stakingKey, recordId);
     const expireAt =
         this.db.getValue(PathUtil.getStakingExpirationPath(serviceName, user, stakingKey));
     if (expireAt > executedAt) {
       // Still in lock-up period.
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.IN_LOCKUP_PERIOD);
+      return this.returnFuncResult(context, FunctionResultCode.IN_LOCKUP_PERIOD);
     }
     const stakingServiceAccountName = CommonUtil.toServiceAccountName(
         PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
@@ -786,12 +765,9 @@ class Functions {
     if (!CommonUtil.isFailedTx(result)) {
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
       this.decValueOrLog(balanceTotalPath, value, context);
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
-    } else if (result.code === 1001) {
-      return this.saveAndReturnFuncResult(
-          context, resultPath, FunctionResultCode.INSUFFICIENT_BALANCE);
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -799,25 +775,18 @@ class Functions {
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
-    const recordId = context.params.record_id;
-    const timestamp = context.timestamp;
-    const executedAt = context.executedAt;
     const transaction = context.transaction;
-    const resultPath =
-        PathUtil.getPaymentPayRecordResultPath(serviceName, user, paymentKey, recordId);
-
-    if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
+    if (!this.validatePaymentRecord(transaction.address, value)) {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
-
     const userServiceAccountName = CommonUtil.toServiceAccountName(
         PredefinedDbPaths.PAYMENTS, serviceName, `${user}|${paymentKey}`);
     const result = this.setServiceAccountTransferOrLog(
         transaction.address, userServiceAccountName, value.amount, context);
     if (!CommonUtil.isFailedTx(result)) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -825,15 +794,9 @@ class Functions {
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
-    const recordId = context.params.record_id;
-    const timestamp = context.timestamp;
-    const executedAt = context.executedAt;
     const transaction = context.transaction;
-    const resultPath =
-        PathUtil.getPaymentClaimRecordResultPath(serviceName, user, paymentKey, recordId);
-
-    if (!this.validatePaymentRecord(transaction.address, value, timestamp, executedAt)) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
+    if (!this.validatePaymentRecord(transaction.address, value)) {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
 
     let result;
@@ -843,27 +806,24 @@ class Functions {
     // transferred directly to the admin account.
     if (value.escrow_key !== undefined) {
       const escrowHoldPath = PathUtil.getEscrowHoldRecordPath(
-          userServiceAccountName, value.target, value.escrow_key, timestamp);
+          userServiceAccountName, value.target, value.escrow_key, context.blockTime);
       result = this.setValueOrLog(escrowHoldPath, { amount: value.amount }, context);
     } else {
       result = this.setServiceAccountTransferOrLog(
           userServiceAccountName, value.target, value.amount, context);
     }
     if (!CommonUtil.isFailedTx(result)) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
-  validatePaymentRecord(adminAddr, value, timestamp, executedAt) {
+  validatePaymentRecord(adminAddr, value) {
     if (!adminAddr) {
       return false;
     }
     if (!value || !value.amount || !CommonUtil.isNumber(value.amount)) {
-      return false;
-    }
-    if (timestamp > executedAt) {
       return false;
     }
     return true;
@@ -873,12 +833,9 @@ class Functions {
     const sourceAccount = context.params.source_account;
     const targetAccount = context.params.target_account;
     const escrowKey = context.params.escrow_key;
-    const recordId = context.params.record_id;
     const amount = _.get(value, 'amount');
-    const resultPath =
-        PathUtil.getEscrowHoldRecordResultPath(sourceAccount, targetAccount, escrowKey, recordId);
     if (!CommonUtil.isNumber(amount)) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     const accountKey = CommonUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
     const escrowServiceAccountName = CommonUtil.toServiceAccountName(
@@ -886,9 +843,9 @@ class Functions {
     const result = this.setServiceAccountTransferOrLog(
         sourceAccount, escrowServiceAccountName, amount, context);
     if (!CommonUtil.isFailedTx(result)) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+      return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
     }
   }
 
@@ -896,12 +853,9 @@ class Functions {
     const sourceAccount = context.params.source_account;
     const targetAccount = context.params.target_account;
     const escrowKey = context.params.escrow_key;
-    const recordId = context.params.record_id;
     const ratio = _.get(value, 'ratio');
-    const resultPath = PathUtil.getEscrowReleaseRecordResultPath(
-        sourceAccount, targetAccount, escrowKey, recordId);
     if (!CommonUtil.isNumber(ratio) || ratio < 0 || ratio > 1) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     const accountKey = CommonUtil.toEscrowAccountName(sourceAccount, targetAccount, escrowKey);
     const escrowServiceAccountName = CommonUtil.toServiceAccountName(
@@ -918,7 +872,7 @@ class Functions {
       targetResult = this.setServiceAccountTransferOrLog(
           escrowServiceAccountName, targetAccount, targetAmount, context);
       if (CommonUtil.isFailedTx(targetResult)) {
-        return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+        return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
       }
     }
     let sourceResult = null;
@@ -927,10 +881,10 @@ class Functions {
           escrowServiceAccountName, sourceAccount, sourceAmount, context);
       if (CommonUtil.isFailedTx(sourceResult)) {
         // TODO(liayoo): Revert the release to target_account if there was any.
-        return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.INTERNAL_ERROR);
+        return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
       }
     }
-    return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
   _updateLatestShardReport(value, context) {
@@ -1094,8 +1048,8 @@ class Functions {
     return true;
   }
 
-  updateCompleteCheckout(amount, timestamp, context) {
-    const dayTimestamp = CommonUtil.getDayTimestamp(timestamp);
+  updateCompleteCheckout(amount, blockTime, context) {
+    const dayTimestamp = CommonUtil.getDayTimestamp(blockTime);
     if (CommonUtil.isFailedTx(
         this.incValueOrLog(PathUtil.getCheckoutCompleteAmountDailyPath(dayTimestamp), amount, context))) {
       return FunctionResultCode.INTERNAL_ERROR;
@@ -1126,10 +1080,10 @@ class Functions {
     return FunctionResultCode.INVALID_RECIPIENT;
   }
 
-  validateCheckoutAmount(amount, timestamp, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay) {
+  validateCheckoutAmount(amount, blockTime, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay) {
     const pendingTotal = this.db.getValue(PathUtil.getCheckoutPendingAmountTotalPath()) || 0; // includes 'amount'
     const checkoutCompleteToday = this.db.getValue(
-        PathUtil.getCheckoutCompleteAmountDailyPath(CommonUtil.getDayTimestamp(timestamp))) || 0;
+        PathUtil.getCheckoutCompleteAmountDailyPath(CommonUtil.getDayTimestamp(blockTime))) || 0;
     if (amount < minCheckoutPerRequest || amount > maxCheckoutPerRequest) {
       return FunctionResultCode.INVALID_CHECKOUT_AMOUNT;
     }
@@ -1170,7 +1124,7 @@ class Functions {
       return this.returnFuncResult(context, recipientValidated);
     }
     const amountValidated = this.validateCheckoutAmount(
-        amount, context.timestamp, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay);
+        amount, context.blockTime, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay);
     if (amountValidated !== true) {
       return this.returnFuncResult(context, amountValidated);
     }
@@ -1191,7 +1145,7 @@ class Functions {
     const { request, response } = value;
     if (response.status === FunctionResultCode.SUCCESS) {
       // Increase complete amounts
-      const updateStatsResultCode = this.updateCompleteCheckout(request.amount, context.timestamp, context);
+      const updateStatsResultCode = this.updateCompleteCheckout(request.amount, context.blockTime, context);
       if (updateStatsResultCode !== true) {
         return this.returnFuncResult(context, updateStatsResultCode);
       }

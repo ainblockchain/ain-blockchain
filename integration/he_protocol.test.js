@@ -161,8 +161,12 @@ describe('HE Protocol', () => {
     describe('Create app', () => {
       it("app creation was successful", async () => {
         const appCreationResult = parseOrLog(syncRequest(
-          'GET', server2 + `/get_value?ref=/manage_app/${appName}/create/1/result`).body.toString('utf-8')).result;
-        expect(appCreationResult.code).to.equal(0);
+          'GET', server2 + `/get_value?ref=/manage_app/${appName}/create/1`).body.toString('utf-8')).result;
+        assert.deepEqual(appCreationResult, {
+          "admin": {
+            "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true
+          }
+        });
       });
     });
 

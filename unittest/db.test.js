@@ -2076,7 +2076,8 @@ describe("DB operations", () => {
                         "bandwidth_gas_amount": 0,
                       }
                     },
-                    "code": 0,
+                    "code": 105,
+                    "error_message": "Triggered function call failed",
                     "bandwidth_gas_amount": 1
                   }
                 }
@@ -2085,7 +2086,8 @@ describe("DB operations", () => {
               "bandwidth_gas_amount": 0,
             }
           },
-          "code": 0,
+          "code": 105,
+          "error_message": "Triggered function call failed",
           "bandwidth_gas_amount": 1,
         });
         assert.deepEqual(node.db.getValue(valuePath), value)
@@ -2510,7 +2512,8 @@ describe("DB operations", () => {
                             "bandwidth_gas_amount": 0,
                           }
                         },
-                        "code": 0,
+                        "code": 105,
+                        "error_message": "Triggered function call failed",
                         "bandwidth_gas_amount": 1
                       }
                     }
@@ -2519,7 +2522,8 @@ describe("DB operations", () => {
                   "bandwidth_gas_amount": 0,
                 }
               },
-              "code": 0,
+              "code": 105,
+              "error_message": "Triggered function call failed",
               "bandwidth_gas_amount": 1
             },
           },
@@ -2708,17 +2712,16 @@ describe("DB operations", () => {
         for (let i = 0; i < 1500; i++) {
           overSizeTxBody.operation.op_list.push({
             type: 'SET_VALUE',
-            ref: `/manage_app/app_${i}/create/${i}`,
-            value: { admin: { [node.account.address]: true } }
+            ref: `/staking/app_${i}/${node.account.address}/0/stake/${i}/value`,
+            value: 1
           });
-          expectedGasAmountTotal.bandwidth.app[`app_${i}`] = 2;
         }
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (10757870 > 10000000)");
-        assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
-        assert.deepEqual(res.gas_cost_total, 3.5460599999999998);
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11008062 > 10000000)");
+        assert.deepEqual(res.gas_amount_total, { bandwidth: { service: 1507500 }, state: { service: 3807120 } });
+        assert.deepEqual(res.gas_cost_total, 5.31462);
       });
 
       it("cannot exceed apps state budget", () => {
