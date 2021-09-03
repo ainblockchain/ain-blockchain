@@ -1,9 +1,6 @@
 const logger = require('../logger')('RADIX_TREE');
 
 const CommonUtil = require('../common/common-util');
-const {
-  FeatureFlags,
-} = require('../common/constants');
 const RadixNode = require('./radix-node');
 
 /**
@@ -14,22 +11,11 @@ class RadixTree {
   constructor() {
     this.root = new RadixNode();
     this.terminalNodeMap = new Map();
-    if (FeatureFlags.enableHexLabelCache) {
-      this.hexLabelCache = new Map();
-    }
   }
 
   _toHexLabel(stateLabel) {
-    if (FeatureFlags.enableHexLabelCache) {
-      if (this.hexLabelCache.has(stateLabel)) {
-        return this.hexLabelCache.get(stateLabel);
-      }
-    }
     const hexLabelWithPrefix = CommonUtil.toHexString(stateLabel);
     const hexLabel = hexLabelWithPrefix.length >= 2 ? hexLabelWithPrefix.slice(2) : '';
-    if (FeatureFlags.enableHexLabelCache) {
-      this.hexLabelCache.set(stateLabel, hexLabel);
-    }
     return hexLabel;
   }
 
@@ -232,9 +218,6 @@ class RadixTree {
       if (parent.numChildren() === 1 && !parent.hasStateNode() && parent.hasParent()) {
         nodeToUpdateProofHash = this._mergeToChild(parent, updateProofHash);
       }
-    }
-    if (FeatureFlags.enableHexLabelCache) {
-      this.hexLabelCache.delete(stateLabel);
     }
     if (updateProofHash) {
       nodeToUpdateProofHash.updateRadixInfoForRadixPath();
