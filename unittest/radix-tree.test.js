@@ -629,6 +629,74 @@ describe("radix-tree", () => {
         });
       });
 
+      it("delete with updateProofHash = true - with common label prefix, with label suffices", () => {
+        const label1 = '0x000aaa';
+        const label2 = '0x000bbb';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null
+        });
+
+        // set first node
+        tree.set(label1, stateNode1);
+
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "000aaa": {
+            ".label": "0x000aaa",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
+        });
+
+        // set second node
+        tree.set(label2, stateNode2);
+
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "aaa": {
+              ".label": "0x000aaa",
+              ".proof_hash": null,
+              ".radix_ph": null
+            },
+            "bbb": {
+              ".label": "0x000bbb",
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
+        });
+
+        // delete first node
+        tree.delete(label1, true);
+
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": "0x16337f10dc7114cb5eba09c616cc2ec112e080404ac3fc1aea63111f8570d6b8",
+          "000bbb": {
+            ".label": "0x000bbb",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
+        });
+      });
+
       it("set / delete with common label prefix - set on an internal node", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
@@ -893,6 +961,52 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
+          "000bbb111": {
+            ".label": "0x000bbb111",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
+        });
+      });
+
+      it("delete with updateProofHash = true - with common label prefix, delete with only one child", () => {
+        const label2 = '0x000bbb';
+        const label21 = '0x000bbb111';
+
+        stateNode2._setLabel(label2);
+        stateNode21._setLabel(label21);
+
+        // set a node
+        tree.set(label2, stateNode2);
+        // set a child
+        tree.set(label21, stateNode21);
+
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".label": "0x000bbb111",
+              ".proof_hash": null,
+              ".radix_ph": null
+            },
+            ".label": "0x000bbb",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
+        });
+
+        // delete the node
+        tree.delete(label2, true);
+
+        expect(tree.has(label2)).to.equal(false);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": "0xdf6bd65883bce47c743eb28ea70897e69be4d9b0046f21e3a2ee26114fb40bd1",
           "000bbb111": {
             ".label": "0x000bbb111",
             ".proof_hash": null,

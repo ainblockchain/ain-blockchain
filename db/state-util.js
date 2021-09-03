@@ -615,11 +615,12 @@ function updateStateInfoForAllRootPathsRecursive(
     curNode, updatedChildLabel = null, updatedChildEmpty = false) {
   let numAffectedNodes = 0;
   if (updatedChildEmpty) {
-    curNode.deleteChild(updatedChildLabel);
+    curNode.deleteChild(updatedChildLabel, true);  // updateStateInfo = true
+  } else {
+    curNode.updateStateInfo(updatedChildLabel, true);  // rebuildRadixProofHash = true
   }
   const curLabel = curNode.getLabel();
   const curNodeEmpty = updatedChildEmpty && isEmptyNode(curNode);
-  curNode.updateStateInfo(updatedChildEmpty ? null : updatedChildLabel);
   numAffectedNodes++;
   for (const parent of curNode.getParentNodes()) {
     numAffectedNodes +=
@@ -649,7 +650,7 @@ function updateStateInfoForStateTree(stateTree) {
       numAffectedNodes += updateStateInfoForStateTree(node);
     }
   }
-  stateTree.updateStateInfo();
+  stateTree.updateStateInfo(null, true);  // rebuildRadixProofHash = true
   numAffectedNodes++;
 
   return numAffectedNodes;

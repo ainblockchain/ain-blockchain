@@ -157,6 +157,11 @@ class RadixTree {
     return node.setStateNode(stateNode);
   }
 
+  /**
+   * Merges a radix node to its the only child.
+   * 
+   * returns the parent of the merged node
+   */
   _mergeToChild(node) {
     const LOG_HEADER = '_mergeToChild';
 
@@ -165,14 +170,14 @@ class RadixTree {
           `[${LOG_HEADER}] Trying to merge a node with children: ${node.getLabel()} ` +
           `at: ${new Error().stack}.`);
       // Does nothing.
-      return false;
+      return node;
     }
     if (node.hasStateNode()) {
       logger.error(
           `[${LOG_HEADER}] Trying to merge a node with state node: ${node.getLabel()} ` +
           `at: ${new Error().stack}.`);
       // Does nothing.
-      return false;
+      return node;
     }
     const parent = node.getParent();
     const labelRadix = node.getLabelRadix();
@@ -184,10 +189,10 @@ class RadixTree {
     node.deleteChild(childLabelRadix);
     const newChildLabelSuffix = labelSuffix + childLabelRadix + childLabelSuffix;
     parent.setChild(labelRadix, newChildLabelSuffix, child);
-    return true;
+    return parent;
   }
 
-  delete(stateLabel) {
+  delete(stateLabel, updateProofHash = false) {
     const LOG_HEADER = '_deleteFromTree';
 
     const node = this._getRadixNodeForReading(stateLabel);
@@ -206,9 +211,9 @@ class RadixTree {
       return false;
     }
     node.resetStateNode();
-    let retVal = true;
+    let nodeToUpdateProofHash = node;
     if (node.numChildren() === 1) {
-      retVal = this._mergeToChild(node);
+      nodeToUpdateProofHash = this._mergeToChild(node, updateProofHash);
     } else if (node.numChildren() === 0) {
       if (!node.hasParent()) {
         logger.error(
@@ -220,15 +225,18 @@ class RadixTree {
       const parent = node.getParent();
       parent.deleteChild(node.getLabelRadix());
       if (parent.numChildren() === 1 && !parent.hasStateNode() && parent.hasParent()) {
-        retVal = this._mergeToChild(parent);
+        nodeToUpdateProofHash = this._mergeToChild(parent, updateProofHash);
       }
     }
     if (FeatureFlags.enableHexLabelCache) {
       this.hexLabelCache.delete(stateLabel);
     }
+    if (updateProofHash) {
+      nodeToUpdateProofHash.updateProofHashForRadixPath();
+    }
     // Delete from the terminal node map.
     this.terminalNodeMap.delete(stateLabel);
-    return retVal;
+    return true;
   }
 
   labels() {
@@ -300,7 +308,7 @@ class RadixTree {
 
     const terminalNodeMap = new Map();
     this.root.copyFrom(radixTree.root, newParentStateNode, terminalNodeMap);
-    // Keep the same order.
+    // Keep the insertion order.
     for (const stateLabel of radixTree.labels()) {
       const terminalNode = terminalNodeMap.get(stateLabel);
       if (terminalNode === undefined) {

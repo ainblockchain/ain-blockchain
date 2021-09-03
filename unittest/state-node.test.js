@@ -872,6 +872,24 @@ describe("state-node", () => {
       expect(parent.getIsLeaf()).to.equal(true);
     });
 
+    it("delete with updateStateInfo = true", () => {
+      const label1 = 'label1';
+      const label2 = 'label2';
+      const child1 = new StateNode();
+      const child2 = new StateNode();
+      child1.setValue('value1');
+      child2.setValue('value2');
+      const parent = new StateNode();
+
+      // Set children
+      parent.setChild(label1, child1);
+      parent.setChild(label2, child2);
+
+      expect(parent.getProofHash()).to.equal(null);
+      parent.deleteChild(label1, true);
+      expect(parent.getProofHash()).to.not.equal(null);  // not null!!
+    });
+
     it("get / set / has / delete with multiple parents", () => {
       const label1 = 'label1';
       const label2 = 'label2';
@@ -1197,9 +1215,20 @@ describe("state-node", () => {
 
       // build proof hash with updatedChildLabel
       const newProofHash = stateTree.buildProofHash(label2);
-      expect(newProofHash).not.equal(proofHash);  // Updated
+      expect(newProofHash).not.equal(proofHash);  // Updated!!
       expect(newProofHash).to.equal(stateTree.radixTree.getRootProofHash());
       expect(stateTree.radixTree.verifyProofHashForRadixTree()).to.equal(true);
+
+      // set another proof hash value for a child again
+      child2.setProofHash('yet another PH');
+      expect(stateTree.radixTree.verifyProofHashForRadixTree()).to.equal(false);
+
+      // build proof hash with updatedChildLabel and rebuildRadixProofHash = false
+      const radixTreeProofHashBefore = stateTree.radixTree.getRootProofHash();
+      const newProofHash2 = stateTree.buildProofHash(label2, false);
+      expect(newProofHash2).equal(radixTreeProofHashBefore);  // Unchanged!!
+      expect(newProofHash2).to.equal(stateTree.radixTree.getRootProofHash());
+      expect(stateTree.radixTree.verifyProofHashForRadixTree()).to.equal(false);
     });
   });
 
@@ -1395,7 +1424,6 @@ describe("state-node", () => {
 
       // set another proof hash value for a child
       child2.setProofHash('another PH');
-      expect(stateTree.verifyProofHash()).to.equal(false);
 
       // update with updatedChildLabel
       stateTree.updateStateInfo(label2);
@@ -1403,6 +1431,16 @@ describe("state-node", () => {
       expect(newProofHash).not.equal(proofHash);  // Updated
       expect(newProofHash).to.equal(stateTree.buildProofHash());
       expect(stateTree.verifyProofHash()).to.equal(true);
+
+      // set yet another proof hash value for a child
+      child2.setProofHash('yet another PH');
+
+      // update with updatedChildLabel and rebuildRadixProofHash = false
+      const stateTreeProofHashBefore = stateTree.getProofHash();
+      stateTree.updateStateInfo(label2, false);  // rebuildRadixProofHash = false
+      const newProofHash2 = stateTree.getProofHash();
+      expect(newProofHash2).equal(stateTreeProofHashBefore);  // Unchanged
+      expect(stateTree.verifyProofHash()).to.equal(false);
     });
 
     it("verifyProofHash with updatedChildLabel", () => {

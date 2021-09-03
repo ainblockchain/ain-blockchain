@@ -279,7 +279,7 @@ class StateNode {
     }
   }
 
-  deleteChild(label) {
+  deleteChild(label, updateStateInfo = false) {
     const LOG_HEADER = 'deleteChild';
     if (!this.hasChild(label)) {
       logger.error(
@@ -291,7 +291,10 @@ class StateNode {
     const child = this.getChild(label);
     child._deleteParent(this);
     if (FeatureFlags.enableRadixTreeLayers) {
-      this.radixTree.delete(label);
+      this.radixTree.delete(label, updateStateInfo);  // with updateStateInfo
+      if (updateStateInfo) {
+        this.updateStateInfo(null, false);  // rebuildRadixProofHash = false
+      }
     } else {
       this.childMap.delete(label);
     }
@@ -375,18 +378,21 @@ class StateNode {
    * need to be updated, and this function does so.
    * 
    * @param {string} updatedChildLabel label of the child whose proof hash is not up-to-date
+   * @param {boolean} rebuildRadixProofhash rebuild radix proof hash values
    */
   // NOTE(platfowner): This function changes proof hashes of the radix tree.
-  buildProofHash(updatedChildLabel = null) {
+  buildProofHash(updatedChildLabel = null, rebuildRadixProofHash = true) {
     let preimage;
     if (this.getIsLeaf()) {
       preimage = this.getValue();
     } else {
       if (FeatureFlags.enableRadixTreeLayers) {
-        if (updatedChildLabel === null) {
-          this.radixTree.updateProofHashForRadixTree();
-        } else {
-          this.radixTree.updateProofHashForRadixPath(updatedChildLabel);
+        if (rebuildRadixProofHash) {
+          if (updatedChildLabel === null) {
+            this.radixTree.updateProofHashForRadixTree();
+          } else {
+            this.radixTree.updateProofHashForRadixPath(updatedChildLabel);
+          }
         }
         return this.radixTree.getRootProofHash();
       } else {
@@ -399,7 +405,7 @@ class StateNode {
   }
 
   verifyProofHash(updatedChildLabel = null) {
-    return this.getProofHash() === this.buildProofHash(updatedChildLabel);
+    return this.getProofHash() === this.buildProofHash(updatedChildLabel, true);
   }
 
   getProofOfState(childLabel = null, childProof = null) {
@@ -452,9 +458,9 @@ class StateNode {
     }
   }
 
-  updateStateInfo(updatedChildLabel = null) {
+  updateStateInfo(updatedChildLabel = null, rebuildRadixProofHash = true) {
     if (!LIGHTWEIGHT) {
-      this.setProofHash(this.buildProofHash(updatedChildLabel));
+      this.setProofHash(this.buildProofHash(updatedChildLabel, rebuildRadixProofHash));
     }
     this.setTreeHeight(this.computeTreeHeight());
     this.setTreeSize(this.computeTreeSize());
