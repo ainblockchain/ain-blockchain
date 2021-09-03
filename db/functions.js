@@ -700,7 +700,6 @@ class Functions {
     if (CommonUtil.isEmpty(value.offenses)) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
-    const now = context.blockTime !== null ? context.blockTime : this.db.lastBlockTimestamp();
     for (const [offender, offenseList] of Object.entries(value.offenses)) {
       const numNewOffenses = Object.values(offenseList).reduce((acc, cur) => acc + cur, 0);
       const offenseRecordsPath = PathUtil.getConsensusOffenseRecordsAddrPath(offender);
@@ -709,7 +708,7 @@ class Functions {
       const lockupExtension = Functions.getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses);
       if (lockupExtension > 0) {
         const expirationPath = PathUtil.getStakingExpirationPath(PredefinedDbPaths.CONSENSUS, offender, 0);
-        const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), now);
+        const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), context.blockTime);
         this.setValueOrLog(expirationPath, currentExpiration + lockupExtension, context);
       }
     }
@@ -720,11 +719,10 @@ class Functions {
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const stakingKey = context.params.staking_key;
-    const now = context.blockTime !== null ? context.blockTime : this.db.lastBlockTimestamp();
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
     const currentExpiration = Number(this.db.getValue(expirationPath));
     const lockup = Number(this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)));
-    const newExpiration = now + lockup;
+    const newExpiration = context.blockTime + lockup;
     const updateExpiration = newExpiration > currentExpiration;
     if (value === 0) {
       // Just update the expiration time
@@ -808,8 +806,7 @@ class Functions {
     // transferred directly to the admin account.
     if (value.escrow_key !== undefined) {
       const escrowHoldPath = PathUtil.getEscrowHoldRecordPath(
-          userServiceAccountName, value.target, value.escrow_key,
-          context.blockTime !== null ? context.blockTime : this.db.lastBlockTimestamp());
+          userServiceAccountName, value.target, value.escrow_key, context.blockTime);
       result = this.setValueOrLog(escrowHoldPath, { amount: value.amount }, context);
     } else {
       result = this.setServiceAccountTransferOrLog(
@@ -1052,8 +1049,7 @@ class Functions {
   }
 
   updateCompleteCheckout(amount, blockTime, context) {
-    const dayTimestamp = CommonUtil.getDayTimestamp(
-        blockTime !== null ? blockTime : this.db.lastBlockTimestamp());
+    const dayTimestamp = CommonUtil.getDayTimestamp(blockTime);
     if (CommonUtil.isFailedTx(
         this.incValueOrLog(PathUtil.getCheckoutCompleteAmountDailyPath(dayTimestamp), amount, context))) {
       return FunctionResultCode.INTERNAL_ERROR;
@@ -1086,9 +1082,8 @@ class Functions {
 
   validateCheckoutAmount(amount, blockTime, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay) {
     const pendingTotal = this.db.getValue(PathUtil.getCheckoutPendingAmountTotalPath()) || 0; // includes 'amount'
-    const timestamp = blockTime !== null ? blockTime : this.db.lastBlockTimestamp();
     const checkoutCompleteToday = this.db.getValue(
-        PathUtil.getCheckoutCompleteAmountDailyPath(CommonUtil.getDayTimestamp(timestamp))) || 0;
+        PathUtil.getCheckoutCompleteAmountDailyPath(CommonUtil.getDayTimestamp(blockTime))) || 0;
     if (amount < minCheckoutPerRequest || amount > maxCheckoutPerRequest) {
       return FunctionResultCode.INVALID_CHECKOUT_AMOUNT;
     }
