@@ -4572,7 +4572,7 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(result.code, 0);
 
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
-        "proof_hash": "0xe037f0083e30127f0e5088be69c2629a7e14e18518ee736fc31d86ec39b3c459",
+        "proof_hash": "0x4769d1547f046cec17f5c94ab38ee3459bc0f8daf57301d818c04dc07adab329",
         "tree_bytes": 348,
         "tree_height": 1,
         "tree_size": 2,
