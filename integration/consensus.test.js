@@ -459,7 +459,7 @@ describe('Consensus', () => {
   describe('Penalties', () => {
     function sendInvalidBlockProposal() {
       const lastBlock = getLastBlock(server1);
-      const proposalBlock = Block.create(lastBlock.hash, [], {}, [], lastBlock.number + 1,
+      const proposalBlock = Block.create(lastBlock.hash, [], {}, [], [], lastBlock.number + 1,
           lastBlock.epoch + 1, '', server2Addr, {}, 0, 0);
       proposalBlock.hash += '0'; // Invalid block hash
       const proposalTxBody = {

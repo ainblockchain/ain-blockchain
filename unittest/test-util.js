@@ -63,6 +63,10 @@ function getTransaction(node, inputTxBody) {
   return node.createTransaction(txBody);
 }
 
+function txsToDummyReceipts(txs) {
+  return new Array(txs.length).fill({ code: 0, gas_amount_charged: 0, gas_cost_total: 0 });
+}
+
 function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
   const finalDb = DB.create(
@@ -71,8 +75,9 @@ function addBlock(node, txs, votes, validators) {
   finalDb.executeTransactionList(votes, true);
   finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1);
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
+  const receipts = txsToDummyReceipts(txs);
   node.addNewBlock(Block.create(
-      lastBlock.hash, votes, {}, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
+      lastBlock.hash, votes, {}, txs, receipts, lastBlock.number + 1, lastBlock.epoch + 1, '',
       node.account.address, validators, 0, 0));
 }
 
@@ -225,4 +230,5 @@ module.exports = {
   getLastBlockNumber,
   getBlockByNumber,
   eraseStateGas,
+  txsToDummyReceipts,
 };
