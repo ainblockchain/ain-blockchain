@@ -671,6 +671,9 @@ class DB {
     this.writeDatabase(fullPath, valueCopy);
     let funcResults = null;
     if (auth && (auth.addr || auth.fid)) {
+      if (blockTime === null) {
+        blockTime = this.lastBlockTimestamp();
+      }
       const { func_results } =
           this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction, blockTime);
       funcResults = func_results;
