@@ -713,6 +713,12 @@ class CommonUtil {
     const date = new Date(timestamp);
     return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
   }
+
+  static txResultsToReceipts(resList) {
+    const DB = require('../db');
+    if (!CommonUtil.isArray(resList)) return [];
+    return resList.map((res) => DB.trimExecutionResult(res));
+  }
 }
 
 module.exports = CommonUtil;

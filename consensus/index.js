@@ -341,7 +341,8 @@ class Consensus {
     this.node.tp.removeInvalidTxsFromPool(invalidTransactions);
     const { gasAmountTotal, gasCostTotal } =
         CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList);
-    return { transactions, gasAmountTotal, gasCostTotal };
+    const receipts = CommonUtil.txResultsToReceipts(resList);
+    return { transactions, receipts, gasAmountTotal, gasCostTotal };
   }
 
   getProposalTx(blockNumber, validators, totalAtStake, gasCostTotal, offenses, proposalBlock) {
@@ -426,11 +427,11 @@ class Consensus {
     this.node.removeOldReceipts(blockNumber, tempDb);
     const { offenses, evidence } = this.blockPool.getOffensesAndEvidence(
         validators, recordedInvalidBlockHashSet, blockTime, tempDb);
-    const { transactions, gasAmountTotal, gasCostTotal } = this.getValidTransactions(
+    const { transactions, receipts, gasAmountTotal, gasCostTotal } = this.getValidTransactions(
         longestNotarizedChain, blockNumber, blockTime, tempDb);
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/')[ProofProperties.PROOF_HASH];
     const proposalBlock = Block.create(
-        lastBlock.hash, lastVotes, evidence, transactions, blockNumber, epoch,
+        lastBlock.hash, lastVotes, evidence, transactions, receipts, blockNumber, epoch,
         stateProofHash, this.node.account.address, validators, gasAmountTotal, gasCostTotal, blockTime);
     const proposalTx = this.getProposalTx(blockNumber, validators, totalAtStake, gasCostTotal, offenses, proposalBlock);
     if (LIGHTWEIGHT) {
@@ -572,6 +573,9 @@ class Consensus {
     const newDb = this.node.createTempDb(
         baseVersion, `${StateVersions.POOL}:${prevBlock.number}:${number}`, prevBlock.number);
     if (!newDb) {
+      if (isSnapDb) {
+        prevDb.destroyDb();
+      }
       throw new ConsensusError({
         code: ConsensusErrorCode.TEMP_DB_CREATION_FAILURE,
         message: `Failed to create a temp database with state version: ${baseVersion}.`,
@@ -670,13 +674,21 @@ class Consensus {
     }
   }
 
-  validateTransactions(transactions, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, newDb) {
+  validateTransactions(transactions, receipts, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, newDb) {
     const txsRes = newDb.executeTransactionList(transactions, false, true, number, blockTime);
     if (!txsRes) {
       newDb.destroyDb();
       throw new ConsensusError({
         code: ConsensusErrorCode.EXECUTING_TX_FAILURE,
         message: `Failed to execute transactions`,
+        level: 'error'
+      });
+    }
+    if (!_.isEqual(receipts, CommonUtil.txResultsToReceipts(txsRes))) {
+      newDb.destroyDb();
+      throw new ConsensusError({
+        code: ConsensusErrorCode.INVALID_RECEIPTS,
+        message: `Invalid receipts`,
         level: 'error'
       });
     }
@@ -770,7 +782,7 @@ class Consensus {
       });
     }
     const { proposer, number, epoch, hash, last_hash, validators, last_votes, transactions,
-        gas_amount_total, gas_cost_total, state_proof_hash, timestamp } = block;
+      receipts, gas_amount_total, gas_cost_total, state_proof_hash, timestamp } = block;
     logger.info(`[${LOG_HEADER}] Checking block proposal: ${number} / ${epoch}`);
     this.precheckProposal(block, proposalTx, proposer, hash, number, validators);
 
@@ -786,7 +798,7 @@ class Consensus {
     this.node.removeOldReceipts(number, newDb);
     this.validateLastVotesAndExecuteOnNewDb(last_votes, last_hash, number, timestamp, newDb);
     this.validateOffensesAndEvidence(block, proposalTx, validators, prevBlockMajority, timestamp, newDb);
-    this.validateTransactions(transactions, number, timestamp, gas_amount_total, gas_cost_total, newDb);
+    this.validateTransactions(transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, newDb);
     this.validateProposalTx(proposalTx, number, timestamp, newDb);
     this.validateStateProofHash(state_proof_hash, newDb);
 
