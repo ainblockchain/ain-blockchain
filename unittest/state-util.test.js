@@ -2515,23 +2515,34 @@ describe("state-util", () => {
     });
 
     it("updateStateInfoForAllRootPaths on empty node with a single root path", () => {
-      assert.deepEqual(stateTree.toJsObject(), {
+      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
         "0x0001": {
+          ".proof_hash": null,
           "0x0011": {
+            ".proof_hash": null,
             "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
               "0x1111": null
             }
           },
           "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
             "0x0121": "V0121"
           }
         }
       });
       const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1111);
       expect(numAffectedNodes).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject(), {
+      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+        ".proof_hash": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
+          ".proof_hash": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
           "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
             "0x0121": "V0121"
           }
         }
@@ -2551,22 +2562,35 @@ describe("state-util", () => {
       const label3 = '0x003';
       stateTreeClone.setChild(label3, child3);
 
-      assert.deepEqual(stateTree.toJsObject(), {
+      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
         "0x0001": {
+          ".proof_hash": null,
           "0x0011": {
+            ".proof_hash": null,
             "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
               "0x1111": null
             }
           },
           "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
             "0x0121": "V0121"
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject(), {
+      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
+        ".proof_hash:0x003": null,
         "0x0001": {
+          ".proof_hash": null,
           "0x0011": {
+            ".proof_hash": null,
             "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
               "0x1111": null
             }
           }
@@ -2576,17 +2600,27 @@ describe("state-util", () => {
       assert.deepEqual(child1111.getParentNodes(), [child111, child111Clone]);
       const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1111);
       expect(numAffectedNodes).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject(), {
+      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+        ".proof_hash": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
+          ".proof_hash": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
           "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
             "0x0121": "V0121"
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject(), {
+      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
+        ".proof_hash:0x003": null,
         "0x0001": {
+          ".proof_hash": null,
           "0x0011": {
+            ".proof_hash": null,
             "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
               "0x1111": null
             }
           }
@@ -2607,22 +2641,35 @@ describe("state-util", () => {
       const label3 = '0x003';
       stateTreeClone.setChild(label3, child3);
 
-      assert.deepEqual(stateTree.toJsObject(), {
+      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
         "0x0001": {
+          ".proof_hash": null,
           "0x0011": {
+            ".proof_hash": null,
             "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
               "0x1111": null
             }
           },
           "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
             "0x0121": "V0121"
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject(), {
+      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
+        ".proof_hash:0x003": null,
         "0x0001": {
+          ".proof_hash": null,
           "0x0011": {
+            ".proof_hash": null,
             "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
               "0x1111": null
             }
           }
@@ -2632,27 +2679,40 @@ describe("state-util", () => {
       assert.deepEqual(child111.getParentNodes(), [child11, child11Clone]);
       const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1111);
       expect(numAffectedNodes).to.equal(7);
-      assert.deepEqual(stateTree.toJsObject(), {
+      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+        ".proof_hash": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
+          ".proof_hash": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
           "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
             "0x0121": "V0121"
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject(), {
+      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+        ".proof_hash": "0x4982c00e8daae6d0ca0cb3b0cc6bcec88b97183a7f7f8decfcd013eb402b6f32",
+        ".proof_hash:0x003": null,
         "0x003": "V0003"
       });
     });
 
     it("updateStateInfoAllRootPaths on non-empty node", () => {
-      assert.deepEqual(stateTree.toJsObject(), {
+      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
         "0x0001": {
+          ".proof_hash": null,
           "0x0011": {
+            ".proof_hash": null,
             "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
               "0x1111": null
             }
           },
           "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
             "0x0121": "V0121"
           }
         }
@@ -2660,14 +2720,21 @@ describe("state-util", () => {
       const numAffectedNodes =
           updateStateInfoForAllRootPaths(child11, label111, false);
       expect(numAffectedNodes).to.equal(3);
-      assert.deepEqual(stateTree.toJsObject(), {
+      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+        ".proof_hash": "0xf8de149cbb6e6ec6eed202d0c1c2927f955bd693dde8725aff64ecd694302be2",
         "0x0001": {
+          ".proof_hash": "0xbeec2ad3bd5285e375bb66f49ccef377af065bb674a3d5c43937d0c66656a61b",
           "0x0011": {
+            ".proof_hash": "0x07f1a0cf4f86e7b2459a2cc76a65df77b0f0de3da941168588bf59bd8bf7c970",
             "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
               "0x1111": null
             }
           },
           "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
             "0x0121": "V0121"
           }
         }
