@@ -6631,12 +6631,19 @@ describe('Blockchain Node', () => {
           signature,
           protoVer: CURRENT_PROTOCOL_VERSION
         });
+        const txHash = _.get(res, 'result.result.tx_hash');
+        if (!(await waitUntilTxFinalized(serverList, txHash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const txRes = parseOrLog(syncRequest('GET', server2 + `/get_transaction?hash=${txHash}`)
+            .body.toString('utf-8')).result;
+        const blockTime = _.get(getBlockByNumber(server2, txRes.number), 'timestamp');
         assert.deepEqual(eraseStateGas(_.get(res, 'result.result.result', null)), {
           "func_results": {
             "_closeCheckout": {
               "op_results": {
                 "0": {
-                  "path": "/checkout/stats/complete/1628208000000",
+                  "path": `/checkout/stats/complete/${CommonUtil.getDayTimestamp(blockTime)}`,
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
@@ -6694,13 +6701,6 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
-        const txHash = _.get(res, 'result.result.tx_hash');
-        if (!(await waitUntilTxFinalized(serverList, txHash))) {
-          console.error(`Failed to check finalization of tx.`);
-        }
-        const txRes = parseOrLog(syncRequest('GET', server2 + `/get_transaction?hash=${txHash}`)
-          .body.toString('utf-8')).result;
-        const blockTime = _.get(getBlockByNumber(server2, txRes.number), 'timestamp');
         const userPendingAmount = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkout/stats/pending/${serviceUser}`)
             .body.toString('utf-8')).result;
@@ -6779,7 +6779,7 @@ describe('Blockchain Node', () => {
           protoVer: CURRENT_PROTOCOL_VERSION
         });
         const txHash = _.get(res, 'result.result.tx_hash');
-        if (!(await waitUntilTxFinalized(serverList, _.get(res, 'result.result.tx_hash')))) {
+        if (!(await waitUntilTxFinalized(serverList, txHash))) {
           console.error(`Failed to check finalization of tx.`);
         }
         const txRes = parseOrLog(syncRequest('GET', server2 + `/get_transaction?hash=${txHash}`)
