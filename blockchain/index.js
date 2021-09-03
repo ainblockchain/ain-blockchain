@@ -7,6 +7,8 @@ const {
   CHAINS_DIR,
   CHAIN_SEGMENT_LENGTH,
   ON_MEMORY_CHAIN_LENGTH,
+  GenesisAccounts,
+  AccountProperties,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
@@ -127,7 +129,7 @@ class Blockchain {
   lastBlockTimestamp() {
     const lastBlock = this.lastBlock();
     if (!lastBlock) {
-      return -1;
+      return GenesisAccounts[AccountProperties.TIMESTAMP];
     }
     return lastBlock.timestamp;
   }

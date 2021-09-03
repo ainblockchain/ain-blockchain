@@ -398,10 +398,10 @@ describe('Consensus', () => {
       assert.deepEqual(claimTx.result, {
         "gas_amount_total": {
           "bandwidth": {
-            "service": 6
+            "service": 5
           },
           "state": {
-            "service": 2414
+            "service": 1574
           }
         },
         "gas_cost_total": 0,
@@ -423,13 +423,6 @@ describe('Consensus', () => {
                         },
                         "1": {
                           "path": "/accounts/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance",
-                          "result": {
-                            "code": 0,
-                            "bandwidth_gas_amount": 1
-                          }
-                        },
-                        "2": {
-                          "path": "/transfer/gas_fee|gas_fee|unclaimed/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/1629377509815/result",
                           "result": {
                             "code": 0,
                             "bandwidth_gas_amount": 1
@@ -458,7 +451,7 @@ describe('Consensus', () => {
         },
         "code": 0,
         "bandwidth_gas_amount": 1,
-        "gas_amount_charged": 2420
+        "gas_amount_charged": 1579
       });
     });
   });

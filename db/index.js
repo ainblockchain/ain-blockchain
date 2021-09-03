@@ -594,21 +594,12 @@ class DB {
 
   static updateAccountNonceAndTimestampToStateRoot(
       stateRoot, stateVersion, address, nonce, timestamp) {
-    const LOG_HEADER = 'updateAccountNonceAndTimestampToStateRoot';
-    if (!CommonUtil.isNumber(nonce)) {
-      logger.error(`[${LOG_HEADER}] Invalid nonce: ${nonce} for address: ${address}`);
-      return false;
-    }
     if (nonce >= 0) { // numbered nonce
       const noncePath = PathUtil.getAccountNoncePath(address);
       const fullNoncePath =
           DB.getFullPath(CommonUtil.parsePath(noncePath), PredefinedDbPaths.VALUES_ROOT);
       DB.writeToStateRoot(stateRoot, stateVersion, fullNoncePath, nonce + 1);
     } else if (nonce === -2) { // ordered nonce
-      if (!CommonUtil.isNumber(timestamp)) {
-        logger.error(`[${LOG_HEADER}] Invalid timestamp: ${timestamp} for address: ${address}`);
-        return false;
-      }
       const timestampPath = PathUtil.getAccountTimestampPath(address);
       const fullTimestampPath =
           DB.getFullPath(CommonUtil.parsePath(timestampPath), PredefinedDbPaths.VALUES_ROOT);
@@ -680,9 +671,15 @@ class DB {
     this.writeDatabase(fullPath, valueCopy);
     let funcResults = null;
     if (auth && (auth.addr || auth.fid)) {
+      if (blockTime === null) {
+        blockTime = this.lastBlockTimestamp();
+      }
       const { func_results } =
           this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction, blockTime);
       funcResults = func_results;
+      if (CommonUtil.isFailedFuncTrigger(funcResults)) {
+        return CommonUtil.returnTxResult(105, `Triggered function call failed`, 1, funcResults);
+      }
     }
 
     return CommonUtil.returnTxResult(0, null, 1, funcResults);
@@ -908,21 +905,6 @@ class DB {
       Object.assign(result, CommonUtil.returnTxResult(11, `Invalid operation: ${op}`, 1));
       DB.updateGasAmountTotal(tx, gasAmountTotal, result);
       return result;
-    }
-    if (tx && auth && auth.addr && !auth.fid) {
-      const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
-      if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
-        Object.assign(result, CommonUtil.returnTxResult(
-            12, `Invalid nonce: ${tx.tx_body.nonce} !== ${nonce}`, 1));
-        DB.updateGasAmountTotal(tx, gasAmountTotal, result);
-        return result;
-      }
-      if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
-        Object.assign(result, CommonUtil.returnTxResult(
-            13, `Invalid timestamp: ${tx.tx_body.timestamp} <= ${accountTimestamp}`, 1));
-        DB.updateGasAmountTotal(tx, gasAmountTotal, result);
-        return result;
-      }
     }
     const allStateUsageBefore = this.getAllStateUsages();
     const stateUsagePerAppBefore = this.getStateUsagePerApp(op);
@@ -1191,6 +1173,25 @@ class DB {
         PathUtil.getManageAppBillingUsersPath(billingAppName, billingId) + '/' + userAddr) === true;
   }
 
+  precheckNonceAndTimestamp(nonce, timestamp, addr) {
+    if (!CommonUtil.isNumber(nonce)) {
+      return CommonUtil.returnTxResult(19, `Invalid nonce value: ${nonce}`);
+    }
+    if (!CommonUtil.isNumber(timestamp)) {
+      return CommonUtil.returnTxResult(20, `Invalid timestamp value: ${timestamp}`);
+    }
+    const { nonce: accountNonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(addr);
+    if (nonce >= 0 && nonce !== accountNonce) {
+      return CommonUtil.returnTxResult(
+          12, `Invalid nonce: ${nonce} !== ${accountNonce}`);
+    }
+    if (nonce === -2 && timestamp <= accountTimestamp) {
+      return CommonUtil.returnTxResult(
+          13, `Invalid timestamp: ${timestamp} <= ${accountTimestamp}`);
+    }
+    return true;
+  }
+
   precheckTxBillingParams(op, addr, billing, blockNumber) {
     const LOG_HEADER = 'precheckTxBillingParams';
     if (!billing || blockNumber === 0) {
@@ -1265,6 +1266,11 @@ class DB {
     const billing = tx.tx_body.billing;
     const op = tx.tx_body.operation;
     const addr = tx.address;
+    const checkNonceTimestampResult = this.precheckNonceAndTimestamp(
+        tx.tx_body.nonce, tx.tx_body.timestamp, addr);
+    if (checkNonceTimestampResult !== true) {
+      return checkNonceTimestampResult;
+    }
     const checkBillingResult = this.precheckTxBillingParams(op, addr, billing, blockNumber);
     if (checkBillingResult !== true) {
       return checkBillingResult;
@@ -1717,6 +1723,10 @@ class DB {
 
   lastBlockNumber() {
     return this.bc ? this.bc.lastBlockNumber() : this.blockNumberSnapshot;
+  }
+
+  lastBlockTimestamp() {
+    return this.bc ? this.bc.lastBlockTimestamp() : Date.now();
   }
 
   matchOwnerPathRecursive(parsedRefPath, depth, curOwnerNode) {
