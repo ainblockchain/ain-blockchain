@@ -1016,7 +1016,7 @@ describe("radix-tree", () => {
       });
     });
 
-    describe("proof hash", () => {
+    describe("radix info", () => {
       it("get / has / set / update / verify proof hash", () => {
         const label1 = '0x000aaa';
         const stateNode1 = new StateNode();
@@ -1094,7 +1094,7 @@ describe("radix-tree", () => {
         expect(tree.verifyProofHashForRadixTree()).to.equal(false);
 
         // set
-        expect(tree.updateProofHashForRadixTree()).to.equal(9);
+        expect(tree.updateRadixInfoForRadixTree()).to.equal(9);
         expect(tree.getRootProofHash()).to.equal(
             '0x3dac16e69a2dfa5ae4a448cda25da5542949b905d2bf8a07c389d77019c56c01');
         expect(tree.verifyProofHashForRadixTree()).to.equal(true);
@@ -1104,7 +1104,7 @@ describe("radix-tree", () => {
         expect(tree.verifyProofHashForRadixTree()).to.equal(false);
 
         // update
-        expect(tree.updateProofHashForRadixPath(label21)).to.equal(4);
+        expect(tree.updateRadixInfoForRadixPath(label21)).to.equal(4);
         expect(tree.getRootProofHash()).to.equal(
             '0x8070aef5df264e5ecea35dd84822e69f7bf65102a06f5765d62bd76265cadff5');
         expect(tree.verifyProofHashForRadixTree()).to.equal(true);
@@ -1138,7 +1138,7 @@ describe("radix-tree", () => {
         tree.set(label21, stateNode21);
         tree.set(label22, stateNode22);
 
-        expect(tree.updateProofHashForRadixTree()).to.equal(8);
+        expect(tree.updateRadixInfoForRadixTree()).to.equal(8);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
           "000": {
@@ -1240,7 +1240,7 @@ describe("radix-tree", () => {
         tree.set(label22, stateNode22);
         stateNode22._setLabel(label22);
 
-        expect(tree.updateProofHashForRadixTree()).to.equal(6);
+        expect(tree.updateRadixInfoForRadixTree()).to.equal(6);
 
         const newTree = new RadixTree();
         newTree.copyFrom(tree);

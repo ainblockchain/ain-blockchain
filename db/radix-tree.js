@@ -237,7 +237,7 @@ class RadixTree {
       this.hexLabelCache.delete(stateLabel);
     }
     if (updateProofHash) {
-      nodeToUpdateProofHash.updateProofHashForRadixPath();
+      nodeToUpdateProofHash.updateRadixInfoForRadixPath();
     }
     // Delete from the terminal node map.
     this.terminalNodeMap.delete(stateLabel);
@@ -272,11 +272,11 @@ class RadixTree {
     return this.root.getProofHash();
   }
 
-  updateProofHashForRadixTree() {
-    return this.root.updateProofHashForRadixSubtree();
+  updateRadixInfoForRadixTree() {
+    return this.root.updateRadixInfoForRadixTree();
   }
 
-  updateProofHashForRadixPath(updatedNodeLabel) {
+  updateRadixInfoForRadixPath(updatedNodeLabel) {
     const LOG_HEADER = 'updateProofHashForRadixPath';
 
     const node = this._getRadixNodeForReading(updatedNodeLabel);
@@ -287,11 +287,11 @@ class RadixTree {
       // Does nothing.
       return 0;
     }
-    return node.updateProofHashForRadixPath();
+    return node.updateRadixInfoForRadixPath();
   }
 
   verifyProofHashForRadixTree() {
-    return this.root.verifyProofHashForRadixSubtree();
+    return this.root.verifyProofHashForRadixTree();
   }
 
   getProofOfState(stateLabel, stateProof) {
