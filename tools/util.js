@@ -1,12 +1,15 @@
 const _ = require('lodash');
 const axios = require('axios');
-const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
+const {
+  CURRENT_PROTOCOL_VERSION,
+  CHAIN_ID
+} = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
 // FIXME(minsulee2): this is duplicated function see: ./common/network-util.js
 function signAndSendTx(endpointUrl, txBody, privateKey) {
   console.log('\n*** signAndSendTx():');
-  const {txHash, signedTx} = CommonUtil.signTransaction(txBody, privateKey);
+  const { txHash, signedTx } = CommonUtil.signTransaction(txBody, privateKey, CHAIN_ID);
   console.log(`signedTx: ${JSON.stringify(signedTx, null, 2)}`);
   console.log(`txHash: ${txHash}`);
   console.log('Sending transaction...');

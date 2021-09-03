@@ -3,28 +3,38 @@ const logger = require('../logger')('STATE_NODE');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
+  FeatureFlags,
   HASH_DELIMITER,
   StateInfoProperties,
+  ProofProperties,
+  LIGHTWEIGHT,
 } = require('../common/constants');
+const RadixTree = require('./radix-tree');
 
 class StateNode {
   // NOTE(seo): Once new member variables are added, computeNodeBytes() should be updated.
   constructor(version) {
     this.version = version || null;
+    this.label = null;
     this.isLeaf = true;
-    this.parentSet = new Set();
-    // Used for internal nodes only.
-    this.childMap = new Map();
     // Used for leaf nodes only.
     this.value = null;
+    this.parentSet = new Set();
+    // Used for internal nodes only.
+    if (FeatureFlags.enableRadixTreeLayers) {
+      this.radixTree = new RadixTree();
+    } else {
+      this.childMap = new Map();
+    }
     this.proofHash = null;
     this.treeHeight = 0;
     this.treeSize = 0;
     this.treeBytes = 0;
   }
 
-  static _create(version, isLeaf, value, proofHash, treeHeight, treeSize, treeBytes) {
+  static _create(version, label, isLeaf, value, proofHash, treeHeight, treeSize, treeBytes) {
     const node = new StateNode(version);
+    node._setLabel(label);
     node.setIsLeaf(isLeaf);
     node.setValue(value);
     node.setProofHash(proofHash);
@@ -35,36 +45,46 @@ class StateNode {
   }
 
   clone(version) {
-    const cloned = StateNode._create(version ? version : this.version,
+    const cloned = StateNode._create(version ? version : this.version, this.label,
         this.isLeaf, this.value, this.proofHash, this.treeHeight, this.treeSize, this.treeBytes);
-    for (const label of this.getChildLabels()) {
-      const child = this.getChild(label);
-      cloned.setChild(label, child);
+    if (FeatureFlags.enableRadixTreeLayers) {
+      cloned.copyRadixTreeFrom(this, cloned);
+    } else {
+      for (const label of this.getChildLabels()) {
+        const child = this.getChild(label);
+        cloned.setChild(label, child);
+      }
     }
     return cloned;
+  }
+
+  copyRadixTreeFrom(stateNode, newParentStateNode) {
+    this.radixTree.copyFrom(stateNode.radixTree, newParentStateNode);
   }
 
   equal(that) {
     if (!that) {
       return false;
     }
-    return (that.isLeaf === this.isLeaf &&
+    return (that.version === this.version &&
+        that.label === this.label &&
+        that.isLeaf === this.isLeaf &&
+        that.value === this.value &&
         that.numParents && typeof that.numParents === 'function' &&
         // NOTE: Compare only numParents() values.
         that.numParents() === this.numParents() &&
         that.getChildLabels && typeof that.getChildLabels === 'function' &&
         // NOTE: The child label order matters.
         JSON.stringify(that.getChildLabels()) === JSON.stringify(this.getChildLabels()) &&
-        that.value === this.value &&
         that.proofHash === this.proofHash &&
-        that.version === this.version &&
         that.treeHeight === this.treeHeight &&
         that.treeSize === this.treeSize &&
         that.treeBytes === this.treeBytes);
   }
 
   // NOTE(liayoo): Bytes for some data (e.g. parents & children references, version) are excluded
-  //               from this calculation, since their sizes can vary and affect the gas costs and state proof hashes.
+  // from this calculation, since their sizes can vary and affect the gas costs and
+  // state proof hashes.
   computeNodeBytes() {
     return sizeof(this.isLeaf) +
         sizeof(this.value) +
@@ -132,6 +152,29 @@ class StateNode {
     return obj;
   }
 
+  getLabel() {
+    return this.label;
+  }
+
+  hasLabel() {
+    return this.getLabel() !== null;
+  }
+
+  _setLabel(label) {
+    const LOG_HEADER = '_setLabel';
+
+    const curLabel = this.getLabel();
+    if (curLabel !== null && curLabel !== label) {
+      logger.error(
+          `[${LOG_HEADER}] Overwriting label ${curLabel} with ${label} at: ${new Error().stack}.`);
+    }
+    this.label = label;
+  }
+
+  _resetLabel() {
+    this.label = null;
+  }
+
   getIsLeaf() {
     return this.isLeaf;
   }
@@ -152,11 +195,12 @@ class StateNode {
     this.setValue(null);
   }
 
-  _addParent(parent) {
+  addParent(parent) {
     const LOG_HEADER = 'addParent';
     if (this._hasParent(parent)) {
       logger.error(
-          `[${LOG_HEADER}] Adding an existing parent: ${JSON.stringify(parent, null, 2)}.`);
+          `[${LOG_HEADER}] Adding an existing parent of label: ${parent.getLabel()} ` +
+          `at: ${new Error().stack}.`);
       // Does nothing.
       return;
     }
@@ -171,7 +215,8 @@ class StateNode {
     const LOG_HEADER = 'deleteParent';
     if (!this.parentSet.has(parent)) {
       logger.error(
-          `[${LOG_HEADER}] Deleting a non-existing parent: ${JSON.stringify(parent, null, 2)}.`);
+          `[${LOG_HEADER}] Deleting a non-existing parent of label: ${parent.getLabel()} ` +
+          `at: ${new Error().stack}.`);
       // Does nothing.
       return;
     }
@@ -187,7 +232,12 @@ class StateNode {
   }
 
   getChild(label) {
-    const child = this.childMap.get(label);
+    let child;
+    if (FeatureFlags.enableRadixTreeLayers) {
+      child = this.radixTree.get(label);
+    } else {
+      child = this.childMap.get(label);
+    }
     if (child === undefined) {
       return null;
     }
@@ -200,7 +250,8 @@ class StateNode {
       const child = this.getChild(label);
       if (child === node) {
         logger.error(
-            `[${LOG_HEADER}] Setting a child with label ${label} which is already a child.`);
+            `[${LOG_HEADER}] Setting a child with label ${label} which is already a child ` +
+            `at: ${new Error().stack}.`);
         // Does nothing.
         return;
       }
@@ -208,42 +259,69 @@ class StateNode {
       //                   to keep the order of children.
       child._deleteParent(this);
     }
-    this.childMap.set(label, node);
-    node._addParent(this);
+    if (FeatureFlags.enableRadixTreeLayers) {
+      this.radixTree.set(label, node);
+    } else {
+      this.childMap.set(label, node);
+    }
+    node.addParent(this);
+    node._setLabel(label);
     if (this.getIsLeaf()) {
       this.setIsLeaf(false);
     }
   }
 
   hasChild(label) {
-    return this.childMap.has(label);
+    if (FeatureFlags.enableRadixTreeLayers) {
+      return this.radixTree.has(label);
+    } else {
+      return this.childMap.has(label);
+    }
   }
 
   deleteChild(label) {
     const LOG_HEADER = 'deleteChild';
     if (!this.hasChild(label)) {
-      logger.error(`[${LOG_HEADER}] Deleting a non-existing child with label: ${label}.`);
+      logger.error(
+          `[${LOG_HEADER}] Deleting a non-existing child with label: ${label} ` +
+          `at: ${new Error().stack}.`);
       // Does nothing.
       return;
     }
     const child = this.getChild(label);
     child._deleteParent(this);
-    this.childMap.delete(label);
+    if (FeatureFlags.enableRadixTreeLayers) {
+      this.radixTree.delete(label);
+    } else {
+      this.childMap.delete(label);
+    }
     if (this.numChildren() === 0) {
       this.setIsLeaf(true);
     }
   }
 
   getChildLabels() {
-    return [...this.childMap.keys()];
+    if (FeatureFlags.enableRadixTreeLayers) {
+      return [...this.radixTree.labels()];
+    } else {
+      return [...this.childMap.keys()];
+    }
   }
 
   getChildNodes() {
-    return [...this.childMap.values()];
+    if (FeatureFlags.enableRadixTreeLayers) {
+      return [...this.radixTree.stateNodes()];
+    } else {
+      return [...this.childMap.values()];
+    }
   }
 
   numChildren() {
-    return this.childMap.size;
+    if (FeatureFlags.enableRadixTreeLayers) {
+      return this.radixTree.size();
+    } else {
+      return this.childMap.size;
+    }
   }
 
   getProofHash() {
@@ -290,20 +368,59 @@ class StateNode {
     this.treeBytes = treeBytes;
   }
 
-  buildProofHash() {
+  /**
+   * Returns newly buildt proof hash. If updatedChildLabel is given, it signifies that
+   * only the child of the given child label among the children is not up-to-date now,
+   * so only the proof hashes of the radix nodes related to the given child label
+   * need to be updated, and this function does so.
+   * 
+   * @param {string} updatedChildLabel label of the child whose proof hash is not up-to-date
+   */
+  // NOTE(platfowner): This function changes proof hashes of the radix tree.
+  buildProofHash(updatedChildLabel = null) {
     let preimage;
     if (this.getIsLeaf()) {
       preimage = this.getValue();
     } else {
-      preimage = this.getChildLabels().map((label) => {
-        return `${label}${HASH_DELIMITER}${this.getChild(label).getProofHash()}`;
-      }, '').join(HASH_DELIMITER);
+      if (FeatureFlags.enableRadixTreeLayers) {
+        if (updatedChildLabel === null) {
+          this.radixTree.updateProofHashForRadixTree();
+        } else {
+          this.radixTree.updateProofHashForRadixPath(updatedChildLabel);
+        }
+        return this.radixTree.getRootProofHash();
+      } else {
+        preimage = this.getChildLabels().map((label) => {
+          return `${label}${HASH_DELIMITER}${this.getChild(label).getProofHash()}`;
+        }).join(HASH_DELIMITER);
+      }
     }
     return CommonUtil.hashString(CommonUtil.toString(preimage));
   }
 
-  verifyProofHash() {
-    return this.getProofHash() === this.buildProofHash();
+  verifyProofHash(updatedChildLabel = null) {
+    return this.getProofHash() === this.buildProofHash(updatedChildLabel);
+  }
+
+  getProofOfState(childLabel = null, childProof = null) {
+    if (childLabel === null) {
+      return { [ProofProperties.PROOF_HASH]: this.getProofHash() };
+    } else {
+      if (FeatureFlags.enableRadixTreeLayers) {
+        return this.radixTree.getProofOfState(childLabel, childProof);
+      } else {
+        const proof = { [ProofProperties.PROOF_HASH]: this.getProofHash() };
+        this.getChildLabels().forEach((label) => {
+          const child = this.getChild(label);
+          Object.assign(proof, {
+            [label]: label === childLabel ? childProof : {
+              [ProofProperties.PROOF_HASH]: child.getProofHash()
+            }
+          });
+        });
+        return proof;
+      }
+    }
   }
 
   computeTreeHeight() {
@@ -335,8 +452,10 @@ class StateNode {
     }
   }
 
-  updateProofHashAndStateInfo() {
-    this.setProofHash(this.buildProofHash());
+  updateStateInfo(updatedChildLabel = null) {
+    if (!LIGHTWEIGHT) {
+      this.setProofHash(this.buildProofHash(updatedChildLabel));
+    }
     this.setTreeHeight(this.computeTreeHeight());
     this.setTreeSize(this.computeTreeSize());
     this.setTreeBytes(this.computeTreeBytes());

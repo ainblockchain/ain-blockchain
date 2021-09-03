@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
 if [[ "$#" -lt 3 ]]; then
-    echo "Usage: sh reset_blockchain_gcp.sh dev lia 0"
+    echo "Usage: bash reset_blockchain_gcp.sh dev lia 0"
     exit
 fi
 

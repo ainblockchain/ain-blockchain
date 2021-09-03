@@ -25,11 +25,41 @@
       }
     }
   },
+  "checkout": {
+    "requests": {
+      "$user_addr": {
+        "$checkout_id": {
+          ".function": {
+            "_openCheckout": {
+              "function_type": "NATIVE",
+              "function_id": "_openCheckout"
+            }
+          }
+        }
+      }
+    },
+    "history": {
+      "$user_addr": {
+        "$checkout_id": {
+          ".function": {
+            "_closeCheckout": {
+              "function_type": "NATIVE",
+              "function_id": "_closeCheckout"
+            }
+          }
+        }
+      }
+    }
+  },
   "consensus": {
     "number": {
       "$number": {
         "propose": {
           ".function": {
+            "_handleOffenses": {
+              "function_type": "NATIVE",
+              "function_id": "_handleOffenses"
+            },
             "_distributeFee": {
               "function_type": "NATIVE",
               "function_id": "_distributeFee"
@@ -68,9 +98,21 @@
     }
   },
   "gas_fee": {
+    "claim": {
+      "$user_addr": {
+        "$record_id": {
+          ".function": {
+            "_claimReward": {
+              "function_type": "NATIVE",
+              "function_id": "_claimReward"
+            }
+          }
+        }
+      }
+    },
     "collect": {
-      "$from": {
-        "$block_number": {
+      "$block_number": {
+        "$from": {
           "$tx_hash": {
             ".function": {
               "_collectFee": {

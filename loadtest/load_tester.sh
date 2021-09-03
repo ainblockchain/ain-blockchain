@@ -12,7 +12,7 @@ sleep 5
 LOCAL=true node $BASEDIR/../client/index.js > $BASEDIR/log1.txt &
 PID2=$!
 sleep 10
-P2P_PORT=5020 PORT=8081 STAKE=250 node $BASEDIR/../client/index.js > $BASEDIR/log2.txt &
+P2P_PORT=5020 PORT=8081 STAKE=100000 node $BASEDIR/../client/index.js > $BASEDIR/log2.txt &
 PID3=$!
 
 sleep 20

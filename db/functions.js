@@ -13,14 +13,15 @@ const {
   ShardingProtocols,
   GenesisAccounts,
   AccountProperties,
+  TokenBridgeProperties,
   TokenExchangeSchemes,
-  FunctionProperties,
   OwnerProperties,
   GasFeeConstants,
   REST_FUNCTION_CALL_TIMEOUT_MS,
   buildOwnerPermissions,
   buildRulePermission,
 } = require('../common/constants');
+const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 const {
@@ -50,8 +51,12 @@ class Functions {
     this.nativeFunctionMap = {
       [NativeFunctionIds.CLAIM]: {
         func: this._claim.bind(this), ownerOnly: true, extraGasAmount: 0 },
+      [NativeFunctionIds.CLAIM_REWARD]: {
+        func: this._claimReward.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CLOSE_CHECKIN]: {
         func: this._closeCheckin.bind(this), ownerOnly: true, extraGasAmount: 10 },
+      [NativeFunctionIds.CLOSE_CHECKOUT]: {
+        func: this._closeCheckout.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.COLLECT_FEE]: {
         func: this._collectFee.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CREATE_APP]: {
@@ -60,10 +65,14 @@ class Functions {
         func: this._distributeFee.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.ERASE_VALUE]: {
         func: this._eraseValue.bind(this), ownerOnly: false, extraGasAmount: 0 },
+      [NativeFunctionIds.HANDLE_OFFENSES]: {
+        func: this._handleOffenses.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.HOLD]: {
         func: this._hold.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.OPEN_CHECKIN]: {
         func: this._openCheckin.bind(this), ownerOnly: true, extraGasAmount: 60 },
+      [NativeFunctionIds.OPEN_CHECKOUT]: {
+        func: this._openCheckout.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.PAY]: {
         func: this._pay.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.RELEASE]: {
@@ -95,7 +104,7 @@ class Functions {
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction) {
+  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction, blockTime) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
@@ -110,7 +119,7 @@ class Functions {
 
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
-          parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction);
+          parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction, blockTime);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
           continue;  // Does nothing.
@@ -149,6 +158,7 @@ class Functions {
                     timestamp,
                     executedAt,
                     transaction,
+                    blockTime,
                     auth: newAuth,
                     opResultList: [],
                     otherGasAmount: 0,
@@ -159,10 +169,10 @@ class Functions {
                     `  ==>| Execution result of NATIVE function [[ ${functionEntry.function_id} ]] ` +
                     `with call stack ${JSON.stringify(this.getFids())}:\n` +
                     `${JSON.stringify(result, null, 2)}`;
-                if (result.code === FunctionResultCode.SUCCESS) {
-                  logger.info(formattedResult);
-                } else {
+                if (CommonUtil.isFailedFuncResultCode(result.code)) {
                   logger.error(formattedResult);
+                } else {
+                  logger.info(formattedResult);
                 }
               }
             } finally {
@@ -268,13 +278,14 @@ class Functions {
   }
 
   static formatFunctionParams(
-      parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction) {
+      parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction, blockTime) {
     return `valuePath: '${CommonUtil.formatPath(parsedValuePath)}', ` +
       `functionPath: '${CommonUtil.formatPath(functionPath)}', ` +
       `timestamp: '${timestamp}', executedAt: '${executedAt}', ` +
       `params: ${JSON.stringify(params, null, 2)}, ` +
       `value: '${JSON.stringify(value, null, 2)}', ` +
-      `transaction: ${JSON.stringify(transaction, null, 2)}`;
+      `transaction: ${JSON.stringify(transaction, null, 2)}, ` +
+      `blockTime: ${blockTime}`;
   }
 
   static getFunctionList(functionMap) {
@@ -608,9 +619,8 @@ class Functions {
 
   _collectFee(value, context) {
     const from = context.params.from;
-    const blockNumber = context.params.block_number;
     const gasFeeServiceAccountName = CommonUtil.toServiceAccountName(
-        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, blockNumber);
+        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE_UNCLAIMED);
     const result =
         this.setServiceAccountTransferOrLog(from, gasFeeServiceAccountName, value.amount, context);
     if (!CommonUtil.isFailedTx(result)) {
@@ -621,23 +631,100 @@ class Functions {
     }
   }
 
+  incrementConsensusRewards(address, amount, context) {
+    const rewardsPath = PathUtil.getConsensusRewardsPath(address);
+    const prevRewards = this.db.getValue(rewardsPath) || {};
+    return this.setValueOrLog(rewardsPath, {
+      [PredefinedDbPaths.CONSENSUS_REWARDS_UNCLAIMED]: (prevRewards[PredefinedDbPaths.CONSENSUS_REWARDS_UNCLAIMED] || 0) + amount,
+      [PredefinedDbPaths.CONSENSUS_REWARDS_CUMULATIVE]: (prevRewards[PredefinedDbPaths.CONSENSUS_REWARDS_CUMULATIVE] || 0) + amount
+    }, context);
+  }
+
   _distributeFee(value, context) {
     const blockNumber = context.params.number;
-    const gasCostTotal = value.gas_cost_total;
-    const proposer = value.proposer;
+    // NOTE(liayoo): Because we need to have the votes to determine which validators to give the
+    //               rewards to, we're distributing the rewards from the (N-1)th block when a
+    //               proposal for the Nth block is written. Genesis block doesn't have rewards,
+    //               so we can start from block number 2 (= processing block number 1) and so on.
+    if (blockNumber <= 1) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    const lastConsensusRound = this.db.getValue(PathUtil.getConsensusNumberPath(blockNumber - 1));
+    const gasCostTotal = lastConsensusRound.propose.gas_cost_total;
     if (gasCostTotal <= 0) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
+    const proposer = lastConsensusRound.propose.proposer;
+    const blockHash = lastConsensusRound.propose.block_hash;
+    const votes = lastConsensusRound[blockHash].vote;
+    const totalAtStake = Object.values(votes).reduce((acc, cur) => acc + cur.stake, 0);
+    const validators = Object.keys(votes);
+    const proposerReward = gasCostTotal / 2;
+    const validatorRewardTotal = gasCostTotal - proposerReward;
+    this.incrementConsensusRewards(proposer, proposerReward, context);
+    let rewardSum = 0;
+    validators.forEach((validator, index) => {
+      const validatorStake = votes[validator].stake;
+      let validatorReward = 0;
+      if (index === validators.length - 1) {
+        validatorReward = validatorRewardTotal - rewardSum;
+      } else {
+        validatorReward = validatorRewardTotal * (validatorStake / totalAtStake);
+        rewardSum += validatorReward;
+      }
+      this.incrementConsensusRewards(validator, validatorReward, context);
+    });
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+  }
+
+  _claimReward(value, context) {
+    const addr = context.params.user_addr;
+    const unclaimedRewardsPath = PathUtil.getConsensusRewardsUnclaimedPath(addr);
+    const unclaimedRewards = this.db.getValue(unclaimedRewardsPath) || 0;
+    if (unclaimedRewards < value.amount) {
+      return this.returnFuncResult(context, FunctionResultCode.INVALID_AMOUNT);
+    }
     const gasFeeServiceAccountName = CommonUtil.toServiceAccountName(
-        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, blockNumber);
-    const result = this.setServiceAccountTransferOrLog(
-        gasFeeServiceAccountName, proposer, gasCostTotal, context);
-    if (!CommonUtil.isFailedTx(result)) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    } else {
-      logger.error(`  ===> _distributeFee failed: ${JSON.stringify(result)}`);
+      PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE_UNCLAIMED);
+    const transferRes = this.setServiceAccountTransferOrLog(gasFeeServiceAccountName, addr, value.amount, context);
+    if (CommonUtil.isFailedTx(transferRes)) {
+      logger.error(`  ===> _claimReward failed: ${JSON.stringify(transferRes)}`);
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
+    const updateUnclaimedRes = this.setValueOrLog(unclaimedRewardsPath, unclaimedRewards - value.amount, context);
+    if (CommonUtil.isFailedTx(updateUnclaimedRes)) {
+      logger.error(`  ===> _claimReward failed: ${JSON.stringify(updateUnclaimedRes)}`);
+      return this.returnFuncResult(context, FunctionResultCode.INTERNAL_ERROR);
+    }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+  }
+
+  static getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses) {
+    let extension = 0;
+    for (let n = updatedNumOffenses - numNewOffenses + 1; n <= updatedNumOffenses; n++) {
+      extension += ConsensusConsts.STAKE_LOCKUP_EXTENSION * Math.pow(2, n - 1);
+    }
+    return extension;
+  }
+
+  _handleOffenses(value, context) {
+    if (CommonUtil.isEmpty(value.offenses)) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    const now = context.blockTime === null ? context.timestamp : context.blockTime;
+    for (const [offender, offenseList] of Object.entries(value.offenses)) {
+      const numNewOffenses = Object.values(offenseList).reduce((acc, cur) => acc + cur, 0);
+      const offenseRecordsPath = PathUtil.getConsensusOffenseRecordsAddrPath(offender);
+      this.incValueOrLog(offenseRecordsPath, numNewOffenses, context);
+      const updatedNumOffenses = this.db.getValue(offenseRecordsPath); // new # of offenses
+      const lockupExtension = Functions.getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses);
+      if (lockupExtension > 0) {
+        const expirationPath = PathUtil.getStakingExpirationPath(PredefinedDbPaths.CONSENSUS, offender, 0);
+        const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), now);
+        this.setValueOrLog(expirationPath, currentExpiration + lockupExtension, context);
+      }
+    }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
   _stake(value, context) {
@@ -645,25 +732,28 @@ class Functions {
     const user = context.params.user_addr;
     const stakingKey = context.params.staking_key;
     const recordId = context.params.record_id;
-    const timestamp = context.timestamp;
-    const executedAt = context.executedAt;
+    const now = context.blockTime === null ? context.timestamp : context.blockTime;
     const resultPath = PathUtil.getStakingStakeResultPath(serviceName, user, stakingKey, recordId);
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
-    const lockup = this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName));
-    if (timestamp > executedAt) {
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.FAILURE);
-    }
+    const currentExpiration = Number(this.db.getValue(expirationPath));
+    const lockup = Number(this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)));
+    const newExpiration = now + lockup;
+    const updateExpiration = newExpiration > currentExpiration;
     if (value === 0) {
       // Just update the expiration time
-      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), context);
-      return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
+      if (updateExpiration) {
+        this.setValueOrLog(expirationPath, newExpiration, context);
+        return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
+      }
     }
     const stakingServiceAccountName = CommonUtil.toServiceAccountName(
           PredefinedDbPaths.STAKING, serviceName, `${user}|${stakingKey}`);
     const result =
         this.setServiceAccountTransferOrLog(user, stakingServiceAccountName, value, context);
     if (!CommonUtil.isFailedTx(result)) {
-      this.setValueOrLog(expirationPath, Number(timestamp) + Number(lockup), context);
+      if (updateExpiration) {
+        this.setValueOrLog(expirationPath, newExpiration, context);
+      }
       const balanceTotalPath = PathUtil.getStakingBalanceTotalPath(serviceName);
       this.incValueOrLog(balanceTotalPath, value, context);
       return this.saveAndReturnFuncResult(context, resultPath, FunctionResultCode.SUCCESS);
@@ -979,6 +1069,158 @@ class Functions {
       logger.error(`  => _closeCheckin failed with error: ${err} ${err.stack}`);
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
+  }
+
+  updatePendingCheckout(user, amount, isIncrease, context) {
+    if (isIncrease) {
+      if (CommonUtil.isFailedTx(
+          this.incValueOrLog(PathUtil.getCheckoutPendingAmountForAddrPath(user), amount, context))) {
+        return FunctionResultCode.INTERNAL_ERROR;
+      }
+      if (CommonUtil.isFailedTx(
+          this.incValueOrLog(PathUtil.getCheckoutPendingAmountTotalPath(), amount, context))) {
+        return FunctionResultCode.INTERNAL_ERROR;
+      }
+    } else {
+      if (CommonUtil.isFailedTx(
+          this.decValueOrLog(PathUtil.getCheckoutPendingAmountForAddrPath(user), amount, context))) {
+        return FunctionResultCode.INTERNAL_ERROR;
+      }
+      if (CommonUtil.isFailedTx(
+          this.decValueOrLog(PathUtil.getCheckoutPendingAmountTotalPath(), amount, context))) {
+        return FunctionResultCode.INTERNAL_ERROR;
+      }
+    }
+    return true;
+  }
+
+  updateCompleteCheckout(amount, timestamp, context) {
+    const dayTimestamp = CommonUtil.getDayTimestamp(timestamp);
+    if (CommonUtil.isFailedTx(
+        this.incValueOrLog(PathUtil.getCheckoutCompleteAmountDailyPath(dayTimestamp), amount, context))) {
+      return FunctionResultCode.INTERNAL_ERROR;
+    }
+    if (CommonUtil.isFailedTx(
+        this.incValueOrLog(PathUtil.getCheckoutCompleteAmountTotalPath(), amount, context))) {
+      return FunctionResultCode.INTERNAL_ERROR;
+    }
+    return true;
+  }
+
+  validateTokenBridgeConfig(tokenPool, minCheckoutPerRequest, maxCheckoutPerRequest,
+      maxCheckoutPerDay, tokenExchangeRate, tokenExchangeScheme) {
+    if (tokenPool === undefined || minCheckoutPerRequest === undefined ||
+        maxCheckoutPerRequest === undefined || maxCheckoutPerDay === undefined ||
+        tokenExchangeRate === undefined || tokenExchangeScheme === undefined) {
+      return FunctionResultCode.INVALID_TOKEN_BRIDGE_CONFIG;
+    }
+    return true;
+  }
+
+  validateRecipient(recipient, tokenType) {
+    switch (tokenType) {
+      case 'ETH':
+        return CommonUtil.isCksumAddr(recipient) ? true : FunctionResultCode.INVALID_RECIPIENT;
+      // TODO(liayoo): add 'AIN' case for shards
+    }
+    return FunctionResultCode.INVALID_RECIPIENT;
+  }
+
+  validateCheckoutAmount(amount, timestamp, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay) {
+    const pendingTotal = this.db.getValue(PathUtil.getCheckoutPendingAmountTotalPath()) || 0; // includes 'amount'
+    const checkoutCompleteToday = this.db.getValue(
+        PathUtil.getCheckoutCompleteAmountDailyPath(CommonUtil.getDayTimestamp(timestamp))) || 0;
+    if (amount < minCheckoutPerRequest || amount > maxCheckoutPerRequest) {
+      return FunctionResultCode.INVALID_CHECKOUT_AMOUNT;
+    }
+    if (pendingTotal + checkoutCompleteToday > maxCheckoutPerDay) {
+      return FunctionResultCode.INVALID_CHECKOUT_AMOUNT;
+    }
+    return true;
+  }
+
+  _openCheckout(value, context) {
+    if (value === null) {
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    const user = context.params.user_addr;
+    const { amount, type, token_id: tokenId, recipient } = value;
+    // Increase pending amounts
+    const incPendingResultCode = this.updatePendingCheckout(user, amount, true, context);
+    if (incPendingResultCode !== true) {
+      return this.returnFuncResult(context, incPendingResultCode);
+    }
+    const {
+      [TokenBridgeProperties.TOKEN_POOL]: tokenPool,
+      [TokenBridgeProperties.MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
+      [TokenBridgeProperties.MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
+      [TokenBridgeProperties.MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
+      [TokenBridgeProperties.TOKEN_EXCH_RATE]: tokenExchangeRate,
+      [TokenBridgeProperties.TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
+    } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(type, tokenId));
+    // Perform checks
+    const tokenBridgeValidated = this.validateTokenBridgeConfig(
+        tokenPool, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay,
+        tokenExchangeRate, tokenExchangeScheme);
+    if (tokenBridgeValidated !== true) {
+      return this.returnFuncResult(context, tokenBridgeValidated);
+    }
+    const recipientValidated = this.validateRecipient(recipient, type);
+    if (recipientValidated !== true) {
+      return this.returnFuncResult(context, recipientValidated);
+    }
+    const amountValidated = this.validateCheckoutAmount(
+        amount, context.timestamp, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay);
+    if (amountValidated !== true) {
+      return this.returnFuncResult(context, amountValidated);
+    }
+    // Transfer from user to token_pool
+    const transferRes = this.setServiceAccountTransferOrLog(user, tokenPool, amount, context);
+    if (!CommonUtil.isFailedTx(transferRes)) {
+      // NOTE(liayoo): History will be recorded by a checkout server after processing the request.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    } else {
+      logger.error(`  ===> _openCheckout failed: ${JSON.stringify(transferRes)}`);
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+  }
+
+  _closeCheckout(value, context) {
+    const user = context.params.user_addr;
+    const checkoutId = context.params.checkout_id;
+    const { request, response } = value;
+    if (response.status === FunctionResultCode.SUCCESS) {
+      // Increase complete amounts
+      const updateStatsResultCode = this.updateCompleteCheckout(request.amount, context.timestamp, context);
+      if (updateStatsResultCode !== true) {
+        return this.returnFuncResult(context, updateStatsResultCode);
+      }
+    } else {
+      // Refund
+      const tokenPool = this.db.getValue(PathUtil.getTokenBridgeTokenPoolPath(request.type, request.token_id));
+      const transferRes = this.setServiceAccountTransferOrLog(tokenPool, user, request.amount, context);
+      if (CommonUtil.isFailedTx(transferRes)) {
+        return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+      }
+      const setRefundRes = this.setValueOrLog(
+            PathUtil.getCheckoutHistoryRefundPath(user, checkoutId),
+            PathUtil.getTransferPath(tokenPool, user, context.timestamp), context);
+      if (CommonUtil.isFailedTx(setRefundRes)) {
+        return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+      }
+    }
+    // NOTE(liayoo): Remove the original request to avoid keeping the processed requests in the
+    //               /checkout/requests and having to read and filter from the growing list.
+    const removeRes = this.setValueOrLog(PathUtil.getCheckoutRequestPath(user, checkoutId), null, context);
+    if (CommonUtil.isFailedTx(removeRes)) {
+      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    }
+    // Decrease pending amounts
+    const decPendingResultCode = this.updatePendingCheckout(user, request.amount, false, context);
+    if (decPendingResultCode !== true) {
+      return this.returnFuncResult(context, decPendingResultCode);
+    }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
   validateCheckinParams(params) {

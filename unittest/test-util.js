@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require("fs");
+const _ = require("lodash");
 const syncRequest = require('sync-request');
 const { Block } = require('../blockchain/block');
 const DB = require('../db');
@@ -71,12 +72,12 @@ function addBlock(node, txs, votes, validators) {
   finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1);
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   node.addNewBlock(Block.create(
-      lastBlock.hash, votes, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
+      lastBlock.hash, votes, {}, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
       node.account.address, validators, 0, 0));
 }
 
 async function waitUntilTxFinalized(servers, txHash) {
-  const MAX_ITERATION = 200;
+  const MAX_ITERATION = 40;
   let iterCount = 0;
   const unchecked = new Set(servers);
   while (true) {
@@ -95,7 +96,7 @@ async function waitUntilTxFinalized(servers, txHash) {
         unchecked.delete(server);
       }
     }
-    await CommonUtil.sleep(500);
+    await CommonUtil.sleep(3000);
     iterCount++;
   }
 }
@@ -109,13 +110,46 @@ async function waitForNewBlocks(server, waitFor = 1) {
   }
 }
 
+async function waitUntilNetworkIsReady(serverList) {
+  const MAX_ITERATION = 40;
+  let iterCount = 0;
+  const unchecked = new Set(serverList);
+  while (true) {
+    if (!unchecked.size) {
+      return true;
+    }
+    if (iterCount >= MAX_ITERATION) {
+      console.log(`Iteration count exceeded its limit before the network is ready (${JSON.stringify([...unchecked])})`);
+      return false;
+    }
+    for (const server of unchecked) {
+      try {
+        const healthCheck = parseOrLog(syncRequest('GET', server + '/health_check')
+            .body
+            .toString('utf-8'));
+        if (healthCheck === true) {
+          unchecked.delete(server);
+        }
+      } catch (e) {
+        // server may not be ready yet
+      }
+    }
+    await CommonUtil.sleep(3000);
+    iterCount++;
+  }
+}
+
 async function waitUntilNodeSyncs(server) {
   let isSyncing = true;
   while (isSyncing) {
-    isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
-        {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
-                params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
-        .body.toString('utf-8')).result.result;
+    try {
+      isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
+          {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
+                  params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
+          .body.toString('utf-8')).result.result;
+    } catch (e) {
+      // server may not be ready yet
+    }
     await CommonUtil.sleep(1000);
   }
 }
@@ -165,6 +199,16 @@ function getBlockByNumber(server, number) {
       .body.toString('utf-8')).result;
 }
 
+function eraseStateGas(result, appNameList = []) {
+  const erased = JSON.parse(JSON.stringify(result));
+  _.set(erased, 'gas_amount_charged', 'erased');
+  _.set(erased, 'gas_amount_total.state.service', 'erased');
+  for (const appName of appNameList) {
+    _.set(erased, `gas_amount_total.state.app.${appName}`, 'erased');
+  }
+  return erased;
+}
+
 module.exports = {
   GET_OPTIONS_INCLUDE_ALL,
   readConfigFile,
@@ -173,10 +217,12 @@ module.exports = {
   addBlock,
   waitUntilTxFinalized,
   waitForNewBlocks,
+  waitUntilNetworkIsReady,
   waitUntilNodeSyncs,
   parseOrLog,
   setUpApp,
   getLastBlock,
   getLastBlockNumber,
   getBlockByNumber,
+  eraseStateGas,
 };

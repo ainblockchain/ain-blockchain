@@ -4,7 +4,6 @@ const _ = require('lodash');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
-const PRIVATE_KEY = process.env.PRIVATE_KEY || null;
 
 class CommonUtil {
   static hashString(stringData) {
@@ -21,12 +20,12 @@ class CommonUtil {
     return '0x' + ainUtil.hashTransaction(txBody).toString('hex');
   }
 
-  static signTransaction(txBody, privateKey) {
+  static signTransaction(txBody, privateKey, chainId) {
     if (!privateKey) {
       return null;
     }
     const keyBuffer = Buffer.from(privateKey, 'hex');
-    const sig = ainUtil.ecSignTransaction(txBody, keyBuffer);
+    const sig = ainUtil.ecSignTransaction(txBody, keyBuffer, chainId);
     const sigBuffer = ainUtil.toBuffer(sig);
     const lenHash = sigBuffer.length - 65;
     const hashedData = sigBuffer.slice(0, lenHash);
@@ -98,6 +97,14 @@ class CommonUtil {
     return ruleUtil.isEmpty(value);
   }
 
+  static isHexString(value) {
+    return ruleUtil.isHexString(value);
+  }
+
+  static isValidHash(value) {
+    return ruleUtil.isValidHash(value);
+  }
+
   static isValAddr(value) {
     return ruleUtil.isValAddr(value);
   }
@@ -116,6 +123,10 @@ class CommonUtil {
 
   static isValShardProto(value) {
     return ruleUtil.isValShardProto(value);
+  }
+
+  static isValidatorOffenseType(type) {
+    return ruleUtil.isValidatorOffenseType(type);
   }
 
   static boolOrFalse(value) {
@@ -138,6 +149,31 @@ class CommonUtil {
     return ruleUtil.toNumberOrNaN(value);
   }
 
+  static toString(value) {
+    if (CommonUtil.isBool(value)) {
+      return value.toString();
+    } else if (CommonUtil.isNumber(value)) {
+      return value.toString();
+    } else if (CommonUtil.isString(value)) {
+      return value;
+    } else if (value === undefined) {
+      return '';
+    } else {
+      return JSON.stringify(value);
+    }
+  }
+
+  /**
+   * Converts the given string to a hex string (with lower case).
+   */
+  static toHexString(str) {
+    if (this.isHexString(str)) {
+      return str.toLowerCase();
+    }
+    const hexStr = this.isString(str) ? Buffer.from(str).toString('hex') : '';
+    return '0x' + hexStr;
+  }
+
   static toCksumAddr(addr) {
     return ruleUtil.toCksumAddr(addr);
   }
@@ -157,25 +193,11 @@ class CommonUtil {
   // NOTE(liayoo): billing is in the form <app name>|<billing id>
   static toBillingAccountName(billing) {
     const { PredefinedDbPaths } = require('../common/constants');
-    return `${PredefinedDbPaths.BILLING}|${billing}`;
+    return `${PredefinedDbPaths.GAS_FEE_BILLING}|${billing}`;
   }
 
   static toEscrowAccountName(source, target, escrowKey) {
     return ruleUtil.toEscrowAccountName(source, target, escrowKey);
-  }
-
-  static toString(value) {
-    if (CommonUtil.isBool(value)) {
-      return value.toString();
-    } else if (CommonUtil.isNumber(value)) {
-      return value.toString();
-    } else if (CommonUtil.isString(value)) {
-      return value;
-    } else if (value === undefined) {
-      return '';
-    } else {
-      return JSON.stringify(value);
-    }
   }
 
   static toGetOptions(args) {
@@ -685,6 +707,11 @@ class CommonUtil {
       obj[index] = item;
     });
     return obj;
+  }
+
+  static getDayTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
   }
 }
 

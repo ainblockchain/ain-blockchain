@@ -101,7 +101,7 @@ const main = async () => {
   const insightVersion = getVersion(`${INSIGHT}/src/data/constants`, 'const.js', 'VERSION', 1);
   const faucetVersion = getVersionFromAinJs(ainJsVersion, FAUCET);
   const connectVersion = faucetVersion;
-  const pipelineVersion = getVersion(`${PIPELINE}/constants`, 'const.js', 'AIN_PROTOCOL_VERSION', 1);
+  const pipelineVersion = getVersion(`${PIPELINE}/constants`, 'const.js', 'AIN_PROTOCOL_VERSION', 3);
   const dataVersion = getVersionFromAinJs(ainJsVersion, DATA);
   const exporterVersion = GPT2Version;
 
@@ -125,7 +125,8 @@ const main = async () => {
   // Compare versions and set color
   const currentRowNumber = (await sheet.getRows()).length + 1;
   await sheet.loadCells(`E${currentRowNumber}:L${currentRowNumber}`);
-  Object.keys(CELL_DICTIONARY).forEach(repo => {
+  for (const repo of Object.keys(CELL_DICTIONARY)) {
+    if (!semver.valid(row[repo])) continue;
     const isLower = semver.lt(row[repo], row.min);
     if (isLower) {
       const latestAinJsCell = sheet.getCellByA1(`${CELL_DICTIONARY[repo]}${currentRowNumber}`);
@@ -135,7 +136,7 @@ const main = async () => {
         blue: 0
       };
     }
-  });
+  }
   await sheet.saveUpdatedCells();
 }
 

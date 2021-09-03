@@ -6,6 +6,7 @@ const logger = require('../logger')('P2P_CLIENT');
 const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const {
+  HOSTING_ENV,
   PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
@@ -13,8 +14,7 @@ const {
   BlockchainNodeStates,
   DEFAULT_MAX_OUTBOUND,
   DEFAULT_MAX_INBOUND,
-  MAX_OUTBOUND_LIMIT,
-  MAX_INBOUND_LIMIT
+  NETWORK_ID,
 } = require('../common/constants');
 const { sleep } = require('../common/common-util');
 const {
@@ -25,7 +25,8 @@ const {
   verifySignedMessage,
   checkTimestamp,
   closeSocketSafe,
-  encapsulateMessage
+  encapsulateMessage,
+  isValidNetworkId
 } = require('./util');
 
 const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
@@ -52,12 +53,10 @@ class P2pClient {
   // maxOutbound is for now limited equal or less than 2.
   // maxInbound is a rest of connection after maxOutbound is set.
   initConnections() {
-    const numOutbound = process.env.MAX_OUTBOUND ?
+    this.maxOutbound = process.env.MAX_OUTBOUND ?
         Number(process.env.MAX_OUTBOUND) : DEFAULT_MAX_OUTBOUND;
-    const numInbound = process.env.MAX_INBOUND ?
+    this.maxInbound = process.env.MAX_INBOUND ?
         Number(process.env.MAX_INBOUND) : DEFAULT_MAX_INBOUND;
-    this.maxOutbound = Math.min(numOutbound, MAX_OUTBOUND_LIMIT);
-    this.maxInbound = Math.min(numInbound, MAX_INBOUND_LIMIT);
   }
 
   getConnectionStatus() {
@@ -94,14 +93,16 @@ class P2pClient {
   }
 
   getNetworkStatus() {
+    const intIp = this.server.getInternalIp();
     const extIp = this.server.getExternalIp();
-    const url = new URL(`ws://${extIp}:${P2P_PORT}`);
-    const p2pUrl = url.toString();
-    url.protocol = 'http:';
-    url.port = PORT;
-    const clientApiUrl = url.toString();
-    url.pathname = 'json-rpc';
-    const jsonRpcUrl = url.toString();
+    const intUrl = new URL(`ws://${intIp}:${P2P_PORT}`);
+    const extUrl = new URL(`ws://${extIp}:${P2P_PORT}`);
+    const p2pUrl = HOSTING_ENV === 'comcom' ? intUrl.toString() : extUrl.toString();
+    extUrl.protocol = 'http:';
+    extUrl.port = PORT;
+    const clientApiUrl = extUrl.toString();
+    extUrl.pathname = 'json-rpc';
+    const jsonRpcUrl = extUrl.toString();
     return {
       ip: extIp,
       p2p: {
@@ -271,9 +272,16 @@ class P2pClient {
     const LOG_HEADER = 'setClientSidePeerEventHandlers';
     socket.on('message', (message) => {
       const parsedMessage = JSON.parse(message);
+      const networkId = _.get(parsedMessage, 'networkId');
+      const address = getAddressFromSocket(this.outbound, socket);
+      if (!isValidNetworkId(networkId)) {
+        logger.error(`The given network ID(${networkId}) of the node(${address}) is MISSING or ` +
+          `DIFFERENT from mine(${NETWORK_ID}). Disconnect the connection.`);
+        closeSocketSafe(this.outbound, socket);
+        return;
+      }
       const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
       if (!VersionUtil.isValidProtocolVersion(dataProtoVer)) {
-        const address = getAddressFromSocket(this.outbound, socket);
         logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
         closeSocketSafe(this.outbound, socket);
