@@ -65,8 +65,14 @@ class RadixTree {
     return terminalNode;
   }
 
-  _getRadixNodeForWriting(hexLabel) {
-    let curNode = this.root
+  _getRadixNodeForWriting(stateLabel) {
+    let curNode = this._getRadixNodeForReading(stateLabel);
+    if (curNode !== null) {
+      return curNode;
+    }
+
+    const hexLabel = this._toHexLabel(stateLabel);
+    curNode = this.root
     let labelIndex = 0;
     while (labelIndex < hexLabel.length) {
       const labelRadix = hexLabel.charAt(labelIndex);
@@ -150,8 +156,7 @@ class RadixTree {
   }
 
   set(stateLabel, stateNode) {
-    const hexLabel = this._toHexLabel(stateLabel);
-    const node = this._getRadixNodeForWriting(hexLabel);
+    const node = this._getRadixNodeForWriting(stateLabel);
     // Set in the terminal node map.
     this.terminalNodeMap.set(stateLabel, node);
     return node.setStateNode(stateNode);
