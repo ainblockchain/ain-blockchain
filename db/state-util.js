@@ -5,6 +5,7 @@ const _ = require('lodash');
 const validUrl = require('valid-url');
 const CommonUtil = require('../common/common-util');
 const {
+  FeatureFlags,
   PredefinedDbPaths,
   FunctionProperties,
   FunctionTypes,
@@ -546,10 +547,21 @@ function renameStateTreeVersion(node, fromVersion, toVersion, isRootNode = true)
  */
 function deleteStateTree(node) {
   let numAffectedNodes = 0;
-  for (const label of node.getChildLabels()) {
-    const child = node.getChild(label);
-    node.deleteChild(label);
-    numAffectedNodes += deleteStateTree(child);
+  if (FeatureFlags.enableRadixTreeLayers) {
+    const childNodes = node.getChildNodes();
+    node.deleteRadixTree();
+    for (const child of childNodes) {
+      numAffectedNodes += deleteStateTree(child);
+    }
+    if (node.numChildren() === 0) {
+      node.setIsLeaf(true);
+    }
+  } else {
+    for (const label of node.getChildLabels()) {
+      const child = node.getChild(label);
+      node.deleteChild(label);
+      numAffectedNodes += deleteStateTree(child);
+    }
   }
   node.resetValue();
   node.resetProofHash();
@@ -571,10 +583,21 @@ function deleteStateTreeVersion(node) {
   node.resetProofHash();
   numAffectedNodes++;
 
-  for (const label of node.getChildLabels()) {
-    const child = node.getChild(label);
-    node.deleteChild(label);
-    numAffectedNodes += deleteStateTreeVersion(child);
+  if (FeatureFlags.enableRadixTreeLayers) {
+    const childNodes = node.getChildNodes();
+    node.deleteRadixTree();
+    for (const child of childNodes) {
+      numAffectedNodes += deleteStateTreeVersion(child);
+    }
+    if (node.numChildren() === 0) {
+      node.setIsLeaf(true);
+    }
+  } else {
+    for (const label of node.getChildLabels()) {
+      const child = node.getChild(label);
+      node.deleteChild(label);
+      numAffectedNodes += deleteStateTreeVersion(child);
+    }
   }
 
   return numAffectedNodes;

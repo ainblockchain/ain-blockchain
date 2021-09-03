@@ -677,13 +677,13 @@ describe("state-node", () => {
       assert.deepEqual(child.getParentNodes(), [parent1, parent2]);
       expect(child.numParents()).to.equal(2);
 
-      child._deleteParent(parent1);
+      child.deleteParent(parent1);
       expect(child._hasParent(parent1)).to.equal(false);
       expect(child._hasParent(parent2)).to.equal(true);
       assert.deepEqual(child.getParentNodes(), [parent2]);
       expect(child.numParents()).to.equal(1);
 
-      child._deleteParent(parent2);
+      child.deleteParent(parent2);
       expect(child._hasParent(parent1)).to.equal(false);
       expect(child._hasParent(parent2)).to.equal(false);
       assert.deepEqual(child.getParentNodes(), []);
@@ -728,8 +728,8 @@ describe("state-node", () => {
       expect(child1.numParents()).to.equal(2);
       expect(child2.numParents()).to.equal(2);
 
-      child1._deleteParent(parent1);
-      child2._deleteParent(parent2);
+      child1.deleteParent(parent1);
+      child2.deleteParent(parent2);
       expect(child1._hasParent(parent1)).to.equal(false);
       expect(child1._hasParent(parent2)).to.equal(true);
       expect(child2._hasParent(parent1)).to.equal(true);
@@ -739,8 +739,8 @@ describe("state-node", () => {
       expect(child1.numParents()).to.equal(1);
       expect(child2.numParents()).to.equal(1);
 
-      child1._deleteParent(parent2);
-      child2._deleteParent(parent1);
+      child1.deleteParent(parent2);
+      child2.deleteParent(parent1);
       expect(child1._hasParent(parent1)).to.equal(false);
       expect(child1._hasParent(parent2)).to.equal(false);
       expect(child2._hasParent(parent1)).to.equal(false);
@@ -786,7 +786,7 @@ describe("state-node", () => {
       assert.deepEqual(child.getParentNodes(), [parent1]);
       expect(child.numParents()).to.equal(1);
 
-      child._deleteParent(parent2);
+      child.deleteParent(parent2);
       expect(child._hasParent(parent1)).to.equal(true);
       expect(child._hasParent(parent2)).to.equal(false);
       assert.deepEqual(child.getParentNodes(), [parent1]);

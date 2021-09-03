@@ -211,7 +211,7 @@ class StateNode {
     return this.parentSet.has(parent);
   }
 
-  _deleteParent(parent) {
+  deleteParent(parent) {
     const LOG_HEADER = 'deleteParent';
     if (!this.parentSet.has(parent)) {
       logger.error(
@@ -255,9 +255,9 @@ class StateNode {
         // Does nothing.
         return;
       }
-      // NOTE(platfowner): Use _deleteParent() instead of deleteChild()
-      //                   to keep the order of children.
-      child._deleteParent(this);
+      // NOTE(platfowner): Use deleteParent() instead of deleteChild() to keep
+      // the order of children.
+      child.deleteParent(this);
     }
     if (FeatureFlags.enableRadixTreeLayers) {
       this.radixTree.set(label, node);
@@ -289,7 +289,7 @@ class StateNode {
       return;
     }
     const child = this.getChild(label);
-    child._deleteParent(this);
+    child.deleteParent(this);
     if (FeatureFlags.enableRadixTreeLayers) {
       this.radixTree.delete(label, updateStateInfo);  // with updateStateInfo
       if (updateStateInfo) {
@@ -369,6 +369,10 @@ class StateNode {
 
   setTreeBytes(treeBytes) {
     this.treeBytes = treeBytes;
+  }
+
+  deleteRadixTree() {
+    this.radixTree.deleteRadixTree(this);
   }
 
   /**
