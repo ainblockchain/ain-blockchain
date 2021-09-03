@@ -36,7 +36,7 @@ describe('Blockchain', () => {
     });
     const lastBlock = node1.bc.lastBlock();
     node1.addNewBlock(Block.create(
-        lastBlock.hash, [], [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
+        lastBlock.hash, [], {}, [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
         node1.account.address, {}, 0, 0));
     assert.deepEqual(
         node1.bc.chain[node1.bc.chain.length -1].transactions[0],
@@ -66,7 +66,7 @@ describe('Blockchain', () => {
     });
     const lastBlock = node1.bc.lastBlock();
     node1.addNewBlock(Block.create(
-        lastBlock.hash, [], [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
+        lastBlock.hash, [], {}, [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
         node1.account.address, {}, 0, 0));
     node1.bc.chain[node1.bc.chain.length - 1].transactions = ':(';
     expect(Blockchain.validateChainSegment(node1.bc.chain)).to.equal(false);
@@ -91,7 +91,7 @@ describe('Blockchain', () => {
         const lastBlock = node1.bc.lastBlock();
         const finalRoot = node1.stateManager.getFinalRoot();
         const block = Block.create(
-            lastBlock.hash, [], node1.tp.getValidTransactions(), lastBlock.number + 1, i,
+            lastBlock.hash, [], {}, node1.tp.getValidTransactions(), lastBlock.number + 1, i,
             finalRoot.getProofHash(), node1.account.address, [], 0, 0);
         if (block.number === 500) {
           blockHash = block.hash;

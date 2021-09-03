@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 if [[ "$#" -lt 4 ]] || [[ "$#" -gt 4 ]]; then
-    printf "Usage: sh start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full]\n"
-    printf "Example: sh start_node_incremental_gcp.sh spring 0 0 fast\n"
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full]\n"
+    printf "Example: bash start_node_incremental_gcp.sh spring 0 0 fast\n"
     exit
 fi
 
@@ -142,11 +142,11 @@ printf "\n#### [Step 5] Kill old node server ####\n\n"
 KILL_CMD="sudo killall node"
 printf "KILL_CMD='$KILL_CMD'\n\n"
 eval $KILL_CMD
+sleep 10
 
 # 6. Start a new node server
 printf "\n#### [Step 6] Start new node server ####\n\n"
 
-sleep 10
 MAX_OLD_SPACE_SIZE_MB=6000
 
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"

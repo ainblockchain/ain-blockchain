@@ -1,8 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 if [[ "$#" -lt 2 ]]; then
-    echo "Usage: sh start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index>"
-    echo "Example: sh start_node_genesis_gcp.sh spring 0 0"
+    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index>"
+    echo "Example: bash start_node_genesis_gcp.sh spring 0 0"
     exit
 fi
 

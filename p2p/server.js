@@ -18,8 +18,6 @@ const {
   DATA_PROTOCOL_VERSION,
   P2P_PORT,
   HOSTING_ENV,
-  COMCOM_HOST_EXTERNAL_IP,
-  COMCOM_HOST_INTERNAL_IP_MAP,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
@@ -34,7 +32,8 @@ const {
   FunctionTypes,
   NativeFunctionIds,
   LIGHTWEIGHT,
-  FeatureFlags
+  FeatureFlags,
+  NETWORK_ID
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const {
@@ -49,7 +48,8 @@ const {
   verifySignedMessage,
   checkTimestamp,
   closeSocketSafe,
-  encapsulateMessage
+  encapsulateMessage,
+  isValidNetworkId
 } = require('./util');
 const PathUtil = require('../common/path-util');
 
@@ -114,6 +114,10 @@ class P2pServer {
 
   getNodePrivateKey() {
     return this.node.account.private_key;
+  }
+
+  getInternalIp() {
+    return this.node.ipAddrInternal;
   }
 
   getExternalIp() {
@@ -294,19 +298,11 @@ class P2pServer {
           process.exit(0);
         });
       } else if (HOSTING_ENV === 'comcom') {
-        let ipAddr = null;
         if (internal) {
-          const hostname = _.toLower(os.hostname());
-          logger.info(`Hostname: ${hostname}`);
-          ipAddr = COMCOM_HOST_INTERNAL_IP_MAP[hostname];
+          return ip.address();
         } else {
-          ipAddr = COMCOM_HOST_EXTERNAL_IP;
+          return publicIp.v4();
         }
-        if (ipAddr) {
-          return ipAddr;
-        }
-        logger.error(`Failed to get ${internal ? 'internal' : 'external'} ip address.`);
-        process.exit(0);
       } else if (HOSTING_ENV === 'local') {
         return ip.address();
       } else {
@@ -358,12 +354,19 @@ class P2pServer {
     socket.on('message', (message) => {
       try {
         const parsedMessage = JSON.parse(message);
-        const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
+        const networkId = _.get(parsedMessage, 'networkId');
         const address = getAddressFromSocket(this.inbound, socket);
+        if (!isValidNetworkId(networkId)) {
+          logger.error(`The given network ID(${networkId}) of the node(${address}) is MISSING or ` +
+            `DIFFERENT from mine(${NETWORK_ID}). Disconnect the connection.`);
+          closeSocketSafe(this.inbound, socket);
+          return;
+        }
+        const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
         if (!VersionUtil.isValidProtocolVersion(dataProtoVer)) {
           logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
-          closeSocketSafe(this.outbound, socket);
+          closeSocketSafe(this.inbound, socket);
           return;
         }
         if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {

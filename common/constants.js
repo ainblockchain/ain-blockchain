@@ -18,7 +18,7 @@ const FeatureFlags = {
   // Enables state version optimization.
   enableStateVersionOpt: true,
   // Enables state tree transfer.
-  enableStateTreeTransfer: true,
+  enableStateTreeTransfer: false,
   // Enables rich logging for functions.
   enableRichFunctionLogging: false,
   // Enables rich logging for transactions.
@@ -28,7 +28,13 @@ const FeatureFlags = {
   // Enables rich logging for tx selection in tx pool.
   enableRichTxSelectionLogging: false,
   // Enables receipt path's prefix layers.
-  enableReceiptPathPrefixLayers: true,
+  enableReceiptPathPrefixLayers: false,  // Some test cases assume this value false.
+  // Enables radix layers.
+  enableRadixTreeLayers: true,  // Some test cases assume this value true.
+  // Enables hex label cache.
+  enableHexLabelCache: false,
+  // Enables array radix child map.
+  enableArrayRadixChildMap: false,
 };
 
 // ** Environment variables **
@@ -39,8 +45,6 @@ const ENABLE_TX_SIG_VERIF_WORKAROUND =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
 const ENABLE_GAS_FEE_WORKAROUND =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
-const COMCOM_HOST_EXTERNAL_IP = process.env.COMCOM_HOST_EXTERNAL_IP ?
-    process.env.COMCOM_HOST_EXTERNAL_IP : '';
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
@@ -104,7 +108,7 @@ const FREE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * FREE_BANDWIDTH
 const SERVICE_STATE_BUDGET = stateTreeBytesLimit * SERVICE_STATE_BUDGET_RATIO;
 const APPS_STATE_BUDGET = stateTreeBytesLimit * APPS_STATE_BUDGET_RATIO;
 const FREE_STATE_BUDGET = stateTreeBytesLimit * FREE_STATE_BUDGET_RATIO;
-const MAX_STATE_TREE_SIZE_PER_BYTE = 0.005;
+const MAX_STATE_TREE_SIZE_PER_BYTE = 0.01;
 const TREE_SIZE_BUDGET = stateTreeBytesLimit * MAX_STATE_TREE_SIZE_PER_BYTE;
 const SERVICE_TREE_SIZE_BUDGET = SERVICE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
 const APPS_TREE_SIZE_BUDGET = APPS_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
@@ -156,30 +160,44 @@ const PredefinedDbPaths = {
   DOT_SHARD: '.shard',
   // Consensus
   CONSENSUS: 'consensus',
-  WHITELIST: 'whitelist',
-  NUMBER: 'number',
-  PROPOSE: 'propose',
-  PROPOSER: 'proposer',
-  VALIDATORS: 'validators',
-  TOTAL_AT_STAKE: 'total_at_stake',
-  VOTE: 'vote',
-  BLOCK_HASH: 'block_hash',
-  STAKE: 'stake',
-  PROPOSAL_RIGHT: 'proposal_right',
+  CONSENSUS_BLOCK_HASH: 'block_hash',
+  CONSENSUS_IS_AGAINST: 'is_against',
+  CONSENSUS_NUMBER: 'number',
+  CONSENSUS_OFFENSE_RECORDS: 'offense_records',
+  CONSENSUS_OFFENSE_TYPE: 'offense_type',
+  CONSENSUS_PROPOSAL_RIGHT: 'proposal_right',
+  CONSENSUS_PROPOSE: 'propose',
+  CONSENSUS_PROPOSER: 'proposer',
+  CONSENSUS_REWARDS: 'rewards',
+  CONSENSUS_REWARDS_UNCLAIMED: 'unclaimed',
+  CONSENSUS_REWARDS_CUMULATIVE: 'cumulative',
+  CONSENSUS_STAKE: 'stake',
+  CONSENSUS_TOTAL_AT_STAKE: 'total_at_stake',
+  CONSENSUS_VALIDATORS: 'validators',
+  CONSENSUS_VOTE: 'vote',
+  CONSENSUS_WHITELIST: 'whitelist',
   // Receipts
   RECEIPTS: 'receipts',
   RECEIPTS_ADDRESS: 'address',
   RECEIPTS_BILLING: 'billing',
   RECEIPTS_BLOCK_NUMBER: 'block_number',
   RECEIPTS_EXEC_RESULT: 'exec_result',
-  RECEIPTS_GAS_COST_TOTAL: 'gas_cost_total',
+  RECEIPTS_EXEC_RESULT_CODE: 'code',
+  RECEIPTS_EXEC_RESULT_ERROR_MESSAGE: 'error_message',
+  RECEIPTS_EXEC_RESULT_GAS_AMOUNT_CHARGED: 'gas_amount_charged',
+  RECEIPTS_EXEC_RESULT_GAS_COST_TOTAL: 'gas_cost_total',
+  RECEIPTS_EXEC_RESULT_RESULT_LIST: 'result_list',
   // Gas fee
   GAS_FEE: 'gas_fee',
-  COLLECT: 'collect',
-  BILLING: 'billing',
   GAS_FEE_AMOUNT: 'amount',
+  GAS_FEE_BILLING: 'billing',
+  GAS_FEE_CLAIM: 'claim',
+  GAS_FEE_COLLECT: 'collect',
+  GAS_FEE_UNCLAIMED: 'unclaimed',
   // Token
   TOKEN: 'token',
+  TOKEN_BRIDGE: 'bridge',
+  TOKEN_BRIDGE_TOKEN_POOL: 'token_pool',
   TOKEN_NAME: 'name',
   TOKEN_SYMBOL: 'symbol',
   TOKEN_TOTAL_SUPPLY: 'total_supply',
@@ -242,6 +260,13 @@ const PredefinedDbPaths = {
   CHECKIN_PAYLOAD: 'payload',
   CHECKIN_PARENT_FINALIZE: 'parent_finalize',
   CHECKOUT: 'checkout',
+  CHECKOUT_HISTORY: 'history',
+  CHECKOUT_HISTORY_REFUND: 'refund',
+  CHECKOUT_REQUESTS: 'requests',
+  CHECKOUT_STATS: 'stats',
+  CHECKOUT_STATS_COMPLETE: 'complete',
+  CHECKOUT_STATS_PENDING: 'pending',
+  CHECKOUT_STATS_TOTAL: 'total',
 };
 
 /**
@@ -253,6 +278,21 @@ const TokenProperties = {
   NAME: 'name',
   SYMBOL: 'symbol',
   TOTAL_SUPPLY: 'total_supply',
+  BRIDGE: 'bridge',
+};
+
+/**
+ * Properties of token bridge configs.
+ *
+ * @enum {string}
+ */
+ const TokenBridgeProperties = {
+  TOKEN_POOL: 'token_pool',
+  MIN_CHECKOUT_PER_REQUEST: 'min_checkout_per_request',
+  MAX_CHECKOUT_PER_REQUEST: 'max_checkout_per_request',
+  MAX_CHECKOUT_PER_DAY: 'max_checkout_per_day',
+  TOKEN_EXCH_RATE: 'token_exchange_rate',
+  TOKEN_EXCH_SCHEME: 'token_exchange_scheme',
 };
 
 /**
@@ -322,7 +362,9 @@ const FunctionTypes = {
  * @enum {string}
  */
 const ProofProperties = {
+  LABEL: '.label',
   PROOF_HASH: '.proof_hash',
+  RADIX_PROOF_HASH: '.radix_ph',
 };
 
 /**
@@ -346,13 +388,17 @@ const StateInfoProperties = {
  */
 const NativeFunctionIds = {
   CLAIM: '_claim',
+  CLAIM_REWARD: '_claimReward',
   CLOSE_CHECKIN: '_closeCheckin',
+  CLOSE_CHECKOUT: '_closeCheckout',
   COLLECT_FEE: '_collectFee',
   CREATE_APP: '_createApp',
   DISTRIBUTE_FEE: '_distributeFee',
   ERASE_VALUE: '_eraseValue',
+  HANDLE_OFFENSES: '_handleOffenses',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
+  OPEN_CHECKOUT: '_openCheckout',
   PAY: '_pay',
   RELEASE: '_release',
   SAVE_LAST_TX: '_saveLastTx',
@@ -445,16 +491,25 @@ const WriteDbOperations = {
 /**
  * Function result code.
  *
- * @enum {string}
+ * @enum {number}
  */
 const FunctionResultCode = {
-  FAILURE: 'FAILURE',  // Normal failure
-  IN_LOCKUP_PERIOD: 'IN_LOCKUP_PERIOD',
-  INSUFFICIENT_BALANCE: 'INSUFFICIENT_BALANCE',
-  INTERNAL_ERROR: 'INTERNAL_ERROR',  // Something went wrong but don't know why
-  INVALID_ACCOUNT_NAME: 'INVALID_ACCOUNT_NAME',
-  INVALID_SERVICE_NAME: 'INVALID_SERVICE_NAME',
-  SUCCESS: 'SUCCESS',
+  SUCCESS: 0,
+  FAILURE: 1,  // Normal failure
+  INTERNAL_ERROR: 2,  // Something went wrong but don't know why
+  // Transfer
+  INSUFFICIENT_BALANCE: 100,
+  // Staking
+  IN_LOCKUP_PERIOD: 200,
+  // Create app
+  INVALID_SERVICE_NAME: 300,
+  // Checkout
+  INVALID_ACCOUNT_NAME: 400,
+  INVALID_CHECKOUT_AMOUNT: 401,
+  INVALID_RECIPIENT: 402,
+  INVALID_TOKEN_BRIDGE_CONFIG: 403,
+  // Claim reward
+  INVALID_AMOUNT: 500,
 };
 
 /**
@@ -508,6 +563,7 @@ const GasFeeConstants = {
 const SERVICE_TYPES = [
   PredefinedDbPaths.ACCOUNTS,
   PredefinedDbPaths.CHECKIN,
+  PredefinedDbPaths.CHECKOUT,
   PredefinedDbPaths.ESCROW,
   PredefinedDbPaths.GAS_FEE,
   PredefinedDbPaths.MANAGE_APP,
@@ -526,7 +582,7 @@ function isServiceType(type) {
  * Service types allowed to create service accounts.
  */
 const SERVICE_ACCOUNT_SERVICE_TYPES = [
-  PredefinedDbPaths.BILLING,
+  PredefinedDbPaths.GAS_FEE_BILLING,
   PredefinedDbPaths.ESCROW,
   PredefinedDbPaths.GAS_FEE,
   PredefinedDbPaths.PAYMENTS,
@@ -583,8 +639,8 @@ function overwriteGenesisParams(overwritingParams, type) {
       const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
       CommonUtil.setJsObject(whitelist, [addr], true);
       CommonUtil.setJsObject(validators, [addr], {
-          [PredefinedDbPaths.STAKE]: GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR,
-          [PredefinedDbPaths.PROPOSAL_RIGHT]: true
+          [PredefinedDbPaths.CONSENSUS_STAKE]: GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR,
+          [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
         });
     }
     GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
@@ -602,11 +658,8 @@ function initializeNetworkEnvronments() {
     return GenesisParams.network;
   } else {
     return {
-      // NOTE(minsulee2): Need a discussion that MAX_NUM_VALIDATORS and MAX_INBOUND_LIMIT
-      // should not be related to one another.
       P2P_MESSAGE_TIMEOUT_MS: 600000,
-      MAX_OUTBOUND_LIMIT: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
-      MAX_INBOUND_LIMIT: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      MAX_NUM_PEER_CANDIDATES_AT_ONCE: 2,
       DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
       DEFAULT_MAX_INBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1
     }
@@ -691,7 +744,7 @@ function getGenesisValues() {
   CommonUtil.setJsObject(
       values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
   CommonUtil.setJsObject(
-      values, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
+      values, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
   return values;
 }
 
@@ -710,7 +763,7 @@ function getGenesisRules() {
 }
 
 function getGenesisOwners() {
-  let owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
+  const owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
   CommonUtil.setJsObject(owners, [], getRootOwner());
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     CommonUtil.setJsObject(
@@ -718,7 +771,7 @@ function getGenesisOwners() {
         getShardingOwner());
   }
   CommonUtil.setJsObject(
-      owners, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST], getWhitelistOwner());
+      owners, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST], getWhitelistOwner());
   return owners;
 }
 
@@ -806,7 +859,6 @@ module.exports = {
   ENABLE_DEV_SET_CLIENT_API,
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
-  COMCOM_HOST_EXTERNAL_IP,
   ACCOUNT_INDEX,
   PORT,
   P2P_PORT,
@@ -832,6 +884,7 @@ module.exports = {
   BlockchainNodeStates,
   PredefinedDbPaths,
   TokenProperties,
+  TokenBridgeProperties,
   AccountProperties,
   OwnerProperties,
   RuleProperties,

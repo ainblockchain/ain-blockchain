@@ -37,12 +37,25 @@ class PathUtil {
     return `${PathUtil.getServiceAccountPathFromAccountName(accountName)}/${PredefinedDbPaths.BALANCE}`;
   }
 
+  static getTokenBridgeConfigPath(type, tokenId) {
+    return CommonUtil.formatPath([PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE, type, tokenId]);
+  }
+
+  static getTokenBridgeTokenPoolPath(type, tokenId) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE, type, tokenId, PredefinedDbPaths.TOKEN_BRIDGE_TOKEN_POOL]);
+  }
+
+  static getTransferPath(from, to, key) {
+    return CommonUtil.formatPath([PredefinedDbPaths.TRANSFER, from, to, key]);
+  }
+
   static getTransferValuePath(from, to, key) {
-    return CommonUtil.formatPath([PredefinedDbPaths.TRANSFER, from, to, key, PredefinedDbPaths.TRANSFER_VALUE]);
+    return CommonUtil.appendPath(PathUtil.getTransferPath(from, to, key), PredefinedDbPaths.TRANSFER_VALUE);
   }
 
   static getTransferResultPath(from, to, key) {
-    return CommonUtil.formatPath([PredefinedDbPaths.TRANSFER, from, to, key, PredefinedDbPaths.TRANSFER_RESULT]);
+    return CommonUtil.appendPath(PathUtil.getTransferPath(from, to, key), PredefinedDbPaths.TRANSFER_RESULT);
   }
 
   static getCreateAppRecordPath(appName, recordId) {
@@ -56,6 +69,10 @@ class PathUtil {
 
   static getManageAppConfigPath(appName) {
     return CommonUtil.formatPath([PredefinedDbPaths.MANAGE_APP, appName, PredefinedDbPaths.MANAGE_APP_CONFIG]);
+  }
+
+  static getManageAppConfigAdminPath(appName) {
+    return `${PathUtil.getManageAppConfigPath(appName)}/${PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN}`;
   }
 
   static getManageAppBillingUsersPath(appName, billingId) {
@@ -187,12 +204,59 @@ class PathUtil {
     return PathUtil.getCheckinPayloadPath(branchPath);
   }
 
+  static getCheckoutRequestPath(address, checkoutId) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_REQUESTS, address, checkoutId]);
+  }
+
+  static getCheckoutHistoryPath(address, checkoutId) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_HISTORY, address, checkoutId]);
+  }
+
+  static getCheckoutHistoryRefundPath(address, checkoutId) {
+    return CommonUtil.appendPath(
+        PathUtil.getCheckoutHistoryPath(address, checkoutId), PredefinedDbPaths.CHECKOUT_HISTORY_REFUND);
+  }
+
+  static getCheckoutPendingAmountTotalPath() {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_STATS,
+        PredefinedDbPaths.CHECKOUT_STATS_PENDING, PredefinedDbPaths.CHECKOUT_STATS_TOTAL]);
+  }
+
+  static getCheckoutPendingAmountForAddrPath(address) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_STATS,
+        PredefinedDbPaths.CHECKOUT_STATS_PENDING, address]);
+  }
+
+  static getCheckoutCompleteAmountTotalPath() {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_STATS,
+        PredefinedDbPaths.CHECKOUT_STATS_COMPLETE, PredefinedDbPaths.CHECKOUT_STATS_TOTAL]);
+  }
+
+  static getCheckoutCompleteAmountDailyPath(dayTimestamp) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_STATS,
+        PredefinedDbPaths.CHECKOUT_STATS_COMPLETE, dayTimestamp]);
+  }
+
+  static getConsensusOffenseRecordsPath() {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_OFFENSE_RECORDS]);
+  }
+
+  static getConsensusOffenseRecordsAddrPath(address) {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_OFFENSE_RECORDS, address]);
+  }
+
   static getConsensusWhitelistPath() {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST]);
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST]);
   }
 
   static getConsensusWhitelistAddrPath(address) {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.WHITELIST, address]);
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST, address]);
   }
 
   static getConsensusStakingAccountPath(address) {
@@ -204,19 +268,41 @@ class PathUtil {
     return CommonUtil.appendPath(accountPath, PredefinedDbPaths.BALANCE)
   }
 
+  static getConsensusRewardsPath(address) {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_REWARDS, address]);
+  }
+
+  static getConsensusRewardsUnclaimedPath(address) {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_REWARDS, address, PredefinedDbPaths.CONSENSUS_REWARDS_UNCLAIMED]);
+  }
+
+  static getConsensusRewardsCumulativePath(address) {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_REWARDS, address, PredefinedDbPaths.CONSENSUS_REWARDS_CUMULATIVE]);
+  }
+
+  static getConsensusNumberPath(blockNumber) {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER, blockNumber]);
+  }
+
   static getConsensusProposePath(blockNumber) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.NUMBER, blockNumber, PredefinedDbPaths.PROPOSE]);
+        PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER, blockNumber, PredefinedDbPaths.CONSENSUS_PROPOSE]);
   }
 
-  static getConsensusVotePath(blockNumber, address) {
+  static getConsensusVotePath(blockNumber, blockHash, address) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.NUMBER, blockNumber, PredefinedDbPaths.VOTE, address]);
+        PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER, blockNumber, blockHash,
+        PredefinedDbPaths.CONSENSUS_VOTE, address]);
   }
 
-  static getGasFeeCollectPath(userAddr, blockNumber, txHash) {
+  static getGasFeeClaimPath(userAddr, recordId) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.COLLECT, userAddr, blockNumber, txHash]);
+        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE_CLAIM, userAddr, recordId]);
+  }
+
+  static getGasFeeCollectPath(blockNumber, userAddr, txHash) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE_COLLECT, blockNumber, userAddr, txHash]);
   }
 
   static getReceiptPath(txHash) {

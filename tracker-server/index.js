@@ -8,7 +8,10 @@ const { v4: uuidv4 } = require('uuid');
 const disk = require('diskusage');
 const os = require('os');
 const v8 = require('v8');
-const { CURRENT_PROTOCOL_VERSION } = require('../common/constants');
+const {
+  CURRENT_PROTOCOL_VERSION,
+  MAX_NUM_PEER_CANDIDATES_AT_ONCE
+} = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const logger = require('../logger')('TRACKER_SERVER');
 
@@ -120,11 +123,7 @@ server.on('connection', (ws) => {
     logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
     logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
 
-    let newManagedPeerInfoList = [];
-    if (nodeInfo.networkStatus.connectionStatus.outgoingPeers.length <
-        nodeInfo.networkStatus.connectionStatus.maxOutbound) {
-      newManagedPeerInfoList = assignRandomPeers(getPeerCandidates(nodeInfo.address));
-    }
+    const newManagedPeerInfoList = assignRandomPeers(nodeInfo);
     const msgToNode = {
       newManagedPeerInfoList,
       numLivePeers: getNumAliveNodes() - 1   // except for me.
@@ -164,34 +163,33 @@ function getNumNodes() {
   return Object.keys(peerNodes).length;
 }
 
-function assignRandomPeers(candidates) {
-  if (_.isEmpty(candidates)) {
-    return [];
-  }
-
-  const shuffled = _.shuffle(candidates);
-  if (shuffled.length > 1) {
-    return [shuffled.pop(), shuffled.pop()];
+function getMaxNumberOfNewPeers(nodeInfo) {
+  const numOfCandidates = nodeInfo.networkStatus.connectionStatus.maxOutbound -
+      nodeInfo.networkStatus.connectionStatus.outgoingPeers.length;
+  if (numOfCandidates >= MAX_NUM_PEER_CANDIDATES_AT_ONCE) {
+    return MAX_NUM_PEER_CANDIDATES_AT_ONCE;
   } else {
-    return shuffled;
+    return numOfCandidates;
   }
 }
 
-function getPeerCandidates(myself) {
-  const candidates = [];
-  Object.values(peerNodes).forEach(nodeInfo => {
-    if (nodeInfo.address !== myself &&
-        nodeInfo.isAlive === true &&
-        !nodeInfo.networkStatus.connectionStatus.incomingPeers.includes(myself) &&
-        nodeInfo.networkStatus.connectionStatus.incomingPeers.length <
-            nodeInfo.networkStatus.connectionStatus.maxInbound) {
-      candidates.push({
-        address: nodeInfo.address,
-        url: nodeInfo.networkStatus.p2p.url
-      });
-    }
-  });
-  return candidates;
+function assignRandomPeers(nodeInfo) {
+  const maxNumberOfNewPeers = getMaxNumberOfNewPeers(nodeInfo);
+  if (maxNumberOfNewPeers) {
+    const candidates = Object.values(peerNodes)
+    .filter(peer =>
+      peer.address !== nodeInfo.address &&
+      peer.isAlive === true &&
+      !peer.networkStatus.connectionStatus.incomingPeers.includes(nodeInfo.address) &&
+      peer.networkStatus.connectionStatus.incomingPeers.length <
+          peer.networkStatus.connectionStatus.maxInbound)
+    .map(peer => ({ address: peer.address, url: peer.networkStatus.p2p.url }));
+
+    const shuffled = _.shuffle(candidates);
+    return shuffled.slice(0, maxNumberOfNewPeers);
+  } else {
+    return [];
+  }
 }
 
 function printNodesInfo() {

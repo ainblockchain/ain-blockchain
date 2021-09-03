@@ -28,6 +28,7 @@ const {
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
 const CommonUtil = require('../common/common-util');
+const PathUtil = require('../common/path-util');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
 const StateManager = require('../db/state-manager');
@@ -416,12 +417,14 @@ class BlockchainNode {
   removeOldReceipts(blockNumber, db) {
     const LOG_HEADER = 'removeOldReceipts';
     if (blockNumber > MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
-      const receiptsPrefixFullPath = DB.getFullPath(
-          [PredefinedDbPaths.RECEIPTS], PredefinedDbPaths.VALUES_ROOT);
       const oldBlock = this.bc.getBlockByNumber(blockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS);
       if (oldBlock) {
         oldBlock.transactions.forEach((tx) => {
-          db.writeDatabase([...receiptsPrefixFullPath, tx.hash], null);
+          db.writeDatabase(
+              [
+                PredefinedDbPaths.VALUES_ROOT,
+                ...CommonUtil.parsePath(PathUtil.getReceiptPath(tx.hash))
+              ], null);
         });
       } else {
         logger.error(
@@ -436,13 +439,13 @@ class BlockchainNode {
     for (const block of blockList) {
       this.removeOldReceipts(block.number, db);
       if (block.number > 0) {
-        if (!db.executeTransactionList(block.last_votes, true)) {
+        if (!db.executeTransactionList(block.last_votes, true, false, 0, block.timestamp)) {
           logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
               `${JSON.stringify(block, null, 2)}`);
           return false;
         }
       }
-      if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number)) {
+      if (!db.executeTransactionList(block.transactions, block.number === 0, false, block.number, block.timestamp)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
             `${JSON.stringify(block, null, 2)}`);
         return false;
@@ -532,13 +535,13 @@ class BlockchainNode {
 
     this.removeOldReceipts(block.number, db);
     if (block.number > 0) {
-      if (!db.executeTransactionList(block.last_votes, true)) {
+      if (!db.executeTransactionList(block.last_votes, true, false, block.number, block.timestamp)) {
         logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
         process.exit(1);
       }
     }
-    if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number)) {
+    if (!db.executeTransactionList(block.transactions, block.number === 0, false, block.number, block.timestamp)) {
       logger.error(`[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
       process.exit(1);
@@ -574,7 +577,8 @@ class BlockchainNode {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
         process.exit(1);
       }
-      // NOTE(minsulee2): Deal with the case the only genesis block was generated.
+      // NOTE(liayoo): we don't have the votes for the last block, so remove it and try to
+      //               receive from peers.
       if (deleteLastBlock && number > 0 && number === numBlockFiles - 1) {
         lastBlockWithoutProposal = block;
         this.bc.deleteBlock(lastBlockWithoutProposal);

@@ -31,7 +31,44 @@
       }
     }
   },
+  "checkout": {
+    "history": {
+      "$user_addr": {
+        "$checkout_id": {
+          ".rule": {
+            "write": "data === null && util.validateCheckoutHistoryData($user_addr, $checkout_id, newData, getValue) && auth.addr === util.getTokenPoolAddr(newData.request.type, newData.request.token_id, getValue)"
+          },
+          "refund": {
+            ".rule": {
+              "write": "data === null && util.isString(newData) && (auth.fid === '_closeCheckout' || auth.addr === util.getTokenPoolAddrFromHistoryData($user_addr, $checkout_id, getValue))"
+            }
+          }
+        }
+      }
+    },
+    "requests": {
+      "$user_addr": {
+        "$checkout_id": {
+          ".rule": {
+            "write": "(auth.fid === '_closeCheckout' && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckoutRequestData(newData, getValue))"
+          }
+        }
+      }
+    },
+    "stats" : {
+      ".rule": {
+        "write": "auth.fid === '_openCheckout' || auth.fid === '_closeCheckout'"
+      }
+    }
+  },
   "consensus": {
+    "offense_records": {
+      "$user_addr": {
+        ".rule": {
+          "write": "auth.fid === '_handleOffenses'"
+        }
+      }
+    },
     "number": {
       "$number": {
         ".rule": {
@@ -39,15 +76,24 @@
         },
         "propose": {
           ".rule": {
-            "write": "util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || (getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount() && getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') <= util.getMaxStakeAmount())) && util.isNumber(newData.gas_cost_total) && (newData.gas_cost_total === 0 || newData.gas_cost_total === getValue('/service_accounts/gas_fee/gas_fee/' + $number + '/balance'))"
+            "write": "util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || (getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount() && getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') <= util.getMaxStakeAmount())) && util.isNumber(newData.gas_cost_total)"
           }
         },
-        "vote": {
-          "$user_addr": {
-            ".rule": {
-              "write": "auth.addr === $user_addr && util.isDict(newData) && util.isString(newData.block_hash) && util.isNumber(newData.stake) && (lastBlockNumber < 1 || util.getConsensusStakeBalance(auth.addr, getValue) === newData.stake)"
+        "$block_hash": {
+          "vote": {
+            "$user_addr": {
+              ".rule": {
+                "write": "auth.addr === $user_addr && data === null && util.validateConsensusVoteData(newData, auth.addr, $block_hash, lastBlockNumber, getValue) === true"
+              }
             }
           }
+        }
+      }
+    },
+    "rewards": {
+      "$user_addr": {
+        ".rule": {
+          "write": "auth.fid === '_distributeFee' || auth.fid === '_claimReward'"
         }
       }
     },
@@ -97,12 +143,21 @@
     }
   },
   "gas_fee": {
+    "claim": {
+      "$user_addr": {
+        "$record_id": {
+          ".rule": {
+            "write": "auth.addr === $user_addr && util.validateClaimRewardData(auth.addr, newData, getValue) === true"
+          }
+        }
+      }
+    },
     "collect": {
-      "$from": {
-        "$block_number": {
+      "$block_number": {
+        "$from": {
           "$tx_hash": {
             ".rule": {
-              "write": "(auth.addr === $from || (util.isServAcntName($from) && util.isBillingUser($from, auth.addr, getValue) === true)) && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount <= util.getBalance($from, getValue)"
+              "write": "(auth.addr === $from || (util.isServAcntName($from) && util.isBillingUser($from, auth.addr, getValue) === true)) && util.validateCollectFeeData(data, newData, $from, getValue)"
             }
           }
         }
@@ -198,7 +253,7 @@
         "$staking_key": {
           "expire_at": {
             ".rule": {
-              "write": "auth.fid === '_stake'"
+              "write": "auth.fid === '_stake' || auth.fid === '_handleOffenses'"
             }
           },
           "stake": {
@@ -239,7 +294,7 @@
         "$key": {
           "value": {
             ".rule": {
-              "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && util.getBalance($from, getValue) >= newData"
+              "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_claimReward' || auth.fid === '_openCheckout' || auth.fid === '_closeCheckout') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && util.getBalance($from, getValue) >= newData"
             }
           },
           "result": {

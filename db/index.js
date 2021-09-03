@@ -7,7 +7,6 @@ const {
   PredefinedDbPaths,
   OwnerProperties,
   RuleProperties,
-  ProofProperties,
   StateInfoProperties,
   ShardingProperties,
   GenesisAccounts,
@@ -15,8 +14,8 @@ const {
   StateVersions,
   buildOwnerPermissions,
   LIGHTWEIGHT,
-  TREE_HEIGHT_LIMIT,
-  TREE_SIZE_LIMIT,
+  STATE_TREE_HEIGHT_LIMIT,
+  TREE_SIZE_BUDGET,
   SERVICE_TREE_SIZE_BUDGET,
   APPS_TREE_SIZE_BUDGET,
   FREE_TREE_SIZE_BUDGET,
@@ -46,8 +45,9 @@ const {
   isValidOwnerTree,
   applyFunctionChange,
   applyOwnerChange,
-  setProofHashForStateTree,
-  updateProofHashForAllRootPaths,
+  updateStateInfoForAllRootPaths,
+  updateStateInfoForStateTree,
+  getProofOfStatePath,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -385,49 +385,24 @@ class DB {
   }
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
-    const stateTree = StateNode.fromJsObject(stateObj, stateVersion);
-    const pathToParent = fullPath.slice().splice(0, fullPath.length - 1);
-    if (fullPath.length === 0) {
-      stateRoot = stateTree;
-    } else {
-      const label = fullPath[fullPath.length - 1];
-      const parent = DB.getRefForWritingToStateRoot(stateRoot, pathToParent);
-      parent.setChild(label, stateTree);
-    }
-    if (isEmptyNode(stateTree)) {
-      DB.removeEmptyNodesFromStateRoot(stateRoot, fullPath);
-    } else if (!LIGHTWEIGHT) {
-      setProofHashForStateTree(stateTree);
-    }
+    const tree = StateNode.fromJsObject(stateObj, stateVersion);
     if (!LIGHTWEIGHT) {
-      updateProofHashForAllRootPaths(pathToParent, stateRoot);
+      updateStateInfoForStateTree(tree);
     }
+    if (fullPath.length === 0) {
+      stateRoot = tree;
+    } else {
+      const pathToParent = fullPath.slice(0, fullPath.length - 1);
+      const treeLabel = fullPath[fullPath.length - 1];
+      const parent = DB.getRefForWritingToStateRoot(stateRoot, pathToParent);
+      parent.setChild(treeLabel, tree);
+    }
+    updateStateInfoForAllRootPaths(fullPath, stateRoot);
     return stateRoot;
   }
 
   writeDatabase(fullPath, stateObj) {
     this.stateRoot = DB.writeToStateRoot(this.stateRoot, this.stateVersion, fullPath, stateObj);
-  }
-
-  static removeEmptyNodesRecursive(fullPath, depth, curDbNode) {
-    if (depth < fullPath.length - 1) {
-      const nextDbNode = curDbNode.getChild(fullPath[depth]);
-      if (nextDbNode === null) {
-        logger.error(`Unavailable path in the database: ${CommonUtil.formatPath(fullPath)}`);
-      } else {
-        DB.removeEmptyNodesRecursive(fullPath, depth + 1, nextDbNode);
-      }
-    }
-    for (const label of curDbNode.getChildLabels()) {
-      const childNode = curDbNode.getChild(label);
-      if (isEmptyNode(childNode)) {
-        curDbNode.deleteChild(label);
-      }
-    }
-  }
-
-  static removeEmptyNodesFromStateRoot(stateRoot, fullPath) {
-    return DB.removeEmptyNodesRecursive(fullPath, 0, stateRoot);
   }
 
   static readFromStateRoot(stateRoot, rootLabel, refPath, options, shardingPath) {
@@ -475,22 +450,7 @@ class DB {
   // TODO(platfowner): Consider supporting global path for getStateProof().
   getStateProof(statePath) {
     const parsedPath = CommonUtil.parsePath(statePath);
-    let node = this.stateRoot;
-    const rootProof = {[ProofProperties.PROOF_HASH]: node.getProofHash()};
-    let proof = rootProof;
-    for (const label of parsedPath) {
-      if (node.hasChild(label)) {
-        node.getChildLabels().forEach((label) => {
-          Object.assign(proof,
-              {[label]: {[ProofProperties.PROOF_HASH]: node.getChild(label).getProofHash()}});
-        });
-        proof = proof[label];
-        node = node.getChild(label);
-      } else {
-        return null;
-      }
-    }
-    return rootProof;
+    return getProofOfStatePath(this.stateRoot, parsedPath);
   }
 
   static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
@@ -686,7 +646,7 @@ class DB {
   // TODO(platfowner): Define error code explicitly.
   // TODO(platfowner): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
   //                   and setOwner() as well.
-  setValue(valuePath, value, auth, timestamp, transaction, options) {
+  setValue(valuePath, value, auth, timestamp, transaction, blockTime, options) {
     const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
@@ -721,14 +681,14 @@ class DB {
     let funcResults = null;
     if (auth && (auth.addr || auth.fid)) {
       const { func_results } =
-          this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction);
+          this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction, blockTime);
       funcResults = func_results;
     }
 
     return CommonUtil.returnTxResult(0, null, 1, funcResults);
   }
 
-  incValue(valuePath, delta, auth, timestamp, transaction, options) {
+  incValue(valuePath, delta, auth, timestamp, transaction, blockTime, options) {
     const isGlobal = options && options.isGlobal;
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -736,10 +696,10 @@ class DB {
       return CommonUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`, 1);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) + delta;
-    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, options);
+    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, blockTime, options);
   }
 
-  decValue(valuePath, delta, auth, timestamp, transaction, options) {
+  decValue(valuePath, delta, auth, timestamp, transaction, blockTime, options) {
     const isGlobal = options && options.isGlobal;
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -747,7 +707,7 @@ class DB {
       return CommonUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`, 1);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, options);
+    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, blockTime, options);
   }
 
   setFunction(functionPath, func, auth, options) {
@@ -888,18 +848,18 @@ class DB {
     return globalPath;
   }
 
-  executeSingleSetOperation(op, auth, timestamp, tx) {
+  executeSingleSetOperation(op, auth, timestamp, tx, blockTime) {
     let result;
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        result = this.setValue(op.ref, op.value, auth, timestamp, tx, CommonUtil.toSetOptions(op));
+        result = this.setValue(op.ref, op.value, auth, timestamp, tx, blockTime, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.INC_VALUE:
-        result = this.incValue(op.ref, op.value, auth, timestamp, tx, CommonUtil.toSetOptions(op));
+        result = this.incValue(op.ref, op.value, auth, timestamp, tx, blockTime, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.DEC_VALUE:
-        result = this.decValue(op.ref, op.value, auth, timestamp, tx, CommonUtil.toSetOptions(op));
+        result = this.decValue(op.ref, op.value, auth, timestamp, tx, blockTime, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_FUNCTION:
         result = this.setFunction(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
@@ -916,11 +876,11 @@ class DB {
     return result;
   }
 
-  executeMultiSetOperation(opList, auth, timestamp, tx) {
+  executeMultiSetOperation(opList, auth, timestamp, tx, blockTime) {
     const resultList = {};
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
-      const result = this.executeSingleSetOperation(op, auth, timestamp, tx);
+      const result = this.executeSingleSetOperation(op, auth, timestamp, tx, blockTime);
       resultList[i] = result;
       if (CommonUtil.isFailedTx(result)) {
         break;
@@ -935,7 +895,7 @@ class DB {
     tx.setExtraField('gas', gasAmountTotal);
   }
 
-  executeOperation(op, auth, timestamp, tx) {
+  executeOperation(op, auth, timestamp, tx, blockTime) {
     const gasAmountTotal = {
       bandwidth: { service: 0 },
       state: { service: 0 }
@@ -969,26 +929,14 @@ class DB {
     if (op.type === WriteDbOperations.SET) {
       Object.assign(result, this.executeMultiSetOperation(op.op_list, auth, timestamp, tx));
     } else {
-      Object.assign(result, this.executeSingleSetOperation(op, auth, timestamp, tx));
+      Object.assign(result, this.executeSingleSetOperation(op, auth, timestamp, tx, blockTime));
     }
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
     DB.updateGasAmountTotal(tx, gasAmountTotal, result);
     if (!CommonUtil.isFailedTx(result)) {
-      const {
-        [StateInfoProperties.TREE_HEIGHT]: treeHeight,
-        [StateInfoProperties.TREE_SIZE]: treeSize
-      } = this.getStateInfo('/');
-      if (treeHeight > TREE_HEIGHT_LIMIT) {
-        return Object.assign(result, {
-          code: 23,
-          error_message: `Out of tree height limit (${treeHeight} > ${TREE_HEIGHT_LIMIT})`
-        });
-      }
-      if (treeSize > TREE_SIZE_LIMIT) {
-        return Object.assign(result, {
-          code: 24,
-          error_message: `Out of tree size limit (${treeSize} > ${TREE_SIZE_LIMIT})`
-        });
+      const heightCheck = this.checkTreeHeightAndSize();
+      if (CommonUtil.isFailedTx(heightCheck)) {
+        return Object.assign(result, heightCheck);
       }
       // NOTE(platfowner): There is no chance to have invalid gas price as its validity check is
       //                   done in isValidTxBody() when transactions are created.
@@ -1054,7 +1002,7 @@ class DB {
     const usageList = [
       this.getStateInfo(`/${PredefinedDbPaths.VALUES_ROOT}/${path}`),
       this.getStateInfo(`/${PredefinedDbPaths.RULES_ROOT}/${path}`),
-      this.getStateInfo(`/${PredefinedDbPaths.FUNCIONS_ROOT}/${path}`),
+      this.getStateInfo(`/${PredefinedDbPaths.FUNCTIONS_ROOT}/${path}`),
       this.getStateInfo(`/${PredefinedDbPaths.OWNERS_ROOT}/${path}`)
     ];
     const usage = usageList.reduce((acc, cur) => {
@@ -1193,9 +1141,9 @@ class DB {
     executionResult.gas_amount_charged = gasAmountChargedByTransfer;
     executionResult.gas_cost_total = CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged);
     if (executionResult.gas_cost_total <= 0) return;
-    const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(billedTo, blockNumber, tx.hash);
+    const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(blockNumber, billedTo, tx.hash);
     const gasFeeCollectRes = this.setValue(
-        gasFeeCollectPath, { amount: executionResult.gas_cost_total }, auth, timestamp, tx);
+        gasFeeCollectPath, { amount: executionResult.gas_cost_total }, auth, timestamp, tx, null);
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) { // Should not happend
       Object.assign(executionResult, {
         code: 18,
@@ -1204,12 +1152,31 @@ class DB {
     }
   }
 
+  static trimExecutionResult(executionResult) {
+    const trimmed = _.pick(executionResult, [
+      PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
+      PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
+      PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_AMOUNT_CHARGED,
+      PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_COST_TOTAL,
+    ]);
+    if (executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST]) {
+      trimmed[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST] = {};
+      for (const [key, val] of Object.entries(executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST])) {
+        trimmed[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST][key] = _.pick(val, [
+          PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
+          PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
+        ]);
+      }
+    }
+    return trimmed;
+  }
+
   recordReceipt(auth, tx, blockNumber, executionResult) {
     const receiptPath = PathUtil.getReceiptPath(tx.hash);
     const receipt = {
       [PredefinedDbPaths.RECEIPTS_ADDRESS]: auth.addr,
       [PredefinedDbPaths.RECEIPTS_BLOCK_NUMBER]: blockNumber,
-      [PredefinedDbPaths.RECEIPTS_EXEC_RESULT]: executionResult
+      [PredefinedDbPaths.RECEIPTS_EXEC_RESULT]: DB.trimExecutionResult(executionResult)
     };
     if (tx.tx_body.billing) {
       receipt[PredefinedDbPaths.RECEIPTS_BILLING] = tx.tx_body.billing;
@@ -1309,7 +1276,7 @@ class DB {
     return true;
   }
 
-  executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0) {
+  executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
     const LOG_HEADER = 'executeTransaction';
     const precheckResult = this.precheckTransaction(tx, blockNumber);
     if (precheckResult !== true) {
@@ -1328,7 +1295,7 @@ class DB {
     // NOTE(platfowner): It's not allowed for users to send transactions with auth.fid.
     const auth = { addr: tx.address };
     const timestamp = txBody.timestamp;
-    const executionResult = this.executeOperation(txBody.operation, auth, timestamp, tx, blockNumber);
+    const executionResult = this.executeOperation(txBody.operation, auth, timestamp, tx, blockTime);
     if (CommonUtil.isFailedTx(executionResult)) {
       if (restoreIfFails) {
         this.restoreDb();
@@ -1343,12 +1310,12 @@ class DB {
     return executionResult;
   }
 
-  executeTransactionList(txList, skipFees = false, restoreIfFails = false, blockNumber = 0) {
+  executeTransactionList(txList, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
       const executableTx = Transaction.toExecutable(tx);
-      const res = this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber);
+      const res = this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime);
       if (CommonUtil.isFailedTx(res)) {
         logger.debug(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);
@@ -1359,6 +1326,28 @@ class DB {
       resList.push(res);
     }
     return resList;
+  }
+
+  checkTreeHeightAndSize() {
+    const {
+      [StateInfoProperties.TREE_HEIGHT]: treeHeight,
+      [StateInfoProperties.TREE_SIZE]: treeSize,
+    } = this.getStateInfo('/');
+    if (treeHeight > STATE_TREE_HEIGHT_LIMIT) {
+      return {
+        code: 23,
+        error_message: `Out of tree height limit (${treeHeight} > ${STATE_TREE_HEIGHT_LIMIT})`
+      };
+    }
+    if (treeSize > TREE_SIZE_BUDGET) {
+      return {
+        code: 24,
+        error_message: `Out of tree size budget (${treeSize} > ${TREE_SIZE_BUDGET})`
+      };
+    }
+    return {
+      code: 0
+    }
   }
 
   addPathToValue(value, matchedValuePath, closestConfigDepth) {

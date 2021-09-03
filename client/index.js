@@ -15,7 +15,8 @@ const {
   PORT,
   BlockchainNodeStates,
   WriteDbOperations,
-  PredefinedDbPaths,
+  NETWORK_ID,
+  CHAIN_ID
 } = require('../common/constants');
 const { ConsensusStates } = require('../consensus/constants');
 
@@ -80,7 +81,7 @@ app.get('/get_value', (req, res, next) => {
   const result = node.db.getValue(req.query.ref, CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
+    .send({ code: result !== null ? 0 : 1, result })
     .end();
 });
 
@@ -88,7 +89,7 @@ app.get('/get_function', (req, res, next) => {
   const result = node.db.getFunction(req.query.ref, CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
+    .send({ code: result !== null ? 0 : 1, result })
     .end();
 });
 
@@ -96,7 +97,7 @@ app.get('/get_rule', (req, res, next) => {
   const result = node.db.getRule(req.query.ref, CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
+    .send({ code: result !== null ? 0 : 1, result })
     .end();
 });
 
@@ -104,7 +105,7 @@ app.get('/get_owner', (req, res, next) => {
   const result = node.db.getOwner(req.query.ref, CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
+    .send({ code: result !== null ? 0 : 1, result })
     .end();
 });
 
@@ -115,7 +116,7 @@ app.get('/get_state_proof', (req, res, next) => {
   const result = node.db.getStateProof(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
+    .send({ code: result !== null ? 0 : 1, result })
     .end();
 });
 
@@ -126,18 +127,18 @@ app.get('/get_state_info', (req, res, next) => {
   const result = node.db.getStateInfo(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
+    .send({ code: result !== null ? 0 : 1, result })
     .end();
 });
 
 /**
  * Returns the state usage of the given app.
  */
- app.get('/get_state_usage', (req, res, next) => {
+app.get('/get_state_usage', (req, res, next) => {
   const result = node.getStateUsage(req.query.app_name);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
+    .send({ code: result !== null ? 0 : 1, result })
     .end();
 });
 
@@ -145,7 +146,7 @@ app.get('/match_function', (req, res, next) => {
   const result = node.db.matchFunction(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
+    .send({ code: result !== null ? 0 : 1, result })
     .end();
 });
 
@@ -153,7 +154,7 @@ app.get('/match_rule', (req, res, next) => {
   const result = node.db.matchRule(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
+    .send({ code: result !== null ? 0 : 1, result })
     .end();
 });
 
@@ -161,7 +162,7 @@ app.get('/match_owner', (req, res, next) => {
   const result = node.db.matchOwner(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
+    .send({ code: result !== null ? 0 : 1, result })
     .end();
 });
 
@@ -179,7 +180,7 @@ app.post('/eval_rule', (req, res, next) => {
       CommonUtil.toMatchOrEvalOptions(body));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -196,7 +197,7 @@ app.post('/eval_owner', (req, res, next) => {
       body.ref, body.permission, auth, CommonUtil.toMatchOrEvalOptions(body));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -204,7 +205,7 @@ app.post('/get', (req, res, next) => {
   const result = node.db.get(req.body.op_list);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -214,7 +215,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.SET_VALUE));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
       .end();
   });
 
@@ -223,7 +224,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.INC_VALUE));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
       .end();
   });
 
@@ -232,7 +233,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.DEC_VALUE));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
       .end();
   });
 
@@ -241,7 +242,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.SET_FUNCTION));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
       .end();
   });
 
@@ -250,7 +251,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.SET_RULE));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
       .end();
   });
 
@@ -259,7 +260,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
         req.body, WriteDbOperations.SET_OWNER));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
       .end();
   });
 
@@ -269,7 +270,7 @@ if (ENABLE_DEV_SET_CLIENT_API) {
     const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result})
+      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
       .end();
   });
 
@@ -277,16 +278,31 @@ if (ENABLE_DEV_SET_CLIENT_API) {
     const result = createAndExecuteTransaction(createBatchTxBody(req.body));
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({code: 0, result})
+      .send({ code: 0, result })
       .end();
   });
+
+  app.post('/broadcast_consensus_msg', (req, res) => {
+    p2pClient.broadcastConsensusMessage(req.body);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({ code: 0, result: true })
+      .end();
+  });
+
+  app.post('/sign_transaction', (req, res) => {
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({ code: 0, result: node.createTransaction(req.body) })
+      .end();
+  })
 }
 
 app.get('/status', (req, res, next) => {
   const result = p2pClient.getStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -294,7 +310,7 @@ app.get('/node_status', (req, res, next) => {
   const result = p2pServer.getNodeStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -302,7 +318,7 @@ app.get('/connection_status', (req, res) => {
   const result = p2pClient.getConnectionStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 })
 
@@ -312,7 +328,7 @@ app.get('/blocks', (req, res, next) => {
   const result = node.bc.getBlockList(blockBegin, blockEnd);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -320,7 +336,7 @@ app.get('/last_block', (req, res, next) => {
   const result = node.bc.lastBlock();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -328,7 +344,7 @@ app.get('/last_block_number', (req, res, next) => {
   const result = node.bc.lastBlockNumber();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -336,7 +352,7 @@ app.get('/tx_pool', (req, res, next) => {
   const result = node.tp.transactions;
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -344,7 +360,7 @@ app.get('/tx_tracker', (req, res, next) => {
   const result = node.tp.transactionTracker;
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -352,7 +368,7 @@ app.get('/committed_nonce_tracker', (req, res, next) => {
   const result = node.tp.committedNonceTracker;
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -360,7 +376,7 @@ app.get('/pending_nonce_tracker', (req, res, next) => {
   const result = node.tp.pendingNonceTracker;
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -368,7 +384,7 @@ app.get('/protocol_versions', (req, res) => {
   const result = p2pClient.server.getProtocolInfo();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -376,7 +392,7 @@ app.get('/state_versions', (req, res) => {
   const result = p2pServer.getStateVersionStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -385,7 +401,7 @@ app.get('/dump_final_db_states', (req, res) => {
   const result = node.dumpFinalDbStates(CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -394,7 +410,7 @@ app.get('/tx_pool_size_util', (req, res) => {
   const txPoolSizeUtil = node.getTxPoolSizeUtilization(address);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result: txPoolSizeUtil})
+    .send({ code: 0, result: txPoolSizeUtil })
     .end();
 });
 
@@ -402,7 +418,7 @@ app.get('/get_transaction', (req, res, next) => {
   const transactionInfo = node.getTransactionByHash(req.query.hash);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result: transactionInfo})
+    .send({ code: 0, result: transactionInfo })
     .end();
 });
 
@@ -410,7 +426,7 @@ app.get('/get_block_by_hash', (req, res, next) => {
   const block = node.bc.getBlockByHash(req.query.hash);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result: block})
+    .send({ code: 0, result: block })
     .end();
 });
 
@@ -418,7 +434,7 @@ app.get('/get_block_by_number', (req, res, next) => {
   const block = node.bc.getBlockByNumber(req.query.number);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result: block})
+    .send({ code: 0, result: block })
     .end();
 });
 
@@ -426,7 +442,7 @@ app.get('/get_address', (req, res, next) => {
   const result = node.account.address;
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -434,7 +450,7 @@ app.get('/get_nonce', (req, res, next) => {
   const result = node.getNonceForAddr(req.query.address, req.query.from === 'pending');
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -442,7 +458,7 @@ app.get('/get_timestamp', (req, res, next) => {
   const result = node.getTimestampForAddr(req.query.address, req.query.from === 'pending');
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -450,7 +466,7 @@ app.get('/get_sharding', (req, res, next) => {
   const result = node.getSharding();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: result !== null ? 0 : 1, result})
+    .send({ code: result !== null ? 0 : 1, result })
     .end();
 });
 
@@ -458,7 +474,7 @@ app.get('/get_raw_consensus_status', (req, res) => {
   const result = p2pServer.consensus.getRawStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
     .end();
 });
 
@@ -466,7 +482,21 @@ app.get('/get_consensus_status', (req, res) => {
   const result = p2pServer.consensus.getStatus();
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({code: 0, result})
+    .send({ code: 0, result })
+    .end();
+});
+
+app.get('/get_network_id', (req, res) => {
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: 0, result: NETWORK_ID })
+    .end();
+});
+
+app.get('/get_chain_id', (req, res) => {
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: 0, result: CHAIN_ID })
     .end();
 });
 

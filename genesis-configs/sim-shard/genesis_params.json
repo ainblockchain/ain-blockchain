@@ -2,12 +2,9 @@
   "blockchain": {
     "TRANSACTION_POOL_TIMEOUT_MS": 3600000,
     "TRANSACTION_TRACKER_TIMEOUT_MS": 86400000,
-    "NETWORK_ID": "Testnet",
+    "NETWORK_ID": 0,
+    "CHAIN_ID": 0,
     "HOSTING_ENV": "local",
-    "COMCOM_HOST_INTERNAL_IP_MAP": {
-      "aincom1": "192.168.1.13",
-      "aincom2": "192.168.1.14"
-    },
     "TRACKER_WS_ADDR": "ws://localhost:6010",
     "MAX_SHARD_REPORT": 100,
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
@@ -23,13 +20,12 @@
   },
   "network": {
     "P2P_MESSAGE_TIMEOUT_MS": 600000,
-    "MAX_OUTBOUND_LIMIT": 2,
-    "MAX_INBOUND_LIMIT": 3,
+    "MAX_NUM_PEER_CANDIDATES_AT_ONCE": 2,
     "DEFAULT_MAX_OUTBOUND": 2,
     "DEFAULT_MAX_INBOUND": 3
   },
   "resource": {
-    "TREE_HEIGHT_LIMIT": 20,
+    "STATE_TREE_HEIGHT_LIMIT": 30,
     "STATE_TREE_BYTES_LIMIT": 5000000000,
     "STATE_LABEL_LENGTH_LIMIT": 150,
     "TX_BYTES_LIMIT": 10000,
