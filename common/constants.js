@@ -660,8 +660,9 @@ function initializeNetworkEnvronments() {
     return {
       P2P_MESSAGE_TIMEOUT_MS: 600000,
       MAX_NUM_PEER_CANDIDATES_AT_ONCE: 2,
-      DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
-      DEFAULT_MAX_INBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1
+      // NOTE(minsulee2): This will be updated, after network extension experiment done.
+      TARGET_NUM_OUTBOUND_CONNECTION: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      MAX_NUM_INBOUND_CONNECTION: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1
     }
   }
 }
