@@ -547,7 +547,7 @@ function renameStateTreeVersion(node, fromVersion, toVersion, isRootNode = true)
  */
 function deleteStateTree(node) {
   let numAffectedNodes = 0;
-  if (FeatureFlags.enableRadixTreeLayers) {
+  if (FeatureFlags.enableRadixTreeLayers && node.getRadixTreeEnabled()) {
     const childNodes = node.getChildNodes();
     node.deleteRadixTree();
     for (const child of childNodes) {
@@ -583,7 +583,7 @@ function deleteStateTreeVersion(node) {
   node.resetProofHash();
   numAffectedNodes++;
 
-  if (FeatureFlags.enableRadixTreeLayers) {
+  if (FeatureFlags.enableRadixTreeLayers && node.getRadixTreeEnabled()) {
     const childNodes = node.getChildNodes();
     node.deleteRadixTree();
     for (const child of childNodes) {
