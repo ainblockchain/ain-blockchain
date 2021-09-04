@@ -267,7 +267,7 @@ class RadixTree {
     return this.root.getTreeBytes();
   }
 
-  deleteRadixTree(parentStateNode) {
+  deleteRadixTree(parentStateNode = null) {
     const LOG_HEADER = 'deleteRadixTree';
 
     for (const terminalNode of this.terminalNodeMap.values()) {
@@ -277,8 +277,10 @@ class RadixTree {
             `${terminalNode.getLabel()} at: ${new Error().stack}.`);
         continue;
       }
-      const childStateNode = terminalNode.getStateNode();
-      childStateNode.deleteParent(parentStateNode);
+      if (parentStateNode !== null) {
+        const childStateNode = terminalNode.getStateNode();
+        childStateNode.deleteParent(parentStateNode);
+      }
     }
     this.terminalNodeMap.clear();
     this.root = new RadixNode();
