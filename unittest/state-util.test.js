@@ -2074,19 +2074,34 @@ describe("state-util", () => {
     const ver2 = 'ver2';
     const ver3 = 'ver3';
 
-    let child1 = null;
-    let child2 = null;
-    let stateTree = null;
+    let child1Enabled;
+    let child2Enabled;
+    let stateTreeEnabled;
+
+    let child1Disabled;
+    let child2Disabled;
+    let stateTreeDisabled;
 
     beforeEach(() => {
-      child1 = new StateNode(ver1);
-      child2 = new StateNode(ver2);
-      child1.setValue('value1');
-      child2.setValue('value2');
-      stateTree = new StateNode(ver3);
-      stateTree.setChild('label1', child1);
-      stateTree.setChild('label2', child2);
-      updateStateInfoForStateTree(stateTree);
+      child1Enabled = new StateNode(ver1);
+      child1Enabled.setValue('value1');
+      child2Enabled = new StateNode(ver2);
+      child2Enabled.setValue('value2');
+      stateTreeEnabled = new StateNode(ver3);
+      stateTreeEnabled.setRadixTreeEnabled(true);
+      stateTreeEnabled.setChild('label1', child1Enabled);
+      stateTreeEnabled.setChild('label2', child2Enabled);
+      updateStateInfoForStateTree(stateTreeEnabled);
+
+      child1Disabled = new StateNode(ver1);
+      child1Disabled.setValue('value1');
+      child2Disabled = new StateNode(ver2);
+      child2Disabled.setValue('value2');
+      stateTreeDisabled = new StateNode(ver3);
+      stateTreeDisabled.setRadixTreeEnabled(true);
+      stateTreeDisabled.setChild('label1', child1Disabled);
+      stateTreeDisabled.setChild('label2', child2Disabled);
+      updateStateInfoForStateTree(stateTreeDisabled);
     })
 
     it("leaf node", () => {
@@ -2113,18 +2128,32 @@ describe("state-util", () => {
       expect(stateNode2.numParents()).to.equal(0);
     })
 
-    it("internal node", () => {
-      const numNodes = deleteStateTree(stateTree);
+    it("internal node when radixTreeEnabled = true", () => {
+      const numNodes = deleteStateTree(stateTreeEnabled);
       expect(numNodes).to.equal(3);
       // State tree is deleted.
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
+      assert.deepEqual(stateTreeEnabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // And child nodes are deleted as well.
-      expect(child1.getValue()).to.equal(null);
-      expect(child1.getProofHash()).to.equal(null);
-      expect(child1.numParents()).to.equal(0);
-      expect(child2.getValue()).to.equal(null);
-      expect(child2.getProofHash()).to.equal(null);
-      expect(child2.numParents()).to.equal(0);
+      expect(child1Enabled.getValue()).to.equal(null);
+      expect(child1Enabled.getProofHash()).to.equal(null);
+      expect(child1Enabled.numParents()).to.equal(0);
+      expect(child2Enabled.getValue()).to.equal(null);
+      expect(child2Enabled.getProofHash()).to.equal(null);
+      expect(child2Enabled.numParents()).to.equal(0);
+    })
+
+    it("internal node when radixTreeEnabled = false", () => {
+      const numNodes = deleteStateTree(stateTreeDisabled);
+      expect(numNodes).to.equal(3);
+      // State tree is deleted.
+      assert.deepEqual(stateTreeDisabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
+      // And child nodes are deleted as well.
+      expect(child1Disabled.getValue()).to.equal(null);
+      expect(child1Disabled.getProofHash()).to.equal(null);
+      expect(child1Disabled.numParents()).to.equal(0);
+      expect(child2Disabled.getValue()).to.equal(null);
+      expect(child2Disabled.getProofHash()).to.equal(null);
+      expect(child2Disabled.numParents()).to.equal(0);
     })
   })
 
@@ -2132,23 +2161,40 @@ describe("state-util", () => {
     const ver1 = 'ver1';
     const ver2 = 'ver2';
     const ver3 = 'ver3';
-
-    let child1 = null;
-    let child2 = null;
-    let node = null;
-
-    const parent = new StateNode(ver1);
     const nodeLabel = 'node_label';
 
+    let child1Enabled;
+    let child2Enabled;
+    let stateTreeEnabled;
+
+    let child1Disabled;
+    let child2Disabled;
+    let stateTreeDisabled;
+
+    let parent;
+
     beforeEach(() => {
-      child1 = new StateNode(ver1);
-      child2 = new StateNode(ver2);
-      child1.setValue('value1');
-      child2.setValue('value2');
-      node = new StateNode(ver3);
-      node.setChild('label1', child1);
-      node.setChild('label2', child2);
-      updateStateInfoForStateTree(node);
+      child1Enabled = new StateNode(ver1);
+      child2Enabled = new StateNode(ver2);
+      child1Enabled.setValue('value1');
+      child2Enabled.setValue('value2');
+      stateTreeEnabled = new StateNode(ver3);
+      stateTreeEnabled.setRadixTreeEnabled(true);  // radixTreeEnabled = true
+      stateTreeEnabled.setChild('label1', child1Enabled);
+      stateTreeEnabled.setChild('label2', child2Enabled);
+      updateStateInfoForStateTree(stateTreeEnabled);
+
+      child1Disabled = new StateNode(ver1);
+      child2Disabled = new StateNode(ver2);
+      child1Disabled.setValue('value1');
+      child2Disabled.setValue('value2');
+      stateTreeDisabled = new StateNode(ver3);
+      stateTreeDisabled.setRadixTreeEnabled(false);  // radixTreeEnabled = false
+      stateTreeDisabled.setChild('label1', child1Disabled);
+      stateTreeDisabled.setChild('label2', child2Disabled);
+      updateStateInfoForStateTree(stateTreeDisabled);
+
+      parent = new StateNode(ver1);
     })
 
     it("leaf node", () => {
@@ -2190,49 +2236,84 @@ describe("state-util", () => {
       expect(stateNode4.numParents()).to.equal(1);
     })
 
-    it("internal node with a different version", () => {
-      const numNodes = deleteStateTreeVersion(node);
+    it("internal node with a different version when radixTreeEnabled = true", () => {
+      const numNodes = deleteStateTreeVersion(stateTreeEnabled);
       expect(numNodes).to.equal(3);
       // State tree is deleted.
-      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
+      assert.deepEqual(stateTreeEnabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // And child nodes are deleted as well.
-      expect(child1.getValue()).to.equal(null);
-      expect(child1.getProofHash()).to.equal(null);
-      expect(child1.getVersion()).to.equal(ver1);
-      expect(child1.numParents()).to.equal(0);
-      expect(child2.getValue()).to.equal(null);
-      expect(child2.getProofHash()).to.equal(null);
-      expect(child2.getVersion()).to.equal(ver2);
-      expect(child2.numParents()).to.equal(0);
+      expect(child1Enabled.getValue()).to.equal(null);
+      expect(child1Enabled.getProofHash()).to.equal(null);
+      expect(child1Enabled.getVersion()).to.equal(ver1);
+      expect(child1Enabled.numParents()).to.equal(0);
+      expect(child2Enabled.getValue()).to.equal(null);
+      expect(child2Enabled.getProofHash()).to.equal(null);
+      expect(child2Enabled.getVersion()).to.equal(ver2);
+      expect(child2Enabled.numParents()).to.equal(0);
     })
 
-    it("internal node with the same version", () => {
+    it("internal node with a different version when radixTreeEnabled = false", () => {
+      const numNodes = deleteStateTreeVersion(stateTreeDisabled);
+      expect(numNodes).to.equal(3);
+      // State tree is deleted.
+      assert.deepEqual(stateTreeDisabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
+      // And child nodes are deleted as well.
+      expect(child1Disabled.getValue()).to.equal(null);
+      expect(child1Disabled.getProofHash()).to.equal(null);
+      expect(child1Disabled.getVersion()).to.equal(ver1);
+      expect(child1Disabled.numParents()).to.equal(0);
+      expect(child2Disabled.getValue()).to.equal(null);
+      expect(child2Disabled.getProofHash()).to.equal(null);
+      expect(child2Disabled.getVersion()).to.equal(ver2);
+      expect(child2Disabled.numParents()).to.equal(0);
+    })
+
+    it("internal node with the same version when radixTreeEnabled = true", () => {
       // Set versions of the state tree.
-      setStateTreeVersion(node, ver3);
+      setStateTreeVersion(stateTreeEnabled, ver3);
 
-      const numNodes = deleteStateTreeVersion(node);
+      const numNodes = deleteStateTreeVersion(stateTreeEnabled);
       expect(numNodes).to.equal(3);
       // State tree is deleted.
-      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
+      assert.deepEqual(stateTreeEnabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // And child nodes are deleted as well.
-      expect(child1.getValue()).to.equal(null);
-      expect(child1.getProofHash()).to.equal(null);
-      expect(child1.getVersion()).to.equal(ver3);
-      expect(child1.numParents()).to.equal(0);
-      expect(child2.getValue()).to.equal(null);
-      expect(child2.getProofHash()).to.equal(null);
-      expect(child2.getVersion()).to.equal(ver3);
-      expect(child2.numParents()).to.equal(0);
+      expect(child1Enabled.getValue()).to.equal(null);
+      expect(child1Enabled.getProofHash()).to.equal(null);
+      expect(child1Enabled.getVersion()).to.equal(ver3);
+      expect(child1Enabled.numParents()).to.equal(0);
+      expect(child2Enabled.getValue()).to.equal(null);
+      expect(child2Enabled.getProofHash()).to.equal(null);
+      expect(child2Enabled.getVersion()).to.equal(ver3);
+      expect(child2Enabled.numParents()).to.equal(0);
     })
 
-    it("internal node with the same version but with non-zero numParents() value", () => {
-      // Increase the numParents() value of the root node.
-      parent.setChild(nodeLabel, node);
+    it("internal node with the same version when radixTreeEnabled = false", () => {
+      // Set versions of the state tree.
+      setStateTreeVersion(stateTreeDisabled, ver3);
 
-      const numNodes = deleteStateTreeVersion(node);
+      const numNodes = deleteStateTreeVersion(stateTreeDisabled);
+      expect(numNodes).to.equal(3);
+      // State tree is deleted.
+      assert.deepEqual(stateTreeDisabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
+      // And child nodes are deleted as well.
+      expect(child1Disabled.getValue()).to.equal(null);
+      expect(child1Disabled.getProofHash()).to.equal(null);
+      expect(child1Disabled.getVersion()).to.equal(ver3);
+      expect(child1Disabled.numParents()).to.equal(0);
+      expect(child2Disabled.getValue()).to.equal(null);
+      expect(child2Disabled.getProofHash()).to.equal(null);
+      expect(child2Disabled.getVersion()).to.equal(ver3);
+      expect(child2Disabled.numParents()).to.equal(0);
+    })
+
+    it("internal node with the same version but with non-zero numParents() value when radixTreeEnabled = true", () => {
+      // Increase the numParents() value of the root node.
+      parent.setChild(nodeLabel, stateTreeEnabled);
+
+      const numNodes = deleteStateTreeVersion(stateTreeEnabled);
       expect(numNodes).to.equal(0);
       // State tree is not deleted.
-      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+      assert.deepEqual(stateTreeEnabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
         ".version": "ver3",
         ".version:label1": "ver1",
         ".version:label2": "ver2",
@@ -2256,44 +2337,115 @@ describe("state-util", () => {
       });
     })
 
-    it("internal node with the same version but with sub-node of different versions", () => {
-      const numNodes = deleteStateTreeVersion(node);
-      expect(numNodes).to.equal(3);
-      // Root node is deleted.
-      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
-      // And child nodes are deleted as well.
-      expect(child1.getValue()).to.equal(null);
-      expect(child1.getProofHash()).to.equal(null);
-      expect(child1.getVersion()).to.equal(ver1);
-      expect(child1.numParents()).to.equal(0);
-      expect(child2.getValue()).to.equal(null);
-      expect(child2.getProofHash()).to.equal(null);
-      expect(child2.getVersion()).to.equal(ver2);
-      expect(child2.numParents()).to.equal(0);
+    it("internal node with the same version but with non-zero numParents() value when radixTreeEnabled = false", () => {
+      // Increase the numParents() value of the root node.
+      parent.setChild(nodeLabel, stateTreeDisabled);
+
+      const numNodes = deleteStateTreeVersion(stateTreeDisabled);
+      expect(numNodes).to.equal(0);
+      // State tree is not deleted.
+      assert.deepEqual(stateTreeDisabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+        ".version": "ver3",
+        ".version:label1": "ver1",
+        ".version:label2": "ver2",
+        ".num_parents": 1,
+        ".num_parents:label1": 1,
+        ".num_parents:label2": 1,
+        ".proof_hash": "0xa540d9d1906f4579604302acdee0b4c9742f537eb5f8397fb9a43ed458dad439",
+        ".proof_hash:label1": "0xb41f4a6e100333ddd8e8dcc01ca1fed23662d9faaec359ed255d21a900cecd08",
+        ".proof_hash:label2": "0x7597bdc763c23c44e90f26c63d7eac963cc0d0aa8a0a3268e7f5691c5361d942",
+        ".tree_height": 1,
+        ".tree_height:label1": 0,
+        ".tree_height:label2": 0,
+        ".tree_size": 3,
+        ".tree_size:label1": 1,
+        ".tree_size:label2": 1,
+        ".tree_bytes": 528,
+        ".tree_bytes:label1": 172,
+        ".tree_bytes:label2": 172,
+        label1: "value1",
+        label2: "value2"
+      });
     })
 
-    it("internal node with the same version but with sub-nodes of > 1 numParents() values", () => {
-      // Set versions of the state tree.
-      setStateTreeVersion(node, ver3);
-      node2 = new StateNode('ver99');
-      node2.setChild('label1', child1);
-      node2.setChild('label2', child2);
-      expect(child1.numParents()).to.equal(2);
-      expect(child2.numParents()).to.equal(2);
+    it("internal node with the same version but with sub-node of different versions when radixTreeEnabled = true", () => {
+      const numNodes = deleteStateTreeVersion(stateTreeEnabled);
+      expect(numNodes).to.equal(3);
+      // Root node is deleted.
+      assert.deepEqual(stateTreeEnabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
+      // And child nodes are deleted as well.
+      expect(child1Enabled.getValue()).to.equal(null);
+      expect(child1Enabled.getProofHash()).to.equal(null);
+      expect(child1Enabled.getVersion()).to.equal(ver1);
+      expect(child1Enabled.numParents()).to.equal(0);
+      expect(child2Enabled.getValue()).to.equal(null);
+      expect(child2Enabled.getProofHash()).to.equal(null);
+      expect(child2Enabled.getVersion()).to.equal(ver2);
+      expect(child2Enabled.numParents()).to.equal(0);
+    })
 
-      const numNodes = deleteStateTreeVersion(node);
+    it("internal node with the same version but with sub-node of different versions when radixTreeEnabled = false", () => {
+      const numNodes = deleteStateTreeVersion(stateTreeDisabled);
+      expect(numNodes).to.equal(3);
+      // Root node is deleted.
+      assert.deepEqual(stateTreeDisabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
+      // And child nodes are deleted as well.
+      expect(child1Disabled.getValue()).to.equal(null);
+      expect(child1Disabled.getProofHash()).to.equal(null);
+      expect(child1Disabled.getVersion()).to.equal(ver1);
+      expect(child1Disabled.numParents()).to.equal(0);
+      expect(child2Disabled.getValue()).to.equal(null);
+      expect(child2Disabled.getProofHash()).to.equal(null);
+      expect(child2Disabled.getVersion()).to.equal(ver2);
+      expect(child2Disabled.numParents()).to.equal(0);
+    })
+
+    it("internal node with the same version but with sub-nodes of > 1 numParents() values when radixTreeEnabled = true", () => {
+      // Set versions of the state tree.
+      setStateTreeVersion(stateTreeEnabled, ver3);
+      stateTree2 = new StateNode('ver99');
+      stateTree2.setChild('label1', child1Enabled);
+      stateTree2.setChild('label2', child2Enabled);
+      expect(child1Enabled.numParents()).to.equal(2);
+      expect(child2Enabled.numParents()).to.equal(2);
+
+      const numNodes = deleteStateTreeVersion(stateTreeEnabled);
       expect(numNodes).to.equal(1);
       // State tree is deleted.
-      assert.deepEqual(node.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
+      assert.deepEqual(stateTreeEnabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
       // But child nodes are not deleted.
-      expect(child1.getValue()).to.equal('value1');
-      expect(child1.getProofHash()).to.not.equal(null);
-      expect(child1.getVersion()).to.equal(ver3);
-      expect(child1.numParents()).to.equal(1);
-      expect(child2.getValue()).to.equal('value2');
-      expect(child2.getProofHash()).to.not.equal(null);
-      expect(child2.getVersion()).to.equal(ver3);
-      expect(child2.numParents()).to.equal(1);
+      expect(child1Enabled.getValue()).to.equal('value1');
+      expect(child1Enabled.getProofHash()).to.not.equal(null);
+      expect(child1Enabled.getVersion()).to.equal(ver3);
+      expect(child1Enabled.numParents()).to.equal(1);
+      expect(child2Enabled.getValue()).to.equal('value2');
+      expect(child2Enabled.getProofHash()).to.not.equal(null);
+      expect(child2Enabled.getVersion()).to.equal(ver3);
+      expect(child2Enabled.numParents()).to.equal(1);
+    })
+
+    it("internal node with the same version but with sub-nodes of > 1 numParents() values when radixTreeEnabled = false", () => {
+      // Set versions of the state tree.
+      setStateTreeVersion(stateTreeDisabled, ver3);
+      stateTree2 = new StateNode('ver99');
+      stateTree2.setChild('label1', child1Disabled);
+      stateTree2.setChild('label2', child2Disabled);
+      expect(child1Disabled.numParents()).to.equal(2);
+      expect(child2Disabled.numParents()).to.equal(2);
+
+      const numNodes = deleteStateTreeVersion(stateTreeDisabled);
+      expect(numNodes).to.equal(1);
+      // State tree is deleted.
+      assert.deepEqual(stateTreeDisabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
+      // But child nodes are not deleted.
+      expect(child1Disabled.getValue()).to.equal('value1');
+      expect(child1Disabled.getProofHash()).to.not.equal(null);
+      expect(child1Disabled.getVersion()).to.equal(ver3);
+      expect(child1Disabled.numParents()).to.equal(1);
+      expect(child2Disabled.getValue()).to.equal('value2');
+      expect(child2Disabled.getProofHash()).to.not.equal(null);
+      expect(child2Disabled.getVersion()).to.equal(ver3);
+      expect(child2Disabled.numParents()).to.equal(1);
     })
   })
 
@@ -2481,18 +2633,13 @@ describe("state-util", () => {
     })
   })
 
-  describe("empty nodes removal", () => {
+  describe("empty nodes removal by updateStateInfoAllRootPaths", () => {
     const label1 = '0x0001';
     const label11 = '0x0011';
     const label111 = '0x0111';
     const label1111 = '0x1111';
     const label12 = '0x0012';
     const label121 = '0x0121';
-    let stateTree;
-    let child1;
-    let child11;
-    let child111;
-    let child1111;
     const jsObject = {
       [label1]: {
         [label11]: {
@@ -2506,16 +2653,35 @@ describe("state-util", () => {
       }
     };
 
+    let stateTreeEnabled;
+    let child1Enabled;
+    let child11Enabled;
+    let child111Enabled;
+    let child1111Enabled;
+
+
+    let stateTreeDisabled;
+    let child1Disabled;
+    let child11Disabled;
+    let child111Disabled;
+    let child1111Disabled;
+
     beforeEach(() => {
-      stateTree = StateNode.fromJsObject(jsObject);
-      child1 = stateTree.getChild(label1);
-      child11 = child1.getChild(label11);
-      child111 = child11.getChild(label111);
-      child1111 = child111.getChild(label1111);
+      stateTreeEnabled = StateNode.fromJsObject(jsObject, null, true);  // radixTreeEnabled = true
+      child1Enabled = stateTreeEnabled.getChild(label1);
+      child11Enabled = child1Enabled.getChild(label11);
+      child111Enabled = child11Enabled.getChild(label111);
+      child1111Enabled = child111Enabled.getChild(label1111);
+
+      stateTreeDisabled = StateNode.fromJsObject(jsObject, null, false);  // radixTreeEnabled = false
+      child1Disabled = stateTreeDisabled.getChild(label1);
+      child11Disabled = child1Disabled.getChild(label11);
+      child111Disabled = child11Disabled.getChild(label111);
+      child1111Disabled = child111Disabled.getChild(label1111);
     });
 
-    it("updateStateInfoForAllRootPaths on empty node with a single root path", () => {
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+    it("updateStateInfoForAllRootPaths on empty node with a single root path when radixTreeEnabled = true", () => {
+      assert.deepEqual(stateTreeEnabled.toJsObject({ includeProof: true }), {
         ".proof_hash": null,
         "0x0001": {
           ".proof_hash": null,
@@ -2534,9 +2700,9 @@ describe("state-util", () => {
           }
         }
       });
-      const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1111);
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111Enabled, label1111);
       expect(numAffectedNodes).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeEnabled.toJsObject({ includeProof: true }), {
         ".proof_hash": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
           ".proof_hash": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
@@ -2549,20 +2715,8 @@ describe("state-util", () => {
       });
     });
 
-    it("updateStateInfoForAllRootPaths on empty node with multiple root paths from empty node", () => {
-      const child111Clone = child111.clone();
-      const child11Clone = new StateNode();
-      child11Clone.setChild(label111, child111Clone);
-      const child1Clone = new StateNode();
-      child1Clone.setChild(label11, child11Clone);
-      const stateTreeClone = new StateNode();
-      stateTreeClone.setChild(label1, child1Clone);
-      const child3 = new StateNode();
-      child3.setValue('V0003');
-      const label3 = '0x003';
-      stateTreeClone.setChild(label3, child3);
-
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+    it("updateStateInfoForAllRootPaths on empty node with a single root path when radixTreeEnabled = false", () => {
+      assert.deepEqual(stateTreeDisabled.toJsObject({ includeProof: true }), {
         ".proof_hash": null,
         "0x0001": {
           ".proof_hash": null,
@@ -2581,7 +2735,58 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111Disabled, label1111);
+      expect(numAffectedNodes).to.equal(4);
+      assert.deepEqual(stateTreeDisabled.toJsObject({ includeProof: true }), {
+        ".proof_hash": "0x779e9ed5ad62a4286ee886697de51a48878f36c7b163abee2d99baca1f89e931",
+        "0x0001": {
+          ".proof_hash": "0x58ed1dfe4e4c18b14179e134b73fc01221c154187bf6ab1c99236ebe4af514a0",
+          "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
+            "0x0121": "V0121"
+          }
+        }
+      });
+    });
+
+    it("updateStateInfoForAllRootPaths on empty node with multiple root paths from empty node when radixTreeEnabled = true", () => {
+      const child111CloneEnabled = child111Enabled.clone();
+      const child11CloneEnabled = new StateNode();
+      child11CloneEnabled.setRadixTreeEnabled(true);
+      child11CloneEnabled.setChild(label111, child111CloneEnabled);
+      const child1CloneEnabled = new StateNode();
+      child1CloneEnabled.setRadixTreeEnabled(true);
+      child1CloneEnabled.setChild(label11, child11CloneEnabled);
+      const stateTreeCloneEnabled = new StateNode();
+      stateTreeCloneEnabled.setRadixTreeEnabled(true);
+      stateTreeCloneEnabled.setChild(label1, child1CloneEnabled);
+      const child3Enabled = new StateNode();
+      child3Enabled.setRadixTreeEnabled(true);
+      child3Enabled.setValue('V0003');
+      const label3 = '0x003';
+      stateTreeCloneEnabled.setChild(label3, child3Enabled);
+
+      assert.deepEqual(stateTreeEnabled.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
+        "0x0001": {
+          ".proof_hash": null,
+          "0x0011": {
+            ".proof_hash": null,
+            "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
+              "0x1111": null
+            }
+          },
+          "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
+            "0x0121": "V0121"
+          }
+        }
+      });
+      assert.deepEqual(stateTreeCloneEnabled.toJsObject({ includeProof: true }), {
         ".proof_hash": null,
         ".proof_hash:0x003": null,
         "0x0001": {
@@ -2597,10 +2802,10 @@ describe("state-util", () => {
         },
         "0x003": "V0003"
       });
-      assert.deepEqual(child1111.getParentNodes(), [child111, child111Clone]);
-      const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1111);
+      assert.deepEqual(child1111Enabled.getParentNodes(), [child111Enabled, child111CloneEnabled]);
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111Enabled, label1111);
       expect(numAffectedNodes).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeEnabled.toJsObject({ includeProof: true }), {
         ".proof_hash": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
           ".proof_hash": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
@@ -2611,7 +2816,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeCloneEnabled.toJsObject({ includeProof: true }), {
         ".proof_hash": null,
         ".proof_hash:0x003": null,
         "0x0001": {
@@ -2629,19 +2834,24 @@ describe("state-util", () => {
       });
     });
 
-
-    it("updateStateInfoForAllRootPaths on empty node with multiple root paths from parent node", () => {
-      const child11Clone = child11.clone()
-      const child1Clone = new StateNode();
-      child1Clone.setChild(label11, child11Clone);
-      const stateTreeClone = new StateNode();
-      stateTreeClone.setChild(label1, child1Clone);
-      const child3 = new StateNode();
-      child3.setValue('V0003');
+    it("updateStateInfoForAllRootPaths on empty node with multiple root paths from empty node when radixTreeEnabled = false", () => {
+      const child111CloneDisabled = child111Disabled.clone();
+      const child11CloneDisabled = new StateNode();
+      child11CloneDisabled.setRadixTreeEnabled(false);
+      child11CloneDisabled.setChild(label111, child111CloneDisabled);
+      const child1CloneDisabled = new StateNode();
+      child1CloneDisabled.setRadixTreeEnabled(false);
+      child1CloneDisabled.setChild(label11, child11CloneDisabled);
+      const stateTreeCloneDisabled = new StateNode();
+      stateTreeCloneDisabled.setRadixTreeEnabled(false);
+      stateTreeCloneDisabled.setChild(label1, child1CloneDisabled);
+      const child3Disabled = new StateNode();
+      child3Disabled.setRadixTreeEnabled(false);
+      child3Disabled.setValue('V0003');
       const label3 = '0x003';
-      stateTreeClone.setChild(label3, child3);
+      stateTreeCloneDisabled.setChild(label3, child3Disabled);
 
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeDisabled.toJsObject({ includeProof: true }), {
         ".proof_hash": null,
         "0x0001": {
           ".proof_hash": null,
@@ -2660,7 +2870,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeCloneDisabled.toJsObject({ includeProof: true }), {
         ".proof_hash": null,
         ".proof_hash:0x003": null,
         "0x0001": {
@@ -2676,10 +2886,91 @@ describe("state-util", () => {
         },
         "0x003": "V0003"
       });
-      assert.deepEqual(child111.getParentNodes(), [child11, child11Clone]);
-      const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1111);
+      assert.deepEqual(child1111Disabled.getParentNodes(), [child111Disabled, child111CloneDisabled]);
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111Disabled, label1111);
+      expect(numAffectedNodes).to.equal(4);
+      assert.deepEqual(stateTreeDisabled.toJsObject({ includeProof: true }), {
+        ".proof_hash": "0x779e9ed5ad62a4286ee886697de51a48878f36c7b163abee2d99baca1f89e931",
+        "0x0001": {
+          ".proof_hash": "0x58ed1dfe4e4c18b14179e134b73fc01221c154187bf6ab1c99236ebe4af514a0",
+          "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
+            "0x0121": "V0121"
+          }
+        }
+      });
+      assert.deepEqual(stateTreeCloneDisabled.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
+        ".proof_hash:0x003": null,
+        "0x0001": {
+          ".proof_hash": null,
+          "0x0011": {
+            ".proof_hash": null,
+            "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
+              "0x1111": null
+            }
+          }
+        },
+        "0x003": "V0003"
+      });
+    });
+
+    it("updateStateInfoForAllRootPaths on empty node with multiple root paths from parent node when radixTreeEnabled = true", () => {
+      const child11CloneEnabled = child11Enabled.clone()
+      const child1CloneEnabled = new StateNode();
+      child1CloneEnabled.setRadixTreeEnabled(true);
+      child1CloneEnabled.setChild(label11, child11CloneEnabled);
+      const stateTreeCloneEnabled = new StateNode();
+      stateTreeCloneEnabled.setRadixTreeEnabled(true);
+      stateTreeCloneEnabled.setChild(label1, child1CloneEnabled);
+      const child3Enabled = new StateNode();
+      child3Enabled.setRadixTreeEnabled(true);
+      child3Enabled.setValue('V0003');
+      const label3 = '0x003';
+      stateTreeCloneEnabled.setChild(label3, child3Enabled);
+
+      assert.deepEqual(stateTreeEnabled.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
+        "0x0001": {
+          ".proof_hash": null,
+          "0x0011": {
+            ".proof_hash": null,
+            "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
+              "0x1111": null
+            }
+          },
+          "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
+            "0x0121": "V0121"
+          }
+        }
+      });
+      assert.deepEqual(stateTreeCloneEnabled.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
+        ".proof_hash:0x003": null,
+        "0x0001": {
+          ".proof_hash": null,
+          "0x0011": {
+            ".proof_hash": null,
+            "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
+              "0x1111": null
+            }
+          }
+        },
+        "0x003": "V0003"
+      });
+      assert.deepEqual(child111Enabled.getParentNodes(), [child11Enabled, child11CloneEnabled]);
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111Enabled, label1111);
       expect(numAffectedNodes).to.equal(7);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeEnabled.toJsObject({ includeProof: true }), {
         ".proof_hash": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
           ".proof_hash": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
@@ -2690,15 +2981,85 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeCloneEnabled.toJsObject({ includeProof: true }), {
         ".proof_hash": "0x4982c00e8daae6d0ca0cb3b0cc6bcec88b97183a7f7f8decfcd013eb402b6f32",
         ".proof_hash:0x003": null,
         "0x003": "V0003"
       });
     });
 
-    it("updateStateInfoAllRootPaths on non-empty node", () => {
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+    it("updateStateInfoForAllRootPaths on empty node with multiple root paths from parent node when radixTreeEnabled = false", () => {
+      const child11CloneDisabled = child11Disabled.clone()
+      const child1CloneDisabled = new StateNode();
+      child1CloneDisabled.setRadixTreeEnabled(true);
+      child1CloneDisabled.setChild(label11, child11CloneDisabled);
+      const stateTreeCloneDisabled = new StateNode();
+      stateTreeCloneDisabled.setRadixTreeEnabled(true);
+      stateTreeCloneDisabled.setChild(label1, child1CloneDisabled);
+      const child3Disabled = new StateNode();
+      child3Disabled.setRadixTreeEnabled(true);
+      child3Disabled.setValue('V0003');
+      const label3 = '0x003';
+      stateTreeCloneDisabled.setChild(label3, child3Disabled);
+
+      assert.deepEqual(stateTreeDisabled.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
+        "0x0001": {
+          ".proof_hash": null,
+          "0x0011": {
+            ".proof_hash": null,
+            "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
+              "0x1111": null
+            }
+          },
+          "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
+            "0x0121": "V0121"
+          }
+        }
+      });
+      assert.deepEqual(stateTreeCloneDisabled.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
+        ".proof_hash:0x003": null,
+        "0x0001": {
+          ".proof_hash": null,
+          "0x0011": {
+            ".proof_hash": null,
+            "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
+              "0x1111": null
+            }
+          }
+        },
+        "0x003": "V0003"
+      });
+      assert.deepEqual(child111Disabled.getParentNodes(), [child11Disabled, child11CloneDisabled]);
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111Disabled, label1111);
+      expect(numAffectedNodes).to.equal(7);
+      assert.deepEqual(stateTreeDisabled.toJsObject({ includeProof: true }), {
+        ".proof_hash": "0x779e9ed5ad62a4286ee886697de51a48878f36c7b163abee2d99baca1f89e931",
+        "0x0001": {
+          ".proof_hash": "0x58ed1dfe4e4c18b14179e134b73fc01221c154187bf6ab1c99236ebe4af514a0",
+          "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
+            "0x0121": "V0121"
+          }
+        }
+      });
+      assert.deepEqual(stateTreeCloneDisabled.toJsObject({ includeProof: true }), {
+        ".proof_hash": "0x4982c00e8daae6d0ca0cb3b0cc6bcec88b97183a7f7f8decfcd013eb402b6f32",
+        ".proof_hash:0x003": null,
+        "0x003": "V0003"
+      });
+    });
+
+    it("updateStateInfoAllRootPaths on non-empty node when radixTreeEnabled = true", () => {
+      assert.deepEqual(stateTreeEnabled.toJsObject({ includeProof: true }), {
         ".proof_hash": null,
         "0x0001": {
           ".proof_hash": null,
@@ -2718,14 +3079,58 @@ describe("state-util", () => {
         }
       });
       const numAffectedNodes =
-          updateStateInfoForAllRootPaths(child11, label111, false);
+          updateStateInfoForAllRootPaths(child11Enabled, label111, false);
       expect(numAffectedNodes).to.equal(3);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeEnabled.toJsObject({ includeProof: true }), {
         ".proof_hash": "0xf8de149cbb6e6ec6eed202d0c1c2927f955bd693dde8725aff64ecd694302be2",
         "0x0001": {
           ".proof_hash": "0xbeec2ad3bd5285e375bb66f49ccef377af065bb674a3d5c43937d0c66656a61b",
           "0x0011": {
             ".proof_hash": "0x07f1a0cf4f86e7b2459a2cc76a65df77b0f0de3da941168588bf59bd8bf7c970",
+            "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
+              "0x1111": null
+            }
+          },
+          "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
+            "0x0121": "V0121"
+          }
+        }
+      });
+    });
+
+    it("updateStateInfoAllRootPaths on non-empty node when radixTreeEnabled = false", () => {
+      assert.deepEqual(stateTreeDisabled.toJsObject({ includeProof: true }), {
+        ".proof_hash": null,
+        "0x0001": {
+          ".proof_hash": null,
+          "0x0011": {
+            ".proof_hash": null,
+            "0x0111": {
+              ".proof_hash": null,
+              ".proof_hash:0x1111": null,
+              "0x1111": null
+            }
+          },
+          "0x0012": {
+            ".proof_hash": null,
+            ".proof_hash:0x0121": null,
+            "0x0121": "V0121"
+          }
+        }
+      });
+      const numAffectedNodes =
+          updateStateInfoForAllRootPaths(child11Disabled, label111, false);
+      expect(numAffectedNodes).to.equal(3);
+      assert.deepEqual(stateTreeDisabled.toJsObject({ includeProof: true }), {
+        ".proof_hash": "0xab0f61360db4d25cc498f314ae5deddd75490eb68cbc48c31574e80d8b2fd95d",
+        "0x0001": {
+          ".proof_hash": "0x7e616ba05dd7f7971325898085dce5b473a17a1d390530d85a5257a9ec459fd2",
+          "0x0011": {
+            ".proof_hash": "0x019ba3616e09c5714a902f3aee0deb04f40ace082ae104792726945307e8a947",
             "0x0111": {
               ".proof_hash": null,
               ".proof_hash:0x1111": null,
@@ -2750,14 +3155,6 @@ describe("state-util", () => {
     const label1112 = '0x1112';
     const label2 = '0x0002';
     const label21 = '0x0021';
-    let stateTree;
-    let child1;
-    let child11;
-    let child111;
-    let child1111;
-    let child1112;
-    let child2;
-    let child21;
     const jsObject = {
       [label1]: {
         [label11]: {
@@ -2772,140 +3169,287 @@ describe("state-util", () => {
       }
     };
 
+    let stateTreeEnabled;
+    let child1Enabled;
+    let child11Enabled;
+    let child111Enabled;
+    let child1111Enabled;
+    let child1112Enabled;
+    let child2Enabled;
+    let child21Enabled;
+
+    let stateTreeDisabled;
+    let child1Disabled;
+    let child11Disabled;
+    let child111Disabled;
+    let child1111Disabled;
+    let child1112Disabled;
+    let child2Disabled;
+    let child21Disabled;
+
     beforeEach(() => {
-      stateTree = StateNode.fromJsObject(jsObject);
-      child1 = stateTree.getChild(label1);
-      child11 = child1.getChild(label11);
-      child111 = child11.getChild(label111);
-      child1111 = child111.getChild(label1111);
-      child1112 = child111.getChild(label1112);
-      child2 = stateTree.getChild(label2);
-      child21 = child2.getChild(label21);
+      stateTreeEnabled = StateNode.fromJsObject(jsObject, null, true);  // radixTreeEnabled = true
+      child1Enabled = stateTreeEnabled.getChild(label1);
+      child11Enabled = child1Enabled.getChild(label11);
+      child111Enabled = child11Enabled.getChild(label111);
+      child1111Enabled = child111Enabled.getChild(label1111);
+      child1112Enabled = child111Enabled.getChild(label1112);
+      child2Enabled = stateTreeEnabled.getChild(label2);
+      child21Enabled = child2Enabled.getChild(label21);
+
+      stateTreeDisabled = StateNode.fromJsObject(jsObject, null, false);  // radixTreeEnabled = false
+      child1Disabled = stateTreeDisabled.getChild(label1);
+      child11Disabled = child1Disabled.getChild(label11);
+      child111Disabled = child11Disabled.getChild(label111);
+      child1111Disabled = child111Disabled.getChild(label1111);
+      child1112Disabled = child111Disabled.getChild(label1112);
+      child2Disabled = stateTreeDisabled.getChild(label2);
+      child21Disabled = child2Disabled.getChild(label21);
     });
 
-    it("updateStateInfoForStateTree", () => {
-      const numAffectedNodes = updateStateInfoForStateTree(child1);
+    it("updateStateInfoForStateTree when radixTreeEnabled = true", () => {
+      const numAffectedNodes = updateStateInfoForStateTree(child1Enabled);
       expect(numAffectedNodes).to.equal(5);
       // Checks proof hashes.
-      expect(child1111.verifyProofHash()).to.equal(true);
-      expect(child1112.verifyProofHash()).to.equal(true);
-      expect(child111.verifyProofHash()).to.equal(true);
-      expect(child11.verifyProofHash()).to.equal(true);
-      expect(child1.verifyProofHash()).to.equal(true);
-      expect(child21.verifyProofHash()).to.equal(false);
-      expect(child2.verifyProofHash()).to.equal(false);
-      expect(stateTree.verifyProofHash()).to.equal(false);
+      expect(child1111Enabled.verifyProofHash()).to.equal(true);
+      expect(child1112Enabled.verifyProofHash()).to.equal(true);
+      expect(child111Enabled.verifyProofHash()).to.equal(true);
+      expect(child11Enabled.verifyProofHash()).to.equal(true);
+      expect(child1Enabled.verifyProofHash()).to.equal(true);
+      expect(child21Enabled.verifyProofHash()).to.equal(false);
+      expect(child2Enabled.verifyProofHash()).to.equal(false);
+      expect(stateTreeEnabled.verifyProofHash()).to.equal(false);
       // Checks tree heights.
-      expect(child1111.getTreeHeight()).to.equal(0);
-      expect(child1112.getTreeHeight()).to.equal(0);
-      expect(child111.getTreeHeight()).to.equal(1);
-      expect(child11.getTreeHeight()).to.equal(2);
-      expect(child1.getTreeHeight()).to.equal(3);
-      expect(child21.getTreeHeight()).to.equal(0);
-      expect(child2.getTreeHeight()).to.equal(0);
-      expect(stateTree.getTreeHeight()).to.equal(0);
+      expect(child1111Enabled.getTreeHeight()).to.equal(0);
+      expect(child1112Enabled.getTreeHeight()).to.equal(0);
+      expect(child111Enabled.getTreeHeight()).to.equal(1);
+      expect(child11Enabled.getTreeHeight()).to.equal(2);
+      expect(child1Enabled.getTreeHeight()).to.equal(3);
+      expect(child21Enabled.getTreeHeight()).to.equal(0);
+      expect(child2Enabled.getTreeHeight()).to.equal(0);
+      expect(stateTreeEnabled.getTreeHeight()).to.equal(0);
       // Checks tree sizes.
-      expect(child1111.getTreeSize()).to.equal(1);
-      expect(child1112.getTreeSize()).to.equal(1);
-      expect(child111.getTreeSize()).to.equal(3);
-      expect(child11.getTreeSize()).to.equal(4);
-      expect(child1.getTreeSize()).to.equal(5);
-      expect(child21.getTreeSize()).to.equal(0);
-      expect(child2.getTreeSize()).to.equal(0);
-      expect(stateTree.getTreeSize()).to.equal(0);
+      expect(child1111Enabled.getTreeSize()).to.equal(1);
+      expect(child1112Enabled.getTreeSize()).to.equal(1);
+      expect(child111Enabled.getTreeSize()).to.equal(3);
+      expect(child11Enabled.getTreeSize()).to.equal(4);
+      expect(child1Enabled.getTreeSize()).to.equal(5);
+      expect(child21Enabled.getTreeSize()).to.equal(0);
+      expect(child2Enabled.getTreeSize()).to.equal(0);
+      expect(stateTreeEnabled.getTreeSize()).to.equal(0);
       // Checks tree bytes.
-      expect(child1111.getTreeBytes()).to.not.equal(0);  // non-zero value
-      expect(child1112.getTreeBytes()).to.not.equal(0); // non-zero value
-      expect(child111.getTreeBytes()).to.not.equal(0); // non-zero value
-      expect(child11.getTreeBytes()).to.not.equal(0); // non-zero value
-      expect(child1.getTreeBytes()).to.not.equal(0); // non-zero value
-      expect(child21.getTreeBytes()).to.equal(0);
-      expect(child2.getTreeBytes()).to.equal(0);
-      expect(stateTree.getTreeBytes()).to.equal(0);
+      expect(child1111Enabled.getTreeBytes()).to.not.equal(0);  // non-zero value
+      expect(child1112Enabled.getTreeBytes()).to.not.equal(0); // non-zero value
+      expect(child111Enabled.getTreeBytes()).to.not.equal(0); // non-zero value
+      expect(child11Enabled.getTreeBytes()).to.not.equal(0); // non-zero value
+      expect(child1Enabled.getTreeBytes()).to.not.equal(0); // non-zero value
+      expect(child21Enabled.getTreeBytes()).to.equal(0);
+      expect(child2Enabled.getTreeBytes()).to.equal(0);
+      expect(stateTreeEnabled.getTreeBytes()).to.equal(0);
     });
 
-    it("updateStateInfoForAllRootPaths with a single root path", () => {
-      const numAffectedNodes = updateStateInfoForAllRootPaths(child111, label1112);
+    it("updateStateInfoForStateTree when radixTreeEnabled = false", () => {
+      const numAffectedNodes = updateStateInfoForStateTree(child1Disabled);
+      expect(numAffectedNodes).to.equal(5);
+      // Checks proof hashes.
+      expect(child1111Disabled.verifyProofHash()).to.equal(true);
+      expect(child1112Disabled.verifyProofHash()).to.equal(true);
+      expect(child111Disabled.verifyProofHash()).to.equal(true);
+      expect(child11Disabled.verifyProofHash()).to.equal(true);
+      expect(child1Disabled.verifyProofHash()).to.equal(true);
+      expect(child21Disabled.verifyProofHash()).to.equal(false);
+      expect(child2Disabled.verifyProofHash()).to.equal(false);
+      expect(stateTreeDisabled.verifyProofHash()).to.equal(false);
+      // Checks tree heights.
+      expect(child1111Disabled.getTreeHeight()).to.equal(0);
+      expect(child1112Disabled.getTreeHeight()).to.equal(0);
+      expect(child111Disabled.getTreeHeight()).to.equal(1);
+      expect(child11Disabled.getTreeHeight()).to.equal(2);
+      expect(child1Disabled.getTreeHeight()).to.equal(3);
+      expect(child21Disabled.getTreeHeight()).to.equal(0);
+      expect(child2Disabled.getTreeHeight()).to.equal(0);
+      expect(stateTreeDisabled.getTreeHeight()).to.equal(0);
+      // Checks tree sizes.
+      expect(child1111Disabled.getTreeSize()).to.equal(1);
+      expect(child1112Disabled.getTreeSize()).to.equal(1);
+      expect(child111Disabled.getTreeSize()).to.equal(3);
+      expect(child11Disabled.getTreeSize()).to.equal(4);
+      expect(child1Disabled.getTreeSize()).to.equal(5);
+      expect(child21Disabled.getTreeSize()).to.equal(0);
+      expect(child2Disabled.getTreeSize()).to.equal(0);
+      expect(stateTreeDisabled.getTreeSize()).to.equal(0);
+      // Checks tree bytes.
+      expect(child1111Disabled.getTreeBytes()).to.not.equal(0);  // non-zero value
+      expect(child1112Disabled.getTreeBytes()).to.not.equal(0); // non-zero value
+      expect(child111Disabled.getTreeBytes()).to.not.equal(0); // non-zero value
+      expect(child11Disabled.getTreeBytes()).to.not.equal(0); // non-zero value
+      expect(child1Disabled.getTreeBytes()).to.not.equal(0); // non-zero value
+      expect(child21Disabled.getTreeBytes()).to.equal(0);
+      expect(child2Disabled.getTreeBytes()).to.equal(0);
+      expect(stateTreeDisabled.getTreeBytes()).to.equal(0);
+    });
+
+    it("updateStateInfoForAllRootPaths with a single root path when radixTreeEnabled = true", () => {
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111Enabled, label1112);
       expect(numAffectedNodes).to.equal(4);
       // Checks proof hashes.
-      expect(child1111.verifyProofHash()).to.equal(false);
-      expect(child1112.verifyProofHash()).to.equal(false);
-      expect(child111.verifyProofHash(label1112)).to.equal(true);  // verified
-      expect(child11.verifyProofHash()).to.equal(true);  // verified
-      expect(child21.verifyProofHash()).to.equal(false);
-      expect(child2.verifyProofHash()).to.equal(false);
-      expect(child1.verifyProofHash()).to.equal(true);  // verified
-      expect(stateTree.verifyProofHash(label1)).to.equal(true);  // verified
+      expect(child1111Enabled.verifyProofHash()).to.equal(false);
+      expect(child1112Enabled.verifyProofHash()).to.equal(false);
+      expect(child111Enabled.verifyProofHash(label1112)).to.equal(true);  // verified
+      expect(child11Enabled.verifyProofHash()).to.equal(true);  // verified
+      expect(child21Enabled.verifyProofHash()).to.equal(false);
+      expect(child2Enabled.verifyProofHash()).to.equal(false);
+      expect(child1Enabled.verifyProofHash()).to.equal(true);  // verified
+      expect(stateTreeEnabled.verifyProofHash(label1)).to.equal(true);  // verified
 
       // Checks tree heights.
-      expect(child1111.getTreeHeight()).to.equal(0);
-      expect(child1112.getTreeHeight()).to.equal(0);
-      expect(child111.getTreeHeight()).to.equal(child111.computeTreeHeight());
-      expect(child11.getTreeHeight()).to.equal(child11.computeTreeHeight());
-      expect(child1.getTreeHeight()).to.equal(child1.computeTreeHeight());
-      expect(child21.getTreeHeight()).to.equal(0);
-      expect(child2.getTreeHeight()).to.equal(0);
-      expect(stateTree.getTreeHeight()).to.equal(stateTree.computeTreeHeight());
+      expect(child1111Enabled.getTreeHeight()).to.equal(0);
+      expect(child1112Enabled.getTreeHeight()).to.equal(0);
+      expect(child111Enabled.getTreeHeight()).to.equal(child111Enabled.computeTreeHeight());
+      expect(child11Enabled.getTreeHeight()).to.equal(child11Enabled.computeTreeHeight());
+      expect(child1Enabled.getTreeHeight()).to.equal(child1Enabled.computeTreeHeight());
+      expect(child21Enabled.getTreeHeight()).to.equal(0);
+      expect(child2Enabled.getTreeHeight()).to.equal(0);
+      expect(stateTreeEnabled.getTreeHeight()).to.equal(stateTreeEnabled.computeTreeHeight());
 
       // Checks tree sizes.
-      expect(child1111.getTreeSize()).to.equal(0);
-      expect(child1112.getTreeSize()).to.equal(0);
-      expect(child111.getTreeSize()).to.equal(child111.computeTreeSize());
-      expect(child11.getTreeSize()).to.equal(child11.computeTreeSize());
-      expect(child1.getTreeSize()).to.equal(child1.computeTreeSize());
-      expect(child21.getTreeSize()).to.equal(0);
-      expect(child2.getTreeSize()).to.equal(0);
-      expect(stateTree.getTreeSize()).to.equal(stateTree.computeTreeSize());
+      expect(child1111Enabled.getTreeSize()).to.equal(0);
+      expect(child1112Enabled.getTreeSize()).to.equal(0);
+      expect(child111Enabled.getTreeSize()).to.equal(child111Enabled.computeTreeSize());
+      expect(child11Enabled.getTreeSize()).to.equal(child11Enabled.computeTreeSize());
+      expect(child1Enabled.getTreeSize()).to.equal(child1Enabled.computeTreeSize());
+      expect(child21Enabled.getTreeSize()).to.equal(0);
+      expect(child2Enabled.getTreeSize()).to.equal(0);
+      expect(stateTreeEnabled.getTreeSize()).to.equal(stateTreeEnabled.computeTreeSize());
 
       // Checks tree bytes.
-      expect(child1111.getTreeBytes()).to.equal(0);
-      expect(child1112.getTreeBytes()).to.equal(0);
-      expect(child111.getTreeBytes()).to.equal(child111.computeTreeBytes());
-      expect(child11.getTreeBytes()).to.equal(child11.computeTreeBytes());
-      expect(child1.getTreeBytes()).to.equal(child1.computeTreeBytes());
-      expect(child21.getTreeBytes()).to.equal(0);
-      expect(child2.getTreeBytes()).to.equal(0);
-      expect(stateTree.getTreeBytes()).to.equal(stateTree.computeTreeBytes());
+      expect(child1111Enabled.getTreeBytes()).to.equal(0);
+      expect(child1112Enabled.getTreeBytes()).to.equal(0);
+      expect(child111Enabled.getTreeBytes()).to.equal(child111Enabled.computeTreeBytes());
+      expect(child11Enabled.getTreeBytes()).to.equal(child11Enabled.computeTreeBytes());
+      expect(child1Enabled.getTreeBytes()).to.equal(child1Enabled.computeTreeBytes());
+      expect(child21Enabled.getTreeBytes()).to.equal(0);
+      expect(child2Enabled.getTreeBytes()).to.equal(0);
+      expect(stateTreeEnabled.getTreeBytes()).to.equal(stateTreeEnabled.computeTreeBytes());
     });
 
-    it("updateStateInfoForAllRootPaths with multiple root paths", () => {
-      const stateTreeClone = stateTree.clone();
-      const child1Clone = child1.clone();
-      const child11Clone = child11.clone();
-      const child111Clone = child111.clone();
-      const child2Clone = child2.clone();
+    it("updateStateInfoForAllRootPaths with a single root path when radixTreeEnabled = false", () => {
+      const numAffectedNodes = updateStateInfoForAllRootPaths(child111Disabled, label1112);
+      expect(numAffectedNodes).to.equal(4);
+      // Checks proof hashes.
+      expect(child1111Disabled.verifyProofHash()).to.equal(false);
+      expect(child1112Disabled.verifyProofHash()).to.equal(false);
+      expect(child111Disabled.verifyProofHash(label1112)).to.equal(true);  // verified
+      expect(child11Disabled.verifyProofHash()).to.equal(true);  // verified
+      expect(child21Disabled.verifyProofHash()).to.equal(false);
+      expect(child2Disabled.verifyProofHash()).to.equal(false);
+      expect(child1Disabled.verifyProofHash()).to.equal(true);  // verified
+      expect(stateTreeDisabled.verifyProofHash(label1)).to.equal(true);  // verified
 
-      expect(updateStateInfoForAllRootPaths(child111, label1112)).to.equal(7);
+      // Checks tree heights.
+      expect(child1111Disabled.getTreeHeight()).to.equal(0);
+      expect(child1112Disabled.getTreeHeight()).to.equal(0);
+      expect(child111Disabled.getTreeHeight()).to.equal(child111Disabled.computeTreeHeight());
+      expect(child11Disabled.getTreeHeight()).to.equal(child11Disabled.computeTreeHeight());
+      expect(child1Disabled.getTreeHeight()).to.equal(child1Disabled.computeTreeHeight());
+      expect(child21Disabled.getTreeHeight()).to.equal(0);
+      expect(child2Disabled.getTreeHeight()).to.equal(0);
+      expect(stateTreeDisabled.getTreeHeight()).to.equal(stateTreeDisabled.computeTreeHeight());
+
+      // Checks tree sizes.
+      expect(child1111Disabled.getTreeSize()).to.equal(0);
+      expect(child1112Disabled.getTreeSize()).to.equal(0);
+      expect(child111Disabled.getTreeSize()).to.equal(child111Disabled.computeTreeSize());
+      expect(child11Disabled.getTreeSize()).to.equal(child11Disabled.computeTreeSize());
+      expect(child1Disabled.getTreeSize()).to.equal(child1Disabled.computeTreeSize());
+      expect(child21Disabled.getTreeSize()).to.equal(0);
+      expect(child2Disabled.getTreeSize()).to.equal(0);
+      expect(stateTreeDisabled.getTreeSize()).to.equal(stateTreeDisabled.computeTreeSize());
+
+      // Checks tree bytes.
+      expect(child1111Disabled.getTreeBytes()).to.equal(0);
+      expect(child1112Disabled.getTreeBytes()).to.equal(0);
+      expect(child111Disabled.getTreeBytes()).to.equal(child111Disabled.computeTreeBytes());
+      expect(child11Disabled.getTreeBytes()).to.equal(child11Disabled.computeTreeBytes());
+      expect(child1Disabled.getTreeBytes()).to.equal(child1Disabled.computeTreeBytes());
+      expect(child21Disabled.getTreeBytes()).to.equal(0);
+      expect(child2Disabled.getTreeBytes()).to.equal(0);
+      expect(stateTreeDisabled.getTreeBytes()).to.equal(stateTreeDisabled.computeTreeBytes());
+    });
+
+    it("updateStateInfoForAllRootPaths with multiple root paths when radixTreeEnabled = true", () => {
+      const stateTreeClone = stateTreeEnabled.clone();
+      const child1Clone = child1Enabled.clone();
+      const child11Clone = child11Enabled.clone();
+      const child111Clone = child111Enabled.clone();
+      const child2Clone = child2Enabled.clone();
+
+      expect(updateStateInfoForAllRootPaths(child111Enabled, label1112)).to.equal(7);
 
       // Checks proof hashes.
-      expect(child1111.verifyProofHash()).to.equal(false);
-      expect(child1112.verifyProofHash()).to.equal(false);  // not verified!!
-      expect(child111.verifyProofHash(label1112)).to.equal(true);  // verified
+      expect(child1111Enabled.verifyProofHash()).to.equal(false);
+      expect(child1112Enabled.verifyProofHash()).to.equal(false);  // not verified!!
+      expect(child111Enabled.verifyProofHash(label1112)).to.equal(true);  // verified
       expect(child111Clone.verifyProofHash(label1112)).to.equal(false);  // not verified!!
-      expect(child11.verifyProofHash()).to.equal(true);  // verified
+      expect(child11Enabled.verifyProofHash()).to.equal(true);  // verified
       expect(child11Clone.verifyProofHash()).to.equal(true);  // verified
-      expect(child11Clone.getProofHash()).to.equal(child11.getProofHash());
-      expect(child1.verifyProofHash()).to.equal(true);  // verified
+      expect(child11Clone.getProofHash()).to.equal(child11Enabled.getProofHash());
+      expect(child1Enabled.verifyProofHash()).to.equal(true);  // verified
       expect(child1Clone.verifyProofHash()).to.equal(true);  // verified
-      expect(child1Clone.getProofHash()).to.equal(child1.getProofHash());
-      expect(child21.verifyProofHash()).to.equal(false);
-      expect(child2.verifyProofHash()).to.equal(false);
+      expect(child1Clone.getProofHash()).to.equal(child1Enabled.getProofHash());
+      expect(child21Enabled.verifyProofHash()).to.equal(false);
+      expect(child2Enabled.verifyProofHash()).to.equal(false);
       expect(child2Clone.verifyProofHash()).to.equal(false);
-      expect(stateTree.verifyProofHash(label1)).to.equal(true);  // verified
+      expect(stateTreeEnabled.verifyProofHash(label1)).to.equal(true);  // verified
       expect(stateTreeClone.verifyProofHash(label1)).to.equal(true);  // verified
-      expect(stateTreeClone.getProofHash()).to.equal(stateTree.getProofHash());
+      expect(stateTreeClone.getProofHash()).to.equal(stateTreeEnabled.getProofHash());
     });
 
-    it("verifyProofHashForStateTree ", () => {
-      updateStateInfoForStateTree(stateTree);
-      expect(verifyProofHashForStateTree(stateTree)).to.equal(true);
-      child111.setProofHash('new ph');
-      expect(verifyProofHashForStateTree(stateTree)).to.equal(false);
+    it("updateStateInfoForAllRootPaths with multiple root paths when radixTreeEnabled = false", () => {
+      const stateTreeClone = stateTreeDisabled.clone();
+      const child1Clone = child1Disabled.clone();
+      const child11Clone = child11Disabled.clone();
+      const child111Clone = child111Disabled.clone();
+      const child2Clone = child2Disabled.clone();
+
+      expect(updateStateInfoForAllRootPaths(child111Disabled, label1112)).to.equal(7);
+
+      // Checks proof hashes.
+      expect(child1111Disabled.verifyProofHash()).to.equal(false);
+      expect(child1112Disabled.verifyProofHash()).to.equal(false);  // not verified!!
+      expect(child111Disabled.verifyProofHash(label1112)).to.equal(true);  // verified
+      expect(child111Clone.verifyProofHash(label1112)).to.equal(false);  // not verified!!
+      expect(child11Disabled.verifyProofHash()).to.equal(true);  // verified
+      expect(child11Clone.verifyProofHash()).to.equal(true);  // verified
+      expect(child11Clone.getProofHash()).to.equal(child11Disabled.getProofHash());
+      expect(child1Disabled.verifyProofHash()).to.equal(true);  // verified
+      expect(child1Clone.verifyProofHash()).to.equal(true);  // verified
+      expect(child1Clone.getProofHash()).to.equal(child1Disabled.getProofHash());
+      expect(child21Disabled.verifyProofHash()).to.equal(false);
+      expect(child2Disabled.verifyProofHash()).to.equal(false);
+      expect(child2Clone.verifyProofHash()).to.equal(false);
+      expect(stateTreeDisabled.verifyProofHash(label1)).to.equal(true);  // verified
+      expect(stateTreeClone.verifyProofHash(label1)).to.equal(true);  // verified
+      expect(stateTreeClone.getProofHash()).to.equal(stateTreeDisabled.getProofHash());
     });
 
-    it("getProofOfState", () => {
-      updateStateInfoForStateTree(stateTree);
-      assert.deepEqual(getProofOfStatePath(stateTree, [label1, label11]), {
+    it("verifyProofHashForStateTree when radixTreeEnabled = true", () => {
+      updateStateInfoForStateTree(stateTreeEnabled);
+      expect(verifyProofHashForStateTree(stateTreeEnabled)).to.equal(true);
+      child111Enabled.setProofHash('new ph');
+      expect(verifyProofHashForStateTree(stateTreeEnabled)).to.equal(false);
+    });
+
+    it("verifyProofHashForStateTree when radixTreeEnabled = false", () => {
+      updateStateInfoForStateTree(stateTreeDisabled);
+      expect(verifyProofHashForStateTree(stateTreeDisabled)).to.equal(true);
+      child111Disabled.setProofHash('new ph');
+      expect(verifyProofHashForStateTree(stateTreeDisabled)).to.equal(false);
+    });
+
+    it("getProofOfState when radixTreeEnabled = true", () => {
+      updateStateInfoForStateTree(stateTreeEnabled);
+      assert.deepEqual(getProofOfStatePath(stateTreeEnabled, [label1, label11]), {
         ".radix_ph": "0xeef6cf891adc1b4755cb54085116c08d7ced1afe8eee3bdaac2259d935b2befe",
         "000": {
           "1": {
@@ -2926,6 +3470,22 @@ describe("state-util", () => {
             ".radix_ph": "0xa64fc83d2b5a4193e285cf17f9f2ad02898730a74441c995409d3d9be3b63dc6"
           },
           ".radix_ph": "0x0f1fdb35bd8e9ec757d12c8a3dafdcd83437aa392b1fcd22d1b0c0ee273aed31"
+        }
+      });
+    });
+
+    it("getProofOfState when radixTreeEnabled = false", () => {
+      updateStateInfoForStateTree(stateTreeDisabled);
+      assert.deepEqual(getProofOfStatePath(stateTreeDisabled, [label1, label11]), {
+        ".proof_hash": "0xb2eee68c1dca492047f80706ee3996a082d911b932f8ae050c60ee6aa29e0c77",
+        "0x0001": {
+          ".proof_hash": "0x59ab9f2ec1fce38b035680beaeac5cfd06a5b2143054e6ca4689dccdb726d352",
+          "0x0011": {
+            ".proof_hash": "0x53b69d12b2eb57a9f0d79d63a4fd17124d7e85148ce21eeeacad687039092911"
+          }
+        },
+        "0x0002": {
+          ".proof_hash": "0x6e575c10e7e36e959b719f513ac8b12ff468d0d0e0a5f98ebae2c66aad4bcedf"
         }
       });
     });
