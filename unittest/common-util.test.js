@@ -77,11 +77,20 @@ describe("CommonUtil", () => {
       expect(CommonUtil.toHexString(false)).to.equal('0x');
     })
 
+    it("when non-string input with withPrefix = false", () => {
+      expect(CommonUtil.toHexString(0, false)).to.equal('');
+    })
+
     it("when string input", () => {
       expect(CommonUtil.toHexString('')).to.equal('0x');
       expect(CommonUtil.toHexString('0x0123456789abcdef')).to.equal('0x0123456789abcdef');
       expect(CommonUtil.toHexString('0x0123456789ABCDEF')).to.equal('0x0123456789abcdef');
       expect(CommonUtil.toHexString('aAzZ')).to.equal('0x61417a5a');
+    })
+
+    it("when string input with withPrefix = false", () => {
+      expect(CommonUtil.toHexString('', false)).to.equal('');
+      expect(CommonUtil.toHexString('0x0123456789abcdef', false)).to.equal('0123456789abcdef');
     })
   })
 
