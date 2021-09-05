@@ -16,10 +16,7 @@ class RadixTree {
     this.terminalNodeMap = new Map();
   }
 
-  static _toRadixLabel(stateLabel, binaryLabel) {
-    if (binaryLabel) {
-      return CommonUtil.toBinaryString(stateLabel);
-    }
+  static _toRadixLabel(stateLabel) {
     return CommonUtil.toHexString(stateLabel, false);
   }
 
@@ -61,8 +58,7 @@ class RadixTree {
       return curNode;
     }
 
-    const radixLabel =
-        RadixTree._toRadixLabel(stateLabel, FeatureFlags.enableBinaryRadixLabel);
+    const radixLabel = RadixTree._toRadixLabel(stateLabel);
     curNode = this.root
     let labelIndex = 0;
     while (labelIndex < radixLabel.length) {
