@@ -2244,11 +2244,11 @@ describe("state-util", () => {
       // And child nodes are deleted as well.
       expect(child1Enabled.getValue()).to.equal(null);
       expect(child1Enabled.getProofHash()).to.equal(null);
-      expect(child1Enabled.getVersion()).to.equal(ver1);
+      expect(child1Enabled.getVersion()).to.equal(null);
       expect(child1Enabled.numParents()).to.equal(0);
       expect(child2Enabled.getValue()).to.equal(null);
       expect(child2Enabled.getProofHash()).to.equal(null);
-      expect(child2Enabled.getVersion()).to.equal(ver2);
+      expect(child2Enabled.getVersion()).to.equal(null);
       expect(child2Enabled.numParents()).to.equal(0);
     })
 
@@ -2260,11 +2260,11 @@ describe("state-util", () => {
       // And child nodes are deleted as well.
       expect(child1Disabled.getValue()).to.equal(null);
       expect(child1Disabled.getProofHash()).to.equal(null);
-      expect(child1Disabled.getVersion()).to.equal(ver1);
+      expect(child1Disabled.getVersion()).to.equal(null);
       expect(child1Disabled.numParents()).to.equal(0);
       expect(child2Disabled.getValue()).to.equal(null);
       expect(child2Disabled.getProofHash()).to.equal(null);
-      expect(child2Disabled.getVersion()).to.equal(ver2);
+      expect(child2Disabled.getVersion()).to.equal(null);
       expect(child2Disabled.numParents()).to.equal(0);
     })
 
@@ -2279,11 +2279,11 @@ describe("state-util", () => {
       // And child nodes are deleted as well.
       expect(child1Enabled.getValue()).to.equal(null);
       expect(child1Enabled.getProofHash()).to.equal(null);
-      expect(child1Enabled.getVersion()).to.equal(ver3);
+      expect(child1Enabled.getVersion()).to.equal(null);
       expect(child1Enabled.numParents()).to.equal(0);
       expect(child2Enabled.getValue()).to.equal(null);
       expect(child2Enabled.getProofHash()).to.equal(null);
-      expect(child2Enabled.getVersion()).to.equal(ver3);
+      expect(child2Enabled.getVersion()).to.equal(null);
       expect(child2Enabled.numParents()).to.equal(0);
     })
 
@@ -2298,11 +2298,11 @@ describe("state-util", () => {
       // And child nodes are deleted as well.
       expect(child1Disabled.getValue()).to.equal(null);
       expect(child1Disabled.getProofHash()).to.equal(null);
-      expect(child1Disabled.getVersion()).to.equal(ver3);
+      expect(child1Disabled.getVersion()).to.equal(null);
       expect(child1Disabled.numParents()).to.equal(0);
       expect(child2Disabled.getValue()).to.equal(null);
       expect(child2Disabled.getProofHash()).to.equal(null);
-      expect(child2Disabled.getVersion()).to.equal(ver3);
+      expect(child2Disabled.getVersion()).to.equal(null);
       expect(child2Disabled.numParents()).to.equal(0);
     })
 
@@ -2376,11 +2376,11 @@ describe("state-util", () => {
       // And child nodes are deleted as well.
       expect(child1Enabled.getValue()).to.equal(null);
       expect(child1Enabled.getProofHash()).to.equal(null);
-      expect(child1Enabled.getVersion()).to.equal(ver1);
+      expect(child1Enabled.getVersion()).to.equal(null);
       expect(child1Enabled.numParents()).to.equal(0);
       expect(child2Enabled.getValue()).to.equal(null);
       expect(child2Enabled.getProofHash()).to.equal(null);
-      expect(child2Enabled.getVersion()).to.equal(ver2);
+      expect(child2Enabled.getVersion()).to.equal(null);
       expect(child2Enabled.numParents()).to.equal(0);
     })
 
@@ -2392,11 +2392,11 @@ describe("state-util", () => {
       // And child nodes are deleted as well.
       expect(child1Disabled.getValue()).to.equal(null);
       expect(child1Disabled.getProofHash()).to.equal(null);
-      expect(child1Disabled.getVersion()).to.equal(ver1);
+      expect(child1Disabled.getVersion()).to.equal(null);
       expect(child1Disabled.numParents()).to.equal(0);
       expect(child2Disabled.getValue()).to.equal(null);
       expect(child2Disabled.getProofHash()).to.equal(null);
-      expect(child2Disabled.getVersion()).to.equal(ver2);
+      expect(child2Disabled.getVersion()).to.equal(null);
       expect(child2Disabled.numParents()).to.equal(0);
     })
 
