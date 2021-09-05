@@ -121,7 +121,7 @@ class RadixTree {
 
   // NOTE(platfowner): Use hash map instead of radix tree as it faster.
   get(stateLabel) {
-    const LOG_HEADER = '_getFromMap';
+    const LOG_HEADER = 'get';
 
     const terminalNode = this.terminalNodeMap.get(stateLabel);
     if (terminalNode === undefined) {
@@ -184,7 +184,7 @@ class RadixTree {
   }
 
   delete(stateLabel, updateProofHash = false) {
-    const LOG_HEADER = '_deleteFromTree';
+    const LOG_HEADER = '_delete';
 
     const node = this._getRadixNodeForReading(stateLabel);
     if (node === null || !node.hasStateNode()) {
@@ -204,7 +204,7 @@ class RadixTree {
     node.resetStateNode();
     let nodeToUpdateProofHash = node;
     if (node.numChildren() === 1) {
-      nodeToUpdateProofHash = this._mergeToChild(node, updateProofHash);
+      nodeToUpdateProofHash = this._mergeToChild(node);
     } else if (node.numChildren() === 0) {
       if (!node.hasParent()) {
         logger.error(
@@ -216,7 +216,7 @@ class RadixTree {
       const parent = node.getParent();
       parent.deleteChild(node.getLabelRadix());
       if (parent.numChildren() === 1 && !parent.hasStateNode() && parent.hasParent()) {
-        nodeToUpdateProofHash = this._mergeToChild(parent, updateProofHash);
+        nodeToUpdateProofHash = this._mergeToChild(parent);
       }
     }
     if (updateProofHash) {
