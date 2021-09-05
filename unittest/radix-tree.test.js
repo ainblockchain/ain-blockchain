@@ -7,47 +7,47 @@ const assert = chai.assert;
 
 describe("radix-tree", () => {
   describe("Utils", () => {
-    it("_toHexLabel", () => {
-      expect(RadixTree._toHexLabel('0x1234567890abcdef')).to.equal('1234567890abcdef');
-      expect(RadixTree._toHexLabel('aAzZ')).to.equal('61417a5a');
+    it("_toRadixLabel", () => {
+      expect(RadixTree._toRadixLabel('0x1234567890abcdef')).to.equal('1234567890abcdef');
+      expect(RadixTree._toRadixLabel('aAzZ')).to.equal('61417a5a');
     });
 
     it("_matchLabelSuffix with empty label suffix", () => {
-      const hexLabel = '1234abcd';
+      const radixLabel = '1234abcd';
       const radixNode = new RadixNode();
       radixNode.setLabelSuffix('');
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 0)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 1)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 2)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 3)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 4)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 5)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 6)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 7)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 8)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 0)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 1)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 2)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 3)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 4)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 5)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 6)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 7)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 8)).to.equal(true);
       expect(RadixTree._matchLabelSuffix(radixNode, '', 0)).to.equal(true);
     });
 
     it("_matchLabelSuffix with non-empty label suffix", () => {
-      const hexLabel = '1234abcd';
+      const radixLabel = '1234abcd';
       const radixNode = new RadixNode();
       // a shorter length
       radixNode.setLabelSuffix('ab');
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 3)).to.equal(false);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 4)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 5)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 3)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 4)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 5)).to.equal(false);
 
       // the same length
       radixNode.setLabelSuffix('abcd');
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 3)).to.equal(false);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 4)).to.equal(true);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 5)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 3)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 4)).to.equal(true);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 5)).to.equal(false);
 
       // a longer length
       radixNode.setLabelSuffix('abcd123');
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 3)).to.equal(false);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 4)).to.equal(false);
-      expect(RadixTree._matchLabelSuffix(radixNode, hexLabel, 5)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 3)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 4)).to.equal(false);
+      expect(RadixTree._matchLabelSuffix(radixNode, radixLabel, 5)).to.equal(false);
     });
 
     it("_getCommonPrefix", () => {

@@ -306,8 +306,10 @@ describe("state-node", () => {
       node2.addParent(parent);
       expect(node1.equal(node2)).to.equal(true);
 
-      node1.setRadixTreeEnabled(true);
+      node1.setRadixTreeEnabled(false);
+      node2.setRadixTreeEnabled(true);
       expect(node1.equal(node2)).to.equal(false);
+      node1.setRadixTreeEnabled(true);
       node2.setRadixTreeEnabled(true);
       expect(node1.equal(node2)).to.equal(true);
 
