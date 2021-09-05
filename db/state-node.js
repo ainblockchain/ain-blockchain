@@ -34,6 +34,23 @@ class StateNode {
     this.treeBytes = 0;
   }
 
+  reset() {
+    this.setVersion(null);
+    this._setLabel(null);
+    this.setIsLeaf(true);
+    this.resetValue();
+    this.parentSet.clear();
+    this.setRadixTreeEnabled(!FeatureFlags.enableDynamicRadixTree);
+    if (FeatureFlags.enableRadixTreeLayers) {
+      this.deleteRadixTree();
+    }
+    this.childMap.clear();
+    this.setProofHash(null);
+    this.setTreeHeight(0);
+    this.setTreeSize(0);
+    this.setTreeBytes(0);
+  }
+
   static _create(
       version, label, isLeaf, value, radixTreeEnabled, proofHash, treeHeight, treeSize, treeBytes) {
     const node = new StateNode(version);
@@ -365,10 +382,6 @@ class StateNode {
 
   setProofHash(proofHash) {
     this.proofHash = proofHash;
-  }
-
-  resetProofHash() {
-    this.setProofHash(null);
   }
 
   getVersion() {

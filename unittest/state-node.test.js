@@ -70,18 +70,55 @@ describe("state-node", () => {
     stateTreeDisabled.setChild(label4, child4Disabled);
   })
 
-  describe("Initialization", () => {
+  describe("Initialization / reset", () => {
     it("constructor", () => {
+      expect(node.version).to.equal(null);
       expect(node.label).to.equal(null);
       expect(node.isLeaf).to.equal(true);
-      assert.deepEqual(node.getParentNodes(), []);
-      expect(node.numParents()).to.equal(0);
-      assert.deepEqual(node.getChildLabels(), []);
-      assert.deepEqual(node.getChildNodes(), []);
-      expect(node.label).to.equal(null);
       expect(node.value).to.equal(null);
+      expect(node.parentSet.size).to.equal(0);
+      expect(node.radixTreeEnabled).to.equal(false);
+      expect(node.radixTree.size()).to.equal(0);
+      expect(node.childMap.size).to.equal(0);
       expect(node.proofHash).to.equal(null);
+      expect(node.treeHeight).to.equal(0);
+      expect(node.treeSize).to.equal(0);
+      expect(node.treeBytes).to.equal(0);
+    });
+
+    it("reset", () => {
+      const version = 'ver';
+      const label = 'label';
+      const value = 'val';
+      const parentNode = new StateNode();
+      const proofHash = 'PH';
+      const treeHeight = 1;
+      const treeSize = 10;
+      const treeBytes = 100;
+
+      node.setVersion(version);
+      node._setLabel(label);
+      node.setValue(value);
+      node.addParent(parentNode);
+      node.setRadixTreeEnabled(true);
+      node.setProofHash(proofHash);
+      node.setTreeHeight(treeHeight);
+      node.setTreeSize(treeSize);
+      node.setTreeBytes(treeBytes);
+
+      node.reset();
       expect(node.version).to.equal(null);
+      expect(node.label).to.equal(null);
+      expect(node.isLeaf).to.equal(true);
+      expect(node.value).to.equal(null);
+      expect(node.parentSet.size).to.equal(0);
+      expect(node.radixTreeEnabled).to.equal(false);
+      expect(node.radixTree.size()).to.equal(0);
+      expect(node.childMap.size).to.equal(0);
+      expect(node.proofHash).to.equal(null);
+      expect(node.treeHeight).to.equal(0);
+      expect(node.treeSize).to.equal(0);
+      expect(node.treeBytes).to.equal(0);
     });
   });
 
@@ -91,13 +128,11 @@ describe("state-node", () => {
       expect(node2.version).to.equal('version1');
       expect(node2.label).to.equal(null);
       expect(node2.isLeaf).to.equal(true);
-      expect(node2.parentSet).to.not.be.null;
-      expect(node2.childMap).to.not.be.null;
-      assert.deepEqual(node2.getParentNodes(), []);
-      expect(node2.numParents()).to.equal(0);
-      assert.deepEqual(node2.getChildLabels(), []);
-      assert.deepEqual(node2.getChildNodes(), []);
       expect(node2.value).to.equal(null);
+      expect(node2.parentSet.size).to.equal(0);
+      expect(node2.radixTreeEnabled).to.equal(false);
+      expect(node2.radixTree.size()).to.equal(0);
+      expect(node2.childMap.size).to.equal(0);
       expect(node2.proofHash).to.equal(null);
       expect(node2.treeHeight).to.equal(0);
       expect(node2.treeSize).to.equal(0);
@@ -1405,12 +1440,10 @@ describe("state-node", () => {
   });
 
   describe("proof hash", () => {
-    it("getProofHash / setProofHash / resetProofHash", () => {
+    it("getProofHash / setProofHash", () => {
       expect(node.getProofHash()).to.equal(null);
       node.setProofHash('hash');
       expect(node.getProofHash()).to.equal('hash');
-      node.resetProofHash();
-      expect(node.getProofHash()).to.equal(null);
     });
   });
 
