@@ -36,7 +36,7 @@ class StateNode {
 
   reset() {
     this.setVersion(null);
-    this._setLabel(null);
+    this._resetLabel();
     this.setIsLeaf(true);
     this.resetValue();
     this.parentSet.clear();
