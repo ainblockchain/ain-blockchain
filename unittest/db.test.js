@@ -4390,10 +4390,10 @@ describe("Proof hash", () => {
       const ownersNode = node.db.getRefForReading(['owners', 'apps', 'test']);
       const rulesNode = node.db.getRefForReading(['rules', 'apps', 'test']);
       const functionNode = node.db.getRefForReading(['functions', 'apps', 'test']);
-      expect(valuesNode.getProofHash()).to.equal(valuesNode.buildProofHash());
-      expect(ownersNode.getProofHash()).to.equal(ownersNode.buildProofHash());
-      expect(rulesNode.getProofHash()).to.equal(rulesNode.buildProofHash());
-      expect(functionNode.getProofHash()).to.equal(functionNode.buildProofHash());
+      expect(valuesNode.getProofHash()).to.equal(valuesNode._buildProofHash());
+      expect(ownersNode.getProofHash()).to.equal(ownersNode._buildProofHash());
+      expect(rulesNode.getProofHash()).to.equal(rulesNode._buildProofHash());
+      expect(functionNode.getProofHash()).to.equal(functionNode._buildProofHash());
     });
 
     it("checks newly setup proof hash", () => {
@@ -4448,10 +4448,10 @@ describe("Proof hash", () => {
       const ownersNode = node.db.getRefForReading(['owners', 'apps', 'test']);
       const rulesNode = node.db.getRefForReading(['rules', 'apps', 'test']);
       const functionNode = node.db.getRefForReading(['functions', 'apps', 'test']);
-      expect(valuesNode.getProofHash()).to.equal(valuesNode.buildProofHash());
-      expect(ownersNode.getProofHash()).to.equal(ownersNode.buildProofHash());
-      expect(rulesNode.getProofHash()).to.equal(rulesNode.buildProofHash());
-      expect(functionNode.getProofHash()).to.equal(functionNode.buildProofHash());
+      expect(valuesNode.getProofHash()).to.equal(valuesNode._buildProofHash());
+      expect(ownersNode.getProofHash()).to.equal(ownersNode._buildProofHash());
+      expect(rulesNode.getProofHash()).to.equal(rulesNode._buildProofHash());
+      expect(functionNode.getProofHash()).to.equal(functionNode._buildProofHash());
     });
   });
 
