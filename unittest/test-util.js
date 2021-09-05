@@ -82,7 +82,8 @@ function addBlock(node, txs, votes, validators) {
 }
 
 async function waitUntilTxFinalized(servers, txHash) {
-  const MAX_ITERATION = 40;
+  const MAX_ITERATION = 100;
+  const SLEEP_TIME_MS = 1000;
   let iterCount = 0;
   const unchecked = new Set(servers);
   while (true) {
@@ -101,7 +102,7 @@ async function waitUntilTxFinalized(servers, txHash) {
         unchecked.delete(server);
       }
     }
-    await CommonUtil.sleep(3000);
+    await CommonUtil.sleep(SLEEP_TIME_MS);
     iterCount++;
   }
 }
@@ -208,7 +209,8 @@ function eraseStateGas(result, appNameList = []) {
   const erased = JSON.parse(JSON.stringify(result));
   _.set(erased, 'gas_amount_charged', 'erased');
   _.set(erased, 'gas_amount_total.state.service', 'erased');
-  for (const appName of appNameList) {
+  const stateApp = _.get(erased, 'gas_amount_total.state.app', {});
+  for (const appName of Object.keys(stateApp)) {
     _.set(erased, `gas_amount_total.state.app.${appName}`, 'erased');
   }
   return erased;
