@@ -3,6 +3,10 @@ const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 
+const {
+  NUM_CHILDREN_TO_ENABLE_RADIX_TREE,
+  NUM_CHILDREN_TO_DISABLE_RADIX_TREE,
+} = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 const {
@@ -1361,6 +1365,45 @@ describe("state-node", () => {
     });
   });
 
+  describe("dynamic radix tree", () => {
+    let stateNodeEnabled;
+    let stateNodeDisabled;
+
+    beforeEach(() => {
+      stateNodeEnabled = new StateNode();
+      stateNodeEnabled.setRadixTreeEnabled(true);  // radixTreeEnabled = true
+
+      stateNodeDisabled = new StateNode();
+      stateNodeDisabled.setRadixTreeEnabled(false);  // radixTreeEnabled = false
+    });
+
+    it("setChild() to call enableRadixTree()", () => {
+      for (let i = 1; i <= NUM_CHILDREN_TO_ENABLE_RADIX_TREE - 1; i++) {
+        const childLabel = `label_${i}`;
+        stateNodeDisabled.setChild(childLabel, new StateNode())
+      }
+
+      expect(stateNodeDisabled.getRadixTreeEnabled()).to.equal(false);
+      const childLabel = `label_${NUM_CHILDREN_TO_ENABLE_RADIX_TREE}`;
+      stateNodeDisabled.setChild(childLabel, new StateNode());
+      expect(stateNodeDisabled.getRadixTreeEnabled()).to.equal(true);
+      expect(stateNodeDisabled.numChildren()).to.equal(NUM_CHILDREN_TO_ENABLE_RADIX_TREE);
+    });
+
+    it("deleteChild() to call disableRadixTree()", () => {
+      for (let i = 1; i <= NUM_CHILDREN_TO_DISABLE_RADIX_TREE + 1; i++) {
+        const childLabel = `label_${i}`;
+        stateNodeEnabled.setChild(childLabel, new StateNode())
+      }
+
+      expect(stateNodeEnabled.getRadixTreeEnabled()).to.equal(true);
+      const childLabel = `label_${NUM_CHILDREN_TO_DISABLE_RADIX_TREE + 1}`;
+      stateNodeEnabled.deleteChild(childLabel);
+      expect(stateNodeEnabled.getRadixTreeEnabled()).to.equal(false);
+      expect(stateNodeEnabled.numChildren()).to.equal(NUM_CHILDREN_TO_DISABLE_RADIX_TREE);
+    });
+  });
+
   describe("proof hash", () => {
     it("getProofHash / setProofHash / resetProofHash", () => {
       expect(node.getProofHash()).to.equal(null);
@@ -1861,6 +1904,86 @@ describe("state-node", () => {
         },
         "0x11bbbb": "childProof2"
       });
+    });
+  });
+
+  describe("deleteRadixTree", () => {
+    it("delete with deleteParent = true when radixTreeEnabled = true", () => {
+      child1Enabled.setProofHash('proofHash1');
+      child2Enabled.setProofHash('proofHash2');
+      child3Enabled.setProofHash('proofHash3');
+      child4Enabled.setProofHash('proofHash4');
+
+      // delete with deleteParent = true
+      expect(stateTreeEnabled.deleteRadixTree()).to.equal(6);
+      // Check parents of state nodes
+      assert.deepEqual(child1Enabled.getParentNodes(), []);
+      assert.deepEqual(child1Enabled.getParentNodes(), []);
+      assert.deepEqual(child1Enabled.getParentNodes(), []);
+      assert.deepEqual(child1Enabled.getParentNodes(), []);
+    });
+
+    it("delete with deleteParent = false when radixTreeEnabled = true", () => {
+      child1Enabled.setProofHash('proofHash1');
+      child2Enabled.setProofHash('proofHash2');
+      child3Enabled.setProofHash('proofHash3');
+      child4Enabled.setProofHash('proofHash4');
+
+      // delete with deleteParent = false
+      expect(stateTreeEnabled.deleteRadixTree(false)).to.equal(6);
+      // Check parents of state nodes
+      assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
+      assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
+      assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
+      assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
+    });
+  });
+
+  describe("enableRadixTree / disableRadixTree", () => {
+    it("enable", () => {
+      child1Disabled.setProofHash('proofHash1');
+      child2Disabled.setProofHash('proofHash2');
+      child3Disabled.setProofHash('proofHash3');
+      child4Disabled.setProofHash('proofHash4');
+
+      const childLabelsBefore = stateTreeDisabled.getChildLabels();
+      const childNodesBefore = stateTreeDisabled.getChildNodes();
+
+      // enable
+      stateTreeDisabled.enableRadixTree();
+      assert.deepEqual(stateTreeDisabled.getChildLabels(), childLabelsBefore);
+      assert.deepEqual(stateTreeDisabled.getChildNodes(), childNodesBefore);
+      expect(stateTreeDisabled.radixTree.size()).to.equal(4);
+      expect(stateTreeDisabled.childMap.size).to.equal(0);
+      expect(stateTreeDisabled.getRadixTreeEnabled()).to.equal(true);
+      // Check parents of state nodes
+      assert.deepEqual(child1Disabled.getParentNodes(), [stateTreeDisabled]);
+      assert.deepEqual(child1Disabled.getParentNodes(), [stateTreeDisabled]);
+      assert.deepEqual(child1Disabled.getParentNodes(), [stateTreeDisabled]);
+      assert.deepEqual(child1Disabled.getParentNodes(), [stateTreeDisabled]);
+    });
+
+    it("disable", () => {
+      child1Enabled.setProofHash('proofHash1');
+      child2Enabled.setProofHash('proofHash2');
+      child3Enabled.setProofHash('proofHash3');
+      child4Enabled.setProofHash('proofHash4');
+
+      const childLabelsBefore = stateTreeEnabled.getChildLabels();
+      const childNodesBefore = stateTreeEnabled.getChildNodes();
+
+      // disable
+      stateTreeEnabled.disableRadixTree();
+      assert.deepEqual(stateTreeEnabled.getChildLabels(), childLabelsBefore);
+      assert.deepEqual(stateTreeEnabled.getChildNodes(), childNodesBefore);
+      expect(stateTreeEnabled.radixTree.size()).to.equal(0);
+      expect(stateTreeEnabled.childMap.size).to.equal(4);
+      expect(stateTreeEnabled.getRadixTreeEnabled()).to.equal(false);
+      // Check parents of state nodes
+      assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
+      assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
+      assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
+      assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
     });
   });
 });

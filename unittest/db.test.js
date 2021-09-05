@@ -2697,7 +2697,7 @@ describe("DB operations", () => {
             app: {},
           },
           state: {
-            service: 3541560
+            service: 3535732
           } 
         };
         const overSizeTxBody = {
@@ -2721,7 +2721,7 @@ describe("DB operations", () => {
         assert.deepEqual(res.code, 25);
         assert.deepEqual(res.error_message, "Exceeded state budget limit for services (10738674 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
-        assert.deepEqual(res.gas_cost_total, 3.5460599999999998);
+        assert.deepEqual(res.gas_cost_total, 3.540232);
       });
 
       it("cannot exceed apps state budget", () => {

@@ -23,6 +23,18 @@ class RadixNode {
     this.treeBytes = 0;
   }
 
+  reset() {
+    this.resetStateNode();
+    this.resetLabelRadix();
+    this.resetLabelSuffix();
+    this.resetParent();
+    this.radixChildMap.clear();
+    this.resetProofHash();
+    this.resetTreeHeight();
+    this.resetTreeSize();
+    this.resetTreeBytes();
+  }
+
   getStateNode() {
     return this.stateNode;
   }
@@ -195,6 +207,10 @@ class RadixNode {
     this.treeHeight = treeHeight;
   }
 
+  resetTreeHeight() {
+    this.setTreeHeight(0);
+  }
+
   getTreeSize() {
     return this.treeSize;
   }
@@ -203,12 +219,20 @@ class RadixNode {
     this.treeSize = treeSize;
   }
 
+  resetTreeSize() {
+    this.setTreeSize(0);
+  }
+
   getTreeBytes() {
     return this.treeBytes;
   }
 
   setTreeBytes(treeBytes) {
     this.treeBytes = treeBytes;
+  }
+
+  resetTreeBytes() {
+    this.setTreeBytes(0);
   }
 
   _buildProofHash() {
@@ -346,6 +370,27 @@ class RadixNode {
       this.setChild(child.getLabelRadix(), child.getLabelSuffix(), clonedChild);
       clonedChild.copyFrom(child, newParentStateNode, terminalNodeMap);
     }
+  }
+
+  /**
+   * Deletes radix tree.
+   * If parentStateNode is given, it deletes it from the terminal state nodes' parent set.
+   */
+  deleteRadixTree(parentStateNode = null) {
+    let numAffectedNodes = 0;
+
+    for (const child of this.getChildNodes()) {
+      numAffectedNodes += child.deleteRadixTree(parentStateNode);
+    }
+
+    if (parentStateNode !== null && this.hasStateNode()) {
+      const stateNode = this.getStateNode();
+      stateNode.deleteParent(parentStateNode);
+    }
+    this.reset();
+    numAffectedNodes++;
+
+    return numAffectedNodes;
   }
 
   /**

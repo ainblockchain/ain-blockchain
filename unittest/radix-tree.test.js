@@ -1112,7 +1112,6 @@ describe("radix-tree", () => {
       it("getProofOfState", () => {
         const label1 = '0x000aaa';
         const stateNode1 = new StateNode();
-        const stateNodePH1 = 'stateNodePH1';
         stateNode1.setProofHash('stateNodePH1');
 
         const label11 = '0x000aaa111';
@@ -1231,12 +1230,13 @@ describe("radix-tree", () => {
 
         // set state nodes
         tree.set(label1, stateNode1);
-        stateNode1._setLabel(label1);
         tree.set(label2, stateNode2);
-        stateNode2._setLabel(label2);
         tree.set(label21, stateNode21);
-        stateNode21._setLabel(label21);
         tree.set(label22, stateNode22);
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+        stateNode21._setLabel(label21);
         stateNode22._setLabel(label22);
 
         expect(tree.updateRadixInfoForRadixTree()).to.equal(6);
@@ -1282,6 +1282,98 @@ describe("radix-tree", () => {
           }
         });
         assert.deepEqual(newTree.toJsObject(true), tree.toJsObject(true));
+      });
+    })
+
+    describe("deleteRadixTree", () => {
+      let stateNode1;
+      let stateNode2;
+      let stateNode21;
+      let stateNode22;
+      
+      beforeEach(() => {
+        stateNode1 = new StateNode();
+        stateNode2 = new StateNode();
+        stateNode21 = new StateNode();
+        stateNode22 = new StateNode();
+      });
+
+      it("delete without parentStateNode", () => {
+        const parentStateNode = new StateNode();
+        parentStateNode._setLabel('parentStateNodeLabel')
+
+        stateNode1.addParent(parentStateNode);
+        stateNode2.addParent(parentStateNode);
+        stateNode21.addParent(parentStateNode);
+        stateNode22.addParent(parentStateNode);
+
+        const label1 = '0x000aaa';
+        const label2 = '0x000bbb';
+        const label21 = '0x000bbb111';
+        const label22 = '0x000bbb222';
+
+        // set state nodes
+        tree.set(label1, stateNode1);
+        tree.set(label2, stateNode2);
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+        stateNode21._setLabel(label21);
+        stateNode22._setLabel(label22);
+
+        expect(tree.deleteRadixTree()).to.equal(6);  // including internal nodes
+        // Check parents of state nodes
+        assert.deepEqual(stateNode1.getParentNodes(), [parentStateNode]);
+        assert.deepEqual(stateNode2.getParentNodes(), [parentStateNode]);
+        assert.deepEqual(stateNode21.getParentNodes(), [parentStateNode]);
+        assert.deepEqual(stateNode22.getParentNodes(), [parentStateNode]);
+        // Check root node
+        expect(tree.root.hasStateNode()).to.equal(false);
+        expect(tree.root.getLabelRadix()).to.equal('');
+        expect(tree.root.getLabelSuffix()).to.equal('');
+        expect(tree.root.hasParent()).to.equal(false);
+        expect(tree.root.numChildren()).to.equal(0);
+        expect(tree.root.getProofHash()).to.equal(null);
+        expect(tree.root.getTreeHeight()).to.equal(0);
+        expect(tree.root.getTreeSize()).to.equal(0);
+        expect(tree.root.getTreeBytes()).to.equal(0);
+        // Check terminalNodeMap
+        expect(tree.terminalNodeMap.size).to.equal(0);
+      });
+
+      it("delete with parentStateNode", () => {
+        const parentStateNode = new StateNode();
+        parentStateNode._setLabel('parentStateNodeLabel')
+
+        stateNode1.addParent(parentStateNode);
+        stateNode2.addParent(parentStateNode);
+        stateNode21.addParent(parentStateNode);
+        stateNode22.addParent(parentStateNode);
+
+        const label1 = '0x000aaa';
+        const label2 = '0x000bbb';
+        const label21 = '0x000bbb111';
+        const label22 = '0x000bbb222';
+
+        // set state nodes
+        tree.set(label1, stateNode1);
+        tree.set(label2, stateNode2);
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+        stateNode21._setLabel(label21);
+        stateNode22._setLabel(label22);
+
+        expect(tree.deleteRadixTree(parentStateNode)).to.equal(6);  // including internal nodes
+        // Check parents of state nodes
+        assert.deepEqual(stateNode1.getParentNodes(), []);
+        assert.deepEqual(stateNode2.getParentNodes(), []);
+        assert.deepEqual(stateNode21.getParentNodes(), []);
+        assert.deepEqual(stateNode22.getParentNodes(), []);
       });
     });
   });
