@@ -180,6 +180,10 @@ class CommonUtil {
     return '0x' + hexStr;
   }
 
+  static toBinaryString(str) {
+    return this.isString(str) ? Buffer.from(str).toString('binary') : '';
+  }
+
   static toCksumAddr(addr) {
     return ruleUtil.toCksumAddr(addr);
   }

@@ -33,6 +33,8 @@ const FeatureFlags = {
   enableRadixTreeLayers: true,  // Some test cases assume this value true.
   // Enables dynamic radix tree.
   enableDynamicRadixTree: false,  // Some test cases assume this value false.
+  // Enables biinary label for radix tree.
+  enableBinaryRadixLabel: false,  // Some test cases assume this value false.
 };
 
 // ** Environment variables **
