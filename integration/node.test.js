@@ -4283,9 +4283,6 @@ describe('Blockchain Node', () => {
               "service": 2
             },
             "state": {
-              "app": {
-                "test_service_create_app0": 'erased'
-              },
               "service": 'erased'
             }
           },
@@ -4396,9 +4393,6 @@ describe('Blockchain Node', () => {
               "service": 2
             },
             "state": {
-              "app": {
-                "test_service_create_app1": 'erased'
-              },
               "service": 'erased'
             }
           },
