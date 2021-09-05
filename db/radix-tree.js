@@ -272,25 +272,6 @@ class RadixTree {
     return this.root.getTreeBytes();
   }
 
-  deleteRadixTree(parentStateNode = null) {
-    const LOG_HEADER = 'deleteRadixTree';
-
-    for (const terminalNode of this.terminalNodeMap.values()) {
-      if (!terminalNode.hasStateNode()) {
-        logger.error(
-            `[${LOG_HEADER}] Terminal node without state node with label: ` +
-            `${terminalNode.getLabel()} at: ${new Error().stack}.`);
-        continue;
-      }
-      if (parentStateNode !== null) {
-        const childStateNode = terminalNode.getStateNode();
-        childStateNode.deleteParent(parentStateNode);
-      }
-    }
-    this.terminalNodeMap.clear();
-    this.root = new RadixNode();
-  }
-
   updateRadixInfoForRadixTree() {
     return this.root.updateRadixInfoForRadixTree();
   }
@@ -343,6 +324,11 @@ class RadixTree {
       }
       this.terminalNodeMap.set(stateLabel, terminalNode);
     }
+  }
+
+  deleteRadixTree(parentStateNode = null) {
+    this.terminalNodeMap.clear();
+    return this.root.deleteRadixTree(parentStateNode);
   }
 
   /**

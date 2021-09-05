@@ -248,25 +248,6 @@ class StateNode {
     this.radixTreeEnabled = radixTreeEnabled;
   }
 
-  enableRadixTree() {
-    // Make sure the insertion order is kept.
-    for (const [label, child] of this.childMap.entries()) {
-      this.radixTree.set(label, child);
-    }
-    this.childMap.clear();
-    this.setRadixTreeEnabled(true);
-  }
-
-  disableRadixTree() {
-    // Make sure the insertion order is kept.
-    for (const label of this.radixTree.labels()) {
-      const child = this.radixTree.get(label);
-      this.childMap.set(label, child);
-    }
-    this.deleteRadixTree(false);  // deleteParent = false
-    this.setRadixTreeEnabled(false);
-  }
-
   getChild(label) {
     let child;
     if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
@@ -422,10 +403,6 @@ class StateNode {
     this.treeBytes = treeBytes;
   }
 
-  deleteRadixTree(deleteParent = true) {
-    this.radixTree.deleteRadixTree(deleteParent ? this : null);
-  }
-
   /**
    * Returns newly buildt proof hash. If updatedChildLabel is given, it signifies that
    * only the child of the given child label among the children is not up-to-date now,
@@ -533,6 +510,29 @@ class StateNode {
     this.setTreeHeight(this.computeTreeHeight());
     this.setTreeSize(this.computeTreeSize());
     this.setTreeBytes(this.computeTreeBytes());
+  }
+
+  deleteRadixTree(deleteParent = true) {
+    return this.radixTree.deleteRadixTree(deleteParent ? this : null);
+  }
+
+  enableRadixTree() {
+    // Make sure the insertion order is kept.
+    for (const [label, child] of this.childMap.entries()) {
+      this.radixTree.set(label, child);
+    }
+    this.childMap.clear();
+    this.setRadixTreeEnabled(true);
+  }
+
+  disableRadixTree() {
+    // Make sure the insertion order is kept.
+    for (const label of this.radixTree.labels()) {
+      const child = this.radixTree.get(label);
+      this.childMap.set(label, child);
+    }
+    this.deleteRadixTree(false);  // deleteParent = false
+    this.setRadixTreeEnabled(false);
   }
 }
 
