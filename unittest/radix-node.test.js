@@ -53,17 +53,6 @@ describe("radix-node", () => {
 
       node.reset();
       expect(node.stateNode).to.equal(null);
-      expect(node.labelRadix).to.equal(labelRadix);
-      expect(node.labelSuffix).to.equal(labelSuffix);
-      expect(node.parent).to.equal(null);
-      expect(node.radixChildMap.size).to.equal(0);
-      expect(node.proofHash).to.equal(proofHash);  // not reset
-      expect(node.treeHeight).to.equal(treeHeight);  // not reset
-      expect(node.treeSize).to.equal(treeSize);  // not reset
-      expect(node.treeBytes).to.equal(treeBytes);  // not reset
-
-      node.reset(false);
-      expect(node.stateNode).to.equal(null);
       expect(node.labelRadix).to.equal('');
       expect(node.labelSuffix).to.equal('');
       expect(node.parent).to.equal(null);
