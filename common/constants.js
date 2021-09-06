@@ -138,7 +138,8 @@ const MessageTypes = {
  */
 const TrackerMessageTypes = {
   CONNECTION: 'CONNECTION',
-  CORRESPOND: 'CORRESPOND'
+  CORRESPOND: 'CORRESPOND',
+  UPDATE: 'UPDATE'
 };
 
 /**
