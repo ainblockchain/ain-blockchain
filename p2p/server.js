@@ -104,8 +104,6 @@ class P2pServer {
     this.wsServer.setMaxListeners(this.maxInbound);
     this.wsServer.on('connection', (socket) => {
       this.setServerSidePeerEventHandlers(socket);
-      const address = buildWsAddressFromSocket(socket);
-      // this.client.connectToPeer(address);
     });
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     await this.setUpIpAddresses();
@@ -429,6 +427,9 @@ class P2pServer {
                 return;
               }
               socket.send(JSON.stringify(payload));
+              if (!this.client.outbound[address]) {
+                this.client.connectToCorrespondingNode(address);
+              }
             }
             break;
           case MessageTypes.CONSENSUS:
