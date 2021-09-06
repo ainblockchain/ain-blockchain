@@ -135,6 +135,16 @@ class P2pClient {
     this.intervalConnection = null;
   }
 
+  connectToCorrespondingNode(address) {
+    const message = {
+      type: TrackerMessageTypes.CORRESPOND,
+      data: address
+    }
+    logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
+        `${JSON.stringify(message, null, 2)}`);
+    this.trackerWebSocket.send(JSON.stringify(message));
+  }
+
   updateNodeStatusToTracker() {
     const message = {
       type: TrackerMessageTypes.CONNECTION,
@@ -154,11 +164,25 @@ class P2pClient {
 
   async setTrackerEventHandlers() {
     this.trackerWebSocket.on('message', async (message) => {
-      const parsedMsg = JSON.parse(message);
-      logger.info(`\n<< Message from [TRACKER]: ${JSON.stringify(parsedMsg, null, 2)}`);
-      this.connectToPeers(parsedMsg.newManagedPeerInfoList);
-      if (this.server.node.state === BlockchainNodeStates.STARTING) {
-        await this.startNode(parsedMsg.numLivePeers);
+      const parsedMessage = JSON.parse(message);
+      logger.info(`\n<< Message from [TRACKER]: ${JSON.stringify(parsedMessage, null, 2)}`);
+      switch(_.get(parsedMessage, 'type')) {
+        case TrackerMessageTypes.CONNECTION:
+          const data = parsedMessage.data;
+          this.connectToPeers(data.newManagedPeerInfoList);
+          if (this.server.node.state === BlockchainNodeStates.STARTING) {
+            await this.startNode(data.numLivePeers);
+          }
+          break;
+        case TrackerMessageTypes.CORRESPOND:
+          const url = parsedMessage.data;
+          console.log(url)
+          this.connectToPeer(url);
+          break;
+        default:
+          logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
+              'specified. Ignore the message.');
+          break;
       }
     });
     this.trackerWebSocket.on('close', (code) => {

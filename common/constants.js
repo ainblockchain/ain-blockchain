@@ -137,7 +137,8 @@ const MessageTypes = {
  * @enum {string}
  */
 const TrackerMessageTypes = {
-  CONNECTION: 'CONNECTION'
+  CONNECTION: 'CONNECTION',
+  CORRESPOND: 'CORRESPOND'
 };
 
 /**

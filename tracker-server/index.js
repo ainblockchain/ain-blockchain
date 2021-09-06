@@ -127,14 +127,29 @@ server.on('connection', (ws) => {
         logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
         logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
         const newManagedPeerInfoList = assignRandomPeers(nodeInfo);
-        const msgToNode = {
-          newManagedPeerInfoList,
-          numLivePeers: getNumAliveNodes() - 1   // except for me.
+        const connectionMessage = {
+          type: TrackerMessageTypes.CONNECTION,
+          data: {
+            newManagedPeerInfoList,
+            numLivePeers: getNumAliveNodes() - 1   // except for me.
+          }
         };
         logger.info(`>> Message to node [${abbrAddr(nodeInfo.address)}]: ` +
-            `${JSON.stringify(msgToNode, null, 2)}`);
-        ws.send(JSON.stringify(msgToNode));
+            `${JSON.stringify(connectionMessage, null, 2)}`);
+        ws.send(JSON.stringify(connectionMessage));
         printNodesInfo();
+        break;
+      case TrackerMessageTypes.CORRESPOND:
+        const address = parsedMessage.data;
+        const correspondingNodeInfo = peerNodes[address];
+        const correspondMessage = {
+          type: TrackerMessageTypes.CORRESPOND,
+          data: correspondingNodeInfo.networkStatus.p2p.url,
+          numLivePeers: getNumAliveNodes() - 1   // except for me.
+        };
+        logger.info(`>> Message to node [${abbrAddr(correspondingNodeInfo.address)}]: ` +
+            `${JSON.stringify(correspondMessage, null, 2)}`);
+        ws.send(JSON.stringify(correspondMessage));
         break;
       default:
         logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
