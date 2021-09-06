@@ -23,6 +23,9 @@ describe("radix-node", () => {
       expect(node.parent).to.equal(null);
       expect(node.radixChildMap.size).to.equal(0);
       expect(node.proofHash).to.equal(null);
+      expect(node.treeHeight).to.equal(0);
+      expect(node.treeSize).to.equal(0);
+      expect(node.treeBytes).to.equal(0);
     });
   });
 
@@ -300,7 +303,7 @@ describe("radix-node", () => {
     });
   });
 
-  describe("proofHash", () => {
+  describe("state info", () => {
     const labelRadix1 = '1';
     const labelSuffix1 = '100';
     let child1;
@@ -330,9 +333,6 @@ describe("radix-node", () => {
 
     let stateNode1;
     const stateNodePH1 = 'stateNodePH1';
-
-    let stateNode2;
-    const stateNodePH2 = 'stateNodePH2';
 
     let stateNode11;
     const stateNodePH11 = 'stateNodePH11';
@@ -379,7 +379,7 @@ describe("radix-node", () => {
       child22.setStateNode(stateNode22);
     })
 
-    it("get / set / has / reset", () => {
+    it("get / set / reset proof hash", () => {
       const proofHash = 'proofHash';
 
       expect(node.getProofHash()).to.equal(null);
@@ -389,7 +389,31 @@ describe("radix-node", () => {
       expect(node.getProofHash()).to.equal(null);
     });
 
-    it("build", () => {
+    it("get / set tree height", () => {
+      const treeHeight = 10;
+
+      expect(node.getTreeHeight()).to.equal(0);
+      node.setTreeHeight(treeHeight);
+      expect(node.getTreeHeight()).to.equal(treeHeight);
+    });
+
+    it("get / set tree size", () => {
+      const treeSize = 100;
+
+      expect(node.getTreeSize()).to.equal(0);
+      node.setTreeSize(treeSize);
+      expect(node.getTreeSize()).to.equal(treeSize);
+    });
+
+    it("get / set tree bytes", () => {
+      const treeBytes = 1000;
+
+      expect(node.getTreeBytes()).to.equal(0);
+      node.setTreeBytes(treeBytes);
+      expect(node.getTreeBytes()).to.equal(treeBytes);
+    });
+
+    it("_buildProofHash", () => {
       const childPH1 = 'childPH1';
       const childPH2 = 'childPH2';
 
@@ -430,13 +454,84 @@ describe("radix-node", () => {
       expect(node._buildProofHash()).to.equal(proofHash1)
     });
 
-    it("update / verify", () => {
+    it("_buildTreeInfo", () => {
+      const stateNodeTH = 12;
+      const childTH1 = 10;
+      const childTH2 = 11;
+
+      const stateNodeTS = 120;
+      const childTS1 = 100;
+      const childTS2 = 110;
+
+      const stateNodeTB = 3200;
+      const childTB1 = 1000;
+      const childTB2 = 2100;
+
+      stateNode.setTreeHeight(stateNodeTH);
+      child1.setTreeHeight(childTH1);
+      child2.setTreeHeight(childTH2);
+
+      stateNode.setTreeSize(stateNodeTS);
+      child1.setTreeSize(childTS1);
+      child2.setTreeSize(childTS2);
+
+      stateNode.setTreeBytes(stateNodeTB);
+      child1.setTreeBytes(childTB1);
+      child2.setTreeBytes(childTB2);
+
+      node.setStateNode(stateNode);
+      node.setChild(labelRadix1, labelSuffix1, child1);
+      node.setChild(labelRadix2, labelSuffix2, child2);
+
+      assert.deepEqual(node.toJsObject(), {
+        "1100": {
+          ".label": null,
+          ".proof_hash": "stateNodePH1",
+        },
+        "2200": {
+        },
+        ".label": null,
+        ".proof_hash": "stateNodePH",
+      });
+
+      const treeInfo = node._buildTreeInfo();
+      expect(treeInfo.treeHeight).to.equal(Math.max(stateNodeTH, childTH1, childTH2));
+      expect(treeInfo.treeSize).to.equal(stateNodeTS + childTS1 + childTS2);
+      expect(treeInfo.treeBytes).to.equal(stateNodeTB + childTB1 + childTB2);
+    });
+
+    it("updateRadixInfo / verifyProofHash", () => {
       const childPH1 = 'childPH1';
       const childPH2 = 'childPH2';
+
+      const stateNodeTH = 12;
+      const childTH1 = 10;
+      const childTH2 = 11;
+
+      const stateNodeTS = 120;
+      const childTS1 = 100;
+      const childTS2 = 110;
+
+      const stateNodeTB = 3200;
+      const childTB1 = 1000;
+      const childTB2 = 2100;
 
       child1.setProofHash(childPH1);
       child2.setProofHash(childPH2);
 
+      stateNode.setTreeHeight(stateNodeTH);
+      child1.setTreeHeight(childTH1);
+      child2.setTreeHeight(childTH2);
+
+      stateNode.setTreeSize(stateNodeTS);
+      child1.setTreeSize(childTS1);
+      child2.setTreeSize(childTS2);
+
+      stateNode.setTreeBytes(stateNodeTB);
+      child1.setTreeBytes(childTB1);
+      child2.setTreeBytes(childTB2);
+
+      node.setStateNode(stateNode);
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
 
@@ -454,14 +549,20 @@ describe("radix-node", () => {
         ".radix_ph": null
       });
 
+      // Check proof hash
       node.resetProofHash();
       expect(node.verifyProofHash()).to.equal(false);
-      node.updateProofHash();
+      node.updateRadixInfo();
       expect(node.verifyProofHash()).to.equal(true);
       expect(node.getProofHash()).to.equal(node._buildProofHash());
+      // Check tree info
+      const treeInfo = node._buildTreeInfo();
+      expect(treeInfo.treeHeight).to.equal(Math.max(stateNodeTH, childTH1, childTH2));
+      expect(treeInfo.treeSize).to.equal(stateNodeTS + childTS1 + childTS2);
+      expect(treeInfo.treeBytes).to.equal(stateNodeTB + childTB1 + childTB2);
     });
 
-    it("updateProofHashForRadixSubtree", () => {
+    it("updateRadixInfoForRadixTree", () => {
       node.setStateNode(stateNode);
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
@@ -514,7 +615,7 @@ describe("radix-node", () => {
       expect(child22.verifyProofHash()).to.equal(false);
 
       // set
-      expect(node.updateProofHashForRadixSubtree()).to.equal(7);
+      expect(node.updateRadixInfoForRadixTree()).to.equal(7);
       expect(node.verifyProofHash()).to.equal(true);
       expect(child1.verifyProofHash()).to.equal(true);
       expect(child2.verifyProofHash()).to.equal(true);
@@ -534,7 +635,7 @@ describe("radix-node", () => {
       expect(child22.verifyProofHash()).to.equal(true);
     });
 
-    it("updateProofHashForRadixPath", () => {
+    it("updateRadixInfoForRadixPath", () => {
       node.setStateNode(stateNode);
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
@@ -587,7 +688,7 @@ describe("radix-node", () => {
       expect(child22.verifyProofHash()).to.equal(false);
 
       // update
-      expect(child21.updateProofHashForRadixPath()).to.equal(3);
+      expect(child21.updateRadixInfoForRadixPath()).to.equal(3);
       expect(node.verifyProofHash()).to.equal(true);
       expect(child1.verifyProofHash()).to.equal(false);
       expect(child2.verifyProofHash()).to.equal(true);
@@ -597,7 +698,7 @@ describe("radix-node", () => {
       expect(child22.verifyProofHash()).to.equal(false);
     });
 
-    it("verifyProofHashForRadixSubtree", () => {
+    it("verifyProofHashForRadixTree", () => {
       node.setStateNode(stateNode);
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
@@ -641,19 +742,19 @@ describe("radix-node", () => {
       });
 
       // initial status
-      expect(node.verifyProofHashForRadixSubtree()).to.equal(false);
+      expect(node.verifyProofHashForRadixTree()).to.equal(false);
 
       // set
-      expect(node.updateProofHashForRadixSubtree()).to.equal(7);
-      expect(node.verifyProofHashForRadixSubtree()).to.equal(true);
+      expect(node.updateRadixInfoForRadixTree()).to.equal(7);
+      expect(node.verifyProofHashForRadixTree()).to.equal(true);
 
       // change of a state node's proof hash
       stateNode21.setProofHash('another PH');
-      expect(node.verifyProofHashForRadixSubtree()).to.equal(false);
+      expect(node.verifyProofHashForRadixTree()).to.equal(false);
 
       // update
-      expect(child21.updateProofHashForRadixPath()).to.equal(3);
-      expect(node.verifyProofHashForRadixSubtree()).to.equal(true);
+      expect(child21.updateRadixInfoForRadixPath()).to.equal(3);
+      expect(node.verifyProofHashForRadixTree()).to.equal(true);
     });
 
     it("getProofOfRadixNode", () => {
@@ -665,7 +766,7 @@ describe("radix-node", () => {
       child2.setChild(labelRadix21, labelSuffix21, child21);
       child2.setChild(labelRadix22, labelSuffix22, child22);
 
-      expect(node.updateProofHashForRadixSubtree()).to.equal(7);
+      expect(node.updateRadixInfoForRadixTree()).to.equal(7);
 
       assert.deepEqual(node.toJsObject(true), {
         "1100": {
@@ -739,6 +840,7 @@ describe("radix-node", () => {
   });
 
   describe("utils", () => {
+    let stateNode;
     let stateNode1;
     let stateNode2;
     let stateNode21;
@@ -749,101 +851,174 @@ describe("radix-node", () => {
     let child22;
 
     beforeEach(() => {
+      stateNode = new StateNode();
+      stateNode.setProofHash('stateNodePH');
+      stateNode.setTreeHeight(1);
+      stateNode.setTreeSize(10);
+      stateNode.setTreeBytes(100);
+
       stateNode1 = new StateNode();
       stateNode1.setProofHash('stateNodePH1');
+      stateNode1.setTreeHeight(2);
+      stateNode1.setTreeSize(20);
+      stateNode1.setTreeBytes(200);
+
       stateNode2 = new StateNode();
       stateNode2.setProofHash('stateNodePH2');
+      stateNode2.setTreeHeight(3);
+      stateNode2.setTreeSize(30);
+      stateNode2.setTreeBytes(300);
+
       stateNode21 = new StateNode();
       stateNode21.setProofHash('stateNodePH21');
+      stateNode21.setTreeHeight(4);
+      stateNode21.setTreeSize(40);
+      stateNode21.setTreeBytes(400);
+
       stateNode22 = new StateNode();
       stateNode22.setProofHash('stateNodePH22');
+      stateNode22.setTreeHeight(5);
+      stateNode22.setTreeSize(50);
+      stateNode22.setTreeBytes(500);
 
       child1 = new RadixNode();
-      child1.setProofHash('childPH1');
       child1.setStateNode(stateNode1);
 
       child2 = new RadixNode();
-      child2.setProofHash('childPH2');
       child2.setStateNode(stateNode2);
 
       child21 = new RadixNode();
-      child21.setProofHash('childPH21');
       child21.setStateNode(stateNode21);
 
       child22 = new RadixNode();
-      child22.setProofHash('childPH22');
       child22.setStateNode(stateNode22);
 
-      node.setChild('0', '001', child1);
-      node.setChild('1', '002', child2);
-      child2.setChild('2', '021', child21);
-      child2.setChild('3', '022', child22);
+      node.setChild('1', '001', child1);
+      node.setChild('2', '002', child2);
+      child2.setChild('1', '021', child21);
+      child2.setChild('2', '022', child22);
+
+      stateNode1._setLabel('1001');
+      stateNode2._setLabel('2002');
+      stateNode21._setLabel('1021');
+      stateNode22._setLabel('2022');
+
+      node.updateRadixInfoForRadixTree();
     });
 
     it("copyFrom", () => {
+      const newParentStateNode = new StateNode();
+      const terminalNodeMap = new Map();
       const newNode = new RadixNode();
-      newNode.copyFrom(node);
-      assert.deepEqual(newNode.toJsObject(), {
-        "1002": {
-          "2021": {
-            ".label": null,
-            ".proof_hash": "stateNodePH21"
-          },
-          "3022": {
-            ".label": null,
-            ".proof_hash": "stateNodePH22"
-          },
-          ".label": null,
-          ".proof_hash": "stateNodePH2"
+      newNode.copyFrom(node, newParentStateNode, terminalNodeMap);
+      assert.deepEqual(newNode.toJsObject(true, true), {
+        "1001": {
+          ".label": "1001",
+          ".proof_hash": "stateNodePH1",
+          ".radix_ph": "0xc6b77f2d527751603d41b89bb7bac0d2a51dfdb3636b37f6d0792676bbe48795",
+          ".tree_bytes": 208,
+          ".tree_height": 2,
+          ".tree_size": 20
         },
-        "0001": {
-          ".label": null,
-          ".proof_hash": "stateNodePH1"
-        }
+        "2002": {
+          "1021": {
+            ".label": "1021",
+            ".proof_hash": "stateNodePH21",
+            ".radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7",
+            ".tree_bytes": 408,
+            ".tree_height": 4,
+            ".tree_size": 40
+          },
+          "2022": {
+            ".label": "2022",
+            ".proof_hash": "stateNodePH22",
+            ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2",
+            ".tree_bytes": 508,
+            ".tree_height": 5,
+            ".tree_size": 50
+          },
+          ".label": "2002",
+          ".proof_hash": "stateNodePH2",
+          ".radix_ph": "0x5587f3fd7b1217631c9e4d531dbd3084eb902913bdbf5d096d4b8eb16585af7a",
+          ".tree_bytes": 1224,
+          ".tree_height": 5,
+          ".tree_size": 120
+        },
+        ".radix_ph": "0x22962a7f8fabb4acd8e48d79a9cb5556a99aa796e78da3a6864b58466ae3d772",
+        ".tree_bytes": 1432,
+        ".tree_height": 5,
+        ".tree_size": 140
       });
+      assert.deepEqual(newNode.toJsObject(true, true), node.toJsObject(true, true));
+      // Check terminalNodeMap
+      expect(terminalNodeMap.size).to.equal(4);
+      expect(terminalNodeMap.has('1001')).to.equal(true);
+      expect(terminalNodeMap.has('2002')).to.equal(true);
+      expect(terminalNodeMap.has('1021')).to.equal(true);
+      expect(terminalNodeMap.has('2022')).to.equal(true);
+      // Check parents
+      assert.deepEqual(stateNode1.getParentNodes(), [newParentStateNode]);
+      assert.deepEqual(stateNode2.getParentNodes(), [newParentStateNode]);
+      assert.deepEqual(stateNode21.getParentNodes(), [newParentStateNode]);
+      assert.deepEqual(stateNode22.getParentNodes(), [newParentStateNode]);
     });
 
     it("toJsObject", () => {
       assert.deepEqual(node.toJsObject(), {
-        "1002": {
-          "2021": {
-            ".label": null,
+        "1001": {
+          ".label": "1001",
+          ".proof_hash": "stateNodePH1"
+        },
+        "2002": {
+          "1021": {
+            ".label": "1021",
             ".proof_hash": "stateNodePH21"
           },
-          "3022": {
-            ".label": null,
+          "2022": {
+            ".label": "2022",
             ".proof_hash": "stateNodePH22"
           },
-          ".label": null,
+          ".label": "2002",
           ".proof_hash": "stateNodePH2"
-        },
-        "0001": {
-          ".label": null,
-          ".proof_hash": "stateNodePH1"
         }
       });
       assert.deepEqual(node.toJsObject(true, true), {
-        "1002": {
-          "2021": {
-            ".label": null,
-            ".proof_hash": "stateNodePH21",
-            ".radix_ph": "childPH21"
-          },
-          "3022": {
-            ".label": null,
-            ".proof_hash": "stateNodePH22",
-            ".radix_ph": "childPH22"
-          },
-          ".label": null,
-          ".proof_hash": "stateNodePH2",
-          ".radix_ph": "childPH2"
-        },
-        ".radix_ph": null,
-        "0001": {
-          ".label": null,
+        "1001": {
+          ".label": "1001",
           ".proof_hash": "stateNodePH1",
-          ".radix_ph": "childPH1"
-        }
+          ".radix_ph": "0xc6b77f2d527751603d41b89bb7bac0d2a51dfdb3636b37f6d0792676bbe48795",
+          ".tree_bytes": 208,
+          ".tree_height": 2,
+          ".tree_size": 20
+        },
+        "2002": {
+          "1021": {
+            ".label": "1021",
+            ".proof_hash": "stateNodePH21",
+            ".radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7",
+            ".tree_bytes": 408,
+            ".tree_height": 4,
+            ".tree_size": 40
+          },
+          "2022": {
+            ".label": "2022",
+            ".proof_hash": "stateNodePH22",
+            ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2",
+            ".tree_bytes": 508,
+            ".tree_height": 5,
+            ".tree_size": 50
+          },
+          ".label": "2002",
+          ".proof_hash": "stateNodePH2",
+          ".radix_ph": "0x5587f3fd7b1217631c9e4d531dbd3084eb902913bdbf5d096d4b8eb16585af7a",
+          ".tree_bytes": 1224,
+          ".tree_height": 5,
+          ".tree_size": 120
+        },
+        ".radix_ph": "0x22962a7f8fabb4acd8e48d79a9cb5556a99aa796e78da3a6864b58466ae3d772",
+        ".tree_bytes": 1432,
+        ".tree_height": 5,
+        ".tree_size": 140
       });
     });
   });

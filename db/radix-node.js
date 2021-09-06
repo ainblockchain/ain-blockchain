@@ -1,12 +1,11 @@
 const logger = require('../logger')('RADIX_NODE');
 
+const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
-  FeatureFlags,
   HASH_DELIMITER,
   ProofProperties,
 } = require('../common/constants');
-const RadixChildMap = require('./radix-child-map');
 
 /**
  * Implements Radix Node, which is used as a component of RadixTree.
@@ -17,12 +16,11 @@ class RadixNode {
     this.labelRadix = '';
     this.labelSuffix = '';
     this.parent = null;
-    if (FeatureFlags.enableArrayRadixChildMap) {
-      this.radixChildMap = new RadixChildMap();
-    } else {
-      this.radixChildMap = new Map();
-    }
+    this.radixChildMap = new Map();
     this.proofHash = null;
+    this.treeHeight = 0;
+    this.treeSize = 0;
+    this.treeBytes = 0;
   }
 
   getStateNode() {
@@ -161,6 +159,7 @@ class RadixNode {
     child.resetLabelRadix();
     child.resetLabelSuffix();
     child.resetParent();
+    child.resetProofHash();
     return true;
   }
 
@@ -188,6 +187,30 @@ class RadixNode {
     this.setProofHash(null);
   }
 
+  getTreeHeight() {
+    return this.treeHeight;
+  }
+
+  setTreeHeight(treeHeight) {
+    this.treeHeight = treeHeight;
+  }
+
+  getTreeSize() {
+    return this.treeSize;
+  }
+
+  setTreeSize(treeSize) {
+    this.treeSize = treeSize;
+  }
+
+  getTreeBytes() {
+    return this.treeBytes;
+  }
+
+  setTreeBytes(treeBytes) {
+    this.treeBytes = treeBytes;
+  }
+
   _buildProofHash() {
     let preimage = '';
     if (this.hasStateNode()) {
@@ -206,40 +229,76 @@ class RadixNode {
     return this.getProofHash() === this._buildProofHash();
   }
 
-  updateProofHash() {
-    this.setProofHash(this._buildProofHash());
+  _buildTreeInfo() {
+    let treeHeight;
+    let treeSize;
+    let treeBytes;
+    if (this.hasStateNode()) {
+      const stateNode = this.getStateNode();
+      treeHeight = stateNode.getTreeHeight();
+      treeSize = stateNode.getTreeSize();
+      const stateNodeLabel = CommonUtil.stringOrEmpty(stateNode.getLabel());
+      treeBytes = sizeof(stateNodeLabel) + stateNode.getTreeBytes();
+    } else {
+      treeHeight = 0;
+      treeSize = 0;
+      treeBytes = 0;
+    }
+    const initialValues = {
+      treeHeight,
+      treeSize,
+      treeBytes,
+    };
+    return this.getChildNodes().reduce((acc, cur) => {
+      const newTreeHeight = Math.max(acc.treeHeight, cur.getTreeHeight());
+      const newTreeSize = acc.treeSize + cur.getTreeSize();
+      const newTreeBytes = acc.treeBytes + cur.getTreeBytes();
+      return {
+        treeHeight: newTreeHeight,
+        treeSize: newTreeSize,
+        treeBytes: newTreeBytes,
+      };
+    }, initialValues);
   }
 
-  updateProofHashForRadixSubtree() {
+  updateRadixInfo() {
+    this.setProofHash(this._buildProofHash());
+    const treeInfo = this._buildTreeInfo();
+    this.setTreeHeight(treeInfo.treeHeight);
+    this.setTreeSize(treeInfo.treeSize);
+    this.setTreeBytes(treeInfo.treeBytes);
+  }
+
+  updateRadixInfoForRadixTree() {
     let numAffectedNodes = 0;
     for (const child of this.getChildNodes()) {
-      numAffectedNodes += child.updateProofHashForRadixSubtree();
+      numAffectedNodes += child.updateRadixInfoForRadixTree();
     }
-    this.updateProofHash();
+    this.updateRadixInfo();
     numAffectedNodes++;
 
     return numAffectedNodes;
   }
 
-  updateProofHashForRadixPath() {
+  updateRadixInfoForRadixPath() {
     let numAffectedNodes = 0;
     let curNode = this;
-    curNode.updateProofHash();
+    curNode.updateRadixInfo();
     numAffectedNodes++;
     while (curNode.hasParent()) {
       curNode = curNode.getParent();
-      curNode.updateProofHash();
+      curNode.updateRadixInfo();
       numAffectedNodes++;
     }
     return numAffectedNodes;
   }
 
-  verifyProofHashForRadixSubtree() {
+  verifyProofHashForRadixTree() {
     if (!this.verifyProofHash()) {
       return false;
     }
     for (const child of this.getChildNodes()) {
-      if (!child.verifyProofHashForRadixSubtree()) {
+      if (!child.verifyProofHashForRadixTree()) {
         return false;
       }
     }
@@ -269,19 +328,23 @@ class RadixNode {
     return proof;
   }
 
-  copyFrom(radixNode, newParentStateNode) {
+  copyFrom(radixNode, newParentStateNode, terminalNodeMap) {
     if (radixNode.hasStateNode()) {
       const stateNode = radixNode.getStateNode();
       this.setStateNode(stateNode);
-      stateNode.addParent(newParentStateNode);
+      stateNode.addParent(newParentStateNode);  // Add new parent state node.
+      terminalNodeMap.set(stateNode.getLabel(), this);
     }
     this.setLabelRadix(radixNode.getLabelRadix());
     this.setLabelSuffix(radixNode.getLabelSuffix());
     this.setProofHash(radixNode.getProofHash());
+    this.setTreeHeight(radixNode.getTreeHeight());
+    this.setTreeSize(radixNode.getTreeSize());
+    this.setTreeBytes(radixNode.getTreeBytes());
     for (const child of radixNode.getChildNodes()) {
       const clonedChild = new RadixNode();
       this.setChild(child.getLabelRadix(), child.getLabelSuffix(), clonedChild);
-      clonedChild.copyFrom(child, newParentStateNode);
+      clonedChild.copyFrom(child, newParentStateNode, terminalNodeMap);
     }
   }
 
@@ -289,10 +352,15 @@ class RadixNode {
    * Converts the subtree to a js object.
    * This is for testing / debugging purpose.
    */
-  toJsObject(withProofHash = false) {
+  toJsObject(withProofHash = false, withTreeInfo = false) {
     const obj = {};
     if (withProofHash) {
       obj[ProofProperties.RADIX_PROOF_HASH] = this.getProofHash();
+    }
+    if (withTreeInfo) {
+      obj[ProofProperties.TREE_HEIGHT] = this.getTreeHeight();
+      obj[ProofProperties.TREE_SIZE] = this.getTreeSize();
+      obj[ProofProperties.TREE_BYTES] = this.getTreeBytes();
     }
     if (this.hasStateNode()) {
       const stateNode = this.getStateNode();
@@ -300,7 +368,7 @@ class RadixNode {
       obj[ProofProperties.PROOF_HASH] = stateNode.getProofHash();
     }
     for (const child of this.getChildNodes()) {
-      obj[child.getLabel()] = child.toJsObject(withProofHash);
+      obj[child.getLabel()] = child.toJsObject(withProofHash, withTreeInfo);
     }
     return obj;
   }

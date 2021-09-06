@@ -8,9 +8,8 @@ const assert = chai.assert;
 describe("radix-tree", () => {
   describe("Utils", () => {
     it("_toHexLabel", () => {
-      const tree = new RadixTree();
-      expect(tree._toHexLabel('0x1234567890abcdef')).to.equal('1234567890abcdef');
-      expect(tree._toHexLabel('aAzZ')).to.equal('61417a5a');
+      expect(RadixTree._toHexLabel('0x1234567890abcdef')).to.equal('1234567890abcdef');
+      expect(RadixTree._toHexLabel('aAzZ')).to.equal('61417a5a');
     });
 
     it("_matchLabelSuffix with empty label suffix", () => {
@@ -88,104 +87,14 @@ describe("radix-tree", () => {
     });
   });
 
-  describe("Map APIs", () => {
+  describe("APIs", () => {
     let tree;
 
     beforeEach(() => {
       tree = new RadixTree();
     })
 
-    describe("_setInMap / _deleteFromMap / _hasInMap / _getFromMap / labels / stateNodes / size", () => {
-      const stateNode1 = new StateNode();
-      const stateNode2 = new StateNode();
-
-      it("with non-empty label suffices", () => {
-        const label1 = '0x000111aaa';
-        const label2 = '0x000111bbb';
-
-        expect(tree._getFromMap(label1)).to.equal(null);
-        expect(tree._getFromMap(label2)).to.equal(null);
-        expect(tree._hasInMap(label1)).to.equal(false);
-        expect(tree._hasInMap(label2)).to.equal(false);
-        assert.deepEqual(tree.labels(), []);
-        assert.deepEqual(tree.stateNodes(), []);
-        assert.deepEqual(tree.size(), 0);
-
-        // set first node
-        tree._setInMap(label1, stateNode1);
-
-        expect(tree._getFromMap(label1)).to.equal(stateNode1);
-        expect(tree._getFromMap(label2)).to.equal(null);
-        expect(tree._hasInMap(label1)).to.equal(true);
-        expect(tree._hasInMap(label2)).to.equal(false);
-        assert.deepEqual(tree.labels(), [label1]);
-        assert.deepEqual(tree.stateNodes(), [stateNode1]);
-        assert.deepEqual(tree.size(), 1);
-
-        // set second node
-        tree._setInMap(label2, stateNode2);
-
-        expect(tree._getFromMap(label1)).to.equal(stateNode1);
-        expect(tree._getFromMap(label2)).to.equal(stateNode2);
-        expect(tree._hasInMap(label1)).to.equal(true);
-        expect(tree._hasInMap(label2)).to.equal(true);
-        assert.deepEqual(tree.labels(), [label1, label2]);
-        assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
-        assert.deepEqual(tree.size(), 2);
-
-        // delete first node
-        tree._deleteFromMap(label1);
-
-        expect(tree._getFromMap(label1)).to.equal(null);
-        expect(tree._getFromMap(label2)).to.equal(stateNode2);
-        expect(tree._hasInMap(label1)).to.equal(false);
-        expect(tree._hasInMap(label2)).to.equal(true);
-        assert.deepEqual(tree.labels(), [label2]);
-        assert.deepEqual(tree.stateNodes(), [stateNode2]);
-        assert.deepEqual(tree.size(), 1);
-
-        // delete second node
-        tree._deleteFromMap(label2);
-
-        expect(tree._getFromMap(label1)).to.equal(null);
-        expect(tree._getFromMap(label2)).to.equal(null);
-        expect(tree._hasInMap(label1)).to.equal(false);
-        expect(tree._hasInMap(label2)).to.equal(false);
-        assert.deepEqual(tree.labels(), []);
-        assert.deepEqual(tree.stateNodes(), []);
-        assert.deepEqual(tree.size(), 0);
-      });
-    });
-
-    describe("_copyMapFrom", () => {
-      const stateNode1 = new StateNode();
-      const stateNode2 = new StateNode();
-
-      it("copy with non-empty label suffices", () => {
-        const label1 = '0x000111aaa';
-        const label2 = '0x000111bbb';
-
-        // set state nodes
-        tree._setInMap(label1, stateNode1);
-        tree._setInMap(label2, stateNode2);
-
-        const newTree = new RadixTree();
-        newTree._copyMapFrom(tree);
-        assert.deepEqual(newTree.labels(), [label1, label2]);
-        assert.deepEqual(newTree.stateNodes(), [stateNode1, stateNode2]);
-        assert.deepEqual(newTree.size(), 2);
-      });
-    });
-  });
-
-  describe("Tree APIs", () => {
-    let tree;
-
-    beforeEach(() => {
-      tree = new RadixTree();
-    })
-
-    describe("_setInTree / _deleteFromTree / _hasInTree / _getFromTree", () => {
+    describe("get / has / set / delete", () => {
       let stateNode1;
       let stateNode2;
       let stateNode21;
@@ -204,11 +113,11 @@ describe("radix-tree", () => {
         const invalidStateNode = new RadixNode();
         const label = '0x000aaa';
 
-        expect(tree._setInTree(label, invalidStateNode)).to.equal(false);
-        expect(tree._setInTree(label, '')).to.equal(false);
-        expect(tree._setInTree(label, true)).to.equal(false);
-        expect(tree._setInTree(label, null)).to.equal(false);
-        expect(tree._setInTree(label, undefined)).to.equal(false);
+        expect(tree.set(label, invalidStateNode)).to.equal(false);
+        expect(tree.set(label, '')).to.equal(false);
+        expect(tree.set(label, true)).to.equal(false);
+        expect(tree.set(label, null)).to.equal(false);
+        expect(tree.set(label, undefined)).to.equal(false);
       });
 
       it("set / delete without common label prefix - without label suffices", () => {
@@ -218,18 +127,18 @@ describe("radix-tree", () => {
         stateNode1._setLabel(label1);
         stateNode2._setLabel(label2);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null
         });
 
         // set first node
-        tree._setInTree(label1, stateNode1);
+        tree.set(label1, stateNode1);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "a": {
@@ -240,12 +149,12 @@ describe("radix-tree", () => {
         });
 
         // set second node
-        tree._setInTree(label2, stateNode2);
+        tree.set(label2, stateNode2);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "a": {
@@ -261,11 +170,11 @@ describe("radix-tree", () => {
         });
 
         // delete first node
-        tree._deleteFromTree(label1);
+        tree.delete(label1);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "b": {
@@ -276,10 +185,10 @@ describe("radix-tree", () => {
         });
 
         // delete second node
-        tree._deleteFromTree(label2);
+        tree.delete(label2);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null
         });
@@ -292,18 +201,18 @@ describe("radix-tree", () => {
         stateNode1._setLabel(label1);
         stateNode2._setLabel(label2);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null
         });
 
         // set first node
-        tree._setInTree(label1, stateNode1);
+        tree.set(label1, stateNode1);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "aaa": {
@@ -314,12 +223,12 @@ describe("radix-tree", () => {
         });
 
         // set second node
-        tree._setInTree(label2, stateNode2);
+        tree.set(label2, stateNode2);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "aaa": {
@@ -335,11 +244,11 @@ describe("radix-tree", () => {
         });
 
         // delete first node
-        tree._deleteFromTree(label1);
+        tree.delete(label1);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "bbb": {
@@ -350,10 +259,10 @@ describe("radix-tree", () => {
         });
 
         // delete second node
-        tree._deleteFromTree(label2);
+        tree.delete(label2);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null
         });
@@ -366,13 +275,13 @@ describe("radix-tree", () => {
         stateNode1._setLabel(label1);
         stateNode2._setLabel(label2);
 
-        tree._setInTree(label1, stateNode1);
-        tree._setInTree(label2, stateNode2);
+        tree.set(label1, stateNode1);
+        tree.set(label2, stateNode2);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "aa": {
@@ -395,13 +304,13 @@ describe("radix-tree", () => {
         stateNode1._setLabel(label1);
         stateNode2._setLabel(label2);
 
-        tree._setInTree(label1, stateNode1);
-        tree._setInTree(label2, stateNode2);
+        tree.set(label1, stateNode1);
+        tree.set(label2, stateNode2);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "aa": {
@@ -423,11 +332,11 @@ describe("radix-tree", () => {
         stateNode1._setLabel(label);
         stateNode2._setLabel(label + '_');  // tweak in order to distinguish
 
-        tree._setInTree(label, stateNode1);
-        tree._setInTree(label, stateNode2);
+        tree.set(label, stateNode1);
+        tree.set(label, stateNode2);
 
-        expect(tree._hasInTree(label)).to.equal(true);
-        expect(tree._getFromTree(label)).to.equal(stateNode2);
+        expect(tree.has(label)).to.equal(true);
+        expect(tree.get(label)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "aa": {
@@ -450,21 +359,21 @@ describe("radix-tree", () => {
         stateNode22._setLabel(label22);
 
         // set first node
-        tree._setInTree(label1, stateNode1);
+        tree.set(label1, stateNode1);
         // set second node
-        tree._setInTree(label2, stateNode2);
+        tree.set(label2, stateNode2);
         // set children
-        tree._setInTree(label21, stateNode21);
-        tree._setInTree(label22, stateNode22);
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
-        expect(tree._hasInTree(label21)).to.equal(true);
-        expect(tree._getFromTree(label21)).to.equal(stateNode21);
-        expect(tree._hasInTree(label22)).to.equal(true);
-        expect(tree._getFromTree(label22)).to.equal(stateNode22);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "aaa": {
@@ -490,15 +399,15 @@ describe("radix-tree", () => {
         });
 
         // delete first node
-        tree._deleteFromTree(label1);
+        tree.delete(label1);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
-        expect(tree._hasInTree(label21)).to.equal(true);
-        expect(tree._getFromTree(label21)).to.equal(stateNode21);
-        expect(tree._hasInTree(label22)).to.equal(true);
-        expect(tree._getFromTree(label22)).to.equal(stateNode22);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "bbb": {
@@ -527,14 +436,14 @@ describe("radix-tree", () => {
         stateNode21._setLabel(label21);
 
         // set a node
-        tree._setInTree(label2, stateNode2);
+        tree.set(label2, stateNode2);
         // set a child
-        tree._setInTree(label21, stateNode21);
+        tree.set(label21, stateNode21);
 
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
-        expect(tree._hasInTree(label21)).to.equal(true);
-        expect(tree._getFromTree(label21)).to.equal(stateNode21);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "bbb": {
@@ -550,11 +459,11 @@ describe("radix-tree", () => {
         });
 
         // delete the node
-        tree._deleteFromTree(label2);
+        tree.delete(label2);
 
-        expect(tree._hasInTree(label2)).to.equal(false);
-        expect(tree._hasInTree(label21)).to.equal(true);
-        expect(tree._getFromTree(label21)).to.equal(stateNode21);
+        expect(tree.has(label2)).to.equal(false);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "bbb111": {
@@ -572,18 +481,18 @@ describe("radix-tree", () => {
         stateNode1._setLabel(label1);
         stateNode2._setLabel(label2);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null
         });
 
         // set first node
-        tree._setInTree(label1, stateNode1);
+        tree.set(label1, stateNode1);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000a": {
@@ -594,12 +503,12 @@ describe("radix-tree", () => {
         });
 
         // set second node
-        tree._setInTree(label2, stateNode2);
+        tree.set(label2, stateNode2);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000": {
@@ -618,11 +527,11 @@ describe("radix-tree", () => {
         });
 
         // delete first node
-        tree._deleteFromTree(label1);
+        tree.delete(label1);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000b": {
@@ -633,10 +542,10 @@ describe("radix-tree", () => {
         });
 
         // delete second node
-        tree._deleteFromTree(label2);
+        tree.delete(label2);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null
         });
@@ -649,18 +558,18 @@ describe("radix-tree", () => {
         stateNode1._setLabel(label1);
         stateNode2._setLabel(label2);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null
         });
 
         // set first node
-        tree._setInTree(label1, stateNode1);
+        tree.set(label1, stateNode1);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000aaa": {
@@ -671,12 +580,12 @@ describe("radix-tree", () => {
         });
 
         // set second node
-        tree._setInTree(label2, stateNode2);
+        tree.set(label2, stateNode2);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000": {
@@ -695,11 +604,11 @@ describe("radix-tree", () => {
         });
 
         // delete first node
-        tree._deleteFromTree(label1);
+        tree.delete(label1);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000bbb": {
@@ -710,12 +619,80 @@ describe("radix-tree", () => {
         });
 
         // delete second node
-        tree._deleteFromTree(label2);
+        tree.delete(label2);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(false);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(false);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null
+        });
+      });
+
+      it("delete with updateProofHash = true - with common label prefix, with label suffices", () => {
+        const label1 = '0x000aaa';
+        const label2 = '0x000bbb';
+
+        stateNode1._setLabel(label1);
+        stateNode2._setLabel(label2);
+
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null
+        });
+
+        // set first node
+        tree.set(label1, stateNode1);
+
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(false);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "000aaa": {
+            ".label": "0x000aaa",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
+        });
+
+        // set second node
+        tree.set(label2, stateNode2);
+
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": null,
+          "000": {
+            ".radix_ph": null,
+            "aaa": {
+              ".label": "0x000aaa",
+              ".proof_hash": null,
+              ".radix_ph": null
+            },
+            "bbb": {
+              ".label": "0x000bbb",
+              ".proof_hash": null,
+              ".radix_ph": null
+            }
+          }
+        });
+
+        // delete first node
+        tree.delete(label1, true);
+
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        assert.deepEqual(tree.toJsObject(true), {
+          ".radix_ph": "0x16337f10dc7114cb5eba09c616cc2ec112e080404ac3fc1aea63111f8570d6b8",
+          "000bbb": {
+            ".label": "0x000bbb",
+            ".proof_hash": null,
+            ".radix_ph": null
+          }
         });
       });
 
@@ -729,13 +706,13 @@ describe("radix-tree", () => {
         stateNodeInternal._setLabel(labelInternal);
 
         // add terminal nodes
-        tree._setInTree(label1, stateNode1);
-        tree._setInTree(label2, stateNode2);
+        tree.set(label1, stateNode1);
+        tree.set(label2, stateNode2);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000": {
@@ -754,14 +731,14 @@ describe("radix-tree", () => {
         });
 
         // set on the internal node
-        tree._setInTree(labelInternal, stateNodeInternal);
+        tree.set(labelInternal, stateNodeInternal);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
-        expect(tree._hasInTree(labelInternal)).to.equal(true);
-        expect(tree._getFromTree(labelInternal)).to.equal(stateNodeInternal);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(labelInternal)).to.equal(true);
+        expect(tree.get(labelInternal)).to.equal(stateNodeInternal);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000": {
@@ -789,13 +766,13 @@ describe("radix-tree", () => {
         stateNode1._setLabel(label1);
         stateNode2._setLabel(label2);
 
-        tree._setInTree(label1, stateNode1);
-        tree._setInTree(label2, stateNode2);
+        tree.set(label1, stateNode1);
+        tree.set(label2, stateNode2);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000aa": {
@@ -818,13 +795,13 @@ describe("radix-tree", () => {
         stateNode1._setLabel(label1);
         stateNode2._setLabel(label2);
 
-        tree._setInTree(label1, stateNode1);
-        tree._setInTree(label2, stateNode2);
+        tree.set(label1, stateNode1);
+        tree.set(label2, stateNode2);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000aa": {
@@ -846,11 +823,11 @@ describe("radix-tree", () => {
         stateNode1._setLabel(label);
         stateNode2._setLabel(label + '_');  // tweak in order to distinguish
 
-        tree._setInTree(label, stateNode1);
-        tree._setInTree(label, stateNode2);
+        tree.set(label, stateNode1);
+        tree.set(label, stateNode2);
 
-        expect(tree._hasInTree(label)).to.equal(true);
-        expect(tree._getFromTree(label)).to.equal(stateNode2);
+        expect(tree.has(label)).to.equal(true);
+        expect(tree.get(label)).to.equal(stateNode2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000aa": {
@@ -873,21 +850,21 @@ describe("radix-tree", () => {
         stateNode22._setLabel(label22);
 
         // set first node
-        tree._setInTree(label1, stateNode1);
+        tree.set(label1, stateNode1);
         // set second node
-        tree._setInTree(label2, stateNode2);
+        tree.set(label2, stateNode2);
         // set children
-        tree._setInTree(label21, stateNode21);
-        tree._setInTree(label22, stateNode22);
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
 
-        expect(tree._hasInTree(label1)).to.equal(true);
-        expect(tree._getFromTree(label1)).to.equal(stateNode1);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
-        expect(tree._hasInTree(label21)).to.equal(true);
-        expect(tree._getFromTree(label21)).to.equal(stateNode21);
-        expect(tree._hasInTree(label22)).to.equal(true);
-        expect(tree._getFromTree(label22)).to.equal(stateNode22);
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000": {
@@ -916,15 +893,15 @@ describe("radix-tree", () => {
         });
 
         // delete first node
-        tree._deleteFromTree(label1);
+        tree.delete(label1);
 
-        expect(tree._hasInTree(label1)).to.equal(false);
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
-        expect(tree._hasInTree(label21)).to.equal(true);
-        expect(tree._getFromTree(label21)).to.equal(stateNode21);
-        expect(tree._hasInTree(label22)).to.equal(true);
-        expect(tree._getFromTree(label22)).to.equal(stateNode22);
+        expect(tree.has(label1)).to.equal(false);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000bbb": {
@@ -953,14 +930,14 @@ describe("radix-tree", () => {
         stateNode21._setLabel(label21);
 
         // set a node
-        tree._setInTree(label2, stateNode2);
+        tree.set(label2, stateNode2);
         // set a child
-        tree._setInTree(label21, stateNode21);
+        tree.set(label21, stateNode21);
 
-        expect(tree._hasInTree(label2)).to.equal(true);
-        expect(tree._getFromTree(label2)).to.equal(stateNode2);
-        expect(tree._hasInTree(label21)).to.equal(true);
-        expect(tree._getFromTree(label21)).to.equal(stateNode21);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000bbb": {
@@ -976,11 +953,11 @@ describe("radix-tree", () => {
         });
 
         // delete the node
-        tree._deleteFromTree(label2);
+        tree.delete(label2);
 
-        expect(tree._hasInTree(label2)).to.equal(false);
-        expect(tree._hasInTree(label21)).to.equal(true);
-        expect(tree._getFromTree(label21)).to.equal(stateNode21);
+        expect(tree.has(label2)).to.equal(false);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000bbb111": {
@@ -990,513 +967,13 @@ describe("radix-tree", () => {
           }
         });
       });
-    });
 
-    describe("_copyTreeFrom", () => {
-      const stateNode1 = new StateNode();
-      const stateNode2 = new StateNode();
-      const stateNode21 = new StateNode();
-      const stateNode22 = new StateNode();
-
-      it("copy with children", () => {
-        const label1 = '0x000aaa';
+      it("delete with updateProofHash = true - with common label prefix, delete with only one child", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
-        const label22 = '0x000bbb222';
 
-        stateNode1._setLabel(label1);
         stateNode2._setLabel(label2);
         stateNode21._setLabel(label21);
-        stateNode22._setLabel(label22);
-
-        // set state nodes
-        tree._setInTree(label1, stateNode1);
-        tree._setInTree(label2, stateNode2);
-        tree._setInTree(label21, stateNode21);
-        tree._setInTree(label22, stateNode22);
-
-        const newTree = new RadixTree();
-        newTree._copyTreeFrom(tree);
-        expect(newTree._hasInTree(label1)).to.equal(true);
-        expect(newTree._getFromTree(label1)).to.equal(stateNode1);
-        expect(newTree._hasInTree(label2)).to.equal(true);
-        expect(newTree._getFromTree(label2)).to.equal(stateNode2);
-        expect(newTree._hasInTree(label21)).to.equal(true);
-        expect(newTree._getFromTree(label21)).to.equal(stateNode21);
-        expect(newTree._hasInTree(label22)).to.equal(true);
-        expect(newTree._getFromTree(label22)).to.equal(stateNode22);
-        assert.deepEqual(newTree.toJsObject(true), {
-          ".radix_ph": null,
-          "000": {
-            ".radix_ph": null,
-            "aaa": {
-              ".label": "0x000aaa",
-              ".proof_hash": null,
-              ".radix_ph": null
-            },
-            "bbb": {
-              "111": {
-                ".label": "0x000bbb111",
-                ".proof_hash": null,
-                ".radix_ph": null
-              },
-              "222": {
-                ".label": "0x000bbb222",
-                ".proof_hash": null,
-                ".radix_ph": null
-              },
-              ".label": "0x000bbb",
-              ".proof_hash": null,
-              ".radix_ph": null
-            }
-          }
-        });
-      });
-    });
-  });
-
-  describe("Common APIs", () => {
-    let tree;
-
-    beforeEach(() => {
-      tree = new RadixTree();
-    })
-
-    describe("set / deletep / has / get / labels / stateNodes / size", () => {
-      const stateNode1 = new StateNode();
-      const stateNode2 = new StateNode();
-      const stateNode21 = new StateNode();
-      const stateNode22 = new StateNode();
-      const stateNodeInternal = new StateNode();
-
-      it("set with invalid state node", () => {
-        const invalidStateNode = new RadixNode();
-        const label = '0x000aaa';
-
-        expect(tree.set(label, invalidStateNode)).to.equal(false);
-        expect(tree.set(label, '')).to.equal(false);
-        expect(tree.set(label, true)).to.equal(false);
-        expect(tree.set(label, null)).to.equal(false);
-        expect(tree.set(label, undefined)).to.equal(false);
-      });
-
-      it("set / delete without common label prefix", () => {
-        const label1 = '0xa';
-        const label2 = '0xb';
-
-        expect(tree.has(label1)).to.equal(false);
-        expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.labels(), []);
-        assert.deepEqual(tree.stateNodes(), []);
-        assert.deepEqual(tree.size(), 0);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null
-        });
-
-        // set first node
-        tree.set(label1, stateNode1);
-
-        expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(stateNode1);
-        expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.labels(), [label1]);
-        assert.deepEqual(tree.stateNodes(), [stateNode1]);
-        assert.deepEqual(tree.size(), 1);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "a": {
-            ".label": null,
-            ".proof_hash": null,
-            ".radix_ph": null
-          }
-        });
-
-        // set second node
-        tree.set(label2, stateNode2);
-
-        expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(stateNode1);
-        expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.labels(), [label1, label2]);
-        assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
-        assert.deepEqual(tree.size(), 2);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "a": {
-            ".label": null,
-            ".proof_hash": null,
-            ".radix_ph": null
-          },
-          "b": {
-            ".label": null,
-            ".proof_hash": null,
-            ".radix_ph": null
-          }
-        });
-
-        // delete first node
-        tree.delete(label1);
-
-        expect(tree.has(label1)).to.equal(false);
-        expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.labels(), [label2]);
-        assert.deepEqual(tree.stateNodes(), [stateNode2]);
-        assert.deepEqual(tree.size(), 1);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "b": {
-            ".label": null,
-            ".proof_hash": null,
-            ".radix_ph": null
-          }
-        });
-
-        // delete second node
-        tree.delete(label2);
-
-        expect(tree.has(label1)).to.equal(false);
-        expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.labels(), []);
-        assert.deepEqual(tree.stateNodes(), []);
-        assert.deepEqual(tree.size(), 0);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null
-        });
-      });
-
-      it("set / delete with common label prefix", () => {
-        const label1 = '0x000a';
-        const label2 = '0x000b';
-
-        expect(tree.has(label1)).to.equal(false);
-        expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.labels(), []);
-        assert.deepEqual(tree.stateNodes(), []);
-        assert.deepEqual(tree.size(), 0);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null
-        });
-
-        // set first node
-        tree.set(label1, stateNode1);
-
-        expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(stateNode1);
-        expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.labels(), [label1]);
-        assert.deepEqual(tree.stateNodes(), [stateNode1]);
-        assert.deepEqual(tree.size(), 1);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "000a": {
-            ".label": null,
-            ".proof_hash": null,
-            ".radix_ph": null
-          }
-        });
-
-        // set second node
-        tree.set(label2, stateNode2);
-
-        expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(stateNode1);
-        expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.labels(), [label1, label2]);
-        assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
-        assert.deepEqual(tree.size(), 2);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "000": {
-            ".radix_ph": null,
-            "a": {
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
-            },
-            "b": {
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
-            }
-          }
-        });
-
-        // delete first node
-        tree.delete(label1);
-
-        expect(tree.has(label1)).to.equal(false);
-        expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.labels(), [label2]);
-        assert.deepEqual(tree.stateNodes(), [stateNode2]);
-        assert.deepEqual(tree.size(), 1);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "000b": {
-            ".label": null,
-            ".proof_hash": null,
-            ".radix_ph": null
-          }
-        });
-
-        // delete second node
-        tree.delete(label2);
-
-        expect(tree.has(label1)).to.equal(false);
-        expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.labels(), []);
-        assert.deepEqual(tree.stateNodes(), []);
-        assert.deepEqual(tree.size(), 0);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null
-        });
-      });
-
-      it("set on an internal node", () => {
-        const label1 = '0x000a';
-        const label2 = '0x000b';
-        const labelInternal = '0x000';
-
-        // add terminal nodes
-        tree.set(label1, stateNode1);
-        tree.set(label2, stateNode2);
-
-        expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(stateNode1);
-        expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.labels(), [label1, label2]);
-        assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
-        assert.deepEqual(tree.size(), 2);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "000": {
-            ".radix_ph": null,
-            "a": {
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
-            },
-            "b": {
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
-            }
-          }
-        });
-
-        // set on the internal node
-        tree.set(labelInternal, stateNodeInternal);
-
-        expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(stateNode1);
-        expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(stateNode2);
-        expect(tree.has(labelInternal)).to.equal(true);
-        expect(tree.get(labelInternal)).to.equal(stateNodeInternal);
-        assert.deepEqual(tree.labels(), [label1, label2, labelInternal]);
-        assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2, stateNodeInternal]);
-        assert.deepEqual(tree.size(), 3);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "000": {
-            ".label": null,
-            ".proof_hash": null,
-            ".radix_ph": null,
-            "a": {
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
-            },
-            "b": {
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
-            }
-          }
-        });
-      });
-
-      it("set / delete with non-empty label suffices", () => {
-        const label1 = '0x000aaa';
-        const label2 = '0x000bbb';
-
-        expect(tree.has(label1)).to.equal(false);
-        expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.labels(), []);
-        assert.deepEqual(tree.stateNodes(), []);
-        assert.deepEqual(tree.size(), 0);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null
-        });
-
-        // set first node
-        tree.set(label1, stateNode1);
-
-        expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(stateNode1);
-        expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.labels(), [label1]);
-        assert.deepEqual(tree.stateNodes(), [stateNode1]);
-        assert.deepEqual(tree.size(), 1);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "000aaa": {
-            ".label": null,
-            ".proof_hash": null,
-            ".radix_ph": null
-          }
-        });
-
-        // set second node
-        tree.set(label2, stateNode2);
-
-        expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(stateNode1);
-        expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.labels(), [label1, label2]);
-        assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2]);
-        assert.deepEqual(tree.size(), 2);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "000": {
-            ".radix_ph": null,
-            "aaa": {
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
-            },
-            "bbb": {
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
-            }
-          }
-        });
-
-        // delete first node
-        tree.delete(label1);
-
-        expect(tree.has(label1)).to.equal(false);
-        expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.labels(), [label2]);
-        assert.deepEqual(tree.stateNodes(), [stateNode2]);
-        assert.deepEqual(tree.size(), 1);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "000bbb": {
-            ".label": null,
-            ".proof_hash": null,
-            ".radix_ph": null
-          }
-        });
-
-        // delete second node
-        tree.delete(label2);
-
-        expect(tree.has(label1)).to.equal(false);
-        expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.labels(), []);
-        assert.deepEqual(tree.stateNodes(), []);
-        assert.deepEqual(tree.size(), 0);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null
-        });
-      });
-
-      it("set / delete with children", () => {
-        const label1 = '0x000aaa';
-        const label2 = '0x000bbb';
-        const label21 = '0x000bbb111';
-        const label22 = '0x000bbb222';
-
-        // set first node
-        tree.set(label1, stateNode1);
-        // set second node
-        tree.set(label2, stateNode2);
-        // set children
-        tree.set(label21, stateNode21);
-        tree.set(label22, stateNode22);
-
-        expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(stateNode1);
-        expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(stateNode2);
-        expect(tree.has(label21)).to.equal(true);
-        expect(tree.get(label21)).to.equal(stateNode21);
-        expect(tree.has(label22)).to.equal(true);
-        expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.labels(), [label1, label2, label21, label22]);
-        assert.deepEqual(tree.stateNodes(), [stateNode1, stateNode2, stateNode21, stateNode22]);
-        assert.deepEqual(tree.size(), 4);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "000": {
-            ".radix_ph": null,
-            "aaa": {
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
-            },
-            "bbb": {
-              "111": {
-                ".label": null,
-                ".proof_hash": null,
-                ".radix_ph": null
-              },
-              "222": {
-                ".label": null,
-                ".proof_hash": null,
-                ".radix_ph": null
-              },
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
-            }
-          }
-        });
-
-        // delete first node
-        tree.delete(label1);
-
-        expect(tree.has(label1)).to.equal(false);
-        expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(stateNode2);
-        expect(tree.has(label21)).to.equal(true);
-        expect(tree.get(label21)).to.equal(stateNode21);
-        expect(tree.has(label22)).to.equal(true);
-        expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.labels(), [label2, label21, label22]);
-        assert.deepEqual(tree.stateNodes(), [stateNode2, stateNode21, stateNode22]);
-        assert.deepEqual(tree.size(), 3);
-        assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
-          "000bbb": {
-            "111": {
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
-            },
-            "222": {
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
-            },
-            ".label": null,
-            ".proof_hash": null,
-            ".radix_ph": null
-          }
-        });
-      });
-
-      it("delete with only one child", () => {
-        const label2 = '0x000bbb';
-        const label21 = '0x000bbb111';
 
         // set a node
         tree.set(label2, stateNode2);
@@ -1507,72 +984,62 @@ describe("radix-tree", () => {
         expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.labels(), [label2, label21]);
-        assert.deepEqual(tree.stateNodes(), [stateNode2, stateNode21]);
-        assert.deepEqual(tree.size(), 2);
         assert.deepEqual(tree.toJsObject(true), {
           ".radix_ph": null,
           "000bbb": {
             "111": {
-              ".label": null,
+              ".label": "0x000bbb111",
               ".proof_hash": null,
               ".radix_ph": null
             },
-            ".label": null,
+            ".label": "0x000bbb",
             ".proof_hash": null,
             ".radix_ph": null
           }
         });
 
         // delete the node
-        tree.delete(label2);
+        tree.delete(label2, true);
 
         expect(tree.has(label2)).to.equal(false);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.labels(), [label21]);
-        assert.deepEqual(tree.stateNodes(), [stateNode21]);
-        assert.deepEqual(tree.size(), 1);
         assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": null,
+          ".radix_ph": "0xdf6bd65883bce47c743eb28ea70897e69be4d9b0046f21e3a2ee26114fb40bd1",
           "000bbb111": {
-            ".label": null,
+            ".label": "0x000bbb111",
             ".proof_hash": null,
             ".radix_ph": null
           }
         });
       });
+    });
 
+    describe("radix info", () => {
       it("get / has / set / update / verify proof hash", () => {
         const label1 = '0x000aaa';
         const stateNode1 = new StateNode();
-        const stateNodePH1 = 'childStateNodePH1';
-        stateNode1.setProofHash(stateNodePH1);
+        stateNode1.setProofHash('stateNodePH1');
 
         const label11 = '0x000aaa111';
-        const stateNodePH11 = 'childStateNodePH11';
         const stateNode11 = new StateNode();
-        stateNode11.setProofHash(stateNodePH11);
+        stateNode11.setProofHash('stateNodePH11');
 
         const label12 = '0x000aaa212';
-        const stateNodePH12 = 'childStateNodePH12';
         const stateNode12 = new StateNode();
-        stateNode12.setProofHash(stateNodePH12);
+        stateNode12.setProofHash('stateNodePH12');
 
         const label21 = '0x000bbb121';
-        const stateNodePH21 = 'childStateNodePH21';
         const stateNode21 = new StateNode();
-        stateNode21.setProofHash(stateNodePH21);
+        stateNode21.setProofHash('stateNodePH21');
 
         const label22 = '0x000bbb222';
-        const stateNodePH22 = 'childStateNodePH22';
         const stateNode22 = new StateNode();
-        stateNode22.setProofHash(stateNodePH22);
+        stateNode22.setProofHash('stateNodePH22');
 
         const label3 = '0x111ccc';
         const stateNode3 = new StateNode();
-        const stateNodePH3 = 'childStateNodePH3';
-        stateNode3.setProofHash(stateNodePH3);
+        stateNode3.setProofHash('stateNodePH3');
 
         tree.set(label1, stateNode1);
         tree.set(label11, stateNode11);
@@ -1588,27 +1055,27 @@ describe("radix-tree", () => {
             "aaa": {
               "111": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH11",
+                ".proof_hash": "stateNodePH11",
                 ".radix_ph": null
               },
               "212": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH12",
+                ".proof_hash": "stateNodePH12",
                 ".radix_ph": null
               },
               ".label": null,
-              ".proof_hash": "childStateNodePH1",
+              ".proof_hash": "stateNodePH1",
               ".radix_ph": null
             },
             "bbb": {
               "121": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH21",
+                ".proof_hash": "stateNodePH21",
                 ".radix_ph": null
               },
               "222": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH22",
+                ".proof_hash": "stateNodePH22",
                 ".radix_ph": null
               },
               ".radix_ph": null
@@ -1616,7 +1083,7 @@ describe("radix-tree", () => {
           },
           "111ccc": {
             ".label": null,
-            ".proof_hash": "childStateNodePH3",
+            ".proof_hash": "stateNodePH3",
             ".radix_ph": null
           }
         });
@@ -1626,9 +1093,9 @@ describe("radix-tree", () => {
         expect(tree.verifyProofHashForRadixTree()).to.equal(false);
 
         // set
-        expect(tree.updateProofHashForRadixTree()).to.equal(9);
+        expect(tree.updateRadixInfoForRadixTree()).to.equal(9);
         expect(tree.getRootProofHash()).to.equal(
-            '0xbc310c6c1b9d339951756d3c0f90bb25e70be0c0a261e04564917ce6c57016d5');
+            '0x3dac16e69a2dfa5ae4a448cda25da5542949b905d2bf8a07c389d77019c56c01');
         expect(tree.verifyProofHashForRadixTree()).to.equal(true);
 
         // change of a state node's proof hash
@@ -1636,37 +1103,33 @@ describe("radix-tree", () => {
         expect(tree.verifyProofHashForRadixTree()).to.equal(false);
 
         // update
-        expect(tree.updateProofHashForRadixPath(label21)).to.equal(4);
+        expect(tree.updateRadixInfoForRadixPath(label21)).to.equal(4);
         expect(tree.getRootProofHash()).to.equal(
-            '0x20520d0c668099565300affd3c4b288fb59dc37b9fbf31702e99a37b564d12d5');
+            '0x8070aef5df264e5ecea35dd84822e69f7bf65102a06f5765d62bd76265cadff5');
         expect(tree.verifyProofHashForRadixTree()).to.equal(true);
       });
 
       it("getProofOfState", () => {
         const label1 = '0x000aaa';
         const stateNode1 = new StateNode();
-        const stateNodePH1 = 'childStateNodePH1';
-        stateNode1.setProofHash(stateNodePH1);
+        const stateNodePH1 = 'stateNodePH1';
+        stateNode1.setProofHash('stateNodePH1');
 
         const label11 = '0x000aaa111';
-        const stateNodePH11 = 'childStateNodePH11';
         const stateNode11 = new StateNode();
-        stateNode11.setProofHash(stateNodePH11);
+        stateNode11.setProofHash('stateNodePH11');
 
         const label12 = '0x000aaa212';
-        const stateNodePH12 = 'childStateNodePH12';
         const stateNode12 = new StateNode();
-        stateNode12.setProofHash(stateNodePH12);
+        stateNode12.setProofHash('stateNodePH12');
 
         const label21 = '0x000bbb121';
-        const stateNodePH21 = 'childStateNodePH21';
         const stateNode21 = new StateNode();
-        stateNode21.setProofHash(stateNodePH21);
+        stateNode21.setProofHash('stateNodePH21');
 
         const label22 = '0x000bbb222';
-        const stateNodePH22 = 'childStateNodePH22';
         const stateNode22 = new StateNode();
-        stateNode22.setProofHash(stateNodePH22);
+        stateNode22.setProofHash('stateNodePH22');
 
         tree.set(label1, stateNode1);
         tree.set(label11, stateNode11);
@@ -1674,76 +1137,76 @@ describe("radix-tree", () => {
         tree.set(label21, stateNode21);
         tree.set(label22, stateNode22);
 
-        expect(tree.updateProofHashForRadixTree()).to.equal(8);
+        expect(tree.updateRadixInfoForRadixTree()).to.equal(8);
         assert.deepEqual(tree.toJsObject(true), {
-          ".radix_ph": "0x890e6c975c63529362955c359c0b7552bf1f88c4945f12a18458f8acafb17b25",
+          ".radix_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
           "000": {
-            ".radix_ph": "0x7de885f5d5ecdd9e059584874ae468ba9d1ecdebb3c320fa02e6a2ac58413386",
+            ".radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
             "aaa": {
               "111": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH11",
-                ".radix_ph": "0x9fb9b2e6c1dc7fed76964029cb13fb1cdc115dc0a9cef54fe052533ab992a58c"
+                ".proof_hash": "stateNodePH11",
+                ".radix_ph": "0xac8e0ca829cea8d80a79260078fb8e1b38a05b6d087c72a1c92f63849a47b96b"
               },
               "212": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH12",
-                ".radix_ph": "0xbde6ad92fee46f223375703e8376c3c8d75989d3b9867520442e63e0836ff596"
+                ".proof_hash": "stateNodePH12",
+                ".radix_ph": "0x7fc53637a6ff6b7efa8cf7c9ba95552ed7479262ad8c07a61b4d2b1e8002d360"
               },
               ".label": null,
-              ".proof_hash": "childStateNodePH1",
-              ".radix_ph": "0x47f652dd768456603c8bb25c5ab7157d43e3edafc51837038f42a6026bf6bb44"
+              ".proof_hash": "stateNodePH1",
+              ".radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0"
             },
             "bbb": {
               "121": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH21",
-                ".radix_ph": "0x68971271b6018c8827230bb696d7d2661ebb286f95851e72da889e1af6b22721"
+                ".proof_hash": "stateNodePH21",
+                ".radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7"
               },
               "222": {
                 ".label": null,
-                ".proof_hash": "childStateNodePH22",
-                ".radix_ph": "0xba9d1dcddd02911d1d260f8acd4e3857174d98a57e6b3c7e0577c8a07056b057"
+                ".proof_hash": "stateNodePH22",
+                ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2"
               },
-              ".radix_ph": "0x35286cd28c53fbe623eed76d4c09246645451b92cdded41ce9952436dc4656c3"
+              ".radix_ph": "0x78d50ec884283d1759dc14ae88aa3e832199ff650b450da3b45cd507c2cd8474"
             }
           }
         });
 
         // on an internal radix node
         assert.deepEqual(tree.getProofOfState(label1, 'state_proof1'), {
-          ".radix_ph": "0x890e6c975c63529362955c359c0b7552bf1f88c4945f12a18458f8acafb17b25",
+          ".radix_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
           "000": {
-            ".radix_ph": "0x7de885f5d5ecdd9e059584874ae468ba9d1ecdebb3c320fa02e6a2ac58413386",
+            ".radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
             "aaa": {
               ".label": "0x000aaa",
               ".proof_hash": "state_proof1",
-              ".radix_ph": "0x47f652dd768456603c8bb25c5ab7157d43e3edafc51837038f42a6026bf6bb44"
+              ".radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0"
             },
             "bbb": {
-              ".radix_ph": "0x35286cd28c53fbe623eed76d4c09246645451b92cdded41ce9952436dc4656c3"
+              ".radix_ph": "0x78d50ec884283d1759dc14ae88aa3e832199ff650b450da3b45cd507c2cd8474"
             }
           }
         });
 
         // on a terminal radix node
         assert.deepEqual(tree.getProofOfState(label22, 'state_proof22'), {
-          ".radix_ph": "0x890e6c975c63529362955c359c0b7552bf1f88c4945f12a18458f8acafb17b25",
+          ".radix_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
           "000": {
-            ".radix_ph": "0x7de885f5d5ecdd9e059584874ae468ba9d1ecdebb3c320fa02e6a2ac58413386",
+            ".radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
             "aaa": {
-              ".radix_ph": "0x47f652dd768456603c8bb25c5ab7157d43e3edafc51837038f42a6026bf6bb44"
+              ".radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0"
             },
             "bbb": {
-              ".radix_ph": "0x35286cd28c53fbe623eed76d4c09246645451b92cdded41ce9952436dc4656c3",
               "121": {
-                ".radix_ph": "0x68971271b6018c8827230bb696d7d2661ebb286f95851e72da889e1af6b22721"
+                ".radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7"
               },
               "222": {
                 ".label": "0x000bbb222",
                 ".proof_hash": "state_proof22",
-                ".radix_ph": "0xba9d1dcddd02911d1d260f8acd4e3857174d98a57e6b3c7e0577c8a07056b057"
-              }
+                ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2"
+              },
+              ".radix_ph": "0x78d50ec884283d1759dc14ae88aa3e832199ff650b450da3b45cd507c2cd8474"
             }
           }
         });
@@ -1752,9 +1215,13 @@ describe("radix-tree", () => {
 
     describe("copyFrom", () => {
       const stateNode1 = new StateNode();
+      stateNode1.setProofHash('stateNodePH1');
       const stateNode2 = new StateNode();
+      stateNode2.setProofHash('stateNodePH2');
       const stateNode21 = new StateNode();
+      stateNode21.setProofHash('stateNodePH21');
       const stateNode22 = new StateNode();
+      stateNode22.setProofHash('stateNodePH22');
 
       it("copy with children", () => {
         const label1 = '0x000aaa';
@@ -1764,9 +1231,15 @@ describe("radix-tree", () => {
 
         // set state nodes
         tree.set(label1, stateNode1);
+        stateNode1._setLabel(label1);
         tree.set(label2, stateNode2);
+        stateNode2._setLabel(label2);
         tree.set(label21, stateNode21);
+        stateNode21._setLabel(label21);
         tree.set(label22, stateNode22);
+        stateNode22._setLabel(label22);
+
+        expect(tree.updateRadixInfoForRadixTree()).to.equal(6);
 
         const newTree = new RadixTree();
         newTree.copyFrom(tree);
@@ -1783,31 +1256,32 @@ describe("radix-tree", () => {
         assert.deepEqual(newTree.stateNodes(), [stateNode1, stateNode2, stateNode21, stateNode22]);
         assert.deepEqual(newTree.size(), 4);
         assert.deepEqual(newTree.toJsObject(true), {
-          ".radix_ph": null,
+          ".radix_ph": "0x6fb64a2130ffc6c39c3c90e2e623594e7818647f93caf25d5c741ffdb6998c5f",
           "000": {
-            ".radix_ph": null,
+            ".radix_ph": "0x13f3860a6d7505b383ef8f966bd5e0bcaa546298616a850c7dfaf20311fc271b",
             "aaa": {
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
+              ".label": "0x000aaa",
+              ".proof_hash": "stateNodePH1",
+              ".radix_ph": "0xc6b77f2d527751603d41b89bb7bac0d2a51dfdb3636b37f6d0792676bbe48795"
             },
             "bbb": {
               "111": {
-                ".label": null,
-                ".proof_hash": null,
-                ".radix_ph": null
+                ".label": "0x000bbb111",
+                ".proof_hash": "stateNodePH21",
+                ".radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7"
               },
               "222": {
-                ".label": null,
-                ".proof_hash": null,
-                ".radix_ph": null
+                ".label": "0x000bbb222",
+                ".proof_hash": "stateNodePH22",
+                ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2"
               },
-              ".label": null,
-              ".proof_hash": null,
-              ".radix_ph": null
+              ".label": "0x000bbb",
+              ".proof_hash": "stateNodePH2",
+              ".radix_ph": "0xc247352aedb1ef374ff55c219d525d882d158e32c134de5eade6e24c51d3b680"
             }
           }
         });
+        assert.deepEqual(newTree.toJsObject(true), tree.toJsObject(true));
       });
     });
   });

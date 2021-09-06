@@ -31,10 +31,6 @@ const FeatureFlags = {
   enableReceiptPathPrefixLayers: false,  // Some test cases assume this value false.
   // Enables radix layers.
   enableRadixTreeLayers: true,  // Some test cases assume this value true.
-  // Enables hex label cache.
-  enableHexLabelCache: false,
-  // Enables array radix child map.
-  enableArrayRadixChildMap: false,
 };
 
 // ** Environment variables **
@@ -365,6 +361,9 @@ const ProofProperties = {
   LABEL: '.label',
   PROOF_HASH: '.proof_hash',
   RADIX_PROOF_HASH: '.radix_ph',
+  TREE_HEIGHT: '.tree_height',
+  TREE_SIZE: '.tree_size',
+  TREE_BYTES: '.tree_bytes',
 };
 
 /**
