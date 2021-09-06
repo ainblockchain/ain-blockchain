@@ -132,6 +132,15 @@ const MessageTypes = {
 };
 
 /**
+ * Message types for communication between tracker and node.
+ *
+ * @enum {string}
+ */
+const TrackerMessageTypes = {
+  CONNECTION: 'CONNECTION'
+};
+
+/**
  * Status of blockchain nodes.
  *
  * @enum {string}
@@ -882,6 +891,7 @@ module.exports = {
   FREE_TREE_SIZE_BUDGET,
   STATE_GAS_COEFFICIENT,
   MessageTypes,
+  TrackerMessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
   TokenProperties,

@@ -49,7 +49,8 @@ const {
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage,
-  isValidNetworkId
+  isValidNetworkId,
+  buildWsAddressFromSocket
 } = require('./util');
 const PathUtil = require('../common/path-util');
 
@@ -103,6 +104,8 @@ class P2pServer {
     this.wsServer.setMaxListeners(this.maxInbound);
     this.wsServer.on('connection', (socket) => {
       this.setServerSidePeerEventHandlers(socket);
+      const address = buildWsAddressFromSocket(socket);
+      // this.client.connectToPeer(address);
     });
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     await this.setUpIpAddresses();

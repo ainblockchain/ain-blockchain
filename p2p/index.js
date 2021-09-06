@@ -11,6 +11,7 @@ const {
   P2P_PORT,
   TRACKER_WS_ADDR,
   MessageTypes,
+  TrackerMessageTypes,
   BlockchainNodeStates,
   TARGET_NUM_OUTBOUND_CONNECTION,
   MAX_NUM_INBOUND_CONNECTION,
@@ -135,34 +136,34 @@ class P2pClient {
   }
 
   updateNodeStatusToTracker() {
-    const updateToTracker = this.getStatus();
+    const message = {
+      type: TrackerMessageTypes.CONNECTION,
+      data: this.getStatus()
+    };
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
-      `${JSON.stringify(updateToTracker, null, 2)}`);
-    this.trackerWebSocket.send(JSON.stringify(updateToTracker));
+        `${JSON.stringify(message, null, 2)}`);
+    this.trackerWebSocket.send(JSON.stringify(message));
   }
 
-  setIntervalForTrackerUpdate() {
-    this.updateNodeStatusToTracker();
-    this.intervalUpdate = setInterval(() => {
-      this.updateNodeStatusToTracker();
-    }, UPDATE_TO_TRACKER_INTERVAL_MS)
-  }
+  // setIntervalForTrackerUpdate() {
+  //   this.updateNodeStatusToTracker();
+  //   this.intervalUpdate = setInterval(() => {
+  //     this.updateNodeStatusToTracker();
+  //   }, UPDATE_TO_TRACKER_INTERVAL_MS);
+  // }
 
   async setTrackerEventHandlers() {
     this.trackerWebSocket.on('message', async (message) => {
       const parsedMsg = JSON.parse(message);
       logger.info(`\n<< Message from [TRACKER]: ${JSON.stringify(parsedMsg, null, 2)}`);
-      if (this.connectToPeers(parsedMsg.newManagedPeerInfoList)) {
-        logger.debug(`Updated MANAGED peers info: ` +
-          `${JSON.stringify(this.server.managedPeersInfo, null, 2)}`);
-      }
+      this.connectToPeers(parsedMsg.newManagedPeerInfoList);
       if (this.server.node.state === BlockchainNodeStates.STARTING) {
         await this.startNode(parsedMsg.numLivePeers);
       }
     });
     this.trackerWebSocket.on('close', (code) => {
       logger.info(`\nDisconnected from [TRACKER] ${TRACKER_WS_ADDR} with code: ${code}`);
-      this.clearIntervalForTrackerUpdate();
+      // this.clearIntervalForTrackerUpdate();
       this.setIntervalForTrackerConnection();
     });
   }
@@ -200,12 +201,13 @@ class P2pClient {
       logger.info(`Connected to tracker (${TRACKER_WS_ADDR})`);
       this.clearIntervalForTrackerConnection();
       this.setTrackerEventHandlers();
-      this.setIntervalForTrackerUpdate();
+      this.updateNodeStatusToTracker();
+      // this.setIntervalForTrackerUpdate();
     });
     this.trackerWebSocket.on('error', (error) => {
       logger.error(`Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
         `${JSON.stringify(error, null, 2)}`);
-      this.clearIntervalForTrackerUpdate();
+      // this.clearIntervalForTrackerUpdate();
       this.setIntervalForTrackerConnection();
     });
   }
@@ -456,35 +458,36 @@ class P2pClient {
       });
   }
 
+  connectToPeer(url) {
+    const socket = new Websocket(url);
+    socket.on('open', async () => {
+      logger.info(`Connected to peer(${url}),`);
+      this.setClientSidePeerEventHandlers(socket);
+      this.sendAddress(socket);
+      await this.waitForAddress(socket);
+      this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
+      if (this.server.consensus.stakeTx) {
+        this.broadcastTransaction(this.server.consensus.stakeTx);
+        this.server.consensus.stakeTx = null;
+      }
+    });
+  }
+
   connectToPeers(newPeerInfoList) {
-    let updated = false;
     newPeerInfoList.forEach((peerInfo) => {
       if (peerInfo.address in this.outbound) {
         logger.info(`Node ${peerInfo.address} is already a managed peer. Something went wrong.`);
       } else {
         logger.info(`Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
-        updated = true;
-        const socket = new Websocket(peerInfo.url);
-        socket.on('open', async () => {
-          logger.info(`Connected to peer(${peerInfo.url}),`);
-          this.setClientSidePeerEventHandlers(socket);
-          this.sendAddress(socket);
-          await this.waitForAddress(socket);
-          this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
-          if (this.server.consensus.stakeTx) {
-            this.broadcastTransaction(this.server.consensus.stakeTx);
-            this.server.consensus.stakeTx = null;
-          }
-        });
+        this.connectToPeer(peerInfo.url);
       }
     });
-    return updated;
   }
 
-  clearIntervalForTrackerUpdate() {
-    clearInterval(this.intervalUpdate);
-    this.intervalUpdate = null;
-  }
+  // clearIntervalForTrackerUpdate() {
+  //   clearInterval(this.intervalUpdate);
+  //   this.intervalUpdate = null;
+  // }
 
   disconnectFromPeers() {
     Object.values(this.outbound).forEach(node => {
@@ -497,7 +500,7 @@ class P2pClient {
     // NOTE(minsulee2): The trackerWebsocket should be checked initialized in order not to get error
     // in case trackerWebsocket is not properly setup.
     this.clearIntervalForTrackerConnection();
-    this.clearIntervalForTrackerUpdate();
+    // this.clearIntervalForTrackerUpdate();
     if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from tracker server.');
     this.stopHeartbeat();

@@ -9,6 +9,7 @@ const disk = require('diskusage');
 const os = require('os');
 const v8 = require('v8');
 const {
+  TrackerMessageTypes,
   CURRENT_PROTOCOL_VERSION,
   MAX_NUM_PEER_CANDIDATES_AT_ONCE
 } = require('../common/constants');
@@ -115,23 +116,31 @@ server.on('connection', (ws) => {
   ws.uuid = uuidv4();
   wsList[ws.uuid] = null;
   ws.on('message', (message) => {
-    const nodeInfo = Object.assign({ isAlive: true }, JSON.parse(message));
-    wsList[ws.uuid] = nodeInfo.address;
-    nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
-    // TODO(minsulee2): It will be managed via peers when heartbeat updates.
-    peerNodes[nodeInfo.address] = nodeInfo;
-    logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
-    logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
-
-    const newManagedPeerInfoList = assignRandomPeers(nodeInfo);
-    const msgToNode = {
-      newManagedPeerInfoList,
-      numLivePeers: getNumAliveNodes() - 1   // except for me.
-    };
-    logger.info(`>> Message to node [${abbrAddr(nodeInfo.address)}]: ` +
-        `${JSON.stringify(msgToNode, null, 2)}`);
-    ws.send(JSON.stringify(msgToNode));
-    printNodesInfo();
+    const parsedMessage = JSON.parse(message);
+    switch(_.get(parsedMessage, 'type')) {
+      case TrackerMessageTypes.CONNECTION:
+        const nodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
+        wsList[ws.uuid] = nodeInfo.address;
+        nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
+        // TODO(minsulee2): It will be managed via peers when heartbeat updates.
+        peerNodes[nodeInfo.address] = nodeInfo;
+        logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
+        logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
+        const newManagedPeerInfoList = assignRandomPeers(nodeInfo);
+        const msgToNode = {
+          newManagedPeerInfoList,
+          numLivePeers: getNumAliveNodes() - 1   // except for me.
+        };
+        logger.info(`>> Message to node [${abbrAddr(nodeInfo.address)}]: ` +
+            `${JSON.stringify(msgToNode, null, 2)}`);
+        ws.send(JSON.stringify(msgToNode));
+        printNodesInfo();
+        break;
+      default:
+        logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
+            'specified. Ignore the message.');
+        break;
+    }
   });
 
   // TODO(minsulee2): Code should be setup ex) code === 1006: SIGINT .
