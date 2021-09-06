@@ -23,20 +23,16 @@ class RadixNode {
     this.treeBytes = 0;
   }
 
-  reset(structuralDataOnly = true) {
+  reset() {
     this.resetStateNode();
-    if (!structuralDataOnly) {
-      this.resetLabelRadix();
-      this.resetLabelSuffix();
-    }
+    this.resetLabelRadix();
+    this.resetLabelSuffix();
     this.resetParent();
     this.radixChildMap.clear();
-    if (!structuralDataOnly) {
-      this.resetProofHash();
-      this.resetTreeHeight();
-      this.resetTreeSize();
-      this.resetTreeBytes();
-    }
+    this.resetProofHash();
+    this.resetTreeHeight();
+    this.resetTreeSize();
+    this.resetTreeBytes();
   }
 
   getStateNode() {

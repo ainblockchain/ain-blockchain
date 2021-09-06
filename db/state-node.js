@@ -34,27 +34,21 @@ class StateNode {
     this.treeBytes = 0;
   }
 
-  reset(structuralDataOnly = true) {
+  reset() {
     this.setVersion(null);  // should be reset for deleteStateTreeVersion().
-    if (!structuralDataOnly) {
-      this._resetLabel();
-      this.setIsLeaf(true);
-      this.resetValue();
-    }
+    this._resetLabel();
+    this.setIsLeaf(true);
+    this.resetValue();
     this.parentSet.clear();
-    if (!structuralDataOnly) {
-      this.setRadixTreeEnabled(!FeatureFlags.enableDynamicRadixTree);
-    }
+    this.setRadixTreeEnabled(!FeatureFlags.enableDynamicRadixTree);
     if (FeatureFlags.enableRadixTreeLayers) {
       this.deleteRadixTree();
     }
     this.childMap.clear();
-    if (!structuralDataOnly) {
-      this.setProofHash(null);
-      this.setTreeHeight(0);
-      this.setTreeSize(0);
-      this.setTreeBytes(0);
-    }
+    this.setProofHash(null);
+    this.setTreeHeight(0);
+    this.setTreeSize(0);
+    this.setTreeBytes(0);
   }
 
   static _create(

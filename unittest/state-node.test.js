@@ -111,20 +111,6 @@ describe("state-node", () => {
 
       node.reset();
       expect(node.version).to.equal(null);
-      expect(node.label).to.equal(label);  // not reset
-      expect(node.isLeaf).to.equal(false); // not reset
-      expect(node.value).to.equal(value);  // not reset
-      expect(node.parentSet.size).to.equal(0);
-      expect(node.radixTreeEnabled).to.equal(true);  // not reset
-      expect(node.radixTree.size()).to.equal(0);
-      expect(node.childMap.size).to.equal(0);
-      expect(node.proofHash).to.equal(proofHash); // not reset
-      expect(node.treeHeight).to.equal(treeHeight); // not reset
-      expect(node.treeSize).to.equal(treeSize); // not reset
-      expect(node.treeBytes).to.equal(treeBytes); // not reset
-
-      node.reset(false);
-      expect(node.version).to.equal(null);
       expect(node.label).to.equal(null);
       expect(node.isLeaf).to.equal(true);
       expect(node.value).to.equal(null);
