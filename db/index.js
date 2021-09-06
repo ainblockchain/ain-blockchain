@@ -396,8 +396,8 @@ class DB {
       const treeLabel = fullPath[fullPath.length - 1];
       const parent = DB.getRefForWritingToStateRoot(stateRoot, pathToParent);
       parent.setChild(treeLabel, tree);
+      updateStateInfoForAllRootPaths(parent, treeLabel);
     }
-    updateStateInfoForAllRootPaths(fullPath, stateRoot);
     return stateRoot;
   }
 

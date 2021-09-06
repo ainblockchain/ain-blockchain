@@ -677,13 +677,13 @@ describe("state-node", () => {
       assert.deepEqual(child.getParentNodes(), [parent1, parent2]);
       expect(child.numParents()).to.equal(2);
 
-      child._deleteParent(parent1);
+      child.deleteParent(parent1);
       expect(child._hasParent(parent1)).to.equal(false);
       expect(child._hasParent(parent2)).to.equal(true);
       assert.deepEqual(child.getParentNodes(), [parent2]);
       expect(child.numParents()).to.equal(1);
 
-      child._deleteParent(parent2);
+      child.deleteParent(parent2);
       expect(child._hasParent(parent1)).to.equal(false);
       expect(child._hasParent(parent2)).to.equal(false);
       assert.deepEqual(child.getParentNodes(), []);
@@ -728,8 +728,8 @@ describe("state-node", () => {
       expect(child1.numParents()).to.equal(2);
       expect(child2.numParents()).to.equal(2);
 
-      child1._deleteParent(parent1);
-      child2._deleteParent(parent2);
+      child1.deleteParent(parent1);
+      child2.deleteParent(parent2);
       expect(child1._hasParent(parent1)).to.equal(false);
       expect(child1._hasParent(parent2)).to.equal(true);
       expect(child2._hasParent(parent1)).to.equal(true);
@@ -739,8 +739,8 @@ describe("state-node", () => {
       expect(child1.numParents()).to.equal(1);
       expect(child2.numParents()).to.equal(1);
 
-      child1._deleteParent(parent2);
-      child2._deleteParent(parent1);
+      child1.deleteParent(parent2);
+      child2.deleteParent(parent1);
       expect(child1._hasParent(parent1)).to.equal(false);
       expect(child1._hasParent(parent2)).to.equal(false);
       expect(child2._hasParent(parent1)).to.equal(false);
@@ -786,7 +786,7 @@ describe("state-node", () => {
       assert.deepEqual(child.getParentNodes(), [parent1]);
       expect(child.numParents()).to.equal(1);
 
-      child._deleteParent(parent2);
+      child.deleteParent(parent2);
       expect(child._hasParent(parent1)).to.equal(true);
       expect(child._hasParent(parent2)).to.equal(false);
       assert.deepEqual(child.getParentNodes(), [parent1]);
@@ -870,6 +870,24 @@ describe("state-node", () => {
       expect(child1.hasLabel()).to.equal(true);
       expect(child2.hasLabel()).to.equal(true);
       expect(parent.getIsLeaf()).to.equal(true);
+    });
+
+    it("delete with updateStateInfo = true", () => {
+      const label1 = 'label1';
+      const label2 = 'label2';
+      const child1 = new StateNode();
+      const child2 = new StateNode();
+      child1.setValue('value1');
+      child2.setValue('value2');
+      const parent = new StateNode();
+
+      // Set children
+      parent.setChild(label1, child1);
+      parent.setChild(label2, child2);
+
+      expect(parent.getProofHash()).to.equal(null);
+      parent.deleteChild(label1, true);
+      expect(parent.getProofHash()).to.not.equal(null);  // not null!!
     });
 
     it("get / set / has / delete with multiple parents", () => {
@@ -1197,9 +1215,20 @@ describe("state-node", () => {
 
       // build proof hash with updatedChildLabel
       const newProofHash = stateTree.buildProofHash(label2);
-      expect(newProofHash).not.equal(proofHash);  // Updated
+      expect(newProofHash).not.equal(proofHash);  // Updated!!
       expect(newProofHash).to.equal(stateTree.radixTree.getRootProofHash());
       expect(stateTree.radixTree.verifyProofHashForRadixTree()).to.equal(true);
+
+      // set another proof hash value for a child again
+      child2.setProofHash('yet another PH');
+      expect(stateTree.radixTree.verifyProofHashForRadixTree()).to.equal(false);
+
+      // build proof hash with updatedChildLabel and rebuildRadixInfo = false
+      const radixTreeProofHashBefore = stateTree.radixTree.getRootProofHash();
+      const newProofHash2 = stateTree.buildProofHash(label2, false);
+      expect(newProofHash2).equal(radixTreeProofHashBefore);  // Unchanged!!
+      expect(newProofHash2).to.equal(stateTree.radixTree.getRootProofHash());
+      expect(stateTree.radixTree.verifyProofHashForRadixTree()).to.equal(false);
     });
   });
 
@@ -1222,11 +1251,8 @@ describe("state-node", () => {
     });
 
     it("internal node", () => {
-      child1.setTreeHeight(0);
-      child2.setTreeHeight(1);
-      child3.setTreeHeight(2);
-      child4.setTreeHeight(3);
-      expect(stateTree.computeTreeHeight()).to.equal(4);
+      stateTree.radixTree.root.setTreeHeight(10);
+      expect(stateTree.computeTreeHeight()).to.equal(11);
     });
   });
 
@@ -1249,10 +1275,7 @@ describe("state-node", () => {
     });
 
     it("internal node", () => {
-      child1.setTreeSize(10);
-      child2.setTreeSize(20);
-      child3.setTreeSize(30);
-      child4.setTreeSize(40);
+      stateTree.radixTree.root.setTreeSize(100);
       expect(stateTree.computeTreeSize()).to.equal(101);
     });
   });
@@ -1301,12 +1324,9 @@ describe("state-node", () => {
       // TOTAL: 42 - 6 = 36 bytes (exclude version)
       expect(stateTree.computeNodeBytes()).to.equal(36);
 
-      child1.setTreeBytes(10);
-      child2.setTreeBytes(20);
-      child3.setTreeBytes(30);
-      child4.setTreeBytes(40);
-      // 36 + 8(label1) * 2 + 10 + 8(label2) * 2 + 20 + 8(label3) * 2 + 30 + 8(label4) * 2 + 40 = 200
-      expect(stateTree.computeTreeBytes()).to.equal(200);
+      stateTree.radixTree.root.setTreeBytes(100);
+      // 36 + 100 = 136
+      expect(stateTree.computeTreeBytes()).to.equal(136);
     });
   });
 
@@ -1395,7 +1415,6 @@ describe("state-node", () => {
 
       // set another proof hash value for a child
       child2.setProofHash('another PH');
-      expect(stateTree.verifyProofHash()).to.equal(false);
 
       // update with updatedChildLabel
       stateTree.updateStateInfo(label2);
@@ -1403,6 +1422,16 @@ describe("state-node", () => {
       expect(newProofHash).not.equal(proofHash);  // Updated
       expect(newProofHash).to.equal(stateTree.buildProofHash());
       expect(stateTree.verifyProofHash()).to.equal(true);
+
+      // set yet another proof hash value for a child
+      child2.setProofHash('yet another PH');
+
+      // update with updatedChildLabel and rebuildRadixInfo = false
+      const stateTreeProofHashBefore = stateTree.getProofHash();
+      stateTree.updateStateInfo(label2, false);  // rebuildRadixInfo = false
+      const newProofHash2 = stateTree.getProofHash();
+      expect(newProofHash2).equal(stateTreeProofHashBefore);  // Unchanged
+      expect(stateTree.verifyProofHash()).to.equal(false);
     });
 
     it("verifyProofHash with updatedChildLabel", () => {
