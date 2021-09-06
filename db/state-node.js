@@ -453,27 +453,6 @@ class StateNode {
     return this.getProofHash() === this._buildProofHash(updatedChildLabel, true);
   }
 
-  getProofOfState(childLabel = null, childProof = null) {
-    if (childLabel === null) {
-      return { [ProofProperties.PROOF_HASH]: this.getProofHash() };
-    } else {
-      if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
-        return this.radixTree.getProofOfState(childLabel, childProof);
-      } else {
-        const proof = { [ProofProperties.PROOF_HASH]: this.getProofHash() };
-        this.getChildLabels().forEach((label) => {
-          const child = this.getChild(label);
-          Object.assign(proof, {
-            [label]: label === childLabel ? childProof : {
-              [ProofProperties.PROOF_HASH]: child.getProofHash()
-            }
-          });
-        });
-        return proof;
-      }
-    }
-  }
-
   _buildTreeInfo(updatedChildLabel = null, shouldRebuildRadixInfo = false) {
     const nodeBytes = this.computeNodeBytes();
     const initialValues = {
@@ -513,6 +492,13 @@ class StateNode {
     }
   }
 
+  verifyTreeInfo(updatedChildLabel = null) {
+    const treeInfo = this._buildTreeInfo(updatedChildLabel, true);
+    return this.getTreeHeight() === treeInfo.treeHeight &&
+        this.getTreeSize() === treeInfo.treeSize &&
+        this.getTreeBytes() === treeInfo.treeBytes;
+  }
+
   updateStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
     if (!LIGHTWEIGHT) {
       this.setProofHash(this._buildProofHash(updatedChildLabel, shouldRebuildRadixInfo));
@@ -525,6 +511,27 @@ class StateNode {
     this.setTreeBytes(treeInfo.treeBytes);
   }
 
+  getProofOfState(childLabel = null, childProof = null) {
+    if (childLabel === null) {
+      return { [ProofProperties.PROOF_HASH]: this.getProofHash() };
+    } else {
+      if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
+        return this.radixTree.getProofOfState(childLabel, childProof);
+      } else {
+        const proof = { [ProofProperties.PROOF_HASH]: this.getProofHash() };
+        this.getChildLabels().forEach((label) => {
+          const child = this.getChild(label);
+          Object.assign(proof, {
+            [label]: label === childLabel ? childProof : {
+              [ProofProperties.PROOF_HASH]: child.getProofHash()
+            }
+          });
+        });
+        return proof;
+      }
+    }
+  }
+
   deleteRadixTree(deleteParent = true) {
     return this.radixTree.deleteRadixTree(deleteParent ? this : null);
   }
@@ -534,8 +541,9 @@ class StateNode {
     for (const [label, child] of this.childMap.entries()) {
       this.radixTree.set(label, child);
     }
-    this.childMap.clear();
     this.setRadixTreeEnabled(true);
+    this.childMap.clear();
+    this.updateStateInfo(null, true);
   }
 
   disableRadixTree() {
@@ -546,6 +554,7 @@ class StateNode {
     }
     this.deleteRadixTree(false);  // deleteParent = false
     this.setRadixTreeEnabled(false);
+    this.updateStateInfo(null, true);
   }
 }
 
