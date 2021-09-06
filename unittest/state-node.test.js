@@ -1735,7 +1735,7 @@ describe("state-node", () => {
     });
   });
 
-  describe("updateStateInfo / verifyProofHash", () => {
+  describe("updateStateInfo / verifyProofHash / verifyTreeInfo", () => {
     it("leaf node", () => {
       let treeInfo;
 
@@ -1744,70 +1744,49 @@ describe("state-node", () => {
       node.updateStateInfo();
       expect(node.getProofHash()).to.equal(node._buildProofHash());
       expect(node.verifyProofHash()).to.equal(true);
-      treeInfo = node._buildTreeInfo();
-      expect(node.getTreeHeight()).to.equal(treeInfo.treeHeight);
-      expect(node.getTreeSize()).to.equal(treeInfo.treeSize);
-      expect(node.getTreeBytes()).to.equal(treeInfo.treeBytes);
+      expect(node.verifyTreeInfo()).to.equal(true);
 
       node.setValue(10);
       expect(node.verifyProofHash()).to.equal(false);
       node.updateStateInfo();
       expect(node.getProofHash()).to.equal(node._buildProofHash());
       expect(node.verifyProofHash()).to.equal(true);
-      treeInfo = node._buildTreeInfo();
-      expect(node.getTreeHeight()).to.equal(treeInfo.treeHeight);
-      expect(node.getTreeSize()).to.equal(treeInfo.treeSize);
-      expect(node.getTreeBytes()).to.equal(treeInfo.treeBytes);
+      expect(node.verifyTreeInfo()).to.equal(true);
 
       node.setValue(-200);
       expect(node.verifyProofHash()).to.equal(false);
       node.updateStateInfo();
       expect(node.getProofHash()).to.equal(node._buildProofHash());
       expect(node.verifyProofHash()).to.equal(true);
-      treeInfo = node._buildTreeInfo();
-      expect(node.getTreeHeight()).to.equal(treeInfo.treeHeight);
-      expect(node.getTreeSize()).to.equal(treeInfo.treeSize);
-      expect(node.getTreeBytes()).to.equal(treeInfo.treeBytes);
+      expect(node.verifyTreeInfo()).to.equal(true);
 
       node.setValue('');
       expect(node.verifyProofHash()).to.equal(false);
       node.updateStateInfo();
       expect(node.getProofHash()).to.equal(node._buildProofHash());
       expect(node.verifyProofHash()).to.equal(true);
-      treeInfo = node._buildTreeInfo();
-      expect(node.getTreeHeight()).to.equal(treeInfo.treeHeight);
-      expect(node.getTreeSize()).to.equal(treeInfo.treeSize);
-      expect(node.getTreeBytes()).to.equal(treeInfo.treeBytes);
+      expect(node.verifyTreeInfo()).to.equal(true);
 
       node.setValue('str');
       expect(node.verifyProofHash()).to.equal(false);
       node.updateStateInfo();
       expect(node.getProofHash()).to.equal(node._buildProofHash());
       expect(node.verifyProofHash()).to.equal(true);
-      treeInfo = node._buildTreeInfo();
-      expect(node.getTreeHeight()).to.equal(treeInfo.treeHeight);
-      expect(node.getTreeSize()).to.equal(treeInfo.treeSize);
-      expect(node.getTreeBytes()).to.equal(treeInfo.treeBytes);
+      expect(node.verifyTreeInfo()).to.equal(true);
 
       node.setValue(null);
       expect(node.verifyProofHash()).to.equal(false);
       node.updateStateInfo();
       expect(node.getProofHash()).to.equal(node._buildProofHash());
       expect(node.verifyProofHash()).to.equal(true);
-      treeInfo = node._buildTreeInfo();
-      expect(node.getTreeHeight()).to.equal(treeInfo.treeHeight);
-      expect(node.getTreeSize()).to.equal(treeInfo.treeSize);
-      expect(node.getTreeBytes()).to.equal(treeInfo.treeBytes);
+      expect(node.verifyTreeInfo()).to.equal(true);
 
       node.setValue(undefined);
       expect(node.verifyProofHash()).to.equal(false);
       node.updateStateInfo();
       expect(node.getProofHash()).to.equal(node._buildProofHash());
       expect(node.verifyProofHash()).to.equal(true);
-      treeInfo = node._buildTreeInfo();
-      expect(node.getTreeHeight()).to.equal(treeInfo.treeHeight);
-      expect(node.getTreeSize()).to.equal(treeInfo.treeSize);
-      expect(node.getTreeBytes()).to.equal(treeInfo.treeBytes);
+      expect(node.verifyTreeInfo()).to.equal(true);
     });
 
     it("internal node when radixTreeEnabled = true", () => {
@@ -1830,10 +1809,7 @@ describe("state-node", () => {
       const proofHash = stateTreeEnabled.getProofHash();
       expect(proofHash).to.equal(stateTreeEnabled._buildProofHash());
       expect(stateTreeEnabled.verifyProofHash()).to.equal(true);
-      const treeInfo = stateTreeEnabled._buildTreeInfo();
-      expect(stateTreeEnabled.getTreeHeight()).to.equal(treeInfo.treeHeight);
-      expect(stateTreeEnabled.getTreeSize()).to.equal(treeInfo.treeSize);
-      expect(stateTreeEnabled.getTreeBytes()).to.equal(treeInfo.treeBytes);
+      expect(stateTreeEnabled.verifyTreeInfo()).to.equal(true);
 
       // set another proof hash value for a child
       child2Enabled.setProofHash('another PH');
@@ -1876,10 +1852,7 @@ describe("state-node", () => {
       const proofHash = stateTreeDisabled.getProofHash();
       expect(proofHash).to.equal(stateTreeDisabled._buildProofHash());
       expect(stateTreeDisabled.verifyProofHash()).to.equal(true);
-      const treeInfo = stateTreeDisabled._buildTreeInfo();
-      expect(stateTreeDisabled.getTreeHeight()).to.equal(treeInfo.treeHeight);
-      expect(stateTreeDisabled.getTreeSize()).to.equal(treeInfo.treeSize);
-      expect(stateTreeDisabled.getTreeBytes()).to.equal(treeInfo.treeBytes);
+      expect(stateTreeDisabled.verifyTreeInfo()).to.equal(true);
 
       // set another proof hash value for a child
       child2Disabled.setProofHash('another PH');
@@ -2037,17 +2010,33 @@ describe("state-node", () => {
       child2Disabled.setProofHash('proofHash2');
       child3Disabled.setProofHash('proofHash3');
       child4Disabled.setProofHash('proofHash4');
+      child1Disabled.setTreeHeight(1);
+      child2Disabled.setTreeHeight(1);
+      child3Disabled.setTreeHeight(1);
+      child4Disabled.setTreeHeight(1);
+      child1Disabled.setTreeSize(10);
+      child2Disabled.setTreeSize(10);
+      child3Disabled.setTreeSize(10);
+      child4Disabled.setTreeSize(10);
+      child1Disabled.setTreeBytes(100);
+      child2Disabled.setTreeBytes(100);
+      child3Disabled.setTreeBytes(100);
+      child4Disabled.setTreeBytes(100);
+      stateTreeDisabled.updateStateInfo(null, true);  // shouldRebuildRadixInfo = true
 
       const childLabelsBefore = stateTreeDisabled.getChildLabels();
       const childNodesBefore = stateTreeDisabled.getChildNodes();
 
-      // enable
       stateTreeDisabled.enableRadixTree();
       assert.deepEqual(stateTreeDisabled.getChildLabels(), childLabelsBefore);
       assert.deepEqual(stateTreeDisabled.getChildNodes(), childNodesBefore);
       expect(stateTreeDisabled.radixTree.size()).to.equal(4);
       expect(stateTreeDisabled.childMap.size).to.equal(0);
       expect(stateTreeDisabled.getRadixTreeEnabled()).to.equal(true);
+      // Verify proof hash
+      expect(stateTreeDisabled.verifyProofHash()).to.equal(true);
+      // Verify tree info
+      expect(stateTreeDisabled.verifyTreeInfo()).to.equal(true);
       // Check parents of state nodes
       assert.deepEqual(child1Disabled.getParentNodes(), [stateTreeDisabled]);
       assert.deepEqual(child1Disabled.getParentNodes(), [stateTreeDisabled]);
@@ -2060,17 +2049,33 @@ describe("state-node", () => {
       child2Enabled.setProofHash('proofHash2');
       child3Enabled.setProofHash('proofHash3');
       child4Enabled.setProofHash('proofHash4');
+      child1Enabled.setTreeHeight(1);
+      child2Enabled.setTreeHeight(1);
+      child3Enabled.setTreeHeight(1);
+      child4Enabled.setTreeHeight(1);
+      child1Enabled.setTreeSize(10);
+      child2Enabled.setTreeSize(10);
+      child3Enabled.setTreeSize(10);
+      child4Enabled.setTreeSize(10);
+      child1Enabled.setTreeBytes(100);
+      child2Enabled.setTreeBytes(100);
+      child3Enabled.setTreeBytes(100);
+      child4Enabled.setTreeBytes(100);
+      stateTreeEnabled.updateStateInfo(null, true);  // shouldRebuildRadixInfo = true
 
       const childLabelsBefore = stateTreeEnabled.getChildLabels();
       const childNodesBefore = stateTreeEnabled.getChildNodes();
 
-      // disable
       stateTreeEnabled.disableRadixTree();
       assert.deepEqual(stateTreeEnabled.getChildLabels(), childLabelsBefore);
       assert.deepEqual(stateTreeEnabled.getChildNodes(), childNodesBefore);
       expect(stateTreeEnabled.radixTree.size()).to.equal(0);
       expect(stateTreeEnabled.childMap.size).to.equal(4);
       expect(stateTreeEnabled.getRadixTreeEnabled()).to.equal(false);
+      // Verify proof hash
+      expect(stateTreeEnabled.verifyProofHash()).to.equal(true);
+      // Verify tree info
+      expect(stateTreeEnabled.verifyTreeInfo()).to.equal(true);
       // Check parents of state nodes
       assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
       assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
