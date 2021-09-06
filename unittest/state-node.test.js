@@ -91,6 +91,8 @@ describe("state-node", () => {
       const label = 'label';
       const value = 'val';
       const parentNode = new StateNode();
+      const childLabel = 'childLabel';
+      const childNode = new StateNode();
       const proofHash = 'PH';
       const treeHeight = 1;
       const treeSize = 10;
@@ -101,12 +103,27 @@ describe("state-node", () => {
       node.setValue(value);
       node.addParent(parentNode);
       node.setRadixTreeEnabled(true);
+      node.setChild(childLabel, childNode);
       node.setProofHash(proofHash);
       node.setTreeHeight(treeHeight);
       node.setTreeSize(treeSize);
       node.setTreeBytes(treeBytes);
 
       node.reset();
+      expect(node.version).to.equal(null);
+      expect(node.label).to.equal(label);  // not reset
+      expect(node.isLeaf).to.equal(false); // not reset
+      expect(node.value).to.equal(value);  // not reset
+      expect(node.parentSet.size).to.equal(0);
+      expect(node.radixTreeEnabled).to.equal(true);  // not reset
+      expect(node.radixTree.size()).to.equal(0);
+      expect(node.childMap.size).to.equal(0);
+      expect(node.proofHash).to.equal(proofHash); // not reset
+      expect(node.treeHeight).to.equal(treeHeight); // not reset
+      expect(node.treeSize).to.equal(treeSize); // not reset
+      expect(node.treeBytes).to.equal(treeBytes); // not reset
+
+      node.reset(false);
       expect(node.version).to.equal(null);
       expect(node.label).to.equal(null);
       expect(node.isLeaf).to.equal(true);
