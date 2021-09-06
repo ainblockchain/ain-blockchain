@@ -873,13 +873,13 @@ describe("state-node", () => {
       expect(parent.getIsLeaf()).to.equal(true);
     });
 
-    it("delete with updateStateInfo = true", () => {
+    it("delete with shouldUpdateStateInfo = true", () => {
       // Set children
       parent1.setChild(label1, child1);
       parent1.setChild(label2, child2);
 
       expect(parent1.getProofHash()).to.equal(null);
-      parent1.deleteChild(label1, true);
+      parent1.deleteChild(label1, true);  // shouldUpdateStateInfo = true
       expect(parent1.getProofHash()).to.not.equal(null);  // not null!!
     });
 
@@ -1185,13 +1185,13 @@ describe("state-node", () => {
       expect(parent.getIsLeaf()).to.equal(true);
     });
 
-    it("delete with updateStateInfo = true", () => {
+    it("delete with shouldUpdateStateInfo = true", () => {
       // Set children
       parent1.setChild(label1, child1);
       parent1.setChild(label2, child2);
 
       expect(parent1.getProofHash()).to.equal(null);
-      parent1.deleteChild(label1, true);
+      parent1.deleteChild(label1, true);  // shouldUpdateStateInfo = true
       expect(parent1.getProofHash()).to.not.equal(null);  // not null!!
     });
 
@@ -1535,7 +1535,7 @@ describe("state-node", () => {
       child2Enabled.setProofHash('yet another PH');
       expect(stateTreeEnabled.radixTree.verifyProofHashForRadixTree()).to.equal(false);
 
-      // build proof hash with updatedChildLabel and rebuildRadixInfo = false
+      // build proof hash with updatedChildLabel and shouldRebuildRadixInfo = false
       const radixTreeProofHashBefore = stateTreeEnabled.radixTree.getRootProofHash();
       const proofHashAfter2 = stateTreeEnabled._buildProofHash(label2, false);
       expect(proofHashAfter2).equal(radixTreeProofHashBefore);  // Unchanged!!
@@ -1580,9 +1580,19 @@ describe("state-node", () => {
         expect(node._buildTreeInfo().treeHeight).to.equal(0);
       });
 
+      // here
       it("internal node when radixTreeEnabled = true", () => {
-        stateTreeEnabled.radixTree.root.setTreeHeight(10);
-        expect(stateTreeEnabled._buildTreeInfo().treeHeight).to.equal(11);
+        child1Enabled.setTreeHeight(0);
+        child2Enabled.setTreeHeight(1);
+        child3Enabled.setTreeHeight(2);
+        child4Enabled.setTreeHeight(3);
+        stateTreeEnabled.radixTree.root.setTreeHeight(100);
+
+        expect(stateTreeEnabled._buildTreeInfo().treeHeight).to.equal(101);
+        // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
+        expect(stateTreeEnabled._buildTreeInfo(label1, true).treeHeight).to.equal(1);
+        // With updatedChildLabel = null, shouldRebuildRadixInfo = true
+        expect(stateTreeEnabled._buildTreeInfo(null, true).treeHeight).to.equal(4);
       });
 
       it("internal node when radixTreeEnabled = false", () => {
@@ -1590,6 +1600,7 @@ describe("state-node", () => {
         child2Disabled.setTreeHeight(1);
         child3Disabled.setTreeHeight(2);
         child4Disabled.setTreeHeight(3);
+
         expect(stateTreeDisabled._buildTreeInfo().treeHeight).to.equal(4);
       });
     });
@@ -1613,8 +1624,17 @@ describe("state-node", () => {
       });
 
       it("internal node when radixTreeEnabled = true", () => {
-        stateTreeEnabled.radixTree.root.setTreeSize(100);
-        expect(stateTreeEnabled._buildTreeInfo().treeSize).to.equal(101);
+        child1Enabled.setTreeSize(10);
+        child2Enabled.setTreeSize(20);
+        child3Enabled.setTreeSize(30);
+        child4Enabled.setTreeSize(40);
+        stateTreeEnabled.radixTree.root.setTreeSize(1000);
+
+        expect(stateTreeEnabled._buildTreeInfo().treeSize).to.equal(1001);
+        // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
+        expect(stateTreeEnabled._buildTreeInfo(label1, true).treeSize).to.equal(11);
+        // With updatedChildLabel = null, shouldRebuildRadixInfo = true
+        expect(stateTreeEnabled._buildTreeInfo(null, true).treeSize).to.equal(101);
       });
 
       it("internal node when radixTreeEnabled = false", () => {
@@ -1622,6 +1642,7 @@ describe("state-node", () => {
         child2Disabled.setTreeSize(20);
         child3Disabled.setTreeSize(30);
         child4Disabled.setTreeSize(40);
+
         expect(stateTreeDisabled._buildTreeInfo().treeSize).to.equal(101);
       });
     });
@@ -1629,7 +1650,8 @@ describe("state-node", () => {
     describe("tree bytes", () => {
       it("leaf node", () => {
         const parent = new StateNode();
-        parent.setChild('child', node);
+        const label = 'label';
+        parent.setChild(label, node);
 
         node.setVersion('ver');  // string (3 * 2 = 6 bytes)
         // node.isLeaf : boolean (4 bytses)
@@ -1658,7 +1680,8 @@ describe("state-node", () => {
 
       it("internal node when radixTreeEnabled = true", () => {
         const parent = new StateNode();
-        parent.setChild('child', stateTreeEnabled);
+        const label = 'label';
+        parent.setChild(label, stateTreeEnabled);
 
         stateTreeEnabled.setVersion('ver');  // string (3 * 2 = 6 bytes)
         // stateTreeEnabled.isLeaf : boolean (4 bytses)
@@ -1670,14 +1693,26 @@ describe("state-node", () => {
         // TOTAL: 42 - 6 = 36 bytes (exclude version)
         expect(stateTreeEnabled.computeNodeBytes()).to.equal(36);
 
-        stateTreeEnabled.radixTree.root.setTreeBytes(100);
+        child1Enabled.setTreeBytes(10);
+        child2Enabled.setTreeBytes(20);
+        child3Enabled.setTreeBytes(30);
+        child4Enabled.setTreeBytes(40);
+        stateTreeEnabled.radixTree.root.setTreeBytes(10000);
+
         // 36 + 100 = 136
-        expect(stateTreeEnabled._buildTreeInfo().treeBytes).to.equal(136);
+        expect(stateTreeEnabled._buildTreeInfo().treeBytes).to.equal(10036);
+        // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
+        // 36 + 8(label1) * 2 + 10 = 62
+        expect(stateTreeEnabled._buildTreeInfo(label1, true).treeBytes).to.equal(62);
+        // With updatedChildLabel = null, shouldRebuildRadixInfo = true
+        // 36 + 8(label1) * 2 + 10 + 8(label2) * 2 + 20 + 8(label3) * 2 + 30 + 8(label4) * 2 + 40 = 200
+        expect(stateTreeEnabled._buildTreeInfo(null, true).treeBytes).to.equal(200);
       });
 
       it("internal node when radixTreeEnabled = false", () => {
         const parent = new StateNode();
-        parent.setChild('child', stateTreeDisabled);
+        const label = 'label';
+        parent.setChild(label, stateTreeDisabled);
 
         stateTreeDisabled.setVersion('ver');  // string (3 * 2 = 6 bytes)
         // stateTreeDisabled.isLeaf : boolean (4 bytses)
@@ -1693,6 +1728,7 @@ describe("state-node", () => {
         child2Disabled.setTreeBytes(20);
         child3Disabled.setTreeBytes(30);
         child4Disabled.setTreeBytes(40);
+
         // 36 + 8(label1) * 2 + 10 + 8(label2) * 2 + 20 + 8(label3) * 2 + 30 + 8(label4) * 2 + 40 = 200
         expect(stateTreeDisabled._buildTreeInfo().treeBytes).to.equal(200);
       });
@@ -1812,9 +1848,9 @@ describe("state-node", () => {
       // set yet another proof hash value for a child
       child2Enabled.setProofHash('yet another PH');
 
-      // update with updatedChildLabel and rebuildRadixInfo = false
+      // update with updatedChildLabel and shouldRebuildRadixInfo = false
       const stateTreeProofHashBefore = stateTreeEnabled.getProofHash();
-      stateTreeEnabled.updateStateInfo(label2, false);  // rebuildRadixInfo = false
+      stateTreeEnabled.updateStateInfo(label2, false);  // shouldRebuildRadixInfo = false
       const newProofHash2 = stateTreeEnabled.getProofHash();
       expect(newProofHash2).equal(stateTreeProofHashBefore);  // Unchanged
       expect(stateTreeEnabled.verifyProofHash()).to.equal(false);

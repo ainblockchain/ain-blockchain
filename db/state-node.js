@@ -319,7 +319,7 @@ class StateNode {
     }
   }
 
-  deleteChild(label, updateStateInfo = false) {
+  deleteChild(label, shouldUpdateStateInfo = false) {
     const LOG_HEADER = 'deleteChild';
     if (!this.hasChild(label)) {
       logger.error(
@@ -331,13 +331,13 @@ class StateNode {
     const child = this.getChild(label);
     child.deleteParent(this);
     if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
-      this.radixTree.delete(label, updateStateInfo);  // with updateStateInfo
-      if (updateStateInfo) {
-        this.updateStateInfo(null, false);  // rebuildRadixInfo = false
+      this.radixTree.delete(label, shouldUpdateStateInfo);  // with shouldUpdateStateInfo
+      if (shouldUpdateStateInfo) {
+        this.updateStateInfo(null, false);  // shouldRebuildRadixInfo = false
       }
     } else {
       this.childMap.delete(label);
-      if (updateStateInfo) {
+      if (shouldUpdateStateInfo) {
         this.updateStateInfo();
       }
     }
@@ -423,16 +423,16 @@ class StateNode {
    * need to be updated, and this function does so.
    * 
    * @param {string} updatedChildLabel label of the child whose proof hash is not up-to-date
-   * @param {boolean} rebuildRadixInfo rebuild radix info
+   * @param {boolean} shouldRebuildRadixInfo rebuild radix info
    */
   // NOTE(platfowner): This function changes proof hashes of the radix tree.
-  _buildProofHash(updatedChildLabel = null, rebuildRadixInfo = true) {
+  _buildProofHash(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
     let preimage;
     if (this.getIsLeaf()) {
       preimage = this.getValue();
     } else {
       if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
-        if (rebuildRadixInfo) {
+        if (shouldRebuildRadixInfo) {
           if (updatedChildLabel === null) {
             this.radixTree.updateRadixInfoForRadixTree();
           } else {
@@ -474,7 +474,7 @@ class StateNode {
     }
   }
 
-  _buildTreeInfo() {
+  _buildTreeInfo(updatedChildLabel = null, shouldRebuildRadixInfo = false) {
     const nodeBytes = this.computeNodeBytes();
     const initialValues = {
       treeHeight: 0,
@@ -485,6 +485,13 @@ class StateNode {
       return initialValues;
     } else {
       if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
+        if (shouldRebuildRadixInfo) {
+          if (updatedChildLabel === null) {
+            this.radixTree.updateRadixInfoForRadixTree();
+          } else {
+            this.radixTree.updateRadixInfoForRadixPath(updatedChildLabel);
+          }
+        }
         return {
           treeHeight: 1 + this.radixTree.getRootTreeHeight(),
           treeSize: 1 + this.radixTree.getRootTreeSize(),
@@ -506,11 +513,13 @@ class StateNode {
     }
   }
 
-  updateStateInfo(updatedChildLabel = null, rebuildRadixInfo = true) {
+  updateStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
     if (!LIGHTWEIGHT) {
-      this.setProofHash(this._buildProofHash(updatedChildLabel, rebuildRadixInfo));
+      this.setProofHash(this._buildProofHash(updatedChildLabel, shouldRebuildRadixInfo));
     }
-    const treeInfo = this._buildTreeInfo();
+    // NOTE(platfowner): With shouldRebuildRadixInfo = false as it should be already done
+    // by _buildProofHash() given shouldRebuildRadixInfo = true.
+    const treeInfo = this._buildTreeInfo(null, false);
     this.setTreeHeight(treeInfo.treeHeight);
     this.setTreeSize(treeInfo.treeSize);
     this.setTreeBytes(treeInfo.treeBytes);
