@@ -150,6 +150,16 @@ class P2pClient {
       type: TrackerMessageTypes.CONNECTION,
       data: this.getStatus()
     };
+    logger.debug(`\n >> Connect to [TRACKER] ${TRACKER_WS_ADDR}: ` +
+        `${JSON.stringify(message, null, 2)}`);
+    this.trackerWebSocket.send(JSON.stringify(message));
+  }
+
+  updateNodeInfoToTracker() {
+    const message = {
+      type: TrackerMessageTypes.UPDATE,
+      data: this.getStatus()
+    };
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
         `${JSON.stringify(message, null, 2)}`);
     this.trackerWebSocket.send(JSON.stringify(message));
@@ -176,7 +186,6 @@ class P2pClient {
           break;
         case TrackerMessageTypes.CORRESPOND:
           const url = parsedMessage.data;
-          console.log(url)
           this.connectToPeer(url);
           break;
         default:
@@ -358,6 +367,7 @@ class P2pClient {
               socket: socket,
               version: dataProtoVer
             };
+            this.updateNodeInfoToTracker();
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:

@@ -411,6 +411,7 @@ class P2pServer {
                 socket: socket,
                 version: dataProtoVer
               };
+              this.client.updateNodeInfoToTracker();
               const body = {
                 address: this.getNodeAddress(),
                 timestamp: Date.now(),

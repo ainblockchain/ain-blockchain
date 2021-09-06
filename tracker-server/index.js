@@ -119,14 +119,9 @@ server.on('connection', (ws) => {
     const parsedMessage = JSON.parse(message);
     switch(_.get(parsedMessage, 'type')) {
       case TrackerMessageTypes.CONNECTION:
-        const nodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
-        wsList[ws.uuid] = nodeInfo.address;
-        nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
-        // TODO(minsulee2): It will be managed via peers when heartbeat updates.
-        peerNodes[nodeInfo.address] = nodeInfo;
-        logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
-        logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
-        const newManagedPeerInfoList = assignRandomPeers(nodeInfo);
+        const connectionNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
+        setNodeInfo(ws, connectionNodeInfo);
+        const newManagedPeerInfoList = assignRandomPeers(connectionNodeInfo);
         const connectionMessage = {
           type: TrackerMessageTypes.CONNECTION,
           data: {
@@ -134,7 +129,7 @@ server.on('connection', (ws) => {
             numLivePeers: getNumAliveNodes() - 1   // except for me.
           }
         };
-        logger.info(`>> Message to node [${abbrAddr(nodeInfo.address)}]: ` +
+        logger.info(`>> Message to node [${abbrAddr(connectionNodeInfo.address)}]: ` +
             `${JSON.stringify(connectionMessage, null, 2)}`);
         ws.send(JSON.stringify(connectionMessage));
         printNodesInfo();
@@ -150,6 +145,11 @@ server.on('connection', (ws) => {
         logger.info(`>> Message to node [${abbrAddr(correspondingNodeInfo.address)}]: ` +
             `${JSON.stringify(correspondMessage, null, 2)}`);
         ws.send(JSON.stringify(correspondMessage));
+        break;
+      case TrackerMessageTypes.UPDATE:
+        const updateNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
+        setNodeInfo(ws, updateNodeInfo);
+        printNodesInfo();
         break;
       default:
         logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
@@ -177,6 +177,15 @@ server.on('connection', (ws) => {
 
 function abbrAddr(address) {
   return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
+}
+
+function setNodeInfo(ws, nodeInfo) {
+  wsList[ws.uuid] = nodeInfo.address;
+  nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
+  // TODO(minsulee2): It will be managed via peers when heartbeat updates.
+  peerNodes[nodeInfo.address] = nodeInfo;
+  logger.info(`\n<< Connection from node [${abbrAddr(nodeInfo.address)}]`);
+  logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
 }
 
 function getNumAliveNodes() {
