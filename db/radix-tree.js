@@ -184,7 +184,7 @@ class RadixTree {
   }
 
   delete(stateLabel, updateProofHash = false) {
-    const LOG_HEADER = '_delete';
+    const LOG_HEADER = 'delete';
 
     const node = this._getRadixNodeForReading(stateLabel);
     if (node === null || !node.hasStateNode()) {
