@@ -36,18 +36,33 @@ describe("radix-node", () => {
       const childLabelRadix = '1';
       const childLabelSuffix = '1111';
       const child = new RadixNode();
+      const proofHash = 'proofHash';
+      const treeHeight = 1;
+      const treeSize = 10;
+      const treeBytes = 100;
 
       node.setStateNode(stateNode);
       node.setLabelRadix(labelRadix);
       node.setLabelSuffix(labelSuffix);
       node.setParent(parent);
       node.setChild(childLabelRadix, childLabelSuffix, child);
-      node.setProofHash('proofHash');
-      node.setTreeHeight(1);
-      node.setTreeSize(10);
-      node.setTreeBytes(100);
+      node.setProofHash(proofHash);
+      node.setTreeHeight(treeHeight);
+      node.setTreeSize(treeSize);
+      node.setTreeBytes(treeBytes);
 
       node.reset();
+      expect(node.stateNode).to.equal(null);
+      expect(node.labelRadix).to.equal(labelRadix);
+      expect(node.labelSuffix).to.equal(labelSuffix);
+      expect(node.parent).to.equal(null);
+      expect(node.radixChildMap.size).to.equal(0);
+      expect(node.proofHash).to.equal(proofHash);  // not reset
+      expect(node.treeHeight).to.equal(treeHeight);  // not reset
+      expect(node.treeSize).to.equal(treeSize);  // not reset
+      expect(node.treeBytes).to.equal(treeBytes);  // not reset
+
+      node.reset(false);
       expect(node.stateNode).to.equal(null);
       expect(node.labelRadix).to.equal('');
       expect(node.labelSuffix).to.equal('');
@@ -1021,54 +1036,18 @@ describe("radix-node", () => {
       expect(child2.hasStateNode()).to.equal(false);
       expect(child21.hasStateNode()).to.equal(false);
       expect(child22.hasStateNode()).to.equal(false);
-      // Checks labelRadix of radix node
-      expect(node.getLabelRadix()).to.equal('');
-      expect(child1.getLabelRadix()).to.equal('');
-      expect(child2.getLabelRadix()).to.equal('');
-      expect(child21.getLabelRadix()).to.equal('');
-      expect(child22.getLabelRadix()).to.equal('');
-      // Checks labelSuffix of radix node
-      expect(node.getLabelSuffix()).to.equal('');
-      expect(child1.getLabelSuffix()).to.equal('');
-      expect(child2.getLabelSuffix()).to.equal('');
-      expect(child21.getLabelSuffix()).to.equal('');
-      expect(child22.getLabelSuffix()).to.equal('');
-      // Checks parent of radix node
-      expect(node.hasParent()).to.equal(false);
-      expect(child1.hasParent()).to.equal(false);
-      expect(child2.hasParent()).to.equal(false);
-      expect(child21.hasParent()).to.equal(false);
-      expect(child22.hasParent()).to.equal(false);
       // Checks numChildren of radix node
       expect(node.numChildren()).to.equal(0);
       expect(child1.numChildren()).to.equal(0);
       expect(child2.numChildren()).to.equal(0);
       expect(child21.numChildren()).to.equal(0);
       expect(child22.numChildren()).to.equal(0);
-      // Checks proof hash of radix node
-      expect(node.getProofHash()).to.equal(null);
-      expect(child1.getProofHash()).to.equal(null);
-      expect(child2.getProofHash()).to.equal(null);
-      expect(child21.getProofHash()).to.equal(null);
-      expect(child22.getProofHash()).to.equal(null);
-      // Checks tree height of radix node
-      expect(node.getTreeHeight()).to.equal(0);
-      expect(child1.getTreeHeight()).to.equal(0);
-      expect(child2.getTreeHeight()).to.equal(0);
-      expect(child21.getTreeHeight()).to.equal(0);
-      expect(child22.getTreeHeight()).to.equal(0);
-      // Checks tree size of radix node
-      expect(node.getTreeSize()).to.equal(0);
-      expect(child1.getTreeSize()).to.equal(0);
-      expect(child2.getTreeSize()).to.equal(0);
-      expect(child21.getTreeSize()).to.equal(0);
-      expect(child22.getTreeSize()).to.equal(0);
-      // Checks tree bytes of radix node
-      expect(node.getTreeBytes()).to.equal(0);
-      expect(child1.getTreeBytes()).to.equal(0);
-      expect(child2.getTreeBytes()).to.equal(0);
-      expect(child21.getTreeBytes()).to.equal(0);
-      expect(child22.getTreeBytes()).to.equal(0);
+      // Checks hasParent of radix node
+      expect(node.hasParent()).to.equal(false);
+      expect(child1.hasParent()).to.equal(false);
+      expect(child2.hasParent()).to.equal(false);
+      expect(child21.hasParent()).to.equal(false);
+      expect(child22.hasParent()).to.equal(false);
     });
 
     it("deleteRadixTree with parentStateNode", () => {
