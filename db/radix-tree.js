@@ -17,7 +17,7 @@ class RadixTree {
   }
 
   static _toRadixLabel(stateLabel) {
-    return CommonUtil.toHexString(stateLabel, false);
+    return CommonUtil.toHexString(stateLabel);
   }
 
   static _matchLabelSuffix(radixNode, radixLabel, index) {
