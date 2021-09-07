@@ -475,6 +475,7 @@ class P2pClient {
     socket.on('close', () => {
       const address = getAddressFromSocket(this.outbound, socket);
       removeSocketConnectionIfExists(this.outbound, address);
+      this.updateNodeInfoToTracker();
       logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
   }
