@@ -49,8 +49,7 @@ const {
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage,
-  isValidNetworkId,
-  buildWsAddressFromSocket
+  isValidNetworkId
 } = require('./util');
 const PathUtil = require('../common/path-util');
 
