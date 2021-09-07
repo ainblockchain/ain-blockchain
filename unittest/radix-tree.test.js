@@ -628,7 +628,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("delete with updateProofHash = true - with common label prefix, with label suffices", () => {
+      it("delete with shouldUpdateRadixInfo = true - with common label prefix, with label suffices", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
 
@@ -968,7 +968,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("delete with updateProofHash = true - with common label prefix, delete with only one child", () => {
+      it("delete with shouldUpdateRadixInfo = true - with common label prefix, delete with only one child", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
 
