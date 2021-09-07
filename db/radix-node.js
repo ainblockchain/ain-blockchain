@@ -254,6 +254,7 @@ class RadixNode {
 
   _buildTreeInfo() {
     let treeInfo = {
+      preimage: '',
       treeHeight: 0,
       treeSize: 0,
       treeBytes: 0,
@@ -262,26 +263,41 @@ class RadixNode {
       const stateNode = this.getStateNode();
       const stateNodeLabel = CommonUtil.stringOrEmpty(stateNode.getLabel());
       treeInfo = {
+        preimage: stateNode.getProofHash(),
         treeHeight: stateNode.getTreeHeight(),
         treeSize: stateNode.getTreeSize(),
         treeBytes: sizeof(stateNodeLabel) + stateNode.getTreeBytes(),
       };
     }
-    return this.getChildNodes().reduce((acc, cur) => {
-      const accTreeHeight = Math.max(acc.treeHeight, cur.getTreeHeight());
-      const accTreeSize = acc.treeSize + cur.getTreeSize();
-      const accTreeBytes = acc.treeBytes + cur.getTreeBytes();
-      return {
-        treeHeight: accTreeHeight,
-        treeSize: accTreeSize,
-        treeBytes: accTreeBytes,
-      };
-    }, treeInfo);
+    treeInfo.preimage += `${HASH_DELIMITER}`;
+    if (this.numChildren() === 0) {
+      treeInfo.preimage += `${HASH_DELIMITER}`;
+    } else {
+      treeInfo = this.getChildNodes().reduce((acc, child) => {
+        const accPreimage = acc.preimage +
+            `${HASH_DELIMITER}${child.getLabel()}${HASH_DELIMITER}${child.getProofHash()}`;
+        const accTreeHeight = Math.max(acc.treeHeight, child.getTreeHeight());
+        const accTreeSize = acc.treeSize + child.getTreeSize();
+        const accTreeBytes = acc.treeBytes + child.getTreeBytes();
+        return {
+          preimage: accPreimage,
+          treeHeight: accTreeHeight,
+          treeSize: accTreeSize,
+          treeBytes: accTreeBytes,
+        };
+      }, treeInfo);
+    }
+    return {
+      proofHash: CommonUtil.hashString(treeInfo.preimage),
+      treeHeight: treeInfo.treeHeight,
+      treeSize: treeInfo.treeSize,
+      treeBytes: treeInfo.treeBytes,
+    };
   }
 
   updateRadixInfo() {
-    this.setProofHash(this._buildProofHash());
     const treeInfo = this._buildTreeInfo();
+    this.setProofHash(treeInfo.proofHash);
     this.setTreeHeight(treeInfo.treeHeight);
     this.setTreeSize(treeInfo.treeSize);
     this.setTreeBytes(treeInfo.treeBytes);

@@ -355,8 +355,8 @@ describe("DB operations", () => {
               ".tree_height:down": 0,
               ".tree_size": 2,
               ".tree_size:down": 1,
-              "down": 456,
-            },
+              "down": 456
+            }
           },
           "shards": {
             ".num_parents": 1,
@@ -375,7 +375,7 @@ describe("DB operations", () => {
                 ".tree_height:sharding_enabled": 0,
                 ".tree_size": 2,
                 ".tree_size:sharding_enabled": 1,
-                "sharding_enabled": false,
+                "sharding_enabled": false
               },
               ".tree_bytes": 704,
               ".tree_bytes:path": 168,
@@ -383,7 +383,7 @@ describe("DB operations", () => {
               ".tree_height:path": 0,
               ".tree_size": 4,
               ".tree_size:path": 1,
-              "path": 10,
+              "path": 10
             },
             "enabled_shard": {
               ".num_parents": 1,
@@ -397,7 +397,7 @@ describe("DB operations", () => {
                 ".tree_height:sharding_enabled": 0,
                 ".tree_size": 2,
                 ".tree_size:sharding_enabled": 1,
-                "sharding_enabled": true,
+                "sharding_enabled": true
               },
               ".tree_bytes": 704,
               ".tree_bytes:path": 168,
@@ -405,7 +405,7 @@ describe("DB operations", () => {
               ".tree_height:path": 0,
               ".tree_size": 4,
               ".tree_size:path": 1,
-              "path": 10,
+              "path": 10
             }
           }
         })

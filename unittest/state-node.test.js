@@ -1588,11 +1588,12 @@ describe("state-node", () => {
         child4Enabled.setTreeHeight(3);
         stateTreeEnabled.radixTree.root.setTreeHeight(100);
 
-        expect(stateTreeEnabled._buildTreeInfo().treeHeight).to.equal(101);
+        // With updatedChildLabel = null, shouldRebuildRadixInfo = false
+        expect(stateTreeEnabled._buildTreeInfo(null, false).treeHeight).to.equal(101);
         // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
-        expect(stateTreeEnabled._buildTreeInfo(label1, true).treeHeight).to.equal(1);
+        expect(stateTreeEnabled._buildTreeInfo(label1).treeHeight).to.equal(1);
         // With updatedChildLabel = null, shouldRebuildRadixInfo = true
-        expect(stateTreeEnabled._buildTreeInfo(null, true).treeHeight).to.equal(4);
+        expect(stateTreeEnabled._buildTreeInfo().treeHeight).to.equal(4);
       });
 
       it("internal node when radixTreeEnabled = false", () => {
@@ -1630,11 +1631,12 @@ describe("state-node", () => {
         child4Enabled.setTreeSize(40);
         stateTreeEnabled.radixTree.root.setTreeSize(1000);
 
-        expect(stateTreeEnabled._buildTreeInfo().treeSize).to.equal(1001);
+        // With updatedChildLabel = null, shouldRebuildRadixInfo = false
+        expect(stateTreeEnabled._buildTreeInfo(null, false).treeSize).to.equal(1001);
         // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
-        expect(stateTreeEnabled._buildTreeInfo(label1, true).treeSize).to.equal(11);
+        expect(stateTreeEnabled._buildTreeInfo(label1).treeSize).to.equal(11);
         // With updatedChildLabel = null, shouldRebuildRadixInfo = true
-        expect(stateTreeEnabled._buildTreeInfo(null, true).treeSize).to.equal(101);
+        expect(stateTreeEnabled._buildTreeInfo().treeSize).to.equal(101);
       });
 
       it("internal node when radixTreeEnabled = false", () => {
@@ -1652,30 +1654,21 @@ describe("state-node", () => {
         const parent = new StateNode();
         const label = 'label';
         parent.setChild(label, node);
-
-        node.setVersion('ver');  // string (3 * 2 = 6 bytes)
-        // node.isLeaf : boolean (4 bytses)
-        node.setProofHash('hash');  // string (4 * 2 = 8 bytses)
-        // node.treeHeight : number (8 bytses)
-        // node.treeSize : number (8 bytses)
-        // node.treeBytes : number (8 bytes)
-        // TOTAL: 42 - 6 = 36 bytes (exclude version)
-        expect(node._buildTreeInfo().treeBytes).to.equal(36);
-
+        expect(node._buildTreeInfo().treeBytes).to.equal(160);
         node.setValue(true);  // boolean (4 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(40);
+        expect(node._buildTreeInfo().treeBytes).to.equal(164);
         node.setValue(10);  // number (8 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(44);
+        expect(node._buildTreeInfo().treeBytes).to.equal(168);
         node.setValue(-200);  // number (8 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(44);
+        expect(node._buildTreeInfo().treeBytes).to.equal(168);
         node.setValue('');  // string (0 * 2 = 0 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(36);
+        expect(node._buildTreeInfo().treeBytes).to.equal(160);
         node.setValue('str');  // string (3 * 2 = 6 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(42);
+        expect(node._buildTreeInfo().treeBytes).to.equal(166);
         node.setValue(null);  // null (0 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(36);
+        expect(node._buildTreeInfo().treeBytes).to.equal(160);
         node.setValue(undefined);  // undefined (0 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(36);
+        expect(node._buildTreeInfo().treeBytes).to.equal(160);
       });
 
       it("internal node when radixTreeEnabled = true", () => {
@@ -1683,15 +1676,7 @@ describe("state-node", () => {
         const label = 'label';
         parent.setChild(label, stateTreeEnabled);
 
-        stateTreeEnabled.setVersion('ver');  // string (3 * 2 = 6 bytes)
-        // stateTreeEnabled.isLeaf : boolean (4 bytses)
-        // stateTreeEnabled.value : null (0 bytses)
-        stateTreeEnabled.setProofHash('hash');  // string (4 * 2 = 8 bytses)
-        // stateTreeEnabled.treeHeight : number (8 bytses)
-        // stateTreeEnabled.treeSize : number (8 bytses)
-        // stateTreeEnabled.treeBytes : number (8 bytes)
-        // TOTAL: 42 - 6 = 36 bytes (exclude version)
-        expect(stateTreeEnabled.computeNodeBytes()).to.equal(36);
+        expect(stateTreeEnabled.computeNodeBytes()).to.equal(160);
 
         child1Enabled.setTreeBytes(10);
         child2Enabled.setTreeBytes(20);
@@ -1699,14 +1684,15 @@ describe("state-node", () => {
         child4Enabled.setTreeBytes(40);
         stateTreeEnabled.radixTree.root.setTreeBytes(10000);
 
-        // 36 + 100 = 136
-        expect(stateTreeEnabled._buildTreeInfo().treeBytes).to.equal(10036);
+        // With updatedChildLabel = null, shouldRebuildRadixInfo = false
+        // 36 + 10000 = 10036
+        expect(stateTreeEnabled._buildTreeInfo(null, false).treeBytes).to.equal(10160);
         // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
-        // 36 + 8(label1) * 2 + 10 = 62
-        expect(stateTreeEnabled._buildTreeInfo(label1, true).treeBytes).to.equal(62);
+        // 8(label1) * 2 + 10 = 62
+        expect(stateTreeEnabled._buildTreeInfo(label1).treeBytes).to.equal(186);
         // With updatedChildLabel = null, shouldRebuildRadixInfo = true
-        // 36 + 8(label1) * 2 + 10 + 8(label2) * 2 + 20 + 8(label3) * 2 + 30 + 8(label4) * 2 + 40 = 200
-        expect(stateTreeEnabled._buildTreeInfo(null, true).treeBytes).to.equal(200);
+        // 8(label1) * 2 + 10 + 8(label2) * 2 + 20 + 8(label3) * 2 + 30 + 8(label4) * 2 + 40 = 164
+        expect(stateTreeEnabled._buildTreeInfo().treeBytes).to.equal(324);
       });
 
       it("internal node when radixTreeEnabled = false", () => {
@@ -1714,23 +1700,15 @@ describe("state-node", () => {
         const label = 'label';
         parent.setChild(label, stateTreeDisabled);
 
-        stateTreeDisabled.setVersion('ver');  // string (3 * 2 = 6 bytes)
-        // stateTreeDisabled.isLeaf : boolean (4 bytses)
-        // stateTreeDisabled.value : null (0 bytses)
-        stateTreeDisabled.setProofHash('hash');  // string (4 * 2 = 8 bytses)
-        // stateTreeDisabled.treeHeight : number (8 bytses)
-        // stateTreeDisabled.treeSize : number (8 bytses)
-        // stateTreeDisabled.treeBytes : number (8 bytes)
-        // TOTAL: 42 - 6 = 36 bytes (exclude version)
-        expect(stateTreeDisabled.computeNodeBytes()).to.equal(36);
+        expect(stateTreeDisabled.computeNodeBytes()).to.equal(160);
 
         child1Disabled.setTreeBytes(10);
         child2Disabled.setTreeBytes(20);
         child3Disabled.setTreeBytes(30);
         child4Disabled.setTreeBytes(40);
 
-        // 36 + 8(label1) * 2 + 10 + 8(label2) * 2 + 20 + 8(label3) * 2 + 30 + 8(label4) * 2 + 40 = 200
-        expect(stateTreeDisabled._buildTreeInfo().treeBytes).to.equal(200);
+        // 8(label1) * 2 + 10 + 8(label2) * 2 + 20 + 8(label3) * 2 + 30 + 8(label4) * 2 + 40 = 164
+        expect(stateTreeDisabled._buildTreeInfo().treeBytes).to.equal(324);
       });
     });
   });
@@ -1845,7 +1823,6 @@ describe("state-node", () => {
       child2Disabled.setTreeSize(20);
       child3Disabled.setTreeSize(30);
       child4Disabled.setTreeSize(40);
-      expect(stateTreeDisabled.verifyProofHash()).to.equal(false);
 
       // update without updatedChildLabel
       stateTreeDisabled.updateStateInfo();
@@ -1870,7 +1847,6 @@ describe("state-node", () => {
       child2Enabled.setProofHash('proofHash2');
       child3Enabled.setProofHash('proofHash3');
       child4Enabled.setProofHash('proofHash4');
-      expect(stateTreeEnabled.verifyProofHash(label2)).to.equal(false);
 
       // update with updatedChildLabel
       stateTreeEnabled.updateStateInfo(label2);
