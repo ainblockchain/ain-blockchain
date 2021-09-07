@@ -123,14 +123,6 @@ function isValidNetworkId(networkId) {
   }
 }
 
-function buildWsAddressFromSocket(socket) {
-  const addressInfo = socket._socket.address();
-  const ipAddressArray = addressInfo.address.split(':').filter(e => e);
-  const ipv4Address = ipAddressArray[ipAddressArray.length - 1];
-  const port = addressInfo.port;
-  return `ws://${ipv4Address}:${port}`;
-}
-
 module.exports = {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
@@ -140,6 +132,5 @@ module.exports = {
   closeSocketSafe,
   checkTimestamp,
   encapsulateMessage,
-  isValidNetworkId,
-  buildWsAddressFromSocket
+  isValidNetworkId
 };
