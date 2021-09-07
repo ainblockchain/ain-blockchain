@@ -184,7 +184,7 @@ class RadixTree {
     return parent;
   }
 
-  delete(stateLabel, updateProofHash = false) {
+  delete(stateLabel, shouldUpdateRadixInfo = false) {
     const LOG_HEADER = 'delete';
 
     const node = this._getRadixNodeForReading(stateLabel);
@@ -220,7 +220,7 @@ class RadixTree {
         nodeToUpdateProofHash = this._mergeToChild(parent);
       }
     }
-    if (updateProofHash) {
+    if (shouldUpdateRadixInfo) {
       nodeToUpdateProofHash.updateRadixInfoForRadixPath();
     }
     // Delete from the terminal node map.
