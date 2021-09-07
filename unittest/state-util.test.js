@@ -2313,8 +2313,8 @@ describe("state-util", () => {
         ".tree_bytes": 528,
         ".tree_bytes:label1": 172,
         ".tree_bytes:label2": 172,
-        label1: "value1",
-        label2: "value2"
+        "label1": "value1",
+        "label2": "value2"
       });
     })
 
@@ -2344,8 +2344,8 @@ describe("state-util", () => {
         ".tree_bytes": 528,
         ".tree_bytes:label1": 172,
         ".tree_bytes:label2": 172,
-        label1: "value1",
-        label2: "value2"
+        "label1": "value1",
+        "label2": "value2"
       });
     })
 
@@ -3183,8 +3183,7 @@ describe("state-util", () => {
     });
 
     it("updateStateInfoForStateTree when radixTreeEnabled = true", () => {
-      const numAffectedNodes = updateStateInfoForStateTree(child1Enabled);
-      expect(numAffectedNodes).to.equal(5);
+      expect(updateStateInfoForStateTree(child1Enabled)).to.equal(5);
       // Checks proof hashes.
       expect(child1111Enabled.verifyProofHash()).to.equal(true);
       expect(child1112Enabled.verifyProofHash()).to.equal(true);
@@ -3224,8 +3223,7 @@ describe("state-util", () => {
     });
 
     it("updateStateInfoForStateTree when radixTreeEnabled = false", () => {
-      const numAffectedNodes = updateStateInfoForStateTree(child1Disabled);
-      expect(numAffectedNodes).to.equal(5);
+      expect(updateStateInfoForStateTree(child1Disabled)).to.equal(5);
       // Checks proof hashes.
       expect(child1111Disabled.verifyProofHash()).to.equal(true);
       expect(child1112Disabled.verifyProofHash()).to.equal(true);
@@ -3265,8 +3263,7 @@ describe("state-util", () => {
     });
 
     it("updateStateInfoForAllRootPaths with a single root path when radixTreeEnabled = true", () => {
-      const numAffectedNodes = updateStateInfoForAllRootPaths(child111Enabled, label1112);
-      expect(numAffectedNodes).to.equal(4);
+      expect(updateStateInfoForAllRootPaths(child111Enabled, label1112)).to.equal(4);
       // Checks proof hashes.
       expect(child1111Enabled.verifyProofHash()).to.equal(false);
       expect(child1112Enabled.verifyProofHash()).to.equal(false);
@@ -3286,20 +3283,11 @@ describe("state-util", () => {
       expect(child1112Enabled.getTreeSize()).to.equal(0);
       expect(child1112Enabled.getTreeBytes()).to.equal(0);
 
-      const treeInfoChild111 = child111Enabled._buildTreeInfo();
-      expect(child111Enabled.getTreeHeight()).to.equal(treeInfoChild111.treeHeight);
-      expect(child111Enabled.getTreeSize()).to.equal(treeInfoChild111.treeSize);
-      expect(child111Enabled.getTreeBytes()).to.equal(treeInfoChild111.treeBytes);
+      expect(child111Enabled.verifyTreeInfo(label1112)).to.equal(true);
 
-      const treeInfoChild11 = child11Enabled._buildTreeInfo();
-      expect(child11Enabled.getTreeHeight()).to.equal(treeInfoChild11.treeHeight);
-      expect(child11Enabled.getTreeSize()).to.equal(treeInfoChild11.treeSize);
-      expect(child11Enabled.getTreeBytes()).to.equal(treeInfoChild11.treeBytes);
+      expect(child11Enabled.verifyTreeInfo(label111)).to.equal(true);
 
-      const treeInfoChild1 = child1Enabled._buildTreeInfo();
-      expect(child1Enabled.getTreeHeight()).to.equal(treeInfoChild1.treeHeight);
-      expect(child1Enabled.getTreeSize()).to.equal(treeInfoChild1.treeSize);
-      expect(child1Enabled.getTreeBytes()).to.equal(treeInfoChild1.treeBytes);
+      expect(child1Enabled.verifyTreeInfo(label11)).to.equal(true);
 
       expect(child21Enabled.getTreeHeight()).to.equal(0);
       expect(child21Enabled.getTreeSize()).to.equal(0);
@@ -3309,15 +3297,11 @@ describe("state-util", () => {
       expect(child2Enabled.getTreeSize()).to.equal(0);
       expect(child2Enabled.getTreeBytes()).to.equal(0);
 
-      const treeInfoStateTree = stateTreeEnabled._buildTreeInfo();
-      expect(stateTreeEnabled.getTreeHeight()).to.equal(treeInfoStateTree.treeHeight);
-      expect(stateTreeEnabled.getTreeSize()).to.equal(treeInfoStateTree.treeSize);
-      expect(stateTreeEnabled.getTreeBytes()).to.equal(treeInfoStateTree.treeBytes);
+      expect(stateTreeEnabled.verifyTreeInfo(label1)).to.equal(true);
     });
 
     it("updateStateInfoForAllRootPaths with a single root path when radixTreeEnabled = false", () => {
-      const numAffectedNodes = updateStateInfoForAllRootPaths(child111Disabled, label1112);
-      expect(numAffectedNodes).to.equal(4);
+      expect(updateStateInfoForAllRootPaths(child111Disabled, label1112)).to.equal(4);
       // Checks proof hashes.
       expect(child1111Disabled.verifyProofHash()).to.equal(false);
       expect(child1112Disabled.verifyProofHash()).to.equal(false);
@@ -3337,20 +3321,11 @@ describe("state-util", () => {
       expect(child1112Disabled.getTreeSize()).to.equal(0);
       expect(child1112Disabled.getTreeBytes()).to.equal(0);
 
-      const treeInfoChild111 = child111Disabled._buildTreeInfo();
-      expect(child111Disabled.getTreeHeight()).to.equal(treeInfoChild111.treeHeight);
-      expect(child111Disabled.getTreeSize()).to.equal(treeInfoChild111.treeSize);
-      expect(child111Disabled.getTreeBytes()).to.equal(treeInfoChild111.treeBytes);
+      expect(child111Disabled.verifyTreeInfo()).to.equal(true);
 
-      const treeInfoChild11 = child11Disabled._buildTreeInfo();
-      expect(child11Disabled.getTreeHeight()).to.equal(treeInfoChild11.treeHeight);
-      expect(child11Disabled.getTreeSize()).to.equal(treeInfoChild11.treeSize);
-      expect(child11Disabled.getTreeBytes()).to.equal(treeInfoChild11.treeBytes);
+      expect(child11Disabled.verifyTreeInfo()).to.equal(true);
 
-      const treeInfoChild1 = child1Disabled._buildTreeInfo();
-      expect(child1Disabled.getTreeHeight()).to.equal(treeInfoChild1.treeHeight);
-      expect(child1Disabled.getTreeSize()).to.equal(treeInfoChild1.treeSize);
-      expect(child1Disabled.getTreeBytes()).to.equal(treeInfoChild1.treeBytes);
+      expect(child1Disabled.verifyTreeInfo()).to.equal(true);
 
       expect(child21Disabled.getTreeHeight()).to.equal(0);
       expect(child21Disabled.getTreeSize()).to.equal(0);
@@ -3360,10 +3335,7 @@ describe("state-util", () => {
       expect(child2Disabled.getTreeSize()).to.equal(0);
       expect(child2Disabled.getTreeBytes()).to.equal(0);
 
-      const treeInfoStateTree = stateTreeDisabled._buildTreeInfo();
-      expect(stateTreeDisabled.getTreeHeight()).to.equal(treeInfoStateTree.treeHeight);
-      expect(stateTreeDisabled.getTreeSize()).to.equal(treeInfoStateTree.treeSize);
-      expect(stateTreeDisabled.getTreeBytes()).to.equal(treeInfoStateTree.treeBytes);
+      expect(stateTreeDisabled.verifyTreeInfo()).to.equal(true);
     });
 
     it("updateStateInfoForAllRootPaths with multiple root paths when radixTreeEnabled = true", () => {

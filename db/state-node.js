@@ -110,13 +110,9 @@ class StateNode {
   // NOTE(liayoo): Bytes for some data (e.g. parents & children references, version) are excluded
   // from this calculation, since their sizes can vary and affect the gas costs and
   // state proof hashes.
+  // 4(isLeaf) + 132(proofHash) + 8(treeHeight) + 8(treeSize) + 8(treeBytes) = 160
   computeNodeBytes() {
-    return sizeof(this.isLeaf) +
-        sizeof(this.value) +
-        sizeof(this.proofHash) +
-        sizeof(this.treeHeight) +
-        sizeof(this.treeSize) +
-        sizeof(this.treeBytes);
+    return sizeof(this.value) + 160;
   }
 
   static fromJsObject(obj, version, radixTreeEnabled = false) {
@@ -427,9 +423,8 @@ class StateNode {
    */
   // NOTE(platfowner): This function changes proof hashes of the radix tree.
   _buildProofHash(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
-    let preimage;
     if (this.getIsLeaf()) {
-      preimage = this.getValue();
+      return CommonUtil.hashString(CommonUtil.toString(this.getValue()));
     } else {
       if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
         if (shouldRebuildRadixInfo) {
@@ -441,26 +436,27 @@ class StateNode {
         }
         return this.radixTree.getRootProofHash();
       } else {
-        preimage = this.getChildLabels().map((label) => {
+        return CommonUtil.hashString(this.getChildLabels().map((label) => {
           return `${label}${HASH_DELIMITER}${this.getChild(label).getProofHash()}`;
-        }).join(HASH_DELIMITER);
+        }).join(HASH_DELIMITER));
       }
     }
-    return CommonUtil.hashString(CommonUtil.toString(preimage));
   }
 
   verifyProofHash(updatedChildLabel = null) {
     return this.getProofHash() === this._buildProofHash(updatedChildLabel, true);
   }
 
-  _buildTreeInfo(updatedChildLabel = null, shouldRebuildRadixInfo = false) {
+  _buildTreeInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
     const nodeBytes = this.computeNodeBytes();
-    let treeInfo = {
-      treeHeight: 0,
-      treeSize: 1,
-      treeBytes: nodeBytes
-    };
-    if (!this.getIsLeaf()) {
+    if (this.getIsLeaf()) {
+      return {
+        proofHash: CommonUtil.hashString(CommonUtil.toString(this.getValue())),
+        treeHeight: 0,
+        treeSize: 1,
+        treeBytes: nodeBytes
+      };
+    } else {
       if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
         if (shouldRebuildRadixInfo) {
           if (updatedChildLabel === null) {
@@ -469,26 +465,41 @@ class StateNode {
             this.radixTree.updateRadixInfoForRadixPath(updatedChildLabel);
           }
         }
-        treeInfo = {
+        return {
+          proofHash: this.radixTree.getRootProofHash(),
           treeHeight: 1 + this.radixTree.getRootTreeHeight(),
           treeSize: 1 + this.radixTree.getRootTreeSize(),
           treeBytes: nodeBytes + this.radixTree.getRootTreeBytes()
         };
       } else {
-        treeInfo = this.getChildLabels().reduce((acc, label) => {
+        const treeInfo = this.getChildLabels().reduce((acc, label) => {
           const child = this.getChild(label);
+          const childPreimage = `${label}${HASH_DELIMITER}${child.getProofHash()}`;
+          const accPreimage = acc.preimage === '' ?
+              childPreimage : `${acc.preimage}${HASH_DELIMITER}${childPreimage}`;
           const accTreeHeight = Math.max(acc.treeHeight, child.getTreeHeight() + 1);
           const accTreeSize = acc.treeSize + child.getTreeSize();
           const accTreeBytes = acc.treeBytes + sizeof(label) + child.getTreeBytes();
           return {
+            preimage: accPreimage,
             treeHeight: accTreeHeight,
             treeSize: accTreeSize,
             treeBytes: accTreeBytes,
           };
-        }, treeInfo);
+        }, {
+          preimage: '',
+          treeHeight: 0,
+          treeSize: 1,
+          treeBytes: nodeBytes
+        });
+        return {
+          proofHash: CommonUtil.hashString(treeInfo.preimage),
+          treeHeight: treeInfo.treeHeight,
+          treeSize: treeInfo.treeSize,
+          treeBytes: treeInfo.treeBytes,
+        }
       }
     }
-    return treeInfo;
   }
 
   verifyTreeInfo(updatedChildLabel = null) {
@@ -499,12 +510,10 @@ class StateNode {
   }
 
   updateStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
+    const treeInfo = this._buildTreeInfo(updatedChildLabel, shouldRebuildRadixInfo);
     if (!LIGHTWEIGHT) {
-      this.setProofHash(this._buildProofHash(updatedChildLabel, shouldRebuildRadixInfo));
+      this.setProofHash(treeInfo.proofHash);
     }
-    // NOTE(platfowner): With shouldRebuildRadixInfo = false as it should be already done
-    // by _buildProofHash() given shouldRebuildRadixInfo = true.
-    const treeInfo = this._buildTreeInfo(null, false);
     this.setTreeHeight(treeInfo.treeHeight);
     this.setTreeSize(treeInfo.treeSize);
     this.setTreeBytes(treeInfo.treeBytes);
