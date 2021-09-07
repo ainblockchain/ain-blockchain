@@ -560,7 +560,7 @@ function deleteStateTree(node) {
   } else {
     for (const label of node.getChildLabels()) {
       const child = node.getChild(label);
-      node.deleteChild(label);
+      node.deleteChild(label, false);  // shouldUpdateStateInfo = false
       numAffectedNodes += deleteStateTree(child);
     }
   }
@@ -591,7 +591,8 @@ function deleteStateTreeVersion(node) {
   } else {
     for (const label of node.getChildLabels()) {
       const child = node.getChild(label);
-      node.deleteChild(label);
+      node.deleteChild(label, false);  // shouldUpdateStateInfo = false
+
       numAffectedNodes += deleteStateTreeVersion(child);
     }
   }
