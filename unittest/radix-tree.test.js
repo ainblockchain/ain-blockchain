@@ -1090,23 +1090,23 @@ describe("radix-tree", () => {
 
         // initial status
         expect(tree.getRootProofHash()).to.equal(null);
-        expect(tree.verifyProofHashForRadixTree()).to.equal(false);
+        expect(tree.verifyRadixInfoForRadixTree()).to.equal(false);
 
         // set
         expect(tree.updateRadixInfoForRadixTree()).to.equal(9);
         expect(tree.getRootProofHash()).to.equal(
             '0x3dac16e69a2dfa5ae4a448cda25da5542949b905d2bf8a07c389d77019c56c01');
-        expect(tree.verifyProofHashForRadixTree()).to.equal(true);
+        expect(tree.verifyRadixInfoForRadixTree()).to.equal(true);
 
         // change of a state node's proof hash
         stateNode21.setProofHash('another PH');
-        expect(tree.verifyProofHashForRadixTree()).to.equal(false);
+        expect(tree.verifyRadixInfoForRadixTree()).to.equal(false);
 
         // update
         expect(tree.updateRadixInfoForRadixPath(label21)).to.equal(4);
         expect(tree.getRootProofHash()).to.equal(
             '0x8070aef5df264e5ecea35dd84822e69f7bf65102a06f5765d62bd76265cadff5');
-        expect(tree.verifyProofHashForRadixTree()).to.equal(true);
+        expect(tree.verifyRadixInfoForRadixTree()).to.equal(true);
       });
 
       it("getProofOfState", () => {

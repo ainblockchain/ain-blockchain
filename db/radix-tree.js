@@ -286,8 +286,8 @@ class RadixTree {
     return node.updateRadixInfoForRadixPath();
   }
 
-  verifyProofHashForRadixTree() {
-    return this.root.verifyProofHashForRadixTree();
+  verifyRadixInfoForRadixTree() {
+    return this.root.verifyRadixInfoForRadixTree();
   }
 
   getProofOfState(stateLabel, stateProof) {

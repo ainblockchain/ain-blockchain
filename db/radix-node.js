@@ -235,25 +235,7 @@ class RadixNode {
     this.setTreeBytes(0);
   }
 
-  _buildProofHash() {
-    let preimage = '';
-    if (this.hasStateNode()) {
-      preimage = this.getStateNode().getProofHash();
-    }
-    // NOTE(platfowner): Put delimiter twice to distinguish the state node proof hash and
-    // the radix child proof hash.
-    preimage += `${HASH_DELIMITER}${HASH_DELIMITER}`;
-    preimage += this.getChildNodes().map((child) => {
-      return `${child.getLabel()}${HASH_DELIMITER}${child.getProofHash()}`;
-    }).join(HASH_DELIMITER);
-    return CommonUtil.hashString(preimage);
-  }
-
-  verifyProofHash() {
-    return this.getProofHash() === this._buildProofHash();
-  }
-
-  _buildTreeInfo() {
+  _buildRadixInfo() {
     let treeInfo = {
       preimage: '',
       treeHeight: 0,
@@ -299,11 +281,19 @@ class RadixNode {
   }
 
   updateRadixInfo() {
-    const treeInfo = this._buildTreeInfo();
+    const treeInfo = this._buildRadixInfo();
     this.setProofHash(treeInfo.proofHash);
     this.setTreeHeight(treeInfo.treeHeight);
     this.setTreeSize(treeInfo.treeSize);
     this.setTreeBytes(treeInfo.treeBytes);
+  }
+
+  verifyRadixInfo() {
+    const treeInfo = this._buildRadixInfo();
+    return this.getProofHash() === treeInfo.proofHash &&
+        this.getTreeHeight() === treeInfo.treeHeight &&
+        this.getTreeSize() === treeInfo.treeSize &&
+        this.getTreeBytes() === treeInfo.treeBytes;
   }
 
   updateRadixInfoForRadixTree() {
@@ -330,12 +320,12 @@ class RadixNode {
     return numAffectedNodes;
   }
 
-  verifyProofHashForRadixTree() {
-    if (!this.verifyProofHash()) {
+  verifyRadixInfoForRadixTree() {
+    if (!this.verifyRadixInfo()) {
       return false;
     }
     for (const child of this.getChildNodes()) {
-      if (!child.verifyProofHashForRadixTree()) {
+      if (!child.verifyRadixInfoForRadixTree()) {
         return false;
       }
     }
