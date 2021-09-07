@@ -678,13 +678,13 @@ function updateStateInfoForStateTree(stateTree) {
   return numAffectedNodes;
 }
 
-function verifyProofHashForStateTree(stateTree) {
-  if (!stateTree.verifyProofHash()) {
+function verifyStateInfoForStateTree(stateTree) {
+  if (!stateTree.verifyStateInfo()) {
     return false;
   }
   if (!stateTree.getIsLeaf()) {
     for (const childNode of stateTree.getChildNodes()) {
-      if (!verifyProofHashForStateTree(childNode)) {
+      if (!verifyStateInfoForStateTree(childNode)) {
         return false;
       }
     }
@@ -746,6 +746,6 @@ module.exports = {
   equalStateTrees,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
-  verifyProofHashForStateTree,
+  verifyStateInfoForStateTree,
   getProofOfStatePath,
 };

@@ -273,7 +273,7 @@ class RadixTree {
   }
 
   updateRadixInfoForRadixPath(updatedNodeLabel) {
-    const LOG_HEADER = 'updateProofHashForRadixPath';
+    const LOG_HEADER = 'updateRadixInfoForRadixPath';
 
     const node = this._getRadixNodeForReading(updatedNodeLabel);
     if (node === null) {
