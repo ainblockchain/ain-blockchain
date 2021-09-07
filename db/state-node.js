@@ -4,12 +4,12 @@ const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
   FeatureFlags,
+  LIGHTWEIGHT,
   HASH_DELIMITER,
   NUM_CHILDREN_TO_ENABLE_RADIX_TREE,
   NUM_CHILDREN_TO_DISABLE_RADIX_TREE,
   StateInfoProperties,
   ProofProperties,
-  LIGHTWEIGHT,
 } = require('../common/constants');
 const RadixTree = require('./radix-tree');
 
@@ -450,8 +450,10 @@ class StateNode {
   _buildTreeInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
     const nodeBytes = this.computeNodeBytes();
     if (this.getIsLeaf()) {
+      const proofHash = LIGHTWEIGHT ?
+          '' : CommonUtil.hashString(CommonUtil.toString(this.getValue()));
       return {
-        proofHash: CommonUtil.hashString(CommonUtil.toString(this.getValue())),
+        proofHash,
         treeHeight: 0,
         treeSize: 1,
         treeBytes: nodeBytes
@@ -475,7 +477,7 @@ class StateNode {
         const treeInfo = this.getChildLabels().reduce((acc, label) => {
           const child = this.getChild(label);
           const childPreimage = `${label}${HASH_DELIMITER}${child.getProofHash()}`;
-          const accPreimage = acc.preimage === '' ?
+          const accPreimage = LIGHTWEIGHT ? '' : acc.preimage === '' ?
               childPreimage : `${acc.preimage}${HASH_DELIMITER}${childPreimage}`;
           const accTreeHeight = Math.max(acc.treeHeight, child.getTreeHeight() + 1);
           const accTreeSize = acc.treeSize + child.getTreeSize();
@@ -492,8 +494,9 @@ class StateNode {
           treeSize: 1,
           treeBytes: nodeBytes
         });
+        const proofHash = LIGHTWEIGHT ?  '' : CommonUtil.hashString(treeInfo.preimage);
         return {
-          proofHash: CommonUtil.hashString(treeInfo.preimage),
+          proofHash,
           treeHeight: treeInfo.treeHeight,
           treeSize: treeInfo.treeSize,
           treeBytes: treeInfo.treeBytes,
@@ -511,9 +514,7 @@ class StateNode {
 
   updateStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
     const treeInfo = this._buildTreeInfo(updatedChildLabel, shouldRebuildRadixInfo);
-    if (!LIGHTWEIGHT) {
-      this.setProofHash(treeInfo.proofHash);
-    }
+    this.setProofHash(treeInfo.proofHash);
     this.setTreeHeight(treeInfo.treeHeight);
     this.setTreeSize(treeInfo.treeSize);
     this.setTreeBytes(treeInfo.treeBytes);
