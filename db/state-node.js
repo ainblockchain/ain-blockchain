@@ -22,7 +22,8 @@ class StateNode {
     // Used for leaf nodes only.
     this.value = null;
     this.parentSet = new Set();
-    this.radixTreeEnabled = !FeatureFlags.enableDynamicRadixTree;
+    this.radixTreeEnabled =
+        FeatureFlags.enableRadixTreeLayers && !FeatureFlags.enableDynamicRadixTree;
     // Used for internal nodes only.
     if (FeatureFlags.enableRadixTreeLayers) {
       this.radixTree = new RadixTree();
@@ -40,7 +41,8 @@ class StateNode {
     this.setIsLeaf(true);
     this.resetValue();
     this.parentSet.clear();
-    this.setRadixTreeEnabled(!FeatureFlags.enableDynamicRadixTree);
+    this.setRadixTreeEnabled(
+        FeatureFlags.enableRadixTreeLayers && !FeatureFlags.enableDynamicRadixTree);
     if (FeatureFlags.enableRadixTreeLayers) {
       this.deleteRadixTree();
     }
