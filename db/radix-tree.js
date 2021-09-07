@@ -322,9 +322,9 @@ class RadixTree {
     }
   }
 
-  deleteRadixTree(parentStateNode = null) {
+  deleteRadixTree(parentStateNodeToDelete = null) {
     this.terminalNodeMap.clear();
-    return this.root.deleteRadixTree(parentStateNode);
+    return this.root.deleteRadixTree(parentStateNodeToDelete);
   }
 
   /**

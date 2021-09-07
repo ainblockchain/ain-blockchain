@@ -550,7 +550,7 @@ function deleteStateTree(node) {
   // 1. Delete children
   if (FeatureFlags.enableRadixTreeLayers && node.getRadixTreeEnabled()) {
     const childNodes = node.getChildNodes();
-    node.deleteRadixTree();
+    node.deleteRadixTree(true);  // shouldDeleteParent = true
     for (const child of childNodes) {
       numAffectedNodes += deleteStateTree(child);
     }
@@ -584,7 +584,7 @@ function deleteStateTreeVersion(node) {
   // 1. Delete children
   if (FeatureFlags.enableRadixTreeLayers && node.getRadixTreeEnabled()) {
     const childNodes = node.getChildNodes();
-    node.deleteRadixTree();
+    node.deleteRadixTree(true);  // shouldDeleteParent = true
     for (const child of childNodes) {
       numAffectedNodes += deleteStateTreeVersion(child);
     }

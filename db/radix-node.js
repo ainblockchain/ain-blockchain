@@ -377,18 +377,18 @@ class RadixNode {
 
   /**
    * Deletes radix tree.
-   * If parentStateNode is given, it deletes it from the terminal state nodes' parent set.
+   * If parentStateNodeToDelete is given, it's deleted from the terminal state nodes' parent set.
    */
-  deleteRadixTree(parentStateNode = null) {
+  deleteRadixTree(parentStateNodeToDelete = null) {
     let numAffectedNodes = 0;
 
     for (const child of this.getChildNodes()) {
-      numAffectedNodes += child.deleteRadixTree(parentStateNode);
+      numAffectedNodes += child.deleteRadixTree(parentStateNodeToDelete);
     }
 
-    if (parentStateNode !== null && this.hasStateNode()) {
+    if (parentStateNodeToDelete !== null && this.hasStateNode()) {
       const stateNode = this.getStateNode();
-      stateNode.deleteParent(parentStateNode);
+      stateNode.deleteParent(parentStateNodeToDelete);
     }
     this.reset();
     numAffectedNodes++;

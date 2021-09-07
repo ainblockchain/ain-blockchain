@@ -1929,13 +1929,13 @@ describe("state-node", () => {
   });
 
   describe("deleteRadixTree", () => {
-    it("delete with deleteParent = true when radixTreeEnabled = true", () => {
+    it("delete with shouldDeleteParent = true when radixTreeEnabled = true", () => {
       child1Enabled.setProofHash('proofHash1');
       child2Enabled.setProofHash('proofHash2');
       child3Enabled.setProofHash('proofHash3');
       child4Enabled.setProofHash('proofHash4');
 
-      // delete with deleteParent = true
+      // delete with shouldDeleteParent = true
       expect(stateTreeEnabled.deleteRadixTree()).to.equal(6);
       // Check parents of state nodes
       assert.deepEqual(child1Enabled.getParentNodes(), []);
@@ -1944,13 +1944,13 @@ describe("state-node", () => {
       assert.deepEqual(child1Enabled.getParentNodes(), []);
     });
 
-    it("delete with deleteParent = false when radixTreeEnabled = true", () => {
+    it("delete with shouldDeleteParent = false when radixTreeEnabled = true", () => {
       child1Enabled.setProofHash('proofHash1');
       child2Enabled.setProofHash('proofHash2');
       child3Enabled.setProofHash('proofHash3');
       child4Enabled.setProofHash('proofHash4');
 
-      // delete with deleteParent = false
+      // delete with shouldDeleteParent = false
       expect(stateTreeEnabled.deleteRadixTree(false)).to.equal(6);
       // Check parents of state nodes
       assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
