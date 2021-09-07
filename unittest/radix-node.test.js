@@ -574,7 +574,7 @@ describe("radix-node", () => {
         ".radix_ph": null
       });
 
-      // Check tree info
+      // Check radix info
       node.resetProofHash();
       expect(node.verifyRadixInfo()).to.equal(false);
       node.updateRadixInfo();

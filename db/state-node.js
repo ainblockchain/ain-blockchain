@@ -422,32 +422,7 @@ class StateNode {
    * @param {boolean} shouldRebuildRadixInfo rebuild radix info
    */
   // NOTE(platfowner): This function changes proof hashes of the radix tree.
-  _buildProofHash(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
-    if (this.getIsLeaf()) {
-      return CommonUtil.hashString(CommonUtil.toString(this.getValue()));
-    } else {
-      if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
-        if (shouldRebuildRadixInfo) {
-          if (updatedChildLabel === null) {
-            this.radixTree.updateRadixInfoForRadixTree();
-          } else {
-            this.radixTree.updateRadixInfoForRadixPath(updatedChildLabel);
-          }
-        }
-        return this.radixTree.getRootProofHash();
-      } else {
-        return CommonUtil.hashString(this.getChildLabels().map((label) => {
-          return `${label}${HASH_DELIMITER}${this.getChild(label).getProofHash()}`;
-        }).join(HASH_DELIMITER));
-      }
-    }
-  }
-
-  verifyProofHash(updatedChildLabel = null) {
-    return this.getProofHash() === this._buildProofHash(updatedChildLabel, true);
-  }
-
-  _buildTreeInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
+  _buildStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
     const nodeBytes = this.computeNodeBytes();
     if (this.getIsLeaf()) {
       const proofHash = LIGHTWEIGHT ?
@@ -505,19 +480,20 @@ class StateNode {
     }
   }
 
-  verifyTreeInfo(updatedChildLabel = null) {
-    const treeInfo = this._buildTreeInfo(updatedChildLabel, true);
-    return this.getTreeHeight() === treeInfo.treeHeight &&
-        this.getTreeSize() === treeInfo.treeSize &&
-        this.getTreeBytes() === treeInfo.treeBytes;
-  }
-
   updateStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
-    const treeInfo = this._buildTreeInfo(updatedChildLabel, shouldRebuildRadixInfo);
+    const treeInfo = this._buildStateInfo(updatedChildLabel, shouldRebuildRadixInfo);
     this.setProofHash(treeInfo.proofHash);
     this.setTreeHeight(treeInfo.treeHeight);
     this.setTreeSize(treeInfo.treeSize);
     this.setTreeBytes(treeInfo.treeBytes);
+  }
+
+  verifyStateInfo(updatedChildLabel = null) {
+    const treeInfo = this._buildStateInfo(updatedChildLabel, true);
+    return this.getProofHash() === treeInfo.proofHash &&
+        this.getTreeHeight() === treeInfo.treeHeight &&
+        this.getTreeSize() === treeInfo.treeSize &&
+        this.getTreeBytes() === treeInfo.treeBytes;
   }
 
   getProofOfState(childLabel = null, childProof = null) {

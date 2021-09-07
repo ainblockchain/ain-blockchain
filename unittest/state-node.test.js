@@ -11,7 +11,7 @@ const CommonUtil = require('../common/common-util');
 const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 const {
   updateStateInfoForStateTree,
-  verifyProofHashForStateTree,
+  verifyStateInfoForStateTree,
 } = require('../db/state-util');
 
 describe("state-node", () => {
@@ -175,9 +175,9 @@ describe("state-node", () => {
       assert.deepEqual(child2Enabled.getParentNodes(), [stateTreeEnabled]);
       assert.deepEqual(child3Enabled.getParentNodes(), [stateTreeEnabled]);
       assert.deepEqual(child4Enabled.getParentNodes(), [stateTreeEnabled]);
-      expect(verifyProofHashForStateTree(stateTreeEnabled)).to.equal(false);
+      expect(verifyStateInfoForStateTree(stateTreeEnabled)).to.equal(false);
       updateStateInfoForStateTree(stateTreeEnabled);
-      expect(verifyProofHashForStateTree(stateTreeEnabled)).to.equal(true);
+      expect(verifyStateInfoForStateTree(stateTreeEnabled)).to.equal(true);
 
       const clone = stateTreeEnabled.clone();
       expect(clone.getVersion()).to.equal(stateTreeEnabled.getVersion());
@@ -190,8 +190,8 @@ describe("state-node", () => {
       assert.deepEqual(clone.getChildLabels(), stateTreeEnabled.getChildLabels());
       assert.deepEqual(clone.getChildNodes(), stateTreeEnabled.getChildNodes());
       assert.deepEqual(clone.numChildren(), stateTreeEnabled.numChildren());
-      // Proof hash is verified without updateStateInfoForStateTree() call!
-      expect(verifyProofHashForStateTree(clone)).to.equal(true);
+      // State info is verified without updateStateInfoForStateTree() call!
+      expect(verifyStateInfoForStateTree(clone)).to.equal(true);
       expect(clone.getLabel()).to.equal('label_root');
       expect(clone.getValue()).to.equal(null);
       expect(clone.getTreeHeight()).to.equal(stateTreeEnabled.getTreeHeight());
@@ -209,9 +209,9 @@ describe("state-node", () => {
       assert.deepEqual(child2Disabled.getParentNodes(), [stateTreeDisabled]);
       assert.deepEqual(child3Disabled.getParentNodes(), [stateTreeDisabled]);
       assert.deepEqual(child4Disabled.getParentNodes(), [stateTreeDisabled]);
-      expect(verifyProofHashForStateTree(stateTreeDisabled)).to.equal(false);
+      expect(verifyStateInfoForStateTree(stateTreeDisabled)).to.equal(false);
       updateStateInfoForStateTree(stateTreeDisabled);
-      expect(verifyProofHashForStateTree(stateTreeDisabled)).to.equal(true);
+      expect(verifyStateInfoForStateTree(stateTreeDisabled)).to.equal(true);
 
       const clone = stateTreeDisabled.clone();
       expect(clone.getVersion()).to.equal(stateTreeDisabled.getVersion());
@@ -224,8 +224,8 @@ describe("state-node", () => {
       assert.deepEqual(clone.getChildLabels(), stateTreeDisabled.getChildLabels());
       assert.deepEqual(clone.getChildNodes(), stateTreeDisabled.getChildNodes());
       assert.deepEqual(clone.numChildren(), stateTreeDisabled.numChildren());
-      // Proof hash is verified without updateStateInfoForStateTree() call!
-      expect(verifyProofHashForStateTree(clone)).to.equal(true);
+      // State info is verified without updateStateInfoForStateTree() call!
+      expect(verifyStateInfoForStateTree(clone)).to.equal(true);
       expect(clone.getLabel()).to.equal('label_root');
       expect(clone.getValue()).to.equal(null);
       expect(clone.getTreeHeight()).to.equal(stateTreeDisabled.getTreeHeight());
@@ -1492,92 +1492,92 @@ describe("state-node", () => {
     });
   });
 
-  describe("buildProofHash", () => {
-    it("leaf node", () => {
-      node.setValue(true);
-      expect(node._buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString(true)));
-      node.setValue(10);
-      expect(node._buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString(10)));
-      node.setValue(-200);
-      expect(node._buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString(-200)));
-      node.setValue('');
-      expect(node._buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString('')));
-      node.setValue('unittest');
-      expect(node._buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString('unittest')));
-      node.setValue(null);
-      expect(node._buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString(null)));
-      node.setValue(undefined);
-      expect(node._buildProofHash()).to.equal(CommonUtil.hashString(CommonUtil.toString(undefined)));
+  describe("_buildStateInfo", () => {
+    describe("proof hash", () => {
+      it("leaf node", () => {
+        node.setValue(true);
+        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(true)));
+        node.setValue(10);
+        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(10)));
+        node.setValue(-200);
+        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(-200)));
+        node.setValue('');
+        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString('')));
+        node.setValue('unittest');
+        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString('unittest')));
+        node.setValue(null);
+        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(null)));
+        node.setValue(undefined);
+        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(undefined)));
+      });
+
+      it("internal node when radixTreeEnabled = true", () => {
+        child1Enabled.setProofHash('proofHash1');
+        child2Enabled.setProofHash('proofHash2');
+        child3Enabled.setProofHash('proofHash3');
+        child4Enabled.setProofHash('proofHash4');
+        expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
+
+        // build state info without updatedChildLabel
+        const proofHashBefore = stateTreeEnabled._buildStateInfo().proofHash;
+        expect(proofHashBefore).to.equal(stateTreeEnabled.radixTree.getRootProofHash());
+        expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(true);
+
+        // set another proof hash value for a child
+        child2Enabled.setProofHash('another PH');
+
+        // build state info with updatedChildLabel
+        const proofHashAfter = stateTreeEnabled._buildStateInfo(label2).proofHash;
+        expect(proofHashAfter).not.equal(proofHashBefore);  // Updated!!
+        expect(proofHashAfter).to.equal(stateTreeEnabled.radixTree.getRootProofHash());
+        expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(true);
+
+        // set another proof hash value for a child again
+        child2Enabled.setProofHash('yet another PH');
+        expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
+
+        // build state info with updatedChildLabel and shouldRebuildRadixInfo = false
+        const radixTreeProofHashBefore = stateTreeEnabled.radixTree.getRootProofHash();
+        const proofHashAfter2 = stateTreeEnabled._buildStateInfo(label2, false).proofHash;
+        expect(proofHashAfter2).equal(radixTreeProofHashBefore);  // Unchanged!!
+        expect(proofHashAfter2).to.equal(stateTreeEnabled.radixTree.getRootProofHash());
+        expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
+      });
+
+      it("internal node when radixTreeEnabled = false", () => {
+        child1Disabled.setProofHash('proofHash1');
+        child2Disabled.setProofHash('proofHash2');
+        child3Disabled.setProofHash('proofHash3');
+        child4Disabled.setProofHash('proofHash4');
+        expect(stateTreeDisabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
+
+        // build state info without updatedChildLabel
+        const proofHashBefore = stateTreeDisabled._buildStateInfo().proofHash;
+        // set another proof hash value for a child
+        child2Disabled.setProofHash('another PH');
+
+        // build state info with updatedChildLabel
+        const proofHashAfter = stateTreeDisabled._buildStateInfo(label2).proofHash;
+        expect(proofHashAfter).not.equal(proofHashBefore);  // Updated!!
+      });
     });
 
-    it("internal node when radixTreeEnabled = true", () => {
-      child1Enabled.setProofHash('proofHash1');
-      child2Enabled.setProofHash('proofHash2');
-      child3Enabled.setProofHash('proofHash3');
-      child4Enabled.setProofHash('proofHash4');
-      expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
-
-      // build proof hash without updatedChildLabel
-      const proofHashBefore = stateTreeEnabled._buildProofHash();
-      expect(proofHashBefore).to.equal(stateTreeEnabled.radixTree.getRootProofHash());
-      expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(true);
-
-      // set another proof hash value for a child
-      child2Enabled.setProofHash('another PH');
-
-      // build proof hash with updatedChildLabel
-      const proofHashAfter = stateTreeEnabled._buildProofHash(label2);
-      expect(proofHashAfter).not.equal(proofHashBefore);  // Updated!!
-      expect(proofHashAfter).to.equal(stateTreeEnabled.radixTree.getRootProofHash());
-      expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(true);
-
-      // set another proof hash value for a child again
-      child2Enabled.setProofHash('yet another PH');
-      expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
-
-      // build proof hash with updatedChildLabel and shouldRebuildRadixInfo = false
-      const radixTreeProofHashBefore = stateTreeEnabled.radixTree.getRootProofHash();
-      const proofHashAfter2 = stateTreeEnabled._buildProofHash(label2, false);
-      expect(proofHashAfter2).equal(radixTreeProofHashBefore);  // Unchanged!!
-      expect(proofHashAfter2).to.equal(stateTreeEnabled.radixTree.getRootProofHash());
-      expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
-    });
-
-    it("internal node when radixTreeEnabled = false", () => {
-      child1Disabled.setProofHash('proofHash1');
-      child2Disabled.setProofHash('proofHash2');
-      child3Disabled.setProofHash('proofHash3');
-      child4Disabled.setProofHash('proofHash4');
-      expect(stateTreeDisabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
-
-      // build proof hash without updatedChildLabel
-      const proofHashBefore = stateTreeDisabled._buildProofHash();
-      // set another proof hash value for a child
-      child2Disabled.setProofHash('another PH');
-
-      // build proof hash with updatedChildLabel
-      const proofHashAfter = stateTreeDisabled._buildProofHash(label2);
-      expect(proofHashAfter).not.equal(proofHashBefore);  // Updated!!
-    });
-  });
-
-  describe("_buildTreeInfo", () => {
     describe("tree height", () => {
       it("leaf node", () => {
         node.setValue(true);
-        expect(node._buildTreeInfo().treeHeight).to.equal(0);
+        expect(node._buildStateInfo().treeHeight).to.equal(0);
         node.setValue(10);
-        expect(node._buildTreeInfo().treeHeight).to.equal(0);
+        expect(node._buildStateInfo().treeHeight).to.equal(0);
         node.setValue(-200);
-        expect(node._buildTreeInfo().treeHeight).to.equal(0);
+        expect(node._buildStateInfo().treeHeight).to.equal(0);
         node.setValue('');
-        expect(node._buildTreeInfo().treeHeight).to.equal(0);
+        expect(node._buildStateInfo().treeHeight).to.equal(0);
         node.setValue('unittest');
-        expect(node._buildTreeInfo().treeHeight).to.equal(0);
+        expect(node._buildStateInfo().treeHeight).to.equal(0);
         node.setValue(null);
-        expect(node._buildTreeInfo().treeHeight).to.equal(0);
+        expect(node._buildStateInfo().treeHeight).to.equal(0);
         node.setValue(undefined);
-        expect(node._buildTreeInfo().treeHeight).to.equal(0);
+        expect(node._buildStateInfo().treeHeight).to.equal(0);
       });
 
       // here
@@ -1589,11 +1589,11 @@ describe("state-node", () => {
         stateTreeEnabled.radixTree.root.setTreeHeight(100);
 
         // With updatedChildLabel = null, shouldRebuildRadixInfo = false
-        expect(stateTreeEnabled._buildTreeInfo(null, false).treeHeight).to.equal(101);
+        expect(stateTreeEnabled._buildStateInfo(null, false).treeHeight).to.equal(101);
         // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
-        expect(stateTreeEnabled._buildTreeInfo(label1).treeHeight).to.equal(1);
+        expect(stateTreeEnabled._buildStateInfo(label1).treeHeight).to.equal(1);
         // With updatedChildLabel = null, shouldRebuildRadixInfo = true
-        expect(stateTreeEnabled._buildTreeInfo().treeHeight).to.equal(4);
+        expect(stateTreeEnabled._buildStateInfo().treeHeight).to.equal(4);
       });
 
       it("internal node when radixTreeEnabled = false", () => {
@@ -1602,26 +1602,26 @@ describe("state-node", () => {
         child3Disabled.setTreeHeight(2);
         child4Disabled.setTreeHeight(3);
 
-        expect(stateTreeDisabled._buildTreeInfo().treeHeight).to.equal(4);
+        expect(stateTreeDisabled._buildStateInfo().treeHeight).to.equal(4);
       });
     });
 
     describe("tree size", () => {
       it("leaf node", () => {
         node.setValue(true);
-        expect(node._buildTreeInfo().treeSize).to.equal(1);
+        expect(node._buildStateInfo().treeSize).to.equal(1);
         node.setValue(10);
-        expect(node._buildTreeInfo().treeSize).to.equal(1);
+        expect(node._buildStateInfo().treeSize).to.equal(1);
         node.setValue(-200);
-        expect(node._buildTreeInfo().treeSize).to.equal(1);
+        expect(node._buildStateInfo().treeSize).to.equal(1);
         node.setValue('');
-        expect(node._buildTreeInfo().treeSize).to.equal(1);
+        expect(node._buildStateInfo().treeSize).to.equal(1);
         node.setValue('unittest');
-        expect(node._buildTreeInfo().treeSize).to.equal(1);
+        expect(node._buildStateInfo().treeSize).to.equal(1);
         node.setValue(null);
-        expect(node._buildTreeInfo().treeSize).to.equal(1);
+        expect(node._buildStateInfo().treeSize).to.equal(1);
         node.setValue(undefined);
-        expect(node._buildTreeInfo().treeSize).to.equal(1);
+        expect(node._buildStateInfo().treeSize).to.equal(1);
       });
 
       it("internal node when radixTreeEnabled = true", () => {
@@ -1632,11 +1632,11 @@ describe("state-node", () => {
         stateTreeEnabled.radixTree.root.setTreeSize(1000);
 
         // With updatedChildLabel = null, shouldRebuildRadixInfo = false
-        expect(stateTreeEnabled._buildTreeInfo(null, false).treeSize).to.equal(1001);
+        expect(stateTreeEnabled._buildStateInfo(null, false).treeSize).to.equal(1001);
         // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
-        expect(stateTreeEnabled._buildTreeInfo(label1).treeSize).to.equal(11);
+        expect(stateTreeEnabled._buildStateInfo(label1).treeSize).to.equal(11);
         // With updatedChildLabel = null, shouldRebuildRadixInfo = true
-        expect(stateTreeEnabled._buildTreeInfo().treeSize).to.equal(101);
+        expect(stateTreeEnabled._buildStateInfo().treeSize).to.equal(101);
       });
 
       it("internal node when radixTreeEnabled = false", () => {
@@ -1645,7 +1645,7 @@ describe("state-node", () => {
         child3Disabled.setTreeSize(30);
         child4Disabled.setTreeSize(40);
 
-        expect(stateTreeDisabled._buildTreeInfo().treeSize).to.equal(101);
+        expect(stateTreeDisabled._buildStateInfo().treeSize).to.equal(101);
       });
     });
 
@@ -1654,21 +1654,21 @@ describe("state-node", () => {
         const parent = new StateNode();
         const label = 'label';
         parent.setChild(label, node);
-        expect(node._buildTreeInfo().treeBytes).to.equal(160);
+        expect(node._buildStateInfo().treeBytes).to.equal(160);
         node.setValue(true);  // boolean (4 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(164);
+        expect(node._buildStateInfo().treeBytes).to.equal(164);
         node.setValue(10);  // number (8 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(168);
+        expect(node._buildStateInfo().treeBytes).to.equal(168);
         node.setValue(-200);  // number (8 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(168);
+        expect(node._buildStateInfo().treeBytes).to.equal(168);
         node.setValue('');  // string (0 * 2 = 0 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(160);
+        expect(node._buildStateInfo().treeBytes).to.equal(160);
         node.setValue('str');  // string (3 * 2 = 6 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(166);
+        expect(node._buildStateInfo().treeBytes).to.equal(166);
         node.setValue(null);  // null (0 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(160);
+        expect(node._buildStateInfo().treeBytes).to.equal(160);
         node.setValue(undefined);  // undefined (0 bytes)
-        expect(node._buildTreeInfo().treeBytes).to.equal(160);
+        expect(node._buildStateInfo().treeBytes).to.equal(160);
       });
 
       it("internal node when radixTreeEnabled = true", () => {
@@ -1686,13 +1686,13 @@ describe("state-node", () => {
 
         // With updatedChildLabel = null, shouldRebuildRadixInfo = false
         // 36 + 10000 = 10036
-        expect(stateTreeEnabled._buildTreeInfo(null, false).treeBytes).to.equal(10160);
+        expect(stateTreeEnabled._buildStateInfo(null, false).treeBytes).to.equal(10160);
         // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
         // 8(label1) * 2 + 10 = 62
-        expect(stateTreeEnabled._buildTreeInfo(label1).treeBytes).to.equal(186);
+        expect(stateTreeEnabled._buildStateInfo(label1).treeBytes).to.equal(186);
         // With updatedChildLabel = null, shouldRebuildRadixInfo = true
         // 8(label1) * 2 + 10 + 8(label2) * 2 + 20 + 8(label3) * 2 + 30 + 8(label4) * 2 + 40 = 164
-        expect(stateTreeEnabled._buildTreeInfo().treeBytes).to.equal(324);
+        expect(stateTreeEnabled._buildStateInfo().treeBytes).to.equal(324);
       });
 
       it("internal node when radixTreeEnabled = false", () => {
@@ -1708,63 +1708,49 @@ describe("state-node", () => {
         child4Disabled.setTreeBytes(40);
 
         // 8(label1) * 2 + 10 + 8(label2) * 2 + 20 + 8(label3) * 2 + 30 + 8(label4) * 2 + 40 = 164
-        expect(stateTreeDisabled._buildTreeInfo().treeBytes).to.equal(324);
+        expect(stateTreeDisabled._buildStateInfo().treeBytes).to.equal(324);
       });
     });
   });
 
-  describe("updateStateInfo / verifyProofHash / verifyTreeInfo", () => {
+  describe("updateStateInfo / verifyStateInfo", () => {
     it("leaf node", () => {
       let treeInfo;
 
       node.setValue(true);
-      expect(node.verifyProofHash()).to.equal(false);
+      expect(node.verifyStateInfo()).to.equal(false);
       node.updateStateInfo();
-      expect(node.getProofHash()).to.equal(node._buildProofHash());
-      expect(node.verifyProofHash()).to.equal(true);
-      expect(node.verifyTreeInfo()).to.equal(true);
+      expect(node.verifyStateInfo()).to.equal(true);
 
       node.setValue(10);
-      expect(node.verifyProofHash()).to.equal(false);
+      expect(node.verifyStateInfo()).to.equal(false);
       node.updateStateInfo();
-      expect(node.getProofHash()).to.equal(node._buildProofHash());
-      expect(node.verifyProofHash()).to.equal(true);
-      expect(node.verifyTreeInfo()).to.equal(true);
+      expect(node.verifyStateInfo()).to.equal(true);
 
       node.setValue(-200);
-      expect(node.verifyProofHash()).to.equal(false);
+      expect(node.verifyStateInfo()).to.equal(false);
       node.updateStateInfo();
-      expect(node.getProofHash()).to.equal(node._buildProofHash());
-      expect(node.verifyProofHash()).to.equal(true);
-      expect(node.verifyTreeInfo()).to.equal(true);
+      expect(node.verifyStateInfo()).to.equal(true);
 
       node.setValue('');
-      expect(node.verifyProofHash()).to.equal(false);
+      expect(node.verifyStateInfo()).to.equal(false);
       node.updateStateInfo();
-      expect(node.getProofHash()).to.equal(node._buildProofHash());
-      expect(node.verifyProofHash()).to.equal(true);
-      expect(node.verifyTreeInfo()).to.equal(true);
+      expect(node.verifyStateInfo()).to.equal(true);
 
       node.setValue('str');
-      expect(node.verifyProofHash()).to.equal(false);
+      expect(node.verifyStateInfo()).to.equal(false);
       node.updateStateInfo();
-      expect(node.getProofHash()).to.equal(node._buildProofHash());
-      expect(node.verifyProofHash()).to.equal(true);
-      expect(node.verifyTreeInfo()).to.equal(true);
+      expect(node.verifyStateInfo()).to.equal(true);
 
       node.setValue(null);
-      expect(node.verifyProofHash()).to.equal(false);
+      expect(node.verifyStateInfo()).to.equal(false);
       node.updateStateInfo();
-      expect(node.getProofHash()).to.equal(node._buildProofHash());
-      expect(node.verifyProofHash()).to.equal(true);
-      expect(node.verifyTreeInfo()).to.equal(true);
+      expect(node.verifyStateInfo()).to.equal(true);
 
       node.setValue(undefined);
-      expect(node.verifyProofHash()).to.equal(false);
+      expect(node.verifyStateInfo()).to.equal(false);
       node.updateStateInfo();
-      expect(node.getProofHash()).to.equal(node._buildProofHash());
-      expect(node.verifyProofHash()).to.equal(true);
-      expect(node.verifyTreeInfo()).to.equal(true);
+      expect(node.verifyStateInfo()).to.equal(true);
     });
 
     it("internal node when radixTreeEnabled = true", () => {
@@ -1780,14 +1766,12 @@ describe("state-node", () => {
       child2Enabled.setTreeSize(20);
       child3Enabled.setTreeSize(30);
       child4Enabled.setTreeSize(40);
-      expect(stateTreeEnabled.verifyProofHash()).to.equal(false);
+      expect(stateTreeEnabled.verifyStateInfo()).to.equal(false);
 
       // update without updatedChildLabel
       stateTreeEnabled.updateStateInfo();
       const proofHash = stateTreeEnabled.getProofHash();
-      expect(proofHash).to.equal(stateTreeEnabled._buildProofHash());
-      expect(stateTreeEnabled.verifyProofHash()).to.equal(true);
-      expect(stateTreeEnabled.verifyTreeInfo()).to.equal(true);
+      expect(stateTreeEnabled.verifyStateInfo()).to.equal(true);
 
       // set another proof hash value for a child
       child2Enabled.setProofHash('another PH');
@@ -1796,8 +1780,7 @@ describe("state-node", () => {
       stateTreeEnabled.updateStateInfo(label2);
       const newProofHash = stateTreeEnabled.getProofHash();
       expect(newProofHash).not.equal(proofHash);  // Updated
-      expect(newProofHash).to.equal(stateTreeEnabled._buildProofHash());
-      expect(stateTreeEnabled.verifyProofHash()).to.equal(true);
+      expect(stateTreeEnabled.verifyStateInfo()).to.equal(true);
 
       // set yet another proof hash value for a child
       child2Enabled.setProofHash('yet another PH');
@@ -1807,7 +1790,7 @@ describe("state-node", () => {
       stateTreeEnabled.updateStateInfo(label2, false);  // shouldRebuildRadixInfo = false
       const newProofHash2 = stateTreeEnabled.getProofHash();
       expect(newProofHash2).equal(stateTreeProofHashBefore);  // Unchanged
-      expect(stateTreeEnabled.verifyProofHash()).to.equal(false);
+      expect(stateTreeEnabled.verifyStateInfo()).to.equal(false);
     });
 
     it("internal node when radixTreeEnabled = false", () => {
@@ -1827,9 +1810,7 @@ describe("state-node", () => {
       // update without updatedChildLabel
       stateTreeDisabled.updateStateInfo();
       const proofHash = stateTreeDisabled.getProofHash();
-      expect(proofHash).to.equal(stateTreeDisabled._buildProofHash());
-      expect(stateTreeDisabled.verifyProofHash()).to.equal(true);
-      expect(stateTreeDisabled.verifyTreeInfo()).to.equal(true);
+      expect(stateTreeDisabled.verifyStateInfo()).to.equal(true);
 
       // set another proof hash value for a child
       child2Disabled.setProofHash('another PH');
@@ -1838,11 +1819,10 @@ describe("state-node", () => {
       stateTreeDisabled.updateStateInfo(label2);
       const newProofHash = stateTreeDisabled.getProofHash();
       expect(newProofHash).not.equal(proofHash);  // Updated
-      expect(newProofHash).to.equal(stateTreeDisabled._buildProofHash());
-      expect(stateTreeDisabled.verifyProofHash()).to.equal(true);
+      expect(stateTreeDisabled.verifyStateInfo()).to.equal(true);
     });
 
-    it("verifyProofHash with updatedChildLabel when radixTreeEnabled = true", () => {
+    it("verifyStateInfo with updatedChildLabel when radixTreeEnabled = true", () => {
       child1Enabled.setProofHash('proofHash1');
       child2Enabled.setProofHash('proofHash2');
       child3Enabled.setProofHash('proofHash3');
@@ -1851,9 +1831,9 @@ describe("state-node", () => {
       // update with updatedChildLabel
       stateTreeEnabled.updateStateInfo(label2);
       // verify with updatedChildLabel
-      expect(stateTreeEnabled.verifyProofHash(label2)).to.equal(true);
+      expect(stateTreeEnabled.verifyStateInfo(label2)).to.equal(true);
       // verify without updatedChildLabel
-      expect(stateTreeEnabled.verifyProofHash()).to.equal(false);
+      expect(stateTreeEnabled.verifyStateInfo()).to.equal(false);
     });
   });
 
@@ -2009,10 +1989,8 @@ describe("state-node", () => {
       expect(stateTreeDisabled.radixTree.size()).to.equal(4);
       expect(stateTreeDisabled.childMap.size).to.equal(0);
       expect(stateTreeDisabled.getRadixTreeEnabled()).to.equal(true);
-      // Verify proof hash
-      expect(stateTreeDisabled.verifyProofHash()).to.equal(true);
-      // Verify tree info
-      expect(stateTreeDisabled.verifyTreeInfo()).to.equal(true);
+      // Verify state info
+      expect(stateTreeDisabled.verifyStateInfo()).to.equal(true);
       // Check parents of state nodes
       assert.deepEqual(child1Disabled.getParentNodes(), [stateTreeDisabled]);
       assert.deepEqual(child1Disabled.getParentNodes(), [stateTreeDisabled]);
@@ -2048,10 +2026,8 @@ describe("state-node", () => {
       expect(stateTreeEnabled.radixTree.size()).to.equal(0);
       expect(stateTreeEnabled.childMap.size).to.equal(4);
       expect(stateTreeEnabled.getRadixTreeEnabled()).to.equal(false);
-      // Verify proof hash
-      expect(stateTreeEnabled.verifyProofHash()).to.equal(true);
-      // Verify tree info
-      expect(stateTreeEnabled.verifyTreeInfo()).to.equal(true);
+      // Verify state info
+      expect(stateTreeEnabled.verifyStateInfo()).to.equal(true);
       // Check parents of state nodes
       assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
       assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);

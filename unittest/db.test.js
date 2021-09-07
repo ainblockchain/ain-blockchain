@@ -4345,7 +4345,7 @@ describe("DB sharding config", () => {
   })
 })
 
-describe("Proof hash", () => {
+describe("State info", () => {
   let node, valuesObject;
 
   beforeEach(() => {
@@ -4384,18 +4384,18 @@ describe("Proof hash", () => {
   });
 
   describe("Check proof for setValue(), setOwner(), setRule(), and setFunction()", () => {
-    it("checks proof hash of under $root_path/test", () => {
+    it("checks state info of under $root_path/test", () => {
       const valuesNode = node.db.getRefForReading(['values', 'apps', 'test']);
       const ownersNode = node.db.getRefForReading(['owners', 'apps', 'test']);
       const rulesNode = node.db.getRefForReading(['rules', 'apps', 'test']);
       const functionNode = node.db.getRefForReading(['functions', 'apps', 'test']);
-      expect(valuesNode.getProofHash()).to.equal(valuesNode._buildProofHash());
-      expect(ownersNode.getProofHash()).to.equal(ownersNode._buildProofHash());
-      expect(rulesNode.getProofHash()).to.equal(rulesNode._buildProofHash());
-      expect(functionNode.getProofHash()).to.equal(functionNode._buildProofHash());
+      expect(valuesNode.verifyStateInfo()).to.equal(true);
+      expect(ownersNode.verifyStateInfo()).to.equal(true);
+      expect(rulesNode.verifyStateInfo()).to.equal(true);
+      expect(functionNode.verifyStateInfo()).to.equal(true);
     });
 
-    it("checks newly setup proof hash", () => {
+    it("checks newly setup state info", () => {
       const nestedRules = {
         "nested": {
           "$var_path": {
@@ -4447,10 +4447,10 @@ describe("Proof hash", () => {
       const ownersNode = node.db.getRefForReading(['owners', 'apps', 'test']);
       const rulesNode = node.db.getRefForReading(['rules', 'apps', 'test']);
       const functionNode = node.db.getRefForReading(['functions', 'apps', 'test']);
-      expect(valuesNode.getProofHash()).to.equal(valuesNode._buildProofHash());
-      expect(ownersNode.getProofHash()).to.equal(ownersNode._buildProofHash());
-      expect(rulesNode.getProofHash()).to.equal(rulesNode._buildProofHash());
-      expect(functionNode.getProofHash()).to.equal(functionNode._buildProofHash());
+      expect(valuesNode.verifyStateInfo()).to.equal(true);
+      expect(ownersNode.verifyStateInfo()).to.equal(true);
+      expect(rulesNode.verifyStateInfo()).to.equal(true);
+      expect(functionNode.verifyStateInfo()).to.equal(true);
     });
   });
 
