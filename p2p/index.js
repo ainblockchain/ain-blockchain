@@ -145,7 +145,7 @@ class P2pClient {
     this.trackerWebSocket.send(JSON.stringify(message));
   }
 
-  updateNodeStatusToTracker() {
+  connectToOtherPeers() {
     const message = {
       type: TrackerMessageTypes.CONNECTION,
       data: this.getStatus()
@@ -165,12 +165,12 @@ class P2pClient {
     this.trackerWebSocket.send(JSON.stringify(message));
   }
 
-  // setIntervalForTrackerUpdate() {
-  //   this.updateNodeStatusToTracker();
-  //   this.intervalUpdate = setInterval(() => {
-  //     this.updateNodeStatusToTracker();
-  //   }, UPDATE_TO_TRACKER_INTERVAL_MS);
-  // }
+  setIntervalForTrackerUpdate() {
+    this.updateNodeInfoToTracker();
+    this.intervalUpdate = setInterval(() => {
+      this.updateNodeInfoToTracker();
+    }, UPDATE_TO_TRACKER_INTERVAL_MS);
+  }
 
   async setTrackerEventHandlers() {
     this.trackerWebSocket.on('message', async (message) => {
@@ -234,8 +234,8 @@ class P2pClient {
       logger.info(`Connected to tracker (${TRACKER_WS_ADDR})`);
       this.clearIntervalForTrackerConnection();
       this.setTrackerEventHandlers();
-      this.updateNodeStatusToTracker();
-      // this.setIntervalForTrackerUpdate();
+      this.connectToOtherPeers();
+      this.setIntervalForTrackerUpdate();
     });
     this.trackerWebSocket.on('error', (error) => {
       logger.error(`Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
@@ -475,7 +475,7 @@ class P2pClient {
     socket.on('close', () => {
       const address = getAddressFromSocket(this.outbound, socket);
       removeSocketConnectionIfExists(this.outbound, address);
-      this.updateNodeInfoToTracker();
+      this.connectToOtherPeers();
       logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
   }
@@ -519,10 +519,10 @@ class P2pClient {
     });
   }
 
-  // clearIntervalForTrackerUpdate() {
-  //   clearInterval(this.intervalUpdate);
-  //   this.intervalUpdate = null;
-  // }
+  clearIntervalForTrackerUpdate() {
+    clearInterval(this.intervalUpdate);
+    this.intervalUpdate = null;
+  }
 
   disconnectFromPeers() {
     Object.values(this.outbound).forEach(node => {
@@ -535,7 +535,7 @@ class P2pClient {
     // NOTE(minsulee2): The trackerWebsocket should be checked initialized in order not to get error
     // in case trackerWebsocket is not properly setup.
     this.clearIntervalForTrackerConnection();
-    // this.clearIntervalForTrackerUpdate();
+    this.clearIntervalForTrackerUpdate();
     if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from tracker server.');
     this.stopHeartbeat();
