@@ -1515,12 +1515,12 @@ describe("state-node", () => {
       child2Enabled.setProofHash('proofHash2');
       child3Enabled.setProofHash('proofHash3');
       child4Enabled.setProofHash('proofHash4');
-      expect(stateTreeEnabled.radixTree.verifyProofHashForRadixTree()).to.equal(false);
+      expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
 
       // build proof hash without updatedChildLabel
       const proofHashBefore = stateTreeEnabled._buildProofHash();
       expect(proofHashBefore).to.equal(stateTreeEnabled.radixTree.getRootProofHash());
-      expect(stateTreeEnabled.radixTree.verifyProofHashForRadixTree()).to.equal(true);
+      expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(true);
 
       // set another proof hash value for a child
       child2Enabled.setProofHash('another PH');
@@ -1529,18 +1529,18 @@ describe("state-node", () => {
       const proofHashAfter = stateTreeEnabled._buildProofHash(label2);
       expect(proofHashAfter).not.equal(proofHashBefore);  // Updated!!
       expect(proofHashAfter).to.equal(stateTreeEnabled.radixTree.getRootProofHash());
-      expect(stateTreeEnabled.radixTree.verifyProofHashForRadixTree()).to.equal(true);
+      expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(true);
 
       // set another proof hash value for a child again
       child2Enabled.setProofHash('yet another PH');
-      expect(stateTreeEnabled.radixTree.verifyProofHashForRadixTree()).to.equal(false);
+      expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
 
       // build proof hash with updatedChildLabel and shouldRebuildRadixInfo = false
       const radixTreeProofHashBefore = stateTreeEnabled.radixTree.getRootProofHash();
       const proofHashAfter2 = stateTreeEnabled._buildProofHash(label2, false);
       expect(proofHashAfter2).equal(radixTreeProofHashBefore);  // Unchanged!!
       expect(proofHashAfter2).to.equal(stateTreeEnabled.radixTree.getRootProofHash());
-      expect(stateTreeEnabled.radixTree.verifyProofHashForRadixTree()).to.equal(false);
+      expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
     });
 
     it("internal node when radixTreeEnabled = false", () => {
@@ -1548,7 +1548,7 @@ describe("state-node", () => {
       child2Disabled.setProofHash('proofHash2');
       child3Disabled.setProofHash('proofHash3');
       child4Disabled.setProofHash('proofHash4');
-      expect(stateTreeDisabled.radixTree.verifyProofHashForRadixTree()).to.equal(false);
+      expect(stateTreeDisabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
 
       // build proof hash without updatedChildLabel
       const proofHashBefore = stateTreeDisabled._buildProofHash();

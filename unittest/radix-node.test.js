@@ -454,12 +454,36 @@ describe("radix-node", () => {
       expect(node.getTreeBytes()).to.equal(0);
     });
 
-    it("_buildProofHash", () => {
+    it("_buildRadixInfo", () => {
       const childPH1 = 'childPH1';
       const childPH2 = 'childPH2';
 
+      const stateNodeTH = 12;
+      const childTH1 = 10;
+      const childTH2 = 11;
+
+      const stateNodeTS = 120;
+      const childTS1 = 100;
+      const childTS2 = 110;
+
+      const stateNodeTB = 3200;
+      const childTB1 = 1000;
+      const childTB2 = 2100;
+
       child1.setProofHash(childPH1);
       child2.setProofHash(childPH2);
+
+      stateNode.setTreeHeight(stateNodeTH);
+      child1.setTreeHeight(childTH1);
+      child2.setTreeHeight(childTH2);
+
+      stateNode.setTreeSize(stateNodeTS);
+      child1.setTreeSize(childTS1);
+      child2.setTreeSize(childTS2);
+
+      stateNode.setTreeBytes(stateNodeTB);
+      child1.setTreeBytes(childTB1);
+      child2.setTreeBytes(childTB2);
 
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
@@ -480,68 +504,28 @@ describe("radix-node", () => {
 
       // With stateNode
       node.setStateNode(stateNode);
-      const preimage2 = `${stateNodePH}${HASH_DELIMITER}${HASH_DELIMITER}` +
-          `${labelRadix1}${labelSuffix1}${HASH_DELIMITER}${childPH1}` +
-          `${HASH_DELIMITER}${labelRadix2}${labelSuffix2}${HASH_DELIMITER}${childPH2}`;
-      const proofHash2 = CommonUtil.hashString(preimage2);
-      expect(node._buildProofHash()).to.equal(proofHash2)
-
-      // Without stateNode
-      node.resetStateNode();
-      const preimage1 = `${HASH_DELIMITER}${HASH_DELIMITER}` +
+      const treeInfo = node._buildRadixInfo();
+      const preimage1 = `${stateNodePH}${HASH_DELIMITER}${HASH_DELIMITER}` +
           `${labelRadix1}${labelSuffix1}${HASH_DELIMITER}${childPH1}` +
           `${HASH_DELIMITER}${labelRadix2}${labelSuffix2}${HASH_DELIMITER}${childPH2}`;
       const proofHash1 = CommonUtil.hashString(preimage1);
-      expect(node._buildProofHash()).to.equal(proofHash1)
-    });
+      expect(treeInfo.proofHash).to.equal(proofHash1)
 
-    it("_buildTreeInfo", () => {
-      const stateNodeTH = 12;
-      const childTH1 = 10;
-      const childTH2 = 11;
-
-      const stateNodeTS = 120;
-      const childTS1 = 100;
-      const childTS2 = 110;
-
-      const stateNodeTB = 3200;
-      const childTB1 = 1000;
-      const childTB2 = 2100;
-
-      stateNode.setTreeHeight(stateNodeTH);
-      child1.setTreeHeight(childTH1);
-      child2.setTreeHeight(childTH2);
-
-      stateNode.setTreeSize(stateNodeTS);
-      child1.setTreeSize(childTS1);
-      child2.setTreeSize(childTS2);
-
-      stateNode.setTreeBytes(stateNodeTB);
-      child1.setTreeBytes(childTB1);
-      child2.setTreeBytes(childTB2);
-
-      node.setStateNode(stateNode);
-      node.setChild(labelRadix1, labelSuffix1, child1);
-      node.setChild(labelRadix2, labelSuffix2, child2);
-
-      assert.deepEqual(node.toJsObject(), {
-        "1100": {
-          ".label": null,
-          ".proof_hash": "stateNodePH1",
-        },
-        "2200": {
-        },
-        ".label": null,
-        ".proof_hash": "stateNodePH",
-      });
-
-      const treeInfo = node._buildTreeInfo();
       expect(treeInfo.treeHeight).to.equal(Math.max(stateNodeTH, childTH1, childTH2));
       expect(treeInfo.treeSize).to.equal(stateNodeTS + childTS1 + childTS2);
       expect(treeInfo.treeBytes).to.equal(stateNodeTB + childTB1 + childTB2);
+
+      // Without stateNode
+      node.resetStateNode();
+      const treeInfo2 = node._buildRadixInfo();
+      const preimage2 = `${HASH_DELIMITER}${HASH_DELIMITER}` +
+          `${labelRadix1}${labelSuffix1}${HASH_DELIMITER}${childPH1}` +
+          `${HASH_DELIMITER}${labelRadix2}${labelSuffix2}${HASH_DELIMITER}${childPH2}`;
+      const proofHash2 = CommonUtil.hashString(preimage2);
+      expect(treeInfo2.proofHash).to.equal(proofHash2)
     });
 
-    it("updateRadixInfo / verifyProofHash", () => {
+    it("updateRadixInfo / verifyRadixInfo", () => {
       const childPH1 = 'childPH1';
       const childPH2 = 'childPH2';
 
@@ -590,17 +574,11 @@ describe("radix-node", () => {
         ".radix_ph": null
       });
 
-      // Check proof hash
-      node.resetProofHash();
-      expect(node.verifyProofHash()).to.equal(false);
-      node.updateRadixInfo();
-      expect(node.verifyProofHash()).to.equal(true);
-      expect(node.getProofHash()).to.equal(node._buildProofHash());
       // Check tree info
-      const treeInfo = node._buildTreeInfo();
-      expect(treeInfo.treeHeight).to.equal(Math.max(stateNodeTH, childTH1, childTH2));
-      expect(treeInfo.treeSize).to.equal(stateNodeTS + childTS1 + childTS2);
-      expect(treeInfo.treeBytes).to.equal(stateNodeTB + childTB1 + childTB2);
+      node.resetProofHash();
+      expect(node.verifyRadixInfo()).to.equal(false);
+      node.updateRadixInfo();
+      expect(node.verifyRadixInfo()).to.equal(true);
     });
 
     it("updateRadixInfoForRadixTree", () => {
@@ -647,33 +625,33 @@ describe("radix-node", () => {
       });
 
       // initial status
-      expect(node.verifyProofHash()).to.equal(false);
-      expect(child1.verifyProofHash()).to.equal(false);
-      expect(child2.verifyProofHash()).to.equal(false);
-      expect(child11.verifyProofHash()).to.equal(false);
-      expect(child12.verifyProofHash()).to.equal(false);
-      expect(child21.verifyProofHash()).to.equal(false);
-      expect(child22.verifyProofHash()).to.equal(false);
+      expect(node.verifyRadixInfo()).to.equal(false);
+      expect(child1.verifyRadixInfo()).to.equal(false);
+      expect(child2.verifyRadixInfo()).to.equal(false);
+      expect(child11.verifyRadixInfo()).to.equal(false);
+      expect(child12.verifyRadixInfo()).to.equal(false);
+      expect(child21.verifyRadixInfo()).to.equal(false);
+      expect(child22.verifyRadixInfo()).to.equal(false);
 
       // set
       expect(node.updateRadixInfoForRadixTree()).to.equal(7);
-      expect(node.verifyProofHash()).to.equal(true);
-      expect(child1.verifyProofHash()).to.equal(true);
-      expect(child2.verifyProofHash()).to.equal(true);
-      expect(child11.verifyProofHash()).to.equal(true);
-      expect(child12.verifyProofHash()).to.equal(true);
-      expect(child21.verifyProofHash()).to.equal(true);
-      expect(child22.verifyProofHash()).to.equal(true);
+      expect(node.verifyRadixInfo()).to.equal(true);
+      expect(child1.verifyRadixInfo()).to.equal(true);
+      expect(child2.verifyRadixInfo()).to.equal(true);
+      expect(child11.verifyRadixInfo()).to.equal(true);
+      expect(child12.verifyRadixInfo()).to.equal(true);
+      expect(child21.verifyRadixInfo()).to.equal(true);
+      expect(child22.verifyRadixInfo()).to.equal(true);
 
       // change of a state node's proof hash
       stateNode12.setProofHash('another PH');
-      expect(node.verifyProofHash()).to.equal(true);
-      expect(child1.verifyProofHash()).to.equal(true);
-      expect(child2.verifyProofHash()).to.equal(true);
-      expect(child11.verifyProofHash()).to.equal(true);
-      expect(child12.verifyProofHash()).to.equal(false);
-      expect(child21.verifyProofHash()).to.equal(true);
-      expect(child22.verifyProofHash()).to.equal(true);
+      expect(node.verifyRadixInfo()).to.equal(true);
+      expect(child1.verifyRadixInfo()).to.equal(true);
+      expect(child2.verifyRadixInfo()).to.equal(true);
+      expect(child11.verifyRadixInfo()).to.equal(true);
+      expect(child12.verifyRadixInfo()).to.equal(false);
+      expect(child21.verifyRadixInfo()).to.equal(true);
+      expect(child22.verifyRadixInfo()).to.equal(true);
     });
 
     it("updateRadixInfoForRadixPath", () => {
@@ -720,26 +698,26 @@ describe("radix-node", () => {
       });
 
       // initial status
-      expect(node.verifyProofHash()).to.equal(false);
-      expect(child1.verifyProofHash()).to.equal(false);
-      expect(child2.verifyProofHash()).to.equal(false);
-      expect(child11.verifyProofHash()).to.equal(false);
-      expect(child12.verifyProofHash()).to.equal(false);
-      expect(child21.verifyProofHash()).to.equal(false);
-      expect(child22.verifyProofHash()).to.equal(false);
+      expect(node.verifyRadixInfo()).to.equal(false);
+      expect(child1.verifyRadixInfo()).to.equal(false);
+      expect(child2.verifyRadixInfo()).to.equal(false);
+      expect(child11.verifyRadixInfo()).to.equal(false);
+      expect(child12.verifyRadixInfo()).to.equal(false);
+      expect(child21.verifyRadixInfo()).to.equal(false);
+      expect(child22.verifyRadixInfo()).to.equal(false);
 
       // update
       expect(child21.updateRadixInfoForRadixPath()).to.equal(3);
-      expect(node.verifyProofHash()).to.equal(true);
-      expect(child1.verifyProofHash()).to.equal(false);
-      expect(child2.verifyProofHash()).to.equal(true);
-      expect(child11.verifyProofHash()).to.equal(false);
-      expect(child12.verifyProofHash()).to.equal(false);
-      expect(child21.verifyProofHash()).to.equal(true);
-      expect(child22.verifyProofHash()).to.equal(false);
+      expect(node.verifyRadixInfo()).to.equal(true);
+      expect(child1.verifyRadixInfo()).to.equal(false);
+      expect(child2.verifyRadixInfo()).to.equal(true);
+      expect(child11.verifyRadixInfo()).to.equal(false);
+      expect(child12.verifyRadixInfo()).to.equal(false);
+      expect(child21.verifyRadixInfo()).to.equal(true);
+      expect(child22.verifyRadixInfo()).to.equal(false);
     });
 
-    it("verifyProofHashForRadixTree", () => {
+    it("verifyRadixInfoForRadixTree", () => {
       node.setStateNode(stateNode);
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
@@ -783,19 +761,19 @@ describe("radix-node", () => {
       });
 
       // initial status
-      expect(node.verifyProofHashForRadixTree()).to.equal(false);
+      expect(node.verifyRadixInfoForRadixTree()).to.equal(false);
 
       // set
       expect(node.updateRadixInfoForRadixTree()).to.equal(7);
-      expect(node.verifyProofHashForRadixTree()).to.equal(true);
+      expect(node.verifyRadixInfoForRadixTree()).to.equal(true);
 
       // change of a state node's proof hash
       stateNode21.setProofHash('another PH');
-      expect(node.verifyProofHashForRadixTree()).to.equal(false);
+      expect(node.verifyRadixInfoForRadixTree()).to.equal(false);
 
       // update
       expect(child21.updateRadixInfoForRadixPath()).to.equal(3);
-      expect(node.verifyProofHashForRadixTree()).to.equal(true);
+      expect(node.verifyRadixInfoForRadixTree()).to.equal(true);
     });
 
     it("getProofOfRadixNode", () => {
