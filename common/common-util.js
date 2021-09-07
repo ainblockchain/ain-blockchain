@@ -166,7 +166,7 @@ class CommonUtil {
   /**
    * Converts the given string to a hex string (with lower case).
    */
-  static toHexString(str, withPrefix = true) {
+  static toHexString(str, withPrefix = false) {
     if (this.isHexString(str)) {
       if (withPrefix) {
         return str.toLowerCase();

@@ -62,35 +62,35 @@ describe("CommonUtil", () => {
 
   describe("toHexString", () => {
     it("when non-string input", () => {
-      expect(CommonUtil.toHexString(0)).to.equal('0x');
-      expect(CommonUtil.toHexString(10)).to.equal('0x');
-      expect(CommonUtil.toHexString(-1)).to.equal('0x');
-      expect(CommonUtil.toHexString(15.5)).to.equal('0x');
-      expect(CommonUtil.toHexString(null)).to.equal('0x');
-      expect(CommonUtil.toHexString(undefined)).to.equal('0x');
-      expect(CommonUtil.toHexString(Infinity)).to.equal('0x');
-      expect(CommonUtil.toHexString(NaN)).to.equal('0x');
-      expect(CommonUtil.toHexString({})).to.equal('0x');
-      expect(CommonUtil.toHexString({a: 'A'})).to.equal('0x');
-      expect(CommonUtil.toHexString([])).to.equal('0x');
-      expect(CommonUtil.toHexString([10])).to.equal('0x');
-      expect(CommonUtil.toHexString(false)).to.equal('0x');
+      expect(CommonUtil.toHexString(0)).to.equal('');
+      expect(CommonUtil.toHexString(10)).to.equal('');
+      expect(CommonUtil.toHexString(-1)).to.equal('');
+      expect(CommonUtil.toHexString(15.5)).to.equal('');
+      expect(CommonUtil.toHexString(null)).to.equal('');
+      expect(CommonUtil.toHexString(undefined)).to.equal('');
+      expect(CommonUtil.toHexString(Infinity)).to.equal('');
+      expect(CommonUtil.toHexString(NaN)).to.equal('');
+      expect(CommonUtil.toHexString({})).to.equal('');
+      expect(CommonUtil.toHexString({a: 'A'})).to.equal('');
+      expect(CommonUtil.toHexString([])).to.equal('');
+      expect(CommonUtil.toHexString([10])).to.equal('');
+      expect(CommonUtil.toHexString(false)).to.equal('');
     })
 
-    it("when non-string input with withPrefix = false", () => {
-      expect(CommonUtil.toHexString(0, false)).to.equal('');
+    it("when non-string input with withPrefix = true", () => {
+      expect(CommonUtil.toHexString(0, true)).to.equal('0x');
     })
 
     it("when string input", () => {
-      expect(CommonUtil.toHexString('')).to.equal('0x');
-      expect(CommonUtil.toHexString('0x0123456789abcdef')).to.equal('0x0123456789abcdef');
-      expect(CommonUtil.toHexString('0x0123456789ABCDEF')).to.equal('0x0123456789abcdef');
-      expect(CommonUtil.toHexString('aAzZ')).to.equal('0x61417a5a');
+      expect(CommonUtil.toHexString('')).to.equal('');
+      expect(CommonUtil.toHexString('0x0123456789abcdef')).to.equal('0123456789abcdef');
+      expect(CommonUtil.toHexString('0x0123456789ABCDEF')).to.equal('0123456789abcdef');
+      expect(CommonUtil.toHexString('aAzZ')).to.equal('61417a5a');
     })
 
-    it("when string input with withPrefix = false", () => {
-      expect(CommonUtil.toHexString('', false)).to.equal('');
-      expect(CommonUtil.toHexString('0x0123456789abcdef', false)).to.equal('0123456789abcdef');
+    it("when string input with withPrefix = true", () => {
+      expect(CommonUtil.toHexString('', true)).to.equal('0x');
+      expect(CommonUtil.toHexString('0x0123456789abcdef', true)).to.equal('0x0123456789abcdef');
     })
   })
 
