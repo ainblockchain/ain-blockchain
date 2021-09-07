@@ -517,8 +517,8 @@ class StateNode {
     }
   }
 
-  deleteRadixTree(deleteParent = true) {
-    return this.radixTree.deleteRadixTree(deleteParent ? this : null);
+  deleteRadixTree(shouldDeleteParent = true) {
+    return this.radixTree.deleteRadixTree(shouldDeleteParent ? this : null);
   }
 
   enableRadixTree() {
@@ -537,7 +537,7 @@ class StateNode {
       const child = this.radixTree.get(label);
       this.childMap.set(label, child);
     }
-    this.deleteRadixTree(false);  // deleteParent = false
+    this.deleteRadixTree(false);  // shouldDeleteParent = false
     this.setRadixTreeEnabled(false);
     this.updateStateInfo(null, true);
   }

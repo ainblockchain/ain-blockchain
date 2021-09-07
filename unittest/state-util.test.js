@@ -1738,8 +1738,7 @@ describe("state-util", () => {
         }
       };
       const stateTree = StateNode.fromJsObject(stateObj);
-      const numNodes = setStateTreeVersion(stateTree, ver1);
-      expect(numNodes).to.equal(24);
+      expect(setStateTreeVersion(stateTree, ver1)).to.equal(24);
       assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
         ".num_parents": 0,
         ".num_parents:bool": 1,

@@ -982,7 +982,7 @@ describe("radix-node", () => {
       assert.deepEqual(stateNode22.getParentNodes(), [newParentStateNode]);
     });
 
-    it("deleteRadixTree without parentStateNode", () => {
+    it("deleteRadixTree without parentStateNodeToDelete", () => {
       const parentStateNode = new StateNode();
       stateNode1.addParent(parentStateNode);
       stateNode2.addParent(parentStateNode);
@@ -991,6 +991,7 @@ describe("radix-node", () => {
       const parentRadixNode = new RadixNode();
       node.setParent(parentRadixNode);
 
+      // parentStateNodeToDelete = null
       expect(node.deleteRadixTree()).to.equal(5);
       // Check parents of state nodes
       assert.deepEqual(stateNode1.getParentNodes(), [parentStateNode]);
@@ -1017,13 +1018,14 @@ describe("radix-node", () => {
       expect(child22.hasParent()).to.equal(false);
     });
 
-    it("deleteRadixTree with parentStateNode", () => {
+    it("deleteRadixTree with parentStateNodeToDelete", () => {
       const parentStateNode = new StateNode();
       stateNode1.addParent(parentStateNode);
       stateNode2.addParent(parentStateNode);
       stateNode21.addParent(parentStateNode);
       stateNode22.addParent(parentStateNode);
 
+      // parentStateNodeToDelete !== null
       expect(node.deleteRadixTree(parentStateNode)).to.equal(5);
       // Check parents of state nodes
       assert.deepEqual(stateNode1.getParentNodes(), []);

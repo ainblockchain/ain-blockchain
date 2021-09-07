@@ -1298,7 +1298,7 @@ describe("radix-tree", () => {
         stateNode22 = new StateNode();
       });
 
-      it("delete without parentStateNode", () => {
+      it("delete without parentStateNodeToDelete", () => {
         const parentStateNode = new StateNode();
         parentStateNode._setLabel('parentStateNodeLabel')
 
@@ -1343,7 +1343,7 @@ describe("radix-tree", () => {
         expect(tree.terminalNodeMap.size).to.equal(0);
       });
 
-      it("delete with parentStateNode", () => {
+      it("delete with parentStateNodeToDelete", () => {
         const parentStateNode = new StateNode();
         parentStateNode._setLabel('parentStateNodeLabel')
 
