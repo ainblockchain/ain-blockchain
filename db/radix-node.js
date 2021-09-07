@@ -3,6 +3,7 @@ const logger = require('../logger')('RADIX_NODE');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
+  LIGHTWEIGHT,
   HASH_DELIMITER,
   ProofProperties,
 } = require('../common/constants');
@@ -262,8 +263,9 @@ class RadixNode {
     if (this.hasStateNode()) {
       const stateNode = this.getStateNode();
       const stateNodeLabel = CommonUtil.stringOrEmpty(stateNode.getLabel());
+      const preimage = LIGHTWEIGHT ? '' : stateNode.getProofHash();
       treeInfo = {
-        preimage: stateNode.getProofHash(),
+        preimage,
         treeHeight: stateNode.getTreeHeight(),
         treeSize: stateNode.getTreeSize(),
         treeBytes: sizeof(stateNodeLabel) + stateNode.getTreeBytes(),
@@ -274,7 +276,7 @@ class RadixNode {
       treeInfo.preimage += `${HASH_DELIMITER}`;
     } else {
       treeInfo = this.getChildNodes().reduce((acc, child) => {
-        const accPreimage = acc.preimage +
+        const accPreimage = LIGHTWEIGHT ? '' : acc.preimage +
             `${HASH_DELIMITER}${child.getLabel()}${HASH_DELIMITER}${child.getProofHash()}`;
         const accTreeHeight = Math.max(acc.treeHeight, child.getTreeHeight());
         const accTreeSize = acc.treeSize + child.getTreeSize();
@@ -287,8 +289,9 @@ class RadixNode {
         };
       }, treeInfo);
     }
+    const proofHash = LIGHTWEIGHT ? '' : CommonUtil.hashString(treeInfo.preimage);
     return {
-      proofHash: CommonUtil.hashString(treeInfo.preimage),
+      proofHash,
       treeHeight: treeInfo.treeHeight,
       treeSize: treeInfo.treeSize,
       treeBytes: treeInfo.treeBytes,
