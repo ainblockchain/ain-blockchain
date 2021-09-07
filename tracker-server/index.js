@@ -161,7 +161,7 @@ server.on('connection', (ws) => {
   // TODO(minsulee2): Code should be setup ex) code === 1006: SIGINT .
   ws.on('close', (code) => {
     const address = wsList[ws.uuid];
-    logger.info(`\nDisconnected from node [${address ? abbrAddr(address) : 'unknown'}] ` +
+    logger.info(`Disconnected from node [${address ? abbrAddr(address) : 'unknown'}] ` +
         `with code: ${code}`);
     delete wsList[ws.uuid];
     peerNodes[address].isAlive = false;
@@ -182,9 +182,8 @@ function abbrAddr(address) {
 function setNodeInfo(ws, nodeInfo) {
   wsList[ws.uuid] = nodeInfo.address;
   nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
-  // TODO(minsulee2): It will be managed via peers when heartbeat updates.
   peerNodes[nodeInfo.address] = nodeInfo;
-  logger.info(`\n<< Connection from node [${abbrAddr(nodeInfo.address)}]`);
+  logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
   logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
 }
 
