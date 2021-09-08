@@ -554,9 +554,6 @@ function deleteStateTree(node) {
     for (const child of childNodes) {
       numAffectedNodes += deleteStateTree(child);
     }
-    if (node.numChildren() === 0) {
-      node.setIsLeaf(true);
-    }
   } else {
     for (const label of node.getChildLabels()) {
       const child = node.getChild(label);
