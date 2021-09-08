@@ -166,11 +166,17 @@ class CommonUtil {
   /**
    * Converts the given string to a hex string (with lower case).
    */
-  static toHexString(str) {
+  static toHexString(str, withPrefix = false) {
     if (this.isHexString(str)) {
-      return str.toLowerCase();
+      if (withPrefix) {
+        return str.toLowerCase();
+      }
+      return str.slice(2).toLowerCase();
     }
     const hexStr = this.isString(str) ? Buffer.from(str).toString('hex') : '';
+    if (!withPrefix) {
+      return hexStr;
+    }
     return '0x' + hexStr;
   }
 

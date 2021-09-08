@@ -4,7 +4,6 @@ const {
   makeCopyOfStateTree,
   renameStateTreeVersion,
   deleteStateTree,
-  deleteStateTreeVersion,
 } = require('./state-util');
 const {
   FeatureFlags,
@@ -193,9 +192,9 @@ class StateManager {
     }
     let numDeletedNodes = null;
     if (FeatureFlags.enableStateVersionOpt) {
-      numDeletedNodes = deleteStateTreeVersion(root);
+      numDeletedNodes = deleteStateTree(root, true);  // deleteOrphanedOnly = true
     } else {
-      numDeletedNodes = deleteStateTree(root);
+      numDeletedNodes = deleteStateTree(root, false);  // deleteOrphanedOnly = false
     }
     logger.debug(`[${LOG_HEADER}] Deleted ${numDeletedNodes} state nodes.`);
     this._deleteRoot(version);

@@ -3,6 +3,7 @@ const logger = require('../logger')('RADIX_NODE');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
+  LIGHTWEIGHT,
   HASH_DELIMITER,
   ProofProperties,
 } = require('../common/constants');
@@ -21,6 +22,18 @@ class RadixNode {
     this.treeHeight = 0;
     this.treeSize = 0;
     this.treeBytes = 0;
+  }
+
+  reset() {
+    this.resetStateNode();
+    this.resetLabelRadix();
+    this.resetLabelSuffix();
+    this.resetParent();
+    this.radixChildMap.clear();
+    this.resetProofHash();
+    this.resetTreeHeight();
+    this.resetTreeSize();
+    this.resetTreeBytes();
   }
 
   getStateNode() {
@@ -159,7 +172,6 @@ class RadixNode {
     child.resetLabelRadix();
     child.resetLabelSuffix();
     child.resetParent();
-    child.resetProofHash();
     return true;
   }
 
@@ -195,12 +207,20 @@ class RadixNode {
     this.treeHeight = treeHeight;
   }
 
+  resetTreeHeight() {
+    this.setTreeHeight(0);
+  }
+
   getTreeSize() {
     return this.treeSize;
   }
 
   setTreeSize(treeSize) {
     this.treeSize = treeSize;
+  }
+
+  resetTreeSize() {
+    this.setTreeSize(0);
   }
 
   getTreeBytes() {
@@ -211,62 +231,69 @@ class RadixNode {
     this.treeBytes = treeBytes;
   }
 
-  _buildProofHash() {
-    let preimage = '';
-    if (this.hasStateNode()) {
-      preimage = this.getStateNode().getProofHash();
-    }
-    // NOTE(platfowner): Put delimiter twice to distinguish the state node proof hash and
-    // the radix child proof hash.
-    preimage += `${HASH_DELIMITER}${HASH_DELIMITER}`;
-    preimage += this.getChildNodes().map((child) => {
-      return `${child.getLabel()}${HASH_DELIMITER}${child.getProofHash()}`;
-    }).join(HASH_DELIMITER);
-    return CommonUtil.hashString(preimage);
+  resetTreeBytes() {
+    this.setTreeBytes(0);
   }
 
-  verifyProofHash() {
-    return this.getProofHash() === this._buildProofHash();
-  }
-
-  _buildTreeInfo() {
-    let treeHeight;
-    let treeSize;
-    let treeBytes;
+  _buildRadixInfo() {
+    let treeInfo = {
+      preimage: '',
+      treeHeight: 0,
+      treeSize: 0,
+      treeBytes: 0,
+    };
     if (this.hasStateNode()) {
       const stateNode = this.getStateNode();
-      treeHeight = stateNode.getTreeHeight();
-      treeSize = stateNode.getTreeSize();
       const stateNodeLabel = CommonUtil.stringOrEmpty(stateNode.getLabel());
-      treeBytes = sizeof(stateNodeLabel) + stateNode.getTreeBytes();
-    } else {
-      treeHeight = 0;
-      treeSize = 0;
-      treeBytes = 0;
-    }
-    const initialValues = {
-      treeHeight,
-      treeSize,
-      treeBytes,
-    };
-    return this.getChildNodes().reduce((acc, cur) => {
-      const newTreeHeight = Math.max(acc.treeHeight, cur.getTreeHeight());
-      const newTreeSize = acc.treeSize + cur.getTreeSize();
-      const newTreeBytes = acc.treeBytes + cur.getTreeBytes();
-      return {
-        treeHeight: newTreeHeight,
-        treeSize: newTreeSize,
-        treeBytes: newTreeBytes,
+      const preimage = LIGHTWEIGHT ? '' : stateNode.getProofHash();
+      treeInfo = {
+        preimage,
+        treeHeight: stateNode.getTreeHeight(),
+        treeSize: stateNode.getTreeSize(),
+        treeBytes: sizeof(stateNodeLabel) + stateNode.getTreeBytes(),
       };
-    }, initialValues);
+    }
+    treeInfo.preimage += `${HASH_DELIMITER}`;
+    if (this.numChildren() === 0) {
+      treeInfo.preimage += `${HASH_DELIMITER}`;
+    } else {
+      treeInfo = this.getChildNodes().reduce((acc, child) => {
+        const accPreimage = LIGHTWEIGHT ? '' : acc.preimage +
+            `${HASH_DELIMITER}${child.getLabel()}${HASH_DELIMITER}${child.getProofHash()}`;
+        const accTreeHeight = Math.max(acc.treeHeight, child.getTreeHeight());
+        const accTreeSize = acc.treeSize + child.getTreeSize();
+        const accTreeBytes = acc.treeBytes + child.getTreeBytes();
+        return {
+          preimage: accPreimage,
+          treeHeight: accTreeHeight,
+          treeSize: accTreeSize,
+          treeBytes: accTreeBytes,
+        };
+      }, treeInfo);
+    }
+    const proofHash = LIGHTWEIGHT ? '' : CommonUtil.hashString(treeInfo.preimage);
+    return {
+      proofHash,
+      treeHeight: treeInfo.treeHeight,
+      treeSize: treeInfo.treeSize,
+      treeBytes: treeInfo.treeBytes,
+    };
   }
 
   updateRadixInfo() {
-    this.setProofHash(this._buildProofHash());
-    const treeInfo = this._buildTreeInfo();
+    const treeInfo = this._buildRadixInfo();
+    this.setProofHash(treeInfo.proofHash);
     this.setTreeHeight(treeInfo.treeHeight);
     this.setTreeSize(treeInfo.treeSize);
     this.setTreeBytes(treeInfo.treeBytes);
+  }
+
+  verifyRadixInfo() {
+    const treeInfo = this._buildRadixInfo();
+    return this.getProofHash() === treeInfo.proofHash &&
+        this.getTreeHeight() === treeInfo.treeHeight &&
+        this.getTreeSize() === treeInfo.treeSize &&
+        this.getTreeBytes() === treeInfo.treeBytes;
   }
 
   updateRadixInfoForRadixTree() {
@@ -293,12 +320,12 @@ class RadixNode {
     return numAffectedNodes;
   }
 
-  verifyProofHashForRadixTree() {
-    if (!this.verifyProofHash()) {
+  verifyRadixInfoForRadixTree() {
+    if (!this.verifyRadixInfo()) {
       return false;
     }
     for (const child of this.getChildNodes()) {
-      if (!child.verifyProofHashForRadixTree()) {
+      if (!child.verifyRadixInfoForRadixTree()) {
         return false;
       }
     }
@@ -346,6 +373,27 @@ class RadixNode {
       this.setChild(child.getLabelRadix(), child.getLabelSuffix(), clonedChild);
       clonedChild.copyFrom(child, newParentStateNode, terminalNodeMap);
     }
+  }
+
+  /**
+   * Deletes radix tree.
+   * If parentStateNodeToDelete is given, it's deleted from the terminal state nodes' parent set.
+   */
+  deleteRadixTree(parentStateNodeToDelete = null) {
+    let numAffectedNodes = 0;
+
+    for (const child of this.getChildNodes()) {
+      numAffectedNodes += child.deleteRadixTree(parentStateNodeToDelete);
+    }
+
+    if (parentStateNodeToDelete !== null && this.hasStateNode()) {
+      const stateNode = this.getStateNode();
+      stateNode.deleteParent(parentStateNodeToDelete);
+    }
+    this.reset();
+    numAffectedNodes++;
+
+    return numAffectedNodes;
   }
 
   /**

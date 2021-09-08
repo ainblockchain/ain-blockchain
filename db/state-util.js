@@ -545,60 +545,33 @@ function renameStateTreeVersion(node, fromVersion, toVersion, isRootNode = true)
 /**
  * Returns affected nodes' number.
  */
-function deleteStateTree(node) {
+function deleteStateTree(node, deleteOrphanedOnly = false) {
   let numAffectedNodes = 0;
-  if (FeatureFlags.enableRadixTreeLayers) {
-    const childNodes = node.getChildNodes();
-    node.deleteRadixTree();
-    for (const child of childNodes) {
-      numAffectedNodes += deleteStateTree(child);
+  if (deleteOrphanedOnly) {
+    if (node.numParents() > 0) {
+      // Does nothing.
+      return numAffectedNodes;
     }
-    if (node.numChildren() === 0) {
-      node.setIsLeaf(true);
+  }
+
+  // 1. Delete children
+  if (FeatureFlags.enableRadixTreeLayers && node.getRadixTreeEnabled()) {
+    const childNodes = node.getChildNodes();
+    node.deleteRadixTree(true);  // shouldDeleteParent = true
+    for (const child of childNodes) {
+      numAffectedNodes += deleteStateTree(child, deleteOrphanedOnly);
     }
   } else {
     for (const label of node.getChildLabels()) {
       const child = node.getChild(label);
-      node.deleteChild(label);
-      numAffectedNodes += deleteStateTree(child);
+      node.deleteChild(label, false);  // shouldUpdateStateInfo = false
+
+      numAffectedNodes += deleteStateTree(child, deleteOrphanedOnly);
     }
   }
-  node.resetValue();
-  node.resetProofHash();
+  // 2. Reset node
+  node.reset();
   numAffectedNodes++;
-
-  return numAffectedNodes;
-}
-
-/**
- * Returns affected nodes' number.
- */
-function deleteStateTreeVersion(node) {
-  let numAffectedNodes = 0;
-  if (node.numParents() > 0) {
-    // Does nothing.
-    return numAffectedNodes;
-  }
-  node.resetValue();
-  node.resetProofHash();
-  numAffectedNodes++;
-
-  if (FeatureFlags.enableRadixTreeLayers) {
-    const childNodes = node.getChildNodes();
-    node.deleteRadixTree();
-    for (const child of childNodes) {
-      numAffectedNodes += deleteStateTreeVersion(child);
-    }
-    if (node.numChildren() === 0) {
-      node.setIsLeaf(true);
-    }
-  } else {
-    for (const label of node.getChildLabels()) {
-      const child = node.getChild(label);
-      node.deleteChild(label);
-      numAffectedNodes += deleteStateTreeVersion(child);
-    }
-  }
 
   return numAffectedNodes;
 }
@@ -638,9 +611,9 @@ function updateStateInfoForAllRootPathsRecursive(
     curNode, updatedChildLabel = null, updatedChildEmpty = false) {
   let numAffectedNodes = 0;
   if (updatedChildEmpty) {
-    curNode.deleteChild(updatedChildLabel, true);  // updateStateInfo = true
+    curNode.deleteChild(updatedChildLabel, true);  // shouldUpdateStateInfo = true
   } else {
-    curNode.updateStateInfo(updatedChildLabel, true);  // rebuildRadixInfo = true
+    curNode.updateStateInfo(updatedChildLabel, true);  // shouldRebuildRadixInfo = true
   }
   const curLabel = curNode.getLabel();
   const curNodeEmpty = updatedChildEmpty && isEmptyNode(curNode);
@@ -673,19 +646,19 @@ function updateStateInfoForStateTree(stateTree) {
       numAffectedNodes += updateStateInfoForStateTree(node);
     }
   }
-  stateTree.updateStateInfo(null, true);  // rebuildRadixInfo = true
+  stateTree.updateStateInfo(null, true);  // shouldRebuildRadixInfo = true
   numAffectedNodes++;
 
   return numAffectedNodes;
 }
 
-function verifyProofHashForStateTree(stateTree) {
-  if (!stateTree.verifyProofHash()) {
+function verifyStateInfoForStateTree(stateTree) {
+  if (!stateTree.verifyStateInfo()) {
     return false;
   }
   if (!stateTree.getIsLeaf()) {
     for (const childNode of stateTree.getChildNodes()) {
-      if (!verifyProofHashForStateTree(childNode)) {
+      if (!verifyStateInfoForStateTree(childNode)) {
         return false;
       }
     }
@@ -742,11 +715,10 @@ module.exports = {
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
-  deleteStateTreeVersion,
   makeCopyOfStateTree,
   equalStateTrees,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
-  verifyProofHashForStateTree,
+  verifyStateInfoForStateTree,
   getProofOfStatePath,
 };
