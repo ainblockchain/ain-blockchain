@@ -124,8 +124,8 @@ describe("radix-tree", () => {
         const label1 = '0xa';
         const label2 = '0xb';
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
@@ -198,8 +198,8 @@ describe("radix-tree", () => {
         const label1 = '0xaaa';
         const label2 = '0xbbb';
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
@@ -272,8 +272,8 @@ describe("radix-tree", () => {
         const label1 = '0xaabb';
         const label2 = '0xaa';
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
 
         tree.set(label1, stateNode1);
         tree.set(label2, stateNode2);
@@ -301,8 +301,8 @@ describe("radix-tree", () => {
         const label1 = '0xaa';
         const label2 = '0xaabb';
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
 
         tree.set(label1, stateNode1);
         tree.set(label2, stateNode2);
@@ -329,8 +329,8 @@ describe("radix-tree", () => {
       it("set / delete without common label prefix - set with exact-matched label suffix", () => {
         const label = '0xaa';
 
-        stateNode1._setLabel(label);
-        stateNode2._setLabel(label + '_');  // tweak in order to distinguish
+        stateNode1.setLabel(label);
+        stateNode2.setLabel(label + '_');  // tweak in order to distinguish
 
         tree.set(label, stateNode1);
         tree.set(label, stateNode2);
@@ -353,10 +353,10 @@ describe("radix-tree", () => {
         const label21 = '0xbbb111';
         const label22 = '0xbbb222';
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
-        stateNode21._setLabel(label21);
-        stateNode22._setLabel(label22);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
 
         // set first node
         tree.set(label1, stateNode1);
@@ -432,8 +432,8 @@ describe("radix-tree", () => {
         const label2 = '0xbbb';
         const label21 = '0xbbb111';
 
-        stateNode2._setLabel(label2);
-        stateNode21._setLabel(label21);
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
 
         // set a node
         tree.set(label2, stateNode2);
@@ -478,8 +478,8 @@ describe("radix-tree", () => {
         const label1 = '0x000a';
         const label2 = '0x000b';
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
@@ -555,8 +555,8 @@ describe("radix-tree", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
@@ -632,8 +632,8 @@ describe("radix-tree", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
@@ -701,9 +701,9 @@ describe("radix-tree", () => {
         const label2 = '0x000bbb';
         const labelInternal = '0x000';
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
-        stateNodeInternal._setLabel(labelInternal);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
+        stateNodeInternal.setLabel(labelInternal);
 
         // add terminal nodes
         tree.set(label1, stateNode1);
@@ -763,8 +763,8 @@ describe("radix-tree", () => {
         const label1 = '0x000aabb';
         const label2 = '0x000aa';
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
 
         tree.set(label1, stateNode1);
         tree.set(label2, stateNode2);
@@ -792,8 +792,8 @@ describe("radix-tree", () => {
         const label1 = '0x000aa';
         const label2 = '0x000aabb';
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
 
         tree.set(label1, stateNode1);
         tree.set(label2, stateNode2);
@@ -820,8 +820,8 @@ describe("radix-tree", () => {
       it("set / delete with common label prefix - set with exact-matched label suffix", () => {
         const label = '0x000aa';
 
-        stateNode1._setLabel(label);
-        stateNode2._setLabel(label + '_');  // tweak in order to distinguish
+        stateNode1.setLabel(label);
+        stateNode2.setLabel(label + '_');  // tweak in order to distinguish
 
         tree.set(label, stateNode1);
         tree.set(label, stateNode2);
@@ -844,10 +844,10 @@ describe("radix-tree", () => {
         const label21 = '0x000bbb111';
         const label22 = '0x000bbb222';
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
-        stateNode21._setLabel(label21);
-        stateNode22._setLabel(label22);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
 
         // set first node
         tree.set(label1, stateNode1);
@@ -926,8 +926,8 @@ describe("radix-tree", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
 
-        stateNode2._setLabel(label2);
-        stateNode21._setLabel(label21);
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
 
         // set a node
         tree.set(label2, stateNode2);
@@ -972,8 +972,8 @@ describe("radix-tree", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
 
-        stateNode2._setLabel(label2);
-        stateNode21._setLabel(label21);
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
 
         // set a node
         tree.set(label2, stateNode2);
@@ -1016,7 +1016,7 @@ describe("radix-tree", () => {
     });
 
     describe("radix info", () => {
-      it("get / has / set / update / verify proof hash", () => {
+      it("get / has / set / update / verify", () => {
         const label1 = '0x000aaa';
         const stateNode1 = new StateNode();
         stateNode1.setProofHash('stateNodePH1');
@@ -1103,7 +1103,7 @@ describe("radix-tree", () => {
         expect(tree.verifyRadixInfoForRadixTree()).to.equal(false);
 
         // update
-        expect(tree.updateRadixInfoForRadixPath(label21)).to.equal(4);
+        expect(tree.updateRadixInfoForAllRootPaths(label21)).to.equal(4);
         expect(tree.getRootProofHash()).to.equal(
             '0x8070aef5df264e5ecea35dd84822e69f7bf65102a06f5765d62bd76265cadff5');
         expect(tree.verifyRadixInfoForRadixTree()).to.equal(true);
@@ -1112,22 +1112,29 @@ describe("radix-tree", () => {
       it("getProofOfState", () => {
         const label1 = '0x000aaa';
         const stateNode1 = new StateNode();
+        stateNode1.setLabel(label1);
         stateNode1.setProofHash('stateNodePH1');
 
         const label11 = '0x000aaa111';
         const stateNode11 = new StateNode();
+        stateNode11.setLabel(label11);
         stateNode11.setProofHash('stateNodePH11');
 
         const label12 = '0x000aaa212';
         const stateNode12 = new StateNode();
+        stateNode12.setLabel(label12);
         stateNode12.setProofHash('stateNodePH12');
+
+        const label2 = '0x000bbb';  // without state node
 
         const label21 = '0x000bbb121';
         const stateNode21 = new StateNode();
+        stateNode21.setLabel(label21);
         stateNode21.setProofHash('stateNodePH21');
 
         const label22 = '0x000bbb222';
         const stateNode22 = new StateNode();
+        stateNode22.setLabel(label22);
         stateNode22.setProofHash('stateNodePH22');
 
         tree.set(label1, stateNode1);
@@ -1143,27 +1150,27 @@ describe("radix-tree", () => {
             ".radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
             "aaa": {
               "111": {
-                ".label": null,
+                ".label": "0x000aaa111",
                 ".proof_hash": "stateNodePH11",
                 ".radix_ph": "0xac8e0ca829cea8d80a79260078fb8e1b38a05b6d087c72a1c92f63849a47b96b"
               },
               "212": {
-                ".label": null,
+                ".label": "0x000aaa212",
                 ".proof_hash": "stateNodePH12",
                 ".radix_ph": "0x7fc53637a6ff6b7efa8cf7c9ba95552ed7479262ad8c07a61b4d2b1e8002d360"
               },
-              ".label": null,
+              ".label": "0x000aaa",
               ".proof_hash": "stateNodePH1",
               ".radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0"
             },
             "bbb": {
               "121": {
-                ".label": null,
+                ".label": "0x000bbb121",
                 ".proof_hash": "stateNodePH21",
                 ".radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7"
               },
               "222": {
-                ".label": null,
+                ".label": "0x000bbb222",
                 ".proof_hash": "stateNodePH22",
                 ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2"
               },
@@ -1209,6 +1216,12 @@ describe("radix-tree", () => {
             }
           }
         });
+
+        // on an internal radix node without state node
+        assert.deepEqual(tree.getProofOfState(label2, 'state_proof2'), null);
+
+        // on a non-existing radix node
+        assert.deepEqual(tree.getProofOfState('non_existing_label', 'state_proof'), null);
       });
     });
 
@@ -1234,10 +1247,10 @@ describe("radix-tree", () => {
         tree.set(label21, stateNode21);
         tree.set(label22, stateNode22);
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
-        stateNode21._setLabel(label21);
-        stateNode22._setLabel(label22);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
 
         expect(tree.updateRadixInfoForRadixTree()).to.equal(6);
 
@@ -1300,7 +1313,7 @@ describe("radix-tree", () => {
 
       it("delete without parentStateNodeToDelete", () => {
         const parentStateNode = new StateNode();
-        parentStateNode._setLabel('parentStateNodeLabel')
+        parentStateNode.setLabel('parentStateNodeLabel')
 
         stateNode1.addParent(parentStateNode);
         stateNode2.addParent(parentStateNode);
@@ -1318,10 +1331,10 @@ describe("radix-tree", () => {
         tree.set(label21, stateNode21);
         tree.set(label22, stateNode22);
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
-        stateNode21._setLabel(label21);
-        stateNode22._setLabel(label22);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
 
         expect(tree.deleteRadixTree()).to.equal(6);  // including internal nodes
         // Check parents of state nodes
@@ -1345,7 +1358,7 @@ describe("radix-tree", () => {
 
       it("delete with parentStateNodeToDelete", () => {
         const parentStateNode = new StateNode();
-        parentStateNode._setLabel('parentStateNodeLabel')
+        parentStateNode.setLabel('parentStateNodeLabel')
 
         stateNode1.addParent(parentStateNode);
         stateNode2.addParent(parentStateNode);
@@ -1363,10 +1376,10 @@ describe("radix-tree", () => {
         tree.set(label21, stateNode21);
         tree.set(label22, stateNode22);
 
-        stateNode1._setLabel(label1);
-        stateNode2._setLabel(label2);
-        stateNode21._setLabel(label21);
-        stateNode22._setLabel(label22);
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
 
         expect(tree.deleteRadixTree(parentStateNode)).to.equal(6);  // including internal nodes
         // Check parents of state nodes

@@ -20,7 +20,7 @@ describe("radix-node", () => {
       expect(node.stateNode).to.equal(null);
       expect(node.labelRadix).to.equal('');
       expect(node.labelSuffix).to.equal('');
-      expect(node.parent).to.equal(null);
+      expect(node.parentSet.size).to.equal(0);
       expect(node.radixChildMap.size).to.equal(0);
       expect(node.proofHash).to.equal(null);
       expect(node.treeHeight).to.equal(0);
@@ -44,7 +44,7 @@ describe("radix-node", () => {
       node.setStateNode(stateNode);
       node.setLabelRadix(labelRadix);
       node.setLabelSuffix(labelSuffix);
-      node.setParent(parent);
+      node.addParent(parent);
       node.setChild(childLabelRadix, childLabelSuffix, child);
       node.setProofHash(proofHash);
       node.setTreeHeight(treeHeight);
@@ -55,7 +55,7 @@ describe("radix-node", () => {
       expect(node.stateNode).to.equal(null);
       expect(node.labelRadix).to.equal('');
       expect(node.labelSuffix).to.equal('');
-      expect(node.parent).to.equal(null);
+      expect(node.parentSet.size).to.equal(0);
       expect(node.radixChildMap.size).to.equal(0);
       expect(node.proofHash).to.equal(null);
       expect(node.treeHeight).to.equal(0);
@@ -127,16 +127,38 @@ describe("radix-node", () => {
   });
 
   describe("parent", () => {
-    it("get / set / has / reset", () => {
-      const parent = new RadixNode();
-      expect(node.getParent()).to.equal(null);
+    it("get / add / has / delete", () => {
+      const parent1 = new RadixNode();
+      const parent2 = new RadixNode();
+      expect(node.numParents()).to.equal(0);
+      assert.deepEqual(node.getParentNodes(), []);
       expect(node.hasParent()).to.equal(false);
-      node.setParent(parent);
-      expect(node.getParent()).to.equal(parent);
+      expect(node.hasParent(parent1)).to.equal(false);
+      expect(node.hasParent(parent2)).to.equal(false);
+      node.addParent(parent1);
+      expect(node.numParents()).to.equal(1);
+      assert.deepEqual(node.getParentNodes(), [parent1]);
       expect(node.hasParent()).to.equal(true);
-      node.resetParent();
-      expect(node.getParent()).to.equal(null);
+      expect(node.hasParent(parent1)).to.equal(true);
+      expect(node.hasParent(parent2)).to.equal(false);
+      node.addParent(parent2);
+      expect(node.numParents()).to.equal(2);
+      assert.deepEqual(node.getParentNodes(), [parent1, parent2]);
+      expect(node.hasParent()).to.equal(true);
+      expect(node.hasParent(parent1)).to.equal(true);
+      expect(node.hasParent(parent2)).to.equal(true);
+      node.deleteParent(parent1);
+      expect(node.numParents()).to.equal(1);
+      assert.deepEqual(node.getParentNodes(), [parent2]);
+      expect(node.hasParent()).to.equal(true);
+      expect(node.hasParent(parent1)).to.equal(false);
+      expect(node.hasParent(parent2)).to.equal(true);
+      node.deleteParent(parent2);
+      expect(node.numParents()).to.equal(0);
+      assert.deepEqual(node.getParentNodes(), []);
       expect(node.hasParent()).to.equal(false);
+      expect(node.hasParent(parent1)).to.equal(false);
+      expect(node.hasParent(parent2)).to.equal(false);
     });
   });
 
@@ -167,77 +189,7 @@ describe("radix-node", () => {
       expect(node.deleteChild(1)).to.equal(false);
     });
 
-    it("get / set / has / delete with a child with valid labels", () => {
-      const labelRadix = '0';
-      const labelSuffix = 'ffff';
-      const child = new RadixNode();
-
-      expect(node.hasStateNode()).to.equal(false);
-      expect(node.getLabelRadix()).to.equal('');
-      expect(node.getLabelSuffix()).to.equal('');
-      expect(node.hasParent()).to.equal(false);
-      expect(node.hasChild()).to.equal(false);
-      expect(node.getChild(labelRadix)).to.equal(null);
-      assert.deepEqual(node.getChildLabelRadices(), []);
-      assert.deepEqual(node.getChildNodes(), []);
-      expect(node.numChildren()).to.equal(0);
-
-      expect(child.hasStateNode()).to.equal(false);
-      expect(child.getLabelRadix()).to.equal('');
-      expect(child.getLabelSuffix()).to.equal('');
-      expect(child.hasParent()).to.equal(false);
-      expect(child.hasChild()).to.equal(false);
-      assert.deepEqual(child.getChildLabelRadices(), []);
-      assert.deepEqual(child.getChildNodes(), []);
-      expect(child.numChildren()).to.equal(0);
-
-      // setChild()
-      node.setChild(labelRadix, labelSuffix, child);
-
-      expect(node.hasStateNode()).to.equal(false);
-      expect(node.getLabelRadix()).to.equal('');
-      expect(node.getLabelSuffix()).to.equal('');
-      expect(node.hasParent()).to.equal(false);
-      expect(node.hasChild()).to.equal(true);
-      expect(node.getChild(labelRadix)).to.equal(child);
-      assert.deepEqual(node.getChildLabelRadices(), [labelRadix]);
-      assert.deepEqual(node.getChildNodes(), [child]);
-      expect(node.numChildren()).to.equal(1);
-
-      expect(child.hasStateNode()).to.equal(false);
-      expect(child.getLabelRadix()).to.equal(labelRadix);
-      expect(child.getLabelSuffix()).to.equal(labelSuffix);
-      expect(child.hasParent()).to.equal(true);
-      expect(child.getParent()).to.equal(node);
-      expect(child.hasChild()).to.equal(false);
-      assert.deepEqual(child.getChildLabelRadices(), []);
-      assert.deepEqual(child.getChildNodes(), []);
-      expect(child.numChildren()).to.equal(0);
-
-      // deleteChild()
-      node.deleteChild(labelRadix);
-
-      expect(node.hasStateNode()).to.equal(false);
-      expect(node.getLabelRadix()).to.equal('');
-      expect(node.getLabelSuffix()).to.equal('');
-      expect(node.hasParent()).to.equal(false);
-      expect(node.hasChild()).to.equal(false);
-      expect(node.getChild(labelRadix)).to.equal(null);
-      assert.deepEqual(node.getChildLabelRadices(), []);
-      assert.deepEqual(node.getChildNodes(), []);
-      expect(node.numChildren()).to.equal(0);
-
-      expect(child.hasStateNode()).to.equal(false);
-      expect(child.getLabelRadix()).to.equal('');
-      expect(child.getLabelSuffix()).to.equal('');
-      expect(child.hasParent()).to.equal(false);
-      expect(child.hasChild()).to.equal(false);
-      assert.deepEqual(child.getChildLabelRadices(), []);
-      assert.deepEqual(child.getChildNodes(), []);
-      expect(child.numChildren()).to.equal(0);
-    });
-
-    it("get / set / has / delete with children with valid labels", () => {
+    it("get / set / has / delete with valid labels", () => {
       const labelRadix1 = '0';
       const labelSuffix1 = '0000';
       const child1 = new RadixNode();
@@ -246,121 +198,140 @@ describe("radix-node", () => {
       const labelSuffix2 = '1111';
       const child2 = new RadixNode();
 
+      expect(node.hasChild()).to.equal(false);
+      expect(node.hasChild(labelRadix1)).to.equal(false);
+      expect(node.hasChild(labelRadix2)).to.equal(false);
+      expect(node.getChild(labelRadix1)).to.equal(null);
+      expect(node.getChild(labelRadix2)).to.equal(null);
+      expect(node.numChildren()).to.equal(0);
+      assert.deepEqual(node.getChildLabelRadices(), []);
+      assert.deepEqual(node.getChildNodes(), []);
+
+      expect(child1.hasParent()).to.equal(false);
+      expect(child1.numParents()).to.equal(0);
+      expect(child1.getLabelRadix()).to.equal('');
+      expect(child1.getLabelSuffix()).to.equal('');
+
+      expect(child2.hasParent()).to.equal(false);
+      expect(child2.numParents()).to.equal(0);
+      expect(child2.getLabelRadix()).to.equal('');
+      expect(child2.getLabelSuffix()).to.equal('');
+
       // setChild() with child1
       node.setChild(labelRadix1, labelSuffix1, child1);
-      expect(node.hasStateNode()).to.equal(false);
-      expect(node.getLabelRadix()).to.equal('');
-      expect(node.getLabelSuffix()).to.equal('');
-      expect(node.hasParent()).to.equal(false);
       expect(node.hasChild()).to.equal(true);
+      expect(node.hasChild(labelRadix1)).to.equal(true);
+      expect(node.hasChild(labelRadix2)).to.equal(false);
       expect(node.getChild(labelRadix1)).to.equal(child1);
       expect(node.getChild(labelRadix2)).to.equal(null);
+      expect(node.numChildren()).to.equal(1);
       assert.deepEqual(node.getChildLabelRadices(), [labelRadix1]);
       assert.deepEqual(node.getChildNodes(), [child1]);
-      expect(node.numChildren()).to.equal(1);
 
-      expect(child1.hasStateNode()).to.equal(false);
+      expect(child1.hasParent()).to.equal(true);
+      expect(child1.hasParent(node)).to.equal(true);
+      expect(child1.numParents()).to.equal(1);
       expect(child1.getLabelRadix()).to.equal(labelRadix1);
       expect(child1.getLabelSuffix()).to.equal(labelSuffix1);
-      expect(child1.hasParent()).to.equal(true);
-      expect(child1.getParent()).to.equal(node);
-      expect(child1.hasChild()).to.equal(false);
-      assert.deepEqual(child1.getChildLabelRadices(), []);
-      assert.deepEqual(child1.getChildNodes(), []);
-      expect(child1.numChildren()).to.equal(0);
+
+      expect(child2.hasParent()).to.equal(false);
+      expect(child2.numParents()).to.equal(0);
+      expect(child2.getLabelRadix()).to.equal('');
+      expect(child2.getLabelSuffix()).to.equal('');
 
       // setChild() with child2
       node.setChild(labelRadix2, labelSuffix2, child2);
-
-      expect(node.hasStateNode()).to.equal(false);
-      expect(node.getLabelRadix()).to.equal('');
-      expect(node.getLabelSuffix()).to.equal('');
-      expect(node.hasParent()).to.equal(false);
       expect(node.hasChild()).to.equal(true);
+      expect(node.hasChild(labelRadix1)).to.equal(true);
+      expect(node.hasChild(labelRadix2)).to.equal(true);
       expect(node.getChild(labelRadix1)).to.equal(child1);
       expect(node.getChild(labelRadix2)).to.equal(child2);
+      expect(node.numChildren()).to.equal(2);
       assert.deepEqual(node.getChildLabelRadices(), [labelRadix1, labelRadix2]);
       assert.deepEqual(node.getChildNodes(), [child1, child2]);
-      expect(node.numChildren()).to.equal(2);
 
-      expect(child1.hasStateNode()).to.equal(false);
-      expect(child1.getLabelRadix()).to.equal(labelRadix1);
-      expect(child1.getLabelSuffix()).to.equal(labelSuffix1);
       expect(child1.hasParent()).to.equal(true);
-      expect(child1.getParent()).to.equal(node);
-      expect(child1.hasChild()).to.equal(false);
-      assert.deepEqual(child1.getChildLabelRadices(), []);
-      assert.deepEqual(child1.getChildNodes(), []);
-      expect(child1.numChildren()).to.equal(0);
-
-      expect(child2.hasStateNode()).to.equal(false);
+      expect(child1.hasParent(node)).to.equal(true);
+      expect(child1.numParents()).to.equal(1);
       expect(child1.getLabelRadix()).to.equal(labelRadix1);
       expect(child1.getLabelSuffix()).to.equal(labelSuffix1);
+
       expect(child2.hasParent()).to.equal(true);
-      expect(child2.getParent()).to.equal(node);
-      expect(child2.hasChild()).to.equal(false);
-      assert.deepEqual(child2.getChildLabelRadices(), []);
-      assert.deepEqual(child2.getChildNodes(), []);
-      expect(child2.numChildren()).to.equal(0);
+      expect(child2.hasParent(node)).to.equal(true);
+      expect(child2.numParents()).to.equal(1);
+      expect(child2.getLabelRadix()).to.equal(labelRadix2);
+      expect(child2.getLabelSuffix()).to.equal(labelSuffix2);
 
       // deleteChild() with child1
       node.deleteChild(labelRadix1);
 
-      expect(node.hasStateNode()).to.equal(false);
-      expect(node.getLabelRadix()).to.equal('');
-      expect(node.getLabelSuffix()).to.equal('');
-      expect(node.hasParent()).to.equal(false);
+      expect(node.hasChild()).to.equal(true);
+      expect(node.hasChild(labelRadix1)).to.equal(false);
+      expect(node.hasChild(labelRadix2)).to.equal(true);
       expect(node.getChild(labelRadix1)).to.equal(null);
       expect(node.getChild(labelRadix2)).to.equal(child2);
-      expect(node.hasChild()).to.equal(true);
+      expect(node.numChildren()).to.equal(1);
       assert.deepEqual(node.getChildLabelRadices(), [labelRadix2]);
       assert.deepEqual(node.getChildNodes(), [child2]);
-      expect(node.numChildren()).to.equal(1);
 
-      expect(child1.hasStateNode()).to.equal(false);
+      expect(child1.hasParent()).to.equal(false);
+      expect(child1.numParents()).to.equal(0);
       expect(child1.getLabelRadix()).to.equal('');
       expect(child1.getLabelSuffix()).to.equal('');
-      expect(child1.hasParent()).to.equal(false);
-      expect(child1.hasChild()).to.equal(false);
-      assert.deepEqual(child1.getChildLabelRadices(), []);
-      assert.deepEqual(child1.getChildNodes(), []);
-      expect(child1.numChildren()).to.equal(0);
 
-      expect(child2.hasStateNode()).to.equal(false);
+      expect(child2.hasParent()).to.equal(true);
+      expect(child2.hasParent(node)).to.equal(true);
+      expect(child2.numParents()).to.equal(1);
       expect(child2.getLabelRadix()).to.equal(labelRadix2);
       expect(child2.getLabelSuffix()).to.equal(labelSuffix2);
-      expect(child2.hasParent()).to.equal(true);
-      expect(child2.getParent()).to.equal(node);
-      expect(child2.hasChild()).to.equal(false);
-      assert.deepEqual(child2.getChildLabelRadices(), []);
-      assert.deepEqual(child2.getChildNodes(), []);
-      expect(child2.numChildren()).to.equal(0);
+
+      // deleteChild() with child2
+      node.deleteChild(labelRadix2);
+
+      expect(node.hasChild()).to.equal(false);
+      expect(node.hasChild(labelRadix1)).to.equal(false);
+      expect(node.hasChild(labelRadix2)).to.equal(false);
+      expect(node.getChild(labelRadix1)).to.equal(null);
+      expect(node.getChild(labelRadix2)).to.equal(null);
+      expect(node.numChildren()).to.equal(0);
+      assert.deepEqual(node.getChildLabelRadices(), []);
+      assert.deepEqual(node.getChildNodes(), []);
+
+      expect(child1.hasParent()).to.equal(false);
+      expect(child1.numParents()).to.equal(0);
+      expect(child1.getLabelRadix()).to.equal('');
+      expect(child1.getLabelSuffix()).to.equal('');
+
+      expect(child2.hasParent()).to.equal(false);
+      expect(child2.numParents()).to.equal(0);
+      expect(child2.getLabelRadix()).to.equal('');
+      expect(child2.getLabelSuffix()).to.equal('');
     });
   });
 
   describe("state info", () => {
     const labelRadix1 = '1';
-    const labelSuffix1 = '100';
+    const labelSuffix1 = '001';
     let child1;
 
     const labelRadix2 = '2';
-    const labelSuffix2 = '200';
+    const labelSuffix2 = '002';
     let child2;
 
     const labelRadix11 = '1';
-    const labelSuffix11 = '110';
+    const labelSuffix11 = '011';
     let child11;
 
     const labelRadix12 = '2';
-    const labelSuffix12 = '120';
+    const labelSuffix12 = '012';
     let child12;
 
     const labelRadix21 = '1';
-    const labelSuffix21 = '210';
+    const labelSuffix21 = '021';
     let child21;
 
     const labelRadix22 = '2';
-    const labelSuffix22 = '220';
+    const labelSuffix22 = '022';
     let child22;
 
     let stateNode;
@@ -454,7 +425,7 @@ describe("radix-node", () => {
       expect(node.getTreeBytes()).to.equal(0);
     });
 
-    it("_buildRadixInfo", () => {
+    it("buildRadixInfo", () => {
       const childPH1 = 'childPH1';
       const childPH2 = 'childPH2';
 
@@ -489,12 +460,12 @@ describe("radix-node", () => {
       node.setChild(labelRadix2, labelSuffix2, child2);
 
       assert.deepEqual(node.toJsObject(true), {
-        "1100": {
+        "1001": {
           ".label": null,
           ".proof_hash": "stateNodePH1",
           ".radix_ph": "childPH1"
         },
-        "2200": {
+        "2002": {
           ".radix_ph": "childPH2"
         },
         ".label": null,
@@ -504,7 +475,7 @@ describe("radix-node", () => {
 
       // With stateNode
       node.setStateNode(stateNode);
-      const treeInfo = node._buildRadixInfo();
+      const treeInfo = node.buildRadixInfo();
       const preimage1 = `${stateNodePH}${HASH_DELIMITER}${HASH_DELIMITER}` +
           `${labelRadix1}${labelSuffix1}${HASH_DELIMITER}${childPH1}` +
           `${HASH_DELIMITER}${labelRadix2}${labelSuffix2}${HASH_DELIMITER}${childPH2}`;
@@ -517,7 +488,7 @@ describe("radix-node", () => {
 
       // Without stateNode
       node.resetStateNode();
-      const treeInfo2 = node._buildRadixInfo();
+      const treeInfo2 = node.buildRadixInfo();
       const preimage2 = `${HASH_DELIMITER}${HASH_DELIMITER}` +
           `${labelRadix1}${labelSuffix1}${HASH_DELIMITER}${childPH1}` +
           `${HASH_DELIMITER}${labelRadix2}${labelSuffix2}${HASH_DELIMITER}${childPH2}`;
@@ -561,12 +532,12 @@ describe("radix-node", () => {
       node.setChild(labelRadix2, labelSuffix2, child2);
 
       assert.deepEqual(node.toJsObject(true), {
-        "1100": {
+        "1001": {
           ".label": null,
           ".proof_hash": "stateNodePH1",
           ".radix_ph": "childPH1"
         },
-        "2200": {
+        "2002": {
           ".radix_ph": "childPH2"
         },
         ".label": null,
@@ -591,13 +562,13 @@ describe("radix-node", () => {
       child2.setChild(labelRadix22, labelSuffix22, child22);
 
       assert.deepEqual(node.toJsObject(true), {
-        "1100": {
-          "1110": {
+        "1001": {
+          "1011": {
             ".label": null,
             ".proof_hash": "stateNodePH11",
             ".radix_ph": null
           },
-          "2120": {
+          "2012": {
             ".label": null,
             ".proof_hash": "stateNodePH12",
             ".radix_ph": null
@@ -606,13 +577,13 @@ describe("radix-node", () => {
           ".proof_hash": "stateNodePH1",
           ".radix_ph": null
         },
-        "2200": {
-          "1210": {
+        "2002": {
+          "1021": {
             ".label": null,
             ".proof_hash": "stateNodePH21",
             ".radix_ph": null
           },
-          "2220": {
+          "2022": {
             ".label": null,
             ".proof_hash": "stateNodePH22",
             ".radix_ph": null
@@ -654,7 +625,7 @@ describe("radix-node", () => {
       expect(child22.verifyRadixInfo()).to.equal(true);
     });
 
-    it("updateRadixInfoForRadixPath", () => {
+    it("updateRadixInfoForAllRootPath", () => {
       node.setStateNode(stateNode);
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
@@ -664,13 +635,13 @@ describe("radix-node", () => {
       child2.setChild(labelRadix22, labelSuffix22, child22);
 
       assert.deepEqual(node.toJsObject(true), {
-        "1100": {
-          "1110": {
+        "1001": {
+          "1011": {
             ".label": null,
             ".proof_hash": "stateNodePH11",
             ".radix_ph": null
           },
-          "2120": {
+          "2012": {
             ".label": null,
             ".proof_hash": "stateNodePH12",
             ".radix_ph": null
@@ -679,13 +650,13 @@ describe("radix-node", () => {
           ".proof_hash": "stateNodePH1",
           ".radix_ph": null
         },
-        "2200": {
-          "1210": {
+        "2002": {
+          "1021": {
             ".label": null,
             ".proof_hash": "stateNodePH21",
             ".radix_ph": null
           },
-          "2220": {
+          "2022": {
             ".label": null,
             ".proof_hash": "stateNodePH22",
             ".radix_ph": null
@@ -707,7 +678,7 @@ describe("radix-node", () => {
       expect(child22.verifyRadixInfo()).to.equal(false);
 
       // update
-      expect(child21.updateRadixInfoForRadixPath()).to.equal(3);
+      expect(child21.updateRadixInfoForAllRootPaths()).to.equal(3);
       expect(node.verifyRadixInfo()).to.equal(true);
       expect(child1.verifyRadixInfo()).to.equal(false);
       expect(child2.verifyRadixInfo()).to.equal(true);
@@ -727,13 +698,13 @@ describe("radix-node", () => {
       child2.setChild(labelRadix22, labelSuffix22, child22);
 
       assert.deepEqual(node.toJsObject(true), {
-        "1100": {
-          "1110": {
+        "1001": {
+          "1011": {
             ".label": null,
             ".proof_hash": "stateNodePH11",
             ".radix_ph": null
           },
-          "2120": {
+          "2012": {
             ".label": null,
             ".proof_hash": "stateNodePH12",
             ".radix_ph": null
@@ -742,13 +713,13 @@ describe("radix-node", () => {
           ".proof_hash": "stateNodePH1",
           ".radix_ph": null
         },
-        "2200": {
-          "1210": {
+        "2002": {
+          "1021": {
             ".label": null,
             ".proof_hash": "stateNodePH21",
             ".radix_ph": null
           },
-          "2220": {
+          "2022": {
             ".label": null,
             ".proof_hash": "stateNodePH22",
             ".radix_ph": null
@@ -772,11 +743,18 @@ describe("radix-node", () => {
       expect(node.verifyRadixInfoForRadixTree()).to.equal(false);
 
       // update
-      expect(child21.updateRadixInfoForRadixPath()).to.equal(3);
+      expect(child21.updateRadixInfoForAllRootPaths()).to.equal(3);
       expect(node.verifyRadixInfoForRadixTree()).to.equal(true);
     });
 
     it("getProofOfRadixNode", () => {
+      stateNode.setLabel('stateLabel');
+      stateNode1.setLabel('stateLabel1');
+      stateNode11.setLabel('stateLabel11');
+      stateNode12.setLabel('stateLabel12');
+      stateNode21.setLabel('stateLabel21');
+      stateNode22.setLabel('stateLabel22');
+
       node.setStateNode(stateNode);
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
@@ -788,72 +766,72 @@ describe("radix-node", () => {
       expect(node.updateRadixInfoForRadixTree()).to.equal(7);
 
       assert.deepEqual(node.toJsObject(true), {
-        "1100": {
-          "1110": {
-            ".label": null,
+        "1001": {
+          "1011": {
+            ".label": "stateLabel11",
             ".proof_hash": "stateNodePH11",
             ".radix_ph": "0xac8e0ca829cea8d80a79260078fb8e1b38a05b6d087c72a1c92f63849a47b96b"
           },
-          "2120": {
-            ".label": null,
+          "2012": {
+            ".label": "stateLabel12",
             ".proof_hash": "stateNodePH12",
             ".radix_ph": "0x7fc53637a6ff6b7efa8cf7c9ba95552ed7479262ad8c07a61b4d2b1e8002d360"
           },
-          ".label": null,
+          ".label": "stateLabel1",
           ".proof_hash": "stateNodePH1",
-          ".radix_ph": "0x58b89a07baf039f5a5420aeafed213b7abe18c3f1537e9626628719f56ab5434"
+          ".radix_ph": "0xd56eaf71ba15b95bf26276fe9ce88a4977a71271405c88aeb4f4efd5e34a8399"
         },
-        "2200": {
-          "1210": {
-            ".label": null,
+        "2002": {
+          "1021": {
+            ".label": "stateLabel21",
             ".proof_hash": "stateNodePH21",
             ".radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7"
           },
-          "2220": {
-            ".label": null,
+          "2022": {
+            ".label": "stateLabel22",
             ".proof_hash": "stateNodePH22",
             ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2"
           },
-          ".radix_ph": "0xb822c6a20a4128f025019f9f03cb802f86998f48073118b132fd40fbd1620fed"
+          ".radix_ph": "0x763902e3186ec54e6a4bc3a2c01f57f60628d95a27a380a3ec2cea9e68c3928c"
         },
-        ".label": null,
+        ".label": "stateLabel",
         ".proof_hash": "stateNodePH",
-        ".radix_ph": "0xf29196bc2c6609216445dc878baf97143463a00c9e03c6af0ba6d38a2817b3b3"
+        ".radix_ph": "0x3142cb3647c2861969c8df0a524336460d6c708c80bec5519bcf1437964ff9e0"
       });
 
       const label11 = labelRadix11 + labelSuffix11;
       const label21 = labelRadix21 + labelSuffix21;
 
       // on a node with state node value with child label and child proof
-      assert.deepEqual(child1.getProofOfRadixNode(label11, 'childProof1'), {
-        "1110": "childProof1",
-        "2120": {
+      assert.deepEqual(child1.getProofOfRadixNode(label11, 'childProof11', null), {
+        "1011": "childProof11",
+        "2012": {
           ".radix_ph": "0x7fc53637a6ff6b7efa8cf7c9ba95552ed7479262ad8c07a61b4d2b1e8002d360"
         },
-        ".label": null,
+        ".label": "stateLabel1",
         ".proof_hash": "stateNodePH1",
-        ".radix_ph": "0x58b89a07baf039f5a5420aeafed213b7abe18c3f1537e9626628719f56ab5434"
+        ".radix_ph": "0xd56eaf71ba15b95bf26276fe9ce88a4977a71271405c88aeb4f4efd5e34a8399"
       });
 
       // on a node without state node value with child label and child proof
-      assert.deepEqual(child2.getProofOfRadixNode(label21, 'childProof2'), {
-        "1210": "childProof2",
-        "2220": {
+      assert.deepEqual(child2.getProofOfRadixNode(label21, 'childProof21', null), {
+        "1021": "childProof21",
+        "2022": {
           ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2"
         },
-        ".radix_ph": "0xb822c6a20a4128f025019f9f03cb802f86998f48073118b132fd40fbd1620fed"
+        ".radix_ph": "0x763902e3186ec54e6a4bc3a2c01f57f60628d95a27a380a3ec2cea9e68c3928c"
       });
 
       // on a node with state node value with state label/proof
-      assert.deepEqual(child1.getProofOfRadixNode(null, null, 'stateLabel1', 'stateProof1'), {
+      assert.deepEqual(child1.getProofOfRadixNode(null, null, 'stateProof1'), {
         ".label": "stateLabel1",
         ".proof_hash": "stateProof1",
-        ".radix_ph": "0x58b89a07baf039f5a5420aeafed213b7abe18c3f1537e9626628719f56ab5434"
+        ".radix_ph": "0xd56eaf71ba15b95bf26276fe9ce88a4977a71271405c88aeb4f4efd5e34a8399"
       });
 
       // on a node without state node value with state label/proof
-      assert.deepEqual(child2.getProofOfRadixNode(null, null, 'stateLabel1', 'stateProof2'), {
-        ".radix_ph": "0xb822c6a20a4128f025019f9f03cb802f86998f48073118b132fd40fbd1620fed"
+      assert.deepEqual(child2.getProofOfRadixNode(null, null, 'stateProof2'), {
+        ".radix_ph": "0x763902e3186ec54e6a4bc3a2c01f57f60628d95a27a380a3ec2cea9e68c3928c"
       });
     });
   });
@@ -917,10 +895,10 @@ describe("radix-node", () => {
       child2.setChild('1', '021', child21);
       child2.setChild('2', '022', child22);
 
-      stateNode1._setLabel('1001');
-      stateNode2._setLabel('2002');
-      stateNode21._setLabel('1021');
-      stateNode22._setLabel('2022');
+      stateNode1.setLabel('1001');
+      stateNode2.setLabel('2002');
+      stateNode21.setLabel('1021');
+      stateNode22.setLabel('2022');
 
       node.updateRadixInfoForRadixTree();
     });
@@ -989,7 +967,7 @@ describe("radix-node", () => {
       stateNode21.addParent(parentStateNode);
       stateNode22.addParent(parentStateNode);
       const parentRadixNode = new RadixNode();
-      node.setParent(parentRadixNode);
+      node.addParent(parentRadixNode);
 
       // parentStateNodeToDelete = null
       expect(node.deleteRadixTree()).to.equal(5);

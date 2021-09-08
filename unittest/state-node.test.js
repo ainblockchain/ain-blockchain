@@ -99,7 +99,7 @@ describe("state-node", () => {
       const treeBytes = 100;
 
       node.setVersion(version);
-      node._setLabel(label);
+      node.setLabel(label);
       node.setValue(value);
       node.addParent(parentNode);
       node.setRadixTreeEnabled(true);
@@ -145,7 +145,7 @@ describe("state-node", () => {
 
   describe("clone", () => {
     it("leaf node", () => {
-      node._setLabel('label');
+      node.setLabel('label');
       node.setValue('value0');
       node.setProofHash('hash');
       node.setVersion('version1');
@@ -168,7 +168,7 @@ describe("state-node", () => {
     });
 
     it("internal node when radixTreeEnabled = true", () => {
-      stateTreeEnabled._setLabel('label_root');
+      stateTreeEnabled.setLabel('label_root');
       stateTreeEnabled.setVersion('version1');
       assert.deepEqual(stateTreeEnabled.getParentNodes(), []);
       assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled]);
@@ -202,7 +202,7 @@ describe("state-node", () => {
     });
 
     it("internal node when radixTreeEnabled = false", () => {
-      stateTreeDisabled._setLabel('label_root');
+      stateTreeDisabled.setLabel('label_root');
       stateTreeDisabled.setVersion('version1');
       assert.deepEqual(stateTreeDisabled.getParentNodes(), []);
       assert.deepEqual(child1Disabled.getParentNodes(), [stateTreeDisabled]);
@@ -596,10 +596,10 @@ describe("state-node", () => {
   describe("label", () => {
     it("get / has / set / reset", () => {
       expect(node.hasLabel()).to.equal(false);
-      node._setLabel('label');
+      node.setLabel('label');
       expect(node.hasLabel()).to.equal(true);
       expect(node.getLabel()).to.equal('label');
-      node._resetLabel();
+      node.resetLabel();
       expect(node.hasLabel()).to.equal(false);
     });
   });
@@ -636,32 +636,32 @@ describe("state-node", () => {
       child.setValue('value1');
       const parent1 = new StateNode();
       const parent2 = new StateNode();
-      expect(child._hasParent(parent1)).to.equal(false);
-      expect(child._hasParent(parent2)).to.equal(false);
+      expect(child.hasParent(parent1)).to.equal(false);
+      expect(child.hasParent(parent2)).to.equal(false);
       assert.deepEqual(child.getParentNodes(), []);
       expect(child.numParents()).to.equal(0);
 
       child.addParent(parent1);
-      expect(child._hasParent(parent1)).to.equal(true);
-      expect(child._hasParent(parent2)).to.equal(false);
+      expect(child.hasParent(parent1)).to.equal(true);
+      expect(child.hasParent(parent2)).to.equal(false);
       assert.deepEqual(child.getParentNodes(), [parent1]);
       expect(child.numParents()).to.equal(1);
 
       child.addParent(parent2);
-      expect(child._hasParent(parent1)).to.equal(true);
-      expect(child._hasParent(parent2)).to.equal(true);
+      expect(child.hasParent(parent1)).to.equal(true);
+      expect(child.hasParent(parent2)).to.equal(true);
       assert.deepEqual(child.getParentNodes(), [parent1, parent2]);
       expect(child.numParents()).to.equal(2);
 
       child.deleteParent(parent1);
-      expect(child._hasParent(parent1)).to.equal(false);
-      expect(child._hasParent(parent2)).to.equal(true);
+      expect(child.hasParent(parent1)).to.equal(false);
+      expect(child.hasParent(parent2)).to.equal(true);
       assert.deepEqual(child.getParentNodes(), [parent2]);
       expect(child.numParents()).to.equal(1);
 
       child.deleteParent(parent2);
-      expect(child._hasParent(parent1)).to.equal(false);
-      expect(child._hasParent(parent2)).to.equal(false);
+      expect(child.hasParent(parent1)).to.equal(false);
+      expect(child.hasParent(parent2)).to.equal(false);
       assert.deepEqual(child.getParentNodes(), []);
       expect(child.numParents()).to.equal(0);
     });
@@ -673,10 +673,10 @@ describe("state-node", () => {
       child2.setValue('value2');
       const parent1 = new StateNode();
       const parent2 = new StateNode();
-      expect(child1._hasParent(parent1)).to.equal(false);
-      expect(child1._hasParent(parent2)).to.equal(false);
-      expect(child2._hasParent(parent1)).to.equal(false);
-      expect(child2._hasParent(parent2)).to.equal(false);
+      expect(child1.hasParent(parent1)).to.equal(false);
+      expect(child1.hasParent(parent2)).to.equal(false);
+      expect(child2.hasParent(parent1)).to.equal(false);
+      expect(child2.hasParent(parent2)).to.equal(false);
       assert.deepEqual(child1.getParentNodes(), []);
       assert.deepEqual(child2.getParentNodes(), []);
       expect(child1.numParents()).to.equal(0);
@@ -684,10 +684,10 @@ describe("state-node", () => {
 
       child1.addParent(parent1);
       child2.addParent(parent2);
-      expect(child1._hasParent(parent1)).to.equal(true);
-      expect(child1._hasParent(parent2)).to.equal(false);
-      expect(child2._hasParent(parent1)).to.equal(false);
-      expect(child2._hasParent(parent2)).to.equal(true);
+      expect(child1.hasParent(parent1)).to.equal(true);
+      expect(child1.hasParent(parent2)).to.equal(false);
+      expect(child2.hasParent(parent1)).to.equal(false);
+      expect(child2.hasParent(parent2)).to.equal(true);
       assert.deepEqual(child1.getParentNodes(), [parent1]);
       assert.deepEqual(child2.getParentNodes(), [parent2]);
       expect(child1.numParents()).to.equal(1);
@@ -695,10 +695,10 @@ describe("state-node", () => {
 
       child1.addParent(parent2);
       child2.addParent(parent1);
-      expect(child1._hasParent(parent1)).to.equal(true);
-      expect(child1._hasParent(parent2)).to.equal(true);
-      expect(child2._hasParent(parent1)).to.equal(true);
-      expect(child2._hasParent(parent2)).to.equal(true);
+      expect(child1.hasParent(parent1)).to.equal(true);
+      expect(child1.hasParent(parent2)).to.equal(true);
+      expect(child2.hasParent(parent1)).to.equal(true);
+      expect(child2.hasParent(parent2)).to.equal(true);
       assert.deepEqual(child1.getParentNodes(), [parent1, parent2]);
       assert.deepEqual(child2.getParentNodes(), [parent2, parent1]);
       expect(child1.numParents()).to.equal(2);
@@ -706,10 +706,10 @@ describe("state-node", () => {
 
       child1.deleteParent(parent1);
       child2.deleteParent(parent2);
-      expect(child1._hasParent(parent1)).to.equal(false);
-      expect(child1._hasParent(parent2)).to.equal(true);
-      expect(child2._hasParent(parent1)).to.equal(true);
-      expect(child2._hasParent(parent2)).to.equal(false);
+      expect(child1.hasParent(parent1)).to.equal(false);
+      expect(child1.hasParent(parent2)).to.equal(true);
+      expect(child2.hasParent(parent1)).to.equal(true);
+      expect(child2.hasParent(parent2)).to.equal(false);
       assert.deepEqual(child1.getParentNodes(), [parent2]);
       assert.deepEqual(child2.getParentNodes(), [parent1]);
       expect(child1.numParents()).to.equal(1);
@@ -717,10 +717,10 @@ describe("state-node", () => {
 
       child1.deleteParent(parent2);
       child2.deleteParent(parent1);
-      expect(child1._hasParent(parent1)).to.equal(false);
-      expect(child1._hasParent(parent2)).to.equal(false);
-      expect(child2._hasParent(parent1)).to.equal(false);
-      expect(child2._hasParent(parent2)).to.equal(false);
+      expect(child1.hasParent(parent1)).to.equal(false);
+      expect(child1.hasParent(parent2)).to.equal(false);
+      expect(child2.hasParent(parent1)).to.equal(false);
+      expect(child2.hasParent(parent2)).to.equal(false);
       assert.deepEqual(child1.getParentNodes(), []);
       assert.deepEqual(child2.getParentNodes(), []);
       expect(child1.numParents()).to.equal(0);
@@ -731,17 +731,17 @@ describe("state-node", () => {
       const child = new StateNode();
       child.setValue('value1');
       const parent = new StateNode();
-      expect(child._hasParent(parent)).to.equal(false);
+      expect(child.hasParent(parent)).to.equal(false);
       assert.deepEqual(child.getParentNodes(), []);
       expect(child.numParents()).to.equal(0);
 
       child.addParent(parent);
-      expect(child._hasParent(parent)).to.equal(true);
+      expect(child.hasParent(parent)).to.equal(true);
       assert.deepEqual(child.getParentNodes(), [parent]);
       expect(child.numParents()).to.equal(1);
 
       child.addParent(parent);
-      expect(child._hasParent(parent)).to.equal(true);
+      expect(child.hasParent(parent)).to.equal(true);
       assert.deepEqual(child.getParentNodes(), [parent]);
       expect(child.numParents()).to.equal(1);
     });
@@ -751,20 +751,20 @@ describe("state-node", () => {
       child.setValue('value1');
       const parent1 = new StateNode();
       const parent2 = new StateNode();
-      expect(child._hasParent(parent1)).to.equal(false);
-      expect(child._hasParent(parent2)).to.equal(false);
+      expect(child.hasParent(parent1)).to.equal(false);
+      expect(child.hasParent(parent2)).to.equal(false);
       assert.deepEqual(child.getParentNodes(), []);
       expect(child.numParents()).to.equal(0);
 
       child.addParent(parent1);
-      expect(child._hasParent(parent1)).to.equal(true);
-      expect(child._hasParent(parent2)).to.equal(false);
+      expect(child.hasParent(parent1)).to.equal(true);
+      expect(child.hasParent(parent2)).to.equal(false);
       assert.deepEqual(child.getParentNodes(), [parent1]);
       expect(child.numParents()).to.equal(1);
 
       child.deleteParent(parent2);
-      expect(child._hasParent(parent1)).to.equal(true);
-      expect(child._hasParent(parent2)).to.equal(false);
+      expect(child.hasParent(parent1)).to.equal(true);
+      expect(child.hasParent(parent2)).to.equal(false);
       assert.deepEqual(child.getParentNodes(), [parent1]);
       expect(child.numParents()).to.equal(1);
     });
@@ -1492,23 +1492,23 @@ describe("state-node", () => {
     });
   });
 
-  describe("_buildStateInfo", () => {
+  describe("buildStateInfo", () => {
     describe("proof hash", () => {
       it("leaf node", () => {
         node.setValue(true);
-        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(true)));
+        expect(node.buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(true)));
         node.setValue(10);
-        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(10)));
+        expect(node.buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(10)));
         node.setValue(-200);
-        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(-200)));
+        expect(node.buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(-200)));
         node.setValue('');
-        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString('')));
+        expect(node.buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString('')));
         node.setValue('unittest');
-        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString('unittest')));
+        expect(node.buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString('unittest')));
         node.setValue(null);
-        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(null)));
+        expect(node.buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(null)));
         node.setValue(undefined);
-        expect(node._buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(undefined)));
+        expect(node.buildStateInfo().proofHash).to.equal(CommonUtil.hashString(CommonUtil.toString(undefined)));
       });
 
       it("internal node when radixTreeEnabled = true", () => {
@@ -1519,7 +1519,7 @@ describe("state-node", () => {
         expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
 
         // build state info without updatedChildLabel
-        const proofHashBefore = stateTreeEnabled._buildStateInfo().proofHash;
+        const proofHashBefore = stateTreeEnabled.buildStateInfo().proofHash;
         expect(proofHashBefore).to.equal(stateTreeEnabled.radixTree.getRootProofHash());
         expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(true);
 
@@ -1527,7 +1527,7 @@ describe("state-node", () => {
         child2Enabled.setProofHash('another PH');
 
         // build state info with updatedChildLabel
-        const proofHashAfter = stateTreeEnabled._buildStateInfo(label2).proofHash;
+        const proofHashAfter = stateTreeEnabled.buildStateInfo(label2).proofHash;
         expect(proofHashAfter).not.equal(proofHashBefore);  // Updated!!
         expect(proofHashAfter).to.equal(stateTreeEnabled.radixTree.getRootProofHash());
         expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(true);
@@ -1538,7 +1538,7 @@ describe("state-node", () => {
 
         // build state info with updatedChildLabel and shouldRebuildRadixInfo = false
         const radixTreeProofHashBefore = stateTreeEnabled.radixTree.getRootProofHash();
-        const proofHashAfter2 = stateTreeEnabled._buildStateInfo(label2, false).proofHash;
+        const proofHashAfter2 = stateTreeEnabled.buildStateInfo(label2, false).proofHash;
         expect(proofHashAfter2).equal(radixTreeProofHashBefore);  // Unchanged!!
         expect(proofHashAfter2).to.equal(stateTreeEnabled.radixTree.getRootProofHash());
         expect(stateTreeEnabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
@@ -1552,12 +1552,12 @@ describe("state-node", () => {
         expect(stateTreeDisabled.radixTree.verifyRadixInfoForRadixTree()).to.equal(false);
 
         // build state info without updatedChildLabel
-        const proofHashBefore = stateTreeDisabled._buildStateInfo().proofHash;
+        const proofHashBefore = stateTreeDisabled.buildStateInfo().proofHash;
         // set another proof hash value for a child
         child2Disabled.setProofHash('another PH');
 
         // build state info with updatedChildLabel
-        const proofHashAfter = stateTreeDisabled._buildStateInfo(label2).proofHash;
+        const proofHashAfter = stateTreeDisabled.buildStateInfo(label2).proofHash;
         expect(proofHashAfter).not.equal(proofHashBefore);  // Updated!!
       });
     });
@@ -1565,19 +1565,19 @@ describe("state-node", () => {
     describe("tree height", () => {
       it("leaf node", () => {
         node.setValue(true);
-        expect(node._buildStateInfo().treeHeight).to.equal(0);
+        expect(node.buildStateInfo().treeHeight).to.equal(0);
         node.setValue(10);
-        expect(node._buildStateInfo().treeHeight).to.equal(0);
+        expect(node.buildStateInfo().treeHeight).to.equal(0);
         node.setValue(-200);
-        expect(node._buildStateInfo().treeHeight).to.equal(0);
+        expect(node.buildStateInfo().treeHeight).to.equal(0);
         node.setValue('');
-        expect(node._buildStateInfo().treeHeight).to.equal(0);
+        expect(node.buildStateInfo().treeHeight).to.equal(0);
         node.setValue('unittest');
-        expect(node._buildStateInfo().treeHeight).to.equal(0);
+        expect(node.buildStateInfo().treeHeight).to.equal(0);
         node.setValue(null);
-        expect(node._buildStateInfo().treeHeight).to.equal(0);
+        expect(node.buildStateInfo().treeHeight).to.equal(0);
         node.setValue(undefined);
-        expect(node._buildStateInfo().treeHeight).to.equal(0);
+        expect(node.buildStateInfo().treeHeight).to.equal(0);
       });
 
       // here
@@ -1589,11 +1589,11 @@ describe("state-node", () => {
         stateTreeEnabled.radixTree.root.setTreeHeight(100);
 
         // With updatedChildLabel = null, shouldRebuildRadixInfo = false
-        expect(stateTreeEnabled._buildStateInfo(null, false).treeHeight).to.equal(101);
+        expect(stateTreeEnabled.buildStateInfo(null, false).treeHeight).to.equal(101);
         // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
-        expect(stateTreeEnabled._buildStateInfo(label1).treeHeight).to.equal(1);
+        expect(stateTreeEnabled.buildStateInfo(label1).treeHeight).to.equal(1);
         // With updatedChildLabel = null, shouldRebuildRadixInfo = true
-        expect(stateTreeEnabled._buildStateInfo().treeHeight).to.equal(4);
+        expect(stateTreeEnabled.buildStateInfo().treeHeight).to.equal(4);
       });
 
       it("internal node when radixTreeEnabled = false", () => {
@@ -1602,26 +1602,26 @@ describe("state-node", () => {
         child3Disabled.setTreeHeight(2);
         child4Disabled.setTreeHeight(3);
 
-        expect(stateTreeDisabled._buildStateInfo().treeHeight).to.equal(4);
+        expect(stateTreeDisabled.buildStateInfo().treeHeight).to.equal(4);
       });
     });
 
     describe("tree size", () => {
       it("leaf node", () => {
         node.setValue(true);
-        expect(node._buildStateInfo().treeSize).to.equal(1);
+        expect(node.buildStateInfo().treeSize).to.equal(1);
         node.setValue(10);
-        expect(node._buildStateInfo().treeSize).to.equal(1);
+        expect(node.buildStateInfo().treeSize).to.equal(1);
         node.setValue(-200);
-        expect(node._buildStateInfo().treeSize).to.equal(1);
+        expect(node.buildStateInfo().treeSize).to.equal(1);
         node.setValue('');
-        expect(node._buildStateInfo().treeSize).to.equal(1);
+        expect(node.buildStateInfo().treeSize).to.equal(1);
         node.setValue('unittest');
-        expect(node._buildStateInfo().treeSize).to.equal(1);
+        expect(node.buildStateInfo().treeSize).to.equal(1);
         node.setValue(null);
-        expect(node._buildStateInfo().treeSize).to.equal(1);
+        expect(node.buildStateInfo().treeSize).to.equal(1);
         node.setValue(undefined);
-        expect(node._buildStateInfo().treeSize).to.equal(1);
+        expect(node.buildStateInfo().treeSize).to.equal(1);
       });
 
       it("internal node when radixTreeEnabled = true", () => {
@@ -1632,11 +1632,11 @@ describe("state-node", () => {
         stateTreeEnabled.radixTree.root.setTreeSize(1000);
 
         // With updatedChildLabel = null, shouldRebuildRadixInfo = false
-        expect(stateTreeEnabled._buildStateInfo(null, false).treeSize).to.equal(1001);
+        expect(stateTreeEnabled.buildStateInfo(null, false).treeSize).to.equal(1001);
         // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
-        expect(stateTreeEnabled._buildStateInfo(label1).treeSize).to.equal(11);
+        expect(stateTreeEnabled.buildStateInfo(label1).treeSize).to.equal(11);
         // With updatedChildLabel = null, shouldRebuildRadixInfo = true
-        expect(stateTreeEnabled._buildStateInfo().treeSize).to.equal(101);
+        expect(stateTreeEnabled.buildStateInfo().treeSize).to.equal(101);
       });
 
       it("internal node when radixTreeEnabled = false", () => {
@@ -1645,7 +1645,7 @@ describe("state-node", () => {
         child3Disabled.setTreeSize(30);
         child4Disabled.setTreeSize(40);
 
-        expect(stateTreeDisabled._buildStateInfo().treeSize).to.equal(101);
+        expect(stateTreeDisabled.buildStateInfo().treeSize).to.equal(101);
       });
     });
 
@@ -1654,21 +1654,21 @@ describe("state-node", () => {
         const parent = new StateNode();
         const label = 'label';
         parent.setChild(label, node);
-        expect(node._buildStateInfo().treeBytes).to.equal(160);
+        expect(node.buildStateInfo().treeBytes).to.equal(160);
         node.setValue(true);  // boolean (4 bytes)
-        expect(node._buildStateInfo().treeBytes).to.equal(164);
+        expect(node.buildStateInfo().treeBytes).to.equal(164);
         node.setValue(10);  // number (8 bytes)
-        expect(node._buildStateInfo().treeBytes).to.equal(168);
+        expect(node.buildStateInfo().treeBytes).to.equal(168);
         node.setValue(-200);  // number (8 bytes)
-        expect(node._buildStateInfo().treeBytes).to.equal(168);
+        expect(node.buildStateInfo().treeBytes).to.equal(168);
         node.setValue('');  // string (0 * 2 = 0 bytes)
-        expect(node._buildStateInfo().treeBytes).to.equal(160);
+        expect(node.buildStateInfo().treeBytes).to.equal(160);
         node.setValue('str');  // string (3 * 2 = 6 bytes)
-        expect(node._buildStateInfo().treeBytes).to.equal(166);
+        expect(node.buildStateInfo().treeBytes).to.equal(166);
         node.setValue(null);  // null (0 bytes)
-        expect(node._buildStateInfo().treeBytes).to.equal(160);
+        expect(node.buildStateInfo().treeBytes).to.equal(160);
         node.setValue(undefined);  // undefined (0 bytes)
-        expect(node._buildStateInfo().treeBytes).to.equal(160);
+        expect(node.buildStateInfo().treeBytes).to.equal(160);
       });
 
       it("internal node when radixTreeEnabled = true", () => {
@@ -1686,13 +1686,13 @@ describe("state-node", () => {
 
         // With updatedChildLabel = null, shouldRebuildRadixInfo = false
         // 36 + 10000 = 10036
-        expect(stateTreeEnabled._buildStateInfo(null, false).treeBytes).to.equal(10160);
+        expect(stateTreeEnabled.buildStateInfo(null, false).treeBytes).to.equal(10160);
         // With updatedChildLabel = label1, shouldRebuildRadixInfo = true
         // 8(label1) * 2 + 10 = 62
-        expect(stateTreeEnabled._buildStateInfo(label1).treeBytes).to.equal(186);
+        expect(stateTreeEnabled.buildStateInfo(label1).treeBytes).to.equal(186);
         // With updatedChildLabel = null, shouldRebuildRadixInfo = true
         // 8(label1) * 2 + 10 + 8(label2) * 2 + 20 + 8(label3) * 2 + 30 + 8(label4) * 2 + 40 = 164
-        expect(stateTreeEnabled._buildStateInfo().treeBytes).to.equal(324);
+        expect(stateTreeEnabled.buildStateInfo().treeBytes).to.equal(324);
       });
 
       it("internal node when radixTreeEnabled = false", () => {
@@ -1708,7 +1708,7 @@ describe("state-node", () => {
         child4Disabled.setTreeBytes(40);
 
         // 8(label1) * 2 + 10 + 8(label2) * 2 + 20 + 8(label3) * 2 + 30 + 8(label4) * 2 + 40 = 164
-        expect(stateTreeDisabled._buildStateInfo().treeBytes).to.equal(324);
+        expect(stateTreeDisabled.buildStateInfo().treeBytes).to.equal(324);
       });
     });
   });

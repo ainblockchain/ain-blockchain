@@ -171,17 +171,19 @@ class RadixTree {
       // Does nothing.
       return node;
     }
-    const parent = node.getParent();
+    const parentNodes = node.getParentNodes();
     const labelRadix = node.getLabelRadix();
     const labelSuffix = node.getLabelSuffix();
     const child = node.getChildNodes()[0];
     const childLabelRadix = child.getLabelRadix();
     const childLabelSuffix = child.getLabelSuffix();
-    parent.deleteChild(labelRadix);
-    node.deleteChild(childLabelRadix);
     const newChildLabelSuffix = labelSuffix + childLabelRadix + childLabelSuffix;
-    parent.setChild(labelRadix, newChildLabelSuffix, child);
-    return parent;
+    node.deleteChild(childLabelRadix);
+    for (const parent of parentNodes) {
+      parent.deleteChild(labelRadix);
+      parent.setChild(labelRadix, newChildLabelSuffix, child);
+    }
+    return parentNodes;
   }
 
   delete(stateLabel, shouldUpdateRadixInfo = false) {
@@ -203,9 +205,9 @@ class RadixTree {
       return false;
     }
     node.resetStateNode();
-    let nodeToUpdateProofHash = node;
+    let parentNodesToUpdate = [node];
     if (node.numChildren() === 1) {
-      nodeToUpdateProofHash = this._mergeToChild(node);
+      parentNodesToUpdate = this._mergeToChild(node);
     } else if (node.numChildren() === 0) {
       if (!node.hasParent()) {
         logger.error(
@@ -214,14 +216,19 @@ class RadixTree {
         // Does nothing.
         return false;
       }
-      const parent = node.getParent();
-      parent.deleteChild(node.getLabelRadix());
-      if (parent.numChildren() === 1 && !parent.hasStateNode() && parent.hasParent()) {
-        nodeToUpdateProofHash = this._mergeToChild(parent);
+      parentNodesToUpdate = [];
+      for (const parent of node.getParentNodes()) {
+        parent.deleteChild(node.getLabelRadix());
+        if (parent.numChildren() === 1 && !parent.hasStateNode() && parent.hasParent()) {
+          const listToUpdate = this._mergeToChild(parent);
+          parentNodesToUpdate.push(...listToUpdate);
+        }
       }
     }
     if (shouldUpdateRadixInfo) {
-      nodeToUpdateProofHash.updateRadixInfoForRadixPath();
+      for (const toBeUpdated of parentNodesToUpdate) {
+        toBeUpdated.updateRadixInfoForAllRootPaths();
+      }
     }
     // Delete from the terminal node map.
     this.terminalNodeMap.delete(stateLabel);
@@ -272,8 +279,8 @@ class RadixTree {
     return this.root.updateRadixInfoForRadixTree();
   }
 
-  updateRadixInfoForRadixPath(updatedNodeLabel) {
-    const LOG_HEADER = 'updateRadixInfoForRadixPath';
+  updateRadixInfoForAllRootPaths(updatedNodeLabel) {
+    const LOG_HEADER = 'updateRadixInfoForAllRootPath';
 
     const node = this._getRadixNodeForReading(updatedNodeLabel);
     if (node === null) {
@@ -283,25 +290,37 @@ class RadixTree {
       // Does nothing.
       return 0;
     }
-    return node.updateRadixInfoForRadixPath();
+    return node.updateRadixInfoForAllRootPaths();
   }
 
   verifyRadixInfoForRadixTree() {
     return this.root.verifyRadixInfoForRadixTree();
   }
 
-  getProofOfState(stateLabel, stateProof) {
-    let curNode = this._getRadixNodeForReading(stateLabel);
-    if (curNode === null || !curNode.hasStateNode()) {
+  static getProofOfStateRecursive(radixLabel, curNode, labelIndex, stateProof) {
+    if (labelIndex === radixLabel.length) {  // Reached the target node
+      if (!curNode.hasStateNode()) {
+        return null;
+      }
+      return curNode.getProofOfRadixNode(null, null, stateProof);
+    }
+    const labelRadix = radixLabel.charAt(labelIndex);
+    const childNode = curNode.getChild(labelRadix);
+    if (childNode === null) {
       return null;
     }
-    let proof = curNode.getProofOfRadixNode(null, null, stateLabel, stateProof);
-    while (curNode.hasParent()) {
-      const label = curNode.getLabel();
-      curNode = curNode.getParent();
-      proof = curNode.getProofOfRadixNode(label, proof);
+    const childLabelIndex = labelIndex + 1 + childNode.getLabelSuffix().length;
+    const childProof =
+        RadixTree.getProofOfStateRecursive(radixLabel, childNode, childLabelIndex, stateProof);
+    if (childProof === null) {
+      return null;
     }
-    return proof;
+    return curNode.getProofOfRadixNode(childNode.getLabel(), childProof, null);
+  }
+
+  getProofOfState(stateLabel, stateProof) {
+    const radixLabel = RadixTree._toRadixLabel(stateLabel);
+    return RadixTree.getProofOfStateRecursive(radixLabel, this.root, 0, stateProof);
   }
 
   copyFrom(radixTree, newParentStateNode) {
