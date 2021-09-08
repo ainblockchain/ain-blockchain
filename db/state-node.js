@@ -26,7 +26,7 @@ class StateNode {
         FeatureFlags.enableRadixTreeLayers && !FeatureFlags.enableDynamicRadixTree;
     // Used for internal nodes only.
     if (FeatureFlags.enableRadixTreeLayers) {
-      this.radixTree = new RadixTree();
+      this.radixTree = new RadixTree(version);
     }
     this.childMap = new Map();
     this.proofHash = null;
