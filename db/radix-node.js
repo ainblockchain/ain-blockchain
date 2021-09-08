@@ -16,7 +16,7 @@ class RadixNode {
     this.stateNode = null;
     this.labelRadix = '';
     this.labelSuffix = '';
-    this.parent = null;
+    this.parentSet = new Set();
     this.radixChildMap = new Map();
     this.proofHash = null;
     this.treeHeight = 0;
@@ -28,7 +28,7 @@ class RadixNode {
     this.resetStateNode();
     this.resetLabelRadix();
     this.resetLabelSuffix();
-    this.resetParent();
+    this.parentSet.clear();
     this.radixChildMap.clear();
     this.resetProofHash();
     this.resetTreeHeight();
@@ -90,20 +90,43 @@ class RadixNode {
     return this.getLabelRadix() + this.getLabelSuffix();
   }
 
-  getParent() {
-    return this.parent;
+  addParent(parent) {
+    const LOG_HEADER = 'addParent';
+    if (this.hasParent(parent)) {
+      logger.error(
+          `[${LOG_HEADER}] Adding an existing parent of label: ${parent.getLabel()} ` +
+          `at: ${new Error().stack}.`);
+      // Does nothing.
+      return;
+    }
+    this.parentSet.add(parent);
   }
 
-  setParent(parent) {
-    this.parent = parent;
+  hasParent(parent = null) {
+    if (parent === null) {
+      return this.numParents() > 0;
+    }
+    return this.parentSet.has(parent);
   }
 
-  hasParent() {
-    return this.getParent() !== null;
+  deleteParent(parent) {
+    const LOG_HEADER = 'deleteParent';
+    if (!this.parentSet.has(parent)) {
+      logger.error(
+          `[${LOG_HEADER}] Deleting a non-existing parent of label: ${parent.getLabel()} ` +
+          `at: ${new Error().stack}.`);
+      // Does nothing.
+      return;
+    }
+    this.parentSet.delete(parent);
   }
 
-  resetParent() {
-    this.setParent(null);
+  getParentNodes() {
+    return Array.from(this.parentSet);
+  }
+
+  numParents() {
+    return this.parentSet.size;
   }
 
   getChild(labelRadix) {
@@ -140,12 +163,12 @@ class RadixNode {
     this.radixChildMap.set(labelRadix, child);
     child.setLabelRadix(labelRadix);
     child.setLabelSuffix(labelSuffix);
-    child.setParent(this);
+    child.addParent(this);
     return true;
   }
 
   hasChild(labelRadix = null) {
-    if (!labelRadix) {
+    if (labelRadix === null) {
       return this.numChildren() > 0;
     }
     return this.radixChildMap.has(labelRadix);
@@ -171,7 +194,7 @@ class RadixNode {
     this.radixChildMap.delete(labelRadix);
     child.resetLabelRadix();
     child.resetLabelSuffix();
-    child.resetParent();
+    child.deleteParent(this);
     return true;
   }
 
@@ -235,7 +258,7 @@ class RadixNode {
     this.setTreeBytes(0);
   }
 
-  _buildRadixInfo() {
+  buildRadixInfo() {
     let treeInfo = {
       preimage: '',
       treeHeight: 0,
@@ -281,7 +304,7 @@ class RadixNode {
   }
 
   updateRadixInfo() {
-    const treeInfo = this._buildRadixInfo();
+    const treeInfo = this.buildRadixInfo();
     this.setProofHash(treeInfo.proofHash);
     this.setTreeHeight(treeInfo.treeHeight);
     this.setTreeSize(treeInfo.treeSize);
@@ -289,7 +312,7 @@ class RadixNode {
   }
 
   verifyRadixInfo() {
-    const treeInfo = this._buildRadixInfo();
+    const treeInfo = this.buildRadixInfo();
     return this.getProofHash() === treeInfo.proofHash &&
         this.getTreeHeight() === treeInfo.treeHeight &&
         this.getTreeSize() === treeInfo.treeSize &&
@@ -307,16 +330,14 @@ class RadixNode {
     return numAffectedNodes;
   }
 
-  updateRadixInfoForRadixPath() {
+  updateRadixInfoForAllRootPaths() {
     let numAffectedNodes = 0;
-    let curNode = this;
-    curNode.updateRadixInfo();
+    this.updateRadixInfo();
     numAffectedNodes++;
-    while (curNode.hasParent()) {
-      curNode = curNode.getParent();
-      curNode.updateRadixInfo();
-      numAffectedNodes++;
+    for (const parent of this.getParentNodes()) {
+      numAffectedNodes += parent.updateRadixInfoForAllRootPaths();
     }
+
     return numAffectedNodes;
   }
 
@@ -332,13 +353,13 @@ class RadixNode {
     return true;
   }
 
-  getProofOfRadixNode(childLabel = null, childProof = null, stateLabel = null, stateProof = null) {
+  getProofOfRadixNode(childLabel = null, childProof = null, stateProof = null) {
     const proof = { [ProofProperties.RADIX_PROOF_HASH]: this.getProofHash() };
     if (this.hasStateNode()) {
+      const stateNode = this.getStateNode();
       Object.assign(proof, {
-        [ProofProperties.LABEL]: stateLabel,
-        [ProofProperties.PROOF_HASH]: stateProof !== null ?
-            stateProof : this.getStateNode().getProofHash()
+        [ProofProperties.LABEL]: stateNode.getLabel(),
+        [ProofProperties.PROOF_HASH]: stateProof !== null ?  stateProof : stateNode.getProofHash()
       });
     }
     if (childLabel === null && stateProof !== null) {

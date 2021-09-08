@@ -37,7 +37,7 @@ class StateNode {
 
   reset() {
     this.setVersion(null);  // should be reset for deleteStateTree().
-    this._resetLabel();
+    this.resetLabel();
     this.setIsLeaf(true);
     this.resetValue();
     this.parentSet.clear();
@@ -56,7 +56,7 @@ class StateNode {
   static _create(
       version, label, isLeaf, value, radixTreeEnabled, proofHash, treeHeight, treeSize, treeBytes) {
     const node = new StateNode(version);
-    node._setLabel(label);
+    node.setLabel(label);
     node.setIsLeaf(isLeaf);
     node.setValue(value);
     node.setRadixTreeEnabled(radixTreeEnabled);
@@ -184,8 +184,8 @@ class StateNode {
     return this.getLabel() !== null;
   }
 
-  _setLabel(label) {
-    const LOG_HEADER = '_setLabel';
+  setLabel(label) {
+    const LOG_HEADER = 'setLabel';
 
     const curLabel = this.getLabel();
     if (curLabel !== null && curLabel !== label) {
@@ -195,7 +195,7 @@ class StateNode {
     this.label = label;
   }
 
-  _resetLabel() {
+  resetLabel() {
     this.label = null;
   }
 
@@ -221,7 +221,7 @@ class StateNode {
 
   addParent(parent) {
     const LOG_HEADER = 'addParent';
-    if (this._hasParent(parent)) {
+    if (this.hasParent(parent)) {
       logger.error(
           `[${LOG_HEADER}] Adding an existing parent of label: ${parent.getLabel()} ` +
           `at: ${new Error().stack}.`);
@@ -231,7 +231,7 @@ class StateNode {
     this.parentSet.add(parent);
   }
 
-  _hasParent(parent) {
+  hasParent(parent) {
     return this.parentSet.has(parent);
   }
 
@@ -297,7 +297,7 @@ class StateNode {
       this.childMap.set(label, node);
     }
     node.addParent(this);
-    node._setLabel(label);
+    node.setLabel(label);
     if (this.getIsLeaf()) {
       this.setIsLeaf(false);
     }
@@ -424,7 +424,7 @@ class StateNode {
    * @param {boolean} shouldRebuildRadixInfo rebuild radix info
    */
   // NOTE(platfowner): This function changes proof hashes of the radix tree.
-  _buildStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
+  buildStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
     const nodeBytes = this.computeNodeBytes();
     if (this.getIsLeaf()) {
       const proofHash = LIGHTWEIGHT ?
@@ -441,7 +441,7 @@ class StateNode {
           if (updatedChildLabel === null) {
             this.radixTree.updateRadixInfoForRadixTree();
           } else {
-            this.radixTree.updateRadixInfoForRadixPath(updatedChildLabel);
+            this.radixTree.updateRadixInfoForAllRootPaths(updatedChildLabel);
           }
         }
         return {
@@ -483,7 +483,7 @@ class StateNode {
   }
 
   updateStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
-    const treeInfo = this._buildStateInfo(updatedChildLabel, shouldRebuildRadixInfo);
+    const treeInfo = this.buildStateInfo(updatedChildLabel, shouldRebuildRadixInfo);
     this.setProofHash(treeInfo.proofHash);
     this.setTreeHeight(treeInfo.treeHeight);
     this.setTreeSize(treeInfo.treeSize);
@@ -491,7 +491,7 @@ class StateNode {
   }
 
   verifyStateInfo(updatedChildLabel = null) {
-    const treeInfo = this._buildStateInfo(updatedChildLabel, true);
+    const treeInfo = this.buildStateInfo(updatedChildLabel, true);
     return this.getProofHash() === treeInfo.proofHash &&
         this.getTreeHeight() === treeInfo.treeHeight &&
         this.getTreeSize() === treeInfo.treeSize &&
