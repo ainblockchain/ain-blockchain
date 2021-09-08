@@ -17,6 +17,7 @@ describe("radix-node", () => {
 
   describe("Initialization / reset", () => {
     it("constructor", () => {
+      expect(node.version).to.equal(null);
       expect(node.stateNode).to.equal(null);
       expect(node.labelRadix).to.equal('');
       expect(node.labelSuffix).to.equal('');
@@ -30,6 +31,7 @@ describe("radix-node", () => {
 
     it("reset", () => {
       const stateNode = new StateNode();
+      const version = 'ver';
       const labelRadix = '0';
       const labelSuffix = '0000';
       const parent = new RadixNode();
@@ -41,6 +43,7 @@ describe("radix-node", () => {
       const treeSize = 10;
       const treeBytes = 100;
 
+      node.setVersion(version);
       node.setStateNode(stateNode);
       node.setLabelRadix(labelRadix);
       node.setLabelSuffix(labelSuffix);
@@ -52,6 +55,7 @@ describe("radix-node", () => {
       node.setTreeBytes(treeBytes);
 
       node.reset();
+      expect(node.version).to.equal(null);
       expect(node.stateNode).to.equal(null);
       expect(node.labelRadix).to.equal('');
       expect(node.labelSuffix).to.equal('');
@@ -61,6 +65,17 @@ describe("radix-node", () => {
       expect(node.treeHeight).to.equal(0);
       expect(node.treeSize).to.equal(0);
       expect(node.treeBytes).to.equal(0);
+    });
+  });
+
+  describe("version", () => {
+    it("get / set / reset", () => {
+      const version = 'ver';
+      expect(node.getVersion()).to.equal(null);
+      node.setVersion(version);
+      expect(node.getVersion()).to.equal(version);
+      node.resetVersion();
+      expect(node.getVersion()).to.equal(null);
     });
   });
 
@@ -459,7 +474,7 @@ describe("radix-node", () => {
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
 
-      assert.deepEqual(node.toJsObject(true), {
+      assert.deepEqual(node.toJsObject(false, true), {
         "1001": {
           ".label": null,
           ".proof_hash": "stateNodePH1",
@@ -531,7 +546,7 @@ describe("radix-node", () => {
       node.setChild(labelRadix1, labelSuffix1, child1);
       node.setChild(labelRadix2, labelSuffix2, child2);
 
-      assert.deepEqual(node.toJsObject(true), {
+      assert.deepEqual(node.toJsObject(false, true), {
         "1001": {
           ".label": null,
           ".proof_hash": "stateNodePH1",
@@ -561,7 +576,7 @@ describe("radix-node", () => {
       child2.setChild(labelRadix21, labelSuffix21, child21);
       child2.setChild(labelRadix22, labelSuffix22, child22);
 
-      assert.deepEqual(node.toJsObject(true), {
+      assert.deepEqual(node.toJsObject(false, true), {
         "1001": {
           "1011": {
             ".label": null,
@@ -634,7 +649,7 @@ describe("radix-node", () => {
       child2.setChild(labelRadix21, labelSuffix21, child21);
       child2.setChild(labelRadix22, labelSuffix22, child22);
 
-      assert.deepEqual(node.toJsObject(true), {
+      assert.deepEqual(node.toJsObject(false, true), {
         "1001": {
           "1011": {
             ".label": null,
@@ -697,7 +712,7 @@ describe("radix-node", () => {
       child2.setChild(labelRadix21, labelSuffix21, child21);
       child2.setChild(labelRadix22, labelSuffix22, child22);
 
-      assert.deepEqual(node.toJsObject(true), {
+      assert.deepEqual(node.toJsObject(false, true), {
         "1001": {
           "1011": {
             ".label": null,
@@ -765,7 +780,7 @@ describe("radix-node", () => {
 
       expect(node.updateRadixInfoForRadixTree()).to.equal(7);
 
-      assert.deepEqual(node.toJsObject(true), {
+      assert.deepEqual(node.toJsObject(false, true), {
         "1001": {
           "1011": {
             ".label": "stateLabel11",
@@ -837,6 +852,8 @@ describe("radix-node", () => {
   });
 
   describe("utils", () => {
+    const version = 'ver';
+
     let stateNode;
     let stateNode1;
     let stateNode2;
@@ -849,45 +866,55 @@ describe("radix-node", () => {
 
     beforeEach(() => {
       stateNode = new StateNode();
+      stateNode.setVersion('stateNodeVer');
       stateNode.setProofHash('stateNodePH');
       stateNode.setTreeHeight(1);
       stateNode.setTreeSize(10);
       stateNode.setTreeBytes(100);
 
       stateNode1 = new StateNode();
+      stateNode1.setVersion('stateNodeVer1');
       stateNode1.setProofHash('stateNodePH1');
       stateNode1.setTreeHeight(2);
       stateNode1.setTreeSize(20);
       stateNode1.setTreeBytes(200);
 
       stateNode2 = new StateNode();
+      stateNode2.setVersion('stateNodeVer2');
       stateNode2.setProofHash('stateNodePH2');
       stateNode2.setTreeHeight(3);
       stateNode2.setTreeSize(30);
       stateNode2.setTreeBytes(300);
 
       stateNode21 = new StateNode();
+      stateNode21.setVersion('stateNodeVer21');
       stateNode21.setProofHash('stateNodePH21');
       stateNode21.setTreeHeight(4);
       stateNode21.setTreeSize(40);
       stateNode21.setTreeBytes(400);
 
       stateNode22 = new StateNode();
+      stateNode22.setVersion('stateNodeVer22');
       stateNode22.setProofHash('stateNodePH22');
       stateNode22.setTreeHeight(5);
       stateNode22.setTreeSize(50);
       stateNode22.setTreeBytes(500);
 
+      node.setVersion(version);
       child1 = new RadixNode();
+      child1.setVersion(version);
       child1.setStateNode(stateNode1);
 
       child2 = new RadixNode();
+      child2.setVersion(version);
       child2.setStateNode(stateNode2);
 
       child21 = new RadixNode();
+      child21.setVersion(version);
       child21.setStateNode(stateNode21);
 
       child22 = new RadixNode();
+      child22.setVersion(version);
       child22.setStateNode(stateNode22);
 
       node.setChild('1', '001', child1);
@@ -908,7 +935,7 @@ describe("radix-node", () => {
       const terminalNodeMap = new Map();
       const newNode = new RadixNode();
       newNode.copyFrom(node, newParentStateNode, terminalNodeMap);
-      assert.deepEqual(newNode.toJsObject(true, true), {
+      assert.deepEqual(newNode.toJsObject(false, true, true), {
         "1001": {
           ".label": "1001",
           ".proof_hash": "stateNodePH1",
@@ -946,7 +973,7 @@ describe("radix-node", () => {
         ".tree_height": 5,
         ".tree_size": 140
       });
-      assert.deepEqual(newNode.toJsObject(true, true), node.toJsObject(true, true));
+      assert.deepEqual(newNode.toJsObject(false, true, true), node.toJsObject(false, true, true));
       // Check terminalNodeMap
       expect(terminalNodeMap.size).to.equal(4);
       expect(terminalNodeMap.has('1001')).to.equal(true);
@@ -1031,40 +1058,49 @@ describe("radix-node", () => {
           ".proof_hash": "stateNodePH2"
         }
       });
-      assert.deepEqual(node.toJsObject(true, true), {
+      assert.deepEqual(node.toJsObject(true, true, true), {
         "1001": {
           ".label": "1001",
           ".proof_hash": "stateNodePH1",
           ".radix_ph": "0xc6b77f2d527751603d41b89bb7bac0d2a51dfdb3636b37f6d0792676bbe48795",
+          ".radix_version": "ver",
           ".tree_bytes": 208,
           ".tree_height": 2,
-          ".tree_size": 20
+          ".tree_size": 20,
+          ".version": "stateNodeVer1"
         },
         "2002": {
           "1021": {
             ".label": "1021",
             ".proof_hash": "stateNodePH21",
             ".radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7",
+            ".radix_version": "ver",
             ".tree_bytes": 408,
             ".tree_height": 4,
-            ".tree_size": 40
+            ".tree_size": 40,
+            ".version": "stateNodeVer21"
           },
           "2022": {
             ".label": "2022",
             ".proof_hash": "stateNodePH22",
             ".radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2",
+            ".radix_version": "ver",
             ".tree_bytes": 508,
             ".tree_height": 5,
-            ".tree_size": 50
+            ".tree_size": 50,
+            ".version": "stateNodeVer22"
           },
           ".label": "2002",
           ".proof_hash": "stateNodePH2",
           ".radix_ph": "0x5587f3fd7b1217631c9e4d531dbd3084eb902913bdbf5d096d4b8eb16585af7a",
+          ".radix_version": "ver",
           ".tree_bytes": 1224,
           ".tree_height": 5,
-          ".tree_size": 120
+          ".tree_size": 120,
+          ".version": "stateNodeVer2"
         },
         ".radix_ph": "0x22962a7f8fabb4acd8e48d79a9cb5556a99aa796e78da3a6864b58466ae3d772",
+        ".radix_version": "ver",
         ".tree_bytes": 1432,
         ".tree_height": 5,
         ".tree_size": 140

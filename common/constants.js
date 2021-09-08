@@ -390,9 +390,22 @@ const ProofProperties = {
   LABEL: '.label',
   PROOF_HASH: '.proof_hash',
   RADIX_PROOF_HASH: '.radix_ph',
+};
+
+/**
+ * Properties of radix info.
+ *
+ * @enum {string}
+ */
+const RadixInfoProperties = {
+  LABEL: '.label',
+  PROOF_HASH: '.proof_hash',
+  RADIX_PROOF_HASH: '.radix_ph',
+  RADIX_VERSION: '.radix_version',
   TREE_HEIGHT: '.tree_height',
   TREE_SIZE: '.tree_size',
   TREE_BYTES: '.tree_bytes',
+  VERSION: '.version',
 };
 
 /**
@@ -944,6 +957,7 @@ module.exports = {
   FunctionTypes,
   FunctionResultCode,
   ProofProperties,
+  RadixInfoProperties,
   StateInfoProperties,
   NativeFunctionIds,
   isNativeFunctionId,

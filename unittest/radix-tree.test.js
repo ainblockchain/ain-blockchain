@@ -129,7 +129,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null
         });
 
@@ -139,7 +139,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(true);
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "a": {
             ".label": "0xa",
@@ -155,7 +155,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "a": {
             ".label": "0xa",
@@ -175,7 +175,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "b": {
             ".label": "0xb",
@@ -189,7 +189,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null
         });
       });
@@ -203,7 +203,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null
         });
 
@@ -213,7 +213,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(true);
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "aaa": {
             ".label": "0xaaa",
@@ -229,7 +229,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "aaa": {
             ".label": "0xaaa",
@@ -249,7 +249,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "bbb": {
             ".label": "0xbbb",
@@ -263,7 +263,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null
         });
       });
@@ -282,7 +282,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "aa": {
             ".label": "0xaa",
@@ -311,7 +311,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "aa": {
             ".label": "0xaa",
@@ -337,7 +337,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label)).to.equal(true);
         expect(tree.get(label)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "aa": {
             ".label": "0xaa_",
@@ -374,7 +374,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "aaa": {
             ".label": "0xaaa",
@@ -408,7 +408,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "bbb": {
             "111": {
@@ -444,7 +444,7 @@ describe("radix-tree", () => {
         expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "bbb": {
             "111": {
@@ -464,7 +464,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(false);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "bbb111": {
             ".label": "0xbbb111",
@@ -483,7 +483,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null
         });
 
@@ -493,7 +493,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(true);
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000a": {
             ".label": "0x000a",
@@ -509,7 +509,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000": {
             ".radix_ph": null,
@@ -532,7 +532,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000b": {
             ".label": "0x000b",
@@ -546,7 +546,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null
         });
       });
@@ -560,7 +560,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null
         });
 
@@ -570,7 +570,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(true);
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000aaa": {
             ".label": "0x000aaa",
@@ -586,7 +586,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000": {
             ".radix_ph": null,
@@ -609,7 +609,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000bbb": {
             ".label": "0x000bbb",
@@ -623,7 +623,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null
         });
       });
@@ -637,7 +637,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null
         });
 
@@ -647,7 +647,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(true);
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000aaa": {
             ".label": "0x000aaa",
@@ -663,7 +663,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000": {
             ".radix_ph": null,
@@ -686,7 +686,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": "0x16337f10dc7114cb5eba09c616cc2ec112e080404ac3fc1aea63111f8570d6b8",
           "000bbb": {
             ".label": "0x000bbb",
@@ -713,7 +713,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000": {
             ".radix_ph": null,
@@ -739,7 +739,7 @@ describe("radix-tree", () => {
         expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(labelInternal)).to.equal(true);
         expect(tree.get(labelInternal)).to.equal(stateNodeInternal);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000": {
             ".label": "0x000",
@@ -773,7 +773,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000aa": {
             ".label": "0x000aa",
@@ -802,7 +802,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000aa": {
             ".label": "0x000aa",
@@ -828,7 +828,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label)).to.equal(true);
         expect(tree.get(label)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000aa": {
             ".label": "0x000aa_",
@@ -865,7 +865,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000": {
             ".radix_ph": null,
@@ -902,7 +902,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000bbb": {
             "111": {
@@ -938,7 +938,7 @@ describe("radix-tree", () => {
         expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000bbb": {
             "111": {
@@ -958,7 +958,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(false);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000bbb111": {
             ".label": "0x000bbb111",
@@ -984,7 +984,7 @@ describe("radix-tree", () => {
         expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000bbb": {
             "111": {
@@ -1004,7 +1004,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(false);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": "0xdf6bd65883bce47c743eb28ea70897e69be4d9b0046f21e3a2ee26114fb40bd1",
           "000bbb111": {
             ".label": "0x000bbb111",
@@ -1048,7 +1048,7 @@ describe("radix-tree", () => {
         tree.set(label22, stateNode22);
         tree.set(label3, stateNode3);
 
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": null,
           "000": {
             ".radix_ph": null,
@@ -1144,7 +1144,7 @@ describe("radix-tree", () => {
         tree.set(label22, stateNode22);
 
         expect(tree.updateRadixInfoForRadixTree()).to.equal(8);
-        assert.deepEqual(tree.toJsObject(true), {
+        assert.deepEqual(tree.toJsObject(false, true), {
           ".radix_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
           "000": {
             ".radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
@@ -1268,7 +1268,7 @@ describe("radix-tree", () => {
         assert.deepEqual(newTree.labels(), [label1, label2, label21, label22]);
         assert.deepEqual(newTree.stateNodes(), [stateNode1, stateNode2, stateNode21, stateNode22]);
         assert.deepEqual(newTree.size(), 4);
-        assert.deepEqual(newTree.toJsObject(true), {
+        assert.deepEqual(newTree.toJsObject(false, true), {
           ".radix_ph": "0x6fb64a2130ffc6c39c3c90e2e623594e7818647f93caf25d5c741ffdb6998c5f",
           "000": {
             ".radix_ph": "0x13f3860a6d7505b383ef8f966bd5e0bcaa546298616a850c7dfaf20311fc271b",
@@ -1294,7 +1294,7 @@ describe("radix-tree", () => {
             }
           }
         });
-        assert.deepEqual(newTree.toJsObject(true), tree.toJsObject(true));
+        assert.deepEqual(newTree.toJsObject(false, true), tree.toJsObject(false, true));
       });
     })
 

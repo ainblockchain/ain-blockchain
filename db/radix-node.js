@@ -6,13 +6,15 @@ const {
   LIGHTWEIGHT,
   HASH_DELIMITER,
   ProofProperties,
+  RadixInfoProperties,
 } = require('../common/constants');
 
 /**
  * Implements Radix Node, which is used as a component of RadixTree.
  */
 class RadixNode {
-  constructor() {
+  constructor(version) {
+    this.version = version || null;
     this.stateNode = null;
     this.labelRadix = '';
     this.labelSuffix = '';
@@ -25,6 +27,7 @@ class RadixNode {
   }
 
   reset() {
+    this.resetVersion();
     this.resetStateNode();
     this.resetLabelRadix();
     this.resetLabelSuffix();
@@ -34,6 +37,18 @@ class RadixNode {
     this.resetTreeHeight();
     this.resetTreeSize();
     this.resetTreeBytes();
+  }
+
+  getVersion() {
+    return this.version;
+  }
+
+  setVersion(version) {
+    this.version = version;
+  }
+
+  resetVersion() {
+    this.version = null;
   }
 
   getStateNode() {
@@ -390,7 +405,7 @@ class RadixNode {
     this.setTreeSize(radixNode.getTreeSize());
     this.setTreeBytes(radixNode.getTreeBytes());
     for (const child of radixNode.getChildNodes()) {
-      const clonedChild = new RadixNode();
+      const clonedChild = new RadixNode(this.getVersion());
       this.setChild(child.getLabelRadix(), child.getLabelSuffix(), clonedChild);
       clonedChild.copyFrom(child, newParentStateNode, terminalNodeMap);
     }
@@ -421,23 +436,29 @@ class RadixNode {
    * Converts the subtree to a js object.
    * This is for testing / debugging purpose.
    */
-  toJsObject(withProofHash = false, withTreeInfo = false) {
+  toJsObject(withVersion = false, withProofHash = false, withTreeInfo = false) {
     const obj = {};
+    if (withVersion) {
+      obj[RadixInfoProperties.RADIX_VERSION] = this.getVersion();
+    }
     if (withProofHash) {
-      obj[ProofProperties.RADIX_PROOF_HASH] = this.getProofHash();
+      obj[RadixInfoProperties.RADIX_PROOF_HASH] = this.getProofHash();
     }
     if (withTreeInfo) {
-      obj[ProofProperties.TREE_HEIGHT] = this.getTreeHeight();
-      obj[ProofProperties.TREE_SIZE] = this.getTreeSize();
-      obj[ProofProperties.TREE_BYTES] = this.getTreeBytes();
+      obj[RadixInfoProperties.TREE_HEIGHT] = this.getTreeHeight();
+      obj[RadixInfoProperties.TREE_SIZE] = this.getTreeSize();
+      obj[RadixInfoProperties.TREE_BYTES] = this.getTreeBytes();
     }
     if (this.hasStateNode()) {
       const stateNode = this.getStateNode();
-      obj[ProofProperties.LABEL] = stateNode.getLabel();
-      obj[ProofProperties.PROOF_HASH] = stateNode.getProofHash();
+      obj[RadixInfoProperties.LABEL] = stateNode.getLabel();
+      obj[RadixInfoProperties.PROOF_HASH] = stateNode.getProofHash();
+      if (withVersion) {
+        obj[RadixInfoProperties.VERSION] = stateNode.getVersion();
+      }
     }
     for (const child of this.getChildNodes()) {
-      obj[child.getLabel()] = child.toJsObject(withProofHash, withTreeInfo);
+      obj[child.getLabel()] = child.toJsObject(withVersion, withProofHash, withTreeInfo);
     }
     return obj;
   }
