@@ -484,7 +484,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete without common label prefix - delete with only one child", () => {
+      it("set / delete without common label prefix - delete with one child", () => {
         const label2 = '0xbbb';
         const label21 = '0xbbb111';
 
@@ -525,6 +525,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(false);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
+        // merged!!
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
@@ -534,6 +535,140 @@ describe("radix-tree", () => {
             ".proof_hash": null,
             ".radix_version": "ver",
             ".radix_ph": null,
+          }
+        });
+      });
+
+      it("set / delete without common label prefix - delete on a node with no children and one parent having state node", () => {
+        const label2 = '0xbbb';
+        const label21 = '0xbbb111';
+        const label22 = '0xbbb222';
+
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
+
+        // set a node
+        tree.set(label2, stateNode2);
+        // set children
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
+
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_version": "ver",
+          ".radix_ph": null,
+          "bbb": {
+            "111": {
+              ".version": null,
+              ".label": "0xbbb111",
+              ".proof_hash": null,
+              ".radix_version": "ver",
+              ".radix_ph": null,
+            },
+            "222": {
+              ".label": "0xbbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".version": null,
+            ".label": "0xbbb",
+            ".proof_hash": null,
+            ".radix_version": "ver",
+            ".radix_ph": null,
+          }
+        });
+
+        // delete the node
+        tree.delete(label21);
+
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(false);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        // not merged!!
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "bbb": {
+            "222": {
+              ".label": "0xbbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".label": "0xbbb",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null
+          }
+        });
+      });
+
+      it("set / delete without common label prefix - delete on a node with no children and one parent having no state node", () => {
+        const label21 = '0xbbb111';
+        const label22 = '0xbbb222';
+
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
+
+        // set children
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
+
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_version": "ver",
+          ".radix_ph": null,
+          "bbb": {
+            "111": {
+              ".version": null,
+              ".label": "0xbbb111",
+              ".proof_hash": null,
+              ".radix_version": "ver",
+              ".radix_ph": null,
+            },
+            "222": {
+              ".label": "0xbbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".radix_version": "ver",
+            ".radix_ph": null,
+          }
+        });
+
+        // delete the node
+        tree.delete(label21);
+
+        expect(tree.has(label21)).to.equal(false);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        // merged!!
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "bbb222": {
+            ".label": "0xbbb222",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null
           }
         });
       });
@@ -720,7 +855,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("delete with shouldUpdateRadixInfo = true - with common label prefix, with label suffices", () => {
+      it("set / delete with common label prefix - with label suffices, with shouldUpdateRadixInfo = true", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
 
@@ -1070,7 +1205,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - delete with only one child", () => {
+      it("set / delete with common label prefix - delete with one child", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
 
@@ -1111,6 +1246,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(false);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
+        // merged!!
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
@@ -1124,7 +1260,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("delete with shouldUpdateRadixInfo = true - with common label prefix, delete with only one child", () => {
+      it("set / delete with common label prefix - delete with one child", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
 
@@ -1160,11 +1296,67 @@ describe("radix-tree", () => {
         });
 
         // delete the node
-        tree.delete(label2, true);
+        tree.delete(label2);
 
         expect(tree.has(label2)).to.equal(false);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
+        // merged!!
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_version": "ver",
+          ".radix_ph": null,
+          "000bbb111": {
+            ".version": null,
+            ".label": "0x000bbb111",
+            ".proof_hash": null,
+            ".radix_version": "ver",
+            ".radix_ph": null,
+          }
+        });
+      });
+
+      it("set / delete with common label prefix - delete with one child, with shouldUpdateRadixInfo = true", () => {
+        const label2 = '0x000bbb';
+        const label21 = '0x000bbb111';
+
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
+
+        // set a node
+        tree.set(label2, stateNode2);
+        // set a child
+        tree.set(label21, stateNode21);
+
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_version": "ver",
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".version": null,
+              ".label": "0x000bbb111",
+              ".proof_hash": null,
+              ".radix_version": "ver",
+              ".radix_ph": null,
+            },
+            ".version": null,
+            ".label": "0x000bbb",
+            ".proof_hash": null,
+            ".radix_version": "ver",
+            ".radix_ph": null,
+          }
+        });
+
+        // delete the node
+        tree.delete(label2, true);  // shouldUpdateRadixInfo = true
+
+        expect(tree.has(label2)).to.equal(false);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        // merged with proof hash updates!!
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": "0xdf6bd65883bce47c743eb28ea70897e69be4d9b0046f21e3a2ee26114fb40bd1",
@@ -1175,6 +1367,592 @@ describe("radix-tree", () => {
             ".radix_version": "ver",
             ".radix_ph": null,
           }
+        });
+      });
+
+      it("set / delete with common label prefix - delete on a node with no children and one parent having state node", () => {
+        const label2 = '0x000bbb';
+        const label21 = '0x000bbb111';
+        const label22 = '0x000bbb222';
+
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
+
+        // set a node
+        tree.set(label2, stateNode2);
+        // set children
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
+
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_version": "ver",
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".version": null,
+              ".label": "0x000bbb111",
+              ".proof_hash": null,
+              ".radix_version": "ver",
+              ".radix_ph": null,
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".version": null,
+            ".label": "0x000bbb",
+            ".proof_hash": null,
+            ".radix_version": "ver",
+            ".radix_ph": null,
+          }
+        });
+
+        // delete the node
+        tree.delete(label21);
+
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(false);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        // not merged!!
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "000bbb": {
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".label": "0x000bbb",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null
+          }
+        });
+      });
+
+      it("set / delete with common label prefix - delete on a node with no children and one parent having state node, with shouldUpdateRadixInfo = true", () => {
+        const label2 = '0x000bbb';
+        const label21 = '0x000bbb111';
+        const label22 = '0x000bbb222';
+
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
+
+        // set a node
+        tree.set(label2, stateNode2);
+        // set children
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
+
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_version": "ver",
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".version": null,
+              ".label": "0x000bbb111",
+              ".proof_hash": null,
+              ".radix_version": "ver",
+              ".radix_ph": null,
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".version": null,
+            ".label": "0x000bbb",
+            ".proof_hash": null,
+            ".radix_version": "ver",
+            ".radix_ph": null,
+          }
+        });
+
+        // delete the node
+        tree.delete(label21, true);  // shouldUpdateRadixInfo = true
+
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(false);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        // not merged with proof hash updates!!
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_ph": "0xca570f9b1ca8572d215027ba2b949003e0c55ff3b5346bec47899fbaf652c8a5",
+          ".radix_version": "ver",
+          "000bbb": {
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".label": "0x000bbb",
+            ".proof_hash": null,
+            ".radix_ph": "0xfca2961686b9d9ee4b618bee6f6c7857c85644cf88e13e93179289fd18985fa8",
+            ".radix_version": "ver",
+            ".version": null
+          }
+        });
+      });
+
+      it("set / delete with common label prefix - delete on a node with no children and one parent having state node and another root path, with shouldUpdateRadixInfo = true", () => {
+        const label2 = '0x000bbb';
+        const label21 = '0x000bbb111';
+        const label22 = '0x000bbb222';
+
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
+
+        // set a node
+        tree.set(label2, stateNode2);
+        // set children
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
+        // set another root path
+        const version2 = 'ver2';
+        const grandParentAnother = new RadixNode(version2);
+        const radixLabel2 = RadixTree._toRadixLabel(label2);
+        const parent = tree._getRadixNodeForWriting(label2);
+        grandParentAnother.setChild(radixLabel2.charAt(0), radixLabel2.slice(1), parent);
+
+        // check grand parents
+        expect(parent.numParents()).to.equal(2);
+        expect(parent.hasParent(grandParentAnother)).to.equal(true);
+
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_version": "ver",
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".version": null,
+              ".label": "0x000bbb111",
+              ".proof_hash": null,
+              ".radix_version": "ver",
+              ".radix_ph": null,
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".version": null,
+            ".label": "0x000bbb",
+            ".proof_hash": null,
+            ".radix_version": "ver",
+            ".radix_ph": null,
+          }
+        });
+        assert.deepEqual(grandParentAnother.toJsObject(true, true), {
+          ".radix_ph": null,
+          ".radix_version": "ver2",
+          "000bbb": {
+            "111": {
+              ".label": "0x000bbb111",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".label": "0x000bbb",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null
+          }
+        });
+
+        // delete the node
+        tree.delete(label21, true);  // shouldUpdateRadixInfo = true
+
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label21)).to.equal(false);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        // not merged with proof hash updates!!
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_ph": "0xca570f9b1ca8572d215027ba2b949003e0c55ff3b5346bec47899fbaf652c8a5",
+          ".radix_version": "ver",
+          "000bbb": {
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".label": "0x000bbb",
+            ".proof_hash": null,
+            ".radix_ph": "0xfca2961686b9d9ee4b618bee6f6c7857c85644cf88e13e93179289fd18985fa8",
+            ".radix_version": "ver",
+            ".version": null
+          }
+        });
+        assert.deepEqual(grandParentAnother.toJsObject(true, true), {
+          ".radix_ph": "0xca570f9b1ca8572d215027ba2b949003e0c55ff3b5346bec47899fbaf652c8a5",
+          ".radix_version": "ver2",
+          "000bbb": {
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".label": "0x000bbb",
+            ".proof_hash": null,
+            ".radix_ph": "0xfca2961686b9d9ee4b618bee6f6c7857c85644cf88e13e93179289fd18985fa8",
+            ".radix_version": "ver",
+            ".version": null
+          }
+        });
+      });
+
+      it("set / delete with common label prefix - delete on a node with no children and one parent having no state node", () => {
+        const label21 = '0x000bbb111';
+        const label22 = '0x000bbb222';
+
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
+
+        // set children
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
+
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_version": "ver",
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".version": null,
+              ".label": "0x000bbb111",
+              ".proof_hash": null,
+              ".radix_version": "ver",
+              ".radix_ph": null,
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".radix_version": "ver",
+            ".radix_ph": null,
+          }
+        });
+
+        // delete the node
+        tree.delete(label21);
+
+        expect(tree.has(label21)).to.equal(false);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        // merged!!
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "000bbb222": {
+            ".label": "0x000bbb222",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null
+          }
+        });
+      });
+
+      it("set / delete with common label prefix - delete on a node with no children and one parent having no state node, with shouldUpdateRadixInfo = true", () => {
+        const label21 = '0x000bbb111';
+        const label22 = '0x000bbb222';
+
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
+
+        // set children
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
+
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_version": "ver",
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".version": null,
+              ".label": "0x000bbb111",
+              ".proof_hash": null,
+              ".radix_version": "ver",
+              ".radix_ph": null,
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".radix_version": "ver",
+            ".radix_ph": null,
+          }
+        });
+
+        // delete the node
+        tree.delete(label21, true);  // shouldUpdateRadixInfo = true
+
+        expect(tree.has(label21)).to.equal(false);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        // merged with proof hash updates!!
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_ph": "0x2f86edb65f78422d4d2b8706495c0baa89c0cb169326a004a7c35b317f218a18",
+          ".radix_version": "ver",
+          "000bbb222": {
+            ".label": "0x000bbb222",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null
+          }
+        });
+      });
+
+      it("set / delete with common label prefix - delete on a node with no children and one parent having no state node and another root path, with shouldUpdateRadixInfo = true", () => {
+        const label2 = '0x000bbb';
+        const label21 = '0x000bbb111';
+        const label22 = '0x000bbb222';
+
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
+
+        // set children
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
+        // set another root path
+        const version2 = 'ver2';
+        const grandParentAnother = new RadixNode(version2);
+        const radixLabel2 = RadixTree._toRadixLabel(label2);
+        const parent = tree._getRadixNodeForWriting(label2);
+        grandParentAnother.setChild(radixLabel2.charAt(0), radixLabel2.slice(1), parent);
+
+        // check grand parents
+        expect(parent.numParents()).to.equal(2);
+        expect(parent.hasParent(grandParentAnother)).to.equal(true);
+
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_version": "ver",
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".version": null,
+              ".label": "0x000bbb111",
+              ".proof_hash": null,
+              ".radix_version": "ver",
+              ".radix_ph": null,
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".radix_version": "ver",
+            ".radix_ph": null,
+          }
+        });
+        assert.deepEqual(grandParentAnother.toJsObject(true, true), {
+          ".radix_ph": null,
+          ".radix_version": "ver2",
+          "000bbb": {
+            "111": {
+              ".label": "0x000bbb111",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".radix_ph": null,
+            ".radix_version": "ver",
+          }
+        });
+
+        // delete the node
+        tree.delete(label21, true);  // shouldUpdateRadixInfo = true
+
+        expect(tree.has(label21)).to.equal(false);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        // merged with proof hash updates!!
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_ph": "0x2f86edb65f78422d4d2b8706495c0baa89c0cb169326a004a7c35b317f218a18",
+          ".radix_version": "ver",
+          "000bbb222": {
+            ".label": "0x000bbb222",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null
+          }
+        });
+        assert.deepEqual(grandParentAnother.toJsObject(true, true), {
+          ".radix_ph": "0x2f86edb65f78422d4d2b8706495c0baa89c0cb169326a004a7c35b317f218a18",
+          ".radix_version": "ver2",
+          "000bbb222": {
+            ".label": "0x000bbb222",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null
+          }
+        });
+      });
+
+      it("set / delete with common label prefix - delete on a node with no children and multiple parents, with shouldUpdateRadixInfo = true", () => {
+        const label21 = '0x000bbb111';
+        const label22 = '0x000bbb222';
+
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
+
+        // set children
+        tree.set(label21, stateNode21);
+        tree.set(label22, stateNode22);
+        // set another root path
+        const version2 = 'ver2';
+        const parentAnother = new RadixNode(version2);
+        const radixLabel21 = RadixTree._toRadixLabel(label21);
+        const node = tree._getRadixNodeForWriting(label21);
+        parentAnother.setChild('1', '11', node);
+
+        // check parents
+        expect(node.numParents()).to.equal(2);
+        node.hasParent(parentAnother);
+
+        expect(tree.has(label21)).to.equal(true);
+        expect(tree.get(label21)).to.equal(stateNode21);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_version": "ver",
+          ".radix_ph": null,
+          "000bbb": {
+            "111": {
+              ".version": null,
+              ".label": "0x000bbb111",
+              ".proof_hash": null,
+              ".radix_version": "ver",
+              ".radix_ph": null,
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".radix_version": "ver",
+            ".radix_ph": null,
+          }
+        });
+        assert.deepEqual(parentAnother.toJsObject(true, true), {
+          "111": {
+            ".label": "0x000bbb111",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null
+          },
+          ".radix_ph": null,
+          ".radix_version": "ver2"
+        });
+
+        // delete the node
+        tree.delete(label21, true);  // shouldUpdateRadixInfo = true
+
+        expect(tree.has(label21)).to.equal(false);
+        expect(tree.has(label22)).to.equal(true);
+        expect(tree.get(label22)).to.equal(stateNode22);
+        // not merged with proof hash updates!!
+        assert.deepEqual(tree.toJsObject(true, true), {
+          ".radix_ph": "0x76691a736e5b3e4cdf14c2384c766409a39e9447571aad9463298a7f47b68e40",
+          ".radix_version": "ver",
+          "000bbb": {
+            "222": {
+              ".label": "0x000bbb222",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null
+            },
+            ".radix_ph": "0x8f58f77d96721e72e2cca7f862a896ab1edba47ecba320ebbed6f2064893d995",
+            ".radix_version": "ver"
+          }
+        });
+        assert.deepEqual(parentAnother.toJsObject(true, true), {
+          ".radix_ph": "0xac6e47f6a906efffe8d6732220926589865ab91ce02bfb3da3dd898f4be7af38",
+          ".radix_version": "ver2"
         });
       });
     });
