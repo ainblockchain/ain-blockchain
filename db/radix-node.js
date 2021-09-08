@@ -452,9 +452,11 @@ class RadixNode {
     if (this.hasStateNode()) {
       const stateNode = this.getStateNode();
       obj[RadixInfoProperties.LABEL] = stateNode.getLabel();
-      obj[RadixInfoProperties.PROOF_HASH] = stateNode.getProofHash();
       if (withVersion) {
         obj[RadixInfoProperties.VERSION] = stateNode.getVersion();
+      }
+      if (withProofHash) {
+        obj[RadixInfoProperties.PROOF_HASH] = stateNode.getProofHash();
       }
     }
     for (const child of this.getChildNodes()) {

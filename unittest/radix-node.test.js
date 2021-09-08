@@ -1043,19 +1043,15 @@ describe("radix-node", () => {
       assert.deepEqual(node.toJsObject(), {
         "1001": {
           ".label": "1001",
-          ".proof_hash": "stateNodePH1"
         },
         "2002": {
           "1021": {
             ".label": "1021",
-            ".proof_hash": "stateNodePH21"
           },
           "2022": {
             ".label": "2022",
-            ".proof_hash": "stateNodePH22"
           },
           ".label": "2002",
-          ".proof_hash": "stateNodePH2"
         }
       });
       assert.deepEqual(node.toJsObject(true, true, true), {

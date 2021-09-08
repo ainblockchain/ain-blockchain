@@ -79,6 +79,7 @@ describe("state-node", () => {
       expect(node.parentSet.size).to.equal(0);
       expect(node.radixTreeEnabled).to.equal(false);
       expect(node.radixTree.size()).to.equal(0);
+      expect(node.radixTree.root.version).to.equal(null);
       expect(node.childMap.size).to.equal(0);
       expect(node.proofHash).to.equal(null);
       expect(node.treeHeight).to.equal(0);
@@ -135,6 +136,7 @@ describe("state-node", () => {
       expect(node2.parentSet.size).to.equal(0);
       expect(node2.radixTreeEnabled).to.equal(false);
       expect(node2.radixTree.size()).to.equal(0);
+      expect(node2.radixTree.root.version).to.equal('version1');
       expect(node2.childMap.size).to.equal(0);
       expect(node2.proofHash).to.equal(null);
       expect(node2.treeHeight).to.equal(0);
@@ -181,6 +183,7 @@ describe("state-node", () => {
 
       const clone = stateTreeEnabled.clone();
       expect(clone.getVersion()).to.equal(stateTreeEnabled.getVersion());
+      expect(clone.radixTree.root.getVersion()).to.equal(stateTreeEnabled.getVersion());
       expect(clone.getIsLeaf()).to.equal(false);
       assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled, clone]);
       assert.deepEqual(child2Enabled.getParentNodes(), [stateTreeEnabled, clone]);
@@ -265,6 +268,7 @@ describe("state-node", () => {
 
       const clone = stateTreeEnabled.clone('version2');
       expect(clone.getVersion()).to.equal('version2');
+      expect(clone.radixTree.root.getVersion()).to.equal('version2');
       expect(clone.getIsLeaf()).to.equal(false);
       assert.deepEqual(child1Enabled.getParentNodes(), [stateTreeEnabled, clone]);
       assert.deepEqual(child2Enabled.getParentNodes(), [stateTreeEnabled, clone]);
