@@ -201,29 +201,34 @@ class RadixTree {
       // Does nothing.
       return false;
     }
+    const labelRadix = node.getLabelRadix();
     node.resetStateNode();
-    let parentNodesToUpdate = [node];
-    if (node.numChildren() === 1) {
-      parentNodesToUpdate = this._mergeToChild(node);
-    } else if (node.numChildren() === 0) {
-      if (!node.hasParent()) {
-        logger.error(
-            `[${LOG_HEADER}] Deleting a child without parent of label: ${stateLabel} ` +
-            `at: ${new Error().stack}.`);
-        // Does nothing.
-        return false;
+    let nodesToUpdate = [node];
+    if (node.numChildren() === 1) {  // the node has only 1 child.
+      const theOnlyChild = node.getChildNodes()[0];
+      if (theOnlyChild.numParents() === 1) {  // the child has only 1 parent.
+        nodesToUpdate = this._mergeToChild(node);
       }
-      parentNodesToUpdate = [];
-      for (const parent of node.getParentNodes()) {
-        parent.deleteChild(node.getLabelRadix());
-        if (parent.numChildren() === 1 && !parent.hasStateNode() && parent.hasParent()) {
-          const listToUpdate = this._mergeToChild(parent);
-          parentNodesToUpdate.push(...listToUpdate);
+    } else if (node.numChildren() === 0) {
+      if (node.numParents() === 1) {  // the node has only 1 parent.
+        const theOnlyParent = node.getParentNodes()[0];
+        theOnlyParent.deleteChild(labelRadix);
+        nodesToUpdate.push(theOnlyParent);
+        if (theOnlyParent.numChildren() === 1 &&  // the parent has only 1 child.
+            !theOnlyParent.hasStateNode() &&  // the parent has no state node
+            theOnlyParent.hasParent()) {  // the parent is not the root.
+          nodesToUpdate = this._mergeToChild(theOnlyParent);
+        }
+      } else {
+        nodesToUpdate = [];
+        for (const parent of node.getParentNodes()) {
+          parent.deleteChild(labelRadix);
+          nodesToUpdate.push(parent);
         }
       }
     }
     if (shouldUpdateRadixInfo) {
-      for (const toBeUpdated of parentNodesToUpdate) {
+      for (const toBeUpdated of nodesToUpdate) {
         toBeUpdated.updateRadixInfoForAllRootPaths();
       }
     }
