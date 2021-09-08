@@ -545,37 +545,13 @@ function renameStateTreeVersion(node, fromVersion, toVersion, isRootNode = true)
 /**
  * Returns affected nodes' number.
  */
-function deleteStateTree(node) {
+function deleteStateTree(node, deleteOrphanedOnly = false) {
   let numAffectedNodes = 0;
-  // 1. Delete children
-  if (FeatureFlags.enableRadixTreeLayers && node.getRadixTreeEnabled()) {
-    const childNodes = node.getChildNodes();
-    node.deleteRadixTree(true);  // shouldDeleteParent = true
-    for (const child of childNodes) {
-      numAffectedNodes += deleteStateTree(child);
+  if (deleteOrphanedOnly) {
+    if (node.numParents() > 0) {
+      // Does nothing.
+      return numAffectedNodes;
     }
-  } else {
-    for (const label of node.getChildLabels()) {
-      const child = node.getChild(label);
-      node.deleteChild(label, false);  // shouldUpdateStateInfo = false
-      numAffectedNodes += deleteStateTree(child);
-    }
-  }
-  // 2. Reset node
-  node.reset();
-  numAffectedNodes++;
-
-  return numAffectedNodes;
-}
-
-/**
- * Returns affected nodes' number.
- */
-function deleteStateTreeVersion(node) {
-  let numAffectedNodes = 0;
-  if (node.numParents() > 0) {
-    // Does nothing.
-    return numAffectedNodes;
   }
 
   // 1. Delete children
@@ -583,14 +559,14 @@ function deleteStateTreeVersion(node) {
     const childNodes = node.getChildNodes();
     node.deleteRadixTree(true);  // shouldDeleteParent = true
     for (const child of childNodes) {
-      numAffectedNodes += deleteStateTreeVersion(child);
+      numAffectedNodes += deleteStateTree(child, deleteOrphanedOnly);
     }
   } else {
     for (const label of node.getChildLabels()) {
       const child = node.getChild(label);
       node.deleteChild(label, false);  // shouldUpdateStateInfo = false
 
-      numAffectedNodes += deleteStateTreeVersion(child);
+      numAffectedNodes += deleteStateTree(child, deleteOrphanedOnly);
     }
   }
   // 2. Reset node
@@ -739,7 +715,6 @@ module.exports = {
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
-  deleteStateTreeVersion,
   makeCopyOfStateTree,
   equalStateTrees,
   updateStateInfoForAllRootPaths,

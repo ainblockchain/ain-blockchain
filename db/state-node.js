@@ -36,7 +36,7 @@ class StateNode {
   }
 
   reset() {
-    this.setVersion(null);  // should be reset for deleteStateTreeVersion().
+    this.setVersion(null);  // should be reset for deleteStateTree().
     this._resetLabel();
     this.setIsLeaf(true);
     this.resetValue();
