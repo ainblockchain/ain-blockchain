@@ -196,7 +196,7 @@ class P2pClient {
     });
     this.trackerWebSocket.on('close', (code) => {
       logger.info(`\nDisconnected from [TRACKER] ${TRACKER_WS_ADDR} with code: ${code}`);
-      // this.clearIntervalForTrackerUpdate();
+      this.clearIntervalForTrackerUpdate();
       this.setIntervalForTrackerConnection();
     });
   }
@@ -240,7 +240,7 @@ class P2pClient {
     this.trackerWebSocket.on('error', (error) => {
       logger.error(`Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
         `${JSON.stringify(error, null, 2)}`);
-      // this.clearIntervalForTrackerUpdate();
+      this.clearIntervalForTrackerUpdate();
       this.setIntervalForTrackerConnection();
     });
   }
