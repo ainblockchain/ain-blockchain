@@ -1,9 +1,6 @@
 const logger = require('../logger')('RADIX_TREE');
 
 const CommonUtil = require('../common/common-util');
-const {
-  FeatureFlags,
-} = require('../common/constants');
 const RadixNode = require('./radix-node');
 
 /**
@@ -11,8 +8,8 @@ const RadixNode = require('./radix-node');
  * it uses a radix tree internally.
  */
 class RadixTree {
-  constructor() {
-    this.root = new RadixNode();
+  constructor(version) {
+    this.root = new RadixNode(version);
     this.terminalNodeMap = new Map();
   }
 
@@ -66,7 +63,7 @@ class RadixTree {
 
       // Case 1: No child with the label radix.
       if (!curNode.hasChild(labelRadix)) {
-        const newChild = new RadixNode();
+        const newChild = new RadixNode(this.root.getVersion());
         const labelSuffix = radixLabel.slice(labelIndex + 1);
         curNode.setChild(labelRadix, labelSuffix, newChild);
 
@@ -85,7 +82,7 @@ class RadixTree {
 
         if (commonPrefix.length === labelSuffix.length) {
           // Insert an internal node between curNode and the existing child.
-          const internalNode = new RadixNode();
+          const internalNode = new RadixNode(this.root.getVersion());
           curNode.setChild(labelRadix, commonPrefix, internalNode);
 
           // Insert the existing child node as a child of the internal node.
@@ -96,7 +93,7 @@ class RadixTree {
           return internalNode;
         } else {
           // Insert an internal node between curNode and two child nodes.
-          const internalNode = new RadixNode();
+          const internalNode = new RadixNode(this.root.getVersion());
           curNode.setChild(labelRadix, commonPrefix, internalNode);
 
           // Insert the existing child node as a child of the internal node.
@@ -104,7 +101,7 @@ class RadixTree {
           RadixTree._setChildWithLabel(internalNode, childNewLabel, child);
 
           // Insert new child node as a child of the internal node.
-          const newChild = new RadixNode();
+          const newChild = new RadixNode(this.root.getVersion());
           const newChildLabel = labelSuffix.slice(commonPrefix.length);
           RadixTree._setChildWithLabel(internalNode, newChildLabel, newChild);
 
@@ -350,8 +347,8 @@ class RadixTree {
    * Converts the tree to a javascript object.
    * This is for testing / debugging purpose.
    */
-  toJsObject(withProofHash = false, withStateNodeDetails = false) {
-    return this.root.toJsObject(withProofHash, withStateNodeDetails);
+  toJsObject(withVersion = false, withProofHash = false, withStateNodeDetails = false) {
+    return this.root.toJsObject(withVersion, withProofHash, withStateNodeDetails);
   }
 }
 

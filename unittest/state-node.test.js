@@ -1854,7 +1854,7 @@ describe("state-node", () => {
       stateTreeEnabled.setProofHash('proofHash');
 
       stateTreeEnabled.updateStateInfo();
-      assert.deepEqual(stateTreeEnabled.radixTree.toJsObject(true), {
+      assert.deepEqual(stateTreeEnabled.radixTree.toJsObject(false, true), {
         ".radix_ph": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6",
         "00aaaa": {
           ".label": "0x00aaaa",
