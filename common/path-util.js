@@ -37,13 +37,16 @@ class PathUtil {
     return `${PathUtil.getServiceAccountPathFromAccountName(accountName)}/${PredefinedDbPaths.BALANCE}`;
   }
 
-  static getTokenBridgeConfigPath(type, tokenId) {
-    return CommonUtil.formatPath([PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE, type, tokenId]);
+  static getTokenBridgeConfigPath(networkName, chainId, tokenId) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE, networkName, chainId, tokenId]);
   }
 
-  static getTokenBridgeTokenPoolPath(type, tokenId) {
+  static getTokenBridgeTokenPoolPath(networkName, chainId, tokenId) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE, type, tokenId, PredefinedDbPaths.TOKEN_BRIDGE_TOKEN_POOL]);
+      PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE, networkName, chainId, tokenId,
+      PredefinedDbPaths.TOKEN_BRIDGE_TOKEN_POOL
+    ]);
   }
 
   static getTransferPath(from, to, key) {
@@ -204,19 +207,22 @@ class PathUtil {
     return PathUtil.getCheckinPayloadPath(branchPath);
   }
 
-  static getCheckoutRequestPath(address, checkoutId) {
+  static getCheckoutRequestPath(networkName, chainId, tokenId, address, checkoutId) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_REQUESTS, address, checkoutId]);
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_REQUESTS, networkName, chainId,
+        tokenId, address, checkoutId]);
   }
 
-  static getCheckoutHistoryPath(address, checkoutId) {
+  static getCheckoutHistoryPath(networkName, chainId, tokenId, address, checkoutId) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_HISTORY, address, checkoutId]);
+        PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_HISTORY, networkName, chainId,
+        tokenId, address, checkoutId]);
   }
 
-  static getCheckoutHistoryRefundPath(address, checkoutId) {
+  static getCheckoutHistoryRefundPath(networkName, chainId, tokenId, address, checkoutId) {
     return CommonUtil.appendPath(
-        PathUtil.getCheckoutHistoryPath(address, checkoutId), PredefinedDbPaths.CHECKOUT_HISTORY_REFUND);
+        PathUtil.getCheckoutHistoryPath(networkName, chainId, tokenId, address, checkoutId),
+        PredefinedDbPaths.CHECKOUT_HISTORY_REFUND);
   }
 
   static getCheckoutPendingAmountTotalPath() {

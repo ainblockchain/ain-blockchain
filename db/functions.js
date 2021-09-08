@@ -1071,8 +1071,8 @@ class Functions {
     return true;
   }
 
-  validateRecipient(recipient, tokenType) {
-    switch (tokenType) {
+  validateRecipient(recipient, networkName) {
+    switch (networkName) {
       case 'ETH':
         return CommonUtil.isCksumAddr(recipient) ? true : FunctionResultCode.INVALID_RECIPIENT;
       // TODO(liayoo): add 'AIN' case for shards
@@ -1097,8 +1097,11 @@ class Functions {
     if (value === null) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
+    const networkName = context.params.network_name;
+    const chainId = context.params.chain_id;
+    const tokenId = context.params.token_id;
     const user = context.params.user_addr;
-    const { amount, type, token_id: tokenId, recipient } = value;
+    const { amount, recipient } = value;
     // Increase pending amounts
     const incPendingResultCode = this.updatePendingCheckout(user, amount, true, context);
     if (incPendingResultCode !== true) {
@@ -1111,7 +1114,7 @@ class Functions {
       [TokenBridgeProperties.MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
       [TokenBridgeProperties.TOKEN_EXCH_RATE]: tokenExchangeRate,
       [TokenBridgeProperties.TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
-    } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(type, tokenId));
+    } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
     // Perform checks
     const tokenBridgeValidated = this.validateTokenBridgeConfig(
         tokenPool, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay,
@@ -1119,7 +1122,7 @@ class Functions {
     if (tokenBridgeValidated !== true) {
       return this.returnFuncResult(context, tokenBridgeValidated);
     }
-    const recipientValidated = this.validateRecipient(recipient, type);
+    const recipientValidated = this.validateRecipient(recipient, networkName);
     if (recipientValidated !== true) {
       return this.returnFuncResult(context, recipientValidated);
     }
@@ -1140,6 +1143,9 @@ class Functions {
   }
 
   _closeCheckout(value, context) {
+    const networkName = context.params.network_name;
+    const chainId = context.params.chain_id;
+    const tokenId = context.params.token_id;
     const user = context.params.user_addr;
     const checkoutId = context.params.checkout_id;
     const { request, response } = value;
@@ -1151,21 +1157,22 @@ class Functions {
       }
     } else {
       // Refund
-      const tokenPool = this.db.getValue(PathUtil.getTokenBridgeTokenPoolPath(request.type, request.token_id));
+      const tokenPool = this.db.getValue(PathUtil.getTokenBridgeTokenPoolPath(networkName, chainId, tokenId));
       const transferRes = this.setServiceAccountTransferOrLog(tokenPool, user, request.amount, context);
       if (CommonUtil.isFailedTx(transferRes)) {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }
       const setRefundRes = this.setValueOrLog(
-            PathUtil.getCheckoutHistoryRefundPath(user, checkoutId),
-            PathUtil.getTransferPath(tokenPool, user, context.timestamp), context);
+          PathUtil.getCheckoutHistoryRefundPath(networkName, chainId, tokenId, user, checkoutId),
+          PathUtil.getTransferPath(tokenPool, user, context.timestamp), context);
       if (CommonUtil.isFailedTx(setRefundRes)) {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }
     }
     // NOTE(liayoo): Remove the original request to avoid keeping the processed requests in the
     //               /checkout/requests and having to read and filter from the growing list.
-    const removeRes = this.setValueOrLog(PathUtil.getCheckoutRequestPath(user, checkoutId), null, context);
+    const removeRes = this.setValueOrLog(
+        PathUtil.getCheckoutRequestPath(networkName, chainId, tokenId, user, checkoutId), null, context);
     if (CommonUtil.isFailedTx(removeRes)) {
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }

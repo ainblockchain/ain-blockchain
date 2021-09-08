@@ -5,7 +5,7 @@ let config = {};
 
 function buildCloseCheckoutTxBody(fromAddr, tokenAmount, checkoutId, failed = false) {
   const response = {
-    tx_hash: '0xETH_TX_HASH'
+    tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c'
   };
   if (failed) {
     response.status = FunctionResultCode.FAILURE;
@@ -16,12 +16,10 @@ function buildCloseCheckoutTxBody(fromAddr, tokenAmount, checkoutId, failed = fa
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/checkout/history/${fromAddr}/${checkoutId}`,
+      ref: `/checkout/history/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkoutId}`,
       value: {
         request: {
           amount: tokenAmount,
-          type: 'ETH',
-          token_id: '0xB16c0C80a81f73204d454426fC413CAe455525A7',
           recipient: config.recipientAddr
         },
         response

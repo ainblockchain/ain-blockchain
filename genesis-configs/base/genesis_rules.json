@@ -33,24 +33,36 @@
   },
   "checkout": {
     "history": {
-      "$user_addr": {
-        "$checkout_id": {
-          ".rule": {
-            "write": "data === null && util.validateCheckoutHistoryData($user_addr, $checkout_id, newData, getValue) && auth.addr === util.getTokenPoolAddr(newData.request.type, newData.request.token_id, getValue)"
-          },
-          "refund": {
-            ".rule": {
-              "write": "data === null && util.isString(newData) && (auth.fid === '_closeCheckout' || auth.addr === util.getTokenPoolAddrFromHistoryData($user_addr, $checkout_id, getValue))"
+      "$network_name": {
+        "$chain_id": {
+          "$token_id": {
+            "$user_addr": {
+              "$checkout_id": {
+                ".rule": {
+                  "write": "data === null && util.validateCheckoutHistoryData($network_name, $chain_id, $token_id, $user_addr, $checkout_id, newData, getValue) && auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue)"
+                },
+                "refund": {
+                  ".rule": {
+                    "write": "data === null && util.isString(newData) && (auth.fid === '_closeCheckout' || auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue))"
+                  }
+                }
+              }
             }
           }
         }
       }
     },
     "requests": {
-      "$user_addr": {
-        "$checkout_id": {
-          ".rule": {
-            "write": "(auth.fid === '_closeCheckout' && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckoutRequestData(newData, getValue))"
+      "$network_name": {
+        "$chain_id": {
+          "$token_id": {
+            "$user_addr": {
+              "$checkout_id": {
+                ".rule": {
+                  "write": "(auth.fid === '_closeCheckout' && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckoutRequestData(newData, $network_name, $chain_id, $token_id, getValue))"
+                }
+              }
+            }
           }
         }
       }
