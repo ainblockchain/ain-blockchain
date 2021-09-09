@@ -13,9 +13,9 @@ describe("radix-node", () => {
 
   beforeEach(() => {
     node = new RadixNode();
-  })
+  });
 
-  describe("Initialization / reset", () => {
+  describe("initialization / reset", () => {
     it("constructor", () => {
       expect(node.version).to.equal(null);
       expect(node.stateNode).to.equal(null);
@@ -65,6 +65,66 @@ describe("radix-node", () => {
       expect(node.treeHeight).to.equal(0);
       expect(node.treeSize).to.equal(0);
       expect(node.treeBytes).to.equal(0);
+    });
+  });
+
+  describe("clone", () => {
+    const version = 'ver';
+    const labelRadix = '0';
+    const labelSuffix = '0000';
+    const childLabelRadix1 = '1';
+    const childLabelSuffix1 = '1111';
+    const childLabelRadix2 = '2';
+    const childLabelSuffix2 = '2222';
+    const proofHash = 'proofHash';
+    const treeHeight = 1;
+    const treeSize = 10;
+    const treeBytes = 100;
+
+    let stateNode;
+    let parent;
+    let child1;
+    let child2;
+
+    beforeEach(() => {
+      stateNode = new StateNode();
+      parent = new RadixNode();
+      child1 = new RadixNode();
+      child2 = new RadixNode();
+
+      node.setVersion(version);
+      node.setStateNode(stateNode);
+      node.setLabelRadix(labelRadix);
+      node.setLabelSuffix(labelSuffix);
+      node.addParent(parent);
+      node.setChild(childLabelRadix1, childLabelSuffix1, child1);
+      node.setChild(childLabelRadix2, childLabelSuffix2, child2);
+      node.setProofHash(proofHash);
+      node.setTreeHeight(treeHeight);
+      node.setTreeSize(treeSize);
+      node.setTreeBytes(treeBytes);
+    });
+
+    it("clone without version", () => {
+      const cloned = node.clone();
+      expect(cloned.getVersion()).to.equal(version);
+      expect(cloned.getStateNode()).to.equal(stateNode);
+      expect(cloned.getLabelRadix()).to.equal(labelRadix);
+      expect(cloned.getLabelSuffix()).to.equal(labelSuffix);
+      expect(cloned.numParents()).to.equal(0);
+      assert.deepEqual(cloned.getParentNodes(), []);
+      expect(cloned.numChildren()).to.equal(2);
+      assert.deepEqual(cloned.getChildNodes(), [child1, child2]);
+      expect(cloned.getProofHash()).to.equal(proofHash);
+      expect(cloned.getTreeHeight()).to.equal(treeHeight);
+      expect(cloned.getTreeSize()).to.equal(treeSize);
+      expect(cloned.getTreeBytes()).to.equal(treeBytes);
+    });
+
+    it("clone with version", () => {
+      const version2 = 'ver2';
+      const cloned = node.clone(version2);
+      expect(cloned.getVersion()).to.equal(version2);
     });
   });
 
