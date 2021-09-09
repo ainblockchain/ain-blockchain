@@ -39,6 +39,29 @@ class RadixNode {
     this.resetTreeBytes();
   }
 
+  static _create(
+      version, stateNode, labelRadix, labelSuffix, proofHash, treeHeight, treeSize, treeBytes) {
+    const node = new RadixNode(version);
+    node.setStateNode(stateNode);
+    node.setLabelRadix(labelRadix);
+    node.setLabelSuffix(labelSuffix);
+    node.setProofHash(proofHash);
+    node.setTreeHeight(treeHeight);
+    node.setTreeSize(treeSize);
+    node.setTreeBytes(treeBytes);
+    return node;
+  }
+
+  clone(version) {
+    const cloned = RadixNode._create(version ? version : this.version, this.stateNode,
+        this.labelRadix, this.labelSuffix, this.proofHash, this.treeHeight, this.treeSize,
+        this.treeBytes);
+    for (const child of this.getChildNodes()) {
+      cloned.setChild(child.getLabelRadix(), child.getLabelSuffix(), child);
+    }
+    return cloned;
+  }
+
   getVersion() {
     return this.version;
   }
