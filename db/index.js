@@ -347,35 +347,23 @@ class DB {
     let hasMultipleRoots = node.numParents() > 1;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
-      if (FeatureFlags.enableStateVersionOpt) {
-        if (node.hasChild(label)) {
-          const child = node.getChild(label);
-          if (hasMultipleRoots || child.numParents() > 1) {
-            const clonedChild = child.clone(this.stateVersion);
-            clonedChild.resetValue();
-            node.setChild(label, clonedChild);
-            node = clonedChild;
-          } else {
-            child.resetValue();
-            node = child;
-          }
+      if (node.hasChild(label)) {
+        const child = node.getChild(label);
+        if (hasMultipleRoots || child.numParents() > 1) {
+          const clonedChild = child.clone(this.stateVersion);
+          clonedChild.resetValue();
+          node.setChild(label, clonedChild);
+          node = clonedChild;
         } else {
-          const newChild = new StateNode(this.stateVersion);
-          node.setChild(label, newChild);
-          node = newChild;
-        }
-        hasMultipleRoots = hasMultipleRoots || node.numParents() > 1;
-      } else {
-        if (node.hasChild(label)) {
-          const child = node.getChild(label);
           child.resetValue();
           node = child;
-        } else {
-          const newChild = new StateNode(this.stateVersion);
-          node.setChild(label, newChild);
-          node = newChild;
         }
+      } else {
+        const newChild = new StateNode(this.stateVersion);
+        node.setChild(label, newChild);
+        node = newChild;
       }
+      hasMultipleRoots = hasMultipleRoots || node.numParents() > 1;
     }
     return node;
   }

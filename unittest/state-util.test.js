@@ -18,7 +18,6 @@ const {
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
-  makeCopyOfStateTree,
   equalStateTrees,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
@@ -2067,89 +2066,7 @@ describe("state-util", () => {
     })
   })
 
-  describe("deleteStateTree with deleteOrphanedOnly = false", () => {
-    const ver1 = 'ver1';
-    const ver2 = 'ver2';
-    const ver3 = 'ver3';
-
-    let child1Enabled;
-    let child2Enabled;
-    let stateTreeEnabled;
-
-    let child1Disabled;
-    let child2Disabled;
-    let stateTreeDisabled;
-
-    beforeEach(() => {
-      child1Enabled = new StateNode(ver1);
-      child1Enabled.setValue('value1');
-      child2Enabled = new StateNode(ver2);
-      child2Enabled.setValue('value2');
-      stateTreeEnabled = new StateNode(ver3);
-      stateTreeEnabled.setRadixTreeEnabled(true);
-      stateTreeEnabled.setChild('label1', child1Enabled);
-      stateTreeEnabled.setChild('label2', child2Enabled);
-      updateStateInfoForStateTree(stateTreeEnabled);
-
-      child1Disabled = new StateNode(ver1);
-      child1Disabled.setValue('value1');
-      child2Disabled = new StateNode(ver2);
-      child2Disabled.setValue('value2');
-      stateTreeDisabled = new StateNode(ver3);
-      stateTreeDisabled.setRadixTreeEnabled(true);
-      stateTreeDisabled.setChild('label1', child1Disabled);
-      stateTreeDisabled.setChild('label2', child2Disabled);
-      updateStateInfoForStateTree(stateTreeDisabled);
-    })
-
-    it("leaf node", () => {
-      const ver1 = 'ver1';
-
-      // Delete a leaf node without version.
-      const stateNode1 = StateNode.fromJsObject(true);
-      updateStateInfoForStateTree(stateNode1);
-      expect(deleteStateTree(stateNode1, false)).to.equal(1);
-      expect(stateNode1.getVersion()).to.equal(null);
-      expect(stateNode1.numParents()).to.equal(0);
-      expect(stateNode1.numChildren()).to.equal(0);
-
-      // Delete a leaf node with version.
-      const stateNode2 = StateNode.fromJsObject(true, ver1);
-      updateStateInfoForStateTree(stateNode2);
-      expect(deleteStateTree(stateNode2, false)).to.equal(1);
-      expect(stateNode2.getVersion()).to.equal(null);
-      expect(stateNode2.numParents()).to.equal(0);
-      expect(stateNode2.numChildren()).to.equal(0);
-    })
-
-    it("internal node when radixTreeEnabled = true", () => {
-      expect(deleteStateTree(stateTreeEnabled, false)).to.equal(3);
-      // State tree is deleted.
-      assert.deepEqual(stateTreeEnabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
-      // And child nodes are deleted as well.
-      expect(child1Enabled.getVersion()).to.equal(null);
-      expect(child1Enabled.numParents()).to.equal(0);
-      expect(child1Enabled.numChildren()).to.equal(0);
-      expect(child2Enabled.getVersion()).to.equal(null);
-      expect(child2Enabled.numParents()).to.equal(0);
-      expect(child2Enabled.numChildren()).to.equal(0);
-    })
-
-    it("internal node when radixTreeEnabled = false", () => {
-      expect(deleteStateTree(stateTreeDisabled, false)).to.equal(3);
-      // State tree is deleted.
-      assert.deepEqual(stateTreeDisabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), null);
-      // And child nodes are deleted as well.
-      expect(child1Disabled.getVersion()).to.equal(null);
-      expect(child1Disabled.numParents()).to.equal(0);
-      expect(child1Disabled.numChildren()).to.equal(0);
-      expect(child2Disabled.getVersion()).to.equal(null);
-      expect(child2Disabled.numParents()).to.equal(0);
-      expect(child2Disabled.numChildren()).to.equal(0);
-    })
-  })
-
-  describe("deleteStateTree with deleteOrphanedOnly = true", () => {
+  describe("deleteStateTree", () => {
     const ver1 = 'ver1';
     const ver2 = 'ver2';
     const ver3 = 'ver3';
@@ -2193,7 +2110,7 @@ describe("state-util", () => {
       // Delete a leaf node without version.
       const stateNode1 = StateNode.fromJsObject(true);
       updateStateInfoForStateTree(stateNode1);
-      expect(deleteStateTree(stateNode1, true)).to.equal(1);
+      expect(deleteStateTree(stateNode1)).to.equal(1);
       expect(stateNode1.getVersion()).to.equal(null);
       expect(stateNode1.numParents()).to.equal(0);
       expect(stateNode1.numChildren()).to.equal(0);
@@ -2201,7 +2118,7 @@ describe("state-util", () => {
       // Delete a leaf node with a different version.
       const stateNode2 = StateNode.fromJsObject(true, 'ver2');
       updateStateInfoForStateTree(stateNode2);
-      expect(deleteStateTree(stateNode2, true)).to.equal(1);
+      expect(deleteStateTree(stateNode2)).to.equal(1);
       expect(stateNode2.getVersion()).to.equal(null);
       expect(stateNode2.numParents()).to.equal(0);
       expect(stateNode2.numChildren()).to.equal(0);
@@ -2209,7 +2126,7 @@ describe("state-util", () => {
       // Delete a leaf node with the same version.
       const stateNode3 = StateNode.fromJsObject(true, ver1);
       updateStateInfoForStateTree(stateNode3);
-      expect(deleteStateTree(stateNode3, true)).to.equal(1);
+      expect(deleteStateTree(stateNode3)).to.equal(1);
       expect(stateNode3.getVersion()).to.equal(null);
       expect(stateNode3.numParents()).to.equal(0);
       expect(stateNode3.numChildren()).to.equal(0);
@@ -2218,14 +2135,14 @@ describe("state-util", () => {
       const stateNode4 = StateNode.fromJsObject(true, ver1);
       parent.setChild(nodeLabel, stateNode4);
       updateStateInfoForStateTree(stateNode4);
-      expect(deleteStateTree(stateNode4, true)).to.equal(0);
+      expect(deleteStateTree(stateNode4)).to.equal(0);
       expect(stateNode4.getVersion()).to.equal(ver1);
       expect(stateNode4.numParents()).to.equal(1);
       expect(stateNode4.numChildren()).to.equal(0);
     })
 
     it("internal node with a different version when radixTreeEnabled = true", () => {
-      expect(deleteStateTree(stateTreeEnabled, true)).to.equal(3);
+      expect(deleteStateTree(stateTreeEnabled)).to.equal(3);
       // Root node is deleted.
       expect(stateTreeEnabled.numParents()).to.equal(0);
       expect(stateTreeEnabled.numChildren()).to.equal(0);
@@ -2239,7 +2156,7 @@ describe("state-util", () => {
     })
 
     it("internal node with a different version when radixTreeEnabled = false", () => {
-      expect(deleteStateTree(stateTreeDisabled, true)).to.equal(3);
+      expect(deleteStateTree(stateTreeDisabled)).to.equal(3);
       // Root node is deleted.
       expect(stateTreeDisabled.numParents()).to.equal(0);
       expect(stateTreeDisabled.numChildren()).to.equal(0);
@@ -2256,7 +2173,7 @@ describe("state-util", () => {
       // Set versions of the state tree.
       setStateTreeVersion(stateTreeEnabled, ver3);
 
-      expect(deleteStateTree(stateTreeEnabled, true)).to.equal(3);
+      expect(deleteStateTree(stateTreeEnabled)).to.equal(3);
       // Root node is deleted.
       expect(stateTreeEnabled.numParents()).to.equal(0);
       expect(stateTreeEnabled.numChildren()).to.equal(0);
@@ -2273,7 +2190,7 @@ describe("state-util", () => {
       // Set versions of the state tree.
       setStateTreeVersion(stateTreeDisabled, ver3);
 
-      expect(deleteStateTree(stateTreeDisabled, true)).to.equal(3);
+      expect(deleteStateTree(stateTreeDisabled)).to.equal(3);
       // Root node is deleted.
       expect(stateTreeDisabled.numParents()).to.equal(0);
       expect(stateTreeDisabled.numChildren()).to.equal(0);
@@ -2290,7 +2207,7 @@ describe("state-util", () => {
       // Increase the numParents() value of the root node.
       parent.setChild(nodeLabel, stateTreeEnabled);
 
-      expect(deleteStateTree(stateTreeEnabled, true)).to.equal(0);
+      expect(deleteStateTree(stateTreeEnabled)).to.equal(0);
       // State tree is not deleted.
       assert.deepEqual(stateTreeEnabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
         ".version": "ver3",
@@ -2320,7 +2237,7 @@ describe("state-util", () => {
       // Increase the numParents() value of the root node.
       parent.setChild(nodeLabel, stateTreeDisabled);
 
-      const numNodes = deleteStateTree(stateTreeDisabled, true);
+      const numNodes = deleteStateTree(stateTreeDisabled);
       expect(numNodes).to.equal(0);
       // State tree is not deleted.
       assert.deepEqual(stateTreeDisabled.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
@@ -2348,7 +2265,7 @@ describe("state-util", () => {
     })
 
     it("internal node with the same version but with sub-node of different versions when radixTreeEnabled = true", () => {
-      const numNodes = deleteStateTree(stateTreeEnabled, true);
+      const numNodes = deleteStateTree(stateTreeEnabled);
       expect(numNodes).to.equal(3);
       // Root node is deleted.
       expect(stateTreeEnabled.numParents()).to.equal(0);
@@ -2363,7 +2280,7 @@ describe("state-util", () => {
     })
 
     it("internal node with the same version but with sub-node of different versions when radixTreeEnabled = false", () => {
-      const numNodes = deleteStateTree(stateTreeDisabled, true);
+      const numNodes = deleteStateTree(stateTreeDisabled);
       expect(numNodes).to.equal(3);
       // Root node is deleted.
       expect(stateTreeDisabled.numParents()).to.equal(0);
@@ -2386,7 +2303,7 @@ describe("state-util", () => {
       expect(child1Enabled.numParents()).to.equal(2);
       expect(child2Enabled.numParents()).to.equal(2);
 
-      expect(deleteStateTree(stateTreeEnabled, true)).to.equal(1);
+      expect(deleteStateTree(stateTreeEnabled)).to.equal(1);
       // Root node is deleted.
       expect(stateTreeEnabled.numParents()).to.equal(0);
       expect(stateTreeEnabled.numChildren()).to.equal(0);
@@ -2408,7 +2325,7 @@ describe("state-util", () => {
       expect(child1Disabled.numParents()).to.equal(2);
       expect(child2Disabled.numParents()).to.equal(2);
 
-      expect(deleteStateTree(stateTreeDisabled, true)).to.equal(1);
+      expect(deleteStateTree(stateTreeDisabled)).to.equal(1);
       // Root node is deleted.
       expect(stateTreeDisabled.numParents()).to.equal(0);
       expect(stateTreeDisabled.numChildren()).to.equal(0);
@@ -2419,44 +2336,6 @@ describe("state-util", () => {
       expect(child2Disabled.getVersion()).to.equal(ver3);
       expect(child2Disabled.numParents()).to.equal(1);
       expect(child2Disabled.numChildren()).to.equal(0);
-    })
-  })
-
-  describe("makeCopyOfStateTree", () => {
-    it("when valid input", () => {
-      const stateObj = {
-        bool: false,
-        number: 10,
-        str: 'str',
-        empty_str: '',
-        null: null,
-        undef: undefined,
-        empty_obj: {},
-        subobj1: {
-          bool: true,
-          number: 20,
-          str: 'str2',
-          empty_str: '',
-          null: null,
-          undef: undefined,
-          empty_obj: {},
-        },
-        subobj2: {
-          bool: true,
-          number: -10,
-          str: 'str3',
-          empty_str: '',
-          null: null,
-          undef: undefined,
-          empty_obj: {},
-        }
-      };
-      const root = StateNode.fromJsObject(stateObj);
-      const convertedObj = root.toJsObject();
-      const copy = makeCopyOfStateTree(root);
-      expect(equalStateTrees(copy, root)).to.equal(true);
-      deleteStateTree(root, false);
-      assert.deepEqual(copy.toJsObject(), convertedObj);
     })
   })
 

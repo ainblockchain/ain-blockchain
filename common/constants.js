@@ -16,8 +16,6 @@ const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 // NOTE(platfowner): If there is a corresponding env variable (e.g. force... flags),
 //                   the flag value will be OR-ed to the value.
 const FeatureFlags = {
-  // Enables state version optimization.
-  enableStateVersionOpt: true,
   // Enables state tree transfer.
   enableStateTreeTransfer: false,
   // Enables rich logging for functions.
