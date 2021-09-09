@@ -414,12 +414,22 @@ class RadixNode {
     return proof;
   }
 
-  copyFrom(radixNode, newParentStateNode, terminalNodeMap) {
+  getStateNodeList() {
+    const stateNodeList = [];
+    if (this.hasStateNode()) {
+      stateNodeList.push(this.getStateNode());
+    }
+    for (const child of this.getChildNodes()) {
+      stateNodeList.push(...child.getStateNodeList());
+    }
+    return stateNodeList;
+  }
+
+  copyFrom(radixNode, newParentStateNode) {
     if (radixNode.hasStateNode()) {
       const stateNode = radixNode.getStateNode();
       this.setStateNode(stateNode);
       stateNode.addParent(newParentStateNode);  // Add new parent state node.
-      terminalNodeMap.set(stateNode.getLabel(), this);
     }
     this.setLabelRadix(radixNode.getLabelRadix());
     this.setLabelSuffix(radixNode.getLabelSuffix());
@@ -430,7 +440,7 @@ class RadixNode {
     for (const child of radixNode.getChildNodes()) {
       const clonedChild = new RadixNode(this.getVersion());
       this.setChild(child.getLabelRadix(), child.getLabelSuffix(), clonedChild);
-      clonedChild.copyFrom(child, newParentStateNode, terminalNodeMap);
+      clonedChild.copyFrom(child, newParentStateNode);
     }
   }
 
