@@ -121,7 +121,7 @@ describe("radix-tree", () => {
         expect(tree.set(label, undefined)).to.equal(false);
       });
 
-      it("set / delete without common label prefix - without label suffices", () => {
+      it("without common label prefix - set / delete without label suffices", () => {
         const label1 = '0xa';
         const label2 = '0xb';
 
@@ -208,7 +208,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete without common label prefix - with label suffices", () => {
+      it("without common label prefix - set / delete with label suffices", () => {
         const label1 = '0xaaa';
         const label2 = '0xbbb';
 
@@ -295,7 +295,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete without common label prefix - set with substring label suffix", () => {
+      it("without common label prefix - set with substring label suffix", () => {
         const label1 = '0xaabb';
         const label2 = '0xaa';
 
@@ -309,6 +309,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
+        // internal node inserted!
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
@@ -329,7 +330,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete without common label prefix - set with superstring label suffix", () => {
+      it("without common label prefix - set with superstring label suffix", () => {
         const label1 = '0xaa';
         const label2 = '0xaabb';
 
@@ -343,6 +344,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
+        // branched!!
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
@@ -363,17 +365,22 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete without common label prefix - set with exact-matched label suffix", () => {
+      it("without common label prefix - set with exact-matched label suffix", () => {
         const label = '0xaa';
 
         stateNode1.setLabel(label);
         stateNode2.setLabel(label + '_');  // tweak in order to distinguish
 
         tree.set(label, stateNode1);
+
+        expect(tree.has(label)).to.equal(true);
+        expect(tree.get(label)).to.equal(stateNode1);
+
         tree.set(label, stateNode2);
 
         expect(tree.has(label)).to.equal(true);
         expect(tree.get(label)).to.equal(stateNode2);
+        // overwritten!
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
@@ -387,27 +394,21 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete without common label prefix - set / delete with children", () => {
-        const label1 = '0xaaa';
+      it("without common label prefix - set / delete with children", () => {
         const label2 = '0xbbb';
         const label21 = '0xbbb111';
         const label22 = '0xbbb222';
 
-        stateNode1.setLabel(label1);
         stateNode2.setLabel(label2);
         stateNode21.setLabel(label21);
         stateNode22.setLabel(label22);
 
-        // set first node
-        tree.set(label1, stateNode1);
-        // set second node
+        // set a node
         tree.set(label2, stateNode2);
         // set children
         tree.set(label21, stateNode21);
         tree.set(label22, stateNode22);
 
-        expect(tree.has(label1)).to.equal(true);
-        expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(label21)).to.equal(true);
@@ -417,13 +418,6 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
-          "aaa": {
-            ".version": null,
-            ".label": "0xaaa",
-            ".proof_hash": null,
-            ".radix_version": "ver",
-            ".radix_ph": null,
-          },
           "bbb": {
             "111": {
               ".version": null,
@@ -447,44 +441,39 @@ describe("radix-tree", () => {
           }
         });
 
-        // delete first node
-        tree.delete(label1);
+        // delete a node
+        tree.delete(label2);
 
-        expect(tree.has(label1)).to.equal(false);
-        expect(tree.has(label2)).to.equal(true);
-        expect(tree.get(label2)).to.equal(stateNode2);
+        expect(tree.has(label2)).to.equal(false);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_version": "ver",
           ".radix_ph": null,
+          ".radix_version": "ver",
           "bbb": {
             "111": {
-              ".version": null,
               ".label": "0xbbb111",
               ".proof_hash": null,
-              ".radix_version": "ver",
               ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
             "222": {
-              ".version": null,
               ".label": "0xbbb222",
               ".proof_hash": null,
-              ".radix_version": "ver",
               ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
-            ".version": null,
-            ".label": "0xbbb",
-            ".proof_hash": null,
-            ".radix_version": "ver",
             ".radix_ph": null,
+            ".radix_version": "ver",
           }
         });
       });
 
-      it("set / delete without common label prefix - delete with one child", () => {
+      it("without common label prefix - delete a node with one child", () => {
         const label2 = '0xbbb';
         const label21 = '0xbbb111';
 
@@ -539,7 +528,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete without common label prefix - delete on a node with no children and one parent having state node", () => {
+      it("without common label prefix - delete a node with no children and one parent having state node", () => {
         const label2 = '0xbbb';
         const label21 = '0xbbb111';
         const label22 = '0xbbb222';
@@ -615,7 +604,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete without common label prefix - delete on a node with no children and one parent having no state node", () => {
+      it("without common label prefix - delete a node with no children and one parent having no state node", () => {
         const label21 = '0xbbb111';
         const label22 = '0xbbb222';
 
@@ -673,7 +662,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - without label suffices", () => {
+      it("with common label prefix - set / delete without label suffices", () => {
         const label1 = '0x000a';
         const label2 = '0x000b';
 
@@ -764,7 +753,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - with label suffices", () => {
+      it("with common label prefix - set / delete with label suffices", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
 
@@ -855,7 +844,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - with label suffices, with shouldUpdateRadixInfo = true", () => {
+      it("with common label prefix - set / delete with label suffices, with shouldUpdateRadixInfo = true", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
 
@@ -936,7 +925,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - set on an internal node", () => {
+      it("with common label prefix - set on an internal node", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
         const labelInternal = '0x000';
@@ -985,6 +974,7 @@ describe("radix-tree", () => {
         expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(labelInternal)).to.equal(true);
         expect(tree.get(labelInternal)).to.equal(stateNodeInternal);
+        // no branching!
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
@@ -1012,7 +1002,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - set with substring label suffix", () => {
+      it("with common label prefix - set with substring label suffix", () => {
         const label1 = '0x000aabb';
         const label2 = '0x000aa';
 
@@ -1026,6 +1016,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
+        // internal node inserted!
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
@@ -1046,7 +1037,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - set with superstring label suffix", () => {
+      it("with common label prefix - set with superstring label suffix", () => {
         const label1 = '0x000aa';
         const label2 = '0x000aabb';
 
@@ -1060,6 +1051,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
+        // branched!
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
@@ -1080,17 +1072,22 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - set with exact-matched label suffix", () => {
+      it("with common label prefix - set with exact-matched label suffix", () => {
         const label = '0x000aa';
 
         stateNode1.setLabel(label);
         stateNode2.setLabel(label + '_');  // tweak in order to distinguish
 
         tree.set(label, stateNode1);
+
+        expect(tree.has(label)).to.equal(true);
+        expect(tree.get(label)).to.equal(stateNode1);
+
         tree.set(label, stateNode2);
 
         expect(tree.has(label)).to.equal(true);
         expect(tree.get(label)).to.equal(stateNode2);
+        // overwritten!
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
@@ -1104,7 +1101,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - set / delete with children", () => {
+      it("with common label prefix - set / delete with children", () => {
         const label1 = '0x000aaa';
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
@@ -1205,7 +1202,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - delete with one child", () => {
+      it("with common label prefix - delete a node with one child", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
 
@@ -1260,7 +1257,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - delete with one child", () => {
+      it("with common label prefix - delete a node with one child having multiple parents", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
 
@@ -1271,6 +1268,15 @@ describe("radix-tree", () => {
         tree.set(label2, stateNode2);
         // set a child
         tree.set(label21, stateNode21);
+        // set another root path
+        const version2 = 'ver2';
+        const parentAnother = new RadixNode(version2);
+        const node = tree._getRadixNodeForWriting(label21);
+        parentAnother.setChild('1', '11', node);
+
+        // check parents
+        expect(node.numParents()).to.equal(2);
+        node.hasParent(parentAnother);
 
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
@@ -1294,6 +1300,17 @@ describe("radix-tree", () => {
             ".radix_ph": null,
           }
         });
+        assert.deepEqual(parentAnother.toJsObject(true, true), {
+          "111": {
+            ".label": "0x000bbb111",
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null
+          },
+          ".radix_ph": null,
+          ".radix_version": "ver2"
+        });
 
         // delete the node
         tree.delete(label2);
@@ -1301,21 +1318,36 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(false);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        // merged!!
+        // not merged!!
         assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_version": "ver",
           ".radix_ph": null,
-          "000bbb111": {
-            ".version": null,
+          ".radix_version": "ver",
+          "000bbb": {
+            "111": {
+              ".label": "0x000bbb111",
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            },
+            ".radix_ph": null,
+            ".radix_version": "ver",
+          }
+        });
+        assert.deepEqual(parentAnother.toJsObject(true, true), {
+          "111": {
             ".label": "0x000bbb111",
             ".proof_hash": null,
-            ".radix_version": "ver",
             ".radix_ph": null,
-          }
+            ".radix_version": "ver",
+            ".version": null
+          },
+          ".radix_ph": null,
+          ".radix_version": "ver2"
         });
       });
 
-      it("set / delete with common label prefix - delete with one child, with shouldUpdateRadixInfo = true", () => {
+      it("with common label prefix - delete a node with one child, with shouldUpdateRadixInfo = true", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
 
@@ -1370,7 +1402,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - delete on a node with no children and one parent having state node", () => {
+      it("with common label prefix - delete a node with no children and one parent having state node", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
         const label22 = '0x000bbb222';
@@ -1446,7 +1478,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - delete on a node with no children and one parent having state node, with shouldUpdateRadixInfo = true", () => {
+      it("with common label prefix - delete a node with no children and one parent having state node, with shouldUpdateRadixInfo = true", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
         const label22 = '0x000bbb222';
@@ -1522,7 +1554,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - delete on a node with no children and one parent having state node and another root path, with shouldUpdateRadixInfo = true", () => {
+      it("with common label prefix - delete a node with no children and one parent having state node and another root path, with shouldUpdateRadixInfo = true", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
         const label22 = '0x000bbb222';
@@ -1651,7 +1683,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - delete on a node with no children and one parent having no state node", () => {
+      it("with common label prefix - delete a node with no children and one parent having no state node", () => {
         const label21 = '0x000bbb111';
         const label22 = '0x000bbb222';
 
@@ -1709,7 +1741,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - delete on a node with no children and one parent having no state node, with shouldUpdateRadixInfo = true", () => {
+      it("with common label prefix - delete a node with no children and one parent having no state node, with shouldUpdateRadixInfo = true", () => {
         const label21 = '0x000bbb111';
         const label22 = '0x000bbb222';
 
@@ -1767,7 +1799,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - delete on a node with no children and one parent having no state node and another root path, with shouldUpdateRadixInfo = true", () => {
+      it("with common label prefix - delete a node with no children and one parent having no state node and another root path, with shouldUpdateRadixInfo = true", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
         const label22 = '0x000bbb222';
@@ -1869,7 +1901,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("set / delete with common label prefix - delete on a node with no children and multiple parents, with shouldUpdateRadixInfo = true", () => {
+      it("with common label prefix - delete a node with no children and multiple parents, with shouldUpdateRadixInfo = true", () => {
         const label21 = '0x000bbb111';
         const label22 = '0x000bbb222';
 
@@ -1882,7 +1914,6 @@ describe("radix-tree", () => {
         // set another root path
         const version2 = 'ver2';
         const parentAnother = new RadixNode(version2);
-        const radixLabel21 = RadixTree._toRadixLabel(label21);
         const node = tree._getRadixNodeForWriting(label21);
         parentAnother.setChild('1', '11', node);
 

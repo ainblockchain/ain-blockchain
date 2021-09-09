@@ -212,17 +212,17 @@ class RadixTree {
     } else if (node.numChildren() === 0) {
       if (node.numParents() === 1) {  // the node has only 1 parent.
         const theOnlyParent = node.getParentNodes()[0];
-        theOnlyParent.deleteChild(labelRadix);
+        theOnlyParent.deleteChild(labelRadix);  // delete child!
         nodesToUpdate.push(theOnlyParent);
-        if (theOnlyParent.numChildren() === 1 &&  // the parent has only 1 child.
+        if (theOnlyParent.numChildren() === 1 &&  // the parent has only 1 child after deletion.
             !theOnlyParent.hasStateNode() &&  // the parent has no state node
-            theOnlyParent.hasParent()) {  // the parent is not the root.
+            theOnlyParent.hasParent()) {  // the parent is not a root.
           nodesToUpdate = this._mergeToChild(theOnlyParent);
         }
       } else {
         nodesToUpdate = [];
         for (const parent of node.getParentNodes()) {
-          parent.deleteChild(labelRadix);
+          parent.deleteChild(labelRadix);  // delete child!
           nodesToUpdate.push(parent);
         }
       }
