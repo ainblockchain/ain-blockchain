@@ -2337,8 +2337,6 @@ describe("radix-tree", () => {
         expect(tree.root.getTreeHeight()).to.equal(0);
         expect(tree.root.getTreeSize()).to.equal(0);
         expect(tree.root.getTreeBytes()).to.equal(0);
-        // Check terminalNodeMap
-        expect(tree.terminalNodeMap.size).to.equal(0);
       });
 
       it("delete with parentStateNodeToDelete", () => {

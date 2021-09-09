@@ -961,6 +961,8 @@ describe("radix-node", () => {
       stateNode22.setTreeBytes(500);
 
       node.setVersion(version);
+      node.setStateNode(stateNode);
+
       child1 = new RadixNode();
       child1.setVersion(version);
       child1.setStateNode(stateNode1);
@@ -990,11 +992,17 @@ describe("radix-node", () => {
       node.updateRadixInfoForRadixTree();
     });
 
+    it("getStateNodeList", () => {
+      const stateNodeList = node.getStateNodeList();
+      expect(stateNodeList.length).to.equal(5)
+      assert.deepEqual(
+          stateNodeList, [stateNode, stateNode1, stateNode2, stateNode21, stateNode22]);
+    });
+
     it("copyFrom", () => {
       const newParentStateNode = new StateNode();
-      const terminalNodeMap = new Map();
       const newNode = new RadixNode();
-      newNode.copyFrom(node, newParentStateNode, terminalNodeMap);
+      newNode.copyFrom(node, newParentStateNode);
       assert.deepEqual(newNode.toJsObject(false, true, true), {
         "1001": {
           ".label": "1001",
@@ -1028,18 +1036,14 @@ describe("radix-node", () => {
           ".tree_height": 5,
           ".tree_size": 120
         },
-        ".radix_ph": "0x22962a7f8fabb4acd8e48d79a9cb5556a99aa796e78da3a6864b58466ae3d772",
-        ".tree_bytes": 1432,
+        ".label": null,
+        ".proof_hash": "stateNodePH",
+        ".radix_ph": "0xf50df0f78e10565caee37c6ee7b8112880e1f7379f9e5ca74b42ae34c4089d3e",
+        ".tree_bytes": 1532,
         ".tree_height": 5,
-        ".tree_size": 140
+        ".tree_size": 150
       });
       assert.deepEqual(newNode.toJsObject(false, true, true), node.toJsObject(false, true, true));
-      // Check terminalNodeMap
-      expect(terminalNodeMap.size).to.equal(4);
-      expect(terminalNodeMap.has('1001')).to.equal(true);
-      expect(terminalNodeMap.has('2002')).to.equal(true);
-      expect(terminalNodeMap.has('1021')).to.equal(true);
-      expect(terminalNodeMap.has('2022')).to.equal(true);
       // Check parents of state nodes
       assert.deepEqual(stateNode1.getParentNodes(), [newParentStateNode]);
       assert.deepEqual(stateNode2.getParentNodes(), [newParentStateNode]);
@@ -1112,7 +1116,8 @@ describe("radix-node", () => {
             ".label": "2022",
           },
           ".label": "2002",
-        }
+        },
+        ".label": null
       });
       assert.deepEqual(node.toJsObject(true, true, true), {
         "1001": {
@@ -1155,11 +1160,14 @@ describe("radix-node", () => {
           ".tree_size": 120,
           ".version": "stateNodeVer2"
         },
-        ".radix_ph": "0x22962a7f8fabb4acd8e48d79a9cb5556a99aa796e78da3a6864b58466ae3d772",
+        ".label": null,
+        ".proof_hash": "stateNodePH",
+        ".radix_ph": "0xf50df0f78e10565caee37c6ee7b8112880e1f7379f9e5ca74b42ae34c4089d3e",
         ".radix_version": "ver",
-        ".tree_bytes": 1432,
+        ".tree_bytes": 1532,
         ".tree_height": 5,
-        ".tree_size": 140
+        ".tree_size": 150,
+        ".version": "stateNodeVer"
       });
     });
   });
