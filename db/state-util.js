@@ -545,13 +545,11 @@ function renameStateTreeVersion(node, fromVersion, toVersion, isRootNode = true)
 /**
  * Returns affected nodes' number.
  */
-function deleteStateTree(node, deleteOrphanedOnly = false) {
+function deleteStateTree(node) {
   let numAffectedNodes = 0;
-  if (deleteOrphanedOnly) {
-    if (node.numParents() > 0) {
-      // Does nothing.
-      return numAffectedNodes;
-    }
+  if (node.numParents() > 0) {
+    // Does nothing.
+    return numAffectedNodes;
   }
 
   // 1. Delete children
@@ -559,14 +557,14 @@ function deleteStateTree(node, deleteOrphanedOnly = false) {
     const childNodes = node.getChildNodes();
     node.deleteRadixTree(true);  // shouldDeleteParent = true
     for (const child of childNodes) {
-      numAffectedNodes += deleteStateTree(child, deleteOrphanedOnly);
+      numAffectedNodes += deleteStateTree(child);
     }
   } else {
     for (const label of node.getChildLabels()) {
       const child = node.getChild(label);
       node.deleteChild(label, false);  // shouldUpdateStateInfo = false
 
-      numAffectedNodes += deleteStateTree(child, deleteOrphanedOnly);
+      numAffectedNodes += deleteStateTree(child);
     }
   }
   // 2. Reset node
@@ -574,15 +572,6 @@ function deleteStateTree(node, deleteOrphanedOnly = false) {
   numAffectedNodes++;
 
   return numAffectedNodes;
-}
-
-function makeCopyOfStateTree(node) {
-  const copy = node.clone();
-  for (const label of node.getChildLabels()) {
-    const child = node.getChild(label);
-    copy.setChild(label, makeCopyOfStateTree(child));
-  }
-  return copy;
 }
 
 function equalStateTrees(node1, node2) {
@@ -715,7 +704,6 @@ module.exports = {
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTree,
-  makeCopyOfStateTree,
   equalStateTrees,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,

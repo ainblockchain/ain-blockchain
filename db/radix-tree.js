@@ -61,7 +61,7 @@ class RadixTree {
     while (labelIndex < radixLabel.length) {
       const labelRadix = radixLabel.charAt(labelIndex);
 
-      // Case 1: No child with the label radix.
+      // Case 1: Has no child with the label radix.
       if (!curNode.hasChild(labelRadix)) {
         const newChild = new RadixNode(this.root.getVersion());
         const labelSuffix = radixLabel.slice(labelIndex + 1);
@@ -70,8 +70,9 @@ class RadixTree {
         return newChild;
       }
 
-      // Case 2: Has a child with the label radix but no match with the label suffix.
       const child = curNode.getChild(labelRadix);
+
+      // Case 2: Has a child with the label radix but no match with the label suffix.
       if (!RadixTree._matchLabelSuffix(child, radixLabel, labelIndex + 1)) {
         const labelSuffix = radixLabel.slice(labelIndex + 1);
         const childLabelSuffix = child.getLabelSuffix();
@@ -80,6 +81,8 @@ class RadixTree {
         // Delete existing child first.
         curNode.deleteChild(labelRadix);
 
+        // Case 2.1: The remaining part of the radix label is
+        //           a substring of the existing child's label suffix.
         if (commonPrefix.length === labelSuffix.length) {
           // Insert an internal node between curNode and the existing child.
           const internalNode = new RadixNode(this.root.getVersion());
@@ -91,6 +94,8 @@ class RadixTree {
 
           // Return the new internal node
           return internalNode;
+        // Case 2.2: The remaining part of the radix label is NOT
+        //           a substring of the existing child's label suffix.
         } else {
           // Insert an internal node between curNode and two child nodes.
           const internalNode = new RadixNode(this.root.getVersion());
