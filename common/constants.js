@@ -32,8 +32,6 @@ const FeatureFlags = {
   enableReceiptPathPrefixLayers: false,  // Some test cases assume this value false.
   // Enables radix layers.
   enableRadixTreeLayers: true,  // Some test cases assume this value true.
-  // Enables dynamic radix tree.
-  enableDynamicRadixTree: true,  // Some test cases assume this value true.
   // Enables ntp-sync for global time syncing.
   enableNtpSync: true,
   // Enables traffic monitoring.
@@ -117,8 +115,6 @@ const SERVICE_TREE_SIZE_BUDGET = SERVICE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_
 const APPS_TREE_SIZE_BUDGET = APPS_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
 const FREE_TREE_SIZE_BUDGET = FREE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
 const STATE_GAS_COEFFICIENT = 1;
-const NUM_CHILDREN_TO_ENABLE_RADIX_TREE = 6;
-const NUM_CHILDREN_TO_DISABLE_RADIX_TREE = 3;
 const TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
 const TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
 
@@ -938,8 +934,6 @@ module.exports = {
   APPS_TREE_SIZE_BUDGET,
   FREE_TREE_SIZE_BUDGET,
   STATE_GAS_COEFFICIENT,
-  NUM_CHILDREN_TO_ENABLE_RADIX_TREE,
-  NUM_CHILDREN_TO_DISABLE_RADIX_TREE,
   TRAFFIC_DB_INTERVAL_MS,
   TRAFFIC_DB_MAX_INTERVALS,
   MessageTypes,
