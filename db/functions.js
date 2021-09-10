@@ -87,13 +87,14 @@ class Functions {
    *
    * @param {Array} parsedValuePath parsed value path
    * @param {Object} value value set on the database path
+   * @param {Object} prevValue previous value at the database path
    * @param {Number} timestamp the time at which the transaction was created and signed
    * @param {Number} executedAt execution time
    * @param {Object} transaction transaction
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction, blockTime) {
+  triggerFunctions(parsedValuePath, value, prevValue, auth, timestamp, transaction, blockTime) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
@@ -108,7 +109,8 @@ class Functions {
 
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
-          parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction, blockTime);
+          parsedValuePath, functionPath, timestamp, executedAt, params, value, prevValue,
+          transaction, blockTime);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
           continue;  // Does nothing.
@@ -143,6 +145,7 @@ class Functions {
                     fid: functionEntry.function_id,
                     valuePath: parsedValuePath,
                     functionPath,
+                    prevValue,
                     params,
                     timestamp,
                     executedAt,
@@ -270,12 +273,13 @@ class Functions {
   }
 
   static formatFunctionParams(
-      parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction, blockTime) {
+      parsedValuePath, functionPath, timestamp, executedAt, params, value, prevValue, transaction, blockTime) {
     return `valuePath: '${CommonUtil.formatPath(parsedValuePath)}', ` +
       `functionPath: '${CommonUtil.formatPath(functionPath)}', ` +
       `timestamp: '${timestamp}', executedAt: '${executedAt}', ` +
       `params: ${JSON.stringify(params, null, 2)}, ` +
       `value: '${JSON.stringify(value, null, 2)}', ` +
+      `prevValue: '${JSON.stringify(prevValue, null, 2)}'` +
       `transaction: ${JSON.stringify(transaction, null, 2)}, ` +
       `blockTime: ${blockTime}`;
   }
