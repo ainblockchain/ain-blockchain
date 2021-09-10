@@ -411,7 +411,6 @@ class BlockchainNode {
   addNewBlock(block) {
     if (this.bc.addNewBlockToChain(block)) {
       this.tp.cleanUpForNewBlock(block);
-      this.tp.checkRemoteTransactions();
       return true;
     }
     return false;

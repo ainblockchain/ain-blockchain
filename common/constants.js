@@ -244,8 +244,6 @@ const PredefinedDbPaths = {
   ESCROW_OPEN: 'open',
   ESCROW_RELEASE: 'release',
   ESCROW_RESULT: 'result',
-  // Remote transaction action
-  REMOTE_TX_ACTION_RESULT: 'result',
   // Sharding
   SHARDING: 'sharding',
   SHARDING_CONFIG: 'config',
