@@ -5,7 +5,7 @@
         "$chain_id": {
           "$token_id": {
             "$user_addr": {
-              "$checkout_id": {
+              "$checkin_id": {
                 ".function": {
                   "_openCheckin": {
                     "function_type": "NATIVE",
@@ -27,7 +27,7 @@
         "$chain_id": {
           "$token_id": {
             "$user_addr": {
-              "$checkout_id": {
+              "$checkin_id": {
                 ".function": {
                   "_closeCheckin": {
                     "function_type": "NATIVE",

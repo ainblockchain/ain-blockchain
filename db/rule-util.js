@@ -221,7 +221,7 @@ class RuleUtil {
     return getValue(PathUtil.getTokenBridgeTokenPoolPath(networkName, chainId, tokenId));
   }
 
-  validateCheckoutRequestData(data, networkName, chainId, tokenId, getValue) {
+  validateCheckoutRequestData(networkName, chainId, tokenId, data, getValue) {
     if (!this.isDict(data) || !this.isNumber(data.amount) || data.amount <= 0 ||
         !this.isString(data.recipient)) {
       return false;
@@ -245,21 +245,23 @@ class RuleUtil {
         data.response.status === FunctionResultCode.FAILURE);
   }
 
-  validateCheckoutRequestData(data, getValue) {
+  validateCheckinRequestData(networkName, chainId, tokenId, data, getValue) {
     if (!this.isDict(data) || !this.isNumber(data.amount) || data.amount <= 0 ||
-        !this.isString(data.type) || !this.isString(data.token_id) || !this.isString(data.recipient)) {
+        !this.isString(data.sender)) {
       return false;
     }
-    return this.isDict(this.getTokenBridgeConfig(data.type, data.token_id, getValue));
+    return this.isDict(this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue));
   }
 
-  validateCheckoutHistoryData(userAddr, checkoutId, data, getValue) {
+  validateCheckinHistoryData(networkName, chainId, tokenId, userAddr, checkinId, data, getValue) {
+    const PathUtil = require('../common/path-util');
     const { FunctionResultCode } = require('../common/constants');
-    const request = getValue(`/checkout/requests/${userAddr}/${checkoutId}`);
+    const request = getValue(
+        PathUtil.getCheckinRequestPath(networkName, chainId, tokenId, userAddr, checkinId));
     if (!request || !this.isDict(request) || !this.isDict(data)) {
       return false;
     }
-    if (!_.isEqual(request, data.request, { strict: true })) {
+    if (!_.isEqual(request, data.request)) {
       return false;
     }
     return this.isDict(data.response) && this.isValidHash(data.response.tx_hash) &&

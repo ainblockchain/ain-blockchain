@@ -667,6 +667,8 @@ class DB {
             104, `Non-writable path with shard config: ${isWritablePath.invalidPath}`, 1);
       }
     }
+    const prevValue = this.getValue(valuePath, { isShallow: false, isGlobal });
+    const prevValueCopy = CommonUtil.isDict(prevValue) ? JSON.parse(JSON.stringify(prevValue)) : prevValue;
     const valueCopy = CommonUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
     let funcResults = null;
@@ -675,7 +677,7 @@ class DB {
         blockTime = this.lastBlockTimestamp();
       }
       const { func_results } =
-          this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction, blockTime);
+          this.func.triggerFunctions(localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockTime);
       funcResults = func_results;
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
         return CommonUtil.returnTxResult(105, `Triggered function call failed`, 1, funcResults);
