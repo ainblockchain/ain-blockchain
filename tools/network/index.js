@@ -9,13 +9,17 @@ const PORT = 8000;
 app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
 
+const abbrAddr = (address) => {
+  return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
+}
+
 const buildGraphData = (peerNodes) => {
   const data = { nodes: [], links: [] };
   const peerNodeIdMap = { };
 
   Object.keys(peerNodes).forEach((peerNode, i) => {
     Object.assign(peerNodeIdMap, { [peerNode]: i });
-    data.nodes.push({ address: peerNode });
+    data.nodes.push({ address: abbrAddr(peerNode) });
   });
 
   Object.values(peerNodes).forEach(nodeInfo => {

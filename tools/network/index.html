@@ -13,7 +13,9 @@
       .attr('height', height);
 
     const force = d3.layout.force()
+      .gravity(.05)
       .distance(100)
+      .charge(-500)
       .size([width, height])
       .nodes(data.nodes)
       .links(data.links)
