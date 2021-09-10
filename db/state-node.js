@@ -4,10 +4,12 @@ const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
   FeatureFlags,
+  LIGHTWEIGHT,
   HASH_DELIMITER,
+  NUM_CHILDREN_TO_ENABLE_RADIX_TREE,
+  NUM_CHILDREN_TO_DISABLE_RADIX_TREE,
   StateInfoProperties,
   ProofProperties,
-  LIGHTWEIGHT,
 } = require('../common/constants');
 const RadixTree = require('./radix-tree');
 
@@ -20,23 +22,44 @@ class StateNode {
     // Used for leaf nodes only.
     this.value = null;
     this.parentSet = new Set();
+    this.radixTreeEnabled =
+        FeatureFlags.enableRadixTreeLayers && !FeatureFlags.enableDynamicRadixTree;
     // Used for internal nodes only.
     if (FeatureFlags.enableRadixTreeLayers) {
       this.radixTree = new RadixTree();
-    } else {
-      this.childMap = new Map();
     }
+    this.childMap = new Map();
     this.proofHash = null;
     this.treeHeight = 0;
     this.treeSize = 0;
     this.treeBytes = 0;
   }
 
-  static _create(version, label, isLeaf, value, proofHash, treeHeight, treeSize, treeBytes) {
+  reset() {
+    this.setVersion(null);  // should be reset for deleteStateTree().
+    this._resetLabel();
+    this.setIsLeaf(true);
+    this.resetValue();
+    this.parentSet.clear();
+    this.setRadixTreeEnabled(
+        FeatureFlags.enableRadixTreeLayers && !FeatureFlags.enableDynamicRadixTree);
+    if (FeatureFlags.enableRadixTreeLayers) {
+      this.deleteRadixTree();
+    }
+    this.childMap.clear();
+    this.setProofHash(null);
+    this.setTreeHeight(0);
+    this.setTreeSize(0);
+    this.setTreeBytes(0);
+  }
+
+  static _create(
+      version, label, isLeaf, value, radixTreeEnabled, proofHash, treeHeight, treeSize, treeBytes) {
     const node = new StateNode(version);
     node._setLabel(label);
     node.setIsLeaf(isLeaf);
     node.setValue(value);
+    node.setRadixTreeEnabled(radixTreeEnabled);
     node.setProofHash(proofHash);
     node.setTreeHeight(treeHeight);
     node.setTreeSize(treeSize);
@@ -46,13 +69,16 @@ class StateNode {
 
   clone(version) {
     const cloned = StateNode._create(version ? version : this.version, this.label,
-        this.isLeaf, this.value, this.proofHash, this.treeHeight, this.treeSize, this.treeBytes);
-    if (FeatureFlags.enableRadixTreeLayers) {
-      cloned.copyRadixTreeFrom(this, cloned);
-    } else {
-      for (const label of this.getChildLabels()) {
-        const child = this.getChild(label);
-        cloned.setChild(label, child);
+        this.isLeaf, this.value, this.radixTreeEnabled, this.proofHash, this.treeHeight,
+        this.treeSize, this.treeBytes);
+    if (!this.getIsLeaf()) {
+      if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
+        cloned.copyRadixTreeFrom(this, cloned);
+      } else {
+        for (const label of this.getChildLabels()) {
+          const child = this.getChild(label);
+          cloned.setChild(label, child);
+        }
       }
     }
     return cloned;
@@ -70,6 +96,7 @@ class StateNode {
         that.label === this.label &&
         that.isLeaf === this.isLeaf &&
         that.value === this.value &&
+        that.radixTreeEnabled === this.radixTreeEnabled &&
         that.numParents && typeof that.numParents === 'function' &&
         // NOTE: Compare only numParents() values.
         that.numParents() === this.numParents() &&
@@ -85,22 +112,19 @@ class StateNode {
   // NOTE(liayoo): Bytes for some data (e.g. parents & children references, version) are excluded
   // from this calculation, since their sizes can vary and affect the gas costs and
   // state proof hashes.
+  // 4(isLeaf) + 132(proofHash) + 8(treeHeight) + 8(treeSize) + 8(treeBytes) = 160
   computeNodeBytes() {
-    return sizeof(this.isLeaf) +
-        sizeof(this.value) +
-        sizeof(this.proofHash) +
-        sizeof(this.treeHeight) +
-        sizeof(this.treeSize) +
-        sizeof(this.treeBytes);
+    return sizeof(this.value) + 160;
   }
 
-  static fromJsObject(obj, version) {
+  static fromJsObject(obj, version, radixTreeEnabled = false) {
     const node = new StateNode(version);
+    node.setRadixTreeEnabled(radixTreeEnabled);
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
         for (const key in obj) {
           const childObj = obj[key];
-          node.setChild(key, StateNode.fromJsObject(childObj, version));
+          node.setChild(key, StateNode.fromJsObject(childObj, version, radixTreeEnabled));
         }
       }
     } else {
@@ -231,9 +255,17 @@ class StateNode {
     return this.parentSet.size;
   }
 
+  getRadixTreeEnabled() {
+    return this.radixTreeEnabled;
+  }
+
+  setRadixTreeEnabled(radixTreeEnabled) {
+    this.radixTreeEnabled = radixTreeEnabled;
+  }
+
   getChild(label) {
     let child;
-    if (FeatureFlags.enableRadixTreeLayers) {
+    if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
       child = this.radixTree.get(label);
     } else {
       child = this.childMap.get(label);
@@ -259,7 +291,7 @@ class StateNode {
       // the order of children.
       child.deleteParent(this);
     }
-    if (FeatureFlags.enableRadixTreeLayers) {
+    if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
       this.radixTree.set(label, node);
     } else {
       this.childMap.set(label, node);
@@ -269,17 +301,23 @@ class StateNode {
     if (this.getIsLeaf()) {
       this.setIsLeaf(false);
     }
+    if (FeatureFlags.enableRadixTreeLayers &&
+        FeatureFlags.enableDynamicRadixTree &&
+        !this.getRadixTreeEnabled() &&
+        this.numChildren() >= NUM_CHILDREN_TO_ENABLE_RADIX_TREE) {
+      this.enableRadixTree();
+    }
   }
 
   hasChild(label) {
-    if (FeatureFlags.enableRadixTreeLayers) {
+    if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
       return this.radixTree.has(label);
     } else {
       return this.childMap.has(label);
     }
   }
 
-  deleteChild(label, updateStateInfo = false) {
+  deleteChild(label, shouldUpdateStateInfo = false) {
     const LOG_HEADER = 'deleteChild';
     if (!this.hasChild(label)) {
       logger.error(
@@ -290,21 +328,30 @@ class StateNode {
     }
     const child = this.getChild(label);
     child.deleteParent(this);
-    if (FeatureFlags.enableRadixTreeLayers) {
-      this.radixTree.delete(label, updateStateInfo);  // with updateStateInfo
-      if (updateStateInfo) {
-        this.updateStateInfo(null, false);  // rebuildRadixInfo = false
+    if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
+      this.radixTree.delete(label, shouldUpdateStateInfo);  // with shouldUpdateStateInfo
+      if (shouldUpdateStateInfo) {
+        this.updateStateInfo(null, false);  // shouldRebuildRadixInfo = false
       }
     } else {
       this.childMap.delete(label);
+      if (shouldUpdateStateInfo) {
+        this.updateStateInfo();
+      }
     }
     if (this.numChildren() === 0) {
       this.setIsLeaf(true);
     }
+    if (FeatureFlags.enableRadixTreeLayers &&
+        FeatureFlags.enableDynamicRadixTree &&
+        this.getRadixTreeEnabled() &&
+        this.numChildren() <= NUM_CHILDREN_TO_DISABLE_RADIX_TREE) {
+      this.disableRadixTree();
+    }
   }
 
   getChildLabels() {
-    if (FeatureFlags.enableRadixTreeLayers) {
+    if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
       return [...this.radixTree.labels()];
     } else {
       return [...this.childMap.keys()];
@@ -312,7 +359,7 @@ class StateNode {
   }
 
   getChildNodes() {
-    if (FeatureFlags.enableRadixTreeLayers) {
+    if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
       return [...this.radixTree.stateNodes()];
     } else {
       return [...this.childMap.values()];
@@ -320,7 +367,7 @@ class StateNode {
   }
 
   numChildren() {
-    if (FeatureFlags.enableRadixTreeLayers) {
+    if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
       return this.radixTree.size();
     } else {
       return this.childMap.size;
@@ -333,10 +380,6 @@ class StateNode {
 
   setProofHash(proofHash) {
     this.proofHash = proofHash;
-  }
-
-  resetProofHash() {
-    this.setProofHash(null);
   }
 
   getVersion() {
@@ -371,10 +414,6 @@ class StateNode {
     this.treeBytes = treeBytes;
   }
 
-  deleteRadixTree() {
-    this.radixTree.deleteRadixTree(this);
-  }
-
   /**
    * Returns newly buildt proof hash. If updatedChildLabel is given, it signifies that
    * only the child of the given child label among the children is not up-to-date now,
@@ -382,41 +421,88 @@ class StateNode {
    * need to be updated, and this function does so.
    * 
    * @param {string} updatedChildLabel label of the child whose proof hash is not up-to-date
-   * @param {boolean} rebuildRadixInfo rebuild radix info
+   * @param {boolean} shouldRebuildRadixInfo rebuild radix info
    */
   // NOTE(platfowner): This function changes proof hashes of the radix tree.
-  buildProofHash(updatedChildLabel = null, rebuildRadixInfo = true) {
-    let preimage;
+  _buildStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
+    const nodeBytes = this.computeNodeBytes();
     if (this.getIsLeaf()) {
-      preimage = this.getValue();
+      const proofHash = LIGHTWEIGHT ?
+          '' : CommonUtil.hashString(CommonUtil.toString(this.getValue()));
+      return {
+        proofHash,
+        treeHeight: 0,
+        treeSize: 1,
+        treeBytes: nodeBytes
+      };
     } else {
-      if (FeatureFlags.enableRadixTreeLayers) {
-        if (rebuildRadixInfo) {
+      if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
+        if (shouldRebuildRadixInfo) {
           if (updatedChildLabel === null) {
             this.radixTree.updateRadixInfoForRadixTree();
           } else {
             this.radixTree.updateRadixInfoForRadixPath(updatedChildLabel);
           }
         }
-        return this.radixTree.getRootProofHash();
+        return {
+          proofHash: this.radixTree.getRootProofHash(),
+          treeHeight: 1 + this.radixTree.getRootTreeHeight(),
+          treeSize: 1 + this.radixTree.getRootTreeSize(),
+          treeBytes: nodeBytes + this.radixTree.getRootTreeBytes()
+        };
       } else {
-        preimage = this.getChildLabels().map((label) => {
-          return `${label}${HASH_DELIMITER}${this.getChild(label).getProofHash()}`;
-        }).join(HASH_DELIMITER);
+        const treeInfo = this.getChildLabels().reduce((acc, label) => {
+          const child = this.getChild(label);
+          const childPreimage = `${label}${HASH_DELIMITER}${child.getProofHash()}`;
+          const accPreimage = LIGHTWEIGHT ? '' : acc.preimage === '' ?
+              childPreimage : `${acc.preimage}${HASH_DELIMITER}${childPreimage}`;
+          const accTreeHeight = Math.max(acc.treeHeight, child.getTreeHeight() + 1);
+          const accTreeSize = acc.treeSize + child.getTreeSize();
+          const accTreeBytes = acc.treeBytes + sizeof(label) + child.getTreeBytes();
+          return {
+            preimage: accPreimage,
+            treeHeight: accTreeHeight,
+            treeSize: accTreeSize,
+            treeBytes: accTreeBytes,
+          };
+        }, {
+          preimage: '',
+          treeHeight: 0,
+          treeSize: 1,
+          treeBytes: nodeBytes
+        });
+        const proofHash = LIGHTWEIGHT ?  '' : CommonUtil.hashString(treeInfo.preimage);
+        return {
+          proofHash,
+          treeHeight: treeInfo.treeHeight,
+          treeSize: treeInfo.treeSize,
+          treeBytes: treeInfo.treeBytes,
+        }
       }
     }
-    return CommonUtil.hashString(CommonUtil.toString(preimage));
   }
 
-  verifyProofHash(updatedChildLabel = null) {
-    return this.getProofHash() === this.buildProofHash(updatedChildLabel, true);
+  updateStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
+    const treeInfo = this._buildStateInfo(updatedChildLabel, shouldRebuildRadixInfo);
+    this.setProofHash(treeInfo.proofHash);
+    this.setTreeHeight(treeInfo.treeHeight);
+    this.setTreeSize(treeInfo.treeSize);
+    this.setTreeBytes(treeInfo.treeBytes);
+  }
+
+  verifyStateInfo(updatedChildLabel = null) {
+    const treeInfo = this._buildStateInfo(updatedChildLabel, true);
+    return this.getProofHash() === treeInfo.proofHash &&
+        this.getTreeHeight() === treeInfo.treeHeight &&
+        this.getTreeSize() === treeInfo.treeSize &&
+        this.getTreeBytes() === treeInfo.treeBytes;
   }
 
   getProofOfState(childLabel = null, childProof = null) {
     if (childLabel === null) {
       return { [ProofProperties.PROOF_HASH]: this.getProofHash() };
     } else {
-      if (FeatureFlags.enableRadixTreeLayers) {
+      if (FeatureFlags.enableRadixTreeLayers && this.getRadixTreeEnabled()) {
         return this.radixTree.getProofOfState(childLabel, childProof);
       } else {
         const proof = { [ProofProperties.PROOF_HASH]: this.getProofHash() };
@@ -433,55 +519,29 @@ class StateNode {
     }
   }
 
-  computeTreeHeight() {
-    if (this.getIsLeaf()) {
-      return 0;
-    } else {
-      if (FeatureFlags.enableRadixTreeLayers) {
-        return 1 + this.radixTree.getRootTreeHeight();
-      } else {
-        return this.getChildNodes().reduce(
-            (max, cur) => Math.max(max, CommonUtil.numberOrZero(cur.getTreeHeight()) + 1), 0);
-      }
-    }
+  deleteRadixTree(shouldDeleteParent = true) {
+    return this.radixTree.deleteRadixTree(shouldDeleteParent ? this : null);
   }
 
-  computeTreeSize() {
-    if (this.getIsLeaf()) {
-      return 1;
-    } else {
-      if (FeatureFlags.enableRadixTreeLayers) {
-        return 1 + this.radixTree.getRootTreeSize();
-      } else {
-        return this.getChildNodes().reduce(
-            (acc, cur) => acc + CommonUtil.numberOrZero(cur.getTreeSize()), 1);
-      }
+  enableRadixTree() {
+    // Make sure the insertion order is kept.
+    for (const [label, child] of this.childMap.entries()) {
+      this.radixTree.set(label, child);
     }
+    this.setRadixTreeEnabled(true);
+    this.childMap.clear();
+    this.updateStateInfo(null, true);
   }
 
-  computeTreeBytes() {
-    const nodeBytes = this.computeNodeBytes();
-    if (this.getIsLeaf()) {
-      return nodeBytes;
-    } else {
-      if (FeatureFlags.enableRadixTreeLayers) {
-        return nodeBytes + this.radixTree.getRootTreeBytes();
-      } else {
-        return this.getChildLabels().reduce((acc, label) => {
-          const child = this.getChild(label);
-          return acc + sizeof(label) + CommonUtil.numberOrZero(child.getTreeBytes());
-        }, nodeBytes);
-      }
+  disableRadixTree() {
+    // Make sure the insertion order is kept.
+    for (const label of this.radixTree.labels()) {
+      const child = this.radixTree.get(label);
+      this.childMap.set(label, child);
     }
-  }
-
-  updateStateInfo(updatedChildLabel = null, rebuildRadixInfo = true) {
-    if (!LIGHTWEIGHT) {
-      this.setProofHash(this.buildProofHash(updatedChildLabel, rebuildRadixInfo));
-    }
-    this.setTreeHeight(this.computeTreeHeight());
-    this.setTreeSize(this.computeTreeSize());
-    this.setTreeBytes(this.computeTreeBytes());
+    this.deleteRadixTree(false);  // shouldDeleteParent = false
+    this.setRadixTreeEnabled(false);
+    this.updateStateInfo(null, true);
   }
 }
 
