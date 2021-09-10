@@ -12,22 +12,39 @@
     }
   },
   "checkin": {
-    "$user_addr": {
-      "$checkin_id": {
-        "request": {
-          ".rule": {
-            "write": "data === null && auth.addr === $user_addr && util.isDict(newData)"
-          }
-        },
-        "parent_finalize": {
-          "$tx_hash": {
-            "result": {
-              ".rule": {
-                "write": "auth.addr === getValue('/sharding/config/shard_owner') && util.isBool(newData)"
+    "history": {
+      "$network_name": {
+        "$chain_id": {
+          "$token_id": {
+            "$user_addr": {
+              "$checkin_id": {
+                ".rule": {
+                  "write": "data === null && util.validateCheckinHistoryData($network_name, $chain_id, $token_id, $user_addr, $checkin_id, newData, getValue) && auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue)"
+                }
               }
             }
           }
         }
+      }
+    },
+    "requests": {
+      "$network_name": {
+        "$chain_id": {
+          "$token_id": {
+            "$user_addr": {
+              "$checkin_id": {
+                ".rule": {
+                  "write": "((auth.fid === '_closeCheckin' || auth.addr === $user_addr) && data !== null && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckinRequestData($network_name, $chain_id, $token_id, newData, getValue))"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "stats" : {
+      ".rule": {
+        "write": "auth.fid === '_openCheckin' || auth.fid === '_closeCheckin' || auth.fid === '_cancelCheckin'"
       }
     }
   },
@@ -59,7 +76,7 @@
             "$user_addr": {
               "$checkout_id": {
                 ".rule": {
-                  "write": "(auth.fid === '_closeCheckout' && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckoutRequestData(newData, $network_name, $chain_id, $token_id, getValue))"
+                  "write": "(auth.fid === '_closeCheckout' && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckoutRequestData($network_name, $chain_id, $token_id, newData, getValue))"
                 }
               }
             }
@@ -271,7 +288,7 @@
         "$key": {
           "value": {
             ".rule": {
-              "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_claimReward' || auth.fid === '_openCheckout' || auth.fid === '_closeCheckout') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && util.getBalance($from, getValue) >= newData"
+              "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_claimReward' || auth.fid === '_openCheckout' || auth.fid === '_closeCheckout' || auth.fid === '_closeCheckin') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && util.getBalance($from, getValue) >= newData"
             }
           }
         }

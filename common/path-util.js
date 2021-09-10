@@ -184,27 +184,40 @@ class PathUtil {
     return PathUtil.getLatestShardReportPath(branchPath);
   }
 
-  static getCheckinParentFinalizeResultPath(shardingPath, branchPath, txHash) {
-    return CommonUtil.appendPath(
-        shardingPath,
-        `${branchPath}/${PredefinedDbPaths.CHECKIN_PARENT_FINALIZE}/${txHash}/` +
-            `${PredefinedDbPaths.REMOTE_TX_ACTION_RESULT}`);
+  static getCheckinRequestPath(networkName, chainId, tokenId, address, checkinId) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKIN, PredefinedDbPaths.CHECKIN_REQUESTS, networkName, chainId,
+        tokenId, address, checkinId]);
   }
 
-  static getCheckinParentFinalizeResultPathFromValuePath(shardingPath, valuePath, txHash) {
-    const branchPath = CommonUtil.formatPath(valuePath.slice(0, -1));
-    return PathUtil.getCheckinParentFinalizeResultPath(shardingPath, branchPath, txHash);
+  static getCheckinHistoryPath(networkName, chainId, tokenId, address, checkinId) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKIN, PredefinedDbPaths.CHECKIN_HISTORY, networkName, chainId,
+        tokenId, address, checkinId]);
   }
 
-  static getCheckinPayloadPath(branchPath) {
-    return CommonUtil.appendPath(
-        branchPath,
-        `${PredefinedDbPaths.CHECKIN_REQUEST}/${PredefinedDbPaths.CHECKIN_PAYLOAD}`);
+  static getCheckinPendingAmountPerTokenPoolPath(tokenPoolAddr) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKIN, PredefinedDbPaths.CHECKIN_STATS,
+        PredefinedDbPaths.CHECKIN_STATS_PENDING, PredefinedDbPaths.CHECKIN_TOKEN_POOL, tokenPoolAddr]);
   }
 
-  static getCheckinPayloadPathFromValuePath(valuePath) {
-    const branchPath = CommonUtil.formatPath(valuePath.slice(0, -3));
-    return PathUtil.getCheckinPayloadPath(branchPath);
+  static getCheckinPendingAmountPerSenderPath(networkName, chainId, tokenId, sender) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKIN, PredefinedDbPaths.CHECKIN_STATS,
+        PredefinedDbPaths.CHECKIN_STATS_PENDING, networkName, chainId, tokenId, sender]);
+  }
+
+  static getCheckinCompleteAmountTotalPath() {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKIN, PredefinedDbPaths.CHECKIN_STATS,
+        PredefinedDbPaths.CHECKIN_STATS_COMPLETE, PredefinedDbPaths.CHECKIN_STATS_TOTAL]);
+  }
+
+  static getCheckinCompleteAmountPerAddrPath(address) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.CHECKIN, PredefinedDbPaths.CHECKIN_STATS,
+        PredefinedDbPaths.CHECKIN_STATS_COMPLETE, address]);
   }
 
   static getCheckoutRequestPath(networkName, chainId, tokenId, address, checkoutId) {
@@ -231,7 +244,7 @@ class PathUtil {
         PredefinedDbPaths.CHECKOUT_STATS_PENDING, PredefinedDbPaths.CHECKOUT_STATS_TOTAL]);
   }
 
-  static getCheckoutPendingAmountForAddrPath(address) {
+  static getCheckoutPendingAmountPerAddrPath(address) {
     return CommonUtil.formatPath([
         PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_STATS,
         PredefinedDbPaths.CHECKOUT_STATS_PENDING, address]);
