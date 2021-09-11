@@ -2,7 +2,7 @@ const logger = require('../logger')('STATE_MANAGER');
 const StateNode = require('./state-node');
 const {
   renameStateTreeVersion,
-  deleteStateTree,
+  deleteStateTreeVersion,
 } = require('./state-util');
 const {
   FeatureFlags,
@@ -184,7 +184,7 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] Null root of version: ${version}`);
       return false;
     }
-    const numDeletedNodes = deleteStateTree(root);
+    const numDeletedNodes = deleteStateTreeVersion(root);
     logger.debug(`[${LOG_HEADER}] Deleted ${numDeletedNodes} state nodes.`);
     this._deleteRoot(version);
     return true;
