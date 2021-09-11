@@ -175,7 +175,7 @@ class RadixNode {
     return child;
   }
 
-  setChild(labelRadix, labelSuffix, child) {
+  setChild(labelRadix, labelSuffix, node) {
     const LOG_HEADER = 'setChild';
     if (!CommonUtil.isString(labelRadix) || labelRadix.length !== 1) {
       logger.error(
@@ -192,16 +192,22 @@ class RadixNode {
       return false;
     }
     if (this.hasChild(labelRadix)) {
-      logger.error(
-          `[${LOG_HEADER}] Overwriting a child with label radix ${labelRadix} ` +
-          `at: ${new Error().stack}.`);
-      // Does nothing.
-      return false;
+      const child = this.getChild(labelRadix);
+      if (child === node) {
+        logger.error(
+            `[${LOG_HEADER}] Setting a child with label ${labelRadix} which is already a child ` +
+            `at: ${new Error().stack}.`);
+        // Does nothing.
+        return false;
+      }
+      // NOTE(platfowner): Use deleteParent() instead of deleteChild() to keep
+      // the order of children.
+      child.deleteParent(this);
     }
-    this.radixChildMap.set(labelRadix, child);
-    child.setLabelRadix(labelRadix);
-    child.setLabelSuffix(labelSuffix);
-    child.addParent(this);
+    this.radixChildMap.set(labelRadix, node);
+    node.setLabelRadix(labelRadix);
+    node.setLabelSuffix(labelSuffix);
+    node.addParent(this);
     return true;
   }
 
