@@ -344,12 +344,11 @@ class DB {
   //
   static getRefForWritingToStateRoot(stateRoot, fullPath) {
     let node = stateRoot;
-    let hasMultipleRoots = node.numParents() > 1;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
       if (node.hasChild(label)) {
         const child = node.getChild(label);
-        if (hasMultipleRoots || child.numParents() > 1) {
+        if (child.numParents() > 1) {
           const clonedChild = child.clone(this.stateVersion);
           clonedChild.resetValue();
           node.setChild(label, clonedChild);
@@ -363,7 +362,6 @@ class DB {
         node.setChild(label, newChild);
         node = newChild;
       }
-      hasMultipleRoots = hasMultipleRoots || node.numParents() > 1;
     }
     return node;
   }
