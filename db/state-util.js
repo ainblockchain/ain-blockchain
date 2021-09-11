@@ -545,7 +545,7 @@ function renameStateTreeVersion(node, fromVersion, toVersion, isRootNode = true)
 /**
  * Returns affected nodes' number.
  */
-function deleteStateTree(node) {
+function deleteStateTreeVersion(node) {
   let numAffectedNodes = 0;
   if (node.numParents() > 0) {
     // Does nothing.
@@ -557,14 +557,14 @@ function deleteStateTree(node) {
     const childNodes = node.getChildNodes();
     node.deleteRadixTree(true);  // shouldDeleteParent = true
     for (const child of childNodes) {
-      numAffectedNodes += deleteStateTree(child);
+      numAffectedNodes += deleteStateTreeVersion(child);
     }
   } else {
     for (const label of node.getChildLabels()) {
       const child = node.getChild(label);
       node.deleteChild(label, false);  // shouldUpdateStateInfo = false
 
-      numAffectedNodes += deleteStateTree(child);
+      numAffectedNodes += deleteStateTreeVersion(child);
     }
   }
   // 2. Reset node
@@ -703,7 +703,7 @@ module.exports = {
   applyOwnerChange,
   setStateTreeVersion,
   renameStateTreeVersion,
-  deleteStateTree,
+  deleteStateTreeVersion,
   equalStateTrees,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,

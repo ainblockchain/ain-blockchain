@@ -17,7 +17,7 @@ const {
   applyOwnerChange,
   setStateTreeVersion,
   renameStateTreeVersion,
-  deleteStateTree,
+  deleteStateTreeVersion,
   equalStateTrees,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
@@ -2097,7 +2097,7 @@ describe("state-util", () => {
       // Delete a leaf node without version.
       const stateNode1 = StateNode.fromJsObject(true);
       updateStateInfoForStateTree(stateNode1);
-      expect(deleteStateTree(stateNode1)).to.equal(1);
+      expect(deleteStateTreeVersion(stateNode1)).to.equal(1);
       expect(stateNode1.getVersion()).to.equal(null);
       expect(stateNode1.numParents()).to.equal(0);
       expect(stateNode1.numChildren()).to.equal(0);
@@ -2105,7 +2105,7 @@ describe("state-util", () => {
       // Delete a leaf node with a different version.
       const stateNode2 = StateNode.fromJsObject(true, 'ver2');
       updateStateInfoForStateTree(stateNode2);
-      expect(deleteStateTree(stateNode2)).to.equal(1);
+      expect(deleteStateTreeVersion(stateNode2)).to.equal(1);
       expect(stateNode2.getVersion()).to.equal(null);
       expect(stateNode2.numParents()).to.equal(0);
       expect(stateNode2.numChildren()).to.equal(0);
@@ -2113,7 +2113,7 @@ describe("state-util", () => {
       // Delete a leaf node with the same version.
       const stateNode3 = StateNode.fromJsObject(true, ver1);
       updateStateInfoForStateTree(stateNode3);
-      expect(deleteStateTree(stateNode3)).to.equal(1);
+      expect(deleteStateTreeVersion(stateNode3)).to.equal(1);
       expect(stateNode3.getVersion()).to.equal(null);
       expect(stateNode3.numParents()).to.equal(0);
       expect(stateNode3.numChildren()).to.equal(0);
@@ -2122,14 +2122,14 @@ describe("state-util", () => {
       const stateNode4 = StateNode.fromJsObject(true, ver1);
       parent.setChild(nodeLabel, stateNode4);
       updateStateInfoForStateTree(stateNode4);
-      expect(deleteStateTree(stateNode4)).to.equal(0);
+      expect(deleteStateTreeVersion(stateNode4)).to.equal(0);
       expect(stateNode4.getVersion()).to.equal(ver1);
       expect(stateNode4.numParents()).to.equal(1);
       expect(stateNode4.numChildren()).to.equal(0);
     })
 
     it("internal node with a different version", () => {
-      expect(deleteStateTree(stateTree)).to.equal(3);
+      expect(deleteStateTreeVersion(stateTree)).to.equal(3);
       // Root node is deleted.
       expect(stateTree.numParents()).to.equal(0);
       expect(stateTree.numChildren()).to.equal(0);
@@ -2146,7 +2146,7 @@ describe("state-util", () => {
       // Set versions of the state tree.
       setStateTreeVersion(stateTree, ver3);
 
-      expect(deleteStateTree(stateTree)).to.equal(3);
+      expect(deleteStateTreeVersion(stateTree)).to.equal(3);
       // Root node is deleted.
       expect(stateTree.numParents()).to.equal(0);
       expect(stateTree.numChildren()).to.equal(0);
@@ -2163,7 +2163,7 @@ describe("state-util", () => {
       // Increase the numParents() value of the root node.
       parent.setChild(nodeLabel, stateTree);
 
-      expect(deleteStateTree(stateTree)).to.equal(0);
+      expect(deleteStateTreeVersion(stateTree)).to.equal(0);
       // State tree is not deleted.
       assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
         ".version": "ver3",
@@ -2190,7 +2190,7 @@ describe("state-util", () => {
     })
 
     it("internal node with the same version but with sub-node of different versions", () => {
-      const numNodes = deleteStateTree(stateTree);
+      const numNodes = deleteStateTreeVersion(stateTree);
       expect(numNodes).to.equal(3);
       // Root node is deleted.
       expect(stateTree.numParents()).to.equal(0);
@@ -2213,7 +2213,7 @@ describe("state-util", () => {
       expect(child1.numParents()).to.equal(2);
       expect(child2.numParents()).to.equal(2);
 
-      expect(deleteStateTree(stateTree)).to.equal(1);
+      expect(deleteStateTreeVersion(stateTree)).to.equal(1);
       // Root node is deleted.
       expect(stateTree.numParents()).to.equal(0);
       expect(stateTree.numChildren()).to.equal(0);
