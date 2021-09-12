@@ -1311,7 +1311,9 @@ class DB {
     }
     if (!skipFees) {
       this.collectFee(auth, timestamp, tx, blockNumber, executionResult);
-      this.recordReceipt(auth, tx, blockNumber, executionResult);
+      if (FeatureFlags.enableReceiptsRecording) {
+        this.recordReceipt(auth, tx, blockNumber, executionResult);
+      }
     }
     return executionResult;
   }
