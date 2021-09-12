@@ -6,7 +6,29 @@ const expect = chai.expect;
 const assert = chai.assert;
 
 describe("radix-tree", () => {
-  describe("Utils", () => {
+  describe("initialization", () => {
+    it("construct without version", () => {
+      const tree = new RadixTree();
+      expect(tree.root.getVersion()).to.equal(null);
+      expect(tree.root.getParentStateNode()).to.equal(null);
+    });
+
+    it("construct with version", () => {
+      const version = 'ver';
+      const tree = new RadixTree(version);
+      expect(tree.root.getVersion()).to.equal(version);
+      expect(tree.root.getParentStateNode()).to.equal(null);
+    });
+
+    it("construct with parent state node", () => {
+      const parentStateNode = new StateNode();
+      const tree = new RadixTree(null, parentStateNode);
+      expect(tree.root.getVersion()).to.equal(null);
+      expect(tree.root.getParentStateNode()).to.equal(parentStateNode);
+    });
+  });
+
+  describe("utils", () => {
     it("_toRadixLabel", () => {
       expect(RadixTree._toRadixLabel('0x1234567890abcdef')).to.equal('1234567890abcdef');
       expect(RadixTree._toRadixLabel('aAzZ')).to.equal('61417a5a');
@@ -109,17 +131,6 @@ describe("radix-tree", () => {
         stateNode22 = new StateNode();
         stateNodeInternal = new StateNode();
       })
-
-      it("set with invalid state node", () => {
-        const invalidStateNode = new RadixNode();
-        const label = '0x000aaa';
-
-        expect(tree.set(label, invalidStateNode)).to.equal(false);
-        expect(tree.set(label, '')).to.equal(false);
-        expect(tree.set(label, true)).to.equal(false);
-        expect(tree.set(label, null)).to.equal(false);
-        expect(tree.set(label, undefined)).to.equal(false);
-      });
 
       it("without common label prefix - set / delete without label suffices", () => {
         const label1 = '0xa';

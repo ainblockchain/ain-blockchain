@@ -2068,7 +2068,7 @@ describe("state-util", () => {
     })
   })
 
-  describe("deleteStateTree", () => {
+  describe("deleteStateTreeVersion", () => {
     const ver1 = 'ver1';
     const ver2 = 'ver2';
     const ver3 = 'ver3';

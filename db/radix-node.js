@@ -13,8 +13,9 @@ const {
  * Implements Radix Node, which is used as a component of RadixTree.
  */
 class RadixNode {
-  constructor(version) {
-    this.version = version || null;
+  constructor(version = null, parentStateNode = null) {
+    this.version = version;
+    this.parentStateNode = parentStateNode;
     this.stateNode = null;
     this.labelRadix = '';
     this.labelSuffix = '';
@@ -28,6 +29,7 @@ class RadixNode {
 
   reset() {
     this.resetVersion();
+    this.resetParentStateNode();
     this.resetStateNode();
     this.resetLabelRadix();
     this.resetLabelSuffix();
@@ -40,8 +42,8 @@ class RadixNode {
   }
 
   static _create(
-      version, stateNode, labelRadix, labelSuffix, proofHash, treeHeight, treeSize, treeBytes) {
-    const node = new RadixNode(version);
+      version, parentStateNode, stateNode, labelRadix, labelSuffix, proofHash, treeHeight, treeSize, treeBytes) {
+    const node = new RadixNode(version, parentStateNode);
     node.setStateNode(stateNode);
     node.setLabelRadix(labelRadix);
     node.setLabelSuffix(labelSuffix);
@@ -52,14 +54,30 @@ class RadixNode {
     return node;
   }
 
-  clone(version) {
-    const cloned = RadixNode._create(version ? version : this.version, this.stateNode,
-        this.labelRadix, this.labelSuffix, this.proofHash, this.treeHeight, this.treeSize,
-        this.treeBytes);
+  clone(version, parentStateNode = null) {
+    const cloned = RadixNode._create(version, parentStateNode, this.getStateNode(),
+        this.getLabelRadix(), this.getLabelSuffix(), this.getProofHash(), this.getTreeHeight(),
+        this.getTreeSize(), this.getTreeBytes());
     for (const child of this.getChildNodes()) {
       cloned.setChild(child.getLabelRadix(), child.getLabelSuffix(), child);
     }
     return cloned;
+  }
+
+  getParentStateNode() {
+    return this.parentStateNode;
+  }
+
+  setParentStateNode(parentStateNode) {
+    this.parentStateNode = parentStateNode;
+  }
+
+  hasParentStateNode() {
+    return this.getParentStateNode() !== null;
+  }
+
+  resetParentStateNode() {
+    this.parentStateNode = null;
   }
 
   getVersion() {
@@ -79,17 +97,10 @@ class RadixNode {
   }
 
   setStateNode(stateNode) {
-    const LOG_HEADER = 'setStateNode';
-    const StateNode = require('./state-node');
-
-    if (!(stateNode instanceof StateNode)) {
-      logger.error(
-          `[${LOG_HEADER}] Setting with a non-StateNode instance at: ${new Error().stack}.`);
-      // Does nothing.
-      return false;
+    if (stateNode !== null && !stateNode.hasParentRadixNode(this)) {
+      stateNode.addParentRadixNode(this);
     }
     this.stateNode = stateNode;
-    return true;
   }
 
   hasStateNode() {
@@ -97,7 +108,10 @@ class RadixNode {
   }
 
   resetStateNode() {
-    this.stateNode = null;
+    if (this.hasStateNode()) {
+      this.getStateNode().deleteParentRadixNode(this);
+    }
+    this.setStateNode(null);
   }
 
   getLabelRadix() {
@@ -195,7 +209,7 @@ class RadixNode {
       const child = this.getChild(labelRadix);
       if (child === node) {
         logger.error(
-            `[${LOG_HEADER}] Setting a child with label ${labelRadix} which is already a child ` +
+            `[${LOG_HEADER}] Setting an existing child with label ${labelRadix + labelSuffix} ` +
             `at: ${new Error().stack}.`);
         // Does nothing.
         return false;
@@ -236,8 +250,6 @@ class RadixNode {
     }
     const child = this.getChild(labelRadix);
     this.radixChildMap.delete(labelRadix);
-    child.resetLabelRadix();
-    child.resetLabelSuffix();
     child.deleteParent(this);
     return true;
   }
@@ -420,6 +432,18 @@ class RadixNode {
     return proof;
   }
 
+  getParentStateNodeList() {
+    const parentStateNodeList = [];
+    if (this.hasParentStateNode()) {
+      parentStateNodeList.push(this.getParentStateNode());
+    } else {
+      for (const parent of this.getParentNodes()) {
+        parentStateNodeList.push(...parent.getParentStateNodeList());
+      }
+    }
+    return parentStateNodeList;
+  }
+
   getStateNodeList() {
     const stateNodeList = [];
     if (this.hasStateNode()) {
@@ -465,6 +489,24 @@ class RadixNode {
       const stateNode = this.getStateNode();
       stateNode.deleteParent(parentStateNodeToDelete);
     }
+    this.reset();
+    numAffectedNodes++;
+
+    return numAffectedNodes;
+  }
+
+  deleteRadixTreeVersion() {
+    let numAffectedNodes = 0;
+    if (this.numParents() > 0) {
+      // Does nothing.
+      return numAffectedNodes;
+    }
+
+    for (const child of this.getChildNodes()) {
+      this.deleteChild(child.getLabelRadix());
+      numAffectedNodes += child.deleteRadixTreeVersion();
+    }
+
     this.reset();
     numAffectedNodes++;
 
