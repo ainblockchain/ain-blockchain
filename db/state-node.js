@@ -12,18 +12,16 @@ const {
 const RadixTree = require('./radix-tree');
 
 class StateNode {
-  // NOTE(seo): Once new member variables are added, computeNodeBytes() should be updated.
-  constructor(version) {
-    this.version = version || null;
+  constructor(version = null) {
+    this.version = version;
     this.label = null;
     this.isLeaf = true;
     // Used for leaf nodes only.
     this.value = null;
+    this.parentRadixNodeSet = new Set();
     this.parentSet = new Set();
     // Used for internal nodes only.
-    if (FeatureFlags.enableRadixTreeLayers) {
-      this.radixTree = new RadixTree(version);
-    }
+    this.radixTree = new RadixTree(version, this);
     this.childMap = new Map();
     this.proofHash = null;
     this.treeHeight = 0;
@@ -32,15 +30,21 @@ class StateNode {
   }
 
   reset() {
-    this.setVersion(null);  // should be reset for deleteStateTree().
+    this.setVersion(null);  // should be reset for deleteStateTreeVersion().
     this.resetLabel();
     this.setIsLeaf(true);
     this.resetValue();
+    this.parentRadixNodeSet.clear();
     this.parentSet.clear();
     if (FeatureFlags.enableRadixTreeLayers) {
-      this.deleteRadixTree();
+      if (FeatureFlags.enableRadixNodeVersioning) {
+        this.deleteRadixTreeVersion();
+      } else {
+        this.deleteRadixTree();
+      }
+    } else {
+      this.childMap.clear();
     }
-    this.childMap.clear();
     this.setProofHash(null);
     this.setTreeHeight(0);
     this.setTreeSize(0);
@@ -66,7 +70,11 @@ class StateNode {
         this.treeSize, this.treeBytes);
     if (!this.getIsLeaf()) {
       if (FeatureFlags.enableRadixTreeLayers) {
-        cloned.copyRadixTreeFrom(this, cloned);
+        if (FeatureFlags.enableRadixNodeVersioning) {
+          cloned.cloneRadixTreeFrom(this);
+        } else {
+          cloned.copyRadixTreeFrom(this);
+        }
       } else {
         for (const label of this.getChildLabels()) {
           const child = this.getChild(label);
@@ -77,8 +85,12 @@ class StateNode {
     return cloned;
   }
 
-  copyRadixTreeFrom(stateNode, newParentStateNode) {
-    this.radixTree.copyFrom(stateNode.radixTree, newParentStateNode);
+  copyRadixTreeFrom(stateNode) {
+    this.radixTree.copyFrom(stateNode.radixTree, this);
+  }
+
+  cloneRadixTreeFrom(stateNode) {
+    this.radixTree.cloneFrom(stateNode.radixTree, this.getVersion(), this);
   }
 
   equal(that) {
@@ -176,13 +188,6 @@ class StateNode {
   }
 
   setLabel(label) {
-    const LOG_HEADER = 'setLabel';
-
-    const curLabel = this.getLabel();
-    if (curLabel !== null && curLabel !== label) {
-      logger.error(
-          `[${LOG_HEADER}] Overwriting label ${curLabel} with ${label} at: ${new Error().stack}.`);
-    }
     this.label = label;
   }
 
@@ -208,6 +213,42 @@ class StateNode {
 
   resetValue() {
     this.setValue(null);
+  }
+
+  addParentRadixNode(parentRadixNode) {
+    const LOG_HEADER = 'addParentRadixNode';
+    if (this.hasParentRadixNode(parentRadixNode)) {
+      logger.error(
+          `[${LOG_HEADER}] Adding an existing parent radix node of label: ` +
+          `${parentRadixNode.getLabel()} at: ${new Error().stack}.`);
+      // Does nothing.
+      return;
+    }
+    this.parentRadixNodeSet.add(parentRadixNode);
+  }
+
+  hasParentRadixNode(parentRadixNode) {
+    return this.parentRadixNodeSet.has(parentRadixNode);
+  }
+
+  deleteParentRadixNode(parentRadixNode) {
+    const LOG_HEADER = 'deleteParentRadixNode';
+    if (!this.parentRadixNodeSet.has(parentRadixNode)) {
+      logger.error(
+          `[${LOG_HEADER}] Deleting a non-existing parent radix node of label: ` +
+          `${parentRadixNode.getLabel()} at: ${new Error().stack}.`);
+      // Does nothing.
+      return;
+    }
+    this.parentRadixNodeSet.delete(parentRadixNode);
+  }
+
+  getParentRadixNodes() {
+    return Array.from(this.parentRadixNodeSet);
+  }
+
+  numParentRadixNodes() {
+    return this.parentRadixNodeSet.size;
   }
 
   addParent(parent) {
@@ -239,11 +280,24 @@ class StateNode {
   }
 
   getParentNodes() {
-    return Array.from(this.parentSet);
+    if (FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning) {
+      const parentNodes = [];
+      for (const parentRadixNode of this.getParentRadixNodes()) {
+        parentNodes.push(...parentRadixNode.getParentStateNodeList());
+      }
+      return parentNodes;
+    } else {
+      return Array.from(this.parentSet);
+    }
   }
 
   numParents() {
-    return this.parentSet.size;
+    if (FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning) {
+      const parentNodes = this.getParentNodes();
+      return parentNodes.length;
+    } else {
+      return this.parentSet.size;
+    }
   }
 
   getChild(label) {
@@ -270,16 +324,20 @@ class StateNode {
         // Does nothing.
         return;
       }
-      // NOTE(platfowner): Use deleteParent() instead of deleteChild() to keep
-      // the order of children.
-      child.deleteParent(this);
+      if (!(FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning)) {
+        // NOTE(platfowner): Use deleteParent() instead of deleteChild() to keep
+        // the order of children.
+        child.deleteParent(this);
+      }
     }
     if (FeatureFlags.enableRadixTreeLayers) {
       this.radixTree.set(label, node);
     } else {
       this.childMap.set(label, node);
     }
-    node.addParent(this);
+    if (!(FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning)) {
+      node.addParent(this);
+    }
     node.setLabel(label);
     if (this.getIsLeaf()) {
       this.setIsLeaf(false);
@@ -304,7 +362,9 @@ class StateNode {
       return;
     }
     const child = this.getChild(label);
-    child.deleteParent(this);
+    if (!(FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning)) {
+      child.deleteParent(this);
+    }
     if (FeatureFlags.enableRadixTreeLayers) {
       this.radixTree.delete(label, shouldUpdateStateInfo);  // with shouldUpdateStateInfo
       if (shouldUpdateStateInfo) {
@@ -490,8 +550,12 @@ class StateNode {
     }
   }
 
-  deleteRadixTree(shouldDeleteParent = true) {
-    return this.radixTree.deleteRadixTree(shouldDeleteParent ? this : null);
+  deleteRadixTree() {
+    return this.radixTree.deleteRadixTree(this);
+  }
+
+  deleteRadixTreeVersion() {
+    return this.radixTree.deleteRadixTreeVersion();
   }
 }
 
