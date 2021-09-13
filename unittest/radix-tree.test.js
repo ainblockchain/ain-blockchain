@@ -1282,7 +1282,7 @@ describe("radix-tree", () => {
         // set another root path
         const version2 = 'ver2';
         const parentAnother = new RadixNode(version2);
-        const node = tree._getRadixNodeForWriting(label21);
+        const node = tree._getRadixNodeForDeleting(label21);
         parentAnother.setChild('1', '11', node);
 
         // check parents
@@ -1583,7 +1583,7 @@ describe("radix-tree", () => {
         const version2 = 'ver2';
         const grandParentAnother = new RadixNode(version2);
         const radixLabel2 = RadixTree._toRadixLabel(label2);
-        const parent = tree._getRadixNodeForWriting(label2);
+        const parent = tree._getRadixNodeForDeleting(label2);
         grandParentAnother.setChild(radixLabel2.charAt(0), radixLabel2.slice(1), parent);
 
         // check grand parents
@@ -1825,7 +1825,7 @@ describe("radix-tree", () => {
         const version2 = 'ver2';
         const grandParentAnother = new RadixNode(version2);
         const radixLabel2 = RadixTree._toRadixLabel(label2);
-        const parent = tree._getRadixNodeForWriting(label2);
+        const parent = tree._getRadixNodeForDeleting(label2);
         grandParentAnother.setChild(radixLabel2.charAt(0), radixLabel2.slice(1), parent);
 
         // check grand parents
@@ -1925,7 +1925,7 @@ describe("radix-tree", () => {
         // set another root path
         const version2 = 'ver2';
         const parentAnother = new RadixNode(version2);
-        const node = tree._getRadixNodeForWriting(label21);
+        const node = tree._getRadixNodeForDeleting(label21);
         parentAnother.setChild('1', '11', node);
 
         // check parents
