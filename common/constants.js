@@ -35,6 +35,8 @@ const FeatureFlags = {
   enableRadixTreeLayers: true,  // Some test cases assume this value true.
   // Enables dynamic radix tree.
   enableDynamicRadixTree: true,  // Some test cases assume this value true.
+  // Enables ntp-sync for global time syncing.
+  enableNtpSync: true,
 };
 
 // ** Environment variables **

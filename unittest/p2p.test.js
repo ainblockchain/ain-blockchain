@@ -104,7 +104,9 @@ describe("p2p", () => {
           state: 'STARTING',
           stateNumeric: 0,
           epoch: 1,
-          longestNotarizedChainTipsSize: 0
+          longestNotarizedChainTipsSize: 0,
+          globalTimeSyncStatus: {},
+          validators: {}
         };
         assert.deepEqual(actual, p2pServer.getConsensusStatus());
       });
