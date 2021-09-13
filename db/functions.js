@@ -35,6 +35,7 @@ const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC]
 const EventListenerWhitelist = {
   'https://events.ainetwork.ai/trigger': true,
   'https://events.ainize.ai/trigger': true,
+  'http://echo-bot.ainetwork.ai/trigger': true,
   'http://localhost:3000/trigger': true
 };
 
