@@ -22,11 +22,12 @@ const buildGraphData = (peerNodes) => {
     data.nodes.push({ address: abbrAddr(peerNode) });
   });
 
-  Object.values(peerNodes).forEach(nodeInfo => {
-    const id = peerNodeIdMap[nodeInfo.address];
+  Object.entries(peerNodes).forEach(([address, nodeInfo]) => {
     const outGoingList = nodeInfo.networkStatus.connectionStatus.outgoingPeers;
-    outGoingList.forEach(address => {
-      data.links.push({ source: id, target: peerNodeIdMap[address], weight: 1 });
+    outGoingList.forEach(outGoingAddress => {
+      data.links.push({
+        source: peerNodeIdMap[address], target: peerNodeIdMap[outGoingAddress], weight: 1
+      });
     });
   });
 
