@@ -34,12 +34,25 @@ const buildGraphData = (peerNodes) => {
 }
 
 const getGraphData = async () => {
-  const networkStatusResponse = await axios.get('http://localhost:8080/network_status');
-  const networkStatus = networkStatusResponse.data;
-  if (!commonUtil.isEmpty(networkStatus.peerNodes)) {
-    const data = buildGraphData(networkStatus.peerNodes);
-    return data;
-  } else {
+  const networkStatus = { };
+  try {
+    const networkStatusResponse = await axios.get('http://localhost:8080/network_status');
+    Object.assign(networkStatus, networkStatusResponse.data);
+    if (!commonUtil.isEmpty(networkStatus.peerNodes)) {
+      const data = buildGraphData(networkStatus.peerNodes);
+      return data;
+    } else {
+      return {
+        "nodes": [
+          { "address": "Peer nodes are NOT online." },
+          { "address": "Peer nodes are NOT online." }
+        ],
+        "links": [
+          { "source": 0, "target": 1, "weight": 1 }
+        ],
+      };
+    }
+  } catch (error) {
     return {
       "nodes": [
         { "address": "Tracker is NOT online." },
