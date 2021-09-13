@@ -332,6 +332,7 @@ describe("p2p", () => {
           diskStatus: p2pServer.getDiskUsage(),
           runtimeInfo: p2pServer.getRuntimeInfo(),
           protocolInfo: p2pServer.getProtocolInfo(),
+          blockchainConfig: p2pServer.getBlockchainConfig(),
         };
         assert.deepEqual(Object.keys(actual), Object.keys(p2pClient.getStatus()));
       });

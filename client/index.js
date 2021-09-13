@@ -500,6 +500,13 @@ app.get('/get_chain_id', (req, res) => {
     .end();
 });
 
+app.get('/blockchain_config', (req, res) => {
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: 0, result: p2pServer.getBlockchainConfig() })
+    .end();
+});
+
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server
 const server = app.listen(PORT, () => {

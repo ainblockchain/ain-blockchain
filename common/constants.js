@@ -926,5 +926,6 @@ module.exports = {
   ...GenesisParams.blockchain,
   ...GenesisParams.consensus,
   ...GenesisParams.resource,
-  ...networkEnv
+  ...networkEnv,
+  GenesisParams,
 };
