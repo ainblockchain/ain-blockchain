@@ -410,7 +410,7 @@ class P2pServer {
                 socket: socket,
                 version: dataProtoVer
               };
-              this.client.updateNodeInfoToTracker();
+              this.client.updatePeerInfoToTracker();
               const body = {
                 address: this.getNodeAddress(),
                 timestamp: Date.now(),
@@ -549,7 +549,7 @@ class P2pServer {
     socket.on('close', () => {
       const address = getAddressFromSocket(this.inbound, socket);
       removeSocketConnectionIfExists(this.inbound, address);
-      this.client.connectToOtherPeers();
+      this.client.sendRequestForNewPeers();
       logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
 

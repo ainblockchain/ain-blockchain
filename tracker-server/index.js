@@ -119,7 +119,7 @@ server.on('connection', (ws) => {
     switch(_.get(parsedMessage, 'type')) {
       case TrackerMessageTypes.NEW_PEERS_REQUEST:
         const connectionNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
-        setpeerNodes(ws, connectionNodeInfo);
+        setPeerNodes(ws, connectionNodeInfo);
         const newManagedPeerInfoList = assignRandomPeers(connectionNodeInfo);
         const connectionMessage = {
           type: TrackerMessageTypes.NEW_PEERS_RESPONSE,
@@ -150,7 +150,7 @@ server.on('connection', (ws) => {
       // next design!
       case TrackerMessageTypes.PEER_INFO_UPDATE:
         const updateNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
-        setpeerNodes(ws, updateNodeInfo);
+        setPeerNodes(ws, updateNodeInfo);
         printNodesInfo();
         break;
       default:
@@ -181,7 +181,7 @@ function abbrAddr(address) {
   return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
 }
 
-function setpeerNodes(ws, nodeInfo) {
+function setPeerNodes(ws, nodeInfo) {
   wsList[ws.uuid] = nodeInfo.address;
   nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
   peerNodes[nodeInfo.address] = nodeInfo;
