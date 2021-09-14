@@ -427,6 +427,7 @@ class P2pServer {
                 return;
               }
               socket.send(JSON.stringify(payload));
+              // NOTE(minsulee2): This will be integrated into anddress and security checks.
               if (!this.client.outbound[address]) {
                 this.client.connectToCorrespondingNode(address);
               }
