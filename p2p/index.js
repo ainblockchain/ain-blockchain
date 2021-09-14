@@ -327,6 +327,10 @@ class P2pClient {
       }
 
       switch (parsedMessage.type) {
+        // NOTE(minsulee2): Now, a distribution of peer nodes are fused in the tracker and node.
+        // To integrate the role, TrackerMessageTypes PEER_INFO_REQUEST and PEER_INFO_REPONSE will
+        // be moved from tracker into peer node and be combined into MessageTypes ADDRESS_RESPONSE
+        // and ADDRESS_REQUEST.
         case MessageTypes.ADDRESS_RESPONSE:
           const dataVersionCheckForAddress =
               this.server.checkDataProtoVer(dataProtoVer, MessageTypes.ADDRESS_RESPONSE);

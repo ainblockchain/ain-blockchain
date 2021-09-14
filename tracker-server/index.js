@@ -119,7 +119,7 @@ server.on('connection', (ws) => {
     switch(_.get(parsedMessage, 'type')) {
       case TrackerMessageTypes.NEW_PEERS_REQUEST:
         const connectionNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
-        setNodeInfo(ws, connectionNodeInfo);
+        setpeerNodes(ws, connectionNodeInfo);
         const newManagedPeerInfoList = assignRandomPeers(connectionNodeInfo);
         const connectionMessage = {
           type: TrackerMessageTypes.NEW_PEERS_RESPONSE,
@@ -133,6 +133,7 @@ server.on('connection', (ws) => {
         ws.send(JSON.stringify(connectionMessage));
         printNodesInfo();
         break;
+      // NOTE(minsulee2): This will be integrated into anddress and security checks.
       case TrackerMessageTypes.PEER_INFO_REQUEST:
         const address = parsedMessage.data;
         const correspondingNodeInfo = peerNodes[address];
@@ -145,9 +146,11 @@ server.on('connection', (ws) => {
             `${JSON.stringify(correspondMessage, null, 2)}`);
         ws.send(JSON.stringify(correspondMessage));
         break;
+      // NOTE(minsulee2): This can be combined with TrackerMessageTypes.NEW_PEERS_REQUEST in the
+      // next design!
       case TrackerMessageTypes.PEER_INFO_UPDATE:
         const updateNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
-        setNodeInfo(ws, updateNodeInfo);
+        setpeerNodes(ws, updateNodeInfo);
         printNodesInfo();
         break;
       default:
@@ -178,7 +181,7 @@ function abbrAddr(address) {
   return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
 }
 
-function setNodeInfo(ws, nodeInfo) {
+function setpeerNodes(ws, nodeInfo) {
   wsList[ws.uuid] = nodeInfo.address;
   nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
   peerNodes[nodeInfo.address] = nodeInfo;
