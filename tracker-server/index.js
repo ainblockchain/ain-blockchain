@@ -117,12 +117,12 @@ server.on('connection', (ws) => {
   ws.on('message', (message) => {
     const parsedMessage = JSON.parse(message);
     switch(_.get(parsedMessage, 'type')) {
-      case TrackerMessageTypes.CONNECTION:
+      case TrackerMessageTypes.NEW_PEERS_REQUEST:
         const connectionNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
         setNodeInfo(ws, connectionNodeInfo);
         const newManagedPeerInfoList = assignRandomPeers(connectionNodeInfo);
         const connectionMessage = {
-          type: TrackerMessageTypes.CONNECTION,
+          type: TrackerMessageTypes.NEW_PEERS_RESPONSE,
           data: {
             newManagedPeerInfoList,
             numLivePeers: getNumAliveNodes() - 1   // except for me.
@@ -133,11 +133,11 @@ server.on('connection', (ws) => {
         ws.send(JSON.stringify(connectionMessage));
         printNodesInfo();
         break;
-      case TrackerMessageTypes.CORRESPOND:
+      case TrackerMessageTypes.PEER_INFO_REQUEST:
         const address = parsedMessage.data;
         const correspondingNodeInfo = peerNodes[address];
         const correspondMessage = {
-          type: TrackerMessageTypes.CORRESPOND,
+          type: TrackerMessageTypes.PEER_INFO_RESPONSE,
           data: correspondingNodeInfo.networkStatus.p2p.url,
           numLivePeers: getNumAliveNodes() - 1   // except for me.
         };
@@ -145,7 +145,7 @@ server.on('connection', (ws) => {
             `${JSON.stringify(correspondMessage, null, 2)}`);
         ws.send(JSON.stringify(correspondMessage));
         break;
-      case TrackerMessageTypes.UPDATE:
+      case TrackerMessageTypes.PEER_INFO_UPDATE:
         const updateNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
         setNodeInfo(ws, updateNodeInfo);
         printNodesInfo();

@@ -137,7 +137,7 @@ class P2pClient {
 
   connectToCorrespondingNode(address) {
     const message = {
-      type: TrackerMessageTypes.CORRESPOND,
+      type: TrackerMessageTypes.PEER_INFO_REQUEST,
       data: address
     }
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
@@ -147,7 +147,7 @@ class P2pClient {
 
   connectToOtherPeers() {
     const message = {
-      type: TrackerMessageTypes.CONNECTION,
+      type: TrackerMessageTypes.NEW_PEERS_REQUEST,
       data: this.getStatus()
     };
     logger.debug(`\n >> Connect to [TRACKER] ${TRACKER_WS_ADDR}: ` +
@@ -157,7 +157,7 @@ class P2pClient {
 
   updateNodeInfoToTracker() {
     const message = {
-      type: TrackerMessageTypes.UPDATE,
+      type: TrackerMessageTypes.PEER_INFO_UPDATE,
       data: this.getStatus()
     };
     logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
@@ -177,14 +177,14 @@ class P2pClient {
       const parsedMessage = JSON.parse(message);
       logger.info(`\n<< Message from [TRACKER]: ${JSON.stringify(parsedMessage, null, 2)}`);
       switch(_.get(parsedMessage, 'type')) {
-        case TrackerMessageTypes.CONNECTION:
+        case TrackerMessageTypes.NEW_PEERS_RESPONSE:
           const data = parsedMessage.data;
           this.connectToPeers(data.newManagedPeerInfoList);
           if (this.server.node.state === BlockchainNodeStates.STARTING) {
             await this.startNode(data.numLivePeers);
           }
           break;
-        case TrackerMessageTypes.CORRESPOND:
+        case TrackerMessageTypes.PEER_INFO_RESPONSE:
           const url = parsedMessage.data;
           this.connectToPeer(url);
           break;
