@@ -92,10 +92,14 @@ class RadixTree {
 
         return newChild;
       }
-      const child = curNode.getChild(labelRadix);
+      let child = curNode.getChild(labelRadix);
 
       // Case 2: Has a child with the label radix but no match with the label suffix.
       if (!RadixTree._matchLabelSuffix(child, radixLabel, labelIndex + 1)) {
+        if (FeatureFlags.enableRadixNodeVersioning && child.numParents() > 1) {
+          child = child.clone(this.root.getVersion());
+        }
+
         const labelSuffix = radixLabel.slice(labelIndex + 1);
         const childLabelSuffix = child.getLabelSuffix();
         const commonPrefix = RadixTree._getCommonPrefix(labelSuffix, childLabelSuffix);
