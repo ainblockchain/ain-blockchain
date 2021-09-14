@@ -142,7 +142,7 @@ class P2pClient {
     this.trackerWebSocket.send(JSON.stringify(message));
   }
 
-  connectToOtherPeers() {
+  sendRequestForNewPeers() {
     const message = {
       type: TrackerMessageTypes.NEW_PEERS_REQUEST,
       data: this.getStatus()
@@ -152,7 +152,7 @@ class P2pClient {
     this.trackerWebSocket.send(JSON.stringify(message));
   }
 
-  updateNodeInfoToTracker() {
+  updatePeerInfoToTracker() {
     const message = {
       type: TrackerMessageTypes.PEER_INFO_UPDATE,
       data: this.getStatus()
@@ -163,9 +163,9 @@ class P2pClient {
   }
 
   setIntervalForTrackerUpdate() {
-    this.updateNodeInfoToTracker();
+    this.updatePeerInfoToTracker();
     this.intervalUpdate = setInterval(() => {
-      this.updateNodeInfoToTracker();
+      this.updatePeerInfoToTracker();
     }, UPDATE_TO_TRACKER_INTERVAL_MS);
   }
 
@@ -178,7 +178,7 @@ class P2pClient {
           const data = parsedMessage.data;
           this.connectToPeers(data.newManagedPeerInfoList);
           if (this.server.node.state === BlockchainNodeStates.STARTING) {
-            await this.startNode(data.numLivePeers);
+            await this.startBlockchainNode(data.numLivePeers);
           }
           break;
         case TrackerMessageTypes.PEER_INFO_RESPONSE:
@@ -198,8 +198,8 @@ class P2pClient {
     });
   }
 
-  async startNode(numLivePeers) {
-    const LOG_HEADER = 'startNode';
+  async startBlockchainNode(numLivePeers) {
+    const LOG_HEADER = 'startBlockchainNode';
 
     if (numLivePeers === 0) {
       logger.info(`[${LOG_HEADER}] Starting node without peers..`);
@@ -231,7 +231,7 @@ class P2pClient {
       logger.info(`Connected to tracker (${TRACKER_WS_ADDR})`);
       this.clearIntervalForTrackerConnection();
       this.setTrackerEventHandlers();
-      this.connectToOtherPeers();
+      this.sendRequestForNewPeers();
       this.setIntervalForTrackerUpdate();
     });
     this.trackerWebSocket.on('error', (error) => {
@@ -368,7 +368,7 @@ class P2pClient {
               socket: socket,
               version: dataProtoVer
             };
-            this.updateNodeInfoToTracker();
+            this.updatePeerInfoToTracker();
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
@@ -476,7 +476,7 @@ class P2pClient {
     socket.on('close', () => {
       const address = getAddressFromSocket(this.outbound, socket);
       removeSocketConnectionIfExists(this.outbound, address);
-      this.connectToOtherPeers();
+      this.sendRequestForNewPeers();
       logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
   }
