@@ -12,6 +12,14 @@ ain.wallet.setDefaultAccount(BOT_ADDRESS);
 
 app.use(express.json());
 
+
+app.get('/', (req, res, next) => {
+  res.status(200)
+    .set('Content-Type', 'text/plain')
+    .send('Echo Bot is alive!')
+    .end();
+});
+
 app.post('/trigger', async (req, res) => {
   res.send('Triggered!');
 
