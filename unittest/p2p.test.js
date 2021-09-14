@@ -259,8 +259,8 @@ describe("p2p", () => {
 
   describe("client status", () => {
     describe("initConnections", () => {
-      it("sets maxOutbound", () => {
-        expect(p2pClient.maxOutbound).to.equal(TARGET_NUM_OUTBOUND_CONNECTION);
+      it("sets targetOutBound", () => {
+        expect(p2pClient.targetOutBound).to.equal(TARGET_NUM_OUTBOUND_CONNECTION);
       });
 
       it("sets maxInbound", () => {
@@ -271,8 +271,8 @@ describe("p2p", () => {
     describe("getConnectionStatus", () => {
       it("shows initial values of connection status", () => {
         const actual = {
-          maxInbound: TARGET_NUM_OUTBOUND_CONNECTION,
-          maxOutbound: MAX_NUM_INBOUND_CONNECTION,
+          targetOutBound: TARGET_NUM_OUTBOUND_CONNECTION,
+          maxInbound: MAX_NUM_INBOUND_CONNECTION,
           numInbound: 0,
           numOutbound: 0,
           incomingPeers: [],

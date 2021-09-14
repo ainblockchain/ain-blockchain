@@ -50,11 +50,8 @@ class P2pClient {
     this.connectToTracker();
   }
 
-  // NOTE(minsulee2): The total number of connection is up to more than 5 without limit.
-  // maxOutbound is for now limited equal or less than 2.
-  // maxInbound is a rest of connection after maxOutbound is set.
   initConnections() {
-    this.maxOutbound = process.env.MAX_OUTBOUND ?
+    this.targetOutBound = process.env.MAX_OUTBOUND ?
         Number(process.env.MAX_OUTBOUND) : TARGET_NUM_OUTBOUND_CONNECTION;
     this.maxInbound = process.env.MAX_INBOUND ?
         Number(process.env.MAX_INBOUND) : MAX_NUM_INBOUND_CONNECTION;
@@ -65,7 +62,7 @@ class P2pClient {
     const outgoingPeers = Object.keys(this.outbound);
     return {
       maxInbound: this.maxInbound,
-      maxOutbound: this.maxOutbound,
+      targetOutBound: this.targetOutBound,
       numInbound: incomingPeers.length,
       numOutbound: outgoingPeers.length,
       incomingPeers: incomingPeers,
