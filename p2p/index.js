@@ -89,6 +89,7 @@ class P2pClient {
       diskStatus: this.server.getDiskUsage(),
       runtimeInfo: this.server.getRuntimeInfo(),
       protocolInfo: this.server.getProtocolInfo(),
+      blockchainConfig: this.server.getBlockchainConfig(),
     };
   }
 
