@@ -195,7 +195,7 @@ function getNumNodes() {
 }
 
 function getMaxNumberOfNewPeers(nodeInfo) {
-  const numOfCandidates = nodeInfo.networkStatus.connectionStatus.maxOutbound -
+  const numOfCandidates = nodeInfo.networkStatus.connectionStatus.targetOutBound -
       nodeInfo.networkStatus.connectionStatus.outgoingPeers.length;
   if (numOfCandidates > 0) {
     return numOfCandidates;
