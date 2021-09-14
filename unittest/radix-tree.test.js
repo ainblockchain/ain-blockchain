@@ -666,29 +666,33 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_version": "ver",
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
+          ".radix_version": "ver",
           "bbb": {
             "111": {
-              ".version": null,
               ".label": "0xbbb111",
+              ".num_parents": 1,
               ".proof_hash": null,
-              ".radix_version": "ver",
               ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
             "222": {
               ".label": "0xbbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
-            ".version": null,
             ".label": "0xbbb",
+            ".num_parents": 1,
             ".proof_hash": null,
-            ".radix_version": "ver",
             ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
           }
         });
 
@@ -701,22 +705,25 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // not merged!!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
           "bbb": {
             "222": {
               ".label": "0xbbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
             ".label": "0xbbb",
+            ".num_parents": 1,
             ".proof_hash": null,
             ".radix_ph": null,
             ".radix_version": "ver",
-            ".version": null
+            ".version": null,
           }
         });
       });
@@ -736,26 +743,30 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_version": "ver",
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
+          ".radix_version": "ver",
           "bbb": {
             "111": {
-              ".version": null,
               ".label": "0xbbb111",
+              ".num_parents": 1,
               ".proof_hash": null,
-              ".radix_version": "ver",
               ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
             "222": {
               ".label": "0xbbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
-            ".radix_version": "ver",
+            ".num_parents": 1,
             ".radix_ph": null,
+            ".radix_version": "ver",
           }
         });
 
@@ -766,15 +777,17 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // merged!!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
           "bbb222": {
             ".label": "0xbbb222",
+            ".num_parents": 1,
             ".proof_hash": null,
             ".radix_ph": null,
             ".radix_version": "ver",
-            ".version": null
+            ".version": null,
           }
         });
       });
@@ -1399,34 +1412,39 @@ describe("radix-tree", () => {
         expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_version": "ver",
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
+          ".radix_version": "ver",
           "000bbb": {
             "111": {
-              ".version": null,
               ".label": "0x000bbb111",
+              ".num_parents": 2,
               ".proof_hash": null,
-              ".radix_version": "ver",
               ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
-            ".version": null,
             ".label": "0x000bbb",
+            ".num_parents": 1,
             ".proof_hash": null,
-            ".radix_version": "ver",
             ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
           }
         });
-        assert.deepEqual(parentAnother.toJsObject(true, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
           "111": {
             ".label": "0x000bbb111",
+            ".num_parents": 2,
             ".proof_hash": null,
             ".radix_ph": null,
             ".radix_version": "ver",
-            ".version": null
+            ".version": null,
           },
+          ".num_parents": 0,
           ".radix_ph": null,
-          ".radix_version": "ver2"
+          ".radix_version": "ver2",
         });
 
         // delete the node
@@ -1436,31 +1454,36 @@ describe("radix-tree", () => {
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
         // not merged!!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
           "000bbb": {
             "111": {
               ".label": "0x000bbb111",
+              ".num_parents": 2,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
               ".version": null,
             },
+            ".num_parents": 1,
             ".radix_ph": null,
             ".radix_version": "ver",
           }
         });
-        assert.deepEqual(parentAnother.toJsObject(true, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
           "111": {
             ".label": "0x000bbb111",
+            ".num_parents": 2,
             ".proof_hash": null,
             ".radix_ph": null,
             ".radix_version": "ver",
-            ".version": null
+            ".version": null,
           },
+          ".num_parents": 0,
           ".radix_ph": null,
-          ".radix_version": "ver2"
+          ".radix_version": "ver2",
         });
       });
 
@@ -1540,29 +1563,33 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_version": "ver",
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
+          ".radix_version": "ver",
           "000bbb": {
             "111": {
-              ".version": null,
               ".label": "0x000bbb111",
+              ".num_parents": 1,
               ".proof_hash": null,
-              ".radix_version": "ver",
               ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
             "222": {
               ".label": "0x000bbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
-            ".version": null,
             ".label": "0x000bbb",
+            ".num_parents": 1,
             ".proof_hash": null,
-            ".radix_version": "ver",
             ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
           }
         });
 
@@ -1575,22 +1602,25 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // not merged!!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
           "000bbb": {
             "222": {
               ".label": "0x000bbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
             ".label": "0x000bbb",
+            ".num_parents": 1,
             ".proof_hash": null,
             ".radix_ph": null,
             ".radix_version": "ver",
-            ".version": null
+            ".version": null,
           }
         });
       });
@@ -1616,29 +1646,33 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_version": "ver",
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
+          ".radix_version": "ver",
           "000bbb": {
             "111": {
-              ".version": null,
               ".label": "0x000bbb111",
+              ".num_parents": 1,
               ".proof_hash": null,
-              ".radix_version": "ver",
               ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
             "222": {
               ".label": "0x000bbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
-            ".version": null,
             ".label": "0x000bbb",
+            ".num_parents": 1,
             ".proof_hash": null,
-            ".radix_version": "ver",
             ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
           }
         });
 
@@ -1651,22 +1685,25 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // not merged with proof hash updates!!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": "0xca570f9b1ca8572d215027ba2b949003e0c55ff3b5346bec47899fbaf652c8a5",
           ".radix_version": "ver",
           "000bbb": {
             "222": {
               ".label": "0x000bbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
             ".label": "0x000bbb",
+            ".num_parents": 1,
             ".proof_hash": null,
             ".radix_ph": "0xfca2961686b9d9ee4b618bee6f6c7857c85644cf88e13e93179289fd18985fa8",
             ".radix_version": "ver",
-            ".version": null
+            ".version": null,
           }
         });
       });
@@ -1687,14 +1724,14 @@ describe("radix-tree", () => {
         tree.set(label22, stateNode22);
         // set another root path
         const version2 = 'ver2';
-        const grandParentAnother = new RadixNode(version2);
+        const child2 = tree._getRadixNodeForReading(label2);
         const radixLabel2 = RadixTree._toRadixLabel(label2);
-        const parent = tree._getRadixNodeForDeleting(label2);
-        grandParentAnother.setChild(radixLabel2.charAt(0), radixLabel2.slice(1), parent);
+        const grandParentAnother = new RadixNode(version2);
+        grandParentAnother.setChild(radixLabel2.charAt(0), radixLabel2.slice(1), child2);
 
-        // check grand parents
-        expect(parent.numParents()).to.equal(2);
-        expect(parent.hasParent(grandParentAnother)).to.equal(true);
+        // check another root path
+        expect(child2.numParents()).to.equal(2);
+        expect(child2.hasParent(grandParentAnother)).to.equal(true);
 
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
@@ -1702,54 +1739,62 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_version": "ver",
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
+          ".radix_version": "ver",
           "000bbb": {
             "111": {
-              ".version": null,
               ".label": "0x000bbb111",
+              ".num_parents": 1,
               ".proof_hash": null,
-              ".radix_version": "ver",
               ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
             "222": {
               ".label": "0x000bbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
-            ".version": null,
             ".label": "0x000bbb",
+            ".num_parents": 2,
             ".proof_hash": null,
-            ".radix_version": "ver",
             ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
           }
         });
-        assert.deepEqual(grandParentAnother.toJsObject(true, true), {
+        assert.deepEqual(grandParentAnother.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
           "000bbb": {
             "111": {
               ".label": "0x000bbb111",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
             "222": {
               ".label": "0x000bbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
             ".label": "0x000bbb",
+            ".num_parents": 2,
             ".proof_hash": null,
             ".radix_ph": null,
             ".radix_version": "ver",
-            ".version": null
+            ".version": null,
           }
         });
 
@@ -1762,40 +1807,55 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // not merged with proof hash updates!!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": "0xca570f9b1ca8572d215027ba2b949003e0c55ff3b5346bec47899fbaf652c8a5",
           ".radix_version": "ver",
           "000bbb": {
             "222": {
               ".label": "0x000bbb222",
+              ".num_parents": 2,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
             ".label": "0x000bbb",
+            ".num_parents": 1,
             ".proof_hash": null,
             ".radix_ph": "0xfca2961686b9d9ee4b618bee6f6c7857c85644cf88e13e93179289fd18985fa8",
             ".radix_version": "ver",
-            ".version": null
+            ".version": null,
           }
         });
-        assert.deepEqual(grandParentAnother.toJsObject(true, true), {
-          ".radix_ph": "0xca570f9b1ca8572d215027ba2b949003e0c55ff3b5346bec47899fbaf652c8a5",
+        // no changes!!
+        assert.deepEqual(grandParentAnother.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
           ".radix_version": "ver2",
           "000bbb": {
-            "222": {
-              ".label": "0x000bbb222",
+            "111": {
+              ".label": "0x000bbb111",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".num_parents": 2,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
             ".label": "0x000bbb",
+            ".num_parents": 1,
             ".proof_hash": null,
-            ".radix_ph": "0xfca2961686b9d9ee4b618bee6f6c7857c85644cf88e13e93179289fd18985fa8",
+            ".radix_ph": null,
             ".radix_version": "ver",
-            ".version": null
+            ".version": null,
           }
         });
       });
@@ -1815,26 +1875,30 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_version": "ver",
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
+          ".radix_version": "ver",
           "000bbb": {
             "111": {
-              ".version": null,
               ".label": "0x000bbb111",
+              ".num_parents": 1,
               ".proof_hash": null,
-              ".radix_version": "ver",
               ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
             "222": {
               ".label": "0x000bbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
-            ".radix_version": "ver",
+            ".num_parents": 1,
             ".radix_ph": null,
+            ".radix_version": "ver",
           }
         });
 
@@ -1845,15 +1909,17 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // merged!!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
           "000bbb222": {
             ".label": "0x000bbb222",
+            ".num_parents": 1,
             ".proof_hash": null,
             ".radix_ph": null,
             ".radix_version": "ver",
-            ".version": null
+            ".version": null,
           }
         });
       });
@@ -1873,26 +1939,30 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_version": "ver",
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
+          ".radix_version": "ver",
           "000bbb": {
             "111": {
-              ".version": null,
               ".label": "0x000bbb111",
+              ".num_parents": 1,
               ".proof_hash": null,
-              ".radix_version": "ver",
               ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
             "222": {
               ".label": "0x000bbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
-            ".radix_version": "ver",
+            ".num_parents": 1,
             ".radix_ph": null,
+            ".radix_version": "ver",
           }
         });
 
@@ -1903,15 +1973,17 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // merged with proof hash updates!!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": "0x2f86edb65f78422d4d2b8706495c0baa89c0cb169326a004a7c35b317f218a18",
           ".radix_version": "ver",
           "000bbb222": {
             ".label": "0x000bbb222",
+            ".num_parents": 1,
             ".proof_hash": null,
             ".radix_ph": null,
             ".radix_version": "ver",
-            ".version": null
+            ".version": null,
           }
         });
       });
@@ -1929,59 +2001,67 @@ describe("radix-tree", () => {
         tree.set(label22, stateNode22);
         // set another root path
         const version2 = 'ver2';
-        const grandParentAnother = new RadixNode(version2);
+        const child2 = tree._getRadixNodeForReading(label2);
         const radixLabel2 = RadixTree._toRadixLabel(label2);
-        const parent = tree._getRadixNodeForDeleting(label2);
-        grandParentAnother.setChild(radixLabel2.charAt(0), radixLabel2.slice(1), parent);
+        const grandParentAnother = new RadixNode(version2);
+        grandParentAnother.setChild(radixLabel2.charAt(0), radixLabel2.slice(1), child2);
 
-        // check grand parents
-        expect(parent.numParents()).to.equal(2);
-        expect(parent.hasParent(grandParentAnother)).to.equal(true);
+        // check another root path
+        expect(child2.numParents()).to.equal(2);
+        expect(child2.hasParent(grandParentAnother)).to.equal(true);
 
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_version": "ver",
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
+          ".radix_version": "ver",
           "000bbb": {
             "111": {
-              ".version": null,
               ".label": "0x000bbb111",
+              ".num_parents": 1,
               ".proof_hash": null,
-              ".radix_version": "ver",
               ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
             "222": {
               ".label": "0x000bbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
-            ".radix_version": "ver",
+            ".num_parents": 2,
             ".radix_ph": null,
+            ".radix_version": "ver",
           }
         });
-        assert.deepEqual(grandParentAnother.toJsObject(true, true), {
+        assert.deepEqual(grandParentAnother.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
           "000bbb": {
             "111": {
               ".label": "0x000bbb111",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
             "222": {
               ".label": "0x000bbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
+            ".num_parents": 2,
             ".radix_ph": null,
             ".radix_version": "ver",
           }
@@ -1993,27 +2073,50 @@ describe("radix-tree", () => {
         expect(tree.has(label21)).to.equal(false);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        // merged with proof hash updates!!
-        assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_ph": "0x2f86edb65f78422d4d2b8706495c0baa89c0cb169326a004a7c35b317f218a18",
+        // deleted with proof hash updates, but not merged!!
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": "0x76691a736e5b3e4cdf14c2384c766409a39e9447571aad9463298a7f47b68e40",
           ".radix_version": "ver",
-          "000bbb222": {
-            ".label": "0x000bbb222",
-            ".proof_hash": null,
-            ".radix_ph": null,
+          "000bbb": {
+            "222": {
+              ".label": "0x000bbb222",
+              ".num_parents": 2,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            },
+            ".num_parents": 1,
+            ".radix_ph": "0x8f58f77d96721e72e2cca7f862a896ab1edba47ecba320ebbed6f2064893d995",
             ".radix_version": "ver",
-            ".version": null
           }
         });
-        assert.deepEqual(grandParentAnother.toJsObject(true, true), {
-          ".radix_ph": "0x2f86edb65f78422d4d2b8706495c0baa89c0cb169326a004a7c35b317f218a18",
+        // no changes!!
+        assert.deepEqual(grandParentAnother.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
           ".radix_version": "ver2",
-          "000bbb222": {
-            ".label": "0x000bbb222",
-            ".proof_hash": null,
+          "000bbb": {
+            "111": {
+              ".label": "0x000bbb111",
+              ".num_parents": 1,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".num_parents": 2,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            },
+            ".num_parents": 1,
             ".radix_ph": null,
             ".radix_version": "ver",
-            ".version": null
           }
         });
       });
@@ -2042,38 +2145,44 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_version": "ver",
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
           ".radix_ph": null,
+          ".radix_version": "ver",
           "000bbb": {
             "111": {
-              ".version": null,
               ".label": "0x000bbb111",
+              ".num_parents": 2,
               ".proof_hash": null,
-              ".radix_version": "ver",
               ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
             },
             "222": {
               ".label": "0x000bbb222",
+              ".num_parents": 1,
               ".proof_hash": null,
               ".radix_ph": null,
               ".radix_version": "ver",
-              ".version": null
+              ".version": null,
             },
-            ".radix_version": "ver",
+            ".num_parents": 1,
             ".radix_ph": null,
+            ".radix_version": "ver",
           }
         });
-        assert.deepEqual(parentAnother.toJsObject(true, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
           "111": {
             ".label": "0x000bbb111",
+            ".num_parents": 2,
             ".proof_hash": null,
             ".radix_ph": null,
             ".radix_version": "ver",
-            ".version": null
+            ".version": null,
           },
+          ".num_parents": 0,
           ".radix_ph": null,
-          ".radix_version": "ver2"
+          ".radix_version": "ver2",
         });
 
         // delete the node
@@ -2082,25 +2191,33 @@ describe("radix-tree", () => {
         expect(tree.has(label21)).to.equal(false);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        // not merged with proof hash updates!!
-        assert.deepEqual(tree.toJsObject(true, true), {
-          ".radix_ph": "0x76691a736e5b3e4cdf14c2384c766409a39e9447571aad9463298a7f47b68e40",
+        // merged with proof hash updates!!
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": "0x2f86edb65f78422d4d2b8706495c0baa89c0cb169326a004a7c35b317f218a18",
           ".radix_version": "ver",
-          "000bbb": {
-            "222": {
-              ".label": "0x000bbb222",
-              ".proof_hash": null,
-              ".radix_ph": null,
-              ".radix_version": "ver",
-              ".version": null
-            },
-            ".radix_ph": "0x8f58f77d96721e72e2cca7f862a896ab1edba47ecba320ebbed6f2064893d995",
-            ".radix_version": "ver"
+          "000bbb222": {
+            ".label": "0x000bbb222",
+            ".num_parents": 1,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
           }
         });
-        assert.deepEqual(parentAnother.toJsObject(true, true), {
-          ".radix_ph": "0xac6e47f6a906efffe8d6732220926589865ab91ce02bfb3da3dd898f4be7af38",
-          ".radix_version": "ver2"
+        // no changes!!
+        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+          "111": {
+            ".label": "0x000bbb111",
+            ".num_parents": 1,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          },
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver2",
         });
       });
     });
@@ -2400,6 +2517,7 @@ describe("radix-tree", () => {
       });
     })
 
+    /*
     describe("deleteRadixTree", () => {
       let stateNode1;
       let stateNode2;
@@ -2487,6 +2605,176 @@ describe("radix-tree", () => {
         assert.deepEqual(stateNode2.getParentNodes(), []);
         assert.deepEqual(stateNode21.getParentNodes(), []);
         assert.deepEqual(stateNode22.getParentNodes(), []);
+      });
+    });
+    */
+
+    it("deleteRadixTreeVersion", () => {
+      const versionAnother = 'ver_another';
+
+      const label1 = '0x000aaa';
+      const label2 = '0x000bbb';
+      const label21 = '0x000bbb111';
+      const label22 = '0x000bbb222';
+
+      const stateNode1 = new StateNode();
+      const stateNode2 = new StateNode();
+      const stateNode21 = new StateNode();
+      const stateNode22 = new StateNode();
+      const stateNodeAnother1 = new StateNode();
+
+      const parentStateNodeAnother = new StateNode();
+      parentStateNodeAnother.setLabel('parentStateNodeLabelAnother')
+
+      // set state nodes
+      tree.set(label1, stateNode1);
+      tree.set(label2, stateNode2);
+      tree.set(label21, stateNode21);
+      tree.set(label22, stateNode22);
+
+      stateNode1.setLabel(label1);
+      stateNode2.setLabel(label2);
+      stateNode21.setLabel(label21);
+      stateNode22.setLabel(label22);
+
+      const treeAnother = tree.clone(versionAnother, parentStateNodeAnother);
+      treeAnother.set(label1, stateNodeAnother1);
+      stateNodeAnother1.setLabel(label1);
+
+      assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        ".num_parents": 0,
+        ".radix_ph": null,
+        ".radix_version": "ver",
+        "000": {
+          ".num_parents": 1,
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "aaa": {
+            ".label": "0x000aaa",
+            ".num_parents": 1,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          },
+          "bbb": {
+            "111": {
+              ".label": "0x000bbb111",
+              ".num_parents": 1,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".num_parents": 1,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            },
+            ".label": "0x000bbb",
+            ".num_parents": 2,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        }
+      });
+      assert.deepEqual(treeAnother.toJsObject(true, true, false, true), {
+        ".num_parents": 0,
+        ".radix_ph": null,
+        ".radix_version": "ver_another",
+        "000": {
+          ".num_parents": 1,
+          ".radix_ph": null,
+          ".radix_version": "ver_another",
+          "aaa": {
+            ".label": "0x000aaa",
+            ".num_parents": 1,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver_another",
+            ".version": null,
+          },
+          "bbb": {
+            "111": {
+              ".label": "0x000bbb111",
+              ".num_parents": 1,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".num_parents": 1,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            },
+            ".label": "0x000bbb",
+            ".num_parents": 2,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        }
+      });
+
+      expect(tree.deleteRadixTreeVersion()).to.equal(3);  // including internal nodes
+      // deleted!!
+      assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        ".num_parents": 0,
+        ".radix_ph": null,
+        ".radix_version": null,
+      });
+      // no changes!!
+      assert.deepEqual(treeAnother.toJsObject(true, true, false, true), {
+        ".num_parents": 0,
+        ".radix_ph": null,
+        ".radix_version": "ver_another",
+        "000": {
+          ".num_parents": 1,
+          ".radix_ph": null,
+          ".radix_version": "ver_another",
+          "aaa": {
+            ".label": "0x000aaa",
+            ".num_parents": 1,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver_another",
+            ".version": null,
+          },
+          "bbb": {
+            "111": {
+              ".label": "0x000bbb111",
+              ".num_parents": 1,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            },
+            "222": {
+              ".label": "0x000bbb222",
+              ".num_parents": 1,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            },
+            ".label": "0x000bbb",
+            ".num_parents": 1,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        }
       });
     });
   });

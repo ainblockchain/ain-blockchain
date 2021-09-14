@@ -97,6 +97,10 @@ class RadixNode {
   }
 
   setStateNode(stateNode) {
+    if (this.hasStateNode()) {
+      const existingStateNode = this.getStateNode();
+      existingStateNode.deleteParentRadixNode(this);
+    }
     if (stateNode !== null && !stateNode.hasParentRadixNode(this)) {
       stateNode.addParentRadixNode(this);
     }
@@ -517,7 +521,7 @@ class RadixNode {
    * Converts the subtree to a js object.
    * This is for testing / debugging purpose.
    */
-  toJsObject(withVersion = false, withProofHash = false, withTreeInfo = false) {
+  toJsObject(withVersion = false, withProofHash = false, withTreeInfo = false, withNumParents = false) {
     const obj = {};
     if (withVersion) {
       obj[RadixInfoProperties.RADIX_VERSION] = this.getVersion();
@@ -530,6 +534,9 @@ class RadixNode {
       obj[RadixInfoProperties.TREE_SIZE] = this.getTreeSize();
       obj[RadixInfoProperties.TREE_BYTES] = this.getTreeBytes();
     }
+    if (withNumParents) {
+      obj[RadixInfoProperties.NUM_PARENTS] = this.numParents();
+    }
     if (this.hasStateNode()) {
       const stateNode = this.getStateNode();
       obj[RadixInfoProperties.LABEL] = stateNode.getLabel();
@@ -541,7 +548,7 @@ class RadixNode {
       }
     }
     for (const child of this.getChildNodes()) {
-      obj[child.getLabel()] = child.toJsObject(withVersion, withProofHash, withTreeInfo);
+      obj[child.getLabel()] = child.toJsObject(withVersion, withProofHash, withTreeInfo, withNumParents);
     }
     return obj;
   }

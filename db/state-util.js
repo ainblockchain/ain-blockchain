@@ -580,28 +580,6 @@ function deleteStateTreeVersion(node) {
   return numAffectedNodes;
 }
 
-function equalStateTrees(node1, node2) {
-  if (!node1 && !node2) {
-    return true;
-  }
-  if (!node1 || !node2) {
-    return false;
-  }
-  if (!node1.equal(node2)) {
-    return false;
-  }
-  // NOTE: The child label order matters.
-  for (const label of node1.getChildLabels()) {
-    const child1 = node1.getChild(label);
-    const child2 = node2.getChild(label);
-    if (!equalStateTrees(child1, child2)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 function updateStateInfoForAllRootPathsRecursive(
     curNode, updatedChildLabel = null, updatedChildEmpty = false) {
   let numAffectedNodes = 0;
@@ -710,7 +688,6 @@ module.exports = {
   setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTreeVersion,
-  equalStateTrees,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,

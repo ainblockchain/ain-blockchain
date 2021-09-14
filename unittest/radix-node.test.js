@@ -1162,6 +1162,7 @@ describe("radix-node", () => {
           stateNodes, [stateNode, childStateNode1, childStateNode2, childStateNode21, childStateNode22]);
     });
 
+    /*
     it("copyFrom", () => {
       const newParentStateNode = new StateNode();
       const newNode = new RadixNode();
@@ -1208,9 +1209,13 @@ describe("radix-node", () => {
       });
       assert.deepEqual(newNode.toJsObject(false, true, true), node.toJsObject(false, true, true));
       // Check parents of state nodes
+      assert.deepEqual(childStateNode1.numParents(), 1);
       assert.deepEqual(childStateNode1.getParentNodes(), [newParentStateNode]);
+      assert.deepEqual(childStateNode2.numParents(), 1);
       assert.deepEqual(childStateNode2.getParentNodes(), [newParentStateNode]);
+      assert.deepEqual(childStateNode21.numParents(), 1);
       assert.deepEqual(childStateNode21.getParentNodes(), [newParentStateNode]);
+      assert.deepEqual(childStateNode22.numParents(), 1);
       assert.deepEqual(childStateNode22.getParentNodes(), [newParentStateNode]);
     });
 
@@ -1224,9 +1229,13 @@ describe("radix-node", () => {
       // parentStateNodeToDelete = null
       expect(node.deleteRadixTree()).to.equal(5);
       // Check parents of state nodes
+      assert.deepEqual(childStateNode1.numParents(), 1);
       assert.deepEqual(childStateNode1.getParentNodes(), [parentStateNode]);
+      assert.deepEqual(childStateNode2.numParents(), 1);
       assert.deepEqual(childStateNode2.getParentNodes(), [parentStateNode]);
+      assert.deepEqual(childStateNode21.numParents(), 1);
       assert.deepEqual(childStateNode21.getParentNodes(), [parentStateNode]);
+      assert.deepEqual(childStateNode22.numParents(), 1);
       assert.deepEqual(childStateNode22.getParentNodes(), [parentStateNode]);
       // Check radix nodes
       expect(node.hasStateNode()).to.equal(false);
@@ -1263,9 +1272,10 @@ describe("radix-node", () => {
       assert.deepEqual(childStateNode21.getParentNodes(), []);
       assert.deepEqual(childStateNode22.getParentNodes(), []);
     });
+    */
 
-    it("deleteRadixTreeVersion with parentStateNodeToDelete", () => {
-      const versionAnother = 'verAnother';
+    it("deleteRadixTreeVersion", () => {
+      const versionAnother = 'ver_another';
 
       const stateNodeAnother = new StateNode();
       stateNodeAnother.setLabel('1001');
@@ -1304,75 +1314,120 @@ describe("radix-node", () => {
       childAnother2.setChild('1', '021', childAnother21);
       childAnother2.setChild('2', '022', childAnother22);
 
-      assert.deepEqual(parent1.toJsObject(), {
+      assert.deepEqual(parent1.toJsObject(true), {
         "1001": {
           "1001": {
-            ".label": "1001"
+            ".label": "1001",
+            ".radix_version": "ver_another",
+            ".version": null,
           },
           "2002": {
             "1021": {
-              ".label": "1021"
+              ".label": "1021",
+              ".radix_version": "ver_another",
+              ".version": null,
             },
             "2022": {
-              ".label": "2022"
+              ".label": "2022",
+              ".radix_version": "ver_another",
+              ".version": null,
             },
-            ".label": "2002"
+            ".label": "2002",
+            ".radix_version": "ver_another",
+            ".version": null,
           },
-          ".label": "1001"
+          ".label": "1001",
+          ".radix_version": "ver_another",
+          ".version": null,
         },
+        ".radix_version": "ver1",
         "0000": {
           "1001": {
-            ".label": "1001"
+            ".label": "1001",
+            ".radix_version": "ver",
+            ".version": "childStateNodeVer1",
           },
           "2002": {
             "1021": {
-              ".label": "1021"
+              ".label": "1021",
+              ".radix_version": "ver",
+              ".version": "childStateNodeVer21",
             },
             "2022": {
-              ".label": "2022"
+              ".label": "2022",
+              ".radix_version": "ver",
+              ".version": "childStateNodeVer22",
             },
-            ".label": "2002"
+            ".label": "2002",
+            ".radix_version": "ver",
+            ".version": "childStateNodeVer2",
           },
-          ".label": "0000"
+          ".label": "0000",
+          ".radix_version": "ver",
+          ".version": "stateNodeVer",
         }
       });
-      assert.deepEqual(parent2.toJsObject(), {
+      assert.deepEqual(parent2.toJsObject(true), {
+        ".radix_version": "ver21",
         "0000": {
           "1001": {
-            ".label": "1001"
+            ".label": "1001",
+            ".radix_version": "ver",
+            ".version": "childStateNodeVer1",
           },
           "2002": {
             "1021": {
-              ".label": "1021"
+              ".label": "1021",
+              ".radix_version": "ver",
+              ".version": "childStateNodeVer21",
             },
             "2022": {
-              ".label": "2022"
+              ".label": "2022",
+              ".radix_version": "ver",
+              ".version": "childStateNodeVer22",
             },
-            ".label": "2002"
+            ".label": "2002",
+            ".radix_version": "ver",
+            ".version": "childStateNodeVer2",
           },
-          ".label": "0000"
+          ".label": "0000",
+          ".radix_version": "ver",
+          ".version": "stateNodeVer",
         }
       });
       // with parentStateNodeToDelete
       expect(parent1.deleteRadixTreeVersion()).to.equal(6);
       // deleted
-      assert.deepEqual(parent1.toJsObject(), {});
+      assert.deepEqual(parent1.toJsObject(true), {
+        ".radix_version": null
+      });
       // remains untouched
-      assert.deepEqual(parent2.toJsObject(), {
+      assert.deepEqual(parent2.toJsObject(true), {
+        ".radix_version": "ver21",
         "0000": {
           "1001": {
-            ".label": "1001"
+            ".label": "1001",
+            ".radix_version": "ver",
+            ".version": "childStateNodeVer1",
           },
           "2002": {
             "1021": {
-              ".label": "1021"
+              ".label": "1021",
+              ".radix_version": "ver",
+              ".version": "childStateNodeVer21",
             },
             "2022": {
-              ".label": "2022"
+              ".label": "2022",
+              ".radix_version": "ver",
+              ".version": "childStateNodeVer22",
             },
-            ".label": "2002"
+            ".label": "2002",
+            ".radix_version": "ver",
+            ".version": "childStateNodeVer2",
           },
-          ".label": "0000"
+          ".label": "0000",
+          ".radix_version": "ver",
+          ".version": "stateNodeVer",
         }
       });
     });
@@ -1393,9 +1448,10 @@ describe("radix-node", () => {
         },
         ".label": "0000"
       });
-      assert.deepEqual(node.toJsObject(true, true, true), {
+      assert.deepEqual(node.toJsObject(true, true, true, true), {
         "1001": {
           ".label": "1001",
+          ".num_parents": 1,
           ".proof_hash": "childStateNodePH1",
           ".radix_ph": "0x250696f53c50acdc0d4b7222f854da562ffaa0b30bfda384bb4d5c92be12ce69",
           ".radix_version": "ver",
@@ -1407,6 +1463,7 @@ describe("radix-node", () => {
         "2002": {
           "1021": {
             ".label": "1021",
+            ".num_parents": 1,
             ".proof_hash": "childStateNodePH21",
             ".radix_ph": "0x68971271b6018c8827230bb696d7d2661ebb286f95851e72da889e1af6b22721",
             ".radix_version": "ver",
@@ -1417,6 +1474,7 @@ describe("radix-node", () => {
           },
           "2022": {
             ".label": "2022",
+            ".num_parents": 1,
             ".proof_hash": "childStateNodePH22",
             ".radix_ph": "0xba9d1dcddd02911d1d260f8acd4e3857174d98a57e6b3c7e0577c8a07056b057",
             ".radix_version": "ver",
@@ -1426,6 +1484,7 @@ describe("radix-node", () => {
             ".version": "childStateNodeVer22",
           },
           ".label": "2002",
+          ".num_parents": 1,
           ".proof_hash": "childStateNodePH2",
           ".radix_ph": "0xa324889bbe8fe5189103966387ec9521bcae57046727f77496fe19e7d0b333ab",
           ".radix_version": "ver",
@@ -1435,6 +1494,7 @@ describe("radix-node", () => {
           ".version": "childStateNodeVer2",
         },
         ".label": "0000",
+        ".num_parents": 2,
         ".proof_hash": "stateNodePH",
         ".radix_ph": "0xeeea0db0b065dd84b326e2852d48d3f8738b2bb220f9dd7e4f2db756915da13e",
         ".radix_version": "ver",
