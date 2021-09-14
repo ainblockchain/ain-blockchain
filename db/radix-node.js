@@ -45,7 +45,9 @@ class RadixNode {
   static _create(
       version, parentStateNode, stateNode, labelRadix, labelSuffix, proofHash, treeHeight, treeSize, treeBytes) {
     const node = new RadixNode(version, parentStateNode);
-    node.setStateNode(stateNode);
+    if (stateNode) {
+      node.setStateNode(stateNode);
+    }
     node.setLabelRadix(labelRadix);
     node.setLabelSuffix(labelSuffix);
     node.setProofHash(proofHash);
@@ -98,13 +100,21 @@ class RadixNode {
   }
 
   setStateNode(stateNode) {
+    const LOG_HEADER = 'setStateNode';
+    if (!stateNode) {
+      logger.error(
+          `[${LOG_HEADER}] Setting invalid state node: ${stateNode} ` +
+          `at: ${new Error().stack}.`);
+      // Does nothing.
+      return;
+    }
     if (FeatureFlags.enableRadixNodeVersioning) {
       if (this.hasStateNode()) {
         const existingStateNode = this.getStateNode();
         existingStateNode.deleteParentRadixNode(this);
       }
     }
-    if (stateNode !== null && !stateNode.hasParentRadixNode(this)) {
+    if (!stateNode.hasParentRadixNode(this)) {
       stateNode.addParentRadixNode(this);
     }
     this.stateNode = stateNode;
@@ -118,7 +128,7 @@ class RadixNode {
     if (this.hasStateNode()) {
       this.getStateNode().deleteParentRadixNode(this);
     }
-    this.setStateNode(null);
+    this.stateNode = null;
   }
 
   getLabelRadix() {
