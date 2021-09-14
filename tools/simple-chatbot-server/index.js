@@ -4,9 +4,9 @@ const CommonUtil = require('../../common/common-util');
 const app = express();
 const port = 80;
 const blockchainEndpoint = 'http://dev-node.ainetwork.ai:8080/';
+const ain = new AinJs(blockchainEndpoint, 0);
 const BOT_NAME = 'echo-bot';
 const BOT_PK = 'ee0b1315d446e5318eb6eb4e9d071cd12ef42d2956d546f9acbdc3b75c469640';
-const ain = new AinJs(blockchainEndpoint, 0);
 const BOT_ADDRESS = AinJs.utils.toChecksumAddress(ain.wallet.add(BOT_PK)); // 0x09A0d53FDf1c36A131938eb379b98910e55EEfe1
 ain.wallet.setDefaultAccount(BOT_ADDRESS);
 
