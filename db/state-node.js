@@ -71,7 +71,7 @@ class StateNode {
     if (!this.getIsLeaf()) {
       if (FeatureFlags.enableRadixTreeLayers) {
         if (FeatureFlags.enableRadixNodeVersioning) {
-          cloned.cloneRadixTreeFrom(this);
+          cloned.radixTree = this.radixTree.clone(version, cloned);
         } else {
           cloned.copyRadixTreeFrom(this);
         }
@@ -87,10 +87,6 @@ class StateNode {
 
   copyRadixTreeFrom(stateNode) {
     this.radixTree.copyFrom(stateNode.radixTree, this);
-  }
-
-  cloneRadixTreeFrom(stateNode) {
-    this.radixTree.cloneFrom(stateNode.radixTree, this.getVersion(), this);
   }
 
   equal(that) {

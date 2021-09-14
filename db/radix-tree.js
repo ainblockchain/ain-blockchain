@@ -16,6 +16,13 @@ class RadixTree {
     this.numStateNodes = 0;
   }
 
+  clone(version, parentStateNode) {
+    const clonedTree = new RadixTree();
+    clonedTree.root = this.root.clone(version, parentStateNode);
+    clonedTree.numStateNodes = this.numStateNodes;
+    return clonedTree;
+  }
+
   static _toRadixLabel(stateLabel) {
     return CommonUtil.toHexString(stateLabel);
   }
@@ -394,11 +401,6 @@ class RadixTree {
     this.numStateNodes = radixTree.size();
   }
 
-  cloneFrom(radixTree, version, parentStateNode) {
-    this.root = radixTree.root.clone(version, parentStateNode);
-    this.numStateNodes = radixTree.size();
-  }
-
   deleteRadixTree(parentStateNodeToDelete = null) {
     this.numStateNodes = 0;
     return this.root.deleteRadixTree(parentStateNodeToDelete);
@@ -413,8 +415,8 @@ class RadixTree {
    * Converts the tree to a javascript object.
    * This is for testing / debugging purpose.
    */
-  toJsObject(withVersion = false, withProofHash = false, withStateNodeDetails = false) {
-    return this.root.toJsObject(withVersion, withProofHash, withStateNodeDetails);
+  toJsObject(withVersion = false, withProofHash = false, withTreeInfo = false) {
+    return this.root.toJsObject(withVersion, withProofHash, withTreeInfo);
   }
 }
 
