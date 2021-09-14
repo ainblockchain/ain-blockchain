@@ -139,7 +139,6 @@ describe("state-node", () => {
       expect(clone.getTreeSize()).to.equal(node.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
       assert.deepEqual(clone.toJsObject(GET_OPTIONS_INCLUDE_ALL), node.toJsObject(GET_OPTIONS_INCLUDE_ALL));
-      expect(node.equal(clone)).to.equal(true);
     });
 
     it("internal node", () => {
@@ -156,7 +155,7 @@ describe("state-node", () => {
 
       const clone = stateTree.clone();
       expect(clone.getVersion()).to.equal(stateTree.getVersion());
-      expect(clone.radixTree.root.getVersion()).to.equal(stateTree.getVersion());
+      expect(clone.radixTree.root.getVersion()).to.equal(null);
       expect(clone.getIsLeaf()).to.equal(false);
       assert.deepEqual(child1.getParentNodes(), [stateTree, clone]);
       assert.deepEqual(child2.getParentNodes(), [stateTree, clone]);
@@ -174,7 +173,6 @@ describe("state-node", () => {
       expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
       assert.deepEqual(clone.toJsObject(GET_OPTIONS_INCLUDE_ALL), stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL));
-      expect(stateTree.equal(clone)).to.equal(true);
     });
   });
 
@@ -222,74 +220,6 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
-    });
-  });
-
-  describe("equal", () => {
-    let node1;
-    let node2;
-    let child1;
-    let child2;
-    let parent;
-
-    beforeEach(() => {
-      node1 = new StateNode();
-      node2 = new StateNode();
-      child1 = new StateNode();
-      child2 = new StateNode();
-      parent = new StateNode();
-    })
-
-    it("non-object", () => {
-      expect(node1.equal(null)).to.equal(false);
-      expect(node1.equal(undefined)).to.equal(false);
-      expect(node1.equal(true)).to.equal(false);
-      expect(node1.equal(false)).to.equal(false);
-    });
-
-    it("leaf", () => {
-      expect(node1.equal(node2)).to.equal(true);
-
-      node1.setValue('value');
-      expect(node1.equal(node2)).to.equal(false);
-      node2.setValue('value');
-      expect(node1.equal(node2)).to.equal(true);
-
-      node1.addParent(parent);
-      expect(node1.equal(node2)).to.equal(false);
-      node2.addParent(parent);
-      expect(node1.equal(node2)).to.equal(true);
-    });
-
-    it("internal", () => {
-      expect(node1.equal(node2)).to.equal(true);
-
-      node1.addParent(parent);
-      expect(node1.equal(node2)).to.equal(false);
-      node2.addParent(parent);
-      expect(node1.equal(node2)).to.equal(true);
-
-      node1.setChild(label1, child1);
-      expect(node1.equal(node2)).to.equal(false);
-      node1.setChild(label2, child2);
-      node2.setChild(label1, child1);
-      node2.setChild(label2, child2);
-      expect(node1.equal(node2)).to.equal(true);
-
-      node1.setProofHash('proof_hash1');
-      expect(node1.equal(node2)).to.equal(false);
-      node2.setProofHash('proof_hash1');
-      expect(node1.equal(node2)).to.equal(true);
-
-      node1.setVersion('version1');
-      expect(node1.equal(node2)).to.equal(false);
-      node2.setVersion('version1');
-      expect(node1.equal(node2)).to.equal(true);
-
-      node1.setTreeSize(5);
-      expect(node1.equal(node2)).to.equal(false);
-      node2.setTreeSize(5);
-      expect(node1.equal(node2)).to.equal(true);
     });
   });
 
@@ -652,6 +582,7 @@ describe("state-node", () => {
     });
   });
 
+  /*
   describe("parent", () => {
     it("add / has / delete / getParentNodes / numParents with single child", () => {
       const child = new StateNode();
@@ -791,6 +722,7 @@ describe("state-node", () => {
       expect(child.numParents()).to.equal(1);
     });
   });
+  */
 
   describe("child", () => {
     const label1 = 'label1';

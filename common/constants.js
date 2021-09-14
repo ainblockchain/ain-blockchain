@@ -395,6 +395,7 @@ const ProofProperties = {
  */
 const RadixInfoProperties = {
   LABEL: '.label',
+  NUM_PARENTS: '.num_parents',
   PROOF_HASH: '.proof_hash',
   RADIX_PROOF_HASH: '.radix_ph',
   RADIX_VERSION: '.radix_version',

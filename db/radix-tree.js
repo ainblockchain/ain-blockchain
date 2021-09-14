@@ -244,17 +244,22 @@ class RadixTree {
       // Does nothing.
       return node;
     }
+    const theOnlyChild = node.getChildNodes()[0];
+    if (theOnlyChild.numParents() > 1) {
+      // Cannot merged!!
+      // Does nothing.
+      return [node];
+    }
     const parentNodes = node.getParentNodes();
     const labelRadix = node.getLabelRadix();
     const labelSuffix = node.getLabelSuffix();
-    const child = node.getChildNodes()[0];
-    const childLabelRadix = child.getLabelRadix();
-    const childLabelSuffix = child.getLabelSuffix();
+    const childLabelRadix = theOnlyChild.getLabelRadix();
+    const childLabelSuffix = theOnlyChild.getLabelSuffix();
     const newChildLabelSuffix = labelSuffix + childLabelRadix + childLabelSuffix;
     node.deleteChild(childLabelRadix);
     for (const parent of parentNodes) {
       parent.deleteChild(labelRadix);
-      parent.setChild(labelRadix, newChildLabelSuffix, child);
+      parent.setChild(labelRadix, newChildLabelSuffix, theOnlyChild);
     }
     return parentNodes;
   }
@@ -289,7 +294,13 @@ class RadixTree {
         nodesToUpdate = RadixTree._mergeToChild(node);
       }
     } else if (node.numChildren() === 0) {
-      if (node.numParents() === 1) {  // the node has only 1 parent.
+      if (node.numParents() !== 1) {
+        logger.error(
+            `[${LOG_HEADER}] Multiple parents of a cloned node with label: ${stateLabel} ` +
+            `at: ${new Error().stack}.`);
+        // Does nothing.
+        return false;
+      } else {  // the node has only 1 parent.
         const theOnlyParent = node.getParentNodes()[0];
         theOnlyParent.deleteChild(labelRadix);  // delete child!
         nodesToUpdate.push(theOnlyParent);
@@ -297,12 +308,6 @@ class RadixTree {
             !theOnlyParent.hasStateNode() &&  // the parent has no state node
             theOnlyParent.hasParent()) {  // the parent is not a root.
           nodesToUpdate = RadixTree._mergeToChild(theOnlyParent);
-        }
-      } else {
-        nodesToUpdate = [];
-        for (const parent of node.getParentNodes()) {
-          parent.deleteChild(labelRadix);  // delete child!
-          nodesToUpdate.push(parent);
         }
       }
     }
@@ -415,8 +420,9 @@ class RadixTree {
    * Converts the tree to a javascript object.
    * This is for testing / debugging purpose.
    */
-  toJsObject(withVersion = false, withProofHash = false, withTreeInfo = false) {
-    return this.root.toJsObject(withVersion, withProofHash, withTreeInfo);
+  toJsObject(
+      withVersion = false, withProofHash = false, withTreeInfo = false, withNumParents = false) {
+    return this.root.toJsObject(withVersion, withProofHash, withTreeInfo, withNumParents);
   }
 }
 
