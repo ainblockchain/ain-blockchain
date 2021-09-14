@@ -3,6 +3,7 @@ const logger = require('../logger')('RADIX_NODE');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
+  FeatureFlags,
   LIGHTWEIGHT,
   HASH_DELIMITER,
   ProofProperties,
@@ -97,9 +98,11 @@ class RadixNode {
   }
 
   setStateNode(stateNode) {
-    if (this.hasStateNode()) {
-      const existingStateNode = this.getStateNode();
-      existingStateNode.deleteParentRadixNode(this);
+    if (FeatureFlags.enableRadixNodeVersioning) {
+      if (this.hasStateNode()) {
+        const existingStateNode = this.getStateNode();
+        existingStateNode.deleteParentRadixNode(this);
+      }
     }
     if (stateNode !== null && !stateNode.hasParentRadixNode(this)) {
       stateNode.addParentRadixNode(this);
