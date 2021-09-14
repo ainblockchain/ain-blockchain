@@ -33,7 +33,8 @@ const {
   NativeFunctionIds,
   LIGHTWEIGHT,
   FeatureFlags,
-  NETWORK_ID
+  NETWORK_ID,
+  GenesisParams,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const {
@@ -163,6 +164,10 @@ class P2pServer {
       timestamp,
       elapsedTimeMs,
     };
+  }
+
+  getBlockchainConfig() {
+    return GenesisParams;
   }
 
   getNodeStatus() {

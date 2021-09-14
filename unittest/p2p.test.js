@@ -104,7 +104,9 @@ describe("p2p", () => {
           state: 'STARTING',
           stateNumeric: 0,
           epoch: 1,
-          longestNotarizedChainTipsSize: 0
+          longestNotarizedChainTipsSize: 0,
+          globalTimeSyncStatus: {},
+          validators: {}
         };
         assert.deepEqual(actual, p2pServer.getConsensusStatus());
       });
@@ -332,6 +334,7 @@ describe("p2p", () => {
           diskStatus: p2pServer.getDiskUsage(),
           runtimeInfo: p2pServer.getRuntimeInfo(),
           protocolInfo: p2pServer.getProtocolInfo(),
+          blockchainConfig: p2pServer.getBlockchainConfig(),
         };
         assert.deepEqual(Object.keys(actual), Object.keys(p2pClient.getStatus()));
       });

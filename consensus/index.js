@@ -27,7 +27,7 @@ const {
   MAX_STAKE_PER_VALIDATOR,
   EPOCH_MS,
   CONSENSUS_PROTOCOL_VERSION,
-  HOSTING_ENV,
+  FeatureFlags,
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
@@ -88,13 +88,18 @@ class Consensus {
     this.timeAdjustment = 0;
     this.isReporting = false;
     this.isInEpochTransition = false;
-    // epoch increases by 1 every EPOCH_MS,
+    this.proposer = null;
+    this.lastReportedBlockNumberSent = -1;
+    // NOTE(liayoo): epoch increases by 1 every EPOCH_MS,
     // and at each epoch a new proposer is pseudo-randomly selected.
     this.epoch = 1;
-    this.proposer = null;
+
+    // Values used for status reporting
+    this.validators = {};
+    this.ntpData = {};
+
     // This feature is only used when LIGHTWEIGHT=true.
     this.cache = {};
-    this.lastReportedBlockNumberSent = -1;
   }
 
   init(lastBlockWithoutProposal) {
@@ -153,13 +158,13 @@ class Consensus {
       this.isInEpochTransition = true;
       this.tryFinalize();
       let currentTime = Date.now();
-      // NOTE(liayoo): temporary solution for avoiding ntp sync errors when running multiple nodes in the same machine.
-      if (HOSTING_ENV === 'gcp' && this.epoch % 100 === 0) {
+      if (FeatureFlags.enableNtpSync && this.epoch % 100 === 0) {
         // adjust time
         try {
           const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
           logger.debug(`(Local Time - NTP Time) Delta = ${iNTPData.minimalNTPLatencyDelta} ms`);
           this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
+          this.ntpData = { ...iNTPData, syncedAt: Date.now() };
         } catch (err) {
           logger.error(`ntpsync error: ${err} ${err.stack}`);
         }
@@ -201,6 +206,7 @@ class Consensus {
     }
     const validators = this.getValidators(
         lastNotarizedBlock.hash, lastNotarizedBlock.number, this.node.stateManager.getFinalVersion());
+    this.validators = validators;
 
     // FIXME(liayoo): Make the seeds more secure and unpredictable.
     const seed = '' + lastNotarizedBlock.last_votes_hash + this.epoch;
@@ -1405,13 +1411,23 @@ class Consensus {
   /**
    * Returns the basic status of consensus to see if blocks are being produced
    * {
-   *   health
-   *   status
-   *   epoch
+   *   health,
+   *   state,
+   *   stateNumeric,
+   *   epoch,
+   *   validators,
+   *   globalTimeSyncStatus
    * }
    */
   getStatus() {
     const lastFinalizedBlock = this.node.bc.lastBlock();
+    const validators = this.validators;
+    const globalTimeSyncStatus = this.ntpData;
+
+    for (const validatorInfo of Object.values(validators)) {
+      validatorInfo.voting_right = true;
+    }
+
     let health;
     if (!lastFinalizedBlock) {
       health = false;
@@ -1422,7 +1438,9 @@ class Consensus {
       health,
       state: this.state,
       stateNumeric: Object.keys(ConsensusStates).indexOf(this.state),
-      epoch: this.epoch
+      epoch: this.epoch,
+      validators,
+      globalTimeSyncStatus,
     };
   }
 
