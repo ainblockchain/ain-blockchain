@@ -328,7 +328,7 @@ class P2pClient {
   setClientSidePeerEventHandlers(socket) {
     const LOG_HEADER = 'setClientSidePeerEventHandlers';
     socket.on('message', (message) => {
-      trafficStatsManager.addEvent(TrafficEventTypes.P2P_CLIENT_MESSAGE);
+      trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT);
       const parsedMessage = JSON.parse(message);
       const networkId = _.get(parsedMessage, 'networkId');
       const address = getAddressFromSocket(this.outbound, socket);

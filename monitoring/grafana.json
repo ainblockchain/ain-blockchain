@@ -419,7 +419,7 @@
           "refId": "H"
         }
       ],
-      "title": "traffic: json rpc",
+      "title": "client_status:traffic_stats:*:json_rpc_*",
       "type": "timeseries"
     },
     {
@@ -646,7 +646,7 @@
           "refId": "H"
         }
       ],
-      "title": "traffic: client api",
+      "title": "client_status:traffic_stats:*:client_api_*",
       "type": "timeseries"
     },
     {
@@ -802,14 +802,14 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:p_2_p_client_message",
+          "expr": "client_status:traffic_stats:5_m:p_2_p_message_client",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         },
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:p_2_p_server_message",
+          "expr": "client_status:traffic_stats:5_m:p_2_p_message_server",
           "hide": false,
           "interval": "",
           "legendFormat": "",
@@ -817,7 +817,7 @@
         },
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:10_m:p_2_p_client_message",
+          "expr": "client_status:traffic_stats:10_m:p_2_p_message_client",
           "hide": false,
           "interval": "",
           "legendFormat": "",
@@ -825,7 +825,7 @@
         },
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:10_m:p_2_p_server_message",
+          "expr": "client_status:traffic_stats:10_m:p_2_p_message_server",
           "hide": false,
           "interval": "",
           "legendFormat": "",
@@ -833,7 +833,7 @@
         },
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:p_2_p_client_message",
+          "expr": "client_status:traffic_stats:1_h:p_2_p_message_client",
           "hide": false,
           "interval": "",
           "legendFormat": "",
@@ -841,7 +841,7 @@
         },
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:p_2_p_server_message",
+          "expr": "client_status:traffic_stats:1_h:p_2_p_message_server",
           "hide": false,
           "interval": "",
           "legendFormat": "",
@@ -849,7 +849,7 @@
         },
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:3_h:p_2_p_client_message",
+          "expr": "client_status:traffic_stats:3_h:p_2_p_message_client",
           "hide": false,
           "interval": "",
           "legendFormat": "",
@@ -857,14 +857,14 @@
         },
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:3_h:p_2_p_server_message",
+          "expr": "client_status:traffic_stats:3_h:p_2_p_message_server",
           "hide": false,
           "interval": "",
           "legendFormat": "",
           "refId": "H"
         }
       ],
-      "title": "traffic: p2p messages",
+      "title": "client_status:traffic_stats:*:p_2_p_message_*",
       "type": "timeseries"
     },
     {
