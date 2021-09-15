@@ -31,6 +31,7 @@
     "test_unit_common_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/common-util.test.js",
     "test_unit_consensus": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/consensus.test.js",
     "test_unit_db": "MIN_NUM_VALIDATORS=1 STATE_TREE_BYTES_LIMIT=20000000 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/db.test.js",
+    "test_unit_event_counter": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/event-counter.test.js",
     "test_unit_functions": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/functions.test.js",
     "test_unit_p2p": "./node_modules/mocha/bin/mocha --timeout 320000 unittest/p2p.test.js",
     "test_unit_p2p_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/p2p-util.test.js",
@@ -40,8 +41,7 @@
     "test_unit_state_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/state-util.test.js",
     "test_unit_radix_node": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/radix-node.test.js",
     "test_unit_radix_tree": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/radix-tree.test.js",
-    "test_unit_traffic_db": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/traffic-db.test.js",
-    "test_unit_traffic_manager": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/traffic-manager.test.js",
+    "test_unit_traffic_sm": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/traffic-stats-manager.test.js",
     "test_unit_tx": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/transaction.test.js",
     "test_unit_tx_pool": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/tx-pool.test.js",
     "tracker": "npm run clean & node ./tracker-server/index.js"
