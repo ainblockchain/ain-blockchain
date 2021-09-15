@@ -13,9 +13,11 @@ const {
   MessageTypes,
   TrackerMessageTypes,
   BlockchainNodeStates,
+  TrafficEventTypes,
   TARGET_NUM_OUTBOUND_CONNECTION,
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
+  trafficManager,
 } = require('../common/constants');
 const { sleep } = require('../common/common-util');
 const {
@@ -34,6 +36,13 @@ const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const HEARTBEAT_INTERVAL_MS = 60 * 1000;  // 1 minute
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
+const TRAFFIC_STATS_PERIOD_SECS_LIST = {
+  '5m': 300,  // 5 minutes
+  '10m': 600,  // 10 minutes
+  '1h': 3600,  // 1 hour
+  '3h': 10800,  // 3 hours
+};
+
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -81,6 +90,7 @@ class P2pClient {
       txStatus: this.server.getTxStatus(),
       consensusStatus: this.server.getConsensusStatus(),
       nodeStatus: this.server.getNodeStatus(),
+      clientStatus: this.getClientStatus(),
       shardingStatus: this.server.getShardingStatus(),
       cpuStatus: this.server.getCpuUsage(),
       memoryStatus: this.server.getMemoryUsage(),
@@ -118,6 +128,21 @@ class P2pClient {
       },
       connectionStatus: this.getConnectionStatus()
     };
+  }
+
+  getClientStatus() {
+    return {
+      trafficStats: this.getTrafficStats(),
+    };
+  }
+
+  getTrafficStats() {
+    const stats = {};
+    for (const periodName of Object.keys(TRAFFIC_STATS_PERIOD_SECS_LIST)) {
+      const periodSecs = TRAFFIC_STATS_PERIOD_SECS_LIST[periodName];
+      stats[periodName] = trafficManager.getEventRates(periodSecs)
+    }
+    return stats;
   }
 
   setIntervalForTrackerConnection() {
@@ -304,6 +329,7 @@ class P2pClient {
   setClientSidePeerEventHandlers(socket) {
     const LOG_HEADER = 'setClientSidePeerEventHandlers';
     socket.on('message', (message) => {
+      trafficManager.addEvent(TrafficEventTypes.P2P_CLIENT_MESSAGE);
       const parsedMessage = JSON.parse(message);
       const networkId = _.get(parsedMessage, 'networkId');
       const address = getAddressFromSocket(this.outbound, socket);

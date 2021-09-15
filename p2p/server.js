@@ -14,6 +14,7 @@ const Consensus = require('../consensus');
 const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
 const {
+  FeatureFlags,
   CURRENT_PROTOCOL_VERSION,
   DATA_PROTOCOL_VERSION,
   P2P_PORT,
@@ -31,10 +32,11 @@ const {
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
+  TrafficEventTypes,
   LIGHTWEIGHT,
-  FeatureFlags,
   NETWORK_ID,
   GenesisParams,
+  trafficManager,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const {
@@ -357,6 +359,7 @@ class P2pServer {
   setServerSidePeerEventHandlers(socket) {
     const LOG_HEADER = 'setServerSidePeerEventHandlers';
     socket.on('message', (message) => {
+      trafficManager.addEvent(TrafficEventTypes.P2P_SERVER_MESSAGE);
       try {
         const parsedMessage = JSON.parse(message);
         const networkId = _.get(parsedMessage, 'networkId');

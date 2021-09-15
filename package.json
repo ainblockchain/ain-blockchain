@@ -40,6 +40,8 @@
     "test_unit_state_util": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/state-util.test.js",
     "test_unit_radix_node": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/radix-node.test.js",
     "test_unit_radix_tree": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/radix-tree.test.js",
+    "test_unit_traffic_db": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/traffic-db.test.js",
+    "test_unit_traffic_manager": "./node_modules/mocha/bin/mocha --timeout 160000 unittest/traffic-manager.test.js",
     "test_unit_tx": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/transaction.test.js",
     "test_unit_tx_pool": "MIN_NUM_VALIDATORS=1 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/tx-pool.test.js",
     "tracker": "npm run clean & node ./tracker-server/index.js"

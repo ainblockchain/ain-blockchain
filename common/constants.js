@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const semver = require('semver');
 const CommonUtil = require('./common-util');
+const TrafficManager = require('../traffic/traffic-manager');
 
 // ** Genesis configs **
 const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/base';
@@ -118,6 +119,8 @@ const FREE_TREE_SIZE_BUDGET = FREE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
 const STATE_GAS_COEFFICIENT = 1;
 const NUM_CHILDREN_TO_ENABLE_RADIX_TREE = 6;
 const NUM_CHILDREN_TO_DISABLE_RADIX_TREE = 3;
+const TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
+const TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
 
 // ** Enums **
 /**
@@ -634,7 +637,19 @@ function isAppDependentServiceType(type) {
 const SyncModeOptions = {
   FULL: 'full',
   FAST: 'fast',
-}
+};
+
+const TrafficEventTypes = {
+  // JSON-RPC APIs
+  JSON_RPC_GET: 'json_rpc_get',
+  JSON_RPC_SET: 'json_rpc_set',
+  // P2P messages
+  P2P_CLIENT_MESSAGE: 'p2p_client_message',
+  P2P_SERVER_MESSAGE: 'p2p_server_message',
+  // Client APIs
+  CLIENT_API_GET: 'client_api_get',
+  CLIENT_API_SET: 'client_api_set',
+};
 
 /**
  * Overwriting environment variables.
@@ -855,6 +870,8 @@ function buildRulePermission(rule) {
   };
 }
 
+const trafficManager = new TrafficManager(TRAFFIC_DB_INTERVAL_MS, TRAFFIC_DB_MAX_INTERVALS);
+
 module.exports = {
   FeatureFlags,
   CURRENT_PROTOCOL_VERSION,
@@ -902,6 +919,8 @@ module.exports = {
   STATE_GAS_COEFFICIENT,
   NUM_CHILDREN_TO_ENABLE_RADIX_TREE,
   NUM_CHILDREN_TO_DISABLE_RADIX_TREE,
+  TRAFFIC_DB_INTERVAL_MS,
+  TRAFFIC_DB_MAX_INTERVALS,
   MessageTypes,
   TrackerMessageTypes,
   BlockchainNodeStates,
@@ -934,6 +953,7 @@ module.exports = {
   GenesisOwners,
   GasFeeConstants,
   SyncModeOptions,
+  TrafficEventTypes,
   isServiceType,
   isServiceAccountServiceType,
   isAppDependentServiceType,
@@ -944,4 +964,5 @@ module.exports = {
   ...GenesisParams.resource,
   ...networkEnv,
   GenesisParams,
+  trafficManager,
 };
