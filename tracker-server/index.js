@@ -133,7 +133,8 @@ server.on('connection', (ws) => {
         ws.send(JSON.stringify(connectionMessage));
         printNodesInfo();
         break;
-      // NOTE(minsulee2): This will be integrated into anddress and security checks.
+      // NOTE(minsulee2): This job will be updated that the request is directly sent in the
+      // node side with anddress and security checks.
       case TrackerMessageTypes.PEER_INFO_REQUEST:
         const address = parsedMessage.data;
         const correspondingNodeInfo = peerNodes[address];
