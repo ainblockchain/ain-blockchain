@@ -39,7 +39,7 @@ const FeatureFlags = {
   // Enables ntp-sync for global time syncing.
   enableNtpSync: true,
   // Enables traffic monitoring.
-  enableTrafficMonitoring: false,
+  enableTrafficMonitoring: true,
 };
 
 // ** Environment variables **
