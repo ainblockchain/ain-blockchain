@@ -132,7 +132,7 @@ class P2pClient {
     this.intervalConnection = null;
   }
 
-  connectToCorrespondingNode(address) {
+  sendRequestForPeerInfo(address) {
     const message = {
       type: TrackerMessageTypes.PEER_INFO_REQUEST,
       data: address
