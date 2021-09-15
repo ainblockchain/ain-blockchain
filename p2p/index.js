@@ -138,8 +138,7 @@ class P2pClient {
 
   getTrafficStats() {
     const stats = {};
-    for (const periodName of Object.keys(TRAFFIC_STATS_PERIOD_SECS_LIST)) {
-      const periodSecs = TRAFFIC_STATS_PERIOD_SECS_LIST[periodName];
+    for (const [periodName, periodSecs] of Object.entries(TRAFFIC_STATS_PERIOD_SECS_LIST)) {
       stats[periodName] = trafficStatsManager.getEventRates(periodSecs)
     }
     return stats;
