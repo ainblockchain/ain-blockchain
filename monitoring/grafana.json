@@ -419,7 +419,7 @@
           "refId": "H"
         }
       ],
-      "title": "Traffic: JSON RPC",
+      "title": "traffic: json rpc",
       "type": "timeseries"
     },
     {
@@ -646,7 +646,7 @@
           "refId": "H"
         }
       ],
-      "title": "Traffic: client APIs",
+      "title": "traffic: client api",
       "type": "timeseries"
     },
     {
@@ -864,7 +864,7 @@
           "refId": "H"
         }
       ],
-      "title": "Traffic: P2P messages",
+      "title": "traffic: p2p messages",
       "type": "timeseries"
     },
     {
@@ -2116,12 +2116,12 @@
     "list": []
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Blockchain Servers",
   "uid": "M6YpMSyMz",
-  "version": 32
+  "version": 33
 }
