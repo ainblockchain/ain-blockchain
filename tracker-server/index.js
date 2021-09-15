@@ -9,8 +9,8 @@ const disk = require('diskusage');
 const os = require('os');
 const v8 = require('v8');
 const {
-  CURRENT_PROTOCOL_VERSION,
-  MAX_NUM_PEER_CANDIDATES_AT_ONCE
+  TrackerMessageTypes,
+  CURRENT_PROTOCOL_VERSION
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const logger = require('../logger')('TRACKER_SERVER');
@@ -115,29 +115,56 @@ server.on('connection', (ws) => {
   ws.uuid = uuidv4();
   wsList[ws.uuid] = null;
   ws.on('message', (message) => {
-    const nodeInfo = Object.assign({ isAlive: true }, JSON.parse(message));
-    wsList[ws.uuid] = nodeInfo.address;
-    nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
-    // TODO(minsulee2): It will be managed via peers when heartbeat updates.
-    peerNodes[nodeInfo.address] = nodeInfo;
-    logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
-    logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
-
-    const newManagedPeerInfoList = assignRandomPeers(nodeInfo);
-    const msgToNode = {
-      newManagedPeerInfoList,
-      numLivePeers: getNumAliveNodes() - 1   // except for me.
-    };
-    logger.info(`>> Message to node [${abbrAddr(nodeInfo.address)}]: ` +
-        `${JSON.stringify(msgToNode, null, 2)}`);
-    ws.send(JSON.stringify(msgToNode));
-    printNodesInfo();
+    const parsedMessage = JSON.parse(message);
+    switch(_.get(parsedMessage, 'type')) {
+      case TrackerMessageTypes.NEW_PEERS_REQUEST:
+        const connectionNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
+        setPeerNodes(ws, connectionNodeInfo);
+        const newManagedPeerInfoList = assignRandomPeers(connectionNodeInfo);
+        const connectionMessage = {
+          type: TrackerMessageTypes.NEW_PEERS_RESPONSE,
+          data: {
+            newManagedPeerInfoList,
+            numLivePeers: getNumAliveNodes() - 1   // except for me.
+          }
+        };
+        logger.info(`>> Message to node [${abbrAddr(connectionNodeInfo.address)}]: ` +
+            `${JSON.stringify(connectionMessage, null, 2)}`);
+        ws.send(JSON.stringify(connectionMessage));
+        printNodesInfo();
+        break;
+      // NOTE(minsulee2): This job will be updated that the request is directly sent in the
+      // node side with anddress and security checks.
+      case TrackerMessageTypes.PEER_INFO_REQUEST:
+        const address = parsedMessage.data;
+        const correspondingNodeInfo = peerNodes[address];
+        const correspondMessage = {
+          type: TrackerMessageTypes.PEER_INFO_RESPONSE,
+          data: correspondingNodeInfo.networkStatus.p2p.url,
+          numLivePeers: getNumAliveNodes() - 1   // except for me.
+        };
+        logger.info(`>> Message to node [${abbrAddr(correspondingNodeInfo.address)}]: ` +
+            `${JSON.stringify(correspondMessage, null, 2)}`);
+        ws.send(JSON.stringify(correspondMessage));
+        break;
+      // NOTE(minsulee2): This can be combined with TrackerMessageTypes.NEW_PEERS_REQUEST in the
+      // next design!
+      case TrackerMessageTypes.PEER_INFO_UPDATE:
+        const updateNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
+        setPeerNodes(ws, updateNodeInfo);
+        printNodesInfo();
+        break;
+      default:
+        logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
+            'specified. Ignore the message.');
+        break;
+    }
   });
 
   // TODO(minsulee2): Code should be setup ex) code === 1006: SIGINT .
   ws.on('close', (code) => {
     const address = wsList[ws.uuid];
-    logger.info(`\nDisconnected from node [${address ? abbrAddr(address) : 'unknown'}] ` +
+    logger.info(`Disconnected from node [${address ? abbrAddr(address) : 'unknown'}] ` +
         `with code: ${code}`);
     delete wsList[ws.uuid];
     peerNodes[address].isAlive = false;
@@ -155,6 +182,14 @@ function abbrAddr(address) {
   return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
 }
 
+function setPeerNodes(ws, nodeInfo) {
+  wsList[ws.uuid] = nodeInfo.address;
+  nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
+  peerNodes[nodeInfo.address] = nodeInfo;
+  logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
+  logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
+}
+
 function getNumAliveNodes() {
   return Object.values(peerNodes).reduce((acc, cur) => acc + (cur.isAlive ? 1 : 0), 0);
 }
@@ -164,12 +199,12 @@ function getNumNodes() {
 }
 
 function getMaxNumberOfNewPeers(nodeInfo) {
-  const numOfCandidates = nodeInfo.networkStatus.connectionStatus.maxOutbound -
+  const numOfCandidates = nodeInfo.networkStatus.connectionStatus.targetOutBound -
       nodeInfo.networkStatus.connectionStatus.outgoingPeers.length;
-  if (numOfCandidates >= MAX_NUM_PEER_CANDIDATES_AT_ONCE) {
-    return MAX_NUM_PEER_CANDIDATES_AT_ONCE;
-  } else {
+  if (numOfCandidates > 0) {
     return numOfCandidates;
+  } else {
+    return 0;
   }
 }
 
@@ -183,10 +218,12 @@ function assignRandomPeers(nodeInfo) {
       !peer.networkStatus.connectionStatus.incomingPeers.includes(nodeInfo.address) &&
       peer.networkStatus.connectionStatus.incomingPeers.length <
           peer.networkStatus.connectionStatus.maxInbound)
-    .map(peer => ({ address: peer.address, url: peer.networkStatus.p2p.url }));
-
-    const shuffled = _.shuffle(candidates);
-    return shuffled.slice(0, maxNumberOfNewPeers);
+    .sort((a, b) =>
+      a.networkStatus.connectionStatus.incomingPeers -
+          b.networkStatus.connectionStatus.incomingPeers)
+    .map(peer => ({ address: peer.address, url: peer.networkStatus.p2p.url }))
+    .slice(0, maxNumberOfNewPeers)
+    return candidates;
   } else {
     return [];
   }
