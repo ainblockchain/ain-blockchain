@@ -60,7 +60,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "network_status:num_alive_nodes",
+          "expr": "network_status:num_nodes_alive",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -70,7 +70,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "network_status:num_alive_nodes",
+      "title": "network_status:num_nodes_alive",
       "tooltip": {
         "shared": true,
         "sort": 0,
