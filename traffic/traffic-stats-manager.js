@@ -1,13 +1,17 @@
 const EventCounter = require('./event-counter');
 
 class TrafficStatsManager {
-  constructor(intervalMs, maxIntervals) {
+  constructor(intervalMs, maxIntervals, enabled = true) {
     this.intervalMs = intervalMs;
     this.maxIntervals = maxIntervals;
+    this.enabled = enabled;
     this.eventCounterMap = new Map();
   }
 
   addEvent(eventType, currentTimeMs = null) {
+    if (!this.enabled) {
+      return;
+    }
     if (!this.eventCounterMap.has(eventType)) {
       const newTdb = new EventCounter(this.intervalMs, this.maxIntervals, currentTimeMs);
       this.eventCounterMap.set(eventType, newTdb);
@@ -17,6 +21,9 @@ class TrafficStatsManager {
   }
 
   countEvents(eventType, periodMs, currentTimeMs = null) {
+    if (!this.enabled) {
+      return -1;
+    }
     if (!this.eventCounterMap.has(eventType)) {
       return 0;
     }
@@ -25,6 +32,9 @@ class TrafficStatsManager {
   }
 
   getEventRates(periodSec, currentTimeMs = null) {
+    if (!this.enabled) {
+      return {};
+    }
     const rates = {};
     for (const eventType of this.eventCounterMap.keys()) {
       let rate = -1;

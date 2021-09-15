@@ -38,6 +38,8 @@ const FeatureFlags = {
   enableDynamicRadixTree: true,  // Some test cases assume this value true.
   // Enables ntp-sync for global time syncing.
   enableNtpSync: true,
+  // Enables traffic monitoring.
+  enableTrafficMonitoring: false,
 };
 
 // ** Environment variables **
@@ -870,7 +872,8 @@ function buildRulePermission(rule) {
   };
 }
 
-const trafficStatsManager = new TrafficStatsManager(TRAFFIC_DB_INTERVAL_MS, TRAFFIC_DB_MAX_INTERVALS);
+const trafficStatsManager = new TrafficStatsManager(
+    TRAFFIC_DB_INTERVAL_MS, TRAFFIC_DB_MAX_INTERVALS, FeatureFlags.enableTrafficMonitoring);
 
 module.exports = {
   FeatureFlags,
