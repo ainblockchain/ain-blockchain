@@ -17,7 +17,7 @@ const {
   TARGET_NUM_OUTBOUND_CONNECTION,
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
-  trafficManager,
+  trafficStatsManager,
 } = require('../common/constants');
 const { sleep } = require('../common/common-util');
 const {
@@ -140,7 +140,7 @@ class P2pClient {
     const stats = {};
     for (const periodName of Object.keys(TRAFFIC_STATS_PERIOD_SECS_LIST)) {
       const periodSecs = TRAFFIC_STATS_PERIOD_SECS_LIST[periodName];
-      stats[periodName] = trafficManager.getEventRates(periodSecs)
+      stats[periodName] = trafficStatsManager.getEventRates(periodSecs)
     }
     return stats;
   }
@@ -329,7 +329,7 @@ class P2pClient {
   setClientSidePeerEventHandlers(socket) {
     const LOG_HEADER = 'setClientSidePeerEventHandlers';
     socket.on('message', (message) => {
-      trafficManager.addEvent(TrafficEventTypes.P2P_CLIENT_MESSAGE);
+      trafficStatsManager.addEvent(TrafficEventTypes.P2P_CLIENT_MESSAGE);
       const parsedMessage = JSON.parse(message);
       const networkId = _.get(parsedMessage, 'networkId');
       const address = getAddressFromSocket(this.outbound, socket);

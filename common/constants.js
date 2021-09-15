@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const semver = require('semver');
 const CommonUtil = require('./common-util');
-const TrafficManager = require('../traffic/traffic-manager');
+const TrafficStatsManager = require('../traffic/traffic-stats-manager');
 
 // ** Genesis configs **
 const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/base';
@@ -870,7 +870,7 @@ function buildRulePermission(rule) {
   };
 }
 
-const trafficManager = new TrafficManager(TRAFFIC_DB_INTERVAL_MS, TRAFFIC_DB_MAX_INTERVALS);
+const trafficStatsManager = new TrafficStatsManager(TRAFFIC_DB_INTERVAL_MS, TRAFFIC_DB_MAX_INTERVALS);
 
 module.exports = {
   FeatureFlags,
@@ -964,5 +964,5 @@ module.exports = {
   ...GenesisParams.resource,
   ...networkEnv,
   GenesisParams,
-  trafficManager,
+  trafficStatsManager,
 };

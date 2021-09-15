@@ -1,8 +1,8 @@
-const TrafficManager = require('../traffic/traffic-manager');
+const TrafficStatsManager = require('../traffic/traffic-stats-manager');
 
 const { expect, assert } = require('chai');
 
-describe("traffic-db", () => {
+describe("traffic-stats-manager", () => {
   const intervalMs = 1000;
   const maxIntervals = 10;
   const initialTimeMs = 5000;
@@ -11,31 +11,31 @@ describe("traffic-db", () => {
   let tm;
 
   beforeEach(() => {
-    tm = new TrafficManager(intervalMs, maxIntervals);
+    tm = new TrafficStatsManager(intervalMs, maxIntervals);
   })
 
   describe("initialization", () => {
     it("constructor", () => {
       expect(tm.intervalMs).to.equal(intervalMs);
       expect(tm.maxIntervals).to.equal(maxIntervals);
-      expect(tm.trafficDbMap.size).to.equal(0);
+      expect(tm.eventCounterMap.size).to.equal(0);
     });
   });
 
   describe("addEvent / countEvents", () => {
     it("with intervals not overlapping", () => {
-      expect(tm.trafficDbMap.size).to.equal(0);
+      expect(tm.eventCounterMap.size).to.equal(0);
 
       tm.addEvent(eventType1, initialTimeMs);
-      expect(tm.trafficDbMap.size).to.equal(1);
-      expect(tm.trafficDbMap.has(eventType1)).to.equal(true);
+      expect(tm.eventCounterMap.size).to.equal(1);
+      expect(tm.eventCounterMap.has(eventType1)).to.equal(true);
       expect(tm.countEvents(eventType1, intervalMs, initialTimeMs)).to.equal(1);
       expect(tm.countEvents(eventType2, intervalMs, initialTimeMs)).to.equal(0);
 
       tm.addEvent(eventType2, initialTimeMs);
-      expect(tm.trafficDbMap.size).to.equal(2);
-      expect(tm.trafficDbMap.has(eventType1)).to.equal(true);
-      expect(tm.trafficDbMap.has(eventType2)).to.equal(true);
+      expect(tm.eventCounterMap.size).to.equal(2);
+      expect(tm.eventCounterMap.has(eventType1)).to.equal(true);
+      expect(tm.eventCounterMap.has(eventType2)).to.equal(true);
       expect(tm.countEvents(eventType1, intervalMs, initialTimeMs)).to.equal(1);
       expect(tm.countEvents(eventType2, intervalMs, initialTimeMs)).to.equal(1);
 
@@ -47,7 +47,7 @@ describe("traffic-db", () => {
     });
 
     it("with intervals overlapping", () => {
-      expect(tm.trafficDbMap.size).to.equal(0);
+      expect(tm.eventCounterMap.size).to.equal(0);
 
       tm.addEvent(eventType1, initialTimeMs);
       tm.addEvent(eventType1, initialTimeMs);
@@ -70,7 +70,7 @@ describe("traffic-db", () => {
 
   describe("getEventRates", () => {
     beforeEach(() => {
-      expect(tm.trafficDbMap.size).to.equal(0);
+      expect(tm.eventCounterMap.size).to.equal(0);
       tm.addEvent(eventType1, initialTimeMs);
       tm.addEvent(eventType1, initialTimeMs);
       tm.addEvent(eventType1, initialTimeMs);
