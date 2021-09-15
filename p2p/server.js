@@ -415,6 +415,7 @@ class P2pServer {
                 socket: socket,
                 version: dataProtoVer
               };
+              this.client.updatePeerInfoToTracker();
               const body = {
                 address: this.getNodeAddress(),
                 timestamp: Date.now(),
@@ -431,6 +432,11 @@ class P2pServer {
                 return;
               }
               socket.send(JSON.stringify(payload));
+              // NOTE(minsulee2): This job will be updated that the request is directly sent in the
+              // node side with anddress and security checks.
+              if (!this.client.outbound[address]) {
+                this.client.sendRequestForPeerInfo(address);
+              }
             }
             break;
           case MessageTypes.CONSENSUS:
@@ -549,6 +555,7 @@ class P2pServer {
     socket.on('close', () => {
       const address = getAddressFromSocket(this.inbound, socket);
       removeSocketConnectionIfExists(this.inbound, address);
+      this.client.sendRequestForNewPeers();
       logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
 

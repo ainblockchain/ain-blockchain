@@ -136,6 +136,19 @@ const MessageTypes = {
 };
 
 /**
+ * Message types for communication between tracker and node.
+ *
+ * @enum {string}
+ */
+const TrackerMessageTypes = {
+  NEW_PEERS_REQUEST: 'NEW_PEERS_REQUEST',
+  NEW_PEERS_RESPONSE: 'NEW_PEERS_RESPONSE',
+  PEER_INFO_REQUEST: 'PEER_INFO_REQUEST',
+  PEER_INFO_RESPONSE: 'PEER_INFO_RESPONSE',
+  PEER_INFO_UPDATE: 'PEER_INFO_UPDATE'
+};
+
+/**
  * Status of blockchain nodes.
  *
  * @enum {string}
@@ -666,9 +679,9 @@ function initializeNetworkEnvronments() {
   } else {
     return {
       P2P_MESSAGE_TIMEOUT_MS: 600000,
-      MAX_NUM_PEER_CANDIDATES_AT_ONCE: 2,
-      DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
-      DEFAULT_MAX_INBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1
+      // NOTE(minsulee2): This will be updated, after network extension experiment done.
+      TARGET_NUM_OUTBOUND_CONNECTION: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      MAX_NUM_INBOUND_CONNECTION: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1
     }
   }
 }
@@ -890,6 +903,7 @@ module.exports = {
   NUM_CHILDREN_TO_ENABLE_RADIX_TREE,
   NUM_CHILDREN_TO_DISABLE_RADIX_TREE,
   MessageTypes,
+  TrackerMessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
   TokenProperties,
