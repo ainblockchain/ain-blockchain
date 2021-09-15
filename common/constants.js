@@ -646,8 +646,8 @@ const TrafficEventTypes = {
   JSON_RPC_GET: 'json_rpc_get',
   JSON_RPC_SET: 'json_rpc_set',
   // P2P messages
-  P2P_CLIENT_MESSAGE: 'p2p_client_message',
-  P2P_SERVER_MESSAGE: 'p2p_server_message',
+  P2P_MESSAGE_CLIENT: 'p2p_message_client',
+  P2P_MESSAGE_SERVER: 'p2p_message_server',
   // Client APIs
   CLIENT_API_GET: 'client_api_get',
   CLIENT_API_SET: 'client_api_set',
