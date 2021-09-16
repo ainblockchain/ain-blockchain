@@ -904,7 +904,7 @@ class Functions {
     }
   }
 
-  updatePendingCheckin(networkName, chainId, tokenId, sender, tokenPool, amount, isIncrease, context) {
+  updateStatsForPendingCheckin(networkName, chainId, tokenId, sender, tokenPool, amount, isIncrease, context) {
     if (isIncrease) {
       if (CommonUtil.isFailedTx(
           this.incValueOrLog(
@@ -933,7 +933,7 @@ class Functions {
     return true;
   }
 
-  updateCompleteCheckin(user, amount, context) {
+  updateStatsForCompleteCheckin(user, amount, context) {
     if (CommonUtil.isFailedTx(
         this.incValueOrLog(PathUtil.getCheckinCompleteAmountPerAddrPath(user), amount, context))) {
       return FunctionResultCode.INTERNAL_ERROR;
@@ -1005,7 +1005,7 @@ class Functions {
       return this.returnFuncResult(context, amountValidated);
     }
     // Increase pending amounts
-    const incPendingResultCode = this.updatePendingCheckin(
+    const incPendingResultCode = this.updateStatsForPendingCheckin(
         networkName, chainId, tokenId, sender, tokenPool, amount, true, context);
     if (incPendingResultCode !== true) {
       return this.returnFuncResult(context, incPendingResultCode);
@@ -1028,7 +1028,7 @@ class Functions {
       [TokenBridgeProperties.TOKEN_POOL]: tokenPool
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
     // Decrease pending amounts
-    const decPendingResultCode = this.updatePendingCheckin(
+    const decPendingResultCode = this.updateStatsForPendingCheckin(
         networkName, chainId, tokenId, context.prevValue.sender, tokenPool,
         context.prevValue.amount, false, context);
     if (decPendingResultCode !== true) {
@@ -1049,7 +1049,7 @@ class Functions {
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
     if (response.status === FunctionResultCode.SUCCESS) {
       // Increase complete amounts
-      const updateStatsResultCode = this.updateCompleteCheckin(user, request.amount, context);
+      const updateStatsResultCode = this.updateStatsForCompleteCheckin(user, request.amount, context);
       if (updateStatsResultCode !== true) {
         return this.returnFuncResult(context, updateStatsResultCode);
       }
@@ -1068,7 +1068,7 @@ class Functions {
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     // Decrease pending amounts
-    const decPendingResultCode = this.updatePendingCheckin(
+    const decPendingResultCode = this.updateStatsForPendingCheckin(
         networkName, chainId, tokenId, request.sender, tokenPool, request.amount, false, context);
     if (decPendingResultCode !== true) {
       return this.returnFuncResult(context, decPendingResultCode);
@@ -1076,7 +1076,7 @@ class Functions {
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
-  updatePendingCheckout(user, amount, isIncrease, context) {
+  updateStatsForPendingCheckout(user, amount, isIncrease, context) {
     if (isIncrease) {
       if (CommonUtil.isFailedTx(
           this.incValueOrLog(PathUtil.getCheckoutPendingAmountPerAddrPath(user), amount, context))) {
@@ -1099,7 +1099,7 @@ class Functions {
     return true;
   }
 
-  updateCompleteCheckout(amount, blockTime, context) {
+  updateStatsForCompleteCheckout(amount, blockTime, context) {
     const dayTimestamp = CommonUtil.getDayTimestamp(blockTime);
     if (CommonUtil.isFailedTx(
         this.incValueOrLog(PathUtil.getCheckoutCompleteAmountDailyPath(dayTimestamp), amount, context))) {
@@ -1154,7 +1154,7 @@ class Functions {
     const user = context.params.user_addr;
     const { amount, recipient } = value;
     // Increase pending amounts
-    const incPendingResultCode = this.updatePendingCheckout(user, amount, true, context);
+    const incPendingResultCode = this.updateStatsForPendingCheckout(user, amount, true, context);
     if (incPendingResultCode !== true) {
       return this.returnFuncResult(context, incPendingResultCode);
     }
@@ -1202,7 +1202,7 @@ class Functions {
     const { request, response } = value;
     if (response.status === FunctionResultCode.SUCCESS) {
       // Increase complete amounts
-      const updateStatsResultCode = this.updateCompleteCheckout(request.amount, context.blockTime, context);
+      const updateStatsResultCode = this.updateStatsForCompleteCheckout(request.amount, context.blockTime, context);
       if (updateStatsResultCode !== true) {
         return this.returnFuncResult(context, updateStatsResultCode);
       }
@@ -1228,7 +1228,7 @@ class Functions {
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     // Decrease pending amounts
-    const decPendingResultCode = this.updatePendingCheckout(user, request.amount, false, context);
+    const decPendingResultCode = this.updateStatsForPendingCheckout(user, request.amount, false, context);
     if (decPendingResultCode !== true) {
       return this.returnFuncResult(context, decPendingResultCode);
     }
