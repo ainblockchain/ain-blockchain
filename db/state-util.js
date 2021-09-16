@@ -586,6 +586,9 @@ function updateStateInfoForAllRootPathsRecursive(
   if (updatedChildEmpty) {
     curNode.deleteChild(updatedChildLabel, true);  // shouldUpdateStateInfo = true
   } else {
+    if (!FeatureFlags.enableStateInfoUpdates) {
+      return 0;
+    }
     curNode.updateStateInfo(updatedChildLabel, true);  // shouldRebuildRadixInfo = true
   }
   const curLabel = curNode.getLabel();
@@ -613,6 +616,9 @@ function updateStateInfoForAllRootPaths(curNode, updatedChildLabel = null) {
 }
 
 function updateStateInfoForStateTree(stateTree) {
+  if (!FeatureFlags.enableStateInfoUpdates) {
+    return 0;
+  }
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
     for (const node of stateTree.getChildNodes()) {
