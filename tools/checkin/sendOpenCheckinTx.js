@@ -3,6 +3,8 @@ const { signAndSendTx, confirmTransaction } = require('../util');
 let config = {};
 
 function buildOpenCheckinTxBody(fromAddr, tokenAmount, checkinId) {
+  // NOTE(liayoo): `sender` is the address on `networkName` that will send `tokenId` tokens to the pool.
+  // For example, with the Eth token bridge, it will be an Ethereum address that will send ETH to the pool.
   return {
     operation: {
       type: 'SET_VALUE',
