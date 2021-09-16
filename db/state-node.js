@@ -223,6 +223,10 @@ class StateNode {
     return Array.from(this.parentRadixNodeSet);
   }
 
+  hasParentRadixNodes() {
+    return this.parentRadixNodeSet.size > 0;
+  }
+
   numParentRadixNodes() {
     return this.parentRadixNodeSet.size;
   }
@@ -260,6 +264,14 @@ class StateNode {
       return RadixTree.getParentStateNodes(this.getParentRadixNodes())
     } else {
       return Array.from(this.parentSet);
+    }
+  }
+
+  hasParents() {
+    if (FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning) {
+      return this.hasParentRadixNodes();
+    } else {
+      return this.parentSet.size > 0;
     }
   }
 
@@ -348,7 +360,7 @@ class StateNode {
         this.updateStateInfo();
       }
     }
-    if (this.numChildren() === 0) {
+    if (!this.hasChildren()) {
       this.setIsLeaf(true);
     }
   }
@@ -366,6 +378,14 @@ class StateNode {
       return [...this.radixTree.getChildStateNodes()];
     } else {
       return [...this.childMap.values()];
+    }
+  }
+
+  hasChildren() {
+    if (FeatureFlags.enableRadixTreeLayers) {
+      return this.radixTree.hasChildStateNodes();
+    } else {
+      return this.childMap.size > 0;
     }
   }
 
