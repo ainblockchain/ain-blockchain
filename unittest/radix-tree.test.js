@@ -2563,7 +2563,7 @@ describe("radix-tree", () => {
         assert.deepEqual(stateNode21.getParentNodes(), [parentStateNode]);
         assert.deepEqual(stateNode22.getParentNodes(), [parentStateNode]);
         // Check root node
-        expect(tree.root.hasStateNode()).to.equal(false);
+        expect(tree.root.hasChildStateNode()).to.equal(false);
         expect(tree.root.getLabelRadix()).to.equal('');
         expect(tree.root.getLabelSuffix()).to.equal('');
         expect(tree.root.hasParent()).to.equal(false);
@@ -2642,7 +2642,7 @@ describe("radix-tree", () => {
       // Let's make stateNodeAnother1 has 2 parent radix nodes.
       const childYetAnother1 = new RadixNode();
       childYetAnother1.setVersion(versionYetAnother);
-      childYetAnother1.setStateNode(stateNodeAnother1);
+      childYetAnother1.setChildStateNode(stateNodeAnother1);
 
       assert.deepEqual(tree.toJsObject(true, true, false, true), {
         ".num_parents": 0,

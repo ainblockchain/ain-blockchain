@@ -199,13 +199,13 @@ class RadixTree {
     if (node === null) {
       return null;
     }
-    if (!node.hasStateNode()) {
+    if (!node.hasChildStateNode()) {
       logger.error(
           `[${LOG_HEADER}] A node without state node with label: ` +
           `${node.getLabel()} at: ${new Error().stack}.`);
       return null;
     }
-    return node.getStateNode();
+    return node.getChildStateNode();
   }
 
   has(stateLabel) {
@@ -214,10 +214,10 @@ class RadixTree {
 
   set(stateLabel, stateNode) {
     const node = this._getRadixNodeForSetting(stateLabel);
-    if (!node.hasStateNode()) {
+    if (!node.hasChildStateNode()) {
       this.numStateNodes++;
     }
-    node.setStateNode(stateNode);
+    node.setChildStateNode(stateNode);
   }
 
   /**
@@ -241,7 +241,7 @@ class RadixTree {
       // Does nothing.
       return node;
     }
-    if (node.hasStateNode()) {
+    if (node.hasChildStateNode()) {
       logger.error(
           `[${LOG_HEADER}] Trying to merge a node having a state node: ${node.getLabel()} ` +
           `at: ${new Error().stack}.`);
@@ -274,7 +274,7 @@ class RadixTree {
     const node = FeatureFlags.enableRadixNodeVersioning ?
         this._getRadixNodeForDeleting(stateLabel) :
         this._getRadixNodeForReading(stateLabel);
-    if (node === null || !node.hasStateNode()) {
+    if (node === null || !node.hasChildStateNode()) {
       logger.error(
           `[${LOG_HEADER}] Deleting a non-existing child of label: ${stateLabel} ` +
           `at: ${new Error().stack}.`);
@@ -288,7 +288,7 @@ class RadixTree {
       // Does nothing.
       return false;
     }
-    node.resetStateNode();
+    node.resetChildStateNode();
     this.numStateNodes--;
     const labelRadix = node.getLabelRadix();
     let nodesToUpdate = [node];
@@ -309,7 +309,7 @@ class RadixTree {
         theOnlyParent.deleteChild(labelRadix);  // delete child!
         nodesToUpdate.push(theOnlyParent);
         if (theOnlyParent.numChildren() === 1 &&  // the parent has only 1 child after deletion.
-            !theOnlyParent.hasStateNode() &&  // the parent has no state node
+            !theOnlyParent.hasChildStateNode() &&  // the parent has no state node
             theOnlyParent.hasParent()) {  // the parent is not a root.
           nodesToUpdate = RadixTree._mergeToChild(theOnlyParent);
         }
@@ -334,7 +334,7 @@ class RadixTree {
 
   // TODO(platfowner): Keep the insertion order.
   stateNodes() {
-    return this.root.getStateNodeList();
+    return this.root.getChildStateNodeList();
   }
 
   size() {
@@ -381,7 +381,7 @@ class RadixTree {
 
   static getProofOfStateRecursive(radixLabel, curNode, labelIndex, stateProof) {
     if (labelIndex === radixLabel.length) {  // Reached the target node
-      if (!curNode.hasStateNode()) {
+      if (!curNode.hasChildStateNode()) {
         return null;
       }
       return curNode.getProofOfRadixNode(null, null, stateProof);
