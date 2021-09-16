@@ -38,6 +38,8 @@ const FeatureFlags = {
   enableNtpSync: true,
   // Enables traffic monitoring.
   enableTrafficMonitoring: true,
+  // Enables state info updates.
+  enableStateInfoUpdates: true,
 };
 
 // ** Environment variables **
