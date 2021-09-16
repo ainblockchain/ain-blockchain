@@ -2829,8 +2829,8 @@ describe("radix-tree", () => {
         expect(newTree.get(label21)).to.equal(stateNode21);
         expect(newTree.has(label22)).to.equal(true);
         expect(newTree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(newTree.childStateLabels(), [label1, label2, label21, label22]);
-        assert.deepEqual(newTree.childStateNodes(), [stateNode1, stateNode2, stateNode21, stateNode22]);
+        assert.deepEqual(newTree.getChildStateLabels(), [label1, label2, label21, label22]);
+        assert.deepEqual(newTree.getChildStateNodes(), [stateNode1, stateNode2, stateNode21, stateNode22]);
         assert.deepEqual(newTree.numChildStateNodes(), 4);
         assert.deepEqual(newTree.toJsObject(true, true), {
           ".radix_version": "ver2",

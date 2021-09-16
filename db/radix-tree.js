@@ -323,17 +323,25 @@ class RadixTree {
     return true;
   }
 
+  static getParentStateNodes(radixNodeList) {
+    const parentNodes = [];
+    for (const radixNode of radixNodeList) {
+      parentNodes.push(...radixNode.getParentStateNodeList());
+    }
+    return parentNodes;
+  }
+
   // TODO(platfowner): Keep the insertion order.
-  childStateLabels() {
+  getChildStateLabels() {
     const labelList = [];
-    for (const stateNode of this.childStateNodes()) {
+    for (const stateNode of this.getChildStateNodes()) {
       labelList.push(stateNode.getLabel());
     }
     return labelList;
   }
 
   // TODO(platfowner): Keep the insertion order.
-  childStateNodes() {
+  getChildStateNodes() {
     return this.root.getChildStateNodeList();
   }
 
