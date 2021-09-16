@@ -345,6 +345,10 @@ class RadixTree {
     return this.root.getChildStateNodeList();
   }
 
+  hasChildStateNodes() {
+    return this.numTerminalNodes > 0;
+  }
+
   numChildStateNodes() {
     return this.numTerminalNodes;
   }
