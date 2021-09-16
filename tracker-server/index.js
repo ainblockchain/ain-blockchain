@@ -125,7 +125,7 @@ server.on('connection', (ws) => {
           type: TrackerMessageTypes.NEW_PEERS_RESPONSE,
           data: {
             newManagedPeerInfoList,
-            numLivePeers: getNumAliveNodes() - 1   // except for me.
+            numLivePeers: getNumNodesAlive() - 1   // except for me.
           }
         };
         logger.info(`>> Message to node [${abbrAddr(connectionNodeInfo.address)}]: ` +
@@ -141,7 +141,7 @@ server.on('connection', (ws) => {
         const correspondMessage = {
           type: TrackerMessageTypes.PEER_INFO_RESPONSE,
           data: correspondingNodeInfo.networkStatus.p2p.url,
-          numLivePeers: getNumAliveNodes() - 1   // except for me.
+          numLivePeers: getNumNodesAlive() - 1   // except for me.
         };
         logger.info(`>> Message to node [${abbrAddr(correspondingNodeInfo.address)}]: ` +
             `${JSON.stringify(correspondMessage, null, 2)}`);
@@ -190,7 +190,7 @@ function setPeerNodes(ws, nodeInfo) {
   logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
 }
 
-function getNumAliveNodes() {
+function getNumNodesAlive() {
   return Object.values(peerNodes).reduce((acc, cur) => acc + (cur.isAlive ? 1 : 0), 0);
 }
 
@@ -230,7 +230,7 @@ function assignRandomPeers(nodeInfo) {
 }
 
 function printNodesInfo() {
-  logger.info(`Updated [peerNodes]: Number of nodes: (${getNumAliveNodes()}/${getNumNodes()})`);
+  logger.info(`Updated [peerNodes]: Number of nodes: (${getNumNodesAlive()}/${getNumNodes()})`);
   const nodeInfoList = Object.values(peerNodes).sort((x, y) => {
     return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
   });
@@ -275,7 +275,7 @@ function getNodeLocation(ip) {
 
 function getNetworkStatus() {
   return {
-    numAliveNodes: getNumAliveNodes(),
+    numNodesAlive: getNumNodesAlive(),
     peerNodes
   };
 }
@@ -283,7 +283,7 @@ function getNetworkStatus() {
 function getStatus() {
   return {
     networkStatus: {
-      numAliveNodes: getNumAliveNodes(),
+      numNodesAlive: getNumNodesAlive(),
     },
     cpuStatus: getCpuUsage(),
     memoryStatus: getMemoryUsage(),

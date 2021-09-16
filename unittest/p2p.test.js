@@ -328,6 +328,7 @@ describe("p2p", () => {
           txStatus: p2pServer.getTxStatus(),
           consensusStatus: p2pServer.getConsensusStatus(),
           nodeStatus: p2pServer.getNodeStatus(),
+          clientStatus: p2pClient.getClientStatus(),
           shardingStatus: p2pServer.getShardingStatus(),
           cpuStatus: p2pServer.getCpuUsage(),
           memoryStatus: p2pServer.getMemoryUsage(),
