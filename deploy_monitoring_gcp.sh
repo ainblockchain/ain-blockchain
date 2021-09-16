@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$#" -lt 2 ]]; then
-    echo "Usage: bash deploy_monitoring_gcp.sh [dev|staging|spring|summer] <GCP Username>"
+    echo "Usage: bash deploy_monitoring_gcp.sh [dev|staging|spring|summer] <GCP Username>  [--setup]"
     echo "Example: bash deploy_monitoring_gcp.sh dev seo"
     exit
 fi
@@ -22,6 +22,9 @@ echo "PROJECT_ID=$PROJECT_ID"
 
 GCP_USER="$2"
 echo "GCP_USER=$GCP_USER"
+
+OPTIONS="$3"
+echo "OPTIONS=$OPTIONS"
 
 # Get confirmation.
 echo
@@ -48,8 +51,10 @@ printf "\nDeploying files to ${MONITORING_TARGET_ADDR}..."
 gcloud compute scp --recurse $FILES_FOR_MONITORING ${MONITORING_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $MONITORING_ZONE
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-# printf "\n\n##########################\n# Setting up monitoring #\n###########################\n\n"
-# gcloud compute ssh $MONITORING_TARGET_ADDR --command ". setup_monitoring_ubuntu.sh" --project $PROJECT_ID
+if [[ $OPTIONS = "--setup" ]]; then
+    printf "\n\n##########################\n# Setting up monitoring #\n###########################\n\n"
+    gcloud compute ssh $MONITORING_TARGET_ADDR --command ". setup_monitoring_ubuntu.sh" --project $PROJECT_ID
+fi
 
 # ssh into each instance, install packages and start up the server
 printf "\n\n############################\n# Running monitoring #\n############################\n\n"
