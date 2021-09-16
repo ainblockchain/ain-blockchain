@@ -413,8 +413,8 @@ describe("radix-tree", () => {
       });
 
       it("without common label prefix - set with substring label suffix", () => {
-        const label1 = '0xaabb';
-        const label2 = '0xaa';
+        const label1 = '0xaaabbb';
+        const label2 = '0xaaa';
 
         stateNode1.setLabel(label1);
         stateNode2.setLabel(label2);
@@ -430,15 +430,15 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
-          "aa": {
+          "aaa": {
             ".version": null,
-            ".label": "0xaa",
+            ".label": "0xaaa",
             ".proof_hash": null,
             ".radix_version": "ver",
             ".radix_ph": null,
-            "bb": {
+            "bbb": {
               ".version": null,
-              ".label": "0xaabb",
+              ".label": "0xaaabbb",
               ".proof_hash": null,
               ".radix_version": "ver",
               ".radix_ph": null,
@@ -447,9 +447,96 @@ describe("radix-tree", () => {
         });
       });
 
+      it("without common label prefix - set with substring label suffix and a sibling having multiple parents", () => {
+        const label1 = '0xaaabbb';
+        const label2 = '0xaaa';
+
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
+
+        tree.set(label1, stateNode1);
+
+        // set another parent
+        const version2 = 'ver2';
+        const parentAnother = new RadixNode(version2);
+        const node = tree._getRadixNodeForReading(label1);
+        parentAnother.setChild('a', 'aabbb', node);
+
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "aaabbb": {
+            ".label": "0xaaabbb",
+            ".num_parents": 2,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        });
+
+        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver2",
+          "aaabbb": {
+            ".label": "0xaaabbb",
+            ".num_parents": 2,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        });
+
+        tree.set(label2, stateNode2);
+
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        // internal node inserted and sibling cloned!
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "aaa": {
+            ".label": "0xaaa",
+            ".num_parents": 1,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+            "bbb": {
+              ".label": "0xaaabbb",
+              ".num_parents": 1,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            }
+          }
+        });
+        // no changes except num_parents!
+        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver2",
+          "aaabbb": {
+            ".label": "0xaaabbb",
+            ".num_parents": 1,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        });
+      });
+
       it("without common label prefix - set with superstring label suffix", () => {
-        const label1 = '0xaa';
-        const label2 = '0xaabb';
+        const label1 = '0xaaa';
+        const label2 = '0xaaabbb';
 
         stateNode1.setLabel(label1);
         stateNode2.setLabel(label2);
@@ -465,15 +552,15 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
-          "aa": {
+          "aaa": {
             ".version": null,
-            ".label": "0xaa",
+            ".label": "0xaaa",
             ".proof_hash": null,
             ".radix_version": "ver",
             ".radix_ph": null,
-            "bb": {
+            "bbb": {
               ".version": null,
-              ".label": "0xaabb",
+              ".label": "0xaaabbb",
               ".proof_hash": null,
               ".radix_version": "ver",
               ".radix_ph": null,
@@ -483,7 +570,7 @@ describe("radix-tree", () => {
       });
 
       it("without common label prefix - set with exact-matched label suffix", () => {
-        const label = '0xaa';
+        const label = '0xaaa';
 
         stateNode1.setLabel(label);
         stateNode2.setLabel(label + '_');  // tweak in order to distinguish
@@ -501,12 +588,99 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
-          "aa": {
+          "aaa": {
             ".version": null,
-            ".label": "0xaa_",
+            ".label": "0xaaa_",
             ".proof_hash": null,
             ".radix_version": "ver",
             ".radix_ph": null,
+          }
+        });
+      });
+
+      it("without common label prefix - set with a sibling having multiple parents", () => {
+        const label1 = '0xaaa';
+        const label2 = '0xbbb';
+
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
+
+        tree.set(label1, stateNode1);
+
+        // set another parent
+        const version2 = 'ver2';
+        const parentAnother = new RadixNode(version2);
+        const node = tree._getRadixNodeForReading(label1);
+        parentAnother.setChild('a', 'aa', node);
+
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "aaa": {
+            ".label": "0xaaa",
+            ".num_parents": 2,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        });
+
+        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver2",
+          "aaa": {
+            ".label": "0xaaa",
+            ".num_parents": 2,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        });
+
+        tree.set(label2, stateNode2);
+
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        // internal node inserted, but no changes on the sibling!
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "aaa": {
+            ".label": "0xaaa",
+            ".num_parents": 2,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          },
+          "bbb": {
+            ".label": "0xbbb",
+            ".num_parents": 1,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        });
+        // no changes!
+        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver2",
+          "aaa": {
+            ".label": "0xaaa",
+            ".num_parents": 2,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
           }
         });
       });
@@ -1133,8 +1307,8 @@ describe("radix-tree", () => {
       });
 
       it("with common label prefix - set with substring label suffix", () => {
-        const label1 = '0x000aabb';
-        const label2 = '0x000aa';
+        const label1 = '0x000aaabbb';
+        const label2 = '0x000aaa';
 
         stateNode1.setLabel(label1);
         stateNode2.setLabel(label2);
@@ -1150,15 +1324,15 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
-          "000aa": {
+          "000aaa": {
             ".version": null,
-            ".label": "0x000aa",
+            ".label": "0x000aaa",
             ".proof_hash": null,
             ".radix_version": "ver",
             ".radix_ph": null,
-            "bb": {
+            "bbb": {
               ".version": null,
-              ".label": "0x000aabb",
+              ".label": "0x000aaabbb",
               ".proof_hash": null,
               ".radix_version": "ver",
               ".radix_ph": null,
@@ -1167,9 +1341,97 @@ describe("radix-tree", () => {
         });
       });
 
+      it("with common label prefix - set with substring label suffix and a sibling having multiple parents", () => {
+        const label1 = '0x000aaabbb';
+        const label2 = '0x000aaa';
+
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
+
+        tree.set(label1, stateNode1);
+
+        // set another parent
+        const version2 = 'ver2';
+        const parentAnother = new RadixNode(version2);
+        const node = tree._getRadixNodeForReading(label1);
+        parentAnother.setChild('0', '00aaabbb', node);
+
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "000aaabbb": {
+            ".label": "0x000aaabbb",
+            ".num_parents": 2,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        });
+
+        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver2",
+          "000aaabbb": {
+            ".label": "0x000aaabbb",
+            ".num_parents": 2,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        });
+
+        tree.set(label2, stateNode2);
+
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        // internal node inserted and sibling cloned!
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "000aaa": {
+            ".label": "0x000aaa",
+            ".num_parents": 1,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+            "bbb": {
+              ".label": "0x000aaabbb",
+              ".num_parents": 1,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            }
+          }
+        });
+
+        // no changes except num_parents!
+        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver2",
+          "000aaabbb": {
+            ".label": "0x000aaabbb",
+            ".num_parents": 1,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        });
+      });
+
       it("with common label prefix - set with superstring label suffix", () => {
-        const label1 = '0x000aa';
-        const label2 = '0x000aabb';
+        const label1 = '0x000aaa';
+        const label2 = '0x000aaabbb';
 
         stateNode1.setLabel(label1);
         stateNode2.setLabel(label2);
@@ -1185,15 +1447,15 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
-          "000aa": {
+          "000aaa": {
             ".version": null,
-            ".label": "0x000aa",
+            ".label": "0x000aaa",
             ".proof_hash": null,
             ".radix_version": "ver",
             ".radix_ph": null,
-            "bb": {
+            "bbb": {
               ".version": null,
-              ".label": "0x000aabb",
+              ".label": "0x000aaabbb",
               ".proof_hash": null,
               ".radix_version": "ver",
               ".radix_ph": null,
@@ -1203,7 +1465,7 @@ describe("radix-tree", () => {
       });
 
       it("with common label prefix - set with exact-matched label suffix", () => {
-        const label = '0x000aa';
+        const label = '0x000aaa';
 
         stateNode1.setLabel(label);
         stateNode2.setLabel(label + '_');  // tweak in order to distinguish
@@ -1221,12 +1483,105 @@ describe("radix-tree", () => {
         assert.deepEqual(tree.toJsObject(true, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
-          "000aa": {
+          "000aaa": {
             ".version": null,
-            ".label": "0x000aa_",
+            ".label": "0x000aaa_",
             ".proof_hash": null,
             ".radix_version": "ver",
             ".radix_ph": null,
+          }
+        });
+      });
+
+      it("with common label prefix - set with a sibling having multiple parents", () => {
+        const label1 = '0x000aaa';
+        const label2 = '0x000bbb';
+
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
+
+        tree.set(label1, stateNode1);
+
+        // set another parent
+        const version2 = 'ver2';
+        const parentAnother = new RadixNode(version2);
+        const node = tree._getRadixNodeForReading(label1);
+        parentAnother.setChild('0', '00aaa', node);
+
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "000aaa": {
+            ".label": "0x000aaa",
+            ".num_parents": 2,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        });
+
+        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver2",
+          "000aaa": {
+            ".label": "0x000aaa",
+            ".num_parents": 2,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
+          }
+        });
+
+        tree.set(label2, stateNode2);
+
+        expect(tree.has(label1)).to.equal(true);
+        expect(tree.get(label1)).to.equal(stateNode1);
+        expect(tree.has(label2)).to.equal(true);
+        expect(tree.get(label2)).to.equal(stateNode2);
+        // internal node inserted and sibling cloned!
+        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver",
+          "000": {
+            ".num_parents": 1,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            "aaa": {
+              ".label": "0x000aaa",
+              ".num_parents": 1,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            },
+            "bbb": {
+              ".label": "0x000bbb",
+              ".num_parents": 1,
+              ".proof_hash": null,
+              ".radix_ph": null,
+              ".radix_version": "ver",
+              ".version": null,
+            }
+          }
+        });
+
+        // no changes except num_parents!
+        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+          ".num_parents": 0,
+          ".radix_ph": null,
+          ".radix_version": "ver2",
+          "000aaa": {
+            ".label": "0x000aaa",
+            ".num_parents": 1,
+            ".proof_hash": null,
+            ".radix_ph": null,
+            ".radix_version": "ver",
+            ".version": null,
           }
         });
       });
@@ -1398,10 +1753,10 @@ describe("radix-tree", () => {
         tree.set(label2, stateNode2);
         // set a child
         tree.set(label21, stateNode21);
-        // set another root path
+        // set another parent
         const version2 = 'ver2';
         const parentAnother = new RadixNode(version2);
-        const node = tree._getRadixNodeForDeleting(label21);
+        const node = tree._getRadixNodeForReading(label21);
         parentAnother.setChild('1', '11', node);
 
         // check parents
@@ -1708,7 +2063,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("with common label prefix - delete a node with no children and one parent having state node and another root path, with shouldUpdateRadixInfo = true", () => {
+      it("with common label prefix - delete a node with no children and one parent having state node and multiple parents, with shouldUpdateRadixInfo = true", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
         const label22 = '0x000bbb222';
@@ -1722,14 +2077,14 @@ describe("radix-tree", () => {
         // set children
         tree.set(label21, stateNode21);
         tree.set(label22, stateNode22);
-        // set another root path
+        // set another grandparent
         const version2 = 'ver2';
         const child2 = tree._getRadixNodeForReading(label2);
         const radixLabel2 = RadixTree._toRadixLabel(label2);
         const grandParentAnother = new RadixNode(version2);
         grandParentAnother.setChild(radixLabel2.charAt(0), radixLabel2.slice(1), child2);
 
-        // check another root path
+        // check grandparents
         expect(child2.numParents()).to.equal(2);
         expect(child2.hasParent(grandParentAnother)).to.equal(true);
 
@@ -1988,7 +2343,7 @@ describe("radix-tree", () => {
         });
       });
 
-      it("with common label prefix - delete a node with no children and one parent having no state node and another root path, with shouldUpdateRadixInfo = true", () => {
+      it("with common label prefix - delete a node with no children and one parent having no state node and multiple parents, with shouldUpdateRadixInfo = true", () => {
         const label2 = '0x000bbb';
         const label21 = '0x000bbb111';
         const label22 = '0x000bbb222';
@@ -1999,14 +2354,14 @@ describe("radix-tree", () => {
         // set children
         tree.set(label21, stateNode21);
         tree.set(label22, stateNode22);
-        // set another root path
+        // set another grandparent
         const version2 = 'ver2';
         const child2 = tree._getRadixNodeForReading(label2);
         const radixLabel2 = RadixTree._toRadixLabel(label2);
         const grandParentAnother = new RadixNode(version2);
         grandParentAnother.setChild(radixLabel2.charAt(0), radixLabel2.slice(1), child2);
 
-        // check another root path
+        // check grandparents
         expect(child2.numParents()).to.equal(2);
         expect(child2.hasParent(grandParentAnother)).to.equal(true);
 
@@ -2131,10 +2486,10 @@ describe("radix-tree", () => {
         // set children
         tree.set(label21, stateNode21);
         tree.set(label22, stateNode22);
-        // set another root path
+        // set another parent
         const version2 = 'ver2';
         const parentAnother = new RadixNode(version2);
-        const node = tree._getRadixNodeForDeleting(label21);
+        const node = tree._getRadixNodeForReading(label21);
         parentAnother.setChild('1', '11', node);
 
         // check parents
