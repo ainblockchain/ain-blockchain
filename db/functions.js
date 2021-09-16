@@ -977,6 +977,8 @@ class Functions {
     const networkName = context.params.network_name;
     const chainId = context.params.chain_id;
     const tokenId = context.params.token_id;
+    // NOTE(liayoo): `sender` is the address on `networkName` that will send `tokenId` tokens to the pool.
+    // For example, with the Eth token bridge, it will be an Ethereum address that will send ETH to the pool.
     const { amount, sender } = value;
     const {
       [TokenBridgeProperties.TOKEN_POOL]: tokenPool,
