@@ -359,7 +359,7 @@ class StateNode {
 
   getChildLabels() {
     if (FeatureFlags.enableRadixTreeLayers) {
-      return [...this.radixTree.labels()];
+      return [...this.radixTree.childStateLabels()];
     } else {
       return [...this.childMap.keys()];
     }
@@ -367,7 +367,7 @@ class StateNode {
 
   getChildNodes() {
     if (FeatureFlags.enableRadixTreeLayers) {
-      return [...this.radixTree.stateNodes()];
+      return [...this.radixTree.childStateNodes()];
     } else {
       return [...this.childMap.values()];
     }
@@ -375,7 +375,7 @@ class StateNode {
 
   numChildren() {
     if (FeatureFlags.enableRadixTreeLayers) {
-      return this.radixTree.size();
+      return this.radixTree.numChildStateNodes();
     } else {
       return this.childMap.size;
     }

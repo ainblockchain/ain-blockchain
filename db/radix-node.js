@@ -283,6 +283,29 @@ class RadixNode {
     return this.radixChildMap.size;
   }
 
+  getParentStateNodeList() {
+    const parentStateNodeList = [];
+    if (this.hasParentStateNode()) {
+      parentStateNodeList.push(this.getParentStateNode());
+    } else {
+      for (const parent of this.getParentNodes()) {
+        parentStateNodeList.push(...parent.getParentStateNodeList());
+      }
+    }
+    return parentStateNodeList;
+  }
+
+  getChildStateNodeList() {
+    const stateNodeList = [];
+    if (this.hasChildStateNode()) {
+      stateNodeList.push(this.getChildStateNode());
+    }
+    for (const child of this.getChildNodes()) {
+      stateNodeList.push(...child.getChildStateNodeList());
+    }
+    return stateNodeList;
+  }
+
   getProofHash() {
     return this.proofHash;
   }
@@ -447,29 +470,6 @@ class RadixNode {
       });
     });
     return proof;
-  }
-
-  getParentStateNodeList() {
-    const parentStateNodeList = [];
-    if (this.hasParentStateNode()) {
-      parentStateNodeList.push(this.getParentStateNode());
-    } else {
-      for (const parent of this.getParentNodes()) {
-        parentStateNodeList.push(...parent.getParentStateNodeList());
-      }
-    }
-    return parentStateNodeList;
-  }
-
-  getChildStateNodeList() {
-    const stateNodeList = [];
-    if (this.hasChildStateNode()) {
-      stateNodeList.push(this.getChildStateNode());
-    }
-    for (const child of this.getChildNodes()) {
-      stateNodeList.push(...child.getChildStateNodeList());
-    }
-    return stateNodeList;
   }
 
   copyFrom(radixNode, newParentStateNode) {
