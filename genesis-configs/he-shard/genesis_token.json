@@ -4,7 +4,7 @@
   "total_supply": 100000000000,
   "bridge": {
     "AIN": {
-      "1": {
+      "0": {
         "0": {
           "token_pool": "0xBBB2219cD5eACc54Ce95deF7a67dDe71C8241891",
           "min_checkout_per_request": 1000,
