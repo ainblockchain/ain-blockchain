@@ -972,6 +972,8 @@ class Functions {
 
   _openCheckin(value, context) {
     if (value === null) {
+      // NOTE(liayoo): It's not a SET_VALUE for a request, but for a cancellation. A request should 
+      // only happen if the value is NOT null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
     const networkName = context.params.network_name;
@@ -1015,6 +1017,8 @@ class Functions {
 
   _cancelCheckin(value, context) {
     if (value !== null) {
+      // NOTE(liayoo): It's not a SET_VALUE for a cancel, but for a request. A cancel should only 
+      // happen if the value is null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
     if (context.auth.fids.length > 1) {
