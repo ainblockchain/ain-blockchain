@@ -257,11 +257,7 @@ class StateNode {
 
   getParentNodes() {
     if (FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning) {
-      const parentNodes = [];
-      for (const parentRadixNode of this.getParentRadixNodes()) {
-        parentNodes.push(...parentRadixNode.getParentStateNodeList());
-      }
-      return parentNodes;
+      return RadixTree.getParentStateNodes(this.getParentRadixNodes())
     } else {
       return Array.from(this.parentSet);
     }
@@ -359,7 +355,7 @@ class StateNode {
 
   getChildLabels() {
     if (FeatureFlags.enableRadixTreeLayers) {
-      return [...this.radixTree.childStateLabels()];
+      return [...this.radixTree.getChildStateLabels()];
     } else {
       return [...this.childMap.keys()];
     }
@@ -367,7 +363,7 @@ class StateNode {
 
   getChildNodes() {
     if (FeatureFlags.enableRadixTreeLayers) {
-      return [...this.radixTree.childStateNodes()];
+      return [...this.radixTree.getChildStateNodes()];
     } else {
       return [...this.childMap.values()];
     }
