@@ -13,13 +13,13 @@ const RadixNode = require('./radix-node');
 class RadixTree {
   constructor(version = null, parentStateNode = null) {
     this.root = new RadixNode(version, parentStateNode);
-    this.numStateNodes = 0;
+    this.numTerminalNodes = 0;
   }
 
   clone(version, parentStateNode) {
     const clonedTree = new RadixTree();
     clonedTree.root = this.root.clone(version, parentStateNode);
-    clonedTree.numStateNodes = this.numStateNodes;
+    clonedTree.numTerminalNodes = this.numTerminalNodes;
     return clonedTree;
   }
 
@@ -215,7 +215,7 @@ class RadixTree {
   set(stateLabel, stateNode) {
     const node = this._getRadixNodeForSetting(stateLabel);
     if (!node.hasChildStateNode()) {
-      this.numStateNodes++;
+      this.numTerminalNodes++;
     }
     node.setChildStateNode(stateNode);
   }
@@ -289,7 +289,7 @@ class RadixTree {
       return false;
     }
     node.resetChildStateNode();
-    this.numStateNodes--;
+    this.numTerminalNodes--;
     const labelRadix = node.getLabelRadix();
     let nodesToUpdate = [node];
     if (node.numChildren() === 1) {  // the node has only 1 child.
@@ -324,21 +324,21 @@ class RadixTree {
   }
 
   // TODO(platfowner): Keep the insertion order.
-  labels() {
+  childStateLabels() {
     const labelList = [];
-    for (const stateNode of this.stateNodes()) {
+    for (const stateNode of this.childStateNodes()) {
       labelList.push(stateNode.getLabel());
     }
     return labelList;
   }
 
   // TODO(platfowner): Keep the insertion order.
-  stateNodes() {
+  childStateNodes() {
     return this.root.getChildStateNodeList();
   }
 
-  size() {
-    return this.numStateNodes;
+  numChildStateNodes() {
+    return this.numTerminalNodes;
   }
 
   getRootProofHash() {
@@ -407,16 +407,16 @@ class RadixTree {
 
   copyFrom(radixTree, newParentStateNode) {
     this.root.copyFrom(radixTree.root, newParentStateNode);
-    this.numStateNodes = radixTree.size();
+    this.numTerminalNodes = radixTree.numChildStateNodes();
   }
 
   deleteRadixTree(parentStateNodeToDelete = null) {
-    this.numStateNodes = 0;
+    this.numTerminalNodes = 0;
     return this.root.deleteRadixTree(parentStateNodeToDelete);
   }
 
   deleteRadixTreeVersion() {
-    this.numStateNodes = 0;
+    this.numTerminalNodes = 0;
     return this.root.deleteRadixTreeVersion();
   }
 

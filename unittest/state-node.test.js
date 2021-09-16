@@ -51,7 +51,7 @@ describe("state-node", () => {
       expect(node.isLeaf).to.equal(true);
       expect(node.value).to.equal(null);
       expect(node.parentSet.size).to.equal(0);
-      expect(node.radixTree.size()).to.equal(0);
+      expect(node.radixTree.numChildStateNodes()).to.equal(0);
       expect(node.radixTree.root.version).to.equal(null);
       /*
       expect(node.childMap.size).to.equal(0);
@@ -90,7 +90,7 @@ describe("state-node", () => {
       expect(node.isLeaf).to.equal(true);
       expect(node.value).to.equal(null);
       expect(node.parentSet.size).to.equal(0);
-      expect(node.radixTree.size()).to.equal(0);
+      expect(node.radixTree.numChildStateNodes()).to.equal(0);
       expect(node.radixTree.root.version).to.equal(null);
       expect(node.childMap.size).to.equal(0);
       expect(node.proofHash).to.equal(null);
@@ -108,7 +108,7 @@ describe("state-node", () => {
       expect(node2.isLeaf).to.equal(true);
       expect(node2.value).to.equal(null);
       expect(node2.parentSet.size).to.equal(0);
-      expect(node2.radixTree.size()).to.equal(0);
+      expect(node2.radixTree.numChildStateNodes()).to.equal(0);
       expect(node2.radixTree.root.version).to.equal('version1');
       expect(node2.childMap.size).to.equal(0);
       expect(node2.proofHash).to.equal(null);
