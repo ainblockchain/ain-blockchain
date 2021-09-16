@@ -956,14 +956,14 @@ class Functions {
 
   validateCheckinAmount(networkName, chainId, tokenId, sender, amount, tokenPool) {
     // NOTE(liayoo): pending amounts do NOT include the request's amount yet.
-    const tokenPoolBalance = this.db.getValue(PathUtil.getAccountBalancePath(tokenPool)) || 0;
-    const pendingPerTokenPool = this.db.getValue(
-        PathUtil.getCheckinPendingAmountPerTokenPoolPath(tokenPool)) || 0;
     const pendingSender = this.db.getValue(
         PathUtil.getCheckinPendingAmountPerSenderPath(networkName, chainId, tokenId, sender)) || 0;
     if (pendingSender > 0) {
       return FunctionResultCode.UNPROCESSED_REQUEST_EXISTS;
     }
+    const tokenPoolBalance = this.db.getValue(PathUtil.getAccountBalancePath(tokenPool)) || 0;
+    const pendingPerTokenPool = this.db.getValue(
+        PathUtil.getCheckinPendingAmountPerTokenPoolPath(tokenPool)) || 0;
     if (amount + pendingPerTokenPool > tokenPoolBalance) {
       return FunctionResultCode.INVALID_CHECKIN_AMOUNT;
     }
