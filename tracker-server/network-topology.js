@@ -1,19 +1,10 @@
-const express = require('express');
-const axios = require('axios').default;
-const commonUtil = require('../../common/common-util');
-
-const app = express();
-
-const PORT = 8000;
-
-app.engine('html', require('ejs').renderFile);
-app.set('view engine', 'html');
+const commonUtil = require('../common/common-util');
 
 const abbrAddr = (address) => {
   return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
 }
 
-const buildGraphData = (peerNodes) => {
+const _buildGraphData = (peerNodes) => {
   const data = { nodes: [], links: [] };
   const peerNodeIdMap = { };
 
@@ -34,13 +25,10 @@ const buildGraphData = (peerNodes) => {
   return data;
 }
 
-const getGraphData = async () => {
-  const networkStatus = { };
+const getGraphData = async (networkStatus) => {
   try {
-    const networkStatusResponse = await axios.get('http://localhost:8080/network_status');
-    Object.assign(networkStatus, networkStatusResponse.data);
     if (!commonUtil.isEmpty(networkStatus.peerNodes)) {
-      const data = buildGraphData(networkStatus.peerNodes);
+      const data = _buildGraphData(networkStatus.peerNodes);
       return data;
     } else {
       return {
@@ -66,14 +54,6 @@ const getGraphData = async () => {
   }
 }
 
-app.get('/', (req, res) => {
-  res.render(__dirname + '/index.html', {}, async (err, html) => {
-    const data = await getGraphData();
-    html = html.replace(/{ \/\* replace this \*\/ };/g, JSON.stringify(data));
-    res.send(html);
-  });
-});
-
-app.listen(PORT, () => {
-  console.log(`Listening at http://localhost:${PORT}`);
-});
+module.exports = {
+  getGraphData
+};

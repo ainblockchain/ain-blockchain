@@ -12,6 +12,7 @@ const {
   TrackerMessageTypes,
   CURRENT_PROTOCOL_VERSION
 } = require('../common/constants');
+const { getGraphData } = require('./network-topology');
 const CommonUtil = require('../common/common-util');
 const logger = require('../logger')('TRACKER_SERVER');
 
@@ -25,6 +26,8 @@ const wsList = {};
 const app = express();
 const jsonRpcMethods = require('./json-rpc')(peerNodes);
 app.use(express.json());
+app.engine('html', require('ejs').renderFile);
+app.set('view engine', 'html');
 app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
@@ -58,6 +61,15 @@ app.get('/network_status', (req, res, next) => {
       .set('Content-Type', 'application/json')
       .send(result)
       .end();
+});
+
+app.get('/network_topology', (req, res) => {
+  res.render(__dirname + '/index.html', {}, async (err, html) => {
+    const networkStatus = getNetworkStatus();
+    const graphData = await getGraphData(networkStatus);
+    html = html.replace(/{ \/\* replace this \*\/ };/g, JSON.stringify(graphData));
+    res.send(html);
+  });
 });
 
 const trackerServer = app.listen(PORT, () => {
