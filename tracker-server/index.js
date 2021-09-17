@@ -8,11 +8,13 @@ const { v4: uuidv4 } = require('uuid');
 const disk = require('diskusage');
 const os = require('os');
 const v8 = require('v8');
+
+const { getGraphData } = require('./network-topology');
+const { abbrAddr } = require('./util');
 const {
   TrackerMessageTypes,
   CURRENT_PROTOCOL_VERSION
 } = require('../common/constants');
-const { getGraphData } = require('./network-topology');
 const CommonUtil = require('../common/common-util');
 const logger = require('../logger')('TRACKER_SERVER');
 
@@ -189,10 +191,6 @@ server.on('connection', (ws) => {
         `${JSON.stringify(error, null, 2)}`);
   });
 });
-
-function abbrAddr(address) {
-  return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
-}
 
 function setPeerNodes(ws, nodeInfo) {
   wsList[ws.uuid] = nodeInfo.address;
