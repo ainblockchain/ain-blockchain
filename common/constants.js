@@ -33,13 +33,15 @@ const FeatureFlags = {
   // Enables radix layers.
   enableRadixTreeLayers: true,  // Some test cases assume this value true.
   // Enables radix node versioning.
-  enableRadixNodeVersioning: true,
+  enableRadixNodeVersioning: true,  // Some test cases assume this value true.
   // Enables ntp-sync for global time syncing.
   enableNtpSync: true,
   // Enables traffic monitoring.
   enableTrafficMonitoring: true,
   // Enables state info updates.
   enableStateInfoUpdates: true,
+  // Enables terminal radix node cache.
+  enableTerminalRadixNodeCache: true,
 };
 
 // ** Environment variables **
