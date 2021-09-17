@@ -2,20 +2,19 @@ const _ = require('lodash');
 
 class EventCounter {
   constructor(
-      intervalMs = 60000,  // 1 min
-      maxIntervals = 180, // 3 hours
+      intervalMs,  // 1 min
+      maxIntervals, // 3 hours
       currentTimeMs = null) {
     this.intervalMs = intervalMs;
     this.maxIntervals = maxIntervals;
     this.initialTimeMs = currentTimeMs;
     this.circularQueue = _.fill(Array(maxIntervals), 0);
-    const curTime = currentTimeMs !== null ? currentTimeMs : Date.now();
     this.lastIntervalCount = 0;
     this.lastQueueIndex = 0;
   }
 
   updateQueueIndex(curTime) {
-    const intervalCount = (curTime - this.initialTimeMs) / this.intervalMs;
+    const intervalCount = Math.ceil((curTime - this.initialTimeMs) / this.intervalMs);
     if (intervalCount <= this.lastIntervalCount) {
       // Does nothing.
       return;
