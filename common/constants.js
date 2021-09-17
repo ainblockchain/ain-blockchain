@@ -40,8 +40,6 @@ const FeatureFlags = {
   enableTrafficMonitoring: true,
   // Enables state info updates.
   enableStateInfoUpdates: true,
-  // Enables terminal radix node cache.
-  enableTerminalRadixNodeCache: true,
 };
 
 // ** Environment variables **
