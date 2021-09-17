@@ -211,39 +211,57 @@ class RuleUtil {
     return MIN_NUM_VALIDATORS;
   }
 
-  getTokenBridgeConfig(type, tokenId, getValue) {
+  getTokenBridgeConfig(networkName, chainId, tokenId, getValue) {
     const PathUtil = require('../common/path-util');
-    return getValue(PathUtil.getTokenBridgeConfigPath(type, tokenId));
+    return getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
   }
 
-  getTokenPoolAddr(type, tokenId, getValue) {
+  getTokenPoolAddr(networkName, chainId, tokenId, getValue) {
     const PathUtil = require('../common/path-util');
-    return getValue(PathUtil.getTokenBridgeTokenPoolPath(type, tokenId));
+    return getValue(PathUtil.getTokenBridgeTokenPoolPath(networkName, chainId, tokenId));
   }
 
-  getTokenPoolAddrFromHistoryData(userAddr, checkoutId, getValue) {
-    const request = getValue(`/checkout/history/${userAddr}/${checkoutId}/request`);
-    if (!request || !request.type || !request.token_id) {
-      return null;
-    }
-    return this.getTokenPoolAddr(request.type, request.token_id, getValue);
-  }
-
-  validateCheckoutRequestData(data, getValue) {
+  validateCheckoutRequestData(networkName, chainId, tokenId, data, getValue) {
     if (!this.isDict(data) || !this.isNumber(data.amount) || data.amount <= 0 ||
-        !this.isString(data.type) || !this.isString(data.token_id) || !this.isString(data.recipient)) {
+        !this.isString(data.recipient)) {
       return false;
     }
-    return this.isDict(this.getTokenBridgeConfig(data.type, data.token_id, getValue));
+    return this.isDict(this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue));
   }
 
-  validateCheckoutHistoryData(userAddr, checkoutId, data, getValue) {
+  validateCheckoutHistoryData(networkName, chainId, tokenId, userAddr, checkoutId, data, getValue) {
+    const PathUtil = require('../common/path-util');
     const { FunctionResultCode } = require('../common/constants');
-    const request = getValue(`/checkout/requests/${userAddr}/${checkoutId}`);
+    const request = getValue(
+        PathUtil.getCheckoutRequestPath(networkName, chainId, tokenId, userAddr, checkoutId));
     if (!request || !this.isDict(request) || !this.isDict(data)) {
       return false;
     }
-    if (!_.isEqual(request, data.request, { strict: true })) {
+    if (!_.isEqual(request, data.request)) {
+      return false;
+    }
+    return this.isDict(data.response) && this.isValidHash(data.response.tx_hash) &&
+        (data.response.status === FunctionResultCode.SUCCESS ||
+        data.response.status === FunctionResultCode.FAILURE);
+  }
+
+  validateCheckinRequestData(networkName, chainId, tokenId, data, getValue) {
+    if (!this.isDict(data) || !this.isNumber(data.amount) || data.amount <= 0 ||
+        !this.isString(data.sender)) {
+      return false;
+    }
+    return this.isDict(this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue));
+  }
+
+  validateCheckinHistoryData(networkName, chainId, tokenId, userAddr, checkinId, data, getValue) {
+    const PathUtil = require('../common/path-util');
+    const { FunctionResultCode } = require('../common/constants');
+    const request = getValue(
+        PathUtil.getCheckinRequestPath(networkName, chainId, tokenId, userAddr, checkinId));
+    if (!request || !this.isDict(request) || !this.isDict(data)) {
+      return false;
+    }
+    if (!_.isEqual(request, data.request)) {
       return false;
     }
     return this.isDict(data.response) && this.isValidHash(data.response.tx_hash) &&

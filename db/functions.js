@@ -7,14 +7,8 @@ const {
   FunctionTypes,
   FunctionResultCode,
   NativeFunctionIds,
-  ShardingProperties,
-  GenesisSharding,
   WriteDbOperations,
-  ShardingProtocols,
-  GenesisAccounts,
-  AccountProperties,
   TokenBridgeProperties,
-  TokenExchangeSchemes,
   OwnerProperties,
   GasFeeConstants,
   REST_FUNCTION_CALL_TIMEOUT_MS,
@@ -24,13 +18,6 @@ const {
 const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
-const {
-  sendSignedTx,
-  signAndSendTx
-} = require('../common/network-util');
-const Transaction = require('../tx-pool/transaction');
-
-const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 
 const EventListenerWhitelist = {
   'https://events.ainetwork.ai/trigger': true,
@@ -50,12 +37,14 @@ class Functions {
     this.db = db;
     this.tp = tp;
     this.nativeFunctionMap = {
+      [NativeFunctionIds.CANCEL_CHECKIN]: {
+        func: this._cancelCheckin.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CLAIM]: {
         func: this._claim.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CLAIM_REWARD]: {
         func: this._claimReward.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CLOSE_CHECKIN]: {
-        func: this._closeCheckin.bind(this), ownerOnly: true, extraGasAmount: 10 },
+        func: this._closeCheckin.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.CLOSE_CHECKOUT]: {
         func: this._closeCheckout.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.COLLECT_FEE]: {
@@ -71,7 +60,7 @@ class Functions {
       [NativeFunctionIds.HOLD]: {
         func: this._hold.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.OPEN_CHECKIN]: {
-        func: this._openCheckin.bind(this), ownerOnly: true, extraGasAmount: 60 },
+        func: this._openCheckin.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.OPEN_CHECKOUT]: {
         func: this._openCheckout.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.PAY]: {
@@ -99,13 +88,14 @@ class Functions {
    *
    * @param {Array} parsedValuePath parsed value path
    * @param {Object} value value set on the database path
+   * @param {Object} prevValue previous value at the database path
    * @param {Number} timestamp the time at which the transaction was created and signed
    * @param {Number} executedAt execution time
    * @param {Object} transaction transaction
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, auth, timestamp, transaction, blockTime) {
+  triggerFunctions(parsedValuePath, value, prevValue, auth, timestamp, transaction, blockTime) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
@@ -120,7 +110,8 @@ class Functions {
 
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
-          parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction, blockTime);
+          parsedValuePath, functionPath, timestamp, executedAt, params, value, prevValue,
+          transaction, blockTime);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
           continue;  // Does nothing.
@@ -155,6 +146,7 @@ class Functions {
                     fid: functionEntry.function_id,
                     valuePath: parsedValuePath,
                     functionPath,
+                    prevValue,
                     params,
                     timestamp,
                     executedAt,
@@ -282,12 +274,13 @@ class Functions {
   }
 
   static formatFunctionParams(
-      parsedValuePath, functionPath, timestamp, executedAt, params, value, transaction, blockTime) {
+      parsedValuePath, functionPath, timestamp, executedAt, params, value, prevValue, transaction, blockTime) {
     return `valuePath: '${CommonUtil.formatPath(parsedValuePath)}', ` +
       `functionPath: '${CommonUtil.formatPath(functionPath)}', ` +
       `timestamp: '${timestamp}', executedAt: '${executedAt}', ` +
       `params: ${JSON.stringify(params, null, 2)}, ` +
       `value: '${JSON.stringify(value, null, 2)}', ` +
+      `prevValue: '${JSON.stringify(prevValue, null, 2)}'` +
       `transaction: ${JSON.stringify(transaction, null, 2)}, ` +
       `blockTime: ${blockTime}`;
   }
@@ -912,124 +905,186 @@ class Functions {
     }
   }
 
-  // TODO(platfowner): Support refund feature.
+  updateStatsForPendingCheckin(networkName, chainId, tokenId, sender, tokenPool, amount, isIncrease, context) {
+    if (isIncrease) {
+      if (CommonUtil.isFailedTx(
+          this.incValueOrLog(
+              PathUtil.getCheckinPendingAmountPerSenderPath(networkName, chainId, tokenId, sender),
+              amount, context))) {
+        return FunctionResultCode.INTERNAL_ERROR;
+      }
+      if (CommonUtil.isFailedTx(
+          this.incValueOrLog(
+              PathUtil.getCheckinPendingAmountPerTokenPoolPath(tokenPool), amount, context))) {
+        return FunctionResultCode.INTERNAL_ERROR;
+      }
+    } else {
+      if (CommonUtil.isFailedTx(
+          this.decValueOrLog(
+              PathUtil.getCheckinPendingAmountPerSenderPath(networkName, chainId, tokenId, sender),
+              amount, context))) {
+        return FunctionResultCode.INTERNAL_ERROR;
+      }
+      if (CommonUtil.isFailedTx(
+          this.decValueOrLog(
+              PathUtil.getCheckinPendingAmountPerTokenPoolPath(tokenPool), amount, context))) {
+        return FunctionResultCode.INTERNAL_ERROR;
+      }
+    }
+    return true;
+  }
+
+  updateStatsForCompleteCheckin(user, amount, context) {
+    if (CommonUtil.isFailedTx(
+        this.incValueOrLog(PathUtil.getCheckinCompleteAmountPerAddrPath(user), amount, context))) {
+      return FunctionResultCode.INTERNAL_ERROR;
+    }
+    if (CommonUtil.isFailedTx(
+        this.incValueOrLog(PathUtil.getCheckinCompleteAmountTotalPath(), amount, context))) {
+      return FunctionResultCode.INTERNAL_ERROR;
+    }
+    return true;
+  }
+
+  validateCheckinSender(sender, networkName) {
+    switch (networkName) {
+      case 'ETH':
+        return CommonUtil.isCksumAddr(sender) ? true : FunctionResultCode.INVALID_SENDER;
+      // TODO(liayoo): add 'AIN' case for shards
+    }
+    return FunctionResultCode.INVALID_SENDER;
+  }
+
+  validateCheckinAmount(networkName, chainId, tokenId, sender, amount, tokenPool) {
+    // NOTE(liayoo): pending amounts do NOT include the request's amount yet.
+    const pendingSender = this.db.getValue(
+        PathUtil.getCheckinPendingAmountPerSenderPath(networkName, chainId, tokenId, sender)) || 0;
+    if (pendingSender > 0) {
+      return FunctionResultCode.UNPROCESSED_REQUEST_EXISTS;
+    }
+    const tokenPoolBalance = this.db.getValue(PathUtil.getAccountBalancePath(tokenPool)) || 0;
+    const pendingPerTokenPool = this.db.getValue(
+        PathUtil.getCheckinPendingAmountPerTokenPoolPath(tokenPool)) || 0;
+    if (amount + pendingPerTokenPool > tokenPoolBalance) {
+      return FunctionResultCode.INVALID_CHECKIN_AMOUNT;
+    }
+    return true;
+  }
+
   _openCheckin(value, context) {
-    const parsedValuePath = context.valuePath;
-    const payloadTx = _.get(value, 'payload', null);
-    const txHash = CommonUtil.hashSignature(payloadTx.signature);
-    if (!this.tp || !this.db.isNodeDb) {
-      // It's not the backupDb
-      logger.info(`  =>> Skip sending signed transaction to the parent blockchain: ${txHash}`);
+    if (value === null) {
+      // NOTE(liayoo): It's not a SET_VALUE for a request, but for a cancellation. A request should 
+      // only happen if the value is NOT null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
-    if (!this.validateCheckinParams(context.params)) {
-      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    const networkName = context.params.network_name;
+    const chainId = context.params.chain_id;
+    const tokenId = context.params.token_id;
+    // NOTE(liayoo): `sender` is the address on `networkName` that will send `tokenId` tokens to the pool.
+    // For example, with the Eth token bridge, it will be an Ethereum address that will send ETH to the pool.
+    const { amount, sender } = value;
+    const {
+      [TokenBridgeProperties.TOKEN_POOL]: tokenPool,
+      [TokenBridgeProperties.MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
+      [TokenBridgeProperties.MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
+      [TokenBridgeProperties.MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
+      [TokenBridgeProperties.TOKEN_EXCH_RATE]: tokenExchangeRate,
+      [TokenBridgeProperties.TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
+    } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
+    // Perform checks
+    const tokenBridgeValidated = this.validateTokenBridgeConfig(
+        tokenPool, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay,
+        tokenExchangeRate, tokenExchangeScheme);
+    if (tokenBridgeValidated !== true) {
+      return this.returnFuncResult(context, tokenBridgeValidated);
     }
-    if (!this.validateShardConfig()) {
-      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    const senderValidated = this.validateCheckinSender(sender, networkName);
+    if (senderValidated !== true) {
+      return this.returnFuncResult(context, senderValidated);
     }
-    if (!payloadTx || !payloadTx.tx_body || !payloadTx.signature) {
-      logger.info('  =>> payloadTx is missing required fields');
-      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    const amountValidated = this.validateCheckinAmount(
+        networkName, chainId, tokenId, sender, amount, tokenPool);
+    if (amountValidated !== true) {
+      return this.returnFuncResult(context, amountValidated);
     }
-    const createdTx = Transaction.create(payloadTx.tx_body, payloadTx.signature);
-    if (!createdTx ||
-        !Transaction.verifyTransaction(createdTx) ||
-        !this.isTransferTx(createdTx.tx_body.operation)) {
-      logger.info('  =>> Invalid payloadTx');
-      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    // Increase pending amounts
+    const incPendingResultCode = this.updateStatsForPendingCheckin(
+        networkName, chainId, tokenId, sender, tokenPool, amount, true, context);
+    if (incPendingResultCode !== true) {
+      return this.returnFuncResult(context, incPendingResultCode);
     }
-    // Forward payload tx to parent chain
-    try {
-      sendSignedTx(parentChainEndpoint, payloadTx)
-      .then((result) => {
-        if (!_.get(result, 'success', false) === true) {
-          logger.info(
-              `  =>> Failed to send signed transaction to the parent blockchain: ${txHash}`);
-          return;
-        }
-        logger.info(
-            `  =>> Successfully sent signed transaction to the parent blockchain: ${txHash}`);
-        const shardingPath = this.db.getShardingPath();
-        const action = {
-          ref: PathUtil.getCheckinParentFinalizeResultPathFromValuePath(
-              shardingPath, parsedValuePath, txHash),
-          valueFunction: (success) => !!success,
-          is_global: true,
-          tx_body: payloadTx.tx_body,
-        };
-        this.tp.addRemoteTransaction(txHash, action);
-      });
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+  }
+
+  _cancelCheckin(value, context) {
+    if (value !== null) {
+      // NOTE(liayoo): It's not a SET_VALUE for a cancel, but for a request. A cancel should only 
+      // happen if the value is null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    } catch (err) {
-      logger.error(`  => _openCheckin failed with error: ${err} ${err.stack}`);
-      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
+    if (context.auth.fids.length > 1) {
+      // NOTE(liayoo): Do not process _cancelCheckin if it's triggered by another function (e.g. _closeCheckin)
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    const networkName = context.params.network_name;
+    const chainId = context.params.chain_id;
+    const tokenId = context.params.token_id;
+    const {
+      [TokenBridgeProperties.TOKEN_POOL]: tokenPool
+    } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
+    // Decrease pending amounts
+    const decPendingResultCode = this.updateStatsForPendingCheckin(
+        networkName, chainId, tokenId, context.prevValue.sender, tokenPool,
+        context.prevValue.amount, false, context);
+    if (decPendingResultCode !== true) {
+      return this.returnFuncResult(context, decPendingResultCode);
+    }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
   _closeCheckin(value, context) {
-    if (!this.tp || !this.db.isNodeDb) {
-      // It's not the backupDb
-      logger.info('  =>> Skip sending transfer transaction to the shard blockchain');
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    }
-    if (!this.validateCheckinParams(context.params)) {
-      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
-    }
-    if (!this.validateShardConfig()) {
-      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
-    }
-    if (value !== true) {
-      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
-    }
-    // Transfer shard chain token from shard_owner to user_addr
+    const networkName = context.params.network_name;
+    const chainId = context.params.chain_id;
+    const tokenId = context.params.token_id;
     const user = context.params.user_addr;
     const checkinId = context.params.checkin_id;
-    const parsedValuePath = context.valuePath;
-    const checkinPayload =
-        this.db.getValue(PathUtil.getCheckinPayloadPathFromValuePath(parsedValuePath));
-    const checkinAmount = _.get(checkinPayload, 'tx_body.operation.value', 0);
-    const tokenExchRate = GenesisSharding[ShardingProperties.TOKEN_EXCH_RATE];
-    const tokenToReceive = checkinAmount * tokenExchRate;
-    if (!this.validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive)) {
+    const { request, response } = value;
+    const {
+      [TokenBridgeProperties.TOKEN_POOL]: tokenPool
+    } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
+    if (response.status === FunctionResultCode.SUCCESS) {
+      // Increase complete amounts
+      const updateStatsResultCode = this.updateStatsForCompleteCheckin(user, request.amount, context);
+      if (updateStatsResultCode !== true) {
+        return this.returnFuncResult(context, updateStatsResultCode);
+      }
+      // Transfer native tokens: token pool -> user
+      const transferRes = this.setServiceAccountTransferOrLog(tokenPool, user, request.amount, context);
+      if (CommonUtil.isFailedTx(transferRes)) {
+        logger.error(`  ===> _closeCheckin failed: ${JSON.stringify(transferRes)}`);
+        return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+      }
+    }
+    // NOTE(liayoo): Remove the original request to avoid keeping the processed requests in the
+    //               /checkin/requests and having to read and filter from the growing list.
+    const removeRes = this.setValueOrLog(
+        PathUtil.getCheckinRequestPath(networkName, chainId, tokenId, user, checkinId), null, context);
+    if (CommonUtil.isFailedTx(removeRes)) {
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
-    const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
-    const ownerPrivateKey = CommonUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-    const shardingPath = this.db.shardingPath;
-    const transferTx = {
-      operation: {
-        type: WriteDbOperations.SET_VALUE,
-        ref: CommonUtil.formatPath([
-          ...shardingPath,
-          PredefinedDbPaths.TRANSFER,
-          shardOwner,
-          user,
-          `checkin_${checkinId}`,
-          PredefinedDbPaths.TRANSFER_VALUE
-        ]),
-        value: tokenToReceive,
-        is_global: true
-      },
-      timestamp: Date.now(),
-      nonce: -1
-    };
-    // Sign and send transferTx to the node itself
-    const endpoint = `${this.tp.node.urlInternal}/json-rpc`;
-    try {
-      signAndSendTx(endpoint, transferTx, ownerPrivateKey);
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    } catch (err) {
-      logger.error(`  => _closeCheckin failed with error: ${err} ${err.stack}`);
-      return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+    // Decrease pending amounts
+    const decPendingResultCode = this.updateStatsForPendingCheckin(
+        networkName, chainId, tokenId, request.sender, tokenPool, request.amount, false, context);
+    if (decPendingResultCode !== true) {
+      return this.returnFuncResult(context, decPendingResultCode);
     }
+    return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
-  updatePendingCheckout(user, amount, isIncrease, context) {
+  updateStatsForPendingCheckout(user, amount, isIncrease, context) {
     if (isIncrease) {
       if (CommonUtil.isFailedTx(
-          this.incValueOrLog(PathUtil.getCheckoutPendingAmountForAddrPath(user), amount, context))) {
+          this.incValueOrLog(PathUtil.getCheckoutPendingAmountPerAddrPath(user), amount, context))) {
         return FunctionResultCode.INTERNAL_ERROR;
       }
       if (CommonUtil.isFailedTx(
@@ -1038,7 +1093,7 @@ class Functions {
       }
     } else {
       if (CommonUtil.isFailedTx(
-          this.decValueOrLog(PathUtil.getCheckoutPendingAmountForAddrPath(user), amount, context))) {
+          this.decValueOrLog(PathUtil.getCheckoutPendingAmountPerAddrPath(user), amount, context))) {
         return FunctionResultCode.INTERNAL_ERROR;
       }
       if (CommonUtil.isFailedTx(
@@ -1049,7 +1104,7 @@ class Functions {
     return true;
   }
 
-  updateCompleteCheckout(amount, blockTime, context) {
+  updateStatsForCompleteCheckout(amount, blockTime, context) {
     const dayTimestamp = CommonUtil.getDayTimestamp(blockTime);
     if (CommonUtil.isFailedTx(
         this.incValueOrLog(PathUtil.getCheckoutCompleteAmountDailyPath(dayTimestamp), amount, context))) {
@@ -1072,8 +1127,8 @@ class Functions {
     return true;
   }
 
-  validateRecipient(recipient, tokenType) {
-    switch (tokenType) {
+  validateCheckoutRecipient(recipient, networkName) {
+    switch (networkName) {
       case 'ETH':
         return CommonUtil.isCksumAddr(recipient) ? true : FunctionResultCode.INVALID_RECIPIENT;
       // TODO(liayoo): add 'AIN' case for shards
@@ -1098,10 +1153,13 @@ class Functions {
     if (value === null) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
+    const networkName = context.params.network_name;
+    const chainId = context.params.chain_id;
+    const tokenId = context.params.token_id;
     const user = context.params.user_addr;
-    const { amount, type, token_id: tokenId, recipient } = value;
+    const { amount, recipient } = value;
     // Increase pending amounts
-    const incPendingResultCode = this.updatePendingCheckout(user, amount, true, context);
+    const incPendingResultCode = this.updateStatsForPendingCheckout(user, amount, true, context);
     if (incPendingResultCode !== true) {
       return this.returnFuncResult(context, incPendingResultCode);
     }
@@ -1112,7 +1170,7 @@ class Functions {
       [TokenBridgeProperties.MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
       [TokenBridgeProperties.TOKEN_EXCH_RATE]: tokenExchangeRate,
       [TokenBridgeProperties.TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
-    } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(type, tokenId));
+    } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
     // Perform checks
     const tokenBridgeValidated = this.validateTokenBridgeConfig(
         tokenPool, minCheckoutPerRequest, maxCheckoutPerRequest, maxCheckoutPerDay,
@@ -1120,7 +1178,7 @@ class Functions {
     if (tokenBridgeValidated !== true) {
       return this.returnFuncResult(context, tokenBridgeValidated);
     }
-    const recipientValidated = this.validateRecipient(recipient, type);
+    const recipientValidated = this.validateCheckoutRecipient(recipient, networkName);
     if (recipientValidated !== true) {
       return this.returnFuncResult(context, recipientValidated);
     }
@@ -1141,82 +1199,45 @@ class Functions {
   }
 
   _closeCheckout(value, context) {
+    const networkName = context.params.network_name;
+    const chainId = context.params.chain_id;
+    const tokenId = context.params.token_id;
     const user = context.params.user_addr;
     const checkoutId = context.params.checkout_id;
     const { request, response } = value;
     if (response.status === FunctionResultCode.SUCCESS) {
       // Increase complete amounts
-      const updateStatsResultCode = this.updateCompleteCheckout(request.amount, context.blockTime, context);
+      const updateStatsResultCode = this.updateStatsForCompleteCheckout(request.amount, context.blockTime, context);
       if (updateStatsResultCode !== true) {
         return this.returnFuncResult(context, updateStatsResultCode);
       }
     } else {
       // Refund
-      const tokenPool = this.db.getValue(PathUtil.getTokenBridgeTokenPoolPath(request.type, request.token_id));
+      const tokenPool = this.db.getValue(PathUtil.getTokenBridgeTokenPoolPath(networkName, chainId, tokenId));
       const transferRes = this.setServiceAccountTransferOrLog(tokenPool, user, request.amount, context);
       if (CommonUtil.isFailedTx(transferRes)) {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }
       const setRefundRes = this.setValueOrLog(
-            PathUtil.getCheckoutHistoryRefundPath(user, checkoutId),
-            PathUtil.getTransferPath(tokenPool, user, context.timestamp), context);
+          PathUtil.getCheckoutHistoryRefundPath(networkName, chainId, tokenId, user, checkoutId),
+          PathUtil.getTransferPath(tokenPool, user, context.timestamp), context);
       if (CommonUtil.isFailedTx(setRefundRes)) {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }
     }
     // NOTE(liayoo): Remove the original request to avoid keeping the processed requests in the
     //               /checkout/requests and having to read and filter from the growing list.
-    const removeRes = this.setValueOrLog(PathUtil.getCheckoutRequestPath(user, checkoutId), null, context);
+    const removeRes = this.setValueOrLog(
+        PathUtil.getCheckoutRequestPath(networkName, chainId, tokenId, user, checkoutId), null, context);
     if (CommonUtil.isFailedTx(removeRes)) {
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
     // Decrease pending amounts
-    const decPendingResultCode = this.updatePendingCheckout(user, request.amount, false, context);
+    const decPendingResultCode = this.updateStatsForPendingCheckout(user, request.amount, false, context);
     if (decPendingResultCode !== true) {
       return this.returnFuncResult(context, decPendingResultCode);
     }
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-  }
-
-  validateCheckinParams(params) {
-    const user = params.user_addr;
-    const checkInId = params.checkin_id;
-    if (!user || !CommonUtil.isCksumAddr(user)) {
-      logger.debug('  =>> Invalid user_addr param');
-      return false;
-    }
-    if (checkInId == null) {
-      logger.debug('  =>> Invalid checkin_id param');
-      return false;
-    }
-    return true;
-  }
-
-  validateShardConfig() {
-    if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.NONE) {
-      logger.debug('  =>> Not a shard');
-      return false;
-    }
-    if (GenesisSharding[ShardingProperties.TOKEN_EXCH_SCHEME] !== TokenExchangeSchemes.FIXED) {
-      logger.debug('  =>> Unsupported token exchange scheme');
-      return false;
-    }
-    return true;
-  }
-
-  validateCheckinAmount(tokenExchRate, checkinAmount, tokenToReceive) {
-    if (!CommonUtil.isNumber(tokenExchRate) || tokenExchRate <= 0 || checkinAmount <= 0 ||
-        tokenToReceive <= 0) {
-      logger.debug('  =>> Invalid exchange rate or checkin amount');
-      return false;
-    }
-    // tokenToReceive = tokenExchRate * checkinAmount
-    if (tokenExchRate !== tokenToReceive / checkinAmount ||
-        checkinAmount !== tokenToReceive / tokenExchRate) {
-      logger.debug('  =>> Number overflow');
-      return false;
-    }
-    return true;
   }
 
   isTransferTx(txOp) {

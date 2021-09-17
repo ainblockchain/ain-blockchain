@@ -270,17 +270,20 @@ const PredefinedDbPaths = {
   ESCROW_OPEN: 'open',
   ESCROW_RELEASE: 'release',
   ESCROW_RESULT: 'result',
-  // Remote transaction action
-  REMOTE_TX_ACTION_RESULT: 'result',
   // Sharding
   SHARDING: 'sharding',
   SHARDING_CONFIG: 'config',
   SHARDING_SHARD: 'shard',
   // Check-in & Check-out
   CHECKIN: 'checkin',
-  CHECKIN_REQUEST: 'request',
-  CHECKIN_PAYLOAD: 'payload',
-  CHECKIN_PARENT_FINALIZE: 'parent_finalize',
+  CHECKIN_AMOUNT: 'amount',
+  CHECKIN_HISTORY: 'history',
+  CHECKIN_REQUESTS: 'requests',
+  CHECKIN_STATS: 'stats',
+  CHECKIN_STATS_COMPLETE: 'complete',
+  CHECKIN_STATS_PENDING: 'pending',
+  CHECKIN_STATS_TOTAL: 'total',
+  CHECKIN_TOKEN_POOL: 'token_pool',
   CHECKOUT: 'checkout',
   CHECKOUT_HISTORY: 'history',
   CHECKOUT_HISTORY_REFUND: 'refund',
@@ -412,6 +415,7 @@ const StateInfoProperties = {
  * @enum {string}
  */
 const NativeFunctionIds = {
+  CANCEL_CHECKIN: '_cancelCheckin',
   CLAIM: '_claim',
   CLAIM_REWARD: '_claimReward',
   CLOSE_CHECKIN: '_closeCheckin',
@@ -528,11 +532,14 @@ const FunctionResultCode = {
   IN_LOCKUP_PERIOD: 200,
   // Create app
   INVALID_SERVICE_NAME: 300,
-  // Checkout
+  // Check-in & Check-out
   INVALID_ACCOUNT_NAME: 400,
   INVALID_CHECKOUT_AMOUNT: 401,
   INVALID_RECIPIENT: 402,
   INVALID_TOKEN_BRIDGE_CONFIG: 403,
+  INVALID_SENDER: 405,
+  UNPROCESSED_REQUEST_EXISTS: 406,
+  INVALID_CHECKIN_AMOUNT: 407,
   // Claim reward
   INVALID_AMOUNT: 500,
 };
