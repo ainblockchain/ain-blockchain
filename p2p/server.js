@@ -1,7 +1,7 @@
 /* eslint no-mixed-operators: "off" */
 const Websocket = require('ws');
 const ip = require('ip');
-const publicIp = require('public-ip');
+const extIp = require('ext-ip')();
 const axios = require('axios');
 const disk = require('diskusage');
 const os = require('os');
@@ -304,16 +304,12 @@ class P2pServer {
           logger.error(`Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
           process.exit(0);
         });
-      } else if (HOSTING_ENV === 'comcom') {
+      } else {
         if (internal) {
           return ip.address();
         } else {
-          return publicIp.v4();
+          return extIp.get();
         }
-      } else if (HOSTING_ENV === 'local') {
-        return ip.address();
-      } else {
-        return publicIp.v4();
       }
     }).then((ipAddr) => {
       return ipAddr;
