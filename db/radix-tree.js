@@ -14,12 +14,16 @@ class RadixTree {
   constructor(version = null, parentStateNode = null) {
     this.root = new RadixNode(version, parentStateNode);
     this.numTerminalNodes = 0;
+    if (FeatureFlags.enableTerminalRadixNodeCache) {
+      this.terminalNodeCache = new Map();
+    }
   }
 
   clone(version, parentStateNode) {
     const clonedTree = new RadixTree();
     clonedTree.root = this.root.clone(version, parentStateNode);
     clonedTree.numTerminalNodes = this.numTerminalNodes;
+    // NOTE(platfowner): terminalNodeCache is not copied.
     return clonedTree;
   }
 
@@ -52,6 +56,12 @@ class RadixTree {
   }
 
   _getRadixNodeForReading(stateLabel) {
+    if (FeatureFlags.enableTerminalRadixNodeCache) {
+      const cachedNode = this.terminalNodeCache.get(stateLabel);
+      if (cachedNode !== undefined) {
+        return cachedNode;
+      }
+    }
     const radixLabel = RadixTree._toRadixLabel(stateLabel);
     let curNode = this.root
     let labelIndex = 0;
@@ -205,6 +215,12 @@ class RadixTree {
           `${node.getLabel()} at: ${new Error().stack}.`);
       return null;
     }
+    if (FeatureFlags.enableTerminalRadixNodeCache) {
+      const cachedNode = this.terminalNodeCache.get(stateLabel);
+      if (cachedNode !== node) {
+        this.terminalNodeCache.set(stateLabel, node);
+      }
+    }
     return node.getChildStateNode();
   }
 
@@ -216,6 +232,12 @@ class RadixTree {
     const node = this._getRadixNodeForSetting(stateLabel);
     if (!node.hasChildStateNode()) {
       this.numTerminalNodes++;
+    }
+    if (FeatureFlags.enableTerminalRadixNodeCache) {
+      const cachedNode = this.terminalNodeCache.get(stateLabel);
+      if (cachedNode !== node) {
+        this.terminalNodeCache.set(stateLabel, node);
+      }
     }
     node.setChildStateNode(stateNode);
   }
@@ -289,6 +311,12 @@ class RadixTree {
       return false;
     }
     node.resetChildStateNode();
+    if (FeatureFlags.enableTerminalRadixNodeCache) {
+      const cachedNode = this.terminalNodeCache.get(stateLabel);
+      if (cachedNode !== undefined) {
+        this.terminalNodeCache.delete(stateLabel);
+      }
+    }
     this.numTerminalNodes--;
     const labelRadix = node.getLabelRadix();
     let nodesToUpdate = [node];
