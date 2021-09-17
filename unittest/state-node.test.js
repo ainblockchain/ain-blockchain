@@ -582,6 +582,52 @@ describe("state-node", () => {
     });
   });
 
+  describe("getParentNodes / hasAParent / hasMultipleParents / numParents", () => {
+    it("with no parent", () => {
+      const node = new StateNode();
+      assert.deepEqual(node.getParentNodes(), []);
+      expect(node.hasAParent()).to.equal(false);
+      expect(node.hasMultipleParents()).to.equal(false);
+      expect(node.numParents()).to.equal(0);
+    });
+
+    it("with one parent", () => {
+      const parent = new StateNode();
+      const node = new StateNode();
+      parent.setChild('label', node);
+      assert.deepEqual(node.getParentNodes(), [parent]);
+      expect(node.hasAParent()).to.equal(true);
+      expect(node.hasMultipleParents()).to.equal(false);
+      expect(node.numParents()).to.equal(1);
+    });
+
+    it("with two parents", () => {
+      const parent1 = new StateNode();
+      const parent2 = new StateNode();
+      const node = new StateNode();
+      parent1.setChild('label', node);
+      parent2.setChild('label', node);
+      assert.deepEqual(node.getParentNodes(), [parent1, parent2]);
+      expect(node.hasAParent()).to.equal(true);
+      expect(node.hasMultipleParents()).to.equal(true);
+      expect(node.numParents()).to.equal(2);
+    });
+
+    it("with three parents", () => {
+      const parent1 = new StateNode();
+      const parent2 = new StateNode();
+      const parent3 = new StateNode();
+      const node = new StateNode();
+      parent1.setChild('label', node);
+      parent2.setChild('label', node);
+      parent3.setChild('label', node);
+      assert.deepEqual(node.getParentNodes(), [parent1, parent2, parent3]);
+      expect(node.hasAParent()).to.equal(true);
+      expect(node.hasMultipleParents()).to.equal(true);
+      expect(node.numParents()).to.equal(3);
+    });
+  });
+
   /*
   describe("parent", () => {
     it("add / has / delete / getParentNodes / numParents with single child", () => {

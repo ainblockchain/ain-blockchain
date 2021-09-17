@@ -547,7 +547,7 @@ function renameStateTreeVersion(node, fromVersion, toVersion, isRootNode = true)
  */
 function deleteStateTreeVersion(node) {
   let numAffectedNodes = 0;
-  if (node.hasParents()) {
+  if (node.hasAParent()) {
     // Does nothing.
     return numAffectedNodes;
   }

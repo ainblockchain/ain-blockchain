@@ -348,7 +348,7 @@ class DB {
       const label = fullPath[i];
       if (node.hasChild(label)) {
         const child = node.getChild(label);
-        if (child.numParents() > 1) {
+        if (child.hasMultipleParents()) {
           const clonedChild = child.clone(this.stateVersion);
           clonedChild.resetValue();
           node.setChild(label, clonedChild);
