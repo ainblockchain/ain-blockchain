@@ -250,7 +250,7 @@ class RadixTree {
   static _mergeToChild(node) {
     const LOG_HEADER = '_mergeToChild';
 
-    if (!node.hasParent()) {
+    if (node.numParents() === 0) {
       logger.error(
           `[${LOG_HEADER}] Trying to merge a root node at: ${new Error().stack}.`);
       // Does nothing.
@@ -303,7 +303,7 @@ class RadixTree {
       // Does nothing.
       return false;
     }
-    if (!node.hasParent()) {
+    if (node.numParents() === 0) {
       logger.error(
           `[${LOG_HEADER}] Deleting the root node with label: ${stateLabel} ` +
           `at: ${new Error().stack}.`);
@@ -338,7 +338,7 @@ class RadixTree {
         nodesToUpdate.push(theOnlyParent);
         if (theOnlyParent.numChildren() === 1 &&  // the parent has only 1 child after deletion.
             !theOnlyParent.hasChildStateNode() &&  // the parent has no state node
-            theOnlyParent.hasParent()) {  // the parent is not a root.
+            theOnlyParent.numParents() !== 0) {  // the parent is not a root.
           nodesToUpdate = RadixTree._mergeToChild(theOnlyParent);
         }
       }
