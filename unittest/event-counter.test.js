@@ -89,6 +89,18 @@ describe("event-counter", () => {
       expect(ec.lastIntervalCount).to.equal(maxIntervals * 2 + 3);
       expect(ec.lastQueueIndex).to.equal(3);
     });
+
+    it("with various time", () => {
+      ec.addEvent(initialTimeMs + 1);
+      assert.deepEqual(ec.circularQueue, [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]);
+      expect(ec.lastIntervalCount).to.equal(1);
+      expect(ec.lastQueueIndex).to.equal(1);
+
+      ec.addEvent(initialTimeMs + intervalMs * 2 - 1);
+      assert.deepEqual(ec.circularQueue, [0, 1, 1, 0, 0, 0, 0, 0, 0, 0]);
+      expect(ec.lastIntervalCount).to.equal(2);
+      expect(ec.lastQueueIndex).to.equal(2);
+    });
   });
 
   describe("countEvents", () => {
