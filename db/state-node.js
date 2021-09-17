@@ -223,12 +223,23 @@ class StateNode {
     return Array.from(this.parentRadixNodeSet);
   }
 
-  hasParentRadixNodes() {
+  numParentRadixNodes() {
+    return this.parentRadixNodeSet.size;
+  }
+
+  _hasAParentRadixNode() {
     return this.parentRadixNodeSet.size > 0;
   }
 
-  numParentRadixNodes() {
-    return this.parentRadixNodeSet.size;
+  _hasMultipleParentStateNodes() {
+    if (this.numParentRadixNodes() === 0) {
+      return false;
+    }
+    if (this.numParentRadixNodes() > 1) {
+      return true;
+    }
+    const theOnlyParentRadixNode = this.getParentRadixNodes()[0];
+    return RadixTree.hasMultipleParentStateNodes(theOnlyParentRadixNode);
   }
 
   addParent(parent) {
@@ -267,11 +278,19 @@ class StateNode {
     }
   }
 
-  hasParents() {
+  hasAParent() {
     if (FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning) {
-      return this.hasParentRadixNodes();
+      return this._hasAParentRadixNode();
     } else {
       return this.parentSet.size > 0;
+    }
+  }
+
+  hasMultipleParents() {
+    if (FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning) {
+      return this._hasMultipleParentStateNodes();
+    } else {
+      return this.parentSet.size > 1;
     }
   }
 

@@ -1119,9 +1119,21 @@ describe("radix-node", () => {
 
     it("getParentStateNodeList", () => {
       const parentStateNodes = node.getParentStateNodeList();
-      expect(parentStateNodes.length).to.equal(3)
+      expect(parentStateNodes.length).to.equal(3);
       assert.deepEqual(
           parentStateNodes, [parentStateNode1, parentStateNode21, parentStateNode22]);
+    });
+
+    describe("hasMultipleParentStateNodes", () => {
+      it("with multiple parent state nodes", () => {
+        expect(node._getNumMultipleParentStateNodes(0)).to.equal(2);
+        expect(node.hasMultipleParentStateNodes()).to.equal(true);
+      });
+
+      it("with single parent state node", () => {
+        expect(parent1._getNumMultipleParentStateNodes(0)).to.equal(1);
+        expect(parent1.hasMultipleParentStateNodes()).to.equal(false);
+      });
     });
 
     it("getChildStateNodeList", () => {

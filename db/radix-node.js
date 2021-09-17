@@ -289,6 +289,39 @@ class RadixNode {
     return parentStateNodeList;
   }
 
+  _getNumMultipleParentStateNodes(numParentStateNodes) {
+    if (this.hasParentStateNode()) {
+      // This is a root node.
+      return numParentStateNodes + 1;
+    }
+
+    for (const parent of this.getParentNodes()) {
+      numParentStateNodes = parent._getNumMultipleParentStateNodes(numParentStateNodes);
+      if (numParentStateNodes > 1) {
+        // Stops early.
+        return numParentStateNodes;
+      }
+    }
+    return numParentStateNodes;
+  }
+
+  hasMultipleParentStateNodes() {
+    if (this.hasParentStateNode()) {
+      // This is a root node, so has only one parent state node.
+      return false;
+    }
+
+    let numParentStateNodes = 0;
+    for (const parent of this.getParentNodes()) {
+      numParentStateNodes = parent._getNumMultipleParentStateNodes(numParentStateNodes);
+      if (numParentStateNodes > 1) {
+        // Stops early.
+        return true;
+      }
+    }
+    return false;
+  }
+
   getChildStateNodeList() {
     const stateNodeList = [];
     if (this.hasChildStateNode()) {

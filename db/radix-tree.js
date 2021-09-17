@@ -359,6 +359,10 @@ class RadixTree {
     return parentNodes;
   }
 
+  static hasMultipleParentStateNodes(radixNode) {
+    return radixNode.hasMultipleParentStateNodes();
+  }
+
   // TODO(platfowner): Keep the insertion order.
   getChildStateLabels() {
     const labelList = [];
