@@ -161,7 +161,7 @@ class FileUtil {
       if (!fs.existsSync(h2nDirPath)) {
         fs.mkdirSync(h2nDirPath);
       }
-      fs.writeFileSync(h2nPath, blockNumber);
+      fs.writeFileSync(h2nPath, blockNumber.toString());
     } else {
       logger.debug(`${h2nPath} file already exists!`);
     }
