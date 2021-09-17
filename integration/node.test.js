@@ -4704,7 +4704,7 @@ describe('Blockchain Node', () => {
           ref: triggerRestFunctionPath,
           value: 'some value',
         }}).body.toString('utf-8'));
-        assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
+        assert.deepEqual(eraseStateGas(_.get(body, 'result.result'), ['test']), {
           "func_results": {
             "0x11111": {
               "code": 0,
@@ -6273,9 +6273,13 @@ describe('Blockchain Node', () => {
 
     describe('Checkout: _openCheckout, _closeCheckout', () => {
       const client = jayson.client.http(server1 + '/json-rpc');
-      const tokenType = 'ETH';
+      const networkName = 'ETH';
+      const chainId = '3';
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
-      const tokenBridgeConfig = require('../genesis-configs/base/genesis_token.json')['bridge'][tokenType][tokenId];
+      const checkoutRequestBasePath = `/checkout/requests/${networkName}/${chainId}/${tokenId}`;
+      const checkoutHistoryBasePath = `/checkout/history/${networkName}/${chainId}/${tokenId}`;
+      const tokenBridgeConfig = require('../genesis-configs/base/genesis_token.json')
+          .bridge[networkName][chainId][tokenId];
       const {
         token_pool: tokenPoolAddr,
         min_checkout_per_request: minCheckoutPerRequest,
@@ -6283,7 +6287,7 @@ describe('Blockchain Node', () => {
         max_checkout_per_day: maxCheckoutPerDay,
        } = tokenBridgeConfig;
       const checkoutAmount = 100;
-      const ethAddress = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1';
+      const ethAddress = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // recipient
 
       it('cannot open checkout with invalid params: amount < min_checkout_per_request', async () => {
         const beforeBalance = parseOrLog(syncRequest('GET',
@@ -6292,11 +6296,9 @@ describe('Blockchain Node', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/requests/${serviceUser}/0`,
+          ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: minCheckoutPerRequest - 1,
-            type: tokenType,
-            token_id: tokenId,
             recipient: ethAddress
           }
         }}).body.toString('utf-8'));
@@ -6305,7 +6307,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -6323,11 +6325,9 @@ describe('Blockchain Node', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/requests/${serviceUser}/0`,
+          ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: maxCheckoutPerRequest + 1,
-            type: tokenType,
-            token_id: tokenId,
             recipient: ethAddress
           }
         }}).body.toString('utf-8'));
@@ -6336,7 +6336,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -6347,18 +6347,17 @@ describe('Blockchain Node', () => {
         expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
       });
 
-      it('cannot open checkout with invalid params: type', async () => {
+      it('cannot open checkout with invalid params: network name', async () => {
         const beforeBalance = parseOrLog(syncRequest('GET',
-        server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const ref = `/checkout/requests/AIN/${chainId}/${tokenId}/${serviceUser}/0`;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/requests/${serviceUser}/0`,
+          ref,
           value: {
             amount: checkoutAmount,
-            type: 'AIN',
-            token_id: tokenId,
             recipient: ethAddress
           }
         }}).body.toString('utf-8'));
@@ -6367,7 +6366,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${ref}`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -6378,18 +6377,17 @@ describe('Blockchain Node', () => {
         expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
       });
 
-      it('cannot open checkout with invalid params: token_id', async () => {
+      it('cannot open checkout with invalid params: chain id', async () => {
         const beforeBalance = parseOrLog(syncRequest('GET',
-        server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const ref = `/checkout/requests/${networkName}/1/${tokenId}/${serviceUser}/0`;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/requests/${serviceUser}/0`,
+          ref,
           value: {
             amount: checkoutAmount,
-            type: tokenType,
-            token_id: '',
             recipient: ethAddress
           }
         }}).body.toString('utf-8'));
@@ -6398,7 +6396,37 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${ref}`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkoutRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('cannot open checkout with invalid params: token id', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const ref = `/checkout/requests/${networkName}/${chainId}/0xINVALID_TOKEN_ID/${serviceUser}/0`;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref,
+          value: {
+            amount: checkoutAmount,
+            recipient: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkoutRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${ref}`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -6411,16 +6439,14 @@ describe('Blockchain Node', () => {
 
       it('cannot open checkout with invalid params: recipient', async () => {
         const beforeBalance = parseOrLog(syncRequest('GET',
-        server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/requests/${serviceUser}/0`,
+          ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: checkoutAmount,
-            type: tokenType,
-            token_id: tokenId,
             recipient: ethAddress.toLowerCase()
           }
         }}).body.toString('utf-8'));
@@ -6429,7 +6455,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -6442,16 +6468,14 @@ describe('Blockchain Node', () => {
 
       it('cannot open checkout with insufficient funds', async () => {
         const beforeBalance = parseOrLog(syncRequest('GET',
-        server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/requests/${serviceUser}/0`,
+          ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: beforeBalance + 1,
-            type: tokenType,
-            token_id: tokenId,
             recipient: ethAddress
           }
         }}).body.toString('utf-8'));
@@ -6460,7 +6484,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/requests/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -6473,16 +6497,14 @@ describe('Blockchain Node', () => {
 
       it('can open checkout', async () => {
         const beforeBalance = parseOrLog(syncRequest('GET',
-        server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/requests/${serviceUser}/0`,
+          ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: checkoutAmount,
-            type: tokenType,
-            token_id: tokenId,
             recipient: ethAddress
           },
           timestamp: 1628255843548
@@ -6575,12 +6597,10 @@ describe('Blockchain Node', () => {
 
       it('cannot close checkout with a non-authorized address', async () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/history/${serviceUser}/0`,
+          ref: `${checkoutHistoryBasePath}/${serviceUser}/0`,
           value: {
             request: {
               amount: checkoutAmount,
-              type: tokenType,
-              token_id: tokenId,
               recipient: ethAddress
             },
             response: {
@@ -6593,7 +6613,7 @@ describe('Blockchain Node', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutHistory = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/history/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
         expect(checkoutHistory).to.equal(null);
       });
 
@@ -6601,12 +6621,10 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `/checkout/history/${serviceUser}/0`,
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/0`,
             value: {
               request: {
                 amount: checkoutAmount,
-                type: tokenType,
-                token_id: tokenId,
                 recipient: ethAddress
               },
               response: {
@@ -6651,7 +6669,7 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "2": {
-                  "path": "/checkout/requests/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
+                  "path": "/checkout/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
                   "result": {
                     "bandwidth_gas_amount": 1,
                     "code": 0,
@@ -6722,11 +6740,9 @@ describe('Blockchain Node', () => {
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
             .body.toString('utf-8')).result || 0;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `/checkout/requests/${serviceUser}/1`,
+          ref: `${checkoutRequestBasePath}/${serviceUser}/1`,
           value: {
             amount: checkoutAmount,
-            type: tokenType,
-            token_id: tokenId,
             recipient: ethAddress
           }
         }}).body.toString('utf-8'));
@@ -6747,12 +6763,10 @@ describe('Blockchain Node', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `/checkout/history/${serviceUser}/1`,
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/1`,
             value: {
               request: {
                 amount: checkoutAmount,
-                type: tokenType,
-                token_id: tokenId,
                 recipient: ethAddress
               },
               response: {
@@ -6813,14 +6827,14 @@ describe('Blockchain Node', () => {
                   }
                 },
                 "1": {
-                  "path": "/checkout/history/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1/refund",
+                  "path": "/checkout/history/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1/refund",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 },
                 "2": {
-                  "path": "/checkout/requests/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
+                  "path": "/checkout/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
                   "result": {
                     "func_results": {
                       "_openCheckout": {
@@ -6865,7 +6879,7 @@ describe('Blockchain Node', () => {
           "gas_cost_total": 0
         });
         const refund = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkout/history/${serviceUser}/1/refund`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/1/refund`).body.toString('utf-8')).result;
         assert.deepEqual(refund,
             '/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548');
         const refundTransfer = parseOrLog(syncRequest('GET',
@@ -6897,8 +6911,726 @@ describe('Blockchain Node', () => {
         expect(totalCompleteAmount).to.equal(checkoutAmount);
       });
     });
+
+    describe('Checkin: _openCheckin, _cancelCheckin, _closeCheckin', () => {
+      const client = jayson.client.http(server1 + '/json-rpc');
+      const networkName = 'ETH';
+      const chainId = '3';
+      const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
+      const checkinRequestBasePath = `/checkin/requests/${networkName}/${chainId}/${tokenId}`;
+      const checkinHistoryBasePath = `/checkin/history/${networkName}/${chainId}/${tokenId}`;
+      const tokenPoolAddr = require('../genesis-configs/base/genesis_token.json')
+          .bridge[networkName][chainId][tokenId].token_pool;
+      const checkinAmount = 100;
+      const ethAddress = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // sender
+
+      before(async () => {
+        // Send some AIN to tokenPoolAddr
+        const body = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
+          ref: `/transfer/${serviceUserBad}/${tokenPoolAddr}/${Date.now()}/value`,
+          value: 1000
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+      });
+
+      it('cannot open checkin with invalid params: amount <= 0', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `${checkinRequestBasePath}/${serviceUser}/0`,
+          value: {
+            amount: 0,
+            sender: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkinequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkinequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('cannot open checkin with invalid params: network name', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const ref = `/checkin/requests/AIN/${chainId}/${tokenId}/${serviceUser}/0`;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref,
+          value: {
+            amount: checkinAmount,
+            sender: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkinRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${ref}`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkinRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('cannot open checkin with invalid params: chain id', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const ref = `/checkin/requests/${networkName}/1/${tokenId}/${serviceUser}/0`;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref,
+          value: {
+            amount: checkinAmount,
+            sender: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkinRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${ref}`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkinRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('cannot open checkin with invalid params: token id', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const ref = `/checkin/requests/${networkName}/${chainId}/0xINVALID_TOKEN_ID/${serviceUser}/0`;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref,
+          value: {
+            amount: checkinAmount,
+            sender: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkinRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${ref}`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkinRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('cannot open checkin with invalid params: sender', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `${checkinRequestBasePath}/${serviceUser}/0`,
+          value: {
+            amount: checkinAmount,
+            sender: ethAddress.toLowerCase()
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkinRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkinRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('can open checkin', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `${checkinRequestBasePath}/${serviceUser}/0`,
+          value: {
+            amount: checkinAmount,
+            sender: ethAddress
+          },
+          timestamp: 1628255843548
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 3
+            },
+            "state": {
+              "service": "erased"
+            }
+          },
+          "gas_cost_total": 0,
+          "func_results": {
+            "_openCheckin": {
+              "op_results": {
+                "0": {
+                  "path": "/checkin/stats/pending/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "1": {
+                  "path": "/checkin/stats/pending/token_pool/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                }
+              },
+              "code": 0,
+              "bandwidth_gas_amount": 0
+            },
+            "_cancelCheckin": {
+              "code": 0,
+              "bandwidth_gas_amount": 0
+            }
+          },
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": "erased"
+        });
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        const senderPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${ethAddress}`)
+            .body.toString('utf-8')).result;
+        const tokenPoolPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/pending/token_pool/${tokenPoolAddr}`)
+            .body.toString('utf-8')).result;
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+        expect(senderPendingAmount).to.equal(checkinAmount);
+        expect(tokenPoolPendingAmount).to.equal(checkinAmount);
+      });
+
+      it('cannot open checkin when sender already has a pending request', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `${checkinRequestBasePath}/${serviceUser}/1`,
+          value: {
+            amount: checkinAmount,
+            sender: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkinRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/1`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkinRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('cannot open checkin with (amount + pending) more than token pool balance', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `${checkinRequestBasePath}/${serviceUser}/1`,
+          value: {
+            amount: beforeTokenPoolBalance - checkinAmount + 1,
+            sender: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkinRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/1`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkinRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('cannot close checkin with a non-authorized address', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `${checkinHistoryBasePath}/${serviceUser}/0`,
+          value: {
+            request: {
+              amount: checkinAmount,
+              sender: ethAddress
+            },
+            response: {
+              status: 0
+            }
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkinHistory = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${checkinHistoryBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+        expect(checkinHistory).to.equal(null);
+      });
+
+      it('can close a successful checkin with token pool key', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const timestamp = Date.now();
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `${checkinHistoryBasePath}/${serviceUser}/0`,
+            value: {
+              request: {
+                amount: checkinAmount,
+                sender: ethAddress
+              },
+              response: {
+                status: 0,
+                tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c'
+              }
+            }
+          },
+          timestamp,
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
+        const res = await client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        });
+        const txHash = _.get(res, 'result.result.tx_hash');
+        if (!(await waitUntilTxFinalized(serverList, txHash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(eraseStateGas(_.get(res, 'result.result.result', null)), {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 9
+            },
+            "state": {
+              "service": "erased"
+            }
+          },
+          "gas_cost_total": 0,
+          "func_results": {
+            "_closeCheckin": {
+              "op_results": {
+                "0": {
+                  "path": "/checkin/stats/complete/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "1": {
+                  "path": "/checkin/stats/complete/total",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "2": {
+                  "path": `/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/${timestamp}/value`,
+                  "result": {
+                    "func_results": {
+                      "_transfer": {
+                        "op_results": {
+                          "0": {
+                            "path": "/accounts/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/balance",
+                            "result": {
+                              "code": 0,
+                              "bandwidth_gas_amount": 1
+                            }
+                          },
+                          "1": {
+                            "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
+                            "result": {
+                              "code": 0,
+                              "bandwidth_gas_amount": 1
+                            }
+                          }
+                        },
+                        "code": 0,
+                        "bandwidth_gas_amount": 0
+                      }
+                    },
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "3": {
+                  "path": "/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
+                  "result": {
+                    "func_results": {
+                      "_openCheckin": {
+                        "code": 0,
+                        "bandwidth_gas_amount": 0
+                      },
+                      "_cancelCheckin": {
+                        "code": 0,
+                        "bandwidth_gas_amount": 0
+                      }
+                    },
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "4": {
+                  "path": "/checkin/stats/pending/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "5": {
+                  "path": "/checkin/stats/pending/token_pool/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                }
+              },
+              "code": 0,
+              "bandwidth_gas_amount": 0
+            }
+          },
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": "erased"
+        });
+        const afterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const afterTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const senderPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${ethAddress}`)
+            .body.toString('utf-8')).result;
+        const tokenPoolPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/pending/token_pool/${tokenPoolAddr}`)
+            .body.toString('utf-8')).result;
+        const userCompleteAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/complete/${serviceUser}`)
+            .body.toString('utf-8')).result;
+        const totalCompleteAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/complete/total`)
+            .body.toString('utf-8')).result;
+        expect(afterBalance).to.equal(beforeBalance + checkinAmount);
+        expect(afterTokenPoolBalance).to.equal(beforeTokenPoolBalance - checkinAmount);
+        expect(senderPendingAmount).to.equal(0);
+        expect(tokenPoolPendingAmount).to.equal(0);
+        expect(userCompleteAmount).to.equal(checkinAmount);
+        expect(totalCompleteAmount).to.equal(checkinAmount);
+      });
+
+      it('can close a failed checkin', async () => {
+        // open checkin
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result || 0;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result || 0;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `${checkinRequestBasePath}/${serviceUser}/1`,
+          value: {
+            amount: checkinAmount,
+            sender: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        expect(_.get(body, 'result.result.code')).to.equal(0);
+        // close failed checkin
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `${checkinHistoryBasePath}/${serviceUser}/1`,
+            value: {
+              request: {
+                amount: checkinAmount,
+                sender: ethAddress
+              },
+              response: {
+                status: 1,
+                tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c',
+                error_message: 'Ethereum tx failed'
+              }
+            }
+          },
+          timestamp: 1628255843548,
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
+        const res = await client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        });
+        const txHash = _.get(res, 'result.result.tx_hash');
+        if (!(await waitUntilTxFinalized(serverList, txHash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(eraseStateGas(_.get(res, 'result.result.result')), {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 4
+            },
+            "state": {
+              "service": "erased"
+            }
+          },
+          "gas_cost_total": 0,
+          "func_results": {
+            "_closeCheckin": {
+              "op_results": {
+                "0": {
+                  "path": "/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
+                  "result": {
+                    "func_results": {
+                      "_openCheckin": {
+                        "code": 0,
+                        "bandwidth_gas_amount": 0
+                      },
+                      "_cancelCheckin": {
+                        "code": 0,
+                        "bandwidth_gas_amount": 0
+                      }
+                    },
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "1": {
+                  "path": "/checkin/stats/pending/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                },
+                "2": {
+                  "path": "/checkin/stats/pending/token_pool/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
+                  "result": {
+                    "code": 0,
+                    "bandwidth_gas_amount": 1
+                  }
+                }
+              },
+              "code": 0,
+              "bandwidth_gas_amount": 0
+            }
+          },
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": "erased"
+        });
+        const afterUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result || 0;
+        const afterTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result || 0;
+        const senderPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${ethAddress}`)
+            .body.toString('utf-8')).result;
+        const tokenPoolPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/pending/token_pool/${tokenPoolAddr}`)
+            .body.toString('utf-8')).result;
+        const userCompleteAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/complete/${serviceUser}`)
+            .body.toString('utf-8')).result;
+        const totalCompleteAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/complete/total`)
+            .body.toString('utf-8')).result;
+        expect(afterUserBalance).to.equal(beforeBalance);
+        expect(afterTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+        expect(senderPendingAmount).to.equal(0);
+        expect(tokenPoolPendingAmount).to.equal(0);
+        expect(userCompleteAmount).to.equal(checkinAmount);
+        expect(totalCompleteAmount).to.equal(checkinAmount);
+      });
+
+      it('cannot cancel a closed checkin request', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `${checkinRequestBasePath}/${serviceUser}/1`,
+          value: null
+        }}).body.toString('utf-8'));
+        expect(body.code).to.equal(1);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const checkinRequest = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/1`).body.toString('utf-8')).result;
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(checkinRequest).to.equal(null);
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
+      it('can cancel an unclosed checkin request', async () => {
+        // open checkin
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result || 0;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result || 0;
+        const requestBody = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `${checkinRequestBasePath}/${serviceUser}/1`,
+          value: {
+          amount: checkinAmount,
+          sender: ethAddress
+          }
+        }}).body.toString('utf-8'));
+        expect(requestBody.code).to.equal(0);
+        if (!(await waitUntilTxFinalized(serverList, _.get(requestBody, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of request tx.`);
+        }
+        expect(_.get(requestBody, 'result.result.code')).to.equal(0);
+        const afterRequestBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const afterRequestSenderPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${ethAddress}`)
+            .body.toString('utf-8')).result;
+        const afterRequestTokenPoolPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/pending/token_pool/${tokenPoolAddr}`)
+            .body.toString('utf-8')).result;
+        expect(afterRequestBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+        expect(afterRequestSenderPendingAmount).to.equal(checkinAmount);
+        expect(afterRequestTokenPoolPendingAmount).to.equal(checkinAmount);
+
+        // cancel checkin
+        const beforeUserCompleteAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/complete/${serviceUser}`)
+            .body.toString('utf-8')).result;
+        const beforeTotalCompleteAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/complete/total`)
+            .body.toString('utf-8')).result;
+        const cancelBody = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `${checkinRequestBasePath}/${serviceUser}/1`,
+          value: null
+        }}).body.toString('utf-8'));
+        expect(cancelBody.code).to.equal(0);
+        if (!(await waitUntilTxFinalized(serverList, _.get(cancelBody, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of cancel tx.`);
+        }
+        const afterCancelBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const afterCancelTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const afterCancelSenderPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${ethAddress}`)
+            .body.toString('utf-8')).result;
+        const afterCancelTokenPoolPendingAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/pending/token_pool/${tokenPoolAddr}`)
+            .body.toString('utf-8')).result;
+        const afterCancelUserCompleteAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/complete/${serviceUser}`)
+            .body.toString('utf-8')).result;
+        const afterCancelTotalCompleteAmount = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkin/stats/complete/total`)
+            .body.toString('utf-8')).result;
+        expect(afterCancelBalance).to.equal(beforeBalance);
+        expect(afterCancelTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+        expect(afterCancelSenderPendingAmount).to.equal(0);
+        expect(afterCancelTokenPoolPendingAmount).to.equal(0);
+        expect(afterCancelUserCompleteAmount).to.equal(beforeUserCompleteAmount);
+        expect(afterCancelTotalCompleteAmount).to.equal(beforeTotalCompleteAmount);
+      });
+    });
   });
 
+  /*
   describe('Billing', async () => {
     let serviceAdmin; // = server1
     let billingUserA; // = server2
@@ -7363,5 +8095,5 @@ describe('Blockchain Node', () => {
       expect(block).to.not.equal(undefined);
       expect(block.transactions.find((tx) => tx.hash === txHash)).to.not.equal(undefined);
     });
-  });
+  });*/
 });

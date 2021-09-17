@@ -1,22 +1,38 @@
 {
   "checkin": {
-    "$user_addr": {
-      "$checkin_id": {
-        "request": {
-          ".function": {
-            "_openCheckin": {
-              "function_type": "NATIVE",
-              "function_id": "_openCheckin"
+    "requests": {
+      "$network_name": {
+        "$chain_id": {
+          "$token_id": {
+            "$user_addr": {
+              "$checkin_id": {
+                ".function": {
+                  "_openCheckin": {
+                    "function_type": "NATIVE",
+                    "function_id": "_openCheckin"
+                  },
+                  "_cancelCheckin": {
+                    "function_type": "NATIVE",
+                    "function_id": "_cancelCheckin"
+                  }
+                }
+              }
             }
           }
-        },
-        "parent_finalize": {
-          "$tx_hash": {
-            "result": {
-              ".function": {
-                "_closeCheckin": {
-                  "function_type": "NATIVE",
-                  "function_id": "_closeCheckin"
+        }
+      }
+    },
+    "history": {
+      "$network_name": {
+        "$chain_id": {
+          "$token_id": {
+            "$user_addr": {
+              "$checkin_id": {
+                ".function": {
+                  "_closeCheckin": {
+                    "function_type": "NATIVE",
+                    "function_id": "_closeCheckin"
+                  }
                 }
               }
             }
@@ -27,24 +43,36 @@
   },
   "checkout": {
     "requests": {
-      "$user_addr": {
-        "$checkout_id": {
-          ".function": {
-            "_openCheckout": {
-              "function_type": "NATIVE",
-              "function_id": "_openCheckout"
+      "$network_name": {
+        "$chain_id": {
+          "$token_id": {
+            "$user_addr": {
+              "$checkout_id": {
+                ".function": {
+                  "_openCheckout": {
+                    "function_type": "NATIVE",
+                    "function_id": "_openCheckout"
+                  }
+                }
+              }
             }
           }
         }
       }
     },
     "history": {
-      "$user_addr": {
-        "$checkout_id": {
-          ".function": {
-            "_closeCheckout": {
-              "function_type": "NATIVE",
-              "function_id": "_closeCheckout"
+      "$network_name": {
+        "$chain_id": {
+          "$token_id": {
+            "$user_addr": {
+              "$checkout_id": {
+                ".function": {
+                  "_closeCheckout": {
+                    "function_type": "NATIVE",
+                    "function_id": "_closeCheckout"
+                  }
+                }
+              }
             }
           }
         }

@@ -2,7 +2,5 @@
   "sharding_protocol": "NONE",
   "sharding_path": "/",
   "parent_chain_poc": "",
-  "reporting_period": 0,
-  "token_exchange_scheme": "NONE",
-  "token_exchange_rate": 0
+  "reporting_period": 0
 }

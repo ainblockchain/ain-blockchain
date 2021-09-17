@@ -3,7 +3,7 @@ const { signAndSendTx, confirmTransaction } = require('../util');
 const { FunctionResultCode } = require('../../common/constants');
 let config = {};
 
-function buildCloseCheckoutTxBody(fromAddr, tokenAmount, checkoutId, failed = false) {
+function buildCloseCheckinTxBody(fromAddr, tokenAmount, checkinId, failed = false) {
   const response = {
     tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c'
   };
@@ -16,11 +16,11 @@ function buildCloseCheckoutTxBody(fromAddr, tokenAmount, checkoutId, failed = fa
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/checkout/history/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkoutId}`,
+      ref: `/checkin/history/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkinId}`,
       value: {
         request: {
           amount: tokenAmount,
-          recipient: config.recipientAddr
+          sender: config.senderAddr
         },
         response
       },
@@ -34,13 +34,13 @@ function buildCloseCheckoutTxBody(fromAddr, tokenAmount, checkoutId, failed = fa
 async function sendTransaction(failed) {
   console.log('\n*** sendTransaction():');
   const timestamp = Date.now();
-  const txBody = buildCloseCheckoutTxBody(config.userAddr, config.tokenAmount, config.checkoutId, failed);
+  const txBody = buildCloseCheckinTxBody(config.userAddr, config.tokenAmount, config.checkinId, failed);
   console.log(`txBody: ${JSON.stringify(txBody, null, 2)}`);
 
   const txInfo = await signAndSendTx(config.endpointUrl, txBody, config.tokenPoolPrivateKey);
   console.log(`txInfo: ${JSON.stringify(txInfo, null, 2)}`);
   if (!txInfo.success) {
-    console.log(`Close checkout transaction failed.`);
+    console.log(`Close checkin transaction failed.`);
     process.exit(0);
   }
   await confirmTransaction(config.endpointUrl, timestamp, txInfo.txHash);
@@ -55,7 +55,7 @@ async function processArguments() {
 }
 
 function usage() {
-  console.log('\nExample commandlines:\n  node sendCloseCheckoutTx.js config_local.js [--failed]\n')
+  console.log('\nExample commandlines:\n  node sendCloseCheckinTx.js config_local.js [--failed]\n')
   process.exit(0)
 }
 
