@@ -1,8 +1,5 @@
 const commonUtil = require('../common/common-util');
-
-const abbrAddr = (address) => {
-  return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
-}
+const { abbrAddr } = require('./util');
 
 const _buildGraphData = (peerNodes) => {
   const data = { nodes: [], links: [] };
