@@ -2,8 +2,8 @@ const _ = require('lodash');
 
 class EventCounter {
   constructor(
-      intervalMs,  // 1 min
-      maxIntervals, // 3 hours
+      intervalMs,
+      maxIntervals,
       currentTimeMs = null) {
     this.intervalMs = intervalMs;
     this.maxIntervals = maxIntervals;
