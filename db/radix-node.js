@@ -171,10 +171,7 @@ class RadixNode {
     this.parentSet.add(parent);
   }
 
-  hasParent(parent = null) {
-    if (parent === null) {
-      return this.numParents() > 0;
-    }
+  hasParent(parent) {
     return this.parentSet.has(parent);
   }
 
@@ -242,10 +239,7 @@ class RadixNode {
     return true;
   }
 
-  hasChild(labelRadix = null) {
-    if (labelRadix === null) {
-      return this.numChildren() > 0;
-    }
+  hasChild(labelRadix) {
     return this.radixChildMap.has(labelRadix);
   }
 
