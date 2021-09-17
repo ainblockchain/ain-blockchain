@@ -106,7 +106,10 @@ class P2pClient {
     const extIp = this.server.getExternalIp();
     const intUrl = new URL(`ws://${intIp}:${P2P_PORT}`);
     const extUrl = new URL(`ws://${extIp}:${P2P_PORT}`);
-    const p2pUrl = HOSTING_ENV === 'comcom' ? intUrl.toString() : extUrl.toString();
+    // NOTE(liayoo): The 'comcom', 'local' HOSTING_ENV settings assume that multiple blockchain
+    // nodes are on the same machine.
+    const p2pUrl = HOSTING_ENV === 'comcom' || HOSTING_ENV === 'local' ?
+        intUrl.toString() : extUrl.toString();
     extUrl.protocol = 'http:';
     extUrl.port = PORT;
     const clientApiUrl = extUrl.toString();
