@@ -1,4 +1,6 @@
 <!-- ref: http://bl.ocks.org/jose187/4733747 -->
+<!-- ref: https://bl.ocks.org/d3noob/5141278 -->
+
 <!DOCTYPE html>
 <meta charset='utf-8'>
 <script src='https://d3js.org/d3.v3.min.js'></script>
@@ -21,6 +23,20 @@
       .links(data.links)
       .start();
 
+    // build triangle
+    svg.append('svg:defs').selectAll('marker')
+      .data(['end'])
+      .enter().append('svg:marker')
+      .attr('id', String)
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', 15)
+      .attr('refY', -1.5)
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .attr('orient', 'auto')
+      .append('svg:path')
+      .attr('d', 'M0,-5L10,0L0,5');
+
     const link = svg
       .selectAll('line')
       .data(data.links)
@@ -38,7 +54,7 @@
 
     node.append('circle')
       .attr('stroke', '#fff')
-      .attr('stroke-width', '3px')
+      .attr('stroke-width', '1px')
       .attr('fill', '#555')
       .attr('r', '5');
 
@@ -52,7 +68,8 @@
       link.attr('x1', d => d.source.x)
         .attr('y1', d => d.source.y)
         .attr('x2', d => d.target.x)
-        .attr('y2', d => d.target.y);
+        .attr('y2', d => d.target.y)
+        .attr('marker-end', 'url(#end)');
       node.attr('transform', d => { return 'translate(' + d.x + ',' + d.y + ')'; });
     });
   </script>
