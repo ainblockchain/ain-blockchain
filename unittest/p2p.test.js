@@ -14,6 +14,7 @@ const {
   DATA_PROTOCOL_VERSION,
   GenesisAccounts,
   AccountProperties,
+  HOSTING_ENV,
 } = require('../common/constants');
 
 const expect = chai.expect;
@@ -288,14 +289,19 @@ describe("p2p", () => {
 
     describe("getNetworkStatus", () => {
       it("shows initial values of connection status", () => {
+        const intIp = p2pClient.server.getInternalIp();
         const extIp = p2pClient.server.getExternalIp();
-        const url = new URL(`ws://${extIp}:${P2P_PORT}`);
-        const p2pUrl = url.toString();
-        url.protocol = 'http:';
-        url.port = PORT;
-        const clientApiUrl = url.toString();
-        url.pathname = 'json-rpc';
-        const jsonRpcUrl = url.toString();
+        const intUrl = new URL(`ws://${intIp}:${P2P_PORT}`);
+        const extUrl = new URL(`ws://${extIp}:${P2P_PORT}`);
+        // NOTE(liayoo): The 'comcom', 'local' HOSTING_ENV settings assume that multiple blockchain
+        // nodes are on the same machine.
+        const p2pUrl = HOSTING_ENV === 'comcom' || HOSTING_ENV === 'local' ?
+            intUrl.toString() : extUrl.toString();
+        extUrl.protocol = 'http:';
+        extUrl.port = PORT;
+        const clientApiUrl = extUrl.toString();
+        extUrl.pathname = 'json-rpc';
+        const jsonRpcUrl = extUrl.toString();
         const actual = {
           ip: extIp,
           p2p: {
