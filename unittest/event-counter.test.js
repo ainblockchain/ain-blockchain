@@ -126,30 +126,30 @@ describe("event-counter", () => {
       assert.deepEqual(ec.circularQueue, [3, 3, 0, 3, 0, 0, 0, 0, 0, 0]);
 
       // numIntervals = 1
-      expect(ec.countEvents(1, initialTimeMs + intervalMs * 3)).to.equal(3);
-      expect(ec.countEvents(intervalMs, initialTimeMs + intervalMs * 3)).to.equal(3);
-      expect(ec.countEvents(intervalMs * 2 - 1, initialTimeMs + intervalMs * 3)).to.equal(3);
+      expect(ec.countEvents(1, initialTimeMs + intervalMs * 3)).to.equal(0);
+      expect(ec.countEvents(intervalMs, initialTimeMs + intervalMs * 4)).to.equal(3);
+      expect(ec.countEvents(intervalMs * 2 - 1, initialTimeMs + intervalMs * 4)).to.equal(3);
       assert.deepEqual(ec.circularQueue, [3, 3, 0, 3, 0, 0, 0, 0, 0, 0]);
-      expect(ec.lastIntervalCount).to.equal(3);
-      expect(ec.lastQueueIndex).to.equal(3);
+      expect(ec.lastIntervalCount).to.equal(4);
+      expect(ec.lastQueueIndex).to.equal(4);
 
       // numIntervals = 2
-      expect(ec.countEvents(intervalMs * 2, initialTimeMs + intervalMs * 3)).to.equal(3);
+      expect(ec.countEvents(intervalMs * 2, initialTimeMs + intervalMs * 4)).to.equal(3);
       assert.deepEqual(ec.circularQueue, [3, 3, 0, 3, 0, 0, 0, 0, 0, 0]);
-      expect(ec.lastIntervalCount).to.equal(3);
-      expect(ec.lastQueueIndex).to.equal(3);
+      expect(ec.lastIntervalCount).to.equal(4);
+      expect(ec.lastQueueIndex).to.equal(4);
 
       // numIntervals = 3
-      expect(ec.countEvents(intervalMs * 3, initialTimeMs + intervalMs * 3)).to.equal(6);
+      expect(ec.countEvents(intervalMs * 3, initialTimeMs + intervalMs * 4)).to.equal(6);
       assert.deepEqual(ec.circularQueue, [3, 3, 0, 3, 0, 0, 0, 0, 0, 0]);
-      expect(ec.lastIntervalCount).to.equal(3);
-      expect(ec.lastQueueIndex).to.equal(3);
+      expect(ec.lastIntervalCount).to.equal(4);
+      expect(ec.lastQueueIndex).to.equal(4);
 
       // numIntervals = 4
-      expect(ec.countEvents(intervalMs * 4, initialTimeMs + intervalMs * 3)).to.equal(9);
+      expect(ec.countEvents(intervalMs * 4, initialTimeMs + intervalMs * 4)).to.equal(9);
       assert.deepEqual(ec.circularQueue, [3, 3, 0, 3, 0, 0, 0, 0, 0, 0]);
-      expect(ec.lastIntervalCount).to.equal(3);
-      expect(ec.lastQueueIndex).to.equal(3);
+      expect(ec.lastIntervalCount).to.equal(4);
+      expect(ec.lastQueueIndex).to.equal(4);
     });
 
     it("with intervals overlapping with 1 round", () => {
@@ -193,11 +193,12 @@ describe("event-counter", () => {
     it("with various periods", () => {
       assert.deepEqual(ec.circularQueue, [3, 3, 0, 3, 0, 0, 0, 0, 0, 0]);
 
-      expect(ec.countEvents(-1, initialTimeMs + intervalMs * 3)).to.equal(-1);
-      expect(ec.countEvents(0, initialTimeMs + intervalMs * 3)).to.equal(-1);
-      expect(ec.countEvents(1, initialTimeMs + intervalMs * 3)).to.equal(3);
-      expect(ec.countEvents(intervalMs * maxIntervals, initialTimeMs + intervalMs * 3)).to.equal(9);
-      expect(ec.countEvents(intervalMs * maxIntervals + 1, initialTimeMs + intervalMs * 3)).to.equal(-1);
+      expect(ec.countEvents(-1, initialTimeMs + intervalMs * 4)).to.equal(-1);
+      expect(ec.countEvents(0, initialTimeMs + intervalMs * 4)).to.equal(-1);
+      expect(ec.countEvents(1, initialTimeMs + intervalMs * 4)).to.equal(0);
+      expect(ec.countEvents(intervalMs * maxIntervals, initialTimeMs + intervalMs * 4)).to.equal(9);
+      expect(ec.countEvents(intervalMs * maxIntervals + intervalMs - 1, initialTimeMs + intervalMs * 4)).to.equal(9);
+      expect(ec.countEvents(intervalMs * (maxIntervals + 1), initialTimeMs + intervalMs * 4)).to.equal(-1);
     });
   });
 });
