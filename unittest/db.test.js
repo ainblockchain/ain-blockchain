@@ -286,7 +286,7 @@ describe("DB operations", () => {
       it("when retrieving high value near top of database with is_final", () => {
         const backupFinalVersion = node.db.stateManager.getFinalVersion();
         node.db.stateManager.finalizeVersion(StateVersions.EMPTY);
-        assert.notDeepEqual(node.db.getValue("/apps/test", { isFinal: true }), dbValues)
+        assert.deepEqual(node.db.getValue("/apps/test", { isFinal: true }), null)
         node.db.stateManager.finalizeVersion(backupFinalVersion);
       })
 
