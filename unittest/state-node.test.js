@@ -586,7 +586,7 @@ describe("state-node", () => {
     it("with no parent", () => {
       const node = new StateNode();
       assert.deepEqual(node.getParentNodes(), []);
-      expect(node.hasSingleParent()).to.equal(false);
+      expect(node.hasAtLeastOneParent()).to.equal(false);
       expect(node.hasMultipleParents()).to.equal(false);
       expect(node.numParents()).to.equal(0);
     });
@@ -596,7 +596,7 @@ describe("state-node", () => {
       const node = new StateNode();
       parent.setChild('label', node);
       assert.deepEqual(node.getParentNodes(), [parent]);
-      expect(node.hasSingleParent()).to.equal(true);
+      expect(node.hasAtLeastOneParent()).to.equal(true);
       expect(node.hasMultipleParents()).to.equal(false);
       expect(node.numParents()).to.equal(1);
     });
@@ -608,7 +608,7 @@ describe("state-node", () => {
       parent1.setChild('label', node);
       parent2.setChild('label', node);
       assert.deepEqual(node.getParentNodes(), [parent1, parent2]);
-      expect(node.hasSingleParent()).to.equal(true);
+      expect(node.hasAtLeastOneParent()).to.equal(true);
       expect(node.hasMultipleParents()).to.equal(true);
       expect(node.numParents()).to.equal(2);
     });
@@ -622,7 +622,7 @@ describe("state-node", () => {
       parent2.setChild('label', node);
       parent3.setChild('label', node);
       assert.deepEqual(node.getParentNodes(), [parent1, parent2, parent3]);
-      expect(node.hasSingleParent()).to.equal(true);
+      expect(node.hasAtLeastOneParent()).to.equal(true);
       expect(node.hasMultipleParents()).to.equal(true);
       expect(node.numParents()).to.equal(3);
     });
