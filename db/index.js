@@ -129,7 +129,7 @@ class DB {
    */
   setBackupStateVersion(backupStateVersion, backupStateRoot) {
     const LOG_HEADER = 'setBackupStateVersion';
-    if (!this.backupStateVersion === backupStateVersion) {
+    if (this.backupStateVersion === backupStateVersion) {
       logger.error(
           `[${LOG_HEADER}] Backup state version already set with version: ${backupStateVersion}`);
       return false;
