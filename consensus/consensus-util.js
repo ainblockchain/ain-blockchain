@@ -67,7 +67,15 @@ class ConsensusUtil {
   }
 
   static getOffensesFromProposalTx(tx) {
-    return _get(tx, 'tx_body.operation.value.offenses', {});
+    const op = _get(tx, 'tx_body.operation');
+    if (!tx || !op) return {};
+    if (op.type === WriteDbOperations.SET_VALUE) {
+      return _get(op, 'value.offenses');
+    } else if (op.type === WriteDbOperations.SET) {
+      return _get(op, 'op_list.0.value.offenses');
+    } else {
+      return {};
+    }
   }
 
   static getTotalAtStake(validators) {
