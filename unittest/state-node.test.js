@@ -1461,7 +1461,7 @@ describe("state-node", () => {
     });
   });
 
-  describe("deleteRadixTree", () => {
+  describe("deleteRadixTreeVersion", () => {
     it("delete", () => {
       child1.setProofHash('proofHash1');
       child2.setProofHash('proofHash2');
@@ -1469,7 +1469,7 @@ describe("state-node", () => {
       child4.setProofHash('proofHash4');
 
       // delete with shouldDeleteParent = true
-      expect(stateTree.deleteRadixTree()).to.equal(6);
+      expect(stateTree.deleteRadixTreeVersion()).to.equal(6);
       // Check parents of state nodes
       assert.deepEqual(child1.getParentNodes(), []);
       assert.deepEqual(child1.getParentNodes(), []);
