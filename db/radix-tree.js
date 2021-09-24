@@ -438,7 +438,7 @@ class RadixTree {
    * This is for testing / debugging purpose.
    */
   toJsObject(
-      withVersion = false, withSerial, withProofHash = false, withTreeInfo = false,
+      withVersion = false, withSerial = false, withProofHash = false, withTreeInfo = false,
       withNumParents = false) {
     return this.root.toJsObject(
         withVersion, withSerial, withProofHash, withTreeInfo, withNumParents);
