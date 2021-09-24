@@ -428,7 +428,6 @@ class DB {
     return DB.readFromStateRoot(targetStateRoot, rootLabel, refPath, options, this.shardingPath);
   }
 
-  // TODO(platfowner): Support lookups on the final version.
   getValue(valuePath, options) {
     return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, options);
   }
