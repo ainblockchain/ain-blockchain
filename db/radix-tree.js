@@ -12,15 +12,22 @@ const RadixNode = require('./radix-node');
  */
 class RadixTree {
   constructor(version = null, parentStateNode = null) {
-    this.root = new RadixNode(version, parentStateNode);
+    this.version = version;
+    this.nodeSerial = 0;
+    this.root = this._newRadixNode(parentStateNode);
     this.numTerminalNodes = 0;
   }
 
   clone(version, parentStateNode) {
-    const clonedTree = new RadixTree();
+    const clonedTree = new RadixTree(version);
+    clonedTree.nodeSerial = this.nodeSerial;
     clonedTree.root = this.root.clone(version, parentStateNode);
     clonedTree.numTerminalNodes = this.numTerminalNodes;
     return clonedTree;
+  }
+
+  _newRadixNode(parentStateNode = null) {
+    return new RadixNode(this.version, this.nodeSerial++, parentStateNode);
   }
 
   static _toRadixLabel(stateLabel) {
@@ -86,7 +93,7 @@ class RadixTree {
 
       // Case 1: Has no child with the label radix.
       if (!curNode.hasChild(childLabelRadix)) {
-        const newChild = new RadixNode(this.root.getVersion());
+        const newChild = this._newRadixNode();
         const labelSuffix = radixLabel.slice(labelIndex + 1);
         curNode.setChild(childLabelRadix, labelSuffix, newChild);
 
@@ -108,7 +115,7 @@ class RadixTree {
         curNode.deleteChild(childLabelRadix);
 
         // Insert an internal node as a child of curNode.
-        const internalNode = new RadixNode(this.root.getVersion());
+        const internalNode = this._newRadixNode();
         curNode.setChild(childLabelRadix, commonPrefix, internalNode);
 
         // Case 2.1: The remaining part of the radix label is
@@ -128,7 +135,7 @@ class RadixTree {
           RadixTree._setChildWithLabel(internalNode, childNewLabel, child);
 
           // Insert new child node as a child of the internal node.
-          const newChild = new RadixNode(this.root.getVersion());
+          const newChild = this._newRadixNode();
           const newChildLabel = labelSuffix.slice(commonPrefix.length);
           RadixTree._setChildWithLabel(internalNode, newChildLabel, newChild);
 
@@ -215,6 +222,9 @@ class RadixTree {
   set(stateLabel, stateNode) {
     const node = this._getRadixNodeForSetting(stateLabel);
     if (!node.hasChildStateNode()) {
+      // Update the node serial with a new value to keep the insertion order.
+      node.setSerial(this.nodeSerial++);
+      // Increase the number of the terminal numbers.
       this.numTerminalNodes++;
     }
     node.setChildStateNode(stateNode);
@@ -333,7 +343,6 @@ class RadixTree {
     return radixNode.hasMultipleParentStateNodes();
   }
 
-  // TODO(platfowner): Keep the insertion order.
   getChildStateLabels() {
     const labelList = [];
     for (const stateNode of this.getChildStateNodes()) {
@@ -342,9 +351,9 @@ class RadixTree {
     return labelList;
   }
 
-  // TODO(platfowner): Keep the insertion order.
   getChildStateNodes() {
-    return this.root.getChildStateNodeList();
+    return this.root.getChildStateNodeList().sort((a, b) => a.serial - b.serial)
+        .map(entry => entry.stateNode);
   }
 
   hasChildStateNodes() {

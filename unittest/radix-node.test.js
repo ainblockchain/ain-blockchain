@@ -37,9 +37,17 @@ describe("radix-node", () => {
       expect(node2.parentStateNode).to.equal(null);
     });
 
+    it("construct with serial", () => {
+      const serial = 10;
+      const node2 = new RadixNode(null, serial);
+      expect(node2.version).to.equal(null);
+      expect(node2.serial).to.equal(serial);
+      expect(node2.parentStateNode).to.equal(null);
+    });
+
     it("construct with parent state node", () => {
       const parentStateNode = new StateNode();
-      const node2 = new RadixNode(null, parentStateNode);
+      const node2 = new RadixNode(null, null, parentStateNode);
       expect(node2.version).to.equal(null);
       expect(node2.parentStateNode).to.equal(parentStateNode);
     });
@@ -88,6 +96,7 @@ describe("radix-node", () => {
 
   describe("clone", () => {
     const version = 'ver';
+    const serial = 200;
     const labelRadix = '0';
     const labelSuffix = '0000';
     const childLabelRadix1 = '1';
@@ -113,6 +122,7 @@ describe("radix-node", () => {
       child2 = new RadixNode();
 
       node.setVersion(version);
+      node.setSerial(serial);
       node.setParentStateNode(parentStateNode);
       node.setChildStateNode(childStateNode);
       node.setLabelRadix(labelRadix);
@@ -129,6 +139,7 @@ describe("radix-node", () => {
     it("clone without version", () => {
       const cloned = node.clone();
       expect(cloned.getVersion()).to.equal(null);
+      expect(cloned.getSerial()).to.equal(serial);
       expect(cloned.getParentStateNode()).to.equal(null);
       expect(cloned.getChildStateNode()).to.equal(childStateNode);
       expect(cloned.getLabelRadix()).to.equal(labelRadix);
@@ -147,6 +158,7 @@ describe("radix-node", () => {
       const version2 = 'ver2';
       const cloned = node.clone(version2);
       expect(cloned.getVersion()).to.equal(version2);
+      expect(cloned.getSerial()).to.equal(serial);
       expect(cloned.getParentStateNode()).to.equal(null);
     });
 
@@ -154,6 +166,7 @@ describe("radix-node", () => {
       const parentStateNode2 = new StateNode();
       const cloned = node.clone(null, parentStateNode2);
       expect(cloned.getVersion()).to.equal(null);
+      expect(cloned.getSerial()).to.equal(serial);
       expect(cloned.getParentStateNode()).to.equal(parentStateNode2);
     });
   });
@@ -166,6 +179,17 @@ describe("radix-node", () => {
       expect(node.getVersion()).to.equal(version);
       node.resetVersion();
       expect(node.getVersion()).to.equal(null);
+    });
+  });
+
+  describe("serial", () => {
+    it("get / set / reset", () => {
+      const serial = 20;
+      expect(node.getSerial()).to.equal(null);
+      node.setSerial(serial);
+      expect(node.getSerial()).to.equal(serial);
+      node.resetSerial();
+      expect(node.getSerial()).to.equal(null);
     });
   });
 
@@ -1063,38 +1087,25 @@ describe("radix-node", () => {
       childStateNode22.setTreeSize(50);
       childStateNode22.setTreeBytes(500);
 
-      parent1 = new RadixNode();
-      parent1.setVersion(version1);
-      parent1.setParentStateNode(parentStateNode1);
-
-      parent2 = new RadixNode();
-      parent2.setVersion(version21);
-
-      parent21 = new RadixNode();
-      parent21.setVersion(version21);
-      parent21.setParentStateNode(parentStateNode21);
-
-      parent22 = new RadixNode();
-      parent22.setVersion(version22);
-      parent22.setParentStateNode(parentStateNode22);
+      parent1 = new RadixNode(version1, null, parentStateNode1 );
+      parent2 = new RadixNode(version21);
+      parent21 = new RadixNode(version21, null, parentStateNode21);
+      parent22 = new RadixNode(version22, null, parentStateNode22);
 
       node.setVersion(version);
+      node.setSerial(0);
       node.setChildStateNode(stateNode);
 
-      child1 = new RadixNode();
-      child1.setVersion(version);
+      child1 = new RadixNode(version, 3);
       child1.setChildStateNode(childStateNode1);
 
-      child2 = new RadixNode();
-      child2.setVersion(version);
+      child2 = new RadixNode(version, 4);
       child2.setChildStateNode(childStateNode2);
 
-      child21 = new RadixNode();
-      child21.setVersion(version);
+      child21 = new RadixNode(version, 2);
       child21.setChildStateNode(childStateNode21);
 
-      child22 = new RadixNode();
-      child22.setVersion(version);
+      child22 = new RadixNode(version, 1);
       child22.setChildStateNode(childStateNode22);
 
       parent1.setChild('0', '000', node);
@@ -1140,7 +1151,28 @@ describe("radix-node", () => {
       const stateNodes = node.getChildStateNodeList();
       expect(stateNodes.length).to.equal(5)
       assert.deepEqual(
-          stateNodes, [stateNode, childStateNode1, childStateNode2, childStateNode21, childStateNode22]);
+          stateNodes, [
+            {
+              serial: 0,
+              stateNode: stateNode,
+            },
+            {
+              serial: 3,
+              stateNode: childStateNode1,
+            },
+            {
+              serial: 4,
+              stateNode: childStateNode2,
+            },
+            {
+              serial: 2,
+              stateNode: childStateNode21,
+            },
+            {
+              serial: 1,
+              stateNode: childStateNode22,
+            },
+          ]);
     });
 
     it("deleteRadixTreeVersion", () => {
