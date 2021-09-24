@@ -14,8 +14,9 @@ const {
  * Implements Radix Node, which is used as a component of RadixTree.
  */
 class RadixNode {
-  constructor(version = null, parentStateNode = null) {
+  constructor(version = null, serial = null, parentStateNode = null) {
     this.version = version;
+    this.serial = serial;
     this.parentStateNode = parentStateNode;
     this.childStateNode = null;
     this.labelRadix = '';
@@ -30,6 +31,7 @@ class RadixNode {
 
   reset() {
     this.resetVersion();
+    this.resetSerial();
     this.resetParentStateNode();
     this.resetChildStateNode();
     this.resetLabelRadix();
@@ -43,8 +45,8 @@ class RadixNode {
   }
 
   static _create(
-      version, parentStateNode, childStateNode, labelRadix, labelSuffix, proofHash, treeHeight, treeSize, treeBytes) {
-    const node = new RadixNode(version, parentStateNode);
+      version, serial, parentStateNode, childStateNode, labelRadix, labelSuffix, proofHash, treeHeight, treeSize, treeBytes) {
+    const node = new RadixNode(version, serial, parentStateNode);
     if (childStateNode) {
       node.setChildStateNode(childStateNode);
     }
@@ -58,13 +60,37 @@ class RadixNode {
   }
 
   clone(version, parentStateNode = null) {
-    const cloned = RadixNode._create(version, parentStateNode, this.getChildStateNode(),
-        this.getLabelRadix(), this.getLabelSuffix(), this.getProofHash(), this.getTreeHeight(),
-        this.getTreeSize(), this.getTreeBytes());
+    const cloned = RadixNode._create(version, this.getSerial(), parentStateNode,
+        this.getChildStateNode(), this.getLabelRadix(), this.getLabelSuffix(), this.getProofHash(),
+        this.getTreeHeight(), this.getTreeSize(), this.getTreeBytes());
     for (const child of this.getChildNodes()) {
       cloned.setChild(child.getLabelRadix(), child.getLabelSuffix(), child);
     }
     return cloned;
+  }
+
+  getVersion() {
+    return this.version;
+  }
+
+  setVersion(version) {
+    this.version = version;
+  }
+
+  resetVersion() {
+    this.version = null;
+  }
+
+  getSerial() {
+    return this.serial;
+  }
+
+  setSerial(serial) {
+    this.serial = serial;
+  }
+
+  resetSerial() {
+    this.serial = null;
   }
 
   getParentStateNode() {
@@ -81,18 +107,6 @@ class RadixNode {
 
   resetParentStateNode() {
     this.parentStateNode = null;
-  }
-
-  getVersion() {
-    return this.version;
-  }
-
-  setVersion(version) {
-    this.version = version;
-  }
-
-  resetVersion() {
-    this.version = null;
   }
 
   getChildStateNode() {
@@ -323,7 +337,10 @@ class RadixNode {
   getChildStateNodeList() {
     const stateNodeList = [];
     if (this.hasChildStateNode()) {
-      stateNodeList.push(this.getChildStateNode());
+      stateNodeList.push({
+        serial: this.getSerial(),
+        stateNode: this.getChildStateNode()
+      });
     }
     for (const child of this.getChildNodes()) {
       stateNodeList.push(...child.getChildStateNodeList());
@@ -522,7 +539,8 @@ class RadixNode {
    * Converts the subtree to a js object.
    * This is for testing / debugging purpose.
    */
-  toJsObject(withVersion = false, withProofHash = false, withTreeInfo = false, withNumParents = false) {
+  toJsObject(
+      withVersion = false, withProofHash = false, withTreeInfo = false, withNumParents = false) {
     const obj = {};
     if (withVersion) {
       obj[RadixInfoProperties.RADIX_VERSION] = this.getVersion();

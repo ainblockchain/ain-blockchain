@@ -9,21 +9,33 @@ describe("radix-tree", () => {
   describe("initialization", () => {
     it("construct without version", () => {
       const tree = new RadixTree();
+      expect(tree.version).to.equal(null);
+      expect(tree.nodeSerial).to.equal(1);
+      expect(tree.numTerminalNodes).to.equal(0);
       expect(tree.root.getVersion()).to.equal(null);
+      expect(tree.root.getSerial()).to.equal(0);
       expect(tree.root.getParentStateNode()).to.equal(null);
     });
 
     it("construct with version", () => {
       const version = 'ver';
       const tree = new RadixTree(version);
+      expect(tree.version).to.equal(version);
+      expect(tree.nodeSerial).to.equal(1);
+      expect(tree.numTerminalNodes).to.equal(0);
       expect(tree.root.getVersion()).to.equal(version);
+      expect(tree.root.getSerial()).to.equal(0);
       expect(tree.root.getParentStateNode()).to.equal(null);
     });
 
     it("construct with parent state node", () => {
       const parentStateNode = new StateNode();
       const tree = new RadixTree(null, parentStateNode);
+      expect(tree.version).to.equal(null);
+      expect(tree.nodeSerial).to.equal(1);
+      expect(tree.numTerminalNodes).to.equal(0);
       expect(tree.root.getVersion()).to.equal(null);
+      expect(tree.root.getSerial()).to.equal(0);
       expect(tree.root.getParentStateNode()).to.equal(parentStateNode);
     });
   });
@@ -96,7 +108,9 @@ describe("radix-tree", () => {
       const cloned = tree.clone(version2, parentStateNode2);
 
       assert.deepEqual(cloned.root.getParentStateNode(), parentStateNode2);
-      expect(cloned.numChildStateNodes()).to.equal(4);
+      expect(cloned.version).to.equal(version2);
+      expect(cloned.nodeSerial).to.equal(tree.nodeSerial);
+      expect(cloned.numTerminalNodes).to.equal(4);
       assert.deepEqual(cloned.toJsObject(true), {
         ".radix_version": "ver2",
         "000": {
@@ -131,6 +145,32 @@ describe("radix-tree", () => {
       expect(stateNode2.numParents()).to.equal(2);
       expect(stateNode21.numParents()).to.equal(2);
       expect(stateNode22.numParents()).to.equal(2);
+    });
+  });
+
+  describe("_newRadixNode", () => {
+    it("new radix nodes with increasing serials", () => {
+      const version = 'ver';
+      const parentStateNode = new StateNode();
+      const tree = new RadixTree(version, parentStateNode);
+
+      const node1 = tree._newRadixNode();
+      expect(node1.getVersion()).to.equal(version);
+      expect(node1.getSerial()).to.equal(1);
+      expect(node1.getParentStateNode()).to.equal(null);
+      expect(tree.nodeSerial).to.equal(2);
+
+      const node2 = tree._newRadixNode();
+      expect(node2.getVersion()).to.equal(version);
+      expect(node2.getSerial()).to.equal(2);
+      expect(node2.getParentStateNode()).to.equal(null);
+      expect(tree.nodeSerial).to.equal(3);
+
+      const node3 = tree._newRadixNode();
+      expect(node3.getVersion()).to.equal(version);
+      expect(node3.getSerial()).to.equal(3);
+      expect(node3.getParentStateNode()).to.equal(null);
+      expect(tree.nodeSerial).to.equal(4);
     });
   });
 
@@ -2574,6 +2614,74 @@ describe("radix-tree", () => {
           ".radix_ph": null,
           ".radix_version": "ver2",
         });
+      });
+    });
+
+    describe("child state nodes", () => {
+      const version = 'ver';
+      const version2 = 'ver2';
+      const label1 = '0x000aaa';
+      const label2 = '0x000bbb';
+      const label21 = '0x000bbb111';
+      const label22 = '0x000bbb222';
+      const label23 = '0x000bbb333';
+
+      let stateNode1;
+      let stateNode2;
+      let stateNode21;
+      let stateNode22;
+
+      let tree;
+      let cloned;
+
+      beforeEach(() => {
+        stateNode1 = new StateNode(version);
+        stateNode2 = new StateNode(version);
+        stateNode21 = new StateNode(version);
+        stateNode22 = new StateNode(version);
+
+        tree = new RadixTree(version);
+
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
+
+        tree.set(label22, stateNode22);
+        tree.set(label21, stateNode21);
+        tree.set(label1, stateNode1);
+        tree.set(label2, stateNode2);
+
+        cloned = tree.clone(version2);
+      });
+
+      it("getChildStateLabels / getChildStateNodes", () => {
+        // Insertion order is kept
+        assert.deepEqual(tree.getChildStateLabels(), [ label22, label21, label1, label2 ]);
+        assert.deepEqual(
+            tree.getChildStateNodes(), [ stateNode22, stateNode21, stateNode1, stateNode2 ]);
+      });
+
+      it("getChildStateLabels / getChildStateNodes with cloned tree", () => {
+        // Insertion order is kept.
+        assert.deepEqual(cloned.getChildStateLabels(), [ label22, label21, label1, label2 ]);
+        assert.deepEqual(
+            cloned.getChildStateNodes(), [ stateNode22, stateNode21, stateNode1, stateNode2 ]);
+
+        const newStateNode21 = new StateNode(version2);
+        newStateNode21.setLabel(label21);
+        cloned.set(label21, newStateNode21);
+
+        const newStateNode23 = new StateNode(version2);
+        newStateNode23.setLabel(label23);
+        cloned.set(label23, newStateNode23);
+
+        // The order does NOT change.
+        assert.deepEqual(
+            cloned.getChildStateLabels(), [ label22, label21, label1, label2, label23 ]);
+        assert.deepEqual(
+            cloned.getChildStateNodes(),
+            [ stateNode22, newStateNode21, stateNode1, stateNode2, newStateNode23 ]);
       });
     });
 
