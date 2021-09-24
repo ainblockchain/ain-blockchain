@@ -661,7 +661,6 @@ module.exports = {
   isValidOwnerTree,
   applyFunctionChange,
   applyOwnerChange,
-  setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTreeVersion,
   updateStateInfoForAllRootPaths,
