@@ -498,25 +498,6 @@ function applyOwnerChange(curOwnerTree, ownerChange) {
 }
 
 /**
- * Returns affected nodes' number.
- */
-function setStateTreeVersion(node, version) {
-  let numAffectedNodes = 0;
-  if (node === null) {
-    return numAffectedNodes;
-  }
-  if (node.getVersion() !== version) {
-    node.setVersion(version);
-    numAffectedNodes++;
-  }
-  for (const child of node.getChildNodes()) {
-    numAffectedNodes += setStateTreeVersion(child, version);
-  }
-
-  return numAffectedNodes;
-}
-
-/**
  * Renames the version of the given state tree. Each node's version of the state tree is set with
  * given to-version if its value is equal to the given from-version.
  * 
