@@ -311,7 +311,7 @@ class RadixTree {
         nodesToUpdate.push(theOnlyParent);
         if (theOnlyParent.numChildren() === 1 &&  // the parent has only 1 child after deletion.
             !theOnlyParent.hasChildStateNode() &&  // the parent has no state node
-            theOnlyParent.numParents() !== 0) {  // the parent is not a root.
+            theOnlyParent.numParents() === 1) {  // the parent is not a root.
           nodesToUpdate = RadixTree._mergeToChild(theOnlyParent);
         }
       }
