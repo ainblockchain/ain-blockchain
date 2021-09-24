@@ -30,7 +30,7 @@ class StateNode {
   }
 
   reset() {
-    this.setVersion(null);  // should be reset for deleteStateTreeVersion().
+    this.setVersion(null);
     this.resetLabel();
     this.setIsLeaf(true);
     this.resetValue();
@@ -75,10 +75,6 @@ class StateNode {
       }
     }
     return cloned;
-  }
-
-  copyRadixTreeFrom(stateNode) {
-    this.radixTree.copyFrom(stateNode.radixTree, this);
   }
 
   // NOTE(liayoo): Bytes for some data (e.g. parents & children references, version) are excluded
@@ -219,7 +215,7 @@ class StateNode {
     return this.parentRadixNodeSet.size;
   }
 
-  _hasAParentRadixNode() {
+  _hasAtLeastOneParentRadixNode() {
     return this.parentRadixNodeSet.size > 0;
   }
 
@@ -270,9 +266,9 @@ class StateNode {
     }
   }
 
-  hasSingleParent() {
+  hasAtLeastOneParent() {
     if (FeatureFlags.enableRadixTreeLayers) {
-      return this._hasAParentRadixNode();
+      return this._hasAtLeastOneParentRadixNode();
     } else {
       return this.parentSet.size > 0;
     }
