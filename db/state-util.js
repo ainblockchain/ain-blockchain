@@ -545,28 +545,28 @@ function renameStateTreeVersion(node, fromVersion, toVersion, isRootNode = true)
 /**
  * Returns affected nodes' number.
  */
-function deleteStateTree(node, deleteOrphanedOnly = false) {
+function deleteStateTreeVersion(node) {
   let numAffectedNodes = 0;
-  if (deleteOrphanedOnly) {
-    if (node.numParents() > 0) {
-      // Does nothing.
-      return numAffectedNodes;
-    }
+  if (node.hasSingleParent()) {
+    // Does nothing.
+    return numAffectedNodes;
   }
 
   // 1. Delete children
-  if (FeatureFlags.enableRadixTreeLayers && node.getRadixTreeEnabled()) {
+  if (FeatureFlags.enableRadixTreeLayers) {
     const childNodes = node.getChildNodes();
-    node.deleteRadixTree(true);  // shouldDeleteParent = true
+    // 1.1.1. Delete radix tree first
+    node.deleteRadixTreeVersion();
+    // 1.1.2. Recursive call for child nodes
     for (const child of childNodes) {
-      numAffectedNodes += deleteStateTree(child, deleteOrphanedOnly);
+      numAffectedNodes += deleteStateTreeVersion(child);
     }
   } else {
+    // 1.2. Recursive call for child nodes
     for (const label of node.getChildLabels()) {
       const child = node.getChild(label);
       node.deleteChild(label, false);  // shouldUpdateStateInfo = false
-
-      numAffectedNodes += deleteStateTree(child, deleteOrphanedOnly);
+      numAffectedNodes += deleteStateTreeVersion(child);
     }
   }
   // 2. Reset node
@@ -576,43 +576,15 @@ function deleteStateTree(node, deleteOrphanedOnly = false) {
   return numAffectedNodes;
 }
 
-function makeCopyOfStateTree(node) {
-  const copy = node.clone();
-  for (const label of node.getChildLabels()) {
-    const child = node.getChild(label);
-    copy.setChild(label, makeCopyOfStateTree(child));
-  }
-  return copy;
-}
-
-function equalStateTrees(node1, node2) {
-  if (!node1 && !node2) {
-    return true;
-  }
-  if (!node1 || !node2) {
-    return false;
-  }
-  if (!node1.equal(node2)) {
-    return false;
-  }
-  // NOTE: The child label order matters.
-  for (const label of node1.getChildLabels()) {
-    const child1 = node1.getChild(label);
-    const child2 = node2.getChild(label);
-    if (!equalStateTrees(child1, child2)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 function updateStateInfoForAllRootPathsRecursive(
     curNode, updatedChildLabel = null, updatedChildEmpty = false) {
   let numAffectedNodes = 0;
   if (updatedChildEmpty) {
     curNode.deleteChild(updatedChildLabel, true);  // shouldUpdateStateInfo = true
   } else {
+    if (!FeatureFlags.enableStateInfoUpdates) {
+      return 0;
+    }
     curNode.updateStateInfo(updatedChildLabel, true);  // shouldRebuildRadixInfo = true
   }
   const curLabel = curNode.getLabel();
@@ -640,6 +612,9 @@ function updateStateInfoForAllRootPaths(curNode, updatedChildLabel = null) {
 }
 
 function updateStateInfoForStateTree(stateTree) {
+  if (!FeatureFlags.enableStateInfoUpdates) {
+    return 0;
+  }
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
     for (const node of stateTree.getChildNodes()) {
@@ -714,9 +689,7 @@ module.exports = {
   applyOwnerChange,
   setStateTreeVersion,
   renameStateTreeVersion,
-  deleteStateTree,
-  makeCopyOfStateTree,
-  equalStateTrees,
+  deleteStateTreeVersion,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
