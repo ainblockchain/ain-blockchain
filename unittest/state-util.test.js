@@ -15,7 +15,6 @@ const {
   isValidOwnerTree,
   applyFunctionChange,
   applyOwnerChange,
-  setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTreeVersion,
   updateStateInfoForAllRootPaths,
