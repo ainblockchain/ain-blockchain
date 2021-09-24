@@ -15,6 +15,7 @@ const {
   PredefinedDbPaths,
   StateInfoProperties,
   SERVICE_STATE_BUDGET,
+  StateVersions,
 } = require('../common/constants')
 const {
   setNodeForTesting,
@@ -280,6 +281,13 @@ describe("DB operations", () => {
     describe("getValue()", () => {
       it("when retrieving high value near top of database", () => {
         assert.deepEqual(node.db.getValue("/apps/test"), dbValues)
+      })
+
+      it("when retrieving high value near top of database with is_final", () => {
+        const backupFinalVersion = node.db.stateManager.getFinalVersion();
+        node.db.stateManager.finalizeVersion(StateVersions.EMPTY);
+        assert.notDeepEqual(node.db.getValue("/apps/test", { isFinal: true }), dbValues)
+        node.db.stateManager.finalizeVersion(backupFinalVersion);
       })
 
       it('when retrieving value near top of database with is_shallow', () => {
@@ -2690,14 +2698,14 @@ describe("DB operations", () => {
             valueObj);
         node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
         expect(node.db.getStateUsageAtPath('/')[StateInfoProperties.TREE_BYTES]).to.be.lessThan(SERVICE_STATE_BUDGET);
-        
+
         const expectedGasAmountTotal = {
           bandwidth: {
             service: 1507500,
           },
           state: {
             service: 3807120
-          } 
+          }
         };
         const overSizeTxBody = {
           operation: {
