@@ -398,6 +398,7 @@ const RadixInfoProperties = {
   NUM_PARENTS: '.num_parents',
   PROOF_HASH: '.proof_hash',
   RADIX_PROOF_HASH: '.radix_ph',
+  RADIX_SERIAL: '.radix_serial',
   RADIX_VERSION: '.radix_version',
   TREE_HEIGHT: '.tree_height',
   TREE_SIZE: '.tree_size',

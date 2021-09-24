@@ -540,10 +540,14 @@ class RadixNode {
    * This is for testing / debugging purpose.
    */
   toJsObject(
-      withVersion = false, withProofHash = false, withTreeInfo = false, withNumParents = false) {
+      withVersion = false, withSerial = false, withProofHash = false, withTreeInfo = false,
+      withNumParents = false) {
     const obj = {};
     if (withVersion) {
       obj[RadixInfoProperties.RADIX_VERSION] = this.getVersion();
+    }
+    if (withSerial) {
+      obj[RadixInfoProperties.RADIX_SERIAL] = this.getSerial();
     }
     if (withProofHash) {
       obj[RadixInfoProperties.RADIX_PROOF_HASH] = this.getProofHash();
@@ -567,7 +571,8 @@ class RadixNode {
       }
     }
     for (const child of this.getChildNodes()) {
-      obj[child.getLabel()] = child.toJsObject(withVersion, withProofHash, withTreeInfo, withNumParents);
+      obj[child.getLabel()] = child.toJsObject(
+          withVersion, withSerial, withProofHash, withTreeInfo, withNumParents);
     }
     return obj;
   }
