@@ -214,6 +214,9 @@ class CommonUtil {
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
     }
+    if (args.is_final !== undefined) {
+      options.isFinal = CommonUtil.toBool(args.is_final);
+    }
     if (args.include_tree_info !== undefined) {
       options.includeTreeInfo = CommonUtil.toBool(args.include_tree_info);
     }
@@ -310,7 +313,7 @@ class CommonUtil {
   /**
    * Sets a value to the given path of an object. If the given path is empty, it tries to copy
    * the first-level properties of the value to the object.
-   * 
+   *
    * @param {object} obj target object
    * @param {array} path target path
    * @param {*} value value to set
@@ -431,7 +434,7 @@ class CommonUtil {
     return false;
   }
 
-  // TODO(platfowner): Consider some code (e.g. IN_LOCKUP_PERIOD, INSUFFICIENT_BALANCE) no failure 
+  // TODO(platfowner): Consider some code (e.g. IN_LOCKUP_PERIOD, INSUFFICIENT_BALANCE) no failure
   // so that their transactions are not reverted.
   static isFailedFuncResultCode(code) {
     const { FunctionResultCode } = require('../common/constants');
@@ -589,10 +592,10 @@ class CommonUtil {
   /**
    * Calculate the gas cost (unit = ain).
    * Only the service bandwidth gas amount is counted toward gas cost.
-   * 
+   *
    * @param {Number} gasPrice gas price in microain
    * @param {Object} gasAmount gas amount
-   * @returns 
+   * @returns
    */
   static getTotalGasCost(gasPrice, gasAmount) {
     const { MICRO_AIN } = require('./constants');
@@ -630,7 +633,7 @@ class CommonUtil {
 
   /**
    * Logs and returns transaction result.
-   * 
+   *
    * @param logger logger to log with
    * @param code error code
    * @param message error message
