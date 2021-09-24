@@ -108,11 +108,9 @@ class RadixNode {
       // Does nothing.
       return;
     }
-    if (FeatureFlags.enableRadixNodeVersioning) {
-      if (this.hasChildStateNode()) {
-        const existingStateNode = this.getChildStateNode();
-        existingStateNode.deleteParentRadixNode(this);
-      }
+    if (this.hasChildStateNode()) {
+      const existingStateNode = this.getChildStateNode();
+      existingStateNode.deleteParentRadixNode(this);
     }
     if (!childStateNode.hasParentRadixNode(this)) {
       childStateNode.addParentRadixNode(this);
@@ -499,46 +497,9 @@ class RadixNode {
     return proof;
   }
 
-  copyFrom(radixNode, newParentStateNode) {
-    if (radixNode.hasChildStateNode()) {
-      const childStateNode = radixNode.getChildStateNode();
-      this.setChildStateNode(childStateNode);
-      childStateNode.addParent(newParentStateNode);  // Add new parent state node.
-    }
-    this.setLabelRadix(radixNode.getLabelRadix());
-    this.setLabelSuffix(radixNode.getLabelSuffix());
-    this.setProofHash(radixNode.getProofHash());
-    this.setTreeHeight(radixNode.getTreeHeight());
-    this.setTreeSize(radixNode.getTreeSize());
-    this.setTreeBytes(radixNode.getTreeBytes());
-    for (const child of radixNode.getChildNodes()) {
-      const clonedChild = new RadixNode(this.getVersion());
-      this.setChild(child.getLabelRadix(), child.getLabelSuffix(), clonedChild);
-      clonedChild.copyFrom(child, newParentStateNode);
-    }
-  }
-
   /**
-   * Deletes radix tree.
-   * If parentStateNodeToDelete is given, it's deleted from the terminal state nodes' parent set.
+   * Deletes radix tree version.
    */
-  deleteRadixTree(parentStateNodeToDelete = null) {
-    let numAffectedNodes = 0;
-
-    for (const child of this.getChildNodes()) {
-      numAffectedNodes += child.deleteRadixTree(parentStateNodeToDelete);
-    }
-
-    if (parentStateNodeToDelete !== null && this.hasChildStateNode()) {
-      const childStateNode = this.getChildStateNode();
-      childStateNode.deleteParent(parentStateNodeToDelete);
-    }
-    this.reset();
-    numAffectedNodes++;
-
-    return numAffectedNodes;
-  }
-
   deleteRadixTreeVersion() {
     let numAffectedNodes = 0;
     if (this.numParents() > 0) {

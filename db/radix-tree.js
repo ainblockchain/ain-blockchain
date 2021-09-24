@@ -96,7 +96,7 @@ class RadixTree {
 
       // Case 2: Has a child with the label radix but no match with the label suffix.
       if (!RadixTree._matchLabelSuffix(child, radixLabel, labelIndex + 1)) {
-        if (FeatureFlags.enableRadixNodeVersioning && child.numParents() > 1) {
+        if (child.numParents() > 1) {
           child = child.clone(this.root.getVersion());
         }
 
@@ -138,7 +138,7 @@ class RadixTree {
 
       // Case 3: Has a child with matching label suffix.
       const childLabelSuffix = child.getLabelSuffix();
-      if (FeatureFlags.enableRadixNodeVersioning && child.numParents() > 1) {
+      if (child.numParents() > 1) {
         const clonedChild = child.clone(this.root.getVersion());
         curNode.setChild(childLabelRadix, childLabelSuffix, clonedChild);
         curNode = clonedChild;
@@ -179,7 +179,7 @@ class RadixTree {
 
       // Case 3: Has a child with matching label suffix.
       const childLabelSuffix = child.getLabelSuffix();
-      if (FeatureFlags.enableRadixNodeVersioning && child.numParents() > 1) {
+      if (child.numParents() > 1) {
         const clonedChild = child.clone(this.root.getVersion());
         curNode.setChild(childLabelRadix, childLabelSuffix, clonedChild);
         curNode = clonedChild;
@@ -271,9 +271,7 @@ class RadixTree {
   delete(stateLabel, shouldUpdateRadixInfo = false) {
     const LOG_HEADER = 'delete';
 
-    const node = FeatureFlags.enableRadixNodeVersioning ?
-        this._getRadixNodeForDeleting(stateLabel) :
-        this._getRadixNodeForReading(stateLabel);
+    const node = this._getRadixNodeForDeleting(stateLabel);
     if (node === null || !node.hasChildStateNode()) {
       logger.error(
           `[${LOG_HEADER}] Deleting a non-existing child of label: ${stateLabel} ` +
@@ -419,16 +417,6 @@ class RadixTree {
   getProofOfState(stateLabel, stateProof) {
     const radixLabel = RadixTree._toRadixLabel(stateLabel);
     return RadixTree.getProofOfStateRecursive(radixLabel, this.root, 0, stateProof);
-  }
-
-  copyFrom(radixTree, newParentStateNode) {
-    this.root.copyFrom(radixTree.root, newParentStateNode);
-    this.numTerminalNodes = radixTree.numChildStateNodes();
-  }
-
-  deleteRadixTree(parentStateNodeToDelete = null) {
-    this.numTerminalNodes = 0;
-    return this.root.deleteRadixTree(parentStateNodeToDelete);
   }
 
   deleteRadixTreeVersion() {

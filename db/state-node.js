@@ -37,11 +37,7 @@ class StateNode {
     this.parentRadixNodeSet.clear();
     this.parentSet.clear();
     if (FeatureFlags.enableRadixTreeLayers) {
-      if (FeatureFlags.enableRadixNodeVersioning) {
-        this.deleteRadixTreeVersion();
-      } else {
-        this.deleteRadixTree();
-      }
+      this.deleteRadixTreeVersion();
     } else {
       this.childMap.clear();
     }
@@ -70,11 +66,7 @@ class StateNode {
         this.treeSize, this.treeBytes);
     if (!this.getIsLeaf()) {
       if (FeatureFlags.enableRadixTreeLayers) {
-        if (FeatureFlags.enableRadixNodeVersioning) {
-          cloned.radixTree = this.radixTree.clone(version, cloned);
-        } else {
-          cloned.copyRadixTreeFrom(this);
-        }
+        cloned.radixTree = this.radixTree.clone(version, cloned);
       } else {
         for (const label of this.getChildLabels()) {
           const child = this.getChild(label);
@@ -271,7 +263,7 @@ class StateNode {
   }
 
   getParentNodes() {
-    if (FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning) {
+    if (FeatureFlags.enableRadixTreeLayers) {
       return RadixTree.getParentStateNodes(this.getParentRadixNodes())
     } else {
       return Array.from(this.parentSet);
@@ -279,7 +271,7 @@ class StateNode {
   }
 
   hasAParent() {
-    if (FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning) {
+    if (FeatureFlags.enableRadixTreeLayers) {
       return this._hasAParentRadixNode();
     } else {
       return this.parentSet.size > 0;
@@ -287,7 +279,7 @@ class StateNode {
   }
 
   hasMultipleParents() {
-    if (FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning) {
+    if (FeatureFlags.enableRadixTreeLayers) {
       return this._hasMultipleParentStateNodes();
     } else {
       return this.parentSet.size > 1;
@@ -295,7 +287,7 @@ class StateNode {
   }
 
   numParents() {
-    if (FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning) {
+    if (FeatureFlags.enableRadixTreeLayers) {
       const parentNodes = this.getParentNodes();
       return parentNodes.length;
     } else {
@@ -327,7 +319,7 @@ class StateNode {
         // Does nothing.
         return;
       }
-      if (!(FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning)) {
+      if (!FeatureFlags.enableRadixTreeLayers) {
         // NOTE(platfowner): Use deleteParent() instead of deleteChild() to keep
         // the order of children.
         child.deleteParent(this);
@@ -338,7 +330,7 @@ class StateNode {
     } else {
       this.childMap.set(label, node);
     }
-    if (!(FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning)) {
+    if (!FeatureFlags.enableRadixTreeLayers) {
       node.addParent(this);
     }
     node.setLabel(label);
@@ -365,7 +357,7 @@ class StateNode {
       return;
     }
     const child = this.getChild(label);
-    if (!(FeatureFlags.enableRadixTreeLayers && FeatureFlags.enableRadixNodeVersioning)) {
+    if (!FeatureFlags.enableRadixTreeLayers) {
       child.deleteParent(this);
     }
     if (FeatureFlags.enableRadixTreeLayers) {
@@ -559,10 +551,6 @@ class StateNode {
         return proof;
       }
     }
-  }
-
-  deleteRadixTree() {
-    return this.radixTree.deleteRadixTree(this);
   }
 
   deleteRadixTreeVersion() {

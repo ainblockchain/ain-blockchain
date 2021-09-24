@@ -32,8 +32,6 @@ const FeatureFlags = {
   enableReceiptPathPrefixLayers: false,  // Some test cases assume this value false.
   // Enables radix layers.
   enableRadixTreeLayers: true,  // Some test cases assume this value true.
-  // Enables radix node versioning.
-  enableRadixNodeVersioning: true,  // Some test cases assume this value true.
   // Enables ntp-sync for global time syncing.
   enableNtpSync: true,
   // Enables traffic monitoring.
