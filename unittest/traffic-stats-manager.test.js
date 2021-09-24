@@ -29,21 +29,21 @@ describe("traffic-stats-manager", () => {
       tm.addEvent(eventType1, initialTimeMs);
       expect(tm.eventCounterMap.size).to.equal(1);
       expect(tm.eventCounterMap.has(eventType1)).to.equal(true);
-      expect(tm.countEvents(eventType1, intervalMs, initialTimeMs)).to.equal(1);
-      expect(tm.countEvents(eventType2, intervalMs, initialTimeMs)).to.equal(0);
+      expect(tm.countEvents(eventType1, intervalMs * 10, initialTimeMs + intervalMs)).to.equal(1);
+      expect(tm.countEvents(eventType2, intervalMs * 10, initialTimeMs + intervalMs)).to.equal(0);
 
-      tm.addEvent(eventType2, initialTimeMs);
+      tm.addEvent(eventType2, initialTimeMs + intervalMs);
       expect(tm.eventCounterMap.size).to.equal(2);
       expect(tm.eventCounterMap.has(eventType1)).to.equal(true);
       expect(tm.eventCounterMap.has(eventType2)).to.equal(true);
-      expect(tm.countEvents(eventType1, intervalMs, initialTimeMs)).to.equal(1);
-      expect(tm.countEvents(eventType2, intervalMs, initialTimeMs)).to.equal(1);
+      expect(tm.countEvents(eventType1, intervalMs * 10, initialTimeMs + intervalMs * 2)).to.equal(1);
+      expect(tm.countEvents(eventType2, intervalMs * 10, initialTimeMs + intervalMs * 2)).to.equal(1);
 
-      tm.addEvent(eventType1, initialTimeMs);
-      tm.addEvent(eventType2, initialTimeMs);
-      tm.addEvent(eventType1, initialTimeMs);
-      expect(tm.countEvents(eventType1, intervalMs, initialTimeMs)).to.equal(3);
-      expect(tm.countEvents(eventType2, intervalMs, initialTimeMs)).to.equal(2);
+      tm.addEvent(eventType1, initialTimeMs + intervalMs * 2);
+      tm.addEvent(eventType2, initialTimeMs + intervalMs * 2);
+      tm.addEvent(eventType1, initialTimeMs + intervalMs * 2);
+      expect(tm.countEvents(eventType1, intervalMs * 10, initialTimeMs + intervalMs * 3)).to.equal(3);
+      expect(tm.countEvents(eventType2, intervalMs * 10, initialTimeMs + intervalMs * 3)).to.equal(2);
     });
 
     it("with intervals overlapping", () => {
@@ -107,12 +107,12 @@ describe("traffic-stats-manager", () => {
 
     it("with invalid periods", () => {
       // with invalid interval period
-      assert.deepEqual(tm.getEventRates(0, initialTimeMs + intervalMs * 3), {
+      assert.deepEqual(tm.getEventRates(0, initialTimeMs + intervalMs * 4), {
         "event_type1": -1,
         "event_type2": -1,
       })
       // with 11 interval period
-      assert.deepEqual(tm.getEventRates(intervalMs / 1000 * 11, initialTimeMs + intervalMs * 3), {
+      assert.deepEqual(tm.getEventRates(intervalMs / 1000 * 11, initialTimeMs + intervalMs * 4), {
         "event_type1": -1,
         "event_type2": -1,
       })
@@ -120,22 +120,22 @@ describe("traffic-stats-manager", () => {
 
     it("with valid periods", () => {
       // with 1 interval period
-      assert.deepEqual(tm.getEventRates(intervalMs / 1000, initialTimeMs + intervalMs * 3), {
+      assert.deepEqual(tm.getEventRates(intervalMs / 1000, initialTimeMs + intervalMs * 4), {
         "event_type1": 5,
         "event_type2": 5,
       })
       // with 2 interval period
-      assert.deepEqual(tm.getEventRates(intervalMs / 1000 * 2, initialTimeMs + intervalMs * 3), {
+      assert.deepEqual(tm.getEventRates(intervalMs / 1000 * 2, initialTimeMs + intervalMs * 4), {
         "event_type1": 2.5,
         "event_type2": 2.5,
       })
       // with 3 interval period
-      assert.deepEqual(tm.getEventRates(intervalMs / 1000 * 3, initialTimeMs + intervalMs * 3), {
+      assert.deepEqual(tm.getEventRates(intervalMs / 1000 * 3, initialTimeMs + intervalMs * 4), {
         "event_type1": 3.3333333333333335,
         "event_type2": 3.3333333333333335,
       })
       // with 10 interval period
-      assert.deepEqual(tm.getEventRates(intervalMs / 1000 * 10, initialTimeMs + intervalMs * 3), {
+      assert.deepEqual(tm.getEventRates(intervalMs / 1000 * 10, initialTimeMs + intervalMs * 4), {
         "event_type1": 1.5,
         "event_type2": 1.5,
       })
