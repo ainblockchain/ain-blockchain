@@ -423,7 +423,9 @@ class DB {
   }
 
   readDatabase(refPath, rootLabel, options) {
-    return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, options, this.shardingPath);
+    const isFinal = _.get(options, 'isFinal', false);
+    const targetStateRoot = isFinal ? this.stateManager.getFinalRoot() : this.stateRoot;
+    return DB.readFromStateRoot(targetStateRoot, rootLabel, refPath, options, this.shardingPath);
   }
 
   // TODO(platfowner): Support lookups on the final version.
