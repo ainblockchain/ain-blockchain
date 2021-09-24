@@ -9,6 +9,7 @@ const {
   ProofProperties,
   RadixInfoProperties,
 } = require('../common/constants');
+const { deleteStateTreeVersion } = require('./state-util');
 
 /**
  * Implements Radix Node, which is used as a component of RadixTree.
@@ -524,11 +525,16 @@ class RadixNode {
       return numAffectedNodes;
     }
 
+    // 1. Recursive call for all child radix nodes.
     for (const child of this.getChildNodes()) {
       this.deleteChild(child.getLabelRadix());
       numAffectedNodes += child.deleteRadixTreeVersion();
     }
-
+    // 2. Recursive call for the child state node if available.
+    if (this.hasChildStateNode()) {
+      numAffectedNodes += deleteStateTreeVersion(this.getChildStateNode());
+    }
+    // 3. Delete node itself.
     this.reset();
     numAffectedNodes++;
 
