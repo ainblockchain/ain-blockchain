@@ -532,7 +532,9 @@ class RadixNode {
     }
     // 2. Recursive call for the child state node if available.
     if (this.hasChildStateNode()) {
-      numAffectedNodes += deleteStateTreeVersion(this.getChildStateNode());
+      const childStateNode = this.getChildStateNode();
+      this.resetChildStateNode();
+      numAffectedNodes += deleteStateTreeVersion(childStateNode);
     }
     // 3. Delete node itself.
     this.reset();
