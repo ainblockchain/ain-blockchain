@@ -270,7 +270,7 @@ class StateNode {
     }
   }
 
-  hasAParent() {
+  hasSingleParent() {
     if (FeatureFlags.enableRadixTreeLayers) {
       return this._hasAParentRadixNode();
     } else {
