@@ -2,12 +2,15 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const _ = require('lodash');
+const moment = require('moment');
+const ainUtil = require('@ainblockchain/ain-util');
 const {
   CHAINS_N2B_DIR_NAME,
   CHAINS_H2N_DIR_NAME,
   CHAINS_N2B_MAX_NUM_FILES,
   CHAINS_H2N_HASH_PREFIX_LENGTH,
   SNAPSHOTS_N2S_DIR_NAME,
+  KEYSTORE_FILENAME_FORMAT,
 } = require('./constants');
 const CommonUtil = require('./common-util');
 const JSON_GZIP_FILE_EXTENSION = 'json.gz';
@@ -112,6 +115,12 @@ class FileUtil {
     }
   }
 
+  static createKeystoreDir(keysPath) {
+    if (!fs.existsSync(keysPath)) {
+      fs.mkdirSync(keysPath, { recursive: true });
+    }
+  }
+
   // TODO(cshcomcom): Change to asynchronous.
   static readCompressedJson(blockPath) {
     try {
@@ -197,6 +206,49 @@ class FileUtil {
     } else {
       // TODO(liayoo): Change this operation to be asynchronous
       fs.writeFileSync(filePath, zlib.gzipSync(Buffer.from(JSON.stringify(snapshot))));
+    }
+  }
+
+  static getLatestKeystoreAccount(keysPath, password) {
+    let files = [];
+    try {
+      files = fs.readdirSync(keysPath);
+    } catch (err) {
+      logger.debug(`Failed to read keys dir (${keysPath}): ${err.stack}`);
+      return null;
+    }
+    files = files.filter((filename) => moment(filename, KEYSTORE_FILENAME_FORMAT).isValid());
+    if (!files.length) {
+      return null;
+    }
+    const latestFile = _.get(_.orderBy(files, [(filename) => moment(filename, KEYSTORE_FILENAME_FORMAT)], ['desc']), 0, null);
+    if (latestFile === null) {
+      return null;
+    }
+    const keystore = JSON.parse(fs.readFileSync(path.join(keysPath, latestFile)));
+    return ainUtil.privateToAccount(ainUtil.v3KeystoreToPrivate(keystore, password));
+  }
+
+  static writeKeystoreFile(keysPath, account, password) {
+    const LOG_HEADER = 'writeKeystoreFile';
+    if (!password) {
+      logger.error(`[${LOG_HEADER}] password is not provided`);
+      return false;
+    }
+    let filePath = '';
+    try {
+      filePath = path.join(keysPath, moment().format(KEYSTORE_FILENAME_FORMAT));
+      while (fs.existsSync(filePath)) {
+        CommonUtil.sleep(200);
+        filePath = path.join(keysPath, moment().format(KEYSTORE_FILENAME_FORMAT));
+      }
+      const privateKey = Buffer.from(account.private_key, 'hex');
+      const keystore = ainUtil.privateToV3Keystore(privateKey, password);
+      fs.writeFileSync(filePath, JSON.stringify(keystore));
+      return true;
+    } catch (err) {
+      logger.debug(`Failed to write to a keystore file (${account.address} / ${filePath}): ${err.stack}`);
+      return false;
     }
   }
 
