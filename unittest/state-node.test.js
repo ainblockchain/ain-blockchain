@@ -1412,7 +1412,7 @@ describe("state-node", () => {
       stateTree.setProofHash('proofHash');
 
       stateTree.updateStateInfo();
-      assert.deepEqual(stateTree.radixTree.toJsObject(false, true), {
+      assert.deepEqual(stateTree.radixTree.toJsObject(false, false, true), {
         ".radix_ph": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6",
         "00aaaa": {
           ".label": "0x00aaaa",

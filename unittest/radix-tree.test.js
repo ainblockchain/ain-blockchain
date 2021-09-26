@@ -9,21 +9,33 @@ describe("radix-tree", () => {
   describe("initialization", () => {
     it("construct without version", () => {
       const tree = new RadixTree();
+      expect(tree.version).to.equal(null);
+      expect(tree.nodeSerial).to.equal(1);
+      expect(tree.numTerminalNodes).to.equal(0);
       expect(tree.root.getVersion()).to.equal(null);
+      expect(tree.root.getSerial()).to.equal(0);
       expect(tree.root.getParentStateNode()).to.equal(null);
     });
 
     it("construct with version", () => {
       const version = 'ver';
       const tree = new RadixTree(version);
+      expect(tree.version).to.equal(version);
+      expect(tree.nodeSerial).to.equal(1);
+      expect(tree.numTerminalNodes).to.equal(0);
       expect(tree.root.getVersion()).to.equal(version);
+      expect(tree.root.getSerial()).to.equal(0);
       expect(tree.root.getParentStateNode()).to.equal(null);
     });
 
     it("construct with parent state node", () => {
       const parentStateNode = new StateNode();
       const tree = new RadixTree(null, parentStateNode);
+      expect(tree.version).to.equal(null);
+      expect(tree.nodeSerial).to.equal(1);
+      expect(tree.numTerminalNodes).to.equal(0);
       expect(tree.root.getVersion()).to.equal(null);
+      expect(tree.root.getSerial()).to.equal(0);
       expect(tree.root.getParentStateNode()).to.equal(parentStateNode);
     });
   });
@@ -57,29 +69,35 @@ describe("radix-tree", () => {
 
       assert.deepEqual(tree.root.getParentStateNode(), parentStateNode);
       expect(tree.numChildStateNodes()).to.equal(4);
-      assert.deepEqual(tree.toJsObject(true), {
+      assert.deepEqual(tree.toJsObject(true, true), {
+        ".radix_serial": 0,
         ".radix_version": "ver",
         "000": {
+          ".radix_serial": 3,
           ".radix_version": "ver",
           "aaa": {
             ".label": "0x000aaa",
+            ".radix_serial": 2,
             ".radix_version": "ver",
-            ".version": "ver"
+            ".version": "ver",
           },
           "bbb": {
             "111": {
               ".label": "0x000bbb111",
+              ".radix_serial": 7,
               ".radix_version": "ver",
-              ".version": "ver"
+              ".version": "ver",
             },
             "222": {
               ".label": "0x000bbb222",
+              ".radix_serial": 9,
               ".radix_version": "ver",
-              ".version": "ver"
+              ".version": "ver",
             },
             ".label": "0x000bbb",
+            ".radix_serial": 5,
             ".radix_version": "ver",
-            ".version": "ver"
+            ".version": "ver",
           }
         }
       });
@@ -96,30 +114,38 @@ describe("radix-tree", () => {
       const cloned = tree.clone(version2, parentStateNode2);
 
       assert.deepEqual(cloned.root.getParentStateNode(), parentStateNode2);
-      expect(cloned.numChildStateNodes()).to.equal(4);
-      assert.deepEqual(cloned.toJsObject(true), {
+      expect(cloned.version).to.equal(version2);
+      expect(cloned.nodeSerial).to.equal(tree.nodeSerial);
+      expect(cloned.numTerminalNodes).to.equal(4);
+      assert.deepEqual(cloned.toJsObject(true, true), {
+        ".radix_serial": 0,
         ".radix_version": "ver2",
         "000": {
+          ".radix_serial": 3,
           ".radix_version": "ver",
           "aaa": {
             ".label": "0x000aaa",
+            ".radix_serial": 2,
             ".radix_version": "ver",
-            ".version": "ver"
+            ".version": "ver",
           },
           "bbb": {
             "111": {
               ".label": "0x000bbb111",
+              ".radix_serial": 7,
               ".radix_version": "ver",
-              ".version": "ver"
+              ".version": "ver",
             },
             "222": {
               ".label": "0x000bbb222",
+              ".radix_serial": 9,
               ".radix_version": "ver",
-              ".version": "ver"
+              ".version": "ver",
             },
             ".label": "0x000bbb",
+            ".radix_serial": 5,
             ".radix_version": "ver",
-            ".version": "ver"
+            ".version": "ver",
           }
         }
       });
@@ -131,6 +157,32 @@ describe("radix-tree", () => {
       expect(stateNode2.numParents()).to.equal(2);
       expect(stateNode21.numParents()).to.equal(2);
       expect(stateNode22.numParents()).to.equal(2);
+    });
+  });
+
+  describe("_newRadixNode", () => {
+    it("new radix nodes with increasing serials", () => {
+      const version = 'ver';
+      const parentStateNode = new StateNode();
+      const tree = new RadixTree(version, parentStateNode);
+
+      const node1 = tree._newRadixNode();
+      expect(node1.getVersion()).to.equal(version);
+      expect(node1.getSerial()).to.equal(1);
+      expect(node1.getParentStateNode()).to.equal(null);
+      expect(tree.nodeSerial).to.equal(2);
+
+      const node2 = tree._newRadixNode();
+      expect(node2.getVersion()).to.equal(version);
+      expect(node2.getSerial()).to.equal(2);
+      expect(node2.getParentStateNode()).to.equal(null);
+      expect(tree.nodeSerial).to.equal(3);
+
+      const node3 = tree._newRadixNode();
+      expect(node3.getVersion()).to.equal(version);
+      expect(node3.getSerial()).to.equal(3);
+      expect(node3.getParentStateNode()).to.equal(null);
+      expect(tree.nodeSerial).to.equal(4);
     });
   });
 
@@ -247,7 +299,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
         });
@@ -258,7 +310,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(true);
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "a": {
@@ -277,7 +329,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "a": {
@@ -302,7 +354,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "b": {
@@ -319,7 +371,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
         });
@@ -334,7 +386,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
         });
@@ -345,7 +397,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(true);
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "aaa": {
@@ -364,7 +416,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "aaa": {
@@ -389,7 +441,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "bbb": {
@@ -406,7 +458,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
         });
@@ -427,7 +479,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
         // internal node inserted!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "aaa": {
@@ -462,7 +514,7 @@ describe("radix-tree", () => {
         const node = tree._getRadixNodeForReading(label1);
         parentAnother.setChild('a', 'aabbb', node);
 
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -476,7 +528,7 @@ describe("radix-tree", () => {
           }
         });
 
-        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
@@ -497,7 +549,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
         // internal node inserted and sibling cloned!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -519,7 +571,7 @@ describe("radix-tree", () => {
           }
         });
         // no changes except num_parents!
-        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
@@ -549,7 +601,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
         // branched!!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "aaa": {
@@ -585,7 +637,7 @@ describe("radix-tree", () => {
         expect(tree.has(label)).to.equal(true);
         expect(tree.get(label)).to.equal(stateNode2);
         // overwritten!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "aaa": {
@@ -613,7 +665,7 @@ describe("radix-tree", () => {
         const node = tree._getRadixNodeForReading(label1);
         parentAnother.setChild('a', 'aa', node);
 
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -627,7 +679,7 @@ describe("radix-tree", () => {
           }
         });
 
-        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
@@ -648,7 +700,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
         // internal node inserted, but no changes on the sibling!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -670,7 +722,7 @@ describe("radix-tree", () => {
           }
         });
         // no changes!
-        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
@@ -706,7 +758,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "bbb": {
@@ -740,7 +792,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_ph": null,
           ".radix_version": "ver",
           "bbb": {
@@ -780,7 +832,7 @@ describe("radix-tree", () => {
         expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "bbb": {
@@ -806,7 +858,7 @@ describe("radix-tree", () => {
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
         // merged!!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "bbb111": {
@@ -840,7 +892,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -879,7 +931,7 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // not merged!!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -917,7 +969,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -951,7 +1003,7 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // merged!!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -975,7 +1027,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
         });
@@ -986,7 +1038,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(true);
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000a": {
@@ -1005,7 +1057,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000": {
@@ -1034,7 +1086,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000b": {
@@ -1051,7 +1103,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
         });
@@ -1066,7 +1118,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
         });
@@ -1077,7 +1129,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(true);
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000aaa": {
@@ -1096,7 +1148,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000": {
@@ -1125,7 +1177,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000bbb": {
@@ -1142,7 +1194,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
         });
@@ -1157,7 +1209,7 @@ describe("radix-tree", () => {
 
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
         });
@@ -1168,7 +1220,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(true);
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(false);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000aaa": {
@@ -1187,7 +1239,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000": {
@@ -1216,7 +1268,7 @@ describe("radix-tree", () => {
         expect(tree.has(label1)).to.equal(false);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": "0x16337f10dc7114cb5eba09c616cc2ec112e080404ac3fc1aea63111f8570d6b8",
           "000bbb": {
@@ -1246,7 +1298,7 @@ describe("radix-tree", () => {
         expect(tree.get(label1)).to.equal(stateNode1);
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000": {
@@ -1279,7 +1331,7 @@ describe("radix-tree", () => {
         expect(tree.has(labelInternal)).to.equal(true);
         expect(tree.get(labelInternal)).to.equal(stateNodeInternal);
         // no branching!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000": {
@@ -1321,7 +1373,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
         // internal node inserted!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000aaa": {
@@ -1356,7 +1408,7 @@ describe("radix-tree", () => {
         const node = tree._getRadixNodeForReading(label1);
         parentAnother.setChild('0', '00aaabbb', node);
 
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -1370,7 +1422,7 @@ describe("radix-tree", () => {
           }
         });
 
-        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
@@ -1391,7 +1443,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
         // internal node inserted and sibling cloned!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -1414,7 +1466,7 @@ describe("radix-tree", () => {
         });
 
         // no changes except num_parents!
-        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
@@ -1444,7 +1496,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
         // branched!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000aaa": {
@@ -1480,7 +1532,7 @@ describe("radix-tree", () => {
         expect(tree.has(label)).to.equal(true);
         expect(tree.get(label)).to.equal(stateNode2);
         // overwritten!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000aaa": {
@@ -1508,7 +1560,7 @@ describe("radix-tree", () => {
         const node = tree._getRadixNodeForReading(label1);
         parentAnother.setChild('0', '00aaa', node);
 
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -1522,7 +1574,7 @@ describe("radix-tree", () => {
           }
         });
 
-        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
@@ -1543,7 +1595,7 @@ describe("radix-tree", () => {
         expect(tree.has(label2)).to.equal(true);
         expect(tree.get(label2)).to.equal(stateNode2);
         // internal node inserted and sibling cloned!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -1571,7 +1623,7 @@ describe("radix-tree", () => {
         });
 
         // no changes except num_parents!
-        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
@@ -1613,7 +1665,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000": {
@@ -1660,7 +1712,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000bbb": {
@@ -1703,7 +1755,7 @@ describe("radix-tree", () => {
         expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000bbb": {
@@ -1729,7 +1781,7 @@ describe("radix-tree", () => {
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
         // merged!!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000bbb111": {
@@ -1767,7 +1819,7 @@ describe("radix-tree", () => {
         expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -1788,7 +1840,7 @@ describe("radix-tree", () => {
             ".version": null,
           }
         });
-        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, false, true, false, true), {
           "111": {
             ".label": "0x000bbb111",
             ".num_parents": 2,
@@ -1809,7 +1861,7 @@ describe("radix-tree", () => {
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
         // not merged!!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -1827,7 +1879,7 @@ describe("radix-tree", () => {
             ".radix_version": "ver",
           }
         });
-        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, false, true, false, true), {
           "111": {
             ".label": "0x000bbb111",
             ".num_parents": 2,
@@ -1858,7 +1910,7 @@ describe("radix-tree", () => {
         expect(tree.get(label2)).to.equal(stateNode2);
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": null,
           "000bbb": {
@@ -1884,7 +1936,7 @@ describe("radix-tree", () => {
         expect(tree.has(label21)).to.equal(true);
         expect(tree.get(label21)).to.equal(stateNode21);
         // merged with proof hash updates!!
-        assert.deepEqual(tree.toJsObject(true, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true), {
           ".radix_version": "ver",
           ".radix_ph": "0xdf6bd65883bce47c743eb28ea70897e69be4d9b0046f21e3a2ee26114fb40bd1",
           "000bbb111": {
@@ -1918,7 +1970,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -1957,7 +2009,7 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // not merged!!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -2001,7 +2053,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -2040,7 +2092,7 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // not merged with proof hash updates!!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": "0xca570f9b1ca8572d215027ba2b949003e0c55ff3b5346bec47899fbaf652c8a5",
           ".radix_version": "ver",
@@ -2094,7 +2146,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -2123,7 +2175,7 @@ describe("radix-tree", () => {
             ".version": null,
           }
         });
-        assert.deepEqual(grandParentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(grandParentAnother.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
@@ -2162,7 +2214,7 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // not merged with proof hash updates!!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": "0xca570f9b1ca8572d215027ba2b949003e0c55ff3b5346bec47899fbaf652c8a5",
           ".radix_version": "ver",
@@ -2184,7 +2236,7 @@ describe("radix-tree", () => {
           }
         });
         // no changes!!
-        assert.deepEqual(grandParentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(grandParentAnother.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
@@ -2230,7 +2282,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -2264,7 +2316,7 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // merged!!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -2294,7 +2346,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -2328,7 +2380,7 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // merged with proof hash updates!!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": "0x2f86edb65f78422d4d2b8706495c0baa89c0cb169326a004a7c35b317f218a18",
           ".radix_version": "ver",
@@ -2369,7 +2421,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -2395,7 +2447,7 @@ describe("radix-tree", () => {
             ".radix_version": "ver",
           }
         });
-        assert.deepEqual(grandParentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(grandParentAnother.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
@@ -2429,7 +2481,7 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // deleted with proof hash updates, but not merged!!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": "0x76691a736e5b3e4cdf14c2384c766409a39e9447571aad9463298a7f47b68e40",
           ".radix_version": "ver",
@@ -2448,7 +2500,7 @@ describe("radix-tree", () => {
           }
         });
         // no changes!!
-        assert.deepEqual(grandParentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(grandParentAnother.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver2",
@@ -2500,7 +2552,7 @@ describe("radix-tree", () => {
         expect(tree.get(label21)).to.equal(stateNode21);
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": null,
           ".radix_version": "ver",
@@ -2526,7 +2578,7 @@ describe("radix-tree", () => {
             ".radix_version": "ver",
           }
         });
-        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, false, true, false, true), {
           "111": {
             ".label": "0x000bbb111",
             ".num_parents": 2,
@@ -2547,7 +2599,7 @@ describe("radix-tree", () => {
         expect(tree.has(label22)).to.equal(true);
         expect(tree.get(label22)).to.equal(stateNode22);
         // merged with proof hash updates!!
-        assert.deepEqual(tree.toJsObject(true, true, false, true), {
+        assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
           ".num_parents": 0,
           ".radix_ph": "0x2f86edb65f78422d4d2b8706495c0baa89c0cb169326a004a7c35b317f218a18",
           ".radix_version": "ver",
@@ -2561,7 +2613,7 @@ describe("radix-tree", () => {
           }
         });
         // no changes!!
-        assert.deepEqual(parentAnother.toJsObject(true, true, false, true), {
+        assert.deepEqual(parentAnother.toJsObject(true, false, true, false, true), {
           "111": {
             ".label": "0x000bbb111",
             ".num_parents": 1,
@@ -2574,6 +2626,74 @@ describe("radix-tree", () => {
           ".radix_ph": null,
           ".radix_version": "ver2",
         });
+      });
+    });
+
+    describe("child state nodes", () => {
+      const version = 'ver';
+      const version2 = 'ver2';
+      const label1 = '0x000aaa';
+      const label2 = '0x000bbb';
+      const label21 = '0x000bbb111';
+      const label22 = '0x000bbb222';
+      const label23 = '0x000bbb333';
+
+      let stateNode1;
+      let stateNode2;
+      let stateNode21;
+      let stateNode22;
+
+      let tree;
+      let cloned;
+
+      beforeEach(() => {
+        stateNode1 = new StateNode(version);
+        stateNode2 = new StateNode(version);
+        stateNode21 = new StateNode(version);
+        stateNode22 = new StateNode(version);
+
+        tree = new RadixTree(version);
+
+        stateNode1.setLabel(label1);
+        stateNode2.setLabel(label2);
+        stateNode21.setLabel(label21);
+        stateNode22.setLabel(label22);
+
+        tree.set(label22, stateNode22);
+        tree.set(label21, stateNode21);
+        tree.set(label1, stateNode1);
+        tree.set(label2, stateNode2);
+
+        cloned = tree.clone(version2);
+      });
+
+      it("getChildStateLabels / getChildStateNodes", () => {
+        // Insertion order is kept
+        assert.deepEqual(tree.getChildStateLabels(), [ label22, label21, label1, label2 ]);
+        assert.deepEqual(
+            tree.getChildStateNodes(), [ stateNode22, stateNode21, stateNode1, stateNode2 ]);
+      });
+
+      it("getChildStateLabels / getChildStateNodes with cloned tree", () => {
+        // Insertion order is kept.
+        assert.deepEqual(cloned.getChildStateLabels(), [ label22, label21, label1, label2 ]);
+        assert.deepEqual(
+            cloned.getChildStateNodes(), [ stateNode22, stateNode21, stateNode1, stateNode2 ]);
+
+        const newStateNode21 = new StateNode(version2);
+        newStateNode21.setLabel(label21);
+        cloned.set(label21, newStateNode21);
+
+        const newStateNode23 = new StateNode(version2);
+        newStateNode23.setLabel(label23);
+        cloned.set(label23, newStateNode23);
+
+        // The order does NOT change.
+        assert.deepEqual(
+            cloned.getChildStateLabels(), [ label22, label21, label1, label2, label23 ]);
+        assert.deepEqual(
+            cloned.getChildStateNodes(),
+            [ stateNode22, newStateNode21, stateNode1, stateNode2, newStateNode23 ]);
       });
     });
 
@@ -2610,7 +2730,7 @@ describe("radix-tree", () => {
         tree.set(label22, stateNode22);
         tree.set(label3, stateNode3);
 
-        assert.deepEqual(tree.toJsObject(false, true), {
+        assert.deepEqual(tree.toJsObject(false, false, true), {
           ".radix_ph": null,
           "000": {
             ".radix_ph": null,
@@ -2706,7 +2826,7 @@ describe("radix-tree", () => {
         tree.set(label22, stateNode22);
 
         expect(tree.updateRadixInfoForRadixTree()).to.equal(8);
-        assert.deepEqual(tree.toJsObject(false, true), {
+        assert.deepEqual(tree.toJsObject(false, false, true), {
           ".radix_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
           "000": {
             ".radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
@@ -2822,7 +2942,7 @@ describe("radix-tree", () => {
       childYetAnother1.setVersion(versionYetAnother);
       childYetAnother1.setChildStateNode(stateNodeAnother1);
 
-      assert.deepEqual(tree.toJsObject(true, true, false, true), {
+      assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
         ".num_parents": 0,
         ".radix_ph": null,
         ".radix_version": "ver",
@@ -2864,7 +2984,7 @@ describe("radix-tree", () => {
           }
         }
       });
-      assert.deepEqual(treeAnother.toJsObject(true, true, false, true), {
+      assert.deepEqual(treeAnother.toJsObject(true, false, true, false, true), {
         ".num_parents": 0,
         ".radix_ph": null,
         ".radix_version": "ver_another",
@@ -2917,7 +3037,7 @@ describe("radix-tree", () => {
       expect(treeAnother.deleteRadixTreeVersion()).to.equal(3);  // including internal nodes
 
       // no changes!!
-      assert.deepEqual(tree.toJsObject(true, true, false, true), {
+      assert.deepEqual(tree.toJsObject(true, false, true, false, true), {
         ".num_parents": 0,
         ".radix_ph": null,
         ".radix_version": "ver",
@@ -2960,7 +3080,7 @@ describe("radix-tree", () => {
         }
       });
       // deleted!!
-      assert.deepEqual(treeAnother.toJsObject(true, true, false, true), {
+      assert.deepEqual(treeAnother.toJsObject(true, false, true, false, true), {
         ".num_parents": 0,
         ".radix_ph": null,
         ".radix_version": null,
