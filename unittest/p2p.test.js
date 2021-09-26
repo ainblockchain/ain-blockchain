@@ -16,6 +16,7 @@ const {
   AccountProperties,
   HOSTING_ENV,
 } = require('../common/constants');
+const { setNodeForTesting } = require('./test-util');
 
 const expect = chai.expect;
 const assert = chai.assert;
@@ -25,8 +26,9 @@ const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 
 const node = new BlockchainNode();
+setNodeForTesting(node, 0, true, true);
 
-describe("p2p", () => {
+describe("P2P", () => {
   let p2pClient;
   let p2pServer;
   before(() => {
@@ -39,7 +41,7 @@ describe("p2p", () => {
     p2pClient.stop();
   });
 
-  describe("server status", () => {
+  describe("Server Status", () => {
     describe("getIpAddress", () => {
       it("gets ip address", async () => {
         const actual = await p2pServer.getIpAddress();
@@ -51,6 +53,8 @@ describe("p2p", () => {
     describe("setUpIpAddresses", () => {
       it("sets ip address", async () => {
         const ipAddressRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        console.log("p2pServer.node.ipAddrInternal", p2pServer.node.ipAddrInternal, ipAddressRegex.test(p2pServer.node.ipAddrInternal))
+        console.log("p2pServer.node.ipAddrExternal", p2pServer.node.ipAddrExternal, ipAddressRegex.test(p2pServer.node.ipAddrExternal))
         expect(ipAddressRegex.test(p2pServer.node.ipAddrInternal)).to.be.true;
         expect(ipAddressRegex.test(p2pServer.node.ipAddrExternal)).to.be.true;
       });
@@ -90,9 +94,9 @@ describe("p2p", () => {
     describe("getStateVersionStatus", () => {
       it("gets initial state version status", () => {
         const actual = {
-          numVersions: 2,
-          versionList: ['EMPTY', 'NODE:-1'],
-          finalVersion: null,
+          numVersions: 3,
+          versionList: ['EMPTY', 'FINAL:0', 'NODE:0'],
+          finalVersion: 'FINAL:0',
         };
         assert.deepEqual(actual, p2pServer.getStateVersionStatus());
       });
@@ -101,7 +105,7 @@ describe("p2p", () => {
     describe("getConsensusStatus", () => {
       it("gets initial consensus state", () => {
         const actual = {
-          health: false,
+          health: true,
           state: 'STARTING',
           stateNumeric: 0,
           epoch: 1,
@@ -115,7 +119,7 @@ describe("p2p", () => {
 
     describe("getBlockStatus", () => {
       it("gets initial block status", () => {
-        const actual = { number: -1, epoch: -1, timestamp: GenesisAccounts[AccountProperties.TIMESTAMP] };
+        const actual = { number: 0, epoch: 0, timestamp: GenesisAccounts[AccountProperties.TIMESTAMP] };
         const expected = p2pServer.getBlockStatus();
         delete expected.elapsedTimeMs;
         assert.deepEqual(actual, expected);
@@ -126,28 +130,33 @@ describe("p2p", () => {
       it("gets initial node status", () => {
         const actual = {
           address: p2pServer.getNodeAddress(),
-          state: 'STARTING',
-          stateNumeric: 0,
+          state: 'SYNCING',
+          stateNumeric: 1,
           nonce: 0,
           dbStatus: {
             stateInfo: {
-              tree_height: 0,
-              tree_size: 0,
-              tree_bytes: 0,
-              proof_hash: null,
-              version: "NODE:-1",
+              tree_height: 11,
+              tree_size: 'erased',
+              tree_bytes: 'erased',
+              proof_hash: 'erased',
+              version: "NODE:0",
             },
             stateProof: {
-              '.proof_hash': null
+              '.proof_hash': 'erased'
             }
           },
           stateVersionStatus: {
-            numVersions: 2,
-            versionList: [ 'EMPTY', 'NODE:-1' ],
-            finalVersion: null
+            numVersions: 3,
+            versionList: [ 'EMPTY', 'FINAL:0', 'NODE:0' ],
+            finalVersion: 'FINAL:0'
           }
         };
-        assert.deepEqual(actual, p2pServer.getNodeStatus());
+        const nodeStatus = p2pServer.getNodeStatus();
+        nodeStatus.dbStatus.stateInfo.tree_size = 'erased';
+        nodeStatus.dbStatus.stateInfo.tree_bytes = 'erased';
+        nodeStatus.dbStatus.stateInfo.proof_hash = 'erased';
+        nodeStatus.dbStatus.stateProof['.proof_hash'] = 'erased';
+        assert.deepEqual(actual, nodeStatus);
       });
     });
 
@@ -262,7 +271,7 @@ describe("p2p", () => {
     });
   });
 
-  describe("client status", () => {
+  describe("Client Status", () => {
     describe("initConnections", () => {
       it("sets targetOutBound", () => {
         expect(p2pClient.targetOutBound).to.equal(TARGET_NUM_OUTBOUND_CONNECTION);
