@@ -7630,7 +7630,6 @@ describe('Blockchain Node', () => {
     });
   });
 
-  /*
   describe('Billing', async () => {
     let serviceAdmin; // = server1
     let billingUserA; // = server2
@@ -8095,5 +8094,5 @@ describe('Blockchain Node', () => {
       expect(block).to.not.equal(undefined);
       expect(block.transactions.find((tx) => tx.hash === txHash)).to.not.equal(undefined);
     });
-  });*/
+  });
 });
