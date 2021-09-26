@@ -1,10 +1,12 @@
 #!/bin/bash
 
-if [[ "$#" -lt 2 ]]; then
-    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index>"
-    echo "Example: bash start_node_genesis_gcp.sh spring 0 0"
+if [[ "$#" -lt 3 ]]; then
+    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore]"
+    echo "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore"
     exit
 fi
+OPTIONS=$4
+echo "OPTIONS=$OPTIONS"
 
 
 echo 'Killing old jobs..'
@@ -26,10 +28,13 @@ cd ../ain-blockchain
 echo 'Installing node modules..'
 npm install
 export GENESIS_CONFIGS_DIR=genesis-configs/testnet
+KEYSTORE_DIR=testnet_dev_staging_keys
 if [[ "$1" = 'spring' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
+    KEYSTORE_DIR=testnet_spring_summer_keys
 elif [[ "$1" = 'summer' ]]; then
     export TRACKER_WS_ADDR=ws://35.194.172.106:5000
+    KEYSTORE_DIR=testnet_spring_summer_keys
 elif [[ "$1" = 'staging' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.150.73:5000
 elif [[ "$1" = 'dev' ]]; then
@@ -90,14 +95,44 @@ fi
 
 echo "TRACKER_WS_ADDR=$TRACKER_WS_ADDR"
 echo "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR"
+echo "KEYSTORE_DIR=$KEYSTORE_DIR"
 
 if [[ "$3" -lt 0 ]] || [[ "$3" -gt 4 ]]; then
     echo "Invalid account_index argument: $2"
     exit
 fi
 
-export ACCOUNT_INDEX="$3"
-echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
+# NOTE(liayoo): Currently this script supports --keystore option only for the parent chain.
+if [[ "$OPTIONS" != '--keystore' ]] || [[ "$2" -gt 0 ]]; then
+    export ACCOUNT_INDEX="$3"
+    echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
+    COMMAND_PREFIX=""
+else
+    if [[ "$3" = 0 ]]; then
+        KEYSTORE_FILENAME="2021-09-24T00-00-00"
+    elif [[ "$3" = 1 ]]; then
+        KEYSTORE_FILENAME="2021-09-24T00-00-01"
+    elif [[ "$3" = 2 ]]; then
+        KEYSTORE_FILENAME="2021-09-24T00-00-02"
+    elif [[ "$3" = 3 ]]; then
+        KEYSTORE_FILENAME="2021-09-24T00-00-03"
+    else
+        KEYSTORE_FILENAME="2021-09-24T00-00-04"
+    fi
+    echo "KEYSTORE_FILENAME=$KEYSTORE_FILENAME"
+    sudo mkdir -p ../ain_blockchain_data/keys/8080
+    sudo mv ./$KEYSTORE_DIR/$KEYSTORE_FILENAME ../ain_blockchain_data/keys/8080/
+
+    # Set up a pipe named `/tmp/blockchain_node_fifo`
+    mkfifo /tmp/blockchain_node_fifo
+
+    # To avoid your server receiving an EOF. At least one process must have
+    # the fifo opened in writing so your server does not receive a EOF.
+    cat > /tmp/blockchain_node_fifo &
+
+    # Starts the server reading from the pipe named `/tmp/blockchain_node_fifo`
+    COMMAND_PREFIX="cat /tmp/blockchain_node_fifo |"
+fi
 
 export DEBUG=false
 export CONSOLE_LOG=false 
@@ -110,7 +145,7 @@ export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
 MAX_OLD_SPACE_SIZE_MB=6000
 
 printf "\nStarting up Blockchain Node server..\n\n"
-START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
+START_CMD="$COMMAND_PREFIX nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
 printf "START_CMD='$START_CMD'\n"
 eval $START_CMD
 
