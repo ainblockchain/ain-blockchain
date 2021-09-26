@@ -1,8 +1,9 @@
 #!/bin/bash
 
-if [[ "$#" -lt 3 ]]; then
-    echo "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup]"
+if [[ "$#" -lt 3 ]] || [[ "$#" -gt 6 ]]; then
+    echo "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup] [--keystore <Password>]"
     echo "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --setup"
+    echo "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --keystore YOUR_PASSWORD"
     exit
 fi
 
@@ -26,8 +27,41 @@ echo "GCP_USER=$GCP_USER"
 NUM_SHARDS=$3
 echo "NUM_SHARDS=$NUM_SHARDS"
 
-OPTIONS="$4"
+USE_KEYSTORE=false
+if [[ "$#" = 4 ]]; then
+    OPTIONS="$4"
+elif [[ "$#" = 5 ]]; then
+    if [[ "$4" != '--keystore' ]]; then
+        echo "Invalid options: $4 $5"
+        exit
+    else
+        USE_KEYSTORE=true
+        PASSWORD="$5"
+    fi
+else
+    USE_KEYSTORE=true
+    if [[ "$4" = '--keystore' ]]; then
+        PASSWORD="$5"
+        OPTIONS="$6"
+    elif [[ "$5" != '--keystore' ]]; then
+        printf "Invalid option: $5\n"
+        exit
+    else
+        OPTIONS="$4"
+        PASSWORD="$6"
+    fi
+fi
 echo "OPTIONS=$OPTIONS"
+echo "USE_KEYSTORE=$USE_KEYSTORE"
+
+# Commands for starting nodes.
+BASE_COMMAND=". start_node_genesis_gcp.sh $SEASON"
+if [[ $USE_KEYSTORE = true ]]; then
+    KEYSTORE_COMMAND_SUFFIX="--keystore; echo $PASSWORD > /tmp/blockchain_node_fifo; rm /tmp/blockchain_node_fifo"
+else
+    KEYSTORE_COMMAND_SUFFIX=""
+fi
+
 
 # Get confirmation.
 echo
@@ -40,7 +74,7 @@ then
 fi
 
 FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh restart_tracker_gcp.sh"
-FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ genesis-configs/ json_rpc/ logger/ node/ p2p/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh restart_node_gcp.sh"
+FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ genesis-configs/ json_rpc/ logger/ node/ p2p/ testnet_dev_staging_keys/ testnet_spring_summer_keys/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh restart_node_gcp.sh"
 
 TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
@@ -116,15 +150,16 @@ fi
 printf "\n\n###########################\n# Starting parent tracker #\n###########################\n\n"
 gcloud compute ssh $TRACKER_TARGET_ADDR --command ". start_tracker_genesis_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
 printf "\n\n##########################\n# Starting parent node 0 #\n##########################\n\n"
-gcloud compute ssh $NODE_0_TARGET_ADDR --command ". start_node_genesis_gcp.sh $SEASON 0 0" --project $PROJECT_ID --zone $NODE_0_ZONE
+gcloud compute ssh $NODE_0_TARGET_ADDR --command "$BASE_COMMAND 0 0 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_0_ZONE
 printf "\n\n##########################\n# Starting parent node 1 #\n##########################\n\n"
-gcloud compute ssh $NODE_1_TARGET_ADDR --command ". start_node_genesis_gcp.sh $SEASON 0 1" --project $PROJECT_ID --zone $NODE_1_ZONE
+gcloud compute ssh $NODE_1_TARGET_ADDR --command "$BASE_COMMAND 0 1 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_1_ZONE
 printf "\n\n##########################\n# Starting parent node 2 #\n##########################\n\n"
-gcloud compute ssh $NODE_2_TARGET_ADDR --command ". start_node_genesis_gcp.sh $SEASON 0 2" --project $PROJECT_ID --zone $NODE_2_ZONE
+gcloud compute ssh $NODE_2_TARGET_ADDR --command "$BASE_COMMAND 0 2 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_2_ZONE
 printf "\n\n##########################\n# Starting parent node 3 #\n##########################\n\n"
-gcloud compute ssh $NODE_3_TARGET_ADDR --command ". start_node_genesis_gcp.sh $SEASON 0 3" --project $PROJECT_ID --zone $NODE_3_ZONE
+gcloud compute ssh $NODE_3_TARGET_ADDR --command "$BASE_COMMAND 0 3 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_3_ZONE
 printf "\n\n##########################\n# Starting parent node 4 #\n##########################\n\n"
-gcloud compute ssh $NODE_4_TARGET_ADDR --command ". start_node_genesis_gcp.sh $SEASON 0 4" --project $PROJECT_ID --zone $NODE_4_ZONE
+gcloud compute ssh $NODE_4_TARGET_ADDR --command "$BASE_COMMAND 0 4 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_4_ZONE
+
 
 if [[ "$NUM_SHARDS" -gt 0 ]]; then
     printf "\nDeploying shard blockchains..."
@@ -168,10 +203,10 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             printf "\n\n###########################\n# Starting shard_$i tracker #\n###########################\n\n"
             gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". start_tracker_genesis_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
             printf "\n\n##########################\n# Starting shard_$i node 0 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command ". start_node_genesis_gcp.sh $SEASON $i 0" --project $PROJECT_ID --zone $NODE_0_ZONE
+            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "$BASE_COMMAND $i 0" --project $PROJECT_ID --zone $NODE_0_ZONE
             printf "\n\n##########################\n# Starting shard_$i node 1 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command ". start_node_genesis_gcp.sh $SEASON $i 1" --project $PROJECT_ID --zone $NODE_1_ZONE
+            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "$BASE_COMMAND $i 1" --project $PROJECT_ID --zone $NODE_1_ZONE
             printf "\n\n##########################\n# Starting shard_$i node 2 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command ". start_node_genesis_gcp.sh $SEASON $i 2" --project $PROJECT_ID --zone $NODE_2_ZONE
+            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "$BASE_COMMAND $i 2" --project $PROJECT_ID --zone $NODE_2_ZONE
         done
 fi

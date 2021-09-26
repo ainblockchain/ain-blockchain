@@ -1,7 +1,9 @@
 #!/bin/bash
 
-if [[ "$#" -lt 3 ]]; then
+if [[ "$#" != 3 ]] && [[ "$#" != 5 ]]; then
+    echo "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--keystore <Password>]"
     echo "Usage: bash reset_blockchain_gcp.sh dev lia 0"
+    echo "Usage: bash reset_blockchain_gcp.sh dev lia 0 --keystore YOUR_PASSWORD"
     exit
 fi
 
@@ -21,6 +23,17 @@ echo "PROJECT_ID=$PROJECT_ID"
 
 GCP_USER="$2"
 echo "GCP_USER=$GCP_USER"
+
+KEYSTORE_COMMAND_SUFFIX=""
+if [[ "$#" = 5 ]]; then
+    if [[ "$4" != '--keystore' ]]; then
+        echo "Invalid options: $4 $5"
+        exit
+    else
+        PASSWORD="$5"
+        KEYSTORE_COMMAND_SUFFIX="--keystore; echo $PASSWORD > /tmp/blockchain_node_fifo; rm /tmp/blockchain_node_fifo"
+    fi
+fi
 
 TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
@@ -66,16 +79,16 @@ fi
 printf "\n\n############################\n# Running parent tracker #\n############################\n\n"
 gcloud compute ssh $TRACKER_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_tracker_genesis_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
 printf "\n\n###########################\n# Running parent node 0 #\n###########################\n\n"
-gcloud compute ssh $NODE_0_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 0" --project $PROJECT_ID --zone $NODE_0_ZONE
+gcloud compute ssh $NODE_0_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 0 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_0_ZONE
 sleep 3
 printf "\n\n#########################\n# Running parent node 1 #\n#########################\n\n"
-gcloud compute ssh $NODE_1_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 1" --project $PROJECT_ID --zone $NODE_1_ZONE
+gcloud compute ssh $NODE_1_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 1 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_1_ZONE
 printf "\n\n#########################\n# Running parent node 2 #\n#########################\n\n"
-gcloud compute ssh $NODE_2_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 2" --project $PROJECT_ID --zone $NODE_2_ZONE
+gcloud compute ssh $NODE_2_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 2 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_2_ZONE
 printf "\n\n#########################\n# Running parent node 3 #\n#########################\n\n"
-gcloud compute ssh $NODE_3_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 3" --project $PROJECT_ID --zone $NODE_3_ZONE
+gcloud compute ssh $NODE_3_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 3 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_3_ZONE
 printf "\n\n#########################\n# Running parent node 4 #\n#########################\n\n"
-gcloud compute ssh $NODE_4_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 4" --project $PROJECT_ID --zone $NODE_4_ZONE
+gcloud compute ssh $NODE_4_TARGET_ADDR --command "cd ../ain-blockchain && sudo rm -rf ./logs/ && sudo rm -rf /home/ain_blockchain_data/ && . start_node_genesis_gcp.sh $SEASON 0 4 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_4_ZONE
 
 sleep 10
 
