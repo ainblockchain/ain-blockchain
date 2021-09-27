@@ -53,9 +53,7 @@ describe("state-node", () => {
       expect(node.parentSet.size).to.equal(0);
       expect(node.radixTree.numChildStateNodes()).to.equal(0);
       expect(node.radixTree.root.version).to.equal(null);
-      /*
       expect(node.childMap.size).to.equal(0);
-      */
       expect(node.proofHash).to.equal(null);
       expect(node.treeHeight).to.equal(0);
       expect(node.treeSize).to.equal(0);
@@ -1469,8 +1467,10 @@ describe("state-node", () => {
       child3.setProofHash('proofHash3');
       child4.setProofHash('proofHash4');
 
-      // delete with shouldDeleteParent = true
-      expect(stateTree.deleteRadixTreeVersion()).to.equal(6);
+      expect(stateTree.deleteRadixTreeVersion()).to.equal(14);
+      expect(stateTree.numChildren()).to.equal(0);
+      assert.deepEqual(stateTree.getChildLabels(), []);
+      assert.deepEqual(stateTree.getChildNodes(), []);
       // Check parents of state nodes
       assert.deepEqual(child1.getParentNodes(), []);
       assert.deepEqual(child1.getParentNodes(), []);

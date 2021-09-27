@@ -1289,7 +1289,9 @@ describe("radix-node", () => {
       expect(stateNodeAnother.numParentRadixNodes()).to.equal(1);
       expect(childStateNodeAnother1.numParentRadixNodes()).to.equal(2);
 
-      expect(nodeAnother.deleteRadixTreeVersion()).to.equal(2);
+      expect(nodeAnother.deleteRadixTreeVersion()).to.equal(4);
+      expect(stateNodeAnother.numParentRadixNodes()).to.equal(0);
+      assert.deepEqual(stateNodeAnother.getParentRadixNodes(), []);
 
       // no changes!!
       assert.deepEqual(node.toJsObject(true, false, true, false, true), {
