@@ -15,7 +15,6 @@ const {
   isValidOwnerTree,
   applyFunctionChange,
   applyOwnerChange,
-  setStateTreeVersion,
   renameStateTreeVersion,
   deleteStateTreeVersion,
   updateStateInfoForAllRootPaths,
@@ -1696,222 +1695,6 @@ describe("state-util", () => {
     });
   });
 
-  describe("setStateTreeVersion", () => {
-    it("leaf node", () => {
-      const ver1 = 'ver1';
-
-      const stateNode = StateNode.fromJsObject(true);
-      const numNodes = setStateTreeVersion(stateNode, ver1);
-      expect(numNodes).to.equal(1);
-      expect(stateNode.getVersion()).to.equal(ver1);
-    })
-
-    it("internal node", () => {
-      const ver1 = 'ver1';
-
-      const stateObj = {
-        bool: false,
-        number: 10,
-        str: 'str',
-        empty_str: '',
-        null: null,
-        undef: undefined,
-        empty_obj: {},
-        subobj1: {
-          bool: true,
-          number: 20,
-          str: 'str2',
-          empty_str: '',
-          null: null,
-          undef: undefined,
-          empty_obj: {},
-        },
-        subobj2: {
-          bool: true,
-          number: -10,
-          str: 'str3',
-          empty_str: '',
-          null: null,
-          undef: undefined,
-          empty_obj: {},
-        }
-      };
-      const stateTree = StateNode.fromJsObject(stateObj);
-      expect(setStateTreeVersion(stateTree, ver1)).to.equal(24);
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
-        ".num_parents": 0,
-        ".num_parents:bool": 1,
-        ".num_parents:empty_obj": 1,
-        ".num_parents:empty_str": 1,
-        ".num_parents:null": 1,
-        ".num_parents:number": 1,
-        ".num_parents:str": 1,
-        ".num_parents:undef": 1,
-        ".proof_hash": null,
-        ".proof_hash:bool": null,
-        ".proof_hash:empty_obj": null,
-        ".proof_hash:empty_str": null,
-        ".proof_hash:null": null,
-        ".proof_hash:number": null,
-        ".proof_hash:str": null,
-        ".proof_hash:undef": null,
-        ".tree_height": 0,
-        ".tree_height:bool": 0,
-        ".tree_height:empty_obj": 0,
-        ".tree_height:empty_str": 0,
-        ".tree_height:null": 0,
-        ".tree_height:number": 0,
-        ".tree_height:str": 0,
-        ".tree_height:undef": 0,
-        ".tree_size": 0,
-        ".tree_size:bool": 0,
-        ".tree_size:empty_obj": 0,
-        ".tree_size:empty_str": 0,
-        ".tree_size:null": 0,
-        ".tree_size:number": 0,
-        ".tree_size:str": 0,
-        ".tree_size:undef": 0,
-        ".tree_bytes": 0,
-        ".tree_bytes:bool": 0,
-        ".tree_bytes:empty_obj": 0,
-        ".tree_bytes:empty_str": 0,
-        ".tree_bytes:null": 0,
-        ".tree_bytes:number": 0,
-        ".tree_bytes:str": 0,
-        ".tree_bytes:undef": 0,
-        ".version": "ver1",
-        ".version:bool": "ver1",
-        ".version:empty_obj": "ver1",
-        ".version:empty_str": "ver1",
-        ".version:null": "ver1",
-        ".version:number": "ver1",
-        ".version:str": "ver1",
-        ".version:undef": "ver1",
-        "bool": false,
-        "empty_obj": null,
-        "empty_str": "",
-        "null": null,
-        "number": 10,
-        "str": "str",
-        "undef": undefined,
-        "subobj1": {
-          ".num_parents": 1,
-          ".num_parents:bool": 1,
-          ".num_parents:empty_obj": 1,
-          ".num_parents:empty_str": 1,
-          ".num_parents:null": 1,
-          ".num_parents:number": 1,
-          ".num_parents:str": 1,
-          ".num_parents:undef": 1,
-          ".proof_hash": null,
-          ".proof_hash:bool": null,
-          ".proof_hash:empty_obj": null,
-          ".proof_hash:empty_str": null,
-          ".proof_hash:null": null,
-          ".proof_hash:number": null,
-          ".proof_hash:str": null,
-          ".proof_hash:undef": null,
-          ".tree_height": 0,
-          ".tree_height:bool": 0,
-          ".tree_height:empty_obj": 0,
-          ".tree_height:empty_str": 0,
-          ".tree_height:null": 0,
-          ".tree_height:number": 0,
-          ".tree_height:str": 0,
-          ".tree_height:undef": 0,
-          ".tree_size": 0,
-          ".tree_size:bool": 0,
-          ".tree_size:empty_obj": 0,
-          ".tree_size:empty_str": 0,
-          ".tree_size:null": 0,
-          ".tree_size:number": 0,
-          ".tree_size:str": 0,
-          ".tree_size:undef": 0,
-          ".tree_bytes": 0,
-          ".tree_bytes:bool": 0,
-          ".tree_bytes:empty_obj": 0,
-          ".tree_bytes:empty_str": 0,
-          ".tree_bytes:null": 0,
-          ".tree_bytes:number": 0,
-          ".tree_bytes:str": 0,
-          ".tree_bytes:undef": 0,
-          ".version": "ver1",
-          ".version:bool": "ver1",
-          ".version:empty_obj": "ver1",
-          ".version:empty_str": "ver1",
-          ".version:null": "ver1",
-          ".version:number": "ver1",
-          ".version:str": "ver1",
-          ".version:undef": "ver1",
-          "bool": true,
-          "empty_obj": null,
-          "empty_str": "",
-          "null": null,
-          "number": 20,
-          "str": "str2",
-          "undef": undefined,
-        },
-        "subobj2": {
-          ".num_parents": 1,
-          ".num_parents:bool": 1,
-          ".num_parents:empty_obj": 1,
-          ".num_parents:empty_str": 1,
-          ".num_parents:null": 1,
-          ".num_parents:number": 1,
-          ".num_parents:str": 1,
-          ".num_parents:undef": 1,
-          ".proof_hash": null,
-          ".proof_hash:bool": null,
-          ".proof_hash:empty_obj": null,
-          ".proof_hash:empty_str": null,
-          ".proof_hash:null": null,
-          ".proof_hash:number": null,
-          ".proof_hash:str": null,
-          ".proof_hash:undef": null,
-          ".tree_height": 0,
-          ".tree_height:bool": 0,
-          ".tree_height:empty_obj": 0,
-          ".tree_height:empty_str": 0,
-          ".tree_height:null": 0,
-          ".tree_height:number": 0,
-          ".tree_height:str": 0,
-          ".tree_height:undef": 0,
-          ".tree_size": 0,
-          ".tree_size:bool": 0,
-          ".tree_size:empty_obj": 0,
-          ".tree_size:empty_str": 0,
-          ".tree_size:null": 0,
-          ".tree_size:number": 0,
-          ".tree_size:str": 0,
-          ".tree_size:undef": 0,
-          ".tree_bytes": 0,
-          ".tree_bytes:bool": 0,
-          ".tree_bytes:empty_obj": 0,
-          ".tree_bytes:empty_str": 0,
-          ".tree_bytes:null": 0,
-          ".tree_bytes:number": 0,
-          ".tree_bytes:str": 0,
-          ".tree_bytes:undef": 0,
-          ".version": "ver1",
-          ".version:bool": "ver1",
-          ".version:empty_obj": "ver1",
-          ".version:empty_str": "ver1",
-          ".version:null": "ver1",
-          ".version:number": "ver1",
-          ".version:str": "ver1",
-          ".version:undef": "ver1",
-          "bool": true,
-          "empty_obj": null,
-          "empty_str": "",
-          "null": null,
-          "number": -10,
-          "str": "str3",
-          "undef": undefined,
-        }
-      });
-    })
-  })
-
   describe("renameStateTreeVersion", () => {
     it("leaf node w/ no version match", () => {
       const ver1 = 'ver1';
@@ -2096,7 +1879,7 @@ describe("state-util", () => {
       // Delete a leaf node without version.
       const stateNode1 = StateNode.fromJsObject(true);
       updateStateInfoForStateTree(stateNode1);
-      expect(deleteStateTreeVersion(stateNode1)).to.equal(1);
+      expect(deleteStateTreeVersion(stateNode1)).to.equal(2);
       expect(stateNode1.getVersion()).to.equal(null);
       expect(stateNode1.numParents()).to.equal(0);
       expect(stateNode1.numChildren()).to.equal(0);
@@ -2104,7 +1887,7 @@ describe("state-util", () => {
       // Delete a leaf node with a different version.
       const stateNode2 = StateNode.fromJsObject(true, 'ver2');
       updateStateInfoForStateTree(stateNode2);
-      expect(deleteStateTreeVersion(stateNode2)).to.equal(1);
+      expect(deleteStateTreeVersion(stateNode2)).to.equal(2);
       expect(stateNode2.getVersion()).to.equal(null);
       expect(stateNode2.numParents()).to.equal(0);
       expect(stateNode2.numChildren()).to.equal(0);
@@ -2112,7 +1895,7 @@ describe("state-util", () => {
       // Delete a leaf node with the same version.
       const stateNode3 = StateNode.fromJsObject(true, ver1);
       updateStateInfoForStateTree(stateNode3);
-      expect(deleteStateTreeVersion(stateNode3)).to.equal(1);
+      expect(deleteStateTreeVersion(stateNode3)).to.equal(2);
       expect(stateNode3.getVersion()).to.equal(null);
       expect(stateNode3.numParents()).to.equal(0);
       expect(stateNode3.numChildren()).to.equal(0);
@@ -2127,8 +1910,8 @@ describe("state-util", () => {
       expect(stateNode4.numChildren()).to.equal(0);
     })
 
-    it("internal node with a different version", () => {
-      expect(deleteStateTreeVersion(stateTree)).to.equal(3);
+    it("internal node", () => {
+      expect(deleteStateTreeVersion(stateTree)).to.equal(9);
       // Root node is deleted.
       expect(stateTree.numParents()).to.equal(0);
       expect(stateTree.numChildren()).to.equal(0);
@@ -2141,24 +1924,7 @@ describe("state-util", () => {
       expect(child2.numChildren()).to.equal(0);
     })
 
-    it("internal node with the same version", () => {
-      // Set versions of the state tree.
-      setStateTreeVersion(stateTree, ver3);
-
-      expect(deleteStateTreeVersion(stateTree)).to.equal(3);
-      // Root node is deleted.
-      expect(stateTree.numParents()).to.equal(0);
-      expect(stateTree.numChildren()).to.equal(0);
-      // And child nodes are deleted as well.
-      expect(child1.getVersion()).to.equal(null);
-      expect(child1.numParents()).to.equal(0);
-      expect(child1.numChildren()).to.equal(0);
-      expect(child2.getVersion()).to.equal(null);
-      expect(child2.numParents()).to.equal(0);
-      expect(child2.numChildren()).to.equal(0);
-    })
-
-    it("internal node with the same version but with non-zero numParents() value", () => {
+    it("internal node with non-zero numParents() value", () => {
       // Increase the numParents() value of the root node.
       parent.setChild(nodeLabel, stateTree);
 
@@ -2188,39 +1954,22 @@ describe("state-util", () => {
       });
     })
 
-    it("internal node with the same version but with sub-node of different versions", () => {
-      const numNodes = deleteStateTreeVersion(stateTree);
-      expect(numNodes).to.equal(3);
-      // Root node is deleted.
-      expect(stateTree.numParents()).to.equal(0);
-      expect(stateTree.numChildren()).to.equal(0);
-      // And child nodes are deleted as well.
-      expect(child1.getVersion()).to.equal(null);
-      expect(child1.numParents()).to.equal(0);
-      expect(child1.numChildren()).to.equal(0);
-      expect(child2.getVersion()).to.equal(null);
-      expect(child2.numParents()).to.equal(0);
-      expect(child2.numChildren()).to.equal(0);
-    })
-
-    it("internal node with the same version but with sub-nodes of > 1 numParents() values", () => {
-      // Set versions of the state tree.
-      setStateTreeVersion(stateTree, ver3);
+    it("internal node with sub-nodes of > 1 numParents() values", () => {
       stateTree2 = new StateNode('ver99');
       stateTree2.setChild('label1', child1);
       stateTree2.setChild('label2', child2);
       expect(child1.numParents()).to.equal(2);
       expect(child2.numParents()).to.equal(2);
 
-      expect(deleteStateTreeVersion(stateTree)).to.equal(1);
+      expect(deleteStateTreeVersion(stateTree)).to.equal(5);
       // Root node is deleted.
       expect(stateTree.numParents()).to.equal(0);
       expect(stateTree.numChildren()).to.equal(0);
       // But child nodes are not deleted.
-      expect(child1.getVersion()).to.equal(ver3);
+      expect(child1.getVersion()).to.equal(ver1);
       expect(child1.numParents()).to.equal(1);
       expect(child1.numChildren()).to.equal(0);
-      expect(child2.getVersion()).to.equal(ver3);
+      expect(child2.getVersion()).to.equal(ver2);
       expect(child2.numParents()).to.equal(1);
       expect(child2.numChildren()).to.equal(0);
     })
