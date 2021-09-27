@@ -21,7 +21,7 @@ function isEmptyNode(node) {
 }
 
 function hasConfig(node, label) {
-  return node && node.hasChild(label);
+  return node && node.getChild(label) !== null;
 }
 
 function getConfig(node, label) {
@@ -78,8 +78,9 @@ function isWritablePathWithSharding(fullPath, root) {
       isValid = false;
       break;
     }
-    if (curNode.hasChild(label)) {
-      curNode = curNode.getChild(label);
+    const child = curNode.getChild(label);
+    if (child !== null) {
+      curNode = child;
       path.push(label);
     } else {
       break;
@@ -574,13 +575,13 @@ function updateStateInfoForAllRootPathsRecursive(
 function updateStateInfoForAllRootPaths(curNode, updatedChildLabel = null) {
   const LOG_HEADER = 'updateStateInfoForAllRootPaths';
 
-  if (!curNode.hasChild(updatedChildLabel)) {
+  const childNode = curNode.getChild(updatedChildLabel);
+  if (childNode === null) {
     logger.error(
         `[${LOG_HEADER}] Updating state info with non-existing label: ${updatedChildLabel} ` +
         `at: ${new Error().stack}.`);
     return 0;
   }
-  const childNode = curNode.getChild(updatedChildLabel);
   return updateStateInfoForAllRootPathsRecursive(
       curNode, updatedChildLabel, isEmptyNode(childNode));
 }
@@ -620,10 +621,10 @@ function getProofOfStatePathRecursive(node, fullPath, labelIndex) {
     return node.getProofOfState();
   }
   const childLabel = fullPath[labelIndex];
-  if (!node.hasChild(childLabel)) {
+  const child = node.getChild(childLabel);
+  if (child === null) {
     return null;
   }
-  const child = node.getChild(childLabel);
   const childProof = getProofOfStatePathRecursive(child, fullPath, labelIndex + 1);
   if (childProof === null) {
     return null;

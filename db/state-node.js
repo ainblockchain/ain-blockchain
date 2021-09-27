@@ -306,8 +306,8 @@ class StateNode {
 
   setChild(label, node) {
     const LOG_HEADER = 'setChild';
-    if (this.hasChild(label)) {
-      const child = this.getChild(label);
+    const child = this.getChild(label);
+    if (child !== null) {
       if (child === node) {
         logger.error(
             `[${LOG_HEADER}] Setting a child with label ${label} which is already a child ` +
@@ -335,24 +335,16 @@ class StateNode {
     }
   }
 
-  hasChild(label) {
-    if (FeatureFlags.enableRadixTreeLayers) {
-      return this.radixTree.has(label);
-    } else {
-      return this.childMap.has(label);
-    }
-  }
-
   deleteChild(label, shouldUpdateStateInfo = false) {
     const LOG_HEADER = 'deleteChild';
-    if (!this.hasChild(label)) {
+    const child = this.getChild(label);
+    if (child === null) {
       logger.error(
           `[${LOG_HEADER}] Deleting a non-existing child with label: ${label} ` +
           `at: ${new Error().stack}.`);
       // Does nothing.
       return;
     }
-    const child = this.getChild(label);
     if (!FeatureFlags.enableRadixTreeLayers) {
       child.deleteParent(this);
     }
