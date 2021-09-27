@@ -313,8 +313,9 @@ class DB {
     let node = stateRoot;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
-      if (node.hasChild(label)) {
-        node = node.getChild(label);
+      const child = node.getChild(label);
+      if (child !== null) {
+        node = child;
       } else {
         return null;
       }
@@ -346,8 +347,8 @@ class DB {
     let node = stateRoot;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
-      if (node.hasChild(label)) {
-        const child = node.getChild(label);
+      const child = node.getChild(label);
+      if (child !== null) {
         if (child.hasMultipleParents()) {
           const clonedChild = child.clone(this.stateVersion);
           clonedChild.resetValue();

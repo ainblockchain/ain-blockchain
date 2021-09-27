@@ -16,8 +16,6 @@ const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 // NOTE(platfowner): If there is a corresponding env variable (e.g. force... flags),
 //                   the flag value will be OR-ed to the value.
 const FeatureFlags = {
-  // Enables state tree transfer.
-  enableStateTreeTransfer: false,
   // Enables rich logging for functions.
   enableRichFunctionLogging: false,
   // Enables rich logging for transactions.
@@ -26,6 +24,8 @@ const FeatureFlags = {
   enableRichP2pCommunicationLogging: false,
   // Enables rich logging for tx selection in tx pool.
   enableRichTxSelectionLogging: false,
+  // Enables state tree transfer.
+  enableStateTreeTransfer: false,
   // Enables receipts recording to the state.
   enableReceiptsRecording: true,  // Some test cases assume this value true.
   // Enables receipt path's prefix layers.

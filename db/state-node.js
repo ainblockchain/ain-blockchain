@@ -30,7 +30,7 @@ class StateNode {
   }
 
   reset() {
-    this.setVersion(null);  // should be reset for deleteStateTreeVersion().
+    this.setVersion(null);
     this.resetLabel();
     this.setIsLeaf(true);
     this.resetValue();
@@ -75,10 +75,6 @@ class StateNode {
       }
     }
     return cloned;
-  }
-
-  copyRadixTreeFrom(stateNode) {
-    this.radixTree.copyFrom(stateNode.radixTree, this);
   }
 
   // NOTE(liayoo): Bytes for some data (e.g. parents & children references, version) are excluded
@@ -219,7 +215,7 @@ class StateNode {
     return this.parentRadixNodeSet.size;
   }
 
-  _hasAParentRadixNode() {
+  _hasAtLeastOneParentRadixNode() {
     return this.parentRadixNodeSet.size > 0;
   }
 
@@ -270,9 +266,9 @@ class StateNode {
     }
   }
 
-  hasSingleParent() {
+  hasAtLeastOneParent() {
     if (FeatureFlags.enableRadixTreeLayers) {
-      return this._hasAParentRadixNode();
+      return this._hasAtLeastOneParentRadixNode();
     } else {
       return this.parentSet.size > 0;
     }
@@ -310,8 +306,8 @@ class StateNode {
 
   setChild(label, node) {
     const LOG_HEADER = 'setChild';
-    if (this.hasChild(label)) {
-      const child = this.getChild(label);
+    const child = this.getChild(label);
+    if (child !== null) {
       if (child === node) {
         logger.error(
             `[${LOG_HEADER}] Setting a child with label ${label} which is already a child ` +
@@ -339,24 +335,16 @@ class StateNode {
     }
   }
 
-  hasChild(label) {
-    if (FeatureFlags.enableRadixTreeLayers) {
-      return this.radixTree.has(label);
-    } else {
-      return this.childMap.has(label);
-    }
-  }
-
   deleteChild(label, shouldUpdateStateInfo = false) {
     const LOG_HEADER = 'deleteChild';
-    if (!this.hasChild(label)) {
+    const child = this.getChild(label);
+    if (child === null) {
       logger.error(
           `[${LOG_HEADER}] Deleting a non-existing child with label: ${label} ` +
           `at: ${new Error().stack}.`);
       // Does nothing.
       return;
     }
-    const child = this.getChild(label);
     if (!FeatureFlags.enableRadixTreeLayers) {
       child.deleteParent(this);
     }
