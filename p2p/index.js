@@ -160,16 +160,6 @@ class P2pClient {
     this.intervalConnection = null;
   }
 
-  sendRequestForPeerInfo(address) {
-    const message = {
-      type: TrackerMessageTypes.PEER_INFO_REQUEST,
-      data: address
-    }
-    logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
-        `${JSON.stringify(message, null, 2)}`);
-    this.trackerWebSocket.send(JSON.stringify(message));
-  }
-
   sendRequestForNewPeers() {
     const message = {
       type: TrackerMessageTypes.NEW_PEERS_REQUEST,
@@ -208,10 +198,6 @@ class P2pClient {
           if (this.server.node.state === BlockchainNodeStates.STARTING) {
             await this.startBlockchainNode(data.numLivePeers);
           }
-          break;
-        case TrackerMessageTypes.PEER_INFO_RESPONSE:
-          const url = parsedMessage.data;
-          this.connectToPeer(url);
           break;
         default:
           logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
