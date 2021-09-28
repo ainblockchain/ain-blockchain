@@ -1407,7 +1407,7 @@ describe("state-node", () => {
         }
       });
 
-      assert.deepEqual(stateTree.getProofOfStateNode(label2, 'childProof2'), {
+      assert.deepEqual(stateTree.getProofOfStateNode(label2, 'child_proof2'), {
         ".radix_ph": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6",
         "00aaaa": {
           ".radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c"
@@ -1422,7 +1422,7 @@ describe("state-node", () => {
           },
           "bb": {
             ".label": "0x11bbbb",
-            ".proof_hash": "childProof2",
+            ".proof_hash": "child_proof2",
             ".radix_ph": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184"
           }
         }
