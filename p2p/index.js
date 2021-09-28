@@ -312,6 +312,7 @@ class P2pClient {
   sendAddress(socket) {
     const body = {
       address: this.server.getNodeAddress(),
+      peerInfo: this.getStatus(),
       timestamp: Date.now(),
     };
     const signature = signMessage(body, this.server.getNodePrivateKey());
@@ -393,10 +394,7 @@ class P2pClient {
               return;
             }
             logger.info(`[${LOG_HEADER}] A new websocket(${address}) is established.`);
-            this.outbound[address] = {
-              socket: socket,
-              version: dataProtoVer
-            };
+            Object.assign(this.outbound[address], { version: dataProtoVer });
             this.updatePeerInfoToTracker();
           }
           break;
@@ -523,9 +521,14 @@ class P2pClient {
       });
   }
 
-  connectToPeer(url) {
+  connectToPeer(peerInfo) {
+    const url = peerInfo.networkStatus.p2p.url;
     const socket = new Websocket(url);
     socket.on('open', async () => {
+      this.outbound[peerInfo.address] = {
+        socket,
+        peerInfo
+      };
       logger.info(`Connected to peer(${url}),`);
       this.setClientSidePeerEventHandlers(socket);
       this.sendAddress(socket);
@@ -544,7 +547,7 @@ class P2pClient {
         logger.info(`Node ${peerInfo.address} is already a managed peer. Something went wrong.`);
       } else {
         logger.info(`Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
-        this.connectToPeer(peerInfo.url);
+        this.connectToPeer(peerInfo);
       }
     });
   }

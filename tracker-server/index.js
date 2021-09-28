@@ -222,17 +222,16 @@ function assignRandomPeers(nodeInfo) {
   const maxNumberOfNewPeers = getMaxNumberOfNewPeers(nodeInfo);
   if (maxNumberOfNewPeers) {
     const candidates = Object.values(peerNodes)
-    .filter(peer =>
-      peer.address !== nodeInfo.address &&
-      peer.isAlive === true &&
-      !peer.networkStatus.connectionStatus.incomingPeers.includes(nodeInfo.address) &&
-      peer.networkStatus.connectionStatus.incomingPeers.length <
-          peer.networkStatus.connectionStatus.maxInbound)
-    .sort((a, b) =>
-      a.networkStatus.connectionStatus.incomingPeers -
-          b.networkStatus.connectionStatus.incomingPeers)
-    .map(peer => ({ address: peer.address, url: peer.networkStatus.p2p.url }))
-    .slice(0, maxNumberOfNewPeers)
+      .filter(peer =>
+        peer.address !== nodeInfo.address &&
+        peer.isAlive === true &&
+        !peer.networkStatus.connectionStatus.incomingPeers.includes(nodeInfo.address) &&
+        peer.networkStatus.connectionStatus.incomingPeers.length <
+            peer.networkStatus.connectionStatus.maxInbound)
+      .sort((a, b) =>
+        a.networkStatus.connectionStatus.incomingPeers -
+            b.networkStatus.connectionStatus.incomingPeers)
+      .slice(0, maxNumberOfNewPeers);
     return candidates;
   } else {
     return [];
