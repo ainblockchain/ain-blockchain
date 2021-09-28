@@ -147,20 +147,6 @@ server.on('connection', (ws) => {
         ws.send(JSON.stringify(connectionMessage));
         printNodesInfo();
         break;
-      // NOTE(minsulee2): This job will be updated that the request is directly sent in the
-      // node side with anddress and security checks.
-      case TrackerMessageTypes.PEER_INFO_REQUEST:
-        const address = parsedMessage.data;
-        const correspondingNodeInfo = peerNodes[address];
-        const correspondMessage = {
-          type: TrackerMessageTypes.PEER_INFO_RESPONSE,
-          data: correspondingNodeInfo.networkStatus.p2p.url,
-          numLivePeers: getNumNodesAlive() - 1   // except for me.
-        };
-        logger.info(`>> Message to node [${abbrAddr(correspondingNodeInfo.address)}]: ` +
-            `${JSON.stringify(correspondMessage, null, 2)}`);
-        ws.send(JSON.stringify(correspondMessage));
-        break;
       // NOTE(minsulee2): This can be combined with TrackerMessageTypes.NEW_PEERS_REQUEST in the
       // next design!
       case TrackerMessageTypes.PEER_INFO_UPDATE:
