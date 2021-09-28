@@ -616,16 +616,16 @@ function verifyStateInfoForStateTree(stateTree) {
   return true;
 }
 
-function getProofOfStatePathRecursive(node, fullPath, labelIndex) {
-  if (labelIndex > fullPath.length - 1) {
+function getProofOfStatePathRecursive(fullPath, node, index) {
+  if (index > fullPath.length - 1) {
     return node.getProofOfStateNode();
   }
-  const childLabel = fullPath[labelIndex];
+  const childLabel = fullPath[index];
   const child = node.getChild(childLabel);
   if (child === null) {
     return null;
   }
-  const childProof = getProofOfStatePathRecursive(child, fullPath, labelIndex + 1);
+  const childProof = getProofOfStatePathRecursive(fullPath, child, index + 1);
   if (childProof === null) {
     return null;
   }
@@ -633,7 +633,7 @@ function getProofOfStatePathRecursive(node, fullPath, labelIndex) {
 }
 
 function getProofOfStatePath(root, fullPath) {
-  return getProofOfStatePathRecursive(root, fullPath, 0);
+  return getProofOfStatePathRecursive(fullPath, root, 0);
 }
 
 module.exports = {
