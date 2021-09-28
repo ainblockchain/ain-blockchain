@@ -520,12 +520,12 @@ class StateNode {
         this.getTreeBytes() === treeInfo.treeBytes;
   }
 
-  getProofOfState(childLabel = null, childProof = null) {
+  getProofOfStateNode(childLabel = null, childProof = null) {
     if (childLabel === null) {
       return { [ProofProperties.PROOF_HASH]: this.getProofHash() };
     } else {
       if (FeatureFlags.enableRadixTreeLayers) {
-        return this.radixTree.getProofOfState(childLabel, childProof);
+        return this.radixTree.getProofOfStateNode(childLabel, childProof);
       } else {
         const proof = { [ProofProperties.PROOF_HASH]: this.getProofHash() };
         this.getChildLabels().forEach((label) => {
