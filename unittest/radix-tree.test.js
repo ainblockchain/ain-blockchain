@@ -2791,7 +2791,7 @@ describe("radix-tree", () => {
         expect(tree.verifyRadixInfoForRadixTree()).to.equal(true);
       });
 
-      it("getProofOfState", () => {
+      it("getProofOfStateNode", () => {
         const label1 = '0x000aaa';
         const stateNode1 = new StateNode();
         stateNode1.setLabel(label1);
@@ -2862,7 +2862,7 @@ describe("radix-tree", () => {
         });
 
         // on an internal radix node
-        assert.deepEqual(tree.getProofOfState(label1, 'state_proof1'), {
+        assert.deepEqual(tree.getProofOfStateNode(label1, 'state_proof1'), {
           ".radix_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
           "000": {
             ".radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
@@ -2878,7 +2878,7 @@ describe("radix-tree", () => {
         });
 
         // on a terminal radix node
-        assert.deepEqual(tree.getProofOfState(label22, 'state_proof22'), {
+        assert.deepEqual(tree.getProofOfStateNode(label22, 'state_proof22'), {
           ".radix_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
           "000": {
             ".radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
@@ -2900,10 +2900,10 @@ describe("radix-tree", () => {
         });
 
         // on an internal radix node without state node
-        assert.deepEqual(tree.getProofOfState(label2, 'state_proof2'), null);
+        assert.deepEqual(tree.getProofOfStateNode(label2, 'state_proof2'), null);
 
         // on a non-existing radix node
-        assert.deepEqual(tree.getProofOfState('non_existing_label', 'state_proof'), null);
+        assert.deepEqual(tree.getProofOfStateNode('non_existing_label', 'state_proof'), null);
       });
     });
 
