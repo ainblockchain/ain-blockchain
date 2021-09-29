@@ -8,6 +8,7 @@ const {
   FeatureFlags,
   PORT,
   ACCOUNT_INDEX,
+  KEYSTORE_FILE_PATH,
   SYNC_MODE,
   ON_MEMORY_CHAIN_LENGTH,
   SNAPSHOTS_ROOT_DIR,
@@ -44,6 +45,8 @@ class BlockchainNode {
     this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
     FileUtil.createSnapshotDir(this.snapshotDir);
 
+    this.account = null;
+    this.bootstrapAccount = null;
     this.ipAddrInternal = null;
     this.ipAddrExternal = null;
     this.urlInternal = null;
@@ -59,39 +62,51 @@ class BlockchainNode {
 
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
+    this.bootstrap();
   }
 
-  async initAccount() {
-    const LOG_HEADER = 'getAccount';
+  bootstrap() {
+    const LOG_HEADER = 'bootstrap';
     if (ACCOUNT_INDEX !== null) {
       this.account = GenesisAccounts.others[ACCOUNT_INDEX];
+      if (!this.account) {
+        throw Error(`[${LOG_HEADER}] Failed to initialize with an account`);
+      }
+      logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
+          `${this.account.address}`);
+      this.initShardSetting();
+    } else if (KEYSTORE_FILE_PATH !== null) {
+      // Create a bootstrap account & wait for the password
+      this.bootstrapAccount = ainUtil.createAccount();
     } else {
-      const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-      });
-      const password = await new Promise((resolve) => {
-        rl.question('Enter password for your latest keystore file or a new account: ', resolve)
-      });
-      logger.debug(`[${LOG_HEADER}] Received password`);
-      const accountFromKeystore = FileUtil.getLatestKeystoreAccount(this.keysDir, password);
+      throw Error(`[${LOG_HEADER}] Must specify either KEYSTORE_FILE_PATH or ACCOUNT_INDEX.`);
+    }
+  }
+
+  async initAccount(encryptedPassword) {
+    const LOG_HEADER = 'initAccount';
+    if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
+      return false;
+    }
+    try {
+      const password = await ainUtil.decryptWithPrivateKey(
+          this.bootstrapAccount.private_key, encryptedPassword);
+      const accountFromKeystore = FileUtil.getAccountAtKeystorePath(KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
         this.account = accountFromKeystore;
-      } else {
-        logger.info(`[${LOG_HEADER}] Creating a new account..`);
-        const newAccount = ainUtil.createAccount();
-        const writeRes = FileUtil.writeKeystoreFile(this.keysDir, newAccount, password);
-        if (!writeRes) {
-          process.exit(1);
-        }
-        this.account = newAccount;
+        logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
+            `${this.account.address}`);
+        this.initShardSetting();
+        return true;
       }
+      return false;
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Failed to initialize an account: ${err.stack}`);
+      return false;
     }
-    if (CommonUtil.isEmpty(this.account)) {
-      throw Error(`[${LOG_HEADER}] Failed to initialize with an account`);
-    }
-    logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
-        `${this.account.address}`);
+  }
+
+  initShardSetting() {
     this.isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
     this.isShardReporter =
         this.isShardChain &&

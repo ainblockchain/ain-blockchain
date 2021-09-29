@@ -5,6 +5,7 @@ const Websocket = require('ws');
 const logger = require('../logger')('P2P_CLIENT');
 const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
+const CommonUtil = require('../common/common-util');
 const {
   HOSTING_ENV,
   PORT,
@@ -19,7 +20,6 @@ const {
   NETWORK_ID,
   trafficStatsManager,
 } = require('../common/constants');
-const { sleep } = require('../common/common-util');
 const {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
@@ -55,6 +55,7 @@ class P2pClient {
   }
 
   async run() {
+    if (CommonUtil.isEmpty(this.server.node.account)) return;
     await this.server.listen();
     this.connectToTracker();
   }
@@ -511,7 +512,7 @@ class P2pClient {
   }
 
   waitForAddress = (socket) => {
-    sleep(WAIT_FOR_ADDRESS_TIMEOUT_MS)
+    CommonUtil.sleep(WAIT_FOR_ADDRESS_TIMEOUT_MS)
       .then(() => {
         const address = getAddressFromSocket(this.outbound, socket);
         if (address) {
