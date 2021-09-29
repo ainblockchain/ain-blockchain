@@ -205,7 +205,7 @@ function getBlockByNumber(server, number) {
       .body.toString('utf-8')).result;
 }
 
-function eraseStateGas(result, appNameList = []) {
+function eraseStateGas(result) {
   const erased = JSON.parse(JSON.stringify(result));
   _.set(erased, 'gas_amount_charged', 'erased');
   _.set(erased, 'gas_amount_total.state.service', 'erased');
