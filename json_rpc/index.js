@@ -374,6 +374,23 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     // Account API
+    ain_getBootstrapPubKey: function(args, done) {
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
+      done(null, addProtocolVersion({
+        result: p2pServer.node.bootstrapAccount ? p2pServer.node.bootstrapAccount.public_key : null
+      }));
+    },
+
+    ain_initAccount: async function(args, done) {
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
+      let result = false;
+      if (await p2pServer.node.initAccount(args.encryptedPassword)) {
+        result = true;
+        p2pServer.client.run();
+      }
+      return addProtocolVersion({ result });
+    },
+
     ain_getAddress: function(args, done) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
       done(null, addProtocolVersion({
