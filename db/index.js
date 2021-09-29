@@ -460,7 +460,7 @@ class DB {
       [StateInfoProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
       [StateInfoProperties.TREE_SIZE]: stateNode.getTreeSize(),
       [StateInfoProperties.TREE_BYTES]: stateNode.getTreeBytes(),
-      [StateInfoProperties.PROOF_HASH]: stateNode.getProofHash(),
+      [StateInfoProperties.STATE_PROOF_HASH]: stateNode.getProofHash(),
       [StateInfoProperties.VERSION]: stateNode.getVersion(),
     };
   }
@@ -982,7 +982,7 @@ class DB {
       return acc;
     }, {});
     delete usage[StateInfoProperties.VERSION];
-    delete usage[StateInfoProperties.PROOF_HASH];
+    delete usage[StateInfoProperties.STATE_PROOF_HASH];
     return usage;
   }
 
