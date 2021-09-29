@@ -112,11 +112,11 @@ class P2pServer {
   }
 
   getNodeAddress() {
-    return this.node.account.address;
+    return this.node.account ? this.node.account.address : null;
   }
 
   getNodePrivateKey() {
-    return this.node.account.private_key;
+    return this.node.account ? this.node.account.private_key : null;
   }
 
   getInternalIp() {
@@ -227,7 +227,7 @@ class P2pServer {
   getDiskUsage() {
     try {
       const diskUsage = disk.checkSync(DISK_USAGE_PATH);
-      const free =  _.get(diskUsage, 'free', 0);
+      const free = _.get(diskUsage, 'free', 0);
       const total = _.get(diskUsage, 'total', 0);
       const usage = total - free;
       const usagePercent = total ? usage / total * 100 : 0;
@@ -281,12 +281,16 @@ class P2pServer {
   }
 
   stop() {
-    logger.info(`Stop consensus interval.`);
-    this.consensus.stop();
+    if (this.consensus) {
+      logger.info(`Stop consensus interval.`);
+      this.consensus.stop();
+    }
     logger.info(`Disconnect from connected peers.`);
     this.disconnectFromPeers();
-    logger.info(`Close server.`);
-    this.wsServer.close();
+    if (this.wsServer) {
+      logger.info(`Close server.`);
+      this.wsServer.close();
+    }
   }
 
   getIpAddress(internal = false) {

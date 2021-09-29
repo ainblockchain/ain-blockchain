@@ -57,6 +57,7 @@ const LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT)
 const SYNC_MODE = process.env.SYNC_MODE || 'full';
 const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
     Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
+const KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
 
 // ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -94,7 +95,6 @@ const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
 const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
 const MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
 const KEYS_ROOT_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'keys');
-const KEYSTORE_FILENAME_FORMAT = 'YYYY-MM-DDTHH-mm-ss';
 const HASH_DELIMITER = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
@@ -904,13 +904,13 @@ module.exports = {
   MAX_NUM_SNAPSHOTS,
   MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
   KEYS_ROOT_DIR,
-  KEYSTORE_FILENAME_FORMAT,
   DEBUG,
   CONSOLE_LOG,
   ENABLE_DEV_SET_CLIENT_API,
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
   ACCOUNT_INDEX,
+  KEYSTORE_FILE_PATH,
   PORT,
   P2P_PORT,
   LIGHTWEIGHT,
