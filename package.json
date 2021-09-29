@@ -20,7 +20,7 @@
     "test_integration": "./node_modules/mocha/bin/mocha --timeout 640000 \"integration/*.test.js\"",
     "test_integration_blockchain": "./node_modules/mocha/bin/mocha --timeout 640000 integration/blockchain.test.js",
     "test_integration_consensus": "./node_modules/mocha/bin/mocha --timeout 640000 integration/consensus.test.js",
-    "test_integration_dapp": "./node_modules/mocha/bin/mocha --timeout 640000 integration/afan_dapp.test.js",
+    "test_integration_afan_dapp": "./node_modules/mocha/bin/mocha --timeout 640000 integration/afan_dapp.test.js",
     "test_integration_node": "./node_modules/mocha/bin/mocha --timeout 640000 integration/node.test.js",
     "test_integration_sharding": "./node_modules/mocha/bin/mocha --timeout 640000 integration/sharding.test.js",
     "test_integration_he_protocol": "./node_modules/mocha/bin/mocha --timeout 640000 integration/he_protocol.test.js",

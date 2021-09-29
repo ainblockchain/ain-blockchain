@@ -507,11 +507,11 @@ describe('Blockchain Node', () => {
       it('get_state_proof', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/')
             .body.toString('utf-8'));
-        body.result['.proof_hash'] = 'erased';
+        body.result['#state_ph'] = 'erased';
         assert.deepEqual(body, {
           "code": 0,
           "result": {
-            ".proof_hash": "erased"
+            "#state_ph": "erased"
           }
         });
       });
@@ -523,18 +523,18 @@ describe('Blockchain Node', () => {
             'GET', server1 + `/get_state_info?ref=/values/apps/test/test_state_info/some/path`)
                 .body.toString('utf-8'));
         // Erase some properties for stable comparison.
-        infoBody.result.tree_bytes = 0;
-        infoBody.result.proof_hash = 'erased';
-        infoBody.result.version = 'erased';
+        infoBody.result['#tree_bytes'] = 0;
+        infoBody.result['#state_ph'] = 'erased';
+        infoBody.result['#version'] = 'erased';
         assert.deepEqual(
             infoBody, {
               code: 0,
               result: {
-                "proof_hash": "erased",
-                "tree_bytes": 0,
-                "tree_height": 2,
-                "tree_size": 5,
-                "version": "erased",
+                "#state_ph": "erased",
+                "#tree_bytes": 0,
+                "#tree_height": 2,
+                "#tree_size": 5,
+                "#version": "erased",
               }});
       });
     });
@@ -545,9 +545,9 @@ describe('Blockchain Node', () => {
             'GET', server1 + `/get_state_usage?app_name=test`)
                 .body.toString('utf-8'));
         assert.deepEqual(body.result, {
-          "tree_height": 23,
-          "tree_size": 62,
-          "tree_bytes": 11966,
+          "#tree_height": 23,
+          "#tree_size": 62,
+          "#tree_bytes": 11966,
         });
       });
     });
@@ -691,9 +691,9 @@ describe('Blockchain Node', () => {
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
         .then(res => {
-          res.result.result['.proof_hash'] = 'erased';
+          res.result.result['#state_ph'] = 'erased';
           assert.deepEqual(res.result.result, {
-            ".proof_hash": "erased"
+            "#state_ph": "erased"
           });
         })
       })
@@ -707,15 +707,15 @@ describe('Blockchain Node', () => {
         .then(res => {
           const stateInfo = res.result.result;
           // Erase some properties for stable comparison.
-          stateInfo.tree_bytes = 0;
-          stateInfo.proof_hash = 'erased';
-          stateInfo.version = 'erased';
+          stateInfo['#tree_bytes'] = 0;
+          stateInfo['#state_ph'] = 'erased';
+          stateInfo['#version'] = 'erased';
           assert.deepEqual(stateInfo, {
-            "proof_hash": "erased",
-            "tree_height": 2,
-            "tree_size": 5,
-            "tree_bytes": 0,
-            "version": "erased"
+            "#state_ph": "erased",
+            "#tree_height": 2,
+            "#tree_size": 5,
+            "#tree_bytes": 0,
+            "#version": "erased"
           });
         })
       })
@@ -728,9 +728,9 @@ describe('Blockchain Node', () => {
         .then(res => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
-            "tree_height": 23,
-            "tree_size": 62,
-            "tree_bytes": 11966,
+            "#tree_bytes": 11966,
+            "#tree_height": 23,
+            "#tree_size": 62,
           });
         })
       })
