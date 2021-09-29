@@ -7,7 +7,6 @@ const {
   LIGHTWEIGHT,
   HASH_DELIMITER,
   StateInfoProperties,
-  ProofProperties,
 } = require('../common/constants');
 const RadixTree = require('./radix-tree');
 
@@ -114,30 +113,30 @@ class StateNode {
       obj[label] = isShallow ? true : childNode.toJsObject(options);
       if (childNode.getIsLeaf()) {
         if (includeVersion) {
-          obj[`.${StateInfoProperties.VERSION}:${label}`] = childNode.getVersion();
+          obj[`${StateInfoProperties.VERSION}:${label}`] = childNode.getVersion();
         }
         if (includeProof) {
-          obj[`.${StateInfoProperties.PROOF_HASH}:${label}`] = childNode.getProofHash();
+          obj[`${StateInfoProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
         }
         if (includeTreeInfo) {
-          obj[`.${StateInfoProperties.NUM_PARENTS}:${label}`] = childNode.numParents();
-          obj[`.${StateInfoProperties.TREE_HEIGHT}:${label}`] = childNode.getTreeHeight();
-          obj[`.${StateInfoProperties.TREE_SIZE}:${label}`] = childNode.getTreeSize();
-          obj[`.${StateInfoProperties.TREE_BYTES}:${label}`] = childNode.getTreeBytes();
+          obj[`${StateInfoProperties.NUM_PARENTS}:${label}`] = childNode.numParents();
+          obj[`${StateInfoProperties.TREE_HEIGHT}:${label}`] = childNode.getTreeHeight();
+          obj[`${StateInfoProperties.TREE_SIZE}:${label}`] = childNode.getTreeSize();
+          obj[`${StateInfoProperties.TREE_BYTES}:${label}`] = childNode.getTreeBytes();
         }
       }
     }
     if (includeVersion) {
-      obj[`.${StateInfoProperties.VERSION}`] = this.getVersion();
+      obj[`${StateInfoProperties.VERSION}`] = this.getVersion();
     }
     if (includeProof) {
-      obj[`.${StateInfoProperties.PROOF_HASH}`] = this.getProofHash();
+      obj[`${StateInfoProperties.STATE_PROOF_HASH}`] = this.getProofHash();
     }
     if (includeTreeInfo) {
-      obj[`.${StateInfoProperties.NUM_PARENTS}`] = this.numParents();
-      obj[`.${StateInfoProperties.TREE_HEIGHT}`] = this.getTreeHeight();
-      obj[`.${StateInfoProperties.TREE_SIZE}`] = this.getTreeSize();
-      obj[`.${StateInfoProperties.TREE_BYTES}`] = this.getTreeBytes();
+      obj[`${StateInfoProperties.NUM_PARENTS}`] = this.numParents();
+      obj[`${StateInfoProperties.TREE_HEIGHT}`] = this.getTreeHeight();
+      obj[`${StateInfoProperties.TREE_SIZE}`] = this.getTreeSize();
+      obj[`${StateInfoProperties.TREE_BYTES}`] = this.getTreeBytes();
     }
 
     return obj;
@@ -522,17 +521,17 @@ class StateNode {
 
   getProofOfStateNode(childLabel = null, childProof = null) {
     if (childLabel === null) {
-      return { [ProofProperties.PROOF_HASH]: this.getProofHash() };
+      return { [StateInfoProperties.STATE_PROOF_HASH]: this.getProofHash() };
     } else {
       if (FeatureFlags.enableRadixTreeLayers) {
         return this.radixTree.getProofOfStateNode(childLabel, childProof);
       } else {
-        const proof = { [ProofProperties.PROOF_HASH]: this.getProofHash() };
+        const proof = { [StateInfoProperties.STATE_PROOF_HASH]: this.getProofHash() };
         this.getChildLabels().forEach((label) => {
           const child = this.getChild(label);
           Object.assign(proof, {
             [label]: label === childLabel ? childProof : {
-              [ProofProperties.PROOF_HASH]: child.getProofHash()
+              [StateInfoProperties.STATE_PROOF_HASH]: child.getProofHash()
             }
           });
         });
