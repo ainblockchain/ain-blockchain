@@ -147,7 +147,7 @@ sleep 10
 # 6. Start a new node server
 printf "\n#### [Step 6] Start new node server ####\n\n"
 
-MAX_OLD_SPACE_SIZE_MB=6000
+MAX_OLD_SPACE_SIZE_MB=5500
 
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
 printf "START_CMD='$START_CMD'\n"
