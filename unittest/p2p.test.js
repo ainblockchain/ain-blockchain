@@ -124,30 +124,34 @@ describe("p2p", () => {
 
     describe("getNodeStatus", () => {
       it("gets initial node status", () => {
-        const actual = {
-          address: p2pServer.getNodeAddress(),
-          state: 'STARTING',
-          stateNumeric: 0,
-          nonce: 0,
-          dbStatus: {
-            stateInfo: {
-              tree_height: 0,
-              tree_size: 0,
-              tree_bytes: 0,
-              proof_hash: null,
-              version: "NODE:-1",
+        const actual = p2pServer.getNodeStatus();
+        actual.address = 'erased';
+        assert.deepEqual(actual, {
+          "address": "erased",
+          "dbStatus": {
+            "stateInfo": {
+              "#state_ph": null,
+              "#tree_bytes": 0,
+              "#tree_height": 0,
+              "#tree_size": 0,
+              "#version": "NODE:-1",
             },
-            stateProof: {
-              '.proof_hash': null
+            "stateProof": {
+              "#state_ph": null,
             }
           },
-          stateVersionStatus: {
-            numVersions: 2,
-            versionList: [ 'EMPTY', 'NODE:-1' ],
-            finalVersion: null
+          "nonce": 0,
+          "state": "STARTING",
+          "stateNumeric": 0,
+          "stateVersionStatus": {
+            "finalVersion": null,
+            "numVersions": 2,
+            "versionList": [
+              "EMPTY",
+              "NODE:-1",
+            ]
           }
-        };
-        assert.deepEqual(actual, p2pServer.getNodeStatus());
+        });
       });
     });
 
