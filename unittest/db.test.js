@@ -20,7 +20,6 @@ const {
 const {
   setNodeForTesting,
 } = require('./test-util');
-const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const CommonUtil = require('../common/common-util');
 const ainUtil = require('@ainblockchain/ain-util');
