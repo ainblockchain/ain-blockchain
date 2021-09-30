@@ -42,14 +42,14 @@ class EventCounter {
     if (periodMs <= 0) {
       return -1;
     }
-    const numIntervals = Math.ceil(periodMs / this.intervalMs);
+    const numIntervals = Math.floor(periodMs / this.intervalMs);
     if (numIntervals > this.maxIntervals) {
       return -1;
     }
     const curTime = currentTimeMs !== null ? currentTimeMs : Date.now();
     this.updateQueueIndex(curTime);
     let count = 0;
-    for (let i = 0; i < numIntervals; i++) {
+    for (let i = 1; i <= numIntervals; i++) {
       const queueIndex = (this.lastQueueIndex - i + this.maxIntervals) % this.maxIntervals;
       count += this.circularQueue[queueIndex];
     }

@@ -8,6 +8,9 @@ const { v4: uuidv4 } = require('uuid');
 const disk = require('diskusage');
 const os = require('os');
 const v8 = require('v8');
+
+const { getGraphData } = require('./network-topology');
+const { abbrAddr } = require('./util');
 const {
   TrackerMessageTypes,
   CURRENT_PROTOCOL_VERSION
@@ -25,6 +28,8 @@ const wsList = {};
 const app = express();
 const jsonRpcMethods = require('./json-rpc')(peerNodes);
 app.use(express.json());
+app.engine('html', require('ejs').renderFile);
+app.set('view engine', 'html');
 app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
@@ -58,6 +63,15 @@ app.get('/network_status', (req, res, next) => {
       .set('Content-Type', 'application/json')
       .send(result)
       .end();
+});
+
+app.get('/network_topology', (req, res) => {
+  res.render(__dirname + '/index.html', {}, async (err, html) => {
+    const networkStatus = getNetworkStatus();
+    const graphData = await getGraphData(networkStatus);
+    html = html.replace(/{ \/\* replace this \*\/ };/g, JSON.stringify(graphData));
+    res.send(html);
+  });
 });
 
 const trackerServer = app.listen(PORT, () => {
@@ -177,10 +191,6 @@ server.on('connection', (ws) => {
         `${JSON.stringify(error, null, 2)}`);
   });
 });
-
-function abbrAddr(address) {
-  return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
-}
 
 function setPeerNodes(ws, nodeInfo) {
   wsList[ws.uuid] = nodeInfo.address;

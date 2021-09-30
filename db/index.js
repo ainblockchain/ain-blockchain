@@ -129,7 +129,7 @@ class DB {
    */
   setBackupStateVersion(backupStateVersion, backupStateRoot) {
     const LOG_HEADER = 'setBackupStateVersion';
-    if (!this.backupStateVersion === backupStateVersion) {
+    if (this.backupStateVersion === backupStateVersion) {
       logger.error(
           `[${LOG_HEADER}] Backup state version already set with version: ${backupStateVersion}`);
       return false;
@@ -313,8 +313,9 @@ class DB {
     let node = stateRoot;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
-      if (node.hasChild(label)) {
-        node = node.getChild(label);
+      const child = node.getChild(label);
+      if (child !== null) {
+        node = child;
       } else {
         return null;
       }
@@ -344,37 +345,23 @@ class DB {
   //
   static getRefForWritingToStateRoot(stateRoot, fullPath) {
     let node = stateRoot;
-    let hasMultipleRoots = node.numParents() > 1;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
-      if (FeatureFlags.enableStateVersionOpt) {
-        if (node.hasChild(label)) {
-          const child = node.getChild(label);
-          if (hasMultipleRoots || child.numParents() > 1) {
-            const clonedChild = child.clone(this.stateVersion);
-            clonedChild.resetValue();
-            node.setChild(label, clonedChild);
-            node = clonedChild;
-          } else {
-            child.resetValue();
-            node = child;
-          }
+      const child = node.getChild(label);
+      if (child !== null) {
+        if (child.hasMultipleParents()) {
+          const clonedChild = child.clone(this.stateVersion);
+          clonedChild.resetValue();
+          node.setChild(label, clonedChild);
+          node = clonedChild;
         } else {
-          const newChild = new StateNode(this.stateVersion);
-          node.setChild(label, newChild);
-          node = newChild;
-        }
-        hasMultipleRoots = hasMultipleRoots || node.numParents() > 1;
-      } else {
-        if (node.hasChild(label)) {
-          const child = node.getChild(label);
           child.resetValue();
           node = child;
-        } else {
-          const newChild = new StateNode(this.stateVersion);
-          node.setChild(label, newChild);
-          node = newChild;
         }
+      } else {
+        const newChild = new StateNode(this.stateVersion);
+        node.setChild(label, newChild);
+        node = newChild;
       }
     }
     return node;
@@ -423,10 +410,11 @@ class DB {
   }
 
   readDatabase(refPath, rootLabel, options) {
-    return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, options, this.shardingPath);
+    const isFinal = _.get(options, 'isFinal', false);
+    const targetStateRoot = isFinal ? this.stateManager.getFinalRoot() : this.stateRoot;
+    return DB.readFromStateRoot(targetStateRoot, rootLabel, refPath, options, this.shardingPath);
   }
 
-  // TODO(platfowner): Support lookups on the final version.
   getValue(valuePath, options) {
     return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, options);
   }
