@@ -3505,7 +3505,7 @@ describe('Blockchain Node', () => {
       const txSignerAddress = parseOrLog(syncRequest(
           'GET', server1 + '/get_address').body.toString('utf-8')).result;
       const request = {
-        ref: '/apps/test/test_value/some/path',
+        ref: '/apps/test/test_receipts/some/path',
         value: "some value"
       };
       const body = parseOrLog(syncRequest(
