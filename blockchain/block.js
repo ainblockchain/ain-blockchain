@@ -16,7 +16,7 @@ const {
   GenesisRules,
   GenesisOwners,
   AccountProperties,
-  ProofProperties,
+  StateInfoProperties,
   StateVersions,
 } = require('../common/constants');
 const PathUtil = require('../common/path-util');
@@ -350,7 +350,7 @@ class Block {
     }
     const { gasAmountTotal, gasCostTotal } = CommonUtil.getServiceGasCostTotalFromTxList(genesisTxs, resList);
     return {
-      stateProofHash: tempGenesisDb.getStateProof('/')[ProofProperties.PROOF_HASH],
+      stateProofHash: tempGenesisDb.getStateProof('/')[StateInfoProperties.STATE_PROOF_HASH],
       gasAmountTotal,
       gasCostTotal,
       receipts: CommonUtil.txResultsToReceipts(resList),

@@ -380,46 +380,19 @@ const FunctionTypes = {
 };
 
 /**
- * Properties of state proof.
- *
- * @enum {string}
- */
-const ProofProperties = {
-  LABEL: '.label',
-  PROOF_HASH: '.proof_hash',
-  RADIX_PROOF_HASH: '.radix_ph',
-};
-
-/**
- * Properties of radix info.
- *
- * @enum {string}
- */
-const RadixInfoProperties = {
-  LABEL: '.label',
-  NUM_PARENTS: '.num_parents',
-  PROOF_HASH: '.proof_hash',
-  RADIX_PROOF_HASH: '.radix_ph',
-  RADIX_SERIAL: '.radix_serial',
-  RADIX_VERSION: '.radix_version',
-  TREE_HEIGHT: '.tree_height',
-  TREE_SIZE: '.tree_size',
-  TREE_BYTES: '.tree_bytes',
-  VERSION: '.version',
-};
-
-/**
  * Properties of state info.
  *
  * @enum {string}
  */
 const StateInfoProperties = {
-  NUM_PARENTS: 'num_parents',
-  PROOF_HASH: 'proof_hash',
-  VERSION: 'version',
-  TREE_HEIGHT: 'tree_height',
-  TREE_SIZE: 'tree_size',
-  TREE_BYTES: 'tree_bytes',
+  NUM_PARENTS: '#num_parents',
+  RADIX_PROOF_HASH: '#radix_ph',
+  SERIAL: '#serial',
+  STATE_PROOF_HASH: '#state_ph',
+  VERSION: '#version',
+  TREE_HEIGHT: '#tree_height',
+  TREE_SIZE: '#tree_size',
+  TREE_BYTES: '#tree_bytes',
 };
 
 /**
@@ -956,8 +929,6 @@ module.exports = {
   FunctionProperties,
   FunctionTypes,
   FunctionResultCode,
-  ProofProperties,
-  RadixInfoProperties,
   StateInfoProperties,
   NativeFunctionIds,
   isNativeFunctionId,

@@ -135,14 +135,14 @@ describe("P2P", () => {
           nonce: 0,
           dbStatus: {
             stateInfo: {
-              tree_height: 11,
-              tree_size: 'erased',
-              tree_bytes: 'erased',
-              proof_hash: 'erased',
-              version: "NODE:0",
+              "#state_ph": 'erased',
+              "#tree_bytes": 'erased',
+              "#tree_height": 11,
+              "#tree_size": 'erased',
+              "#version": "NODE:0",
             },
             stateProof: {
-              '.proof_hash': 'erased'
+              "#state_ph": 'erased'
             }
           },
           stateVersionStatus: {
@@ -152,10 +152,10 @@ describe("P2P", () => {
           }
         };
         const nodeStatus = p2pServer.getNodeStatus();
-        nodeStatus.dbStatus.stateInfo.tree_size = 'erased';
-        nodeStatus.dbStatus.stateInfo.tree_bytes = 'erased';
-        nodeStatus.dbStatus.stateInfo.proof_hash = 'erased';
-        nodeStatus.dbStatus.stateProof['.proof_hash'] = 'erased';
+        nodeStatus.dbStatus.stateInfo['#tree_size'] = 'erased';
+        nodeStatus.dbStatus.stateInfo['#tree_bytes'] = 'erased';
+        nodeStatus.dbStatus.stateInfo['#state_ph'] = 'erased';
+        nodeStatus.dbStatus.stateProof['#state_ph'] = 'erased';
         assert.deepEqual(actual, nodeStatus);
       });
     });
