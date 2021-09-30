@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [[ "$#" -lt 3 ]] || [[ "$#" -gt 6 ]]; then
-    echo "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup] [--keystore <Password>]"
+if [[ "$#" -lt 3 ]] || [[ "$#" -gt 5 ]]; then
+    echo "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup] [--keystore]"
     echo "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --setup"
-    echo "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --keystore YOUR_PASSWORD"
+    echo "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --keystore"
     exit
 fi
 
@@ -27,40 +27,32 @@ echo "GCP_USER=$GCP_USER"
 NUM_SHARDS=$3
 echo "NUM_SHARDS=$NUM_SHARDS"
 
-USE_KEYSTORE=false
+KEYSTORE_COMMAND_SUFFIX=""
 if [[ "$#" = 4 ]]; then
-    OPTIONS="$4"
+    if [[ "$4" = '--setup' ]]; then
+        OPTIONS="$4"
+    elif [[ "$4" = '--keystore' ]]; then
+        KEYSTORE_COMMAND_SUFFIX="--keystore"
+    else
+        echo "Invalid option: $4"
+        exit
+    fi
 elif [[ "$#" = 5 ]]; then
-    if [[ "$4" != '--keystore' ]]; then
+    KEYSTORE_COMMAND_SUFFIX="--keystore"
+    if [[ "$4" = '--setup' ]] && [[ "$5" = '--keystore' ]]; then
+        OPTIONS="$4"
+    elif [[ "$4" = '--keystore' ]] && [[ "$5" = '--setup' ]]; then
+        OPTIONS="$5"
+    else
         echo "Invalid options: $4 $5"
         exit
-    else
-        USE_KEYSTORE=true
-        PASSWORD="$5"
-    fi
-else
-    USE_KEYSTORE=true
-    if [[ "$4" = '--keystore' ]]; then
-        PASSWORD="$5"
-        OPTIONS="$6"
-    elif [[ "$5" != '--keystore' ]]; then
-        printf "Invalid option: $5\n"
-        exit
-    else
-        OPTIONS="$4"
-        PASSWORD="$6"
     fi
 fi
 echo "OPTIONS=$OPTIONS"
-echo "USE_KEYSTORE=$USE_KEYSTORE"
+echo "KEYSTORE_COMMAND_SUFFIX=$KEYSTORE_COMMAND_SUFFIX"
 
 # Commands for starting nodes.
 BASE_COMMAND=". start_node_genesis_gcp.sh $SEASON"
-if [[ $USE_KEYSTORE = true ]]; then
-    KEYSTORE_COMMAND_SUFFIX="--keystore; echo $PASSWORD > /tmp/blockchain_node_fifo; rm /tmp/blockchain_node_fifo"
-else
-    KEYSTORE_COMMAND_SUFFIX=""
-fi
 
 
 # Get confirmation.
@@ -73,8 +65,30 @@ then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
+if [[ "$KEYSTORE_COMMAND_SUFFIX" != "" ]]; then
+    # Get keystore password
+    echo -n "Enter password: "
+    read -s PASSWORD
+    echo
+    echo
+
+    # Read node ip addresses
+    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON
+fi
+
+function init_account() {
+    if [[ "$KEYSTORE_COMMAND_SUFFIX" != "" ]]; then
+        local node_index="$1"
+        local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
+        printf "\n* >> Initializing account for node $node_index ********************\n\n"
+        printf "node_ip_addr='$node_ip_addr'\n"
+
+        node init_account_gcp.js $node_ip_addr $PASSWORD
+    fi
+}
+
 FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh restart_tracker_gcp.sh"
-FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ genesis-configs/ json_rpc/ logger/ node/ p2p/ testnet_dev_staging_keys/ testnet_spring_summer_keys/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh restart_node_gcp.sh"
+FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ genesis-configs/ json_rpc/ logger/ node/ p2p/ testnet_dev_staging_keys/ testnet_prod_keys/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh restart_node_gcp.sh wait_until_node_sync_gcp.sh"
 
 TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
@@ -151,14 +165,19 @@ printf "\n\n###########################\n# Starting parent tracker #\n##########
 gcloud compute ssh $TRACKER_TARGET_ADDR --command ". start_tracker_genesis_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
 printf "\n\n##########################\n# Starting parent node 0 #\n##########################\n\n"
 gcloud compute ssh $NODE_0_TARGET_ADDR --command "$BASE_COMMAND 0 0 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_0_ZONE
+init_account "0"
 printf "\n\n##########################\n# Starting parent node 1 #\n##########################\n\n"
 gcloud compute ssh $NODE_1_TARGET_ADDR --command "$BASE_COMMAND 0 1 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_1_ZONE
+init_account "1"
 printf "\n\n##########################\n# Starting parent node 2 #\n##########################\n\n"
 gcloud compute ssh $NODE_2_TARGET_ADDR --command "$BASE_COMMAND 0 2 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_2_ZONE
+init_account "2"
 printf "\n\n##########################\n# Starting parent node 3 #\n##########################\n\n"
 gcloud compute ssh $NODE_3_TARGET_ADDR --command "$BASE_COMMAND 0 3 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_3_ZONE
+init_account "3"
 printf "\n\n##########################\n# Starting parent node 4 #\n##########################\n\n"
 gcloud compute ssh $NODE_4_TARGET_ADDR --command "$BASE_COMMAND 0 4 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_4_ZONE
+init_account "4"
 
 
 if [[ "$NUM_SHARDS" -gt 0 ]]; then
