@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ "$#" -lt 5 ]] || [[ "$#" -gt 8 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [fast|full] [canary|full] [--setup] [--keystore <Password>]\n"
+if [[ "$#" -lt 5 ]] || [[ "$#" -gt 7 ]]; then
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [fast|full] [canary|full] [--setup] [--keystore]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 fast canary --setup\n"
     exit
 fi
@@ -42,35 +42,30 @@ else
 fi
 printf "RUN_MODE=$RUN_MODE\n"
 
-USE_KEYSTORE=false
+
 KEYSTORE_COMMAND_SUFFIX=""
 if [[ "$#" = 6 ]]; then
-    OPTIONS="$6"
-elif [[ "$#" = 7 ]]; then
-    if [[ "$6" != '--keystore' ]]; then
-        printf "Invalid options: $6 $7\n"
-        exit
-    else
-        USE_KEYSTORE=true
-        PASSWORD="$7"
-        KEYSTORE_COMMAND_SUFFIX="--keystore; echo $PASSWORD > /tmp/blockchain_node_fifo; rm /tmp/blockchain_node_fifo"
-    fi
-else
-    if [[ "$6" = '--keystore' ]]; then
-        PASSWORD="$7"
-        OPTIONS="$8"
-    elif [[ "$7" != '--keystore' ]]; then
-        printf "Invalid option: $7\n"
-        exit
-    else
+    if [[ "$6" = '--setup' ]]; then
         OPTIONS="$6"
-        PASSWORD="$8"
+    elif [[ "$6" = '--keystore' ]]; then
+        KEYSTORE_COMMAND_SUFFIX="--keystore"
+    else
+        echo "Invalid option: $6"
+        exit
     fi
-    USE_KEYSTORE=true
-    KEYSTORE_COMMAND_SUFFIX="--keystore; echo $PASSWORD > /tmp/blockchain_node_fifo; rm /tmp/blockchain_node_fifo"
+elif [[ "$#" = 7 ]]; then
+    KEYSTORE_COMMAND_SUFFIX="--keystore"
+    if [[ "$6" = '--setup' ]] && [[ "$7" = '--keystore' ]]; then
+        OPTIONS="$6"
+    elif [[ "$6" = '--keystore' ]] && [[ "$7" = '--setup' ]]; then
+        OPTIONS="$7"
+    else
+        echo "Invalid options: $6 $7"
+        exit
+    fi
 fi
 printf "OPTIONS=$OPTIONS\n"
-printf "USE_KEYSTORE=$USE_KEYSTORE\n"
+echo "KEYSTORE_COMMAND_SUFFIX=$KEYSTORE_COMMAND_SUFFIX"
 
 # Get confirmation.
 printf "\n"
@@ -80,8 +75,19 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
+if [[ "$KEYSTORE_COMMAND_SUFFIX" != "" ]]; then
+    # Get keystore password
+    echo -n "Enter password: "
+    read -s PASSWORD
+    echo
+    echo
+
+    # Read node ip addresses
+    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON
+fi
+
 FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh restart_tracker_gcp.sh"
-FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ genesis-configs/ json_rpc/ logger/ node/ p2p/ testnet_dev_staging_keys/ testnet_spring_summer_keys/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh restart_node_gcp.sh wait_until_node_sync_gcp.sh"
+FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ genesis-configs/ json_rpc/ logger/ node/ p2p/ testnet_dev_staging_keys/ testnet_prod_keys/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh restart_node_gcp.sh wait_until_node_sync_gcp.sh"
 
 NUM_PARENT_NODES=5
 NUM_SHARD_NODES=3
@@ -153,7 +159,16 @@ function deploy_node() {
     printf "START_CMD='$START_CMD'\n\n"
     eval $START_CMD
 
-    #3. Wait until node is synced
+    # 3. Init account if necessary (if --keystore specified)
+    if [[ "$KEYSTORE_COMMAND_SUFFIX" != "" ]]; then
+        local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
+        printf "\n* >> Initializing account for node $node_index ********************\n\n"
+        printf "node_ip_addr='$node_ip_addr'\n"
+
+        node init_account_gcp.js $node_ip_addr $PASSWORD
+    fi
+
+    #4. Wait until node is synced
     printf "\n\n[[[[ Waiting until node is synced $node_index ]]]]\n\n"
     WAIT_CMD="gcloud compute ssh $node_target_addr --command 'cd \$(find /home/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync_gcp.sh'"
     printf "WAIT_CMD='$WAIT_CMD'\n\n"

@@ -29,7 +29,7 @@ MKDIR_CMD="sudo mkdir $NEW_DIR_PATH"
 printf "MKDIR_CMD=$MKDIR_CMD\n"
 eval $MKDIR_CMD
 
-sudo chmod 777 $NEW_DIR_PATH
+sudo chmod -R 777 $NEW_DIR_PATH
 mv * $NEW_DIR_PATH
 
 # 4. Install dependencies
