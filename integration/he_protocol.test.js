@@ -199,7 +199,7 @@ describe('HE Protocol', () => {
         };
         const res = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
             .body.toString('utf-8')).result;
-        assert.deepEqual(eraseStateGas(res.result, [appName]), {
+        assert.deepEqual(eraseStateGas(res.result), {
           "bandwidth_gas_amount": 1,
           "code": 0,
           "gas_amount_charged": "erased",
@@ -211,9 +211,6 @@ describe('HE Protocol', () => {
               "service": 0
             },
             "state": {
-              "app": {
-                "he_health_care": "erased"
-              },
               "service": "erased"
             }
           },
@@ -256,7 +253,7 @@ describe('HE Protocol', () => {
         };
         const res = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: request})
             .body.toString('utf-8')).result;
-        assert.deepEqual(eraseStateGas(res.result, [appName]), {
+        assert.deepEqual(eraseStateGas(res.result), {
           "bandwidth_gas_amount": 1,
           "code": 0,
           "gas_amount_charged": "erased",
@@ -303,7 +300,7 @@ describe('HE Protocol', () => {
         };
         const res = parseOrLog(syncRequest('POST', server1 + '/set_function', {json: request})
             .body.toString('utf-8')).result;
-        assert.deepEqual(eraseStateGas(res.result, [appName]), {
+        assert.deepEqual(eraseStateGas(res.result), {
           "bandwidth_gas_amount": 1,
           "code": 0,
           "gas_amount_charged": "erased",
@@ -315,9 +312,6 @@ describe('HE Protocol', () => {
               "service": 0
             },
             "state": {
-              "app": {
-                "he_health_care": "erased"
-              },
               "service": "erased"
             }
           },
@@ -355,7 +349,7 @@ describe('HE Protocol', () => {
         };
         const res = parseOrLog(syncRequest('POST', server1 + '/set_function', {json: request})
             .body.toString('utf-8')).result;
-        assert.deepEqual(eraseStateGas(res.result, [appName]), {
+        assert.deepEqual(eraseStateGas(res.result), {
           "bandwidth_gas_amount": 1,
           "code": 0,
           "gas_amount_charged": "erased",
@@ -412,7 +406,7 @@ describe('HE Protocol', () => {
         };
         const ruleResp = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: ruleRequest})
             .body.toString('utf-8')).result;
-        assert.deepEqual(eraseStateGas(ruleResp.result, [appName]), {
+        assert.deepEqual(eraseStateGas(ruleResp.result), {
           "bandwidth_gas_amount": 1,
           "code": 0,
           "gas_amount_charged": "erased",
@@ -457,7 +451,7 @@ describe('HE Protocol', () => {
         const functionResp = parseOrLog(syncRequest('POST',
             server1 + '/set_function', {json: functionRequest})
             .body.toString('utf-8')).result;
-        assert.deepEqual(eraseStateGas(functionResp.result, [appName]), {
+        assert.deepEqual(eraseStateGas(functionResp.result), {
           "bandwidth_gas_amount": 1,
           "code": 0,
           "gas_amount_charged": "erased",
@@ -495,7 +489,7 @@ describe('HE Protocol', () => {
         };
         const ruleResp = parseOrLog(syncRequest('POST', server1 + '/set_rule', {json: ruleRequest})
             .body.toString('utf-8')).result;
-        assert.deepEqual(eraseStateGas(ruleResp.result, [appName]), {
+        assert.deepEqual(eraseStateGas(ruleResp.result), {
           "bandwidth_gas_amount": 1,
           "code": 0,
           "gas_amount_charged": "erased",
@@ -507,9 +501,6 @@ describe('HE Protocol', () => {
               "service": 0
             },
             "state": {
-              "app": {
-                "he_health_care": "erased"
-              },
               "service": "erased"
             }
           },
@@ -531,7 +522,7 @@ describe('HE Protocol', () => {
         const functionResp = parseOrLog(syncRequest('POST',
             server1 + '/set_function', {json: functioinRequest})
             .body.toString('utf-8')).result;
-        assert.deepEqual(eraseStateGas(functionResp.result, [appName]), {
+        assert.deepEqual(eraseStateGas(functionResp.result), {
           "bandwidth_gas_amount": 1,
           "code": 0,
           "gas_amount_charged": "erased",
@@ -543,9 +534,6 @@ describe('HE Protocol', () => {
               "service": 0
             },
             "state": {
-              "app": {
-                "he_health_care": "erased"
-              },
               "service": "erased"
             }
           },
@@ -577,7 +565,7 @@ describe('HE Protocol', () => {
         };
         const res = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: request})
             .body.toString('utf-8')).result;
-        assert.deepEqual(eraseStateGas(res.result, [appName]), {
+        assert.deepEqual(eraseStateGas(res.result), {
           "bandwidth_gas_amount": 1,
           "code": 0,
           "func_results": {

@@ -312,70 +312,70 @@ describe("state-node", () => {
 
       // includeVersion = true
       assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeVersion: true }), {
-        ".version": "ver1",
-        ".version:str": "ver1",
+        "#version": "ver1",
+        "#version:str": "ver1",
         "str": "str",
         "subobj1": {
-          ".version": "ver1",
-          ".version:str": "ver1",
-          "str": "str1"
+          "#version": "ver1",
+          "#version:str": "ver1",
+          "str": "str1",
         },
         "subobj2": {
-          ".version": "ver1",
-          ".version:str": "ver1",
-          "str": "str2"
+          "#version": "ver1",
+          "#version:str": "ver1",
+          "str": "str2",
         }
       });
 
       // includeTreeInfo = true
       assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeTreeInfo: true }), {
-        ".num_parents": 0,
-        ".num_parents:str": 1,
-        ".tree_bytes": 0,
-        ".tree_bytes:str": 0,
-        ".tree_height": 0,
-        ".tree_height:str": 0,
-        ".tree_size": 0,
-        ".tree_size:str": 0,
+        "#num_parents": 0,
+        "#num_parents:str": 1,
+        "#tree_bytes": 0,
+        "#tree_bytes:str": 0,
+        "#tree_height": 0,
+        "#tree_height:str": 0,
+        "#tree_size": 0,
+        "#tree_size:str": 0,
         "str": "str",
         "subobj1": {
-          ".num_parents": 1,
-          ".num_parents:str": 1,
-          ".tree_bytes": 0,
-          ".tree_bytes:str": 0,
-          ".tree_height": 0,
-          ".tree_height:str": 0,
-          ".tree_size": 0,
-          ".tree_size:str": 0,
-          "str": "str1"
+          "#num_parents": 1,
+          "#num_parents:str": 1,
+          "#tree_bytes": 0,
+          "#tree_bytes:str": 0,
+          "#tree_height": 0,
+          "#tree_height:str": 0,
+          "#tree_size": 0,
+          "#tree_size:str": 0,
+          "str": "str1",
         },
         "subobj2": {
-          ".num_parents": 1,
-          ".num_parents:str": 1,
-          ".tree_bytes": 0,
-          ".tree_bytes:str": 0,
-          ".tree_height": 0,
-          ".tree_height:str": 0,
-          ".tree_size": 0,
-          ".tree_size:str": 0,
-          "str": "str2"
+          "#num_parents": 1,
+          "#num_parents:str": 1,
+          "#tree_bytes": 0,
+          "#tree_bytes:str": 0,
+          "#tree_height": 0,
+          "#tree_height:str": 0,
+          "#tree_size": 0,
+          "#tree_size:str": 0,
+          "str": "str2",
         }
       });
 
       // includeProof = true
       assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeProof: true }), {
-        ".proof_hash": null,
-        ".proof_hash:str": null,
+        "#state_ph": null,
+        "#state_ph:str": null,
         "str": "str",
         "subobj1": {
-          ".proof_hash": null,
-          ".proof_hash:str": null,
-          "str": "str1"
+          "#state_ph": null,
+          "#state_ph:str": null,
+          "str": "str1",
         },
         "subobj2": {
-          ".proof_hash": null,
-          ".proof_hash:str": null,
-          "str": "str2"
+          "#state_ph": null,
+          "#state_ph:str": null,
+          "str": "str2",
         }
       });
     })
@@ -1363,12 +1363,12 @@ describe("state-node", () => {
     });
   });
 
-  describe("getProofOfState", () => {
+  describe("getProofOfStateNode", () => {
     it("leaf node", () => {
       node.setValue(true);  // leaf node
       node.setProofHash('proofHash');
-      assert.deepEqual(node.getProofOfState(), {
-        ".proof_hash": "proofHash"
+      assert.deepEqual(node.getProofOfStateNode(), {
+        "#state_ph": "proofHash"
       });
     });
 
@@ -1381,49 +1381,54 @@ describe("state-node", () => {
 
       stateTree.updateStateInfo();
       assert.deepEqual(stateTree.radixTree.toJsObject(false, false, true), {
-        ".radix_ph": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6",
+        "#radix_ph": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6",
         "00aaaa": {
-          ".label": "0x00aaaa",
-          ".proof_hash": "proofHash1",
-          ".radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c"
+          "#radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c",
+          "0x00aaaa": {
+            "#state_ph": "proofHash1",
+          }
         },
         "11bb": {
           "11": {
-            ".label": "0x11bb11",
-            ".proof_hash": "proofHash4",
-            ".radix_ph": "0x741ba4788b06907f8c99c60a6f483f885cc1b4fb27f9e1bed71dfd1d8a213214"
+            "#radix_ph": "0x741ba4788b06907f8c99c60a6f483f885cc1b4fb27f9e1bed71dfd1d8a213214",
+            "0x11bb11": {
+              "#state_ph": "proofHash4",
+            }
           },
-          ".radix_ph": "0x099ad81295e3257147362606afc34b47757dd5c1508d441e248302be8577ed44",
+          "#radix_ph": "0x099ad81295e3257147362606afc34b47757dd5c1508d441e248302be8577ed44",
           "00": {
-            ".label": "0x11bb00",
-            ".proof_hash": "proofHash3",
-            ".radix_ph": "0x3dfb52c0d974feb0559c9efafa996fb286717785e98871336e68ffb52d04bdf4"
+            "#radix_ph": "0x3dfb52c0d974feb0559c9efafa996fb286717785e98871336e68ffb52d04bdf4",
+            "0x11bb00": {
+              "#state_ph": "proofHash3",
+            }
           },
           "bb": {
-            ".label": "0x11bbbb",
-            ".proof_hash": "proofHash2",
-            ".radix_ph": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184"
+            "#radix_ph": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184",
+            "0x11bbbb": {
+              "#state_ph": "proofHash2",
+            }
           }
         }
       });
 
-      assert.deepEqual(stateTree.getProofOfState(label2, 'childProof2'), {
-        ".radix_ph": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6",
+      assert.deepEqual(stateTree.getProofOfStateNode(label2, 'child_proof2'), {
+        "#radix_ph": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6",
         "00aaaa": {
-          ".radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c"
+          "#radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c",
         },
         "11bb": {
           "11": {
-            ".radix_ph": "0x741ba4788b06907f8c99c60a6f483f885cc1b4fb27f9e1bed71dfd1d8a213214"
+            "#radix_ph": "0x741ba4788b06907f8c99c60a6f483f885cc1b4fb27f9e1bed71dfd1d8a213214",
           },
-          ".radix_ph": "0x099ad81295e3257147362606afc34b47757dd5c1508d441e248302be8577ed44",
+          "#radix_ph": "0x099ad81295e3257147362606afc34b47757dd5c1508d441e248302be8577ed44",
           "00": {
-            ".radix_ph": "0x3dfb52c0d974feb0559c9efafa996fb286717785e98871336e68ffb52d04bdf4"
+            "#radix_ph": "0x3dfb52c0d974feb0559c9efafa996fb286717785e98871336e68ffb52d04bdf4",
           },
           "bb": {
-            ".label": "0x11bbbb",
-            ".proof_hash": "childProof2",
-            ".radix_ph": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184"
+            "#radix_ph": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184",
+            "0x11bbbb": {
+              "#state_ph": "child_proof2",
+            }
           }
         }
       });
