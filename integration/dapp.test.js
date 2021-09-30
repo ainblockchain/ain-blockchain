@@ -102,7 +102,7 @@ async function cleanUp() {
   }
 }
 
-describe('aFan DApp Test', async () => {
+describe('DApp Test', async () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
 
   before(async () => {
