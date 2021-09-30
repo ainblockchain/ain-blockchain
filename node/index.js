@@ -94,6 +94,7 @@ class BlockchainNode {
       const accountFromKeystore = FileUtil.getAccountAtKeystorePath(KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
         this.account = accountFromKeystore;
+        this.bootstrapAccount = null;
         logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
             `${this.account.address}`);
         this.initShardSetting();
