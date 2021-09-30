@@ -3,11 +3,9 @@ const logger = require('../logger')('RADIX_NODE');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
-  FeatureFlags,
   LIGHTWEIGHT,
   HASH_DELIMITER,
-  ProofProperties,
-  RadixInfoProperties,
+  StateInfoProperties,
 } = require('../common/constants');
 const { deleteStateTreeVersion } = require('./state-util');
 
@@ -493,12 +491,15 @@ class RadixNode {
   }
 
   getProofOfRadixNode(childLabel = null, childProof = null, stateProof = null) {
-    const proof = { [ProofProperties.RADIX_PROOF_HASH]: this.getProofHash() };
+    const proof = { [StateInfoProperties.RADIX_PROOF_HASH]: this.getProofHash() };
     if (this.hasChildStateNode()) {
       const childStateNode = this.getChildStateNode();
+      const childStateProof = {
+        [StateInfoProperties.STATE_PROOF_HASH]: stateProof !== null ?
+            stateProof : childStateNode.getProofHash()
+      };
       Object.assign(proof, {
-        [ProofProperties.LABEL]: childStateNode.getLabel(),
-        [ProofProperties.PROOF_HASH]: stateProof !== null ?  stateProof : childStateNode.getProofHash()
+        [childStateNode.getLabel()]: childStateProof,
       });
     }
     if (childLabel === null && stateProof !== null) {
@@ -508,7 +509,7 @@ class RadixNode {
       const label = child.getLabel();
       Object.assign(proof, {
         [label]: label === childLabel ? childProof : {
-          [ProofProperties.RADIX_PROOF_HASH]: child.getProofHash()
+          [StateInfoProperties.RADIX_PROOF_HASH]: child.getProofHash()
         }
       });
     });
@@ -552,31 +553,32 @@ class RadixNode {
       withNumParents = false) {
     const obj = {};
     if (withVersion) {
-      obj[RadixInfoProperties.RADIX_VERSION] = this.getVersion();
+      obj[StateInfoProperties.VERSION] = this.getVersion();
     }
     if (withSerial) {
-      obj[RadixInfoProperties.RADIX_SERIAL] = this.getSerial();
+      obj[StateInfoProperties.SERIAL] = this.getSerial();
     }
     if (withProofHash) {
-      obj[RadixInfoProperties.RADIX_PROOF_HASH] = this.getProofHash();
+      obj[StateInfoProperties.RADIX_PROOF_HASH] = this.getProofHash();
     }
     if (withTreeInfo) {
-      obj[RadixInfoProperties.TREE_HEIGHT] = this.getTreeHeight();
-      obj[RadixInfoProperties.TREE_SIZE] = this.getTreeSize();
-      obj[RadixInfoProperties.TREE_BYTES] = this.getTreeBytes();
+      obj[StateInfoProperties.TREE_HEIGHT] = this.getTreeHeight();
+      obj[StateInfoProperties.TREE_SIZE] = this.getTreeSize();
+      obj[StateInfoProperties.TREE_BYTES] = this.getTreeBytes();
     }
     if (withNumParents) {
-      obj[RadixInfoProperties.NUM_PARENTS] = this.numParents();
+      obj[StateInfoProperties.NUM_PARENTS] = this.numParents();
     }
     if (this.hasChildStateNode()) {
+      const stateObj = {};
       const childStateNode = this.getChildStateNode();
-      obj[RadixInfoProperties.LABEL] = childStateNode.getLabel();
       if (withVersion) {
-        obj[RadixInfoProperties.VERSION] = childStateNode.getVersion();
+        stateObj[StateInfoProperties.VERSION] = childStateNode.getVersion();
       }
       if (withProofHash) {
-        obj[RadixInfoProperties.PROOF_HASH] = childStateNode.getProofHash();
+        stateObj[StateInfoProperties.STATE_PROOF_HASH] = childStateNode.getProofHash();
       }
+      obj[childStateNode.getLabel()] = stateObj;
     }
     for (const child of this.getChildNodes()) {
       obj[child.getLabel()] = child.toJsObject(
