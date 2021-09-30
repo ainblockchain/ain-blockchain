@@ -78,7 +78,7 @@ jobs:
           project_id: ${{ secrets.PERF_TEST_PIPELINE_GCP_PROJECT_ID }}
       - name: send test start message to gcp
         run: |-
-          gcloud compute ssh "${{ secrets.PERF_TEST_PIPELINE_GCE_INSTANCE }}" --zone "${{ secrets.PERF_TEST_PIPELINE_GCE_INSTANCE_ZONE }}" -- "cd ~/../workspace/testnet-performance-test-pipeline && nohup node start_performance_test.js ${{ github.event.pull_request.head.ref }} >> test_log.txt 2>&1 &" &
+          gcloud compute ssh "${{ secrets.PERF_TEST_PIPELINE_GCE_INSTANCE }}" --zone "${{ secrets.PERF_TEST_PIPELINE_GCE_INSTANCE_ZONE }}" -- "cd ~/../workspace/testnet-performance-test-pipeline && nohup node start_performance_test.js ${{ secrets.PERF_TEST_PIPELINE_TEST_BRANCH }} ${{ github.event.pull_request.head.ref }} >> test_log.txt 2>&1 &" &
           sleep 60
   check_deployment:
     if: github.event.pull_request.base.ref == 'master'

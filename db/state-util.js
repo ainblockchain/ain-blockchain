@@ -21,7 +21,7 @@ function isEmptyNode(node) {
 }
 
 function hasConfig(node, label) {
-  return node && node.hasChild(label);
+  return node && node.getChild(label) !== null;
 }
 
 function getConfig(node, label) {
@@ -78,8 +78,9 @@ function isWritablePathWithSharding(fullPath, root) {
       isValid = false;
       break;
     }
-    if (curNode.hasChild(label)) {
-      curNode = curNode.getChild(label);
+    const child = curNode.getChild(label);
+    if (child !== null) {
+      curNode = child;
       path.push(label);
     } else {
       break;
@@ -498,25 +499,6 @@ function applyOwnerChange(curOwnerTree, ownerChange) {
 }
 
 /**
- * Returns affected nodes' number.
- */
-function setStateTreeVersion(node, version) {
-  let numAffectedNodes = 0;
-  if (node === null) {
-    return numAffectedNodes;
-  }
-  if (node.getVersion() !== version) {
-    node.setVersion(version);
-    numAffectedNodes++;
-  }
-  for (const child of node.getChildNodes()) {
-    numAffectedNodes += setStateTreeVersion(child, version);
-  }
-
-  return numAffectedNodes;
-}
-
-/**
  * Renames the version of the given state tree. Each node's version of the state tree is set with
  * given to-version if its value is equal to the given from-version.
  * 
@@ -545,28 +527,21 @@ function renameStateTreeVersion(node, fromVersion, toVersion, isRootNode = true)
 /**
  * Returns affected nodes' number.
  */
-function deleteStateTree(node, deleteOrphanedOnly = false) {
+function deleteStateTreeVersion(node) {
   let numAffectedNodes = 0;
-  if (deleteOrphanedOnly) {
-    if (node.numParents() > 0) {
-      // Does nothing.
-      return numAffectedNodes;
-    }
+  if (node.hasAtLeastOneParent()) {
+    // Does nothing.
+    return numAffectedNodes;
   }
 
   // 1. Delete children
-  if (FeatureFlags.enableRadixTreeLayers && node.getRadixTreeEnabled()) {
-    const childNodes = node.getChildNodes();
-    node.deleteRadixTree(true);  // shouldDeleteParent = true
-    for (const child of childNodes) {
-      numAffectedNodes += deleteStateTree(child, deleteOrphanedOnly);
-    }
+  if (FeatureFlags.enableRadixTreeLayers) {
+    numAffectedNodes += node.deleteRadixTreeVersion();
   } else {
     for (const label of node.getChildLabels()) {
       const child = node.getChild(label);
       node.deleteChild(label, false);  // shouldUpdateStateInfo = false
-
-      numAffectedNodes += deleteStateTree(child, deleteOrphanedOnly);
+      numAffectedNodes += deleteStateTreeVersion(child);
     }
   }
   // 2. Reset node
@@ -576,43 +551,15 @@ function deleteStateTree(node, deleteOrphanedOnly = false) {
   return numAffectedNodes;
 }
 
-function makeCopyOfStateTree(node) {
-  const copy = node.clone();
-  for (const label of node.getChildLabels()) {
-    const child = node.getChild(label);
-    copy.setChild(label, makeCopyOfStateTree(child));
-  }
-  return copy;
-}
-
-function equalStateTrees(node1, node2) {
-  if (!node1 && !node2) {
-    return true;
-  }
-  if (!node1 || !node2) {
-    return false;
-  }
-  if (!node1.equal(node2)) {
-    return false;
-  }
-  // NOTE: The child label order matters.
-  for (const label of node1.getChildLabels()) {
-    const child1 = node1.getChild(label);
-    const child2 = node2.getChild(label);
-    if (!equalStateTrees(child1, child2)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 function updateStateInfoForAllRootPathsRecursive(
     curNode, updatedChildLabel = null, updatedChildEmpty = false) {
   let numAffectedNodes = 0;
   if (updatedChildEmpty) {
     curNode.deleteChild(updatedChildLabel, true);  // shouldUpdateStateInfo = true
   } else {
+    if (!FeatureFlags.enableStateInfoUpdates) {
+      return 0;
+    }
     curNode.updateStateInfo(updatedChildLabel, true);  // shouldRebuildRadixInfo = true
   }
   const curLabel = curNode.getLabel();
@@ -628,18 +575,21 @@ function updateStateInfoForAllRootPathsRecursive(
 function updateStateInfoForAllRootPaths(curNode, updatedChildLabel = null) {
   const LOG_HEADER = 'updateStateInfoForAllRootPaths';
 
-  if (!curNode.hasChild(updatedChildLabel)) {
+  const childNode = curNode.getChild(updatedChildLabel);
+  if (childNode === null) {
     logger.error(
         `[${LOG_HEADER}] Updating state info with non-existing label: ${updatedChildLabel} ` +
         `at: ${new Error().stack}.`);
     return 0;
   }
-  const childNode = curNode.getChild(updatedChildLabel);
   return updateStateInfoForAllRootPathsRecursive(
       curNode, updatedChildLabel, isEmptyNode(childNode));
 }
 
 function updateStateInfoForStateTree(stateTree) {
+  if (!FeatureFlags.enableStateInfoUpdates) {
+    return 0;
+  }
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
     for (const node of stateTree.getChildNodes()) {
@@ -671,10 +621,10 @@ function getProofOfStatePathRecursive(node, fullPath, labelIndex) {
     return node.getProofOfState();
   }
   const childLabel = fullPath[labelIndex];
-  if (!node.hasChild(childLabel)) {
+  const child = node.getChild(childLabel);
+  if (child === null) {
     return null;
   }
-  const child = node.getChild(childLabel);
   const childProof = getProofOfStatePathRecursive(child, fullPath, labelIndex + 1);
   if (childProof === null) {
     return null;
@@ -712,11 +662,8 @@ module.exports = {
   isValidOwnerTree,
   applyFunctionChange,
   applyOwnerChange,
-  setStateTreeVersion,
   renameStateTreeVersion,
-  deleteStateTree,
-  makeCopyOfStateTree,
-  equalStateTrees,
+  deleteStateTreeVersion,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,

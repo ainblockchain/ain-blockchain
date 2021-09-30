@@ -16,10 +16,6 @@ const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 // NOTE(platfowner): If there is a corresponding env variable (e.g. force... flags),
 //                   the flag value will be OR-ed to the value.
 const FeatureFlags = {
-  // Enables state version optimization.
-  enableStateVersionOpt: true,
-  // Enables state tree transfer.
-  enableStateTreeTransfer: false,
   // Enables rich logging for functions.
   enableRichFunctionLogging: false,
   // Enables rich logging for transactions.
@@ -28,18 +24,20 @@ const FeatureFlags = {
   enableRichP2pCommunicationLogging: false,
   // Enables rich logging for tx selection in tx pool.
   enableRichTxSelectionLogging: false,
+  // Enables state tree transfer.
+  enableStateTreeTransfer: false,
   // Enables receipts recording to the state.
   enableReceiptsRecording: true,  // Some test cases assume this value true.
   // Enables receipt path's prefix layers.
   enableReceiptPathPrefixLayers: false,  // Some test cases assume this value false.
   // Enables radix layers.
   enableRadixTreeLayers: true,  // Some test cases assume this value true.
-  // Enables dynamic radix tree.
-  enableDynamicRadixTree: true,  // Some test cases assume this value true.
   // Enables ntp-sync for global time syncing.
   enableNtpSync: true,
   // Enables traffic monitoring.
   enableTrafficMonitoring: true,
+  // Enables state info updates.
+  enableStateInfoUpdates: true,
 };
 
 // ** Environment variables **
@@ -121,8 +119,6 @@ const SERVICE_TREE_SIZE_BUDGET = SERVICE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_
 const APPS_TREE_SIZE_BUDGET = APPS_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
 const FREE_TREE_SIZE_BUDGET = FREE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
 const STATE_GAS_COEFFICIENT = 1;
-const NUM_CHILDREN_TO_ENABLE_RADIX_TREE = 6;
-const NUM_CHILDREN_TO_DISABLE_RADIX_TREE = 3;
 const TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
 const TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
 
@@ -392,9 +388,24 @@ const ProofProperties = {
   LABEL: '.label',
   PROOF_HASH: '.proof_hash',
   RADIX_PROOF_HASH: '.radix_ph',
+};
+
+/**
+ * Properties of radix info.
+ *
+ * @enum {string}
+ */
+const RadixInfoProperties = {
+  LABEL: '.label',
+  NUM_PARENTS: '.num_parents',
+  PROOF_HASH: '.proof_hash',
+  RADIX_PROOF_HASH: '.radix_ph',
+  RADIX_SERIAL: '.radix_serial',
+  RADIX_VERSION: '.radix_version',
   TREE_HEIGHT: '.tree_height',
   TREE_SIZE: '.tree_size',
   TREE_BYTES: '.tree_bytes',
+  VERSION: '.version',
 };
 
 /**
@@ -931,8 +942,6 @@ module.exports = {
   APPS_TREE_SIZE_BUDGET,
   FREE_TREE_SIZE_BUDGET,
   STATE_GAS_COEFFICIENT,
-  NUM_CHILDREN_TO_ENABLE_RADIX_TREE,
-  NUM_CHILDREN_TO_DISABLE_RADIX_TREE,
   TRAFFIC_DB_INTERVAL_MS,
   TRAFFIC_DB_MAX_INTERVALS,
   MessageTypes,
@@ -948,6 +957,7 @@ module.exports = {
   FunctionTypes,
   FunctionResultCode,
   ProofProperties,
+  RadixInfoProperties,
   StateInfoProperties,
   NativeFunctionIds,
   isNativeFunctionId,
