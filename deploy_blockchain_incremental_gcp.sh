@@ -165,7 +165,7 @@ function deploy_node() {
         printf "\n* >> Initializing account for node $node_index ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
 
-        node init_account_gcp.js $node_ip_addr $PASSWORD
+        echo $PASSWORD | node init_account_gcp.js $node_ip_addr $PASSWORD
     fi
 
     #4. Wait until node is synced

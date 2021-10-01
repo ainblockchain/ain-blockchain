@@ -3,6 +3,12 @@ const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const { CURRENT_PROTOCOL_VERSION } = require('./common/constants');
 const { sleep } = require('./common/common-util');
+const readline = require('readline');
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
 async function sendGetBootstrapPubKeyRequest(endpointUrl) {
   return await axios.post(
@@ -57,14 +63,18 @@ async function initAccount(endpointUrl, password) {
 }
 
 async function processArguments() {
-  if (process.argv.length !== 4) {
+  if (process.argv.length !== 3) {
     usage();
   }
-  await initAccount(process.argv[2], process.argv[3]);
+  const password = await new Promise((resolve) => {
+    rl.question('Enter password: ', resolve);
+  })
+  console.log(password);
+  await initAccount(process.argv[2], password);
 }
 
 function usage() {
-  console.log('\nExample commandlines:\n  node init_account_gcp.js <ENDPOINT_URL> <PASSWORD>\n');
+  console.log('\nExample commandlines:\n  node init_account_gcp.js <ENDPOINT_URL>\n');
   process.exit(0);
 }
 
