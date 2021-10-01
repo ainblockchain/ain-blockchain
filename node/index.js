@@ -65,10 +65,15 @@ class BlockchainNode {
     this.bootstrap();
   }
 
+  setAccount(account) {
+    this.account = account;
+    this.bootstrapAccount = null;
+  }
+
   bootstrap() {
     const LOG_HEADER = 'bootstrap';
     if (ACCOUNT_INDEX !== null) {
-      this.account = GenesisAccounts.others[ACCOUNT_INDEX];
+      this.setAccount(GenesisAccounts.others[ACCOUNT_INDEX]);
       if (!this.account) {
         throw Error(`[${LOG_HEADER}] Failed to initialize with an account`);
       }
@@ -93,8 +98,7 @@ class BlockchainNode {
           this.bootstrapAccount.private_key, encryptedPassword);
       const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
-        this.account = accountFromKeystore;
-        this.bootstrapAccount = null;
+        this.setAccount(accountFromKeystore);
         logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
             `${this.account.address}`);
         this.initShardSetting();
