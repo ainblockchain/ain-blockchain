@@ -65,7 +65,7 @@ if [[ "$#" -gt 5 ]]; then
     fi
 fi
 printf "SETUP_OPTION=$SETUP_OPTION\n"
-echo "KEYSTORE_OPTION=$KEYSTORE_OPTION"
+printf "KEYSTORE_OPTION=$KEYSTORE_OPTION\n"
 
 
 # Get confirmation.

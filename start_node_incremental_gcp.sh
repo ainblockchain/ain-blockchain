@@ -98,8 +98,8 @@ fi
 
 export SYNC_MODE="$4"
 printf "SYNC_MODE=$SYNC_MODE\n"
-OPTIONS=$5
-printf "OPTIONS=$OPTIONS\n"
+KEYSTORE_OPTION=$5
+printf "KEYSTORE_OPTION=$KEYSTORE_OPTION\n"
 
 export DEBUG=false
 export CONSOLE_LOG=false
@@ -158,7 +158,7 @@ eval $RM_CMD
 printf "\n#### [Step 7] Start new node server ####\n\n"
 
 # NOTE(liayoo): Currently this script supports --keystore option only for the parent chain.
-if [[ "$OPTIONS" != '--keystore' ]] || [[ "$2" -gt 0 ]]; then
+if [[ "$KEYSTORE_OPTION" != '--keystore' ]] || [[ "$2" -gt 0 ]]; then
     export ACCOUNT_INDEX="$3"
     printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
     COMMAND_PREFIX=""
