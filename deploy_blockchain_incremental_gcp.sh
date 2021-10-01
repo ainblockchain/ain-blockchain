@@ -43,29 +43,25 @@ fi
 printf "RUN_MODE=$RUN_MODE\n"
 
 
-KEYSTORE_COMMAND_SUFFIX=""
-if [[ "$#" = 6 ]]; then
-    if [[ "$6" = '--setup' ]]; then
-        OPTIONS="$6"
-    elif [[ "$6" = '--keystore' ]]; then
-        KEYSTORE_COMMAND_SUFFIX="--keystore"
+function parse_options() {
+    local option="$1"
+    if [[ "$option" = '--setup' ]]; then
+        SETUP_OPTION="$option"
+    elif [[ "$option" = '--keystore' ]]; then
+        KEYSTORE_OPTION="$option"
     else
-        echo "Invalid option: $6"
+        echo "Invalid option: $option"
         exit
     fi
-elif [[ "$#" = 7 ]]; then
-    KEYSTORE_COMMAND_SUFFIX="--keystore"
-    if [[ "$6" = '--setup' ]] && [[ "$7" = '--keystore' ]]; then
-        OPTIONS="$6"
-    elif [[ "$6" = '--keystore' ]] && [[ "$7" = '--setup' ]]; then
-        OPTIONS="$7"
-    else
-        echo "Invalid options: $6 $7"
-        exit
-    fi
-fi
-printf "OPTIONS=$OPTIONS\n"
-echo "KEYSTORE_COMMAND_SUFFIX=$KEYSTORE_COMMAND_SUFFIX"
+}
+
+# Parse options.
+KEYSTORE_OPTION=""
+parse_options "$6"
+parse_options "$7"
+printf "SETUP_OPTION=$SETUP_OPTION\n"
+echo "KEYSTORE_OPTION=$KEYSTORE_OPTION"
+
 
 # Get confirmation.
 printf "\n"
@@ -75,7 +71,8 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
-if [[ "$KEYSTORE_COMMAND_SUFFIX" != "" ]]; then
+
+if [[ "$KEYSTORE_OPTION" != "" ]]; then
     # Get keystore password
     echo -n "Enter password: "
     read -s PASSWORD
@@ -115,7 +112,7 @@ function deploy_tracker() {
     eval $SCP_CMD
 
     # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-    if [[ $OPTIONS = "--setup" ]]; then
+    if [[ $SETUP_OPTION = "--setup" ]]; then
         printf "\n\n[[[[ Setting up tracker ]]]]\n\n"
         SETUP_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
         printf "SETUP_CMD='$SETUP_CMD'\n\n"
@@ -146,7 +143,7 @@ function deploy_node() {
     eval $SCP_CMD
 
     # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-    if [[ $OPTIONS = "--setup" ]]; then
+    if [[ $SETUP_OPTION = "--setup" ]]; then
         printf "\n\n[[[[ Setting up node $node_index ]]]]\n\n"
         SETUP_CMD="gcloud compute ssh $node_target_addr --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $node_zone"
         printf "SETUP_CMD='$SETUP_CMD'\n\n"
@@ -155,12 +152,12 @@ function deploy_node() {
 
     # 2. Start node
     printf "\n\n[[[[ Starting node $node_index ]]]]\n\n"
-    START_CMD="gcloud compute ssh $node_target_addr --command '. start_node_incremental_gcp.sh $SEASON 0 $node_index $SYNC_MODE $KEYSTORE_COMMAND_SUFFIX' --project $PROJECT_ID --zone $node_zone"
+    START_CMD="gcloud compute ssh $node_target_addr --command '. start_node_incremental_gcp.sh $SEASON 0 $node_index $SYNC_MODE $KEYSTORE_OPTION' --project $PROJECT_ID --zone $node_zone"
     printf "START_CMD='$START_CMD'\n\n"
     eval $START_CMD
 
     # 3. Init account if necessary (if --keystore specified)
-    if [[ "$KEYSTORE_COMMAND_SUFFIX" != "" ]]; then
+    if [[ "$KEYSTORE_OPTION" != "" ]]; then
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         printf "\n* >> Initializing account for node $node_index ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
