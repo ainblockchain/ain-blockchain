@@ -80,31 +80,29 @@ describe("P2P", () => {
 
     describe("getProtocolInfo", () => {
       it("gets external IP address", () => {
-        const actual = {
+        assert.deepEqual(p2pServer.getProtocolInfo(), {
           COMPATIBLE_MAX_PROTOCOL_VERSION: maxProtocolVersion,
           COMPATIBLE_MIN_PROTOCOL_VERSION: minProtocolVersion,
           CONSENSUS_PROTOCOL_VERSION: CONSENSUS_PROTOCOL_VERSION,
           CURRENT_PROTOCOL_VERSION: CURRENT_PROTOCOL_VERSION,
           DATA_PROTOCOL_VERSION: DATA_PROTOCOL_VERSION
-        };
-        assert.deepEqual(actual, p2pServer.getProtocolInfo());
+        });
       });
     });
 
     describe("getStateVersionStatus", () => {
       it("gets initial state version status", () => {
-        const actual = {
+        assert.deepEqual(p2pServer.getStateVersionStatus(), {
           numVersions: 3,
           versionList: ['EMPTY', 'FINAL:0', 'NODE:0'],
           finalVersion: 'FINAL:0',
-        };
-        assert.deepEqual(actual, p2pServer.getStateVersionStatus());
+        });
       });
     });
 
     describe("getConsensusStatus", () => {
       it("gets initial consensus state", () => {
-        const actual = {
+        assert.deepEqual(p2pServer.getConsensusStatus(), {
           health: true,
           state: 'STARTING',
           stateNumeric: 0,
@@ -112,23 +110,28 @@ describe("P2P", () => {
           longestNotarizedChainTipsSize: 0,
           globalTimeSyncStatus: {},
           validators: {}
-        };
-        assert.deepEqual(actual, p2pServer.getConsensusStatus());
+        });
       });
     });
 
     describe("getBlockStatus", () => {
       it("gets initial block status", () => {
-        const actual = { number: 0, epoch: 0, timestamp: GenesisAccounts[AccountProperties.TIMESTAMP] };
-        const expected = p2pServer.getBlockStatus();
-        delete expected.elapsedTimeMs;
-        assert.deepEqual(actual, expected);
+        const actual = p2pServer.getBlockStatus();
+        delete actual.elapsedTimeMs;
+        assert.deepEqual(actual, {
+          number: 0, epoch: 0, timestamp: GenesisAccounts[AccountProperties.TIMESTAMP]
+        });
       });
     });
 
     describe("getNodeStatus", () => {
       it("gets initial node status", () => {
-        const actual = {
+        const actual = p2pServer.getNodeStatus();
+        actual.dbStatus.stateInfo['#tree_size'] = 'erased';
+        actual.dbStatus.stateInfo['#tree_bytes'] = 'erased';
+        actual.dbStatus.stateInfo['#state_ph'] = 'erased';
+        actual.dbStatus.stateProof['#state_ph'] = 'erased';
+        assert.deepEqual(actual, {
           address: p2pServer.getNodeAddress(),
           state: 'SYNCING',
           stateNumeric: 1,
@@ -150,39 +153,36 @@ describe("P2P", () => {
             versionList: [ 'EMPTY', 'FINAL:0', 'NODE:0' ],
             finalVersion: 'FINAL:0'
           }
-        };
-        const nodeStatus = p2pServer.getNodeStatus();
-        nodeStatus.dbStatus.stateInfo['#tree_size'] = 'erased';
-        nodeStatus.dbStatus.stateInfo['#tree_bytes'] = 'erased';
-        nodeStatus.dbStatus.stateInfo['#state_ph'] = 'erased';
-        nodeStatus.dbStatus.stateProof['#state_ph'] = 'erased';
-        assert.deepEqual(actual, nodeStatus);
+        });
       });
     });
 
     describe("getDiskUsage", () => {
       it("gets initial disk usage (it depends on the machine)", () => {
-        const actual = {
+        assert.deepEqual(Object.keys(p2pServer.getDiskUsage()), Object.keys({
           available: 113007648768,
           free: 235339354112,
           total: 250685575168,
           usage: 15346221056,
           usagePercent: 10.1
-        };
-        assert.deepEqual(Object.keys(actual), Object.keys(p2pServer.getDiskUsage()));
+        }));
       });
     });
 
     describe("getCpuUsage", () => {
       it("gets initial cpu usage (it depends on the machine)", () => {
-        const actual = { free: 3174023060, usage: 313233920, usagePercent: 7.5, total: 3487256980 };
-        assert.deepEqual(Object.keys(actual), Object.keys(p2pServer.getCpuUsage()));
+        assert.deepEqual(Object.keys(p2pServer.getCpuUsage()), Object.keys({
+          free: 3174023060,
+          usage: 313233920,
+          usagePercent: 7.5,
+          total: 3487256980
+        }));
       });
     });
 
     describe("getMemoryUsage", () => {
       it("gets initial memory usage (it depends on the machine)", () => {
-        const actual = {
+        const expected = {
           os: {
             free: 211546112,
             usage: 16968323072,
@@ -209,20 +209,20 @@ describe("P2P", () => {
             number_of_detached_contexts: 0
           }
         };
-        const expected = p2pServer.getMemoryUsage();
+        const actual = p2pServer.getMemoryUsage();
         assert.deepEqual(Object.keys(actual), Object.keys(expected));
         assert.deepEqual(Object.keys(actual.os), Object.keys(expected.os));
         // NOTE(minsulee2): Since the actual.heap part have in difference between the node version
         // (> 12.16) and (<= 12.17), which newly includes arrayBuffers info as well.
         // See also: the issue #419(https://github.com/ainblockchain/ain-blockchain/issues/419)
-        expect(Object.keys(expected.heap)).include.members(Object.keys(actual.heap));
+        expect(Object.keys(actual.heap)).include.members(Object.keys(expected.heap));
         assert.deepEqual(Object.keys(actual.heapStats), Object.keys(expected.heapStats));
       });
     });
 
     describe("getRuntimeInfo (it depends on the machine)", () => {
       it("gets runtime information", () => {
-        const actual = {
+        const expected = {
           process: {
             version: 'v12.16.0',
             platform: 'darwin',
@@ -248,7 +248,7 @@ describe("P2P", () => {
             DEBUG: undefined
           }
         };
-        const expected = p2pServer.getRuntimeInfo();
+        const actual = p2pServer.getRuntimeInfo();
         assert.deepEqual(Object.keys(actual), Object.keys(expected));
         assert.deepEqual(Object.keys(actual.process), Object.keys(expected.process));
         assert.deepEqual(Object.keys(actual.os), Object.keys(expected.os));
@@ -258,15 +258,16 @@ describe("P2P", () => {
 
     describe("getTxStatus", () => {
       it("gets initial tx status", () => {
-        const actual = { txPoolSize: 0, txTrackerSize: 0 };
-        assert.deepEqual(Object.keys(actual), Object.keys(p2pServer.getTxStatus()));
+        assert.deepEqual(Object.keys(p2pServer.getTxStatus()), Object.keys({
+          txPoolSize: 0,
+          txTrackerSize: 0
+        }));
       });
     });
 
     describe("getShardingStatus", () => {
       it("gets initial sharding status", () => {
-        const actual = {};
-        assert.deepEqual(Object.keys(actual), Object.keys(p2pServer.getShardingStatus()));
+        assert.deepEqual(Object.keys(p2pServer.getShardingStatus()), Object.keys({}));
       });
     });
   });
@@ -284,15 +285,14 @@ describe("P2P", () => {
 
     describe("getConnectionStatus", () => {
       it("shows initial values of connection status", () => {
-        const actual = {
+        assert.deepEqual(p2pClient.getConnectionStatus(), {
           targetOutBound: TARGET_NUM_OUTBOUND_CONNECTION,
           maxInbound: MAX_NUM_INBOUND_CONNECTION,
           numInbound: 0,
           numOutbound: 0,
           incomingPeers: [],
           outgoingPeers: [],
-        };
-        assert.deepEqual(actual, p2pClient.getConnectionStatus());
+        });
       });
     });
 
@@ -311,7 +311,7 @@ describe("P2P", () => {
         const clientApiUrl = extUrl.toString();
         extUrl.pathname = 'json-rpc';
         const jsonRpcUrl = extUrl.toString();
-        const actual = {
+        assert.deepEqual(p2pClient.getNetworkStatus(), {
           ip: extIp,
           p2p: {
             url: p2pUrl,
@@ -326,15 +326,14 @@ describe("P2P", () => {
             port: PORT,
           },
           connectionStatus: p2pClient.getConnectionStatus()
-        };
-        assert.deepEqual(actual, p2pClient.getNetworkStatus());
+        });
       });
     });
 
     describe("getStatus", () => {
       it("shows initial client status", () => {
         const blockStatus = p2pServer.getBlockStatus();
-        const actual = {
+        assert.deepEqual(Object.keys(p2pClient.getStatus()), Object.keys({
           address: p2pServer.getNodeAddress(),
           updatedAt: Date.now(),
           lastBlockNumber: blockStatus.number,
@@ -351,8 +350,7 @@ describe("P2P", () => {
           runtimeInfo: p2pServer.getRuntimeInfo(),
           protocolInfo: p2pServer.getProtocolInfo(),
           blockchainConfig: p2pServer.getBlockchainConfig(),
-        };
-        assert.deepEqual(Object.keys(actual), Object.keys(p2pClient.getStatus()));
+        }));
       });
     });
   });
