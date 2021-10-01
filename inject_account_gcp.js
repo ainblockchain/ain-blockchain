@@ -5,10 +5,18 @@ const { CURRENT_PROTOCOL_VERSION } = require('./common/constants');
 const { sleep } = require('./common/common-util');
 const readline = require('readline');
 
+let hide = false;
 const readlineInterface = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
+// NOTE(liayoo): Show the prompt & hide the password
+readlineInterface._writeToOutput = (val) => {
+  if (!hide) {
+    readlineInterface.output.write(val);
+    hide = true;
+  }
+};
 
 async function sendGetBootstrapPubKeyRequest(endpointUrl) {
   return await axios.post(
@@ -67,9 +75,12 @@ async function processArguments() {
     usage();
   }
   const password = await new Promise((resolve) => {
-    readlineInterface.question('Enter password: ', resolve);
+    readlineInterface.question('Enter password: ', (input) => {
+      readlineInterface.output.write('\n\r');
+      readlineInterface.close();
+      resolve(input);
+    });
   })
-  console.log(password);
   await injectAccount(process.argv[2], password);
 }
 
