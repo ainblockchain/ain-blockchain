@@ -494,6 +494,7 @@ class P2pClient {
     });
   }
 
+  // TODO(minsulee2): Not just wait for address, but ack. if ack fails, this connection disconnects.
   waitForAddress = (socket) => {
     sleep(WAIT_FOR_ADDRESS_TIMEOUT_MS)
       .then(() => {
@@ -517,7 +518,10 @@ class P2pClient {
       };
       logger.info(`Connected to peer(${url}),`);
       this.setClientSidePeerEventHandlers(socket);
+      // TODO(minsulee2): Send an encrypted form of address(pubkey can be recoverable from address),
+      // ip address, and signature.
       this.sendAddress(socket);
+      // TODO(minsulee2): Check ack from the corresponding server, then proceed reqeustChainSegment.
       await this.waitForAddress(socket);
       this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
       if (this.server.consensus.stakeTx) {

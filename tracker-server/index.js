@@ -147,8 +147,6 @@ server.on('connection', (ws) => {
         ws.send(JSON.stringify(connectionMessage));
         printNodesInfo();
         break;
-      // NOTE(minsulee2): This can be combined with TrackerMessageTypes.NEW_PEERS_REQUEST in the
-      // next design!
       case TrackerMessageTypes.PEER_INFO_UPDATE:
         const updateNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
         setPeerNodes(ws, updateNodeInfo);
