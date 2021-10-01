@@ -24,16 +24,16 @@ echo "PROJECT_ID=$PROJECT_ID"
 GCP_USER="$2"
 echo "GCP_USER=$GCP_USER"
 
-KEYSTORE_COMMAND_SUFFIX=""
+KEYSTORE_OPTION=""
 if [[ "$#" = 4 ]]; then
     if [[ "$4" != '--keystore' ]]; then
-        echo "Invalid options: $4 $5"
+        echo "Invalid option: $4"
         exit
     else
-        KEYSTORE_COMMAND_SUFFIX="--keystore"
+        KEYSTORE_OPTION="--keystore"
     fi
 fi
-echo "KEYSTORE_COMMAND_SUFFIX=$KEYSTORE_COMMAND_SUFFIX"
+echo "KEYSTORE_OPTION=$KEYSTORE_OPTION"
 
 # Get confirmation.
 echo
@@ -45,7 +45,7 @@ then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
-if [[ "$KEYSTORE_COMMAND_SUFFIX" != "" ]]; then
+if [[ "$KEYSTORE_OPTION" != "" ]]; then
     # Get keystore password
     echo -n "Enter password: "
     read -s PASSWORD
@@ -57,7 +57,7 @@ if [[ "$KEYSTORE_COMMAND_SUFFIX" != "" ]]; then
 fi
 
 function inject_account() {
-    if [[ "$KEYSTORE_COMMAND_SUFFIX" != "" ]]; then
+    if [[ "$KEYSTORE_OPTION" != "" ]]; then
         local node_index="$1"
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         printf "\n* >> Injecting an account for node $node_index ********************\n\n"
@@ -115,23 +115,23 @@ START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/
 printf "\n\n############################\n# Running parent tracker #\n############################\n\n"
 gcloud compute ssh $TRACKER_TARGET_ADDR --command "$START_TRACKER_CMD --keep-code" --project $PROJECT_ID --zone $TRACKER_ZONE
 printf "\n\n###########################\n# Running parent node 0 #\n###########################\n\n"
-gcloud compute ssh $NODE_0_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 0 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_0_ZONE
+gcloud compute ssh $NODE_0_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 0 $KEYSTORE_OPTION --keep-code" --project $PROJECT_ID --zone $NODE_0_ZONE
 inject_account "0"
 sleep 10
 printf "\n\n#########################\n# Running parent node 1 #\n#########################\n\n"
-gcloud compute ssh $NODE_1_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 1 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_1_ZONE
+gcloud compute ssh $NODE_1_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 1 $KEYSTORE_OPTION --keep-code" --project $PROJECT_ID --zone $NODE_1_ZONE
 inject_account "1"
 sleep 10
 printf "\n\n#########################\n# Running parent node 2 #\n#########################\n\n"
-gcloud compute ssh $NODE_2_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 2 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_2_ZONE
+gcloud compute ssh $NODE_2_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 2 $KEYSTORE_OPTION --keep-code" --project $PROJECT_ID --zone $NODE_2_ZONE
 inject_account "2"
 sleep 10
 printf "\n\n#########################\n# Running parent node 3 #\n#########################\n\n"
-gcloud compute ssh $NODE_3_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 3 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_3_ZONE
+gcloud compute ssh $NODE_3_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 3 $KEYSTORE_OPTION --keep-code" --project $PROJECT_ID --zone $NODE_3_ZONE
 inject_account "3"
 sleep 10
 printf "\n\n#########################\n# Running parent node 4 #\n#########################\n\n"
-gcloud compute ssh $NODE_4_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 4 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_4_ZONE
+gcloud compute ssh $NODE_4_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 4 $KEYSTORE_OPTION --keep-code" --project $PROJECT_ID --zone $NODE_4_ZONE
 inject_account "4"
 sleep 10
 
