@@ -33,11 +33,11 @@ async function sendGetBootstrapPubKeyRequest(endpointUrl) {
       });
 }
 
-async function sendInitAccountRequest(endpointUrl, encryptedPassword) {
+async function sendInjectAccountRequest(endpointUrl, encryptedPassword) {
   return await axios.post(
     `${endpointUrl}/json-rpc`,
     {
-      method: 'ain_initAccount',
+      method: 'ain_injectAccount',
       params: {
         protoVer: CURRENT_PROTOCOL_VERSION,
         encryptedPassword,
@@ -50,7 +50,7 @@ async function sendInitAccountRequest(endpointUrl, encryptedPassword) {
       });
 }
 
-async function initAccount(endpointUrl, password) {
+async function injectAccount(endpointUrl, password) {
   let bootstrapPubKey = null;
   while (bootstrapPubKey === null) {
     await sleep(1000);
@@ -58,8 +58,8 @@ async function initAccount(endpointUrl, password) {
   }
   console.log('bootstrapPubKey:', JSON.stringify(bootstrapPubKey, null, 2));
   const encryptedPassword = await ainUtil.encryptWithPublicKey(bootstrapPubKey, password);
-  const res = await sendInitAccountRequest(endpointUrl, encryptedPassword);
-  console.log('initAccount result:', res);
+  const res = await sendInjectAccountRequest(endpointUrl, encryptedPassword);
+  console.log('injectAccount result:', res);
 }
 
 async function processArguments() {
@@ -70,11 +70,11 @@ async function processArguments() {
     rl.question('Enter password: ', resolve);
   })
   console.log(password);
-  await initAccount(process.argv[2], password);
+  await injectAccount(process.argv[2], password);
 }
 
 function usage() {
-  console.log('\nExample commandlines:\n  node init_account_gcp.js <ENDPOINT_URL>\n');
+  console.log('\nExample commandlines:\n  node inject_account_gcp.js <ENDPOINT_URL>\n');
   process.exit(0);
 }
 
