@@ -27,32 +27,29 @@ echo "GCP_USER=$GCP_USER"
 NUM_SHARDS=$3
 echo "NUM_SHARDS=$NUM_SHARDS"
 
-KEYSTORE_COMMAND_SUFFIX=""
-if [[ "$#" = 4 ]]; then
-    if [[ "$4" = '--setup' ]]; then
-        OPTIONS="$4"
-    elif [[ "$4" = '--keystore' ]]; then
-        KEYSTORE_COMMAND_SUFFIX="--keystore"
+
+function parse_options() {
+    local option="$1"
+    if [[ "$option" = '--setup' ]]; then
+        SETUP_OPTION="$option"
+    elif [[ "$option" = '--keystore' ]]; then
+        KEYSTORE_OPTION="$option"
     else
-        echo "Invalid option: $4"
+        echo "Invalid options: $option"
         exit
     fi
-elif [[ "$#" = 5 ]]; then
-    KEYSTORE_COMMAND_SUFFIX="--keystore"
-    if [[ "$4" = '--setup' ]] && [[ "$5" = '--keystore' ]]; then
-        OPTIONS="$4"
-    elif [[ "$4" = '--keystore' ]] && [[ "$5" = '--setup' ]]; then
-        OPTIONS="$5"
-    else
-        echo "Invalid options: $4 $5"
-        exit
-    fi
-fi
-echo "OPTIONS=$OPTIONS"
-echo "KEYSTORE_COMMAND_SUFFIX=$KEYSTORE_COMMAND_SUFFIX"
+}
+
+# Parse options.
+KEYSTORE_OPTION=""
+parse_options "$4"
+parse_options "$5"
+echo "SETUP_OPTION=$SETUP_OPTION"
+echo "KEYSTORE_OPTION=$KEYSTORE_OPTION"
+
 
 # Commands for starting nodes.
-BASE_COMMAND=". start_node_genesis_gcp.sh $SEASON"
+START_NODE_COMMAND_BASE=". start_node_genesis_gcp.sh $SEASON"
 
 
 # Get confirmation.
@@ -65,7 +62,7 @@ then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
-if [[ "$KEYSTORE_COMMAND_SUFFIX" != "" ]]; then
+if [[ "$KEYSTORE_OPTION" != "" ]]; then
     # Get keystore password
     echo -n "Enter password: "
     read -s PASSWORD
@@ -77,7 +74,7 @@ if [[ "$KEYSTORE_COMMAND_SUFFIX" != "" ]]; then
 fi
 
 function inject_account() {
-    if [[ "$KEYSTORE_COMMAND_SUFFIX" != "" ]]; then
+    if [[ "$KEYSTORE_OPTION" != "" ]]; then
         local node_index="$1"
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         printf "\n* >> Injecting an account for node $node_index ********************\n\n"
@@ -145,7 +142,7 @@ printf "\nDeploying files to parent node 4 (${NODE_4_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_4_ZONE
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-if [[ $OPTIONS = "--setup" ]]; then
+if [[ $SETUP_OPTION = "--setup" ]]; then
     printf "\n\n##########################\n# Setting up parent tracker #\n###########################\n\n"
     gcloud compute ssh $TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
     printf "\n\n##########################\n# Setting up parent node 0 #\n##########################\n\n"
@@ -164,19 +161,19 @@ fi
 printf "\n\n###########################\n# Starting parent tracker #\n###########################\n\n"
 gcloud compute ssh $TRACKER_TARGET_ADDR --command ". start_tracker_genesis_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
 printf "\n\n##########################\n# Starting parent node 0 #\n##########################\n\n"
-gcloud compute ssh $NODE_0_TARGET_ADDR --command "$BASE_COMMAND 0 0 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_0_ZONE
+gcloud compute ssh $NODE_0_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 0 $KEYSTORE_OPTION" --project $PROJECT_ID --zone $NODE_0_ZONE
 inject_account "0"
 printf "\n\n##########################\n# Starting parent node 1 #\n##########################\n\n"
-gcloud compute ssh $NODE_1_TARGET_ADDR --command "$BASE_COMMAND 0 1 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_1_ZONE
+gcloud compute ssh $NODE_1_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 1 $KEYSTORE_OPTION" --project $PROJECT_ID --zone $NODE_1_ZONE
 inject_account "1"
 printf "\n\n##########################\n# Starting parent node 2 #\n##########################\n\n"
-gcloud compute ssh $NODE_2_TARGET_ADDR --command "$BASE_COMMAND 0 2 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_2_ZONE
+gcloud compute ssh $NODE_2_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 2 $KEYSTORE_OPTION" --project $PROJECT_ID --zone $NODE_2_ZONE
 inject_account "2"
 printf "\n\n##########################\n# Starting parent node 3 #\n##########################\n\n"
-gcloud compute ssh $NODE_3_TARGET_ADDR --command "$BASE_COMMAND 0 3 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_3_ZONE
+gcloud compute ssh $NODE_3_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 3 $KEYSTORE_OPTION" --project $PROJECT_ID --zone $NODE_3_ZONE
 inject_account "3"
 printf "\n\n##########################\n# Starting parent node 4 #\n##########################\n\n"
-gcloud compute ssh $NODE_4_TARGET_ADDR --command "$BASE_COMMAND 0 4 $KEYSTORE_COMMAND_SUFFIX" --project $PROJECT_ID --zone $NODE_4_ZONE
+gcloud compute ssh $NODE_4_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 4 $KEYSTORE_OPTION" --project $PROJECT_ID --zone $NODE_4_ZONE
 inject_account "4"
 
 
@@ -187,7 +184,7 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             echo "shard #$i"
 
             # generate genesis config files in ./blockchain/shard_$i
-            if [[ $OPTIONS = "--setup" ]]; then
+            if [[ $SETUP_OPTION = "--setup" ]]; then
                 node ./tools/generateShardGenesisFiles.js $SEASON 10 $i
             fi
 
@@ -207,7 +204,7 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             gcloud compute scp --recurse $FILES_FOR_NODE ${SHARD_NODE_2_TARGET_ADDR}:~/  --project $PROJECT_ID --zone $NODE_2_ZONE
 
             # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
-            if [[ $OPTIONS = "--setup" ]]; then
+            if [[ $SETUP_OPTION = "--setup" ]]; then
                 printf "\n\n###########################\n# Setting up shard_$i tracker #\n###########################\n\n"
                 gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
                 printf "\n\n##########################\n# Setting up  shard_$i node 0 #\n##########################\n\n"
@@ -222,10 +219,10 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
             printf "\n\n###########################\n# Starting shard_$i tracker #\n###########################\n\n"
             gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command ". start_tracker_genesis_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
             printf "\n\n##########################\n# Starting shard_$i node 0 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "$BASE_COMMAND $i 0" --project $PROJECT_ID --zone $NODE_0_ZONE
+            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "$START_NODE_COMMAND_BASE $i 0" --project $PROJECT_ID --zone $NODE_0_ZONE
             printf "\n\n##########################\n# Starting shard_$i node 1 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "$BASE_COMMAND $i 1" --project $PROJECT_ID --zone $NODE_1_ZONE
+            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "$START_NODE_COMMAND_BASE $i 1" --project $PROJECT_ID --zone $NODE_1_ZONE
             printf "\n\n##########################\n# Starting shard_$i node 2 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "$BASE_COMMAND $i 2" --project $PROJECT_ID --zone $NODE_2_ZONE
+            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "$START_NODE_COMMAND_BASE $i 2" --project $PROJECT_ID --zone $NODE_2_ZONE
         done
 fi
