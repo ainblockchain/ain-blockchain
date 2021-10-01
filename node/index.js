@@ -62,7 +62,7 @@ class BlockchainNode {
 
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
-    this.bootstrap();
+    this.initAccount();
   }
 
   setAccount(account) {
@@ -70,8 +70,8 @@ class BlockchainNode {
     this.bootstrapAccount = null;
   }
 
-  bootstrap() {
-    const LOG_HEADER = 'bootstrap';
+  initAccount() {
+    const LOG_HEADER = 'initAccount';
     if (ACCOUNT_INDEX !== null) {
       this.setAccount(GenesisAccounts.others[ACCOUNT_INDEX]);
       if (!this.account) {
@@ -88,8 +88,8 @@ class BlockchainNode {
     }
   }
 
-  async initAccount(encryptedPassword) {
-    const LOG_HEADER = 'initAccount';
+  async injectAccount(encryptedPassword) {
+    const LOG_HEADER = 'injectAccount';
     if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
       return false;
     }
