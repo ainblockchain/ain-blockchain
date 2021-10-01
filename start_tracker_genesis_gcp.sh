@@ -5,10 +5,10 @@ if [[ "$#" -gt 1 ]]; then
     exit
 fi
 
-KEEP_CODE=""
+KEEP_CODE_OPTION=""
 if [[ "$#" = 1 ]]; then
     if [[ "$1" = '--keep-code' ]]; then
-        KEEP_CODE=true
+        KEEP_CODE_OPTION=true
     else
         echo "Invalid option: $1\n"
         exit
@@ -20,7 +20,7 @@ echo 'Killing jobs..'
 killall node
 
 
-if [[ "$KEEP_CODE" = "" ]]; then
+if [[ "$KEEP_CODE_OPTION" = "" ]]; then
     echo 'Setting up working directory..'
     cd
     sudo rm -rf /home/ain_blockchain_data
