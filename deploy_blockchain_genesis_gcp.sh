@@ -44,9 +44,9 @@ function parse_options() {
 KEYSTORE_OPTION=""
 if [[ "$#" -gt 3 ]]; then
     parse_options "$4"
-fi
-if [[ "$#" = 5 ]]; then
-    parse_options "$5"
+    if [[ "$#" = 5 ]]; then
+        parse_options "$5"
+    fi
 fi
 echo "SETUP_OPTION=$SETUP_OPTION"
 echo "KEYSTORE_OPTION=$KEYSTORE_OPTION"
