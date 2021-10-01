@@ -14,18 +14,17 @@ async function sendGetBootstrapPubKeyRequest(endpointUrl) {
       },
       jsonrpc: '2.0',
       id: 0
-    }
-  )
-    .then(function(resp) {
-      return _.get(resp, 'data.result.result');
     })
-    .catch((e) => {
-      console.log(`sendGetBootstrapPubKeyRequest ${e}`);
-      if (e.code === 'ECONNREFUSED') {
-        return null;
-      }
-      throw e;
-    });
+      .then(function(resp) {
+        return _.get(resp, 'data.result.result');
+      })
+      .catch((e) => {
+        console.log(`sendGetBootstrapPubKeyRequest ${e}`);
+        if (e.code === 'ECONNREFUSED') {
+          return null;
+        }
+        throw e;
+      });
 }
 
 async function sendInitAccountRequest(endpointUrl, encryptedPassword) {
@@ -39,10 +38,10 @@ async function sendInitAccountRequest(endpointUrl, encryptedPassword) {
       },
       jsonrpc: '2.0',
       id: 0
-    }
-  ).then(function(resp) {
-    return _.get(resp, 'data.result.result');
-  });
+    })
+      .then(function(resp) {
+        return _.get(resp, 'data.result.result');
+      });
 }
 
 async function initAccount(endpointUrl, password) {
