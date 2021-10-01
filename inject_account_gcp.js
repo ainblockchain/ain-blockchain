@@ -67,7 +67,7 @@ async function processArguments() {
     usage();
   }
   const password = await new Promise((resolve) => {
-    rl.question('Enter password: ', resolve);
+    readlineInterface.question('Enter password: ', resolve);
   })
   console.log(password);
   await injectAccount(process.argv[2], password);
