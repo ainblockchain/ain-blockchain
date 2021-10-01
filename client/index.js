@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+// NOTE(liayoo): To use async/await (ref: https://github.com/tedeh/jayson#promises)
 const jayson = require('jayson/promise');
 const _ = require('lodash');
 const logger = require('../logger')('CLIENT');
