@@ -60,9 +60,9 @@ KEYSTORE_OPTION=""
 
 if [[ "$#" -gt 5 ]]; then
     parse_options "$6"
-fi
-if [[ "$#" = 7 ]]; then
-    parse_options "$7"
+    if [[ "$#" = 7 ]]; then
+        parse_options "$7"
+    fi
 fi
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 echo "KEYSTORE_OPTION=$KEYSTORE_OPTION"

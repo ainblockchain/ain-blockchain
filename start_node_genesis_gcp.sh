@@ -6,34 +6,35 @@ if [[ "$#" -lt 3 ]] || [[ "$#" -gt 5 ]]; then
     exit
 fi
 
-KEEP_CODE=""
+
+function parse_options() {
+    local option="$1"
+    if [[ "$option" = '--keep-code' ]]; then
+        KEEP_CODE_OPTION="$option"
+    elif [[ "$option" = '--keystore' ]]; then
+        KEYSTORE_OPTION="$option"
+    else
+        echo "Invalid options: $option"
+        exit
+    fi
+}
+
+# Parse options.
+KEEP_CODE_OPTION=""
+KEYSTORE_OPTION=""
 if [[ "$#" -gt 3 ]]; then
-    if [[ "$4" = '--keystore' ]]; then
-        OPTIONS=$4
-    elif [[ "$4" = '--keep-code' ]]; then
-        KEEP_CODE=true
-    else
-        printf "Invalid option: $4\n"
-        exit
+    parse_options "$4"
+    if [[ "$#" = 5 ]]; then
+        parse_options "$5"
     fi
 fi
-if [[ "$#" = 5 ]]; then
-    if [[ "$5" = '--keystore' ]]; then
-        OPTIONS=$5
-    elif [[ "$5" = '--keep-code' ]]; then
-        KEEP_CODE=true
-    else
-        printf "Invalid option: $5\n"
-        exit
-    fi
-fi
-echo "OPTIONS=$OPTIONS"
-echo "KEEP_CODE=$KEEP_CODE"
+echo "KEEP_CODE_OPTION=$KEEP_CODE_OPTION"
+echo "KEYSTORE_OPTION=$KEYSTORE_OPTION"
 
 echo 'Killing old jobs..'
 sudo killall node
 
-if [[ "$KEEP_CODE" = "" ]]; then
+if [[ "$KEEP_CODE_OPTION" = "" ]]; then
     echo 'Setting up working directory..'
     cd
     sudo rm -rf /home/ain_blockchain_data
@@ -133,7 +134,7 @@ if [[ "$3" -lt 0 ]] || [[ "$3" -gt 4 ]]; then
 fi
 
 # NOTE(liayoo): Currently this script supports --keystore option only for the parent chain.
-if [[ "$OPTIONS" != '--keystore' ]] || [[ "$2" -gt 0 ]]; then
+if [[ "$KEYSTORE_OPTION" != '--keystore' ]] || [[ "$2" -gt 0 ]]; then
     export ACCOUNT_INDEX="$3"
     echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
 else
@@ -149,7 +150,7 @@ else
         KEYSTORE_FILENAME="keystore_node_4.json"
     fi
     echo "KEYSTORE_FILENAME=$KEYSTORE_FILENAME"
-    if [[ "$KEEP_CODE" = "" ]]; then
+    if [[ "$KEEP_CODE_OPTION" = "" ]]; then
         sudo mkdir -p ../ain_blockchain_data/keys/8080
         sudo mv ./$KEYSTORE_DIR/$KEYSTORE_FILENAME ../ain_blockchain_data/keys/8080/
     fi
