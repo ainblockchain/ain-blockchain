@@ -41,7 +41,7 @@ const Transaction = require('../tx-pool/transaction');
 class BlockchainNode {
   constructor() {
     this.keysDir = path.resolve(KEYS_ROOT_DIR, `${PORT}`);
-    FileUtil.createKeystoreDir(this.keysDir);
+    FileUtil.createDir(this.keysDir);
     this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
     FileUtil.createSnapshotDir(this.snapshotDir);
 
@@ -91,7 +91,7 @@ class BlockchainNode {
     try {
       const password = await ainUtil.decryptWithPrivateKey(
           this.bootstrapAccount.private_key, encryptedPassword);
-      const accountFromKeystore = FileUtil.getAccountAtKeystorePath(KEYSTORE_FILE_PATH, password);
+      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
         this.account = accountFromKeystore;
         this.bootstrapAccount = null;

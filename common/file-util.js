@@ -193,7 +193,7 @@ class FileUtil {
     }
   }
 
-  static getAccountAtKeystorePath(keystorePath, password) {
+  static getAccountFromKeystoreFile(keystorePath, password) {
     const keystore = JSON.parse(fs.readFileSync(keystorePath));
     return ainUtil.privateToAccount(ainUtil.v3KeystoreToPrivate(keystore, password));
   }
