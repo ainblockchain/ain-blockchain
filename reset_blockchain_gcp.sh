@@ -111,27 +111,27 @@ fi
 CHAINS_DIR=/home/ain_blockchain_data/chains
 SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
 START_TRACKER_CMD="sudo rm -rf /home/ain_blockchain_data/ && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_tracker_genesis_gcp.sh"
-START_NODE_CMD_PREFIX="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_node_genesis_gcp.sh $SEASON"
+START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_node_genesis_gcp.sh $SEASON"
 printf "\n\n############################\n# Running parent tracker #\n############################\n\n"
 gcloud compute ssh $TRACKER_TARGET_ADDR --command "$START_TRACKER_CMD --keep-code" --project $PROJECT_ID --zone $TRACKER_ZONE
 printf "\n\n###########################\n# Running parent node 0 #\n###########################\n\n"
-gcloud compute ssh $NODE_0_TARGET_ADDR --command "$START_NODE_CMD_PREFIX 0 0 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_0_ZONE
+gcloud compute ssh $NODE_0_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 0 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_0_ZONE
 inject_account "0"
 sleep 10
 printf "\n\n#########################\n# Running parent node 1 #\n#########################\n\n"
-gcloud compute ssh $NODE_1_TARGET_ADDR --command "$START_NODE_CMD_PREFIX 0 1 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_1_ZONE
+gcloud compute ssh $NODE_1_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 1 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_1_ZONE
 inject_account "1"
 sleep 10
 printf "\n\n#########################\n# Running parent node 2 #\n#########################\n\n"
-gcloud compute ssh $NODE_2_TARGET_ADDR --command "$START_NODE_CMD_PREFIX 0 2 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_2_ZONE
+gcloud compute ssh $NODE_2_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 2 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_2_ZONE
 inject_account "2"
 sleep 10
 printf "\n\n#########################\n# Running parent node 3 #\n#########################\n\n"
-gcloud compute ssh $NODE_3_TARGET_ADDR --command "$START_NODE_CMD_PREFIX 0 3 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_3_ZONE
+gcloud compute ssh $NODE_3_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 3 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_3_ZONE
 inject_account "3"
 sleep 10
 printf "\n\n#########################\n# Running parent node 4 #\n#########################\n\n"
-gcloud compute ssh $NODE_4_TARGET_ADDR --command "$START_NODE_CMD_PREFIX 0 4 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_4_ZONE
+gcloud compute ssh $NODE_4_TARGET_ADDR --command "$START_NODE_CMD_BASE 0 4 $KEYSTORE_COMMAND_SUFFIX --keep-code" --project $PROJECT_ID --zone $NODE_4_ZONE
 inject_account "4"
 sleep 10
 
@@ -150,15 +150,15 @@ if [[ "$3" -gt 0 ]]; then
             printf "\n\n###########################\n# Running shard_$i tracker #\n###########################\n\n"
             gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "$START_TRACKER_CMD --keep-code" --project $PROJECT_ID --zone $TRACKER_ZONE
             printf "\n\n##########################\n# Running shard_$i node 0 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "$START_NODE_CMD_PREFIX $i 0 --keep-code" --project $PROJECT_ID --zone $NODE_0_ZONE
+            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "$START_NODE_CMD_BASE $i 0 --keep-code" --project $PROJECT_ID --zone $NODE_0_ZONE
             inject_account "0"
             sleep 10
             printf "\n\n##########################\n# Running shard_$i node 1 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "$START_NODE_CMD_PREFIX $i 1 --keep-code" --project $PROJECT_ID --zone $NODE_1_ZONE
+            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "$START_NODE_CMD_BASE $i 1 --keep-code" --project $PROJECT_ID --zone $NODE_1_ZONE
             inject_account "1"
             sleep 10
             printf "\n\n##########################\n# Running shard_$i node 2 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "$START_NODE_CMD_PREFIX $i 2 --keep-code" --project $PROJECT_ID --zone $NODE_2_ZONE
+            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "$START_NODE_CMD_BASE $i 2 --keep-code" --project $PROJECT_ID --zone $NODE_2_ZONE
             inject_account "2"
         done
 fi
