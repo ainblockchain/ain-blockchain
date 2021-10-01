@@ -5,22 +5,22 @@ const { CURRENT_PROTOCOL_VERSION } = require('./common/constants');
 const { sleep } = require('./common/common-util');
 const readline = require('readline');
 
-const rl = readline.createInterface({
+const readlineInterface = readline.createInterface({
   input: process.stdin,
   output: process.stdout
 });
 
 async function sendGetBootstrapPubKeyRequest(endpointUrl) {
   return await axios.post(
-    `${endpointUrl}/json-rpc`,
-    {
-      method: 'ain_getBootstrapPubKey',
-      params: {
-        protoVer: CURRENT_PROTOCOL_VERSION,
-      },
-      jsonrpc: '2.0',
-      id: 0
-    })
+      `${endpointUrl}/json-rpc`,
+      {
+        method: 'ain_getBootstrapPubKey',
+        params: {
+          protoVer: CURRENT_PROTOCOL_VERSION,
+        },
+        jsonrpc: '2.0',
+        id: 0
+      })
       .then(function(resp) {
         return _.get(resp, 'data.result.result');
       })
@@ -35,16 +35,16 @@ async function sendGetBootstrapPubKeyRequest(endpointUrl) {
 
 async function sendInjectAccountRequest(endpointUrl, encryptedPassword) {
   return await axios.post(
-    `${endpointUrl}/json-rpc`,
-    {
-      method: 'ain_injectAccount',
-      params: {
-        protoVer: CURRENT_PROTOCOL_VERSION,
-        encryptedPassword,
-      },
-      jsonrpc: '2.0',
-      id: 0
-    })
+      `${endpointUrl}/json-rpc`,
+      {
+        method: 'ain_injectAccount',
+        params: {
+          protoVer: CURRENT_PROTOCOL_VERSION,
+          encryptedPassword,
+        },
+        jsonrpc: '2.0',
+        id: 0
+      })
       .then(function(resp) {
         return _.get(resp, 'data.result.result');
       });
