@@ -70,7 +70,7 @@ if [[ "$KEYSTORE_OPTION" != "" ]]; then
     echo
 
     # Read node ip addresses
-    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON
+    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
 fi
 
 function inject_account() {
