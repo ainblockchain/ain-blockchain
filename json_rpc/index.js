@@ -381,10 +381,10 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       }));
     },
 
-    ain_initAccount: async function(args, done) {
+    ain_injectAccount: async function(args, done) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
       let result = false;
-      if (await p2pServer.node.initAccount(args.encryptedPassword)) {
+      if (await p2pServer.node.injectAccount(args.encryptedPassword)) {
         result = true;
         p2pServer.client.run();
       }
