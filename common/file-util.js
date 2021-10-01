@@ -89,15 +89,9 @@ class FileUtil {
     const n2bPath = path.join(chainPath, CHAINS_N2B_DIR_NAME);
     const h2nPath = path.join(chainPath, CHAINS_H2N_DIR_NAME);
     let isBlocksDirEmpty = true;
-    if (!fs.existsSync(chainPath)) {
-      fs.mkdirSync(chainPath, {recursive: true});
-    }
-    if (!fs.existsSync(n2bPath)) {
-      fs.mkdirSync(n2bPath);
-    }
-    if (!fs.existsSync(h2nPath)) {
-      fs.mkdirSync(h2nPath);
-    }
+    FileUtil.createDir(chainPath);
+    FileUtil.createDir(n2bPath);
+    FileUtil.createDir(h2nPath);
     if (fs.readdirSync(n2bPath).length > 0) {
       isBlocksDirEmpty = false;
     }
@@ -105,17 +99,13 @@ class FileUtil {
   }
 
   static createSnapshotDir(snapshotPath) {
-    if (!fs.existsSync(snapshotPath)) {
-      fs.mkdirSync(snapshotPath, { recursive: true });
-    }
-    if (!fs.existsSync(path.join(snapshotPath, SNAPSHOTS_N2S_DIR_NAME))) {
-      fs.mkdirSync(path.join(snapshotPath, SNAPSHOTS_N2S_DIR_NAME));
-    }
+    FileUtil.createDir(snapshotPath);
+    FileUtil.createDir(path.join(snapshotPath, SNAPSHOTS_N2S_DIR_NAME));
   }
 
-  static createKeystoreDir(keysPath) {
-    if (!fs.existsSync(keysPath)) {
-      fs.mkdirSync(keysPath, { recursive: true });
+  static createDir(dirPath) {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
     }
   }
 
@@ -139,9 +129,7 @@ class FileUtil {
     const blockPath = FileUtil.getBlockPath(chainPath, block.number);
     if (!fs.existsSync(blockPath)) {
       const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
-      if (!fs.existsSync(blockDirPath)) {
-        fs.mkdirSync(blockDirPath);
-      }
+      FileUtil.createDir(blockDirPath);
       const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
       fs.writeFileSync(blockPath, compressed);
     } else {
@@ -165,9 +153,7 @@ class FileUtil {
     const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
     if (!fs.existsSync(h2nPath)) {
       const h2nDirPath = FileUtil.getH2nDirPath(chainPath, blockHash);
-      if (!fs.existsSync(h2nDirPath)) {
-        fs.mkdirSync(h2nDirPath);
-      }
+      FileUtil.createDir(h2nDirPath);
       fs.writeFileSync(h2nPath, blockNumber.toString());
     } else {
       logger.debug(`${h2nPath} file already exists!`);
