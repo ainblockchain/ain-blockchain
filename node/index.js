@@ -99,14 +99,14 @@ class BlockchainNode {
       const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
         this.setAccount(accountFromKeystore);
-        logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
+        logger.info(`[${LOG_HEADER}] Injecting an account from a keystore file: ` +
             `${this.account.address}`);
         this.initShardSetting();
         return true;
       }
       return false;
     } catch (err) {
-      logger.error(`[${LOG_HEADER}] Failed to initialize an account: ${err.stack}`);
+      logger.error(`[${LOG_HEADER}] Failed to inject an account: ${err.stack}`);
       return false;
     }
   }
