@@ -899,7 +899,7 @@ class DB {
     const allStateUsageBefore = this.getAllStateUsages();
     const stateUsagePerAppBefore = this.getStateUsagePerApp(op);
     if (op.type === WriteDbOperations.SET) {
-      Object.assign(result, this.executeMultiSetOperation(op.op_list, auth, timestamp, tx));
+      Object.assign(result, this.executeMultiSetOperation(op.op_list, auth, timestamp, tx, blockTime));
     } else {
       Object.assign(result, this.executeSingleSetOperation(op, auth, timestamp, tx, blockTime));
     }
