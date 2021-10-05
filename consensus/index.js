@@ -370,26 +370,22 @@ class Consensus {
     if (!CommonUtil.isEmpty(offenses)) {
       proposeOp.value.offenses = offenses;
     }
-    if (blockNumber <= ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
-      return this.node.createTransaction({ operation: proposeOp, nonce: -1, gas_price: 1 });
-    } else {
-      const setOp = {
-        type: WriteDbOperations.SET,
-        op_list: [
-          proposeOp,
-          {
-            type: WriteDbOperations.SET_VALUE,
-            ref: CommonUtil.formatPath([
-              PredefinedDbPaths.CONSENSUS,
-              PredefinedDbPaths.CONSENSUS_NUMBER,
-              blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB
-            ]),
-            value: null
-          }
-        ]
-      };
-      return this.node.createTransaction({ operation: setOp, nonce: -1, gas_price: 1 });
+    const setOp = {
+      type: WriteDbOperations.SET,
+      op_list: [proposeOp]
+    };
+    if (blockNumber > ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
+      setOp.op_list.push({
+        type: WriteDbOperations.SET_VALUE,
+        ref: CommonUtil.formatPath([
+          PredefinedDbPaths.CONSENSUS,
+          PredefinedDbPaths.CONSENSUS_NUMBER,
+          blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB
+        ]),
+        value: null
+      });
     }
+    return this.node.createTransaction({ operation: setOp, nonce: -1, gas_price: 1 });
   }
 
   // proposing for block #N :
@@ -407,6 +403,9 @@ class Consensus {
     const blockNumber = lastBlock.number + 1;
     if (LIGHTWEIGHT && blockNumber > 1 && this.cache[blockNumber]) {
       throw Error(`[${LOG_HEADER}] Already proposed ${blockNumber} / ${this.cache[blockNumber]}`);
+    }
+    if (lastBlock.epoch >= epoch) {
+      throw Error(`[${LOG_HEADER}] Last block's epoch is greater than or equal to my current epoch.`);
     }
     const baseVersion = lastBlock.number === this.node.bc.lastBlockNumber() ?
         this.node.stateManager.getFinalVersion() :
