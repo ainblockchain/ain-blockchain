@@ -295,7 +295,7 @@ class P2pClient {
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
 
-  sendAddress(socket) {
+  sendPeerInfo(socket) {
     const body = {
       address: this.server.getNodeAddress(),
       peerInfo: this.getStatus(),
@@ -520,7 +520,7 @@ class P2pClient {
       this.setClientSidePeerEventHandlers(socket);
       // TODO(minsulee2): Send an encrypted form of address(pubkey can be recoverable from address),
       // ip address, and signature.
-      this.sendAddress(socket);
+      this.sendPeerInfo(socket);
       // TODO(minsulee2): Check ack from the corresponding server, then proceed reqeustChainSegment.
       await this.waitForAddress(socket);
       this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
