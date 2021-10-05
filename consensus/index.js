@@ -374,13 +374,13 @@ class Consensus {
       type: WriteDbOperations.SET,
       op_list: [proposeOp]
     };
-    if (blockNumber > ConsensusConsts.MAX_CONSENSUS_STATE_DB) {
+    if (blockNumber > ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES) {
       setOp.op_list.push({
         type: WriteDbOperations.SET_VALUE,
         ref: CommonUtil.formatPath([
           PredefinedDbPaths.CONSENSUS,
           PredefinedDbPaths.CONSENSUS_NUMBER,
-          blockNumber - ConsensusConsts.MAX_CONSENSUS_STATE_DB
+          blockNumber - ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES
         ]),
         value: null
       });
