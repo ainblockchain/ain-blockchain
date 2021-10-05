@@ -39,30 +39,35 @@ const ENV_VARIABLES = [
   {
     ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     ACCOUNT_INDEX: 4, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
@@ -307,7 +312,7 @@ describe('Consensus', () => {
   describe('Rewards', () => {
     it('consensus rewards are updated', async () => {
       const rewardsBefore = parseOrLog(syncRequest('GET',
-          server2 + `/get_value?ref=/consensus/rewards`).body.toString('utf-8')).result || {};
+          server2 + `/get_value?ref=/consensus/rewards&is_final=true`).body.toString('utf-8')).result || {};
       const txWithGasFee = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
         ref: `/transfer/${server1Addr}/${server2Addr}/0/value`,
         value: 1,
@@ -316,9 +321,9 @@ describe('Consensus', () => {
       if (!(await waitUntilTxFinalized(serverList, txWithGasFee.tx_hash))) {
         console.error(`Failed to check finalization of tx.`);
       }
-      await waitForNewBlocks(server2); // Make sure 1 more block is finalized
+      await waitForNewBlocks(server2, 2); // Make sure 1 more block is finalized
       const rewardsAfter = parseOrLog(syncRequest('GET',
-          server2 + `/get_value?ref=/consensus/rewards`).body.toString('utf-8')).result;
+          server2 + `/get_value?ref=/consensus/rewards&is_final=true`).body.toString('utf-8')).result;
       const txInfo = parseOrLog(syncRequest('GET',
           server2 + `/get_transaction?hash=${txWithGasFee.tx_hash}`).body.toString('utf-8')).result;
       const blockNumber = txInfo.number;
