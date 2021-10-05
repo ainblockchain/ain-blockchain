@@ -2,11 +2,13 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const path = require('path');
+const readline = require('readline');
 const logger = require('../logger')('NODE');
 const {
   FeatureFlags,
   PORT,
   ACCOUNT_INDEX,
+  KEYSTORE_FILE_PATH,
   SYNC_MODE,
   ON_MEMORY_CHAIN_LENGTH,
   SNAPSHOTS_ROOT_DIR,
@@ -25,6 +27,7 @@ const {
   TX_POOL_SIZE_LIMIT,
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
   MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
+  KEYS_ROOT_DIR,
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
 const CommonUtil = require('../common/common-util');
@@ -37,21 +40,18 @@ const Transaction = require('../tx-pool/transaction');
 
 class BlockchainNode {
   constructor() {
-    const LOG_HEADER = 'constructor';
-    // TODO(liayoo): Add account importing functionality.
-    this.account = ACCOUNT_INDEX !== null ?
-        GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
-    logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
-        `${this.account.address}`);
-    this.isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
-    this.isShardReporter =
-        this.isShardChain &&
-        CommonUtil.areSameAddrs(
-            GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
+    this.keysDir = path.resolve(KEYS_ROOT_DIR, `${PORT}`);
+    FileUtil.createDir(this.keysDir);
+    this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
+    FileUtil.createSnapshotDir(this.snapshotDir);
+
+    this.account = null;
+    this.bootstrapAccount = null;
     this.ipAddrInternal = null;
     this.ipAddrExternal = null;
     this.urlInternal = null;
     this.urlExternal = null;
+
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
@@ -59,10 +59,64 @@ class BlockchainNode {
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true,
         this.bc.lastBlockNumber(), this.stateManager);
+
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
-    this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
-    FileUtil.createSnapshotDir(this.snapshotDir);
+    this.initAccount();
+  }
+
+  setAccount(account) {
+    this.account = account;
+    this.bootstrapAccount = null;
+  }
+
+  initAccount() {
+    const LOG_HEADER = 'initAccount';
+    if (ACCOUNT_INDEX !== null) {
+      this.setAccount(GenesisAccounts.others[ACCOUNT_INDEX]);
+      if (!this.account) {
+        throw Error(`[${LOG_HEADER}] Failed to initialize with an account`);
+      }
+      logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
+          `${this.account.address}`);
+      this.initShardSetting();
+    } else if (KEYSTORE_FILE_PATH !== null) {
+      // Create a bootstrap account & wait for the password
+      this.bootstrapAccount = ainUtil.createAccount();
+    } else {
+      throw Error(`[${LOG_HEADER}] Must specify either KEYSTORE_FILE_PATH or ACCOUNT_INDEX.`);
+    }
+  }
+
+  async injectAccount(encryptedPassword) {
+    const LOG_HEADER = 'injectAccount';
+    if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
+      return false;
+    }
+    try {
+      const password = await ainUtil.decryptWithPrivateKey(
+          this.bootstrapAccount.private_key, encryptedPassword);
+      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(KEYSTORE_FILE_PATH, password);
+      if (accountFromKeystore !== null) {
+        this.setAccount(accountFromKeystore);
+        logger.info(`[${LOG_HEADER}] Injecting an account from a keystore file: ` +
+            `${this.account.address}`);
+        this.initShardSetting();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Failed to inject an account: ${err.stack}`);
+      return false;
+    }
+  }
+
+  initShardSetting() {
+    this.isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
+    this.isShardReporter =
+        this.isShardChain &&
+        CommonUtil.areSameAddrs(
+            GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
   }
 
   // For testing purpose only.

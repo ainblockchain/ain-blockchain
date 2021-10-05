@@ -37,7 +37,7 @@ kill  -9 $PID1 $PID2 $PID3
 rm -rf $BASEDIR/chains
 
 echo $RESULT1
-if [ "$RESULT1"=="{'code':0,'result':50000}" ] ;
+if [ "$RESULT1" = "{'code':0,'result':50000}" ] ;
 then
     echo "/test/increase/first/level correctly increased to 50000 !! Pass"
 else

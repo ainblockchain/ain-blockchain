@@ -1,35 +1,71 @@
 #!/bin/bash
 
-if [[ "$#" -lt 2 ]]; then
-    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index>"
-    echo "Example: bash start_node_genesis_gcp.sh spring 0 0"
+if [[ "$#" -lt 3 ]] || [[ "$#" -gt 5 ]]; then
+    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore] [--keep-code]"
+    echo "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore"
     exit
 fi
 
 
+function parse_options() {
+    local option="$1"
+    if [[ "$option" = '--keep-code' ]]; then
+        KEEP_CODE_OPTION="$option"
+    elif [[ "$option" = '--keystore' ]]; then
+        KEYSTORE_OPTION="$option"
+    else
+        echo "Invalid options: $option"
+        exit
+    fi
+}
+
+# Parse options.
+KEEP_CODE_OPTION=""
+KEYSTORE_OPTION=""
+if [[ "$#" -gt 3 ]]; then
+    parse_options "$4"
+    if [[ "$#" = 5 ]]; then
+        parse_options "$5"
+    fi
+fi
+echo "KEEP_CODE_OPTION=$KEEP_CODE_OPTION"
+echo "KEYSTORE_OPTION=$KEYSTORE_OPTION"
+
 echo 'Killing old jobs..'
 sudo killall node
 
+if [[ "$KEEP_CODE_OPTION" = "" ]]; then
+    echo 'Setting up working directory..'
+    cd
+    sudo rm -rf /home/ain_blockchain_data
+    sudo mkdir /home/ain_blockchain_data
+    sudo chmod -R 777 /home/ain_blockchain_data
+    sudo rm -rf ../ain-blockchain*
+    sudo mkdir ../ain-blockchain
+    sudo chmod -R 777 ../ain-blockchain
+    mv * ../ain-blockchain
+    cd ../ain-blockchain
 
-echo 'Setting up working directory..'
-cd
-sudo rm -rf /home/ain_blockchain_data
-sudo mkdir /home/ain_blockchain_data
-sudo chmod 777 /home/ain_blockchain_data
-sudo rm -rf ../ain-blockchain*
-sudo mkdir ../ain-blockchain
-sudo chmod 777 ../ain-blockchain
-mv * ../ain-blockchain
-cd ../ain-blockchain
+    echo 'Installing node modules..'
+    npm install
+else
+    echo 'Using old directory..'
+    OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
+    printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
+    sudo chmod -R 777 $OLD_DIR_PATH
+    sudo chmod -R 777 /home/ain_blockchain_data
+    cd $OLD_DIR_PATH
+fi
 
 
-echo 'Installing node modules..'
-npm install
 export GENESIS_CONFIGS_DIR=genesis-configs/testnet
+KEYSTORE_DIR=testnet_dev_staging_keys
 if [[ "$1" = 'spring' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
+    KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$1" = 'summer' ]]; then
     export TRACKER_WS_ADDR=ws://35.194.172.106:5000
+    KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$1" = 'staging' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.150.73:5000
 elif [[ "$1" = 'dev' ]]; then
@@ -90,14 +126,37 @@ fi
 
 echo "TRACKER_WS_ADDR=$TRACKER_WS_ADDR"
 echo "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR"
+echo "KEYSTORE_DIR=$KEYSTORE_DIR"
 
 if [[ "$3" -lt 0 ]] || [[ "$3" -gt 4 ]]; then
     echo "Invalid account_index argument: $2"
     exit
 fi
 
-export ACCOUNT_INDEX="$3"
-echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
+# NOTE(liayoo): Currently this script supports --keystore option only for the parent chain.
+if [[ "$KEYSTORE_OPTION" != '--keystore' ]] || [[ "$2" -gt 0 ]]; then
+    export ACCOUNT_INDEX="$3"
+    echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
+else
+    if [[ "$3" = 0 ]]; then
+        KEYSTORE_FILENAME="keystore_node_0.json"
+    elif [[ "$3" = 1 ]]; then
+        KEYSTORE_FILENAME="keystore_node_1.json"
+    elif [[ "$3" = 2 ]]; then
+        KEYSTORE_FILENAME="keystore_node_2.json"
+    elif [[ "$3" = 3 ]]; then
+        KEYSTORE_FILENAME="keystore_node_3.json"
+    else
+        KEYSTORE_FILENAME="keystore_node_4.json"
+    fi
+    echo "KEYSTORE_FILENAME=$KEYSTORE_FILENAME"
+    if [[ "$KEEP_CODE_OPTION" = "" ]]; then
+        sudo mkdir -p ../ain_blockchain_data/keys/8080
+        sudo mv ./$KEYSTORE_DIR/$KEYSTORE_FILENAME ../ain_blockchain_data/keys/8080/
+    fi
+    export KEYSTORE_FILE_PATH=/home/ain_blockchain_data/keys/8080/$KEYSTORE_FILENAME
+    echo "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH"
+fi
 
 export DEBUG=false
 export CONSOLE_LOG=false 
