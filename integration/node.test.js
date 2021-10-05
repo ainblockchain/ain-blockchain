@@ -3523,7 +3523,7 @@ describe('Blockchain Node', () => {
       assert.deepEqual(receipt.address, txSignerAddress);
       assert.deepEqual(receipt.exec_result, {
         "code": 0,
-        "gas_amount_charged": 8,
+        "gas_amount_charged": 0,
         "gas_cost_total": 0
       });
     });

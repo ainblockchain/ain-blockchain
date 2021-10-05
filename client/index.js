@@ -1,7 +1,8 @@
 'use strict';
 
 const express = require('express');
-const jayson = require('jayson');
+// NOTE(liayoo): To use async/await (ref: https://github.com/tedeh/jayson#promises)
+const jayson = require('jayson/promise');
 const _ = require('lodash');
 const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
@@ -24,6 +25,10 @@ const { ConsensusStates } = require('../consensus/constants');
 
 const MAX_BLOCKS = 20;
 
+const app = express();
+app.use(express.json()); // support json encoded bodies
+
+const node = new BlockchainNode();
 // NOTE(platfowner): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function(err) {
   logger.error(err);
@@ -38,18 +43,28 @@ process.on('SIGINT', (_) => {
 const { min, max } = VersionUtil.matchVersions(PROTOCOL_VERSION_MAP, CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
-
-const app = express();
-app.use(express.json()); // support json encoded bodies
-
-const node = new BlockchainNode();
 const p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
 const p2pServer = p2pClient.server;
 
 const jsonRpcMethods = require('../json_rpc')(
     node, p2pServer, minProtocolVersion, maxProtocolVersion);
-app.post('/json-rpc', VersionUtil.validateVersion.bind({ minProtocolVersion, maxProtocolVersion }),
-    jayson.server(jsonRpcMethods).middleware());
+
+function createAndExecuteTransaction(txBody) {
+  const tx = node.createTransaction(txBody);
+  if (!tx) {
+    return {
+      tx_hash: null,
+      result: false,
+    };
+  }
+  return p2pServer.executeAndBroadcastTransaction(tx);
+}
+
+app.post(
+  '/json-rpc',
+  VersionUtil.validateVersion.bind({ minProtocolVersion, maxProtocolVersion }),
+  jayson.server(jsonRpcMethods).middleware()
+);
 
 app.get('/', (req, res, next) => {
   res.status(200)
@@ -643,15 +658,4 @@ function createBatchTxBody(input) {
     txList.push(tx);
   }
   return { tx_body_list: txList };
-}
-
-function createAndExecuteTransaction(txBody) {
-  const tx = node.createTransaction(txBody);
-  if (!tx) {
-    return {
-      tx_hash: null,
-      result: false,
-    };
-  }
-  return p2pServer.executeAndBroadcastTransaction(tx);
 }
