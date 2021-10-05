@@ -407,12 +407,19 @@ describe('Blockchain Cluster', () => {
             if (!blocks[j - 1].validators[vote.address].stake) {
               assert.fail(`Invalid validator (${vote.address}) is validating block ${blocks[j - 1]}`);
             }
-            if (vote.tx_body.operation.value.block_hash !== blocks[j - 1].hash) {
-              assert.fail('Invalid vote included in last_votes');
-            }
-            if (vote.tx_body.operation.type === 'SET_VALUE' && vote.tx_body.operation.value.stake &&
-                blocks[j - 1].validators[vote.address].stake) {
-              voteSum += vote.tx_body.operation.value.stake;
+            if (vote.tx_body.operation.type === 'SET_VALUE') {
+              if (vote.tx_body.operation.value.block_hash !== blocks[j - 1].hash) {
+                assert.fail('Invalid vote included in last_votes');
+              }
+              if (vote.tx_body.operation.value.stake && blocks[j - 1].validators[vote.address].stake) {
+                voteSum += vote.tx_body.operation.value.stake;
+              }
+            } else if (vote.tx_body.operation.type === 'SET') {
+              if (vote.tx_body.operation.op_list[0].value.block_hash !== blocks[j - 1].hash) {
+                assert.fail('Invalid vote included in last_votes');
+              }
+            } else {
+              assert.fail('Invalid operation type in last_votes');
             }
           }
           if (voteSum < majority) {
