@@ -388,8 +388,13 @@ class P2pServer {
               // this.convertAddressMessage();
             }
             const address = _.get(parsedMessage, 'data.body.address');
+            const peerInfo = _.get(parsedMessage, 'data.body.peerInfo');
             if (!address) {
               logger.error(`Providing an address is compulsary when initiating p2p communication.`);
+              closeSocketSafe(this.inbound, socket);
+              return;
+            } else if (!peerInfo) {
+              logger.error(`Providing peerInfo is compulsary when initiating p2p communication.`);
               closeSocketSafe(this.inbound, socket);
               return;
             } else if (!_.get(parsedMessage, 'data.signature')) {
@@ -431,10 +436,8 @@ class P2pServer {
                 return;
               }
               socket.send(JSON.stringify(payload));
-              // NOTE(minsulee2): This job will be updated that the request is directly sent in the
-              // node side with anddress and security checks.
               if (!this.client.outbound[address]) {
-                this.client.sendRequestForPeerInfo(address);
+                this.client.connectToPeer(peerInfo);
               }
             }
             break;

@@ -160,16 +160,6 @@ class P2pClient {
     this.intervalConnection = null;
   }
 
-  sendRequestForPeerInfo(address) {
-    const message = {
-      type: TrackerMessageTypes.PEER_INFO_REQUEST,
-      data: address
-    }
-    logger.debug(`\n >> Update to [TRACKER] ${TRACKER_WS_ADDR}: ` +
-        `${JSON.stringify(message, null, 2)}`);
-    this.trackerWebSocket.send(JSON.stringify(message));
-  }
-
   sendRequestForNewPeers() {
     const message = {
       type: TrackerMessageTypes.NEW_PEERS_REQUEST,
@@ -208,10 +198,6 @@ class P2pClient {
           if (this.server.node.state === BlockchainNodeStates.STARTING) {
             await this.startBlockchainNode(data.numLivePeers);
           }
-          break;
-        case TrackerMessageTypes.PEER_INFO_RESPONSE:
-          const url = parsedMessage.data;
-          this.connectToPeer(url);
           break;
         default:
           logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
@@ -309,9 +295,10 @@ class P2pClient {
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
 
-  sendAddress(socket) {
+  sendPeerInfo(socket) {
     const body = {
       address: this.server.getNodeAddress(),
+      peerInfo: this.getStatus(),
       timestamp: Date.now(),
     };
     const signature = signMessage(body, this.server.getNodePrivateKey());
@@ -393,10 +380,7 @@ class P2pClient {
               return;
             }
             logger.info(`[${LOG_HEADER}] A new websocket(${address}) is established.`);
-            this.outbound[address] = {
-              socket: socket,
-              version: dataProtoVer
-            };
+            Object.assign(this.outbound[address], { version: dataProtoVer });
             this.updatePeerInfoToTracker();
           }
           break;
@@ -510,6 +494,7 @@ class P2pClient {
     });
   }
 
+  // TODO(minsulee2): Not just wait for address, but ack. if ack fails, this connection disconnects.
   waitForAddress = (socket) => {
     sleep(WAIT_FOR_ADDRESS_TIMEOUT_MS)
       .then(() => {
@@ -523,12 +508,20 @@ class P2pClient {
       });
   }
 
-  connectToPeer(url) {
+  connectToPeer(peerInfo) {
+    const url = peerInfo.networkStatus.p2p.url;
     const socket = new Websocket(url);
     socket.on('open', async () => {
+      this.outbound[peerInfo.address] = {
+        socket,
+        peerInfo
+      };
       logger.info(`Connected to peer(${url}),`);
       this.setClientSidePeerEventHandlers(socket);
-      this.sendAddress(socket);
+      // TODO(minsulee2): Send an encrypted form of address(pubkey can be recoverable from address),
+      // ip address, and signature.
+      this.sendPeerInfo(socket);
+      // TODO(minsulee2): Check ack from the corresponding server, then proceed reqeustChainSegment.
       await this.waitForAddress(socket);
       this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
       if (this.server.consensus.stakeTx) {
@@ -544,7 +537,7 @@ class P2pClient {
         logger.info(`Node ${peerInfo.address} is already a managed peer. Something went wrong.`);
       } else {
         logger.info(`Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
-        this.connectToPeer(peerInfo.url);
+        this.connectToPeer(peerInfo);
       }
     });
   }
