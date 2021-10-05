@@ -702,7 +702,7 @@ class Functions {
       const lockupExtension = Functions.getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses);
       if (lockupExtension > 0) {
         const expirationPath = PathUtil.getStakingExpirationPath(PredefinedDbPaths.CONSENSUS, offender, 0);
-        const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), context.blockTime || 0);
+        const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), context.blockTime);
         this.setValueOrLog(expirationPath, currentExpiration + lockupExtension, context);
       }
     }
@@ -716,7 +716,7 @@ class Functions {
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
     const currentExpiration = Number(this.db.getValue(expirationPath));
     const lockup = Number(this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)));
-    const newExpiration = (context.blockTime || 0) + lockup;
+    const newExpiration = context.blockTime + lockup;
     const updateExpiration = newExpiration > currentExpiration;
     if (value === 0) {
       // Just update the expiration time
