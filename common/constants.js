@@ -150,7 +150,7 @@ const TrackerMessageTypes = {
 };
 
 /**
- * Status of blockchain nodes.
+ * States of blockchain nodes.
  *
  * @enum {string}
  */
@@ -158,6 +158,17 @@ const BlockchainNodeStates = {
   STARTING: 'STARTING',
   SYNCING: 'SYNCING',
   SERVING: 'SERVING',
+};
+
+/**
+ * States of p2p network.
+ *
+ * @enum {string}
+ */
+const p2pNetworkStates = {
+  STARTING: 'STARTING',
+  CONNECTING: 'CONNECTING',
+  FULLY_SERVING: 'FULLY_SERVING'
 };
 
 /**
@@ -921,6 +932,7 @@ module.exports = {
   MessageTypes,
   TrackerMessageTypes,
   BlockchainNodeStates,
+  p2pNetworkStates,
   PredefinedDbPaths,
   TokenProperties,
   TokenBridgeProperties,
