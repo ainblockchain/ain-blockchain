@@ -89,7 +89,15 @@ function inject_account() {
 }
 
 FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh restart_tracker_gcp.sh"
-FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ genesis-configs/ json_rpc/ logger/ node/ p2p/ testnet_dev_staging_keys/ testnet_prod_keys/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh restart_node_gcp.sh wait_until_node_sync_gcp.sh"
+FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ genesis-configs/ json_rpc/ logger/ node/ p2p/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh restart_node_gcp.sh wait_until_node_sync_gcp.sh"
+
+if [[ "$KEYSTORE_OPTION" != "" ]]; then
+    if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
+        FILES_FOR_NODE="$FILES_FOR_NODE testnet_prod_keys/"
+    else
+        FILES_FOR_NODE="$FILES_FOR_NODE testnet_dev_staging_keys/"
+    fi
+fi
 
 TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
