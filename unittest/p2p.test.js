@@ -34,8 +34,7 @@ describe("P2P", () => {
   before(async () => {
     p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
     p2pServer = p2pClient.server;
-    p2pServer.listen();
-    await p2pServer.setUpIpAddresses();
+    await p2pServer.listen();
   });
 
   after(() => {
