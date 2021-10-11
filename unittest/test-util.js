@@ -71,7 +71,7 @@ function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
   const finalDb = DB.create(
       node.stateManager.getFinalVersion(), `${StateVersions.FINAL}:${lastBlock.number + 1}`,
-      node.bc, true, false, lastBlock.number, node.stateManager);
+      node.bc, true, lastBlock.number, node.stateManager);
   finalDb.executeTransactionList(votes, true);
   finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1);
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);

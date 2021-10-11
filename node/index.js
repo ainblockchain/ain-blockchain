@@ -56,7 +56,7 @@ class BlockchainNode {
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = DB.create(
-        StateVersions.EMPTY, initialVersion, this.bc, false, true, this.bc.lastBlockNumber(),
+        StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
         this.stateManager);
 
     this.state = BlockchainNodeStates.STARTING;
@@ -166,7 +166,7 @@ class BlockchainNode {
     // 2. Initialize DB (with the latest snapshot, if it exists)
     logger.info(`[${LOG_HEADER}] Initializing DB..`);
     const startingDb = DB.create(
-        StateVersions.EMPTY, StateVersions.START, this.bc, true, false, latestSnapshotBlockNumber,
+        StateVersions.EMPTY, StateVersions.START, this.bc, true, latestSnapshotBlockNumber,
         this.stateManager);
     startingDb.initDbStates(latestSnapshot);
 
@@ -206,7 +206,7 @@ class BlockchainNode {
           `[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`);
       return null;
     }
-    return new DB(tempRoot, tempVersion, null, false, blockNumberSnapshot, this.stateManager);
+    return new DB(tempRoot, tempVersion, null, blockNumberSnapshot, this.stateManager);
   }
 
   syncDbAndNonce(newVersion) {

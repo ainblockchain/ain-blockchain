@@ -54,7 +54,7 @@ const PathUtil = require('../common/path-util');
 const _ = require('lodash');
 
 class DB {
-  constructor(stateRoot, stateVersion, bc, isNodeDb, blockNumberSnapshot, stateManager) {
+  constructor(stateRoot, stateVersion, bc, blockNumberSnapshot, stateManager) {
     this.shardingPath = null;
     this.isRootBlockchain = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
@@ -64,7 +64,6 @@ class DB {
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this);
     this.bc = bc;
-    this.isNodeDb = isNodeDb;
     this.blockNumberSnapshot = blockNumberSnapshot;
     this.stateManager = stateManager;
     this.ownerAddress = CommonUtil.getJsObject(
@@ -238,7 +237,7 @@ class DB {
   }
 
   static create(
-      baseVersion, newVersion, bc, finalizeVersion, isNodeDb, blockNumberSnapshot, stateManager) {
+      baseVersion, newVersion, bc, finalizeVersion, blockNumberSnapshot, stateManager) {
     const LOG_HEADER = 'create';
 
     logger.debug(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
@@ -252,7 +251,7 @@ class DB {
     if (finalizeVersion) {
       stateManager.finalizeVersion(newVersion);
     }
-    return new DB(newRoot, newVersion, bc, isNodeDb, blockNumberSnapshot, stateManager);
+    return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager);
   }
 
   dumpDbStates(options) {
