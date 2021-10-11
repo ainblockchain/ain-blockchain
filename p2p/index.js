@@ -75,6 +75,7 @@ class P2pClient {
     const incomingPeers = Object.keys(this.server.inbound);
     const outgoingPeers = Object.keys(this.outbound);
     return {
+      p2pState: this.state,
       maxInbound: this.maxInbound,
       targetOutBound: this.targetOutBound,
       numInbound: incomingPeers.length,
@@ -87,7 +88,6 @@ class P2pClient {
   getStatus() {
     const blockStatus = this.server.getBlockStatus();
     return {
-      p2pState: this.state,
       address: this.server.getNodeAddress(),
       updatedAt: Date.now(),
       lastBlockNumber: blockStatus.number,
