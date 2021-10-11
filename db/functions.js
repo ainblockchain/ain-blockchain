@@ -33,9 +33,8 @@ const EventListenerWhitelist = {
 // NOTE(platfowner): extraGasAmount means the extra gas amount required to execute the function,
 // which often reflects the external RPC calls needed.
 class Functions {
-  constructor(db, tp) {
+  constructor(db) {
     this.db = db;
-    this.tp = tp;
     this.nativeFunctionMap = {
       [NativeFunctionIds.CANCEL_CHECKIN]: {
         func: this._cancelCheckin.bind(this), ownerOnly: true, extraGasAmount: 0 },
