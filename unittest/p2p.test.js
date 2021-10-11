@@ -42,6 +42,10 @@ describe("P2P", () => {
   });
 
   describe("Server Status", () => {
+    before(async () => {
+      await p2pServer.setUpIpAddresses();
+    });
+
     describe("getIpAddress", () => {
       it("gets ip address", async () => {
         const actual = await p2pServer.getIpAddress();
