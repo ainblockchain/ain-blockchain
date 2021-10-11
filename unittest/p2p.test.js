@@ -31,10 +31,10 @@ setNodeForTesting(node, 0, true, true);
 describe("P2P", () => {
   let p2pClient;
   let p2pServer;
-  before(() => {
+  before(async () => {
     p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
     p2pServer = p2pClient.server;
-    p2pServer.listen();
+    await p2pServer.listen();
   });
 
   after(() => {
