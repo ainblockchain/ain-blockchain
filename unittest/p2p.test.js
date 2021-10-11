@@ -15,6 +15,7 @@ const {
   GenesisAccounts,
   AccountProperties,
   HOSTING_ENV,
+  p2pNetworkStates
 } = require('../common/constants');
 const { setNodeForTesting } = require('./test-util');
 
@@ -53,8 +54,6 @@ describe("P2P", () => {
     describe("setUpIpAddresses", () => {
       it("sets ip address", async () => {
         const ipAddressRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-        console.log("p2pServer.node.ipAddrInternal", p2pServer.node.ipAddrInternal, ipAddressRegex.test(p2pServer.node.ipAddrInternal))
-        console.log("p2pServer.node.ipAddrExternal", p2pServer.node.ipAddrExternal, ipAddressRegex.test(p2pServer.node.ipAddrExternal))
         expect(ipAddressRegex.test(p2pServer.node.ipAddrInternal)).to.be.true;
         expect(ipAddressRegex.test(p2pServer.node.ipAddrExternal)).to.be.true;
       });
@@ -286,6 +285,7 @@ describe("P2P", () => {
     describe("getConnectionStatus", () => {
       it("shows initial values of connection status", () => {
         assert.deepEqual(p2pClient.getConnectionStatus(), {
+          p2pState: p2pNetworkStates.STARTING,
           targetOutBound: TARGET_NUM_OUTBOUND_CONNECTION,
           maxInbound: MAX_NUM_INBOUND_CONNECTION,
           numInbound: 0,
