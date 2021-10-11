@@ -110,10 +110,19 @@ class FileUtil {
   }
 
   // TODO(cshcomcom): Change to asynchronous.
-  static readCompressedJson(blockPath) {
+  static readCompressedJson(filePath) {
     try {
-      const zippedFs = fs.readFileSync(blockPath);
+      const zippedFs = fs.readFileSync(filePath);
       return JSON.parse(zlib.gunzipSync(zippedFs).toString());
+    } catch (err) {
+      return null;
+    }
+  }
+
+  static readJson(filePath) {
+    try {
+      const fileStr = fs.readFileSync(filePath);
+      return JSON.parse(fileStr);
     } catch (err) {
       return null;
     }
