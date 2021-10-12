@@ -26,9 +26,13 @@ class TransactionPool {
     this.txCountTotal = 0;
   }
 
-  // NOTE(platfowner): A transaction needs to be converted to an executable form
-  //                   before being added.
   addTransaction(tx, isExecutedTx = false) {
+    // NOTE(platfowner): A transaction needs to be converted to an executable form
+    //                   before being added.
+    if (!Transaction.isExecutable(tx)) {
+      logger.error(`Not executable transaction: ${JSON.stringify(tx)}`);
+      return false;
+    }
     if (!(tx.address in this.transactions)) {
       this.transactions[tx.address] = [];
     }
