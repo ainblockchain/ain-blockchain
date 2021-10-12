@@ -2625,6 +2625,32 @@ describe('Blockchain Node', () => {
           });
         })
       })
+
+      it('rejects a transaction with an invalid signature.', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value 3',
+            ref: `/apps/test/test_value/some/path`
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature: signature + '0', // invalid signature
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          assert.deepEqual(res.result.result.result, {
+            "error_message": "[executeTransactionAndAddToPool] Invalid signature",
+            "code": 6,
+            "bandwidth_gas_amount": 0
+          });
+        })
+      })
     })
 
     describe('ain_sendSignedTransactionBatch', () => {
@@ -3127,6 +3153,98 @@ describe('Blockchain Node', () => {
             },
             protoVer: CURRENT_PROTOCOL_VERSION
           });
+        })
+      })
+
+      it('rejects a batch transaction with an invalid signature.', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            value: 'some other value 3',
+            ref: `/apps/test/test_value/some/path`
+          },
+          timestamp: Date.now(),
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
+        return client.request('ain_sendSignedTransactionBatch', {
+          tx_list: [
+            {
+              tx_body: txBodyBefore,
+              signature: signatureBefore,
+            },
+            {
+              tx_body: txBody,
+              signature: signature + 'a', // invalid signature
+            },
+            {
+              tx_body: txBodyAfter,
+              signature: signatureAfter,
+            }
+          ],
+          protoVer: CURRENT_PROTOCOL_VERSION
+        }).then((res) => {
+          res.result.result.forEach((res) => {
+            res.tx_hash = 'erased';
+          });
+          assert.deepEqual(res.result.result, [
+            {
+              "tx_hash": "erased",
+              "result": {
+                "gas_amount_total": {
+                  "bandwidth": {
+                    "service": 0,
+                    "app": {
+                      "test": 1
+                    }
+                  },
+                  "state": {
+                    "service": 0,
+                    "app": {
+                      "test": 380
+                    }
+                  }
+                },
+                "gas_cost_total": 0,
+                "code": 0,
+                "bandwidth_gas_amount": 1,
+                "gas_amount_charged": 0
+              }
+            },
+            {
+              "tx_hash": "erased",
+              "result": {
+                "error_message": "[executeTransactionAndAddToPool] Invalid signature",
+                "code": 6,
+                "bandwidth_gas_amount": 0
+              }
+            },
+            {
+              "tx_hash": "erased",
+              "result": {
+                "gas_amount_total": {
+                  "bandwidth": {
+                    "service": 0,
+                    "app": {
+                      "test": 1
+                    }
+                  },
+                  "state": {
+                    "service": 0,
+                    "app": {
+                      "test": 178
+                    }
+                  }
+                },
+                "gas_cost_total": 0,
+                "code": 0,
+                "bandwidth_gas_amount": 1,
+                "gas_amount_charged": 0
+              }
+            }
+          ]);
         })
       })
     })

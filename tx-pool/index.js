@@ -5,7 +5,6 @@ const {
   FeatureFlags,
   TRANSACTION_POOL_TIMEOUT_MS,
   TRANSACTION_TRACKER_TIMEOUT_MS,
-  LIGHTWEIGHT,
   TX_POOL_SIZE_LIMIT,
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
   SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
@@ -33,15 +32,6 @@ class TransactionPool {
       logger.error(`Not executable transaction: ${JSON.stringify(tx)}`);
       return false;
     }
-    // Quick verification of transaction on entry
-    if (!LIGHTWEIGHT) {
-      if (!Transaction.verifyTransaction(tx)) {
-        logger.error('Invalid transaction');
-        logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
-        return false;
-      }
-    }
-
     if (!(tx.address in this.transactions)) {
       this.transactions[tx.address] = [];
     }

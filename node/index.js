@@ -434,6 +434,16 @@ class BlockchainNode {
           logger, 2, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
     const executableTx = Transaction.toExecutable(tx);
+    if (!Transaction.isExecutable(executableTx)) {
+      return CommonUtil.logAndReturnTxResult(
+          logger, 5,
+          `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
+    }
+    if (!LIGHTWEIGHT) {
+      if (!Transaction.verifyTransaction(executableTx)) {
+        return CommonUtil.logAndReturnTxResult(logger, 6, `[${LOG_HEADER}] Invalid signature`);
+      }
+    }
     if (!this.tp.hasPerAccountRoomForNewTransaction(executableTx.address)) {
       const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
       return CommonUtil.logAndReturnTxResult(

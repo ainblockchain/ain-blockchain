@@ -1,10 +1,20 @@
 const _get = require('lodash/get');
-const { WriteDbOperations, PredefinedDbPaths } = require('../common/constants');
+const { WriteDbOperations, PredefinedDbPaths, LIGHTWEIGHT } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const { ConsensusErrorCodesToVoteAgainst } = require('./constants');
+const Transaction = require('../tx-pool/transaction');
 
 class ConsensusUtil {
   static isValidConsensusTx(tx) {
+    const executableTx = Transaction.toExecutable(tx);
+    if (!Transaction.isExecutable(executableTx)) {
+      return false;
+    }
+    if (!LIGHTWEIGHT) {
+      if (!Transaction.verifyTransaction(executableTx)) {
+        return false;
+      }
+    }
     const op = _get(tx, 'tx_body.operation');
     if (!op) return false;
     const consensusTxPrefix = CommonUtil.formatPath(
