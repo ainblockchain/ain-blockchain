@@ -294,7 +294,7 @@ class Consensus {
         return;
       }
       if (!ConsensusUtil.isValidConsensusTx(proposalTx)) {
-        logger.info(`[${LOG_HEADER}] Invalid consensus tx: ${JSON.stringify(proposalTx)}`);
+        logger.error(`[${LOG_HEADER}] Invalid consensus tx: ${JSON.stringify(proposalTx)}`);
         return;
       }
       try {
@@ -320,7 +320,7 @@ class Consensus {
         return;
       }
       if (!ConsensusUtil.isValidConsensusTx(msg.value) || !this.checkVoteTx(msg.value)) {
-        logger.info(`[${LOG_HEADER}] Invalid vote tx: ${JSON.stringify(msg.value)}`);
+        logger.error(`[${LOG_HEADER}] Invalid vote tx: ${JSON.stringify(msg.value)}`);
         return;
       }
       this.server.client.broadcastConsensusMessage(msg);
@@ -1030,7 +1030,7 @@ class Consensus {
         continue;
       }
       if (!ConsensusUtil.isValidConsensusTx(blockInfo.proposal)) {
-        logger.info(`[${LOG_HEADER}] Invalid consensus tx: ${JSON.stringify(blockInfo.proposal)}`);
+        logger.error(`[${LOG_HEADER}] Invalid consensus tx: ${JSON.stringify(blockInfo.proposal)}`);
         return;
       }
       try {
