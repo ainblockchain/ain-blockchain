@@ -25,7 +25,7 @@ describe("Functions", () => {
 
       node = new BlockchainNode();
       setNodeForTesting(node);
-      functions = new Functions(node.db, null);
+      functions = new Functions(node.db);
     })
 
     after(() => {
