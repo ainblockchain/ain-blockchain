@@ -2,7 +2,6 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const path = require('path');
-const readline = require('readline');
 const logger = require('../logger')('NODE');
 const {
   FeatureFlags,
@@ -57,8 +56,8 @@ class BlockchainNode {
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = DB.create(
-        StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true,
-        this.bc.lastBlockNumber(), this.stateManager);
+        StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
+        this.stateManager);
 
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
@@ -167,8 +166,8 @@ class BlockchainNode {
     // 2. Initialize DB (with the latest snapshot, if it exists)
     logger.info(`[${LOG_HEADER}] Initializing DB..`);
     const startingDb = DB.create(
-        StateVersions.EMPTY, StateVersions.START, this.bc, this.tp, true, false,
-        latestSnapshotBlockNumber, this.stateManager);
+        StateVersions.EMPTY, StateVersions.START, this.bc, true, latestSnapshotBlockNumber,
+        this.stateManager);
     startingDb.initDbStates(latestSnapshot);
 
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
@@ -207,7 +206,7 @@ class BlockchainNode {
           `[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`);
       return null;
     }
-    return new DB(tempRoot, tempVersion, null, null, false, blockNumberSnapshot, this.stateManager);
+    return new DB(tempRoot, tempVersion, null, blockNumberSnapshot, this.stateManager);
   }
 
   syncDbAndNonce(newVersion) {
