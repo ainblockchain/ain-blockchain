@@ -35,7 +35,7 @@ const {
 
 const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const TRACKER_UPDATE_INTERVAL_MS = 5 * 1000;  // 5 seconds
-const NODE_CONNECTION_INVERVAL_MS = 60 * 1000;  // 1 minute
+const PEER_CONNECTION_INVERVAL_MS = 60 * 1000;  // 1 minute
 const HEARTBEAT_INTERVAL_MS = 60 * 1000;  // 1 minute
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
@@ -209,13 +209,13 @@ class P2pClient {
 
   setIntervalForPeerConnection() {
     this.updateP2pState();
-    this.intervalNodeConnection = setInterval(() => {
+    this.intervalPeerConnection = setInterval(() => {
       this.updateP2pState();
-    }, NODE_CONNECTION_INVERVAL_MS);
+    }, PEER_CONNECTION_INVERVAL_MS);
   }
 
   clearIntervalForPeerConnection() {
-    clearInterval(this.intervalNodeConnection);
+    clearInterval(this.intervalPeerConnection);
   }
 
   async setTrackerEventHandlers() {
