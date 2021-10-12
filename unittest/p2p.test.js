@@ -1,5 +1,5 @@
+const rimraf = require("rimraf")
 const chai = require('chai');
-
 const BlockchainNode = require('../node');
 const VersionUtil = require('../common/version-util');
 const P2pClient = require('../p2p');
@@ -12,6 +12,7 @@ const {
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   DATA_PROTOCOL_VERSION,
+  CHAINS_DIR,
   GenesisAccounts,
   AccountProperties,
   HOSTING_ENV,
@@ -26,13 +27,16 @@ const { min, max } = VersionUtil.matchVersions(PROTOCOL_VERSION_MAP, CURRENT_PRO
 const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 
-const node = new BlockchainNode();
-setNodeForTesting(node, 0, true, true);
-
 describe("P2P", () => {
+  let node;
   let p2pClient;
   let p2pServer;
+
   before(async () => {
+    rimraf.sync(CHAINS_DIR);
+
+    node = new BlockchainNode();
+    setNodeForTesting(node, 0, true, true);
     p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
     p2pServer = p2pClient.server;
     await p2pServer.listen();
@@ -40,6 +44,8 @@ describe("P2P", () => {
 
   after(() => {
     p2pClient.stop();
+
+    rimraf.sync(CHAINS_DIR);
   });
 
   describe("Server Status", () => {
