@@ -200,10 +200,10 @@ class P2pClient {
 
   updateP2pState() {
     if (Object.keys(this.outbound).length < TARGET_NUM_OUTBOUND_CONNECTION) {
-      this.p2pState = P2pNetworkStates.CONNECTING;
+      this.p2pState = P2pNetworkStates.EXPANDING;
       this.sendRequestForNewPeers();
     } else {
-      this.p2pState = P2pNetworkStates.FULLY_SERVING;
+      this.p2pState = P2pNetworkStates.STEADY;
     }
   }
 
@@ -214,7 +214,7 @@ class P2pClient {
     }, NODE_CONNECTION_INVERVAL_MS);
   }
 
-  clearIntervalForNodeConnection() {
+  clearIntervalForPeerConnection() {
     clearInterval(this.intervalNodeConnection);
   }
 
@@ -584,7 +584,7 @@ class P2pClient {
     // in case trackerWebsocket is not properly setup.
     this.clearIntervalForTrackerConnection();
     this.clearIntervalForTrackerUpdate();
-    this.clearIntervalForNodeConnection();
+    this.clearIntervalForPeerConnection();
     if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from tracker server.');
     this.stopHeartbeat();
