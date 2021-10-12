@@ -135,7 +135,7 @@ describe("P2P", () => {
         actual.dbStatus.stateInfo['#tree_size'] = 'erased';
         actual.dbStatus.stateInfo['#tree_bytes'] = 'erased';
         actual.dbStatus.stateInfo['#state_ph'] = 'erased';
-        actual.dbStatus.stateProof['#state_ph'] = 'erased';
+        actual.dbStatus.stateProof = 'erased';
         assert.deepEqual(actual, {
           address: p2pServer.getNodeAddress(),
           state: 'SYNCING',
@@ -149,9 +149,7 @@ describe("P2P", () => {
               "#tree_size": 'erased',
               "#version": "NODE:0",
             },
-            stateProof: {
-              "#state_ph": 'erased'
-            }
+            stateProof: 'erased',
           },
           stateVersionStatus: {
             numVersions: 3,
