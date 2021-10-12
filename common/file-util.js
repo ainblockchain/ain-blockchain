@@ -109,6 +109,10 @@ class FileUtil {
     }
   }
 
+  static isCompressedFile(filePath) {
+    return _.endsWith(filePath, '.gz');
+  }
+
   // TODO(cshcomcom): Change to asynchronous.
   static readCompressedJson(filePath) {
     try {
