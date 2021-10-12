@@ -15,7 +15,7 @@ const {
   GenesisAccounts,
   AccountProperties,
   HOSTING_ENV,
-  p2pNetworkStates
+  P2pNetworkStates
 } = require('../common/constants');
 const { setNodeForTesting } = require('./test-util');
 
@@ -285,7 +285,7 @@ describe("P2P", () => {
     describe("getConnectionStatus", () => {
       it("shows initial values of connection status", () => {
         assert.deepEqual(p2pClient.getConnectionStatus(), {
-          p2pState: p2pNetworkStates.STARTING,
+          p2pState: P2pNetworkStates.STARTING,
           targetOutBound: TARGET_NUM_OUTBOUND_CONNECTION,
           maxInbound: MAX_NUM_INBOUND_CONNECTION,
           numInbound: 0,

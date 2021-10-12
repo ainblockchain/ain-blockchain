@@ -5,16 +5,16 @@ const _buildGraphData = (peerNodes) => {
   const filteredPeerNodesEntries = Object.entries(peerNodes).filter(([address, peerNode]) => {
     return peerNode.isAlive === true
   });
-  const alivePeerNodes = Object.fromEntries(filteredPeerNodesEntries);
+  const peerNodesAlive = Object.fromEntries(filteredPeerNodesEntries);
   const data = { nodes: [], links: [] };
   const peerNodeIdMap = { };
 
-  Object.keys(alivePeerNodes).forEach((address, i) => {
+  Object.keys(peerNodesAlive).forEach((address, i) => {
     Object.assign(peerNodeIdMap, { [address]: i });
     data.nodes.push({ address: abbrAddr(address) });
   });
 
-  Object.entries(alivePeerNodes).forEach(([address, nodeInfo]) => {
+  Object.entries(peerNodesAlive).forEach(([address, nodeInfo]) => {
     const outGoingList = nodeInfo.networkStatus.connectionStatus.outgoingPeers;
     outGoingList.forEach(outGoingAddress => {
       data.links.push({
