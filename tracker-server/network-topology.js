@@ -2,15 +2,19 @@ const commonUtil = require('../common/common-util');
 const { abbrAddr } = require('./util');
 
 const _buildGraphData = (peerNodes) => {
+  const filteredPeerNodesEntries = Object.entries(peerNodes).filter(([address, peerNode]) => {
+    return peerNode.isAlive === true
+  });
+  const peerNodesAlive = Object.fromEntries(filteredPeerNodesEntries);
   const data = { nodes: [], links: [] };
   const peerNodeIdMap = { };
 
-  Object.keys(peerNodes).forEach((peerNode, i) => {
-    Object.assign(peerNodeIdMap, { [peerNode]: i });
-    data.nodes.push({ address: abbrAddr(peerNode) });
+  Object.keys(peerNodesAlive).forEach((address, i) => {
+    Object.assign(peerNodeIdMap, { [address]: i });
+    data.nodes.push({ address: abbrAddr(address) });
   });
 
-  Object.entries(peerNodes).forEach(([address, nodeInfo]) => {
+  Object.entries(peerNodesAlive).forEach(([address, nodeInfo]) => {
     const outGoingList = nodeInfo.networkStatus.connectionStatus.outgoingPeers;
     outGoingList.forEach(outGoingAddress => {
       data.links.push({

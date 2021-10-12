@@ -14,6 +14,7 @@ const {
   MessageTypes,
   TrackerMessageTypes,
   BlockchainNodeStates,
+  P2pNetworkStates,
   TrafficEventTypes,
   TARGET_NUM_OUTBOUND_CONNECTION,
   MAX_NUM_INBOUND_CONNECTION,
@@ -32,8 +33,9 @@ const {
   isValidNetworkId
 } = require('./util');
 
-const RECONNECT_INTERVAL_MS = 5 * 1000;  // 5 seconds
-const UPDATE_TO_TRACKER_INTERVAL_MS = 5 * 1000;  // 5 seconds
+const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
+const TRACKER_UPDATE_INTERVAL_MS = 5 * 1000;  // 5 seconds
+const PEER_CONNECTION_INVERVAL_MS = 60 * 1000;  // 1 minute
 const HEARTBEAT_INTERVAL_MS = 60 * 1000;  // 1 minute
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
@@ -51,6 +53,8 @@ class P2pClient {
         this, node, minProtocolVersion, maxProtocolVersion, this.maxInbound);
     this.trackerWebSocket = null;
     this.outbound = {};
+    this.p2pState = P2pNetworkStates.STARTING;
+    logger.info(`Now p2p network in STARTING state!`);
     this.startHeartbeat();
   }
 
@@ -71,6 +75,7 @@ class P2pClient {
     const incomingPeers = Object.keys(this.server.inbound);
     const outgoingPeers = Object.keys(this.outbound);
     return {
+      p2pState: this.p2pState,
       maxInbound: this.maxInbound,
       targetOutBound: this.targetOutBound,
       numInbound: incomingPeers.length,
@@ -148,19 +153,6 @@ class P2pClient {
     return stats;
   }
 
-  setIntervalForTrackerConnection() {
-    if (!this.intervalConnection) {
-      this.intervalConnection = setInterval(() => {
-        this.connectToTracker();
-      }, RECONNECT_INTERVAL_MS);
-    }
-  }
-
-  clearIntervalForTrackerConnection() {
-    clearInterval(this.intervalConnection);
-    this.intervalConnection = null;
-  }
-
   sendRequestForNewPeers() {
     const message = {
       type: TrackerMessageTypes.NEW_PEERS_REQUEST,
@@ -181,11 +173,49 @@ class P2pClient {
     this.trackerWebSocket.send(JSON.stringify(message));
   }
 
+  setIntervalForTrackerConnection() {
+    if (!this.intervalTrackerConnection) {
+      this.intervalTrackerConnection = setInterval(() => {
+        this.connectToTracker();
+      }, TRACKER_RECONNECTION_INTERVAL_MS);
+    }
+  }
+
+  clearIntervalForTrackerConnection() {
+    clearInterval(this.intervalTrackerConnection);
+    this.intervalTrackerConnection = null;
+  }
+
   setIntervalForTrackerUpdate() {
     this.updatePeerInfoToTracker();
-    this.intervalUpdate = setInterval(() => {
+    this.intervalTrackerUpdate = setInterval(() => {
       this.updatePeerInfoToTracker();
-    }, UPDATE_TO_TRACKER_INTERVAL_MS);
+    }, TRACKER_UPDATE_INTERVAL_MS);
+  }
+
+  clearIntervalForTrackerUpdate() {
+    clearInterval(this.intervalTrackerUpdate);
+    this.intervalTrackerUpdate = null;
+  }
+
+  updateP2pState() {
+    if (Object.keys(this.outbound).length < TARGET_NUM_OUTBOUND_CONNECTION) {
+      this.p2pState = P2pNetworkStates.EXPANDING;
+      this.sendRequestForNewPeers();
+    } else {
+      this.p2pState = P2pNetworkStates.STEADY;
+    }
+  }
+
+  setIntervalForPeerConnection() {
+    this.updateP2pState();
+    this.intervalPeerConnection = setInterval(() => {
+      this.updateP2pState();
+    }, PEER_CONNECTION_INVERVAL_MS);
+  }
+
+  clearIntervalForPeerConnection() {
+    clearInterval(this.intervalPeerConnection);
   }
 
   async setTrackerEventHandlers() {
@@ -246,7 +276,7 @@ class P2pClient {
       logger.info(`Connected to tracker (${TRACKER_WS_ADDR})`);
       this.clearIntervalForTrackerConnection();
       this.setTrackerEventHandlers();
-      this.sendRequestForNewPeers();
+      this.setIntervalForPeerConnection();
       this.setIntervalForTrackerUpdate();
     });
     this.trackerWebSocket.on('error', (error) => {
@@ -490,7 +520,6 @@ class P2pClient {
     socket.on('close', () => {
       const address = getAddressFromSocket(this.outbound, socket);
       removeSocketConnectionIfExists(this.outbound, address);
-      this.sendRequestForNewPeers();
       logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
   }
@@ -543,11 +572,6 @@ class P2pClient {
     });
   }
 
-  clearIntervalForTrackerUpdate() {
-    clearInterval(this.intervalUpdate);
-    this.intervalUpdate = null;
-  }
-
   disconnectFromPeers() {
     Object.values(this.outbound).forEach(node => {
       node.socket.close();
@@ -560,6 +584,7 @@ class P2pClient {
     // in case trackerWebsocket is not properly setup.
     this.clearIntervalForTrackerConnection();
     this.clearIntervalForTrackerUpdate();
+    this.clearIntervalForPeerConnection();
     if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from tracker server.');
     this.stopHeartbeat();
