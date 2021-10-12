@@ -171,7 +171,7 @@ class Functions {
               // Always pops from the call stack.
               this.popCall();
               triggerCount++;
-              if (CommonUtil.isFailedFuncResultCode(result.code)) {
+              if (!result || CommonUtil.isFailedFuncResultCode(result.code)) {
                 break;
               }
             }

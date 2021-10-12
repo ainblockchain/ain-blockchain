@@ -1,0 +1,108 @@
+{
+    "last_votes": [
+        {
+            "tx_body": {
+                "operation": {
+                    "type": "SET",
+                    "op_list": [
+                        {
+                            "type": "SET_VALUE",
+                            "ref": "/consensus/number/100/propose",
+                            "value": {
+                                "number": 100,
+                                "epoch": 20715292,
+                                "validators": {
+                                    "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
+                                        "stake": 100000,
+                                        "proposal_right": true
+                                    },
+                                    "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": {
+                                        "stake": 100000,
+                                        "proposal_right": true
+                                    }
+                                },
+                                "total_at_stake": 200000,
+                                "proposer": "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
+                                "block_hash": "0xd1caa14615e2b7f367ed739d09d661cb9cec1be6d3a7e2015c853af605a39fd9",
+                                "last_hash": "0x3e7571d6ad9cd4328d6a6fc19600e6d6e7f37caae256b24d83828a3816c18d41",
+                                "timestamp": 1633965194819,
+                                "gas_cost_total": 0
+                            }
+                        }
+                    ]
+                },
+                "nonce": -1,
+                "gas_price": 1,
+                "timestamp": 1633965194828
+            },
+            "signature": "0x158625c6135e84d4c5ecf1183024a5cad01514477b36763fedb1d3c7adaed8873b2a150c9ba606aaed536d1d965f53c06712cb18ec3c594c8e67c5b8fb2185ba3719ef56c26b406f60a8f499fe4cf3984b7ad752ee8df9cbdff30d5e895d4f2a1c",
+            "hash": "0x158625c6135e84d4c5ecf1183024a5cad01514477b36763fedb1d3c7adaed887",
+            "address": "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204"
+        },
+        {
+            "tx_body": {
+                "operation": {
+                    "type": "SET_VALUE",
+                    "ref": "/consensus/number/100/0xd1caa14615e2b7f367ed739d09d661cb9cec1be6d3a7e2015c853af605a39fd9/vote/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
+                    "value": {
+                        "block_hash": "0xd1caa14615e2b7f367ed739d09d661cb9cec1be6d3a7e2015c853af605a39fd9",
+                        "stake": 100000,
+                        "is_against": false
+                    }
+                },
+                "nonce": -1,
+                "gas_price": 1,
+                "timestamp": 1633965194842
+            },
+            "signature": "0x331f213d3cf7f16f5e3ff1f3ae72ffb6f80a9ea11d996ece88b95011271dd0624d40273fcc26965792780fdba8a412a169d98247ee5054d22f2a1ac99d22de29629b1eb51c9f38475bf30dd3c5683282ac0484176704df220e876425ccec8bf41b",
+            "hash": "0x331f213d3cf7f16f5e3ff1f3ae72ffb6f80a9ea11d996ece88b95011271dd062",
+            "address": "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204"
+        },
+        {
+            "tx_body": {
+                "operation": {
+                    "type": "SET_VALUE",
+                    "ref": "/consensus/number/100/0xd1caa14615e2b7f367ed739d09d661cb9cec1be6d3a7e2015c853af605a39fd9/vote/0x00ADEc28B6a845a085e03591bE7550dd68673C1C",
+                    "value": {
+                        "block_hash": "0xd1caa14615e2b7f367ed739d09d661cb9cec1be6d3a7e2015c853af605a39fd9",
+                        "stake": 100000,
+                        "is_against": false
+                    }
+                },
+                "nonce": -1,
+                "gas_price": 1,
+                "timestamp": 1633965194855
+            },
+            "signature": "0xaa6fc0264c2942a12208041cc486ca8631f6ee05eb46d0d38331054ca08073a61fd6d5bac819ec5c52c06bac52a2df81dcf2fbf1a60ad8d96d343992b764100a482b15d63dd571decfb7f9cf25c44072a07b314658c52fc3aa661731b998abb11c",
+            "hash": "0xaa6fc0264c2942a12208041cc486ca8631f6ee05eb46d0d38331054ca08073a6",
+            "address": "0x00ADEc28B6a845a085e03591bE7550dd68673C1C"
+        }
+    ],
+    "evidence": {},
+    "transactions": [],
+    "receipts": [],
+    "last_hash": "0xd1caa14615e2b7f367ed739d09d661cb9cec1be6d3a7e2015c853af605a39fd9",
+    "last_votes_hash": "0x6e9f6e15baf1b93556bc5a73d591f43da3ec56ede583c049cd06fe7b3f71e369",
+    "evidence_hash": "0xd35126dcb36a3c4b4ef04c4eff63edecbc9eacff867d1c348c1abaf82567a8f8",
+    "transactions_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+    "receipts_hash": "0x853fb99c831d4952ff90b897bd7d7c5c2f3747e8eda8ad13e7359b731eadc299",
+    "number": 101,
+    "epoch": 20715293,
+    "timestamp": 1633965197827,
+    "state_proof_hash": "0xdc730a0ff77933d20990836c9c6526fcbff682f37ba89a0cff65827e35195ccc",
+    "proposer": "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
+    "validators": {
+        "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
+            "stake": 100000,
+            "proposal_right": true
+        },
+        "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": {
+            "stake": 100000,
+            "proposal_right": true
+        }
+    },
+    "gas_amount_total": 0,
+    "gas_cost_total": 0,
+    "hash": "0x875b0dec45559aaec027aa4d33dbc8a4c13ddf29b7e16915b54ac0d0e83f438b",
+    "size": 5782
+}
