@@ -434,13 +434,6 @@ class BlockchainNode {
           logger, 2, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
     const executableTx = Transaction.toExecutable(tx);
-    if (!this.tp.hasPerAccountRoomForNewTransaction(executableTx.address)) {
-      const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
-      return CommonUtil.logAndReturnTxResult(
-          logger, 4,
-          `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
-          `for account: ${executableTx.address}`);
-    }
     if (!Transaction.isExecutable(executableTx)) {
       return CommonUtil.logAndReturnTxResult(
           logger, 5,
@@ -450,6 +443,13 @@ class BlockchainNode {
       if (!Transaction.verifyTransaction(executableTx)) {
         return CommonUtil.logAndReturnTxResult(logger, 6, `[${LOG_HEADER}] Invalid signature`);
       }
+    }
+    if (!this.tp.hasPerAccountRoomForNewTransaction(executableTx.address)) {
+      const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
+      return CommonUtil.logAndReturnTxResult(
+          logger, 4,
+          `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
+          `for account: ${executableTx.address}`);
     }
     const result = this.db.executeTransaction(executableTx, false, true, this.bc.lastBlockNumber() + 1);
     if (CommonUtil.isFailedTx(result)) {
