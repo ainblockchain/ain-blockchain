@@ -1029,6 +1029,10 @@ class Consensus {
       if (blockInfo.block.number < lastNotarizedBlock.number) {
         continue;
       }
+      if (!ConsensusUtil.isValidConsensusTx(blockInfo.proposal)) {
+        logger.info(`[${LOG_HEADER}] Invalid consensus tx: ${JSON.stringify(blockInfo.proposal)}`);
+        return;
+      }
       try {
         this.checkProposal(blockInfo.block, blockInfo.proposal);
       } catch (e) {
@@ -1042,9 +1046,11 @@ class Consensus {
         }
       }
       if (blockInfo.votes) {
-        blockInfo.votes.forEach((vote) => {
-          this.blockPool.addSeenVote(vote);
-        });
+        for (const vote of blockInfo.votes) {
+          if (ConsensusUtil.isValidConsensusTx(vote)) {
+            this.blockPool.addSeenVote(vote);
+          }
+        }
       }
       if (!lastVerifiedBlock || lastVerifiedBlock.epoch < blockInfo.block.epoch) {
         lastVerifiedBlock = blockInfo.block;

@@ -26,22 +26,9 @@ class TransactionPool {
     this.txCountTotal = 0;
   }
 
+  // NOTE(platfowner): A transaction needs to be converted to an executable form
+  //                   before being added.
   addTransaction(tx, isExecutedTx = false) {
-    // NOTE(platfowner): A transaction needs to be converted to an executable form
-    //                   before being added.
-    if (!Transaction.isExecutable(tx)) {
-      logger.error(`Not executable transaction: ${JSON.stringify(tx)}`);
-      return false;
-    }
-    // Quick verification of transaction on entry
-    if (!LIGHTWEIGHT) {
-      if (!Transaction.verifyTransaction(tx)) {
-        logger.error('Invalid transaction');
-        logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
-        return false;
-      }
-    }
-
     if (!(tx.address in this.transactions)) {
       this.transactions[tx.address] = [];
     }

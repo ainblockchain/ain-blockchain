@@ -441,6 +441,16 @@ class BlockchainNode {
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
           `for account: ${executableTx.address}`);
     }
+    if (!Transaction.isExecutable(executableTx)) {
+      return CommonUtil.logAndReturnTxResult(
+          logger, 5,
+          `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
+    }
+    if (!LIGHTWEIGHT) {
+      if (!Transaction.verifyTransaction(executableTx)) {
+        return CommonUtil.logAndReturnTxResult(logger, 6, `[${LOG_HEADER}] Invalid signature`);
+      }
+    }
     const result = this.db.executeTransaction(executableTx, false, true, this.bc.lastBlockNumber() + 1);
     if (CommonUtil.isFailedTx(result)) {
       if (FeatureFlags.enableRichTransactionLogging) {
