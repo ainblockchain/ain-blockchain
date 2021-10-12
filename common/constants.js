@@ -165,10 +165,10 @@ const BlockchainNodeStates = {
  *
  * @enum {string}
  */
-const p2pNetworkStates = {
+const P2pNetworkStates = {
   STARTING: 'STARTING',
-  CONNECTING: 'CONNECTING',
-  FULLY_SERVING: 'FULLY_SERVING'
+  EXPANDING: 'EXPANDING',
+  STEADY: 'STEADY'
 };
 
 /**
@@ -932,7 +932,7 @@ module.exports = {
   MessageTypes,
   TrackerMessageTypes,
   BlockchainNodeStates,
-  p2pNetworkStates,
+  P2pNetworkStates,
   PredefinedDbPaths,
   TokenProperties,
   TokenBridgeProperties,
