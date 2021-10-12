@@ -294,7 +294,7 @@ class Consensus {
         return;
       }
       if (!ConsensusUtil.isValidConsensusTx(proposalTx)) {
-        logger.info(`[${LOG_HEADER}] Invalid consensus tx: ${JSON.stringify(proposalTx)}`);
+        logger.error(`[${LOG_HEADER}] Invalid consensus tx: ${JSON.stringify(proposalTx)}`);
         return;
       }
       try {
@@ -320,7 +320,7 @@ class Consensus {
         return;
       }
       if (!ConsensusUtil.isValidConsensusTx(msg.value) || !this.checkVoteTx(msg.value)) {
-        logger.info(`[${LOG_HEADER}] Invalid vote tx: ${JSON.stringify(msg.value)}`);
+        logger.error(`[${LOG_HEADER}] Invalid vote tx: ${JSON.stringify(msg.value)}`);
         return;
       }
       this.server.client.broadcastConsensusMessage(msg);
@@ -1029,6 +1029,10 @@ class Consensus {
       if (blockInfo.block.number < lastNotarizedBlock.number) {
         continue;
       }
+      if (!ConsensusUtil.isValidConsensusTx(blockInfo.proposal)) {
+        logger.error(`[${LOG_HEADER}] Invalid consensus tx: ${JSON.stringify(blockInfo.proposal)}`);
+        return;
+      }
       try {
         this.checkProposal(blockInfo.block, blockInfo.proposal);
       } catch (e) {
@@ -1042,9 +1046,11 @@ class Consensus {
         }
       }
       if (blockInfo.votes) {
-        blockInfo.votes.forEach((vote) => {
-          this.blockPool.addSeenVote(vote);
-        });
+        for (const vote of blockInfo.votes) {
+          if (ConsensusUtil.isValidConsensusTx(vote)) {
+            this.blockPool.addSeenVote(vote);
+          }
+        }
       }
       if (!lastVerifiedBlock || lastVerifiedBlock.epoch < blockInfo.block.epoch) {
         lastVerifiedBlock = blockInfo.block;
