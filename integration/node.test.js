@@ -197,7 +197,7 @@ describe('Blockchain Node', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
 
   before(async () => {
-    rimraf.sync(CHAINS_DIR)
+    rimraf.sync(CHAINS_DIR);
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
     await CommonUtil.sleep(3000);
