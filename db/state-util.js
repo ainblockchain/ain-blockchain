@@ -6,6 +6,7 @@ const validUrl = require('valid-url');
 const CommonUtil = require('../common/common-util');
 const {
   FeatureFlags,
+  HASH_DELIMITER,
   PredefinedDbPaths,
   FunctionProperties,
   FunctionTypes,
@@ -13,6 +14,7 @@ const {
   RuleProperties,
   OwnerProperties,
   ShardingProperties,
+  StateInfoProperties,
   STATE_LABEL_LENGTH_LIMIT,
 } = require('../common/constants');
 
@@ -636,6 +638,78 @@ function getProofOfStatePath(root, fullPath) {
   return getProofOfStatePathRecursive(fullPath, root, 0);
 }
 
+function verifyStateProofRecursive(proof) {
+  let stateProofHash = null;
+  let radixProofHash = null;
+  const subProofList = [];
+  for (const [label, value] of Object.entries(proof)) {
+    let proofHash = null;
+    if (CommonUtil.isDict(value)) {
+      const subProof = verifyStateProofRecursive(value);
+      if (subProof === null) {
+        return null;
+      }
+      if (subProof.isStateProof === true) {
+        stateProofHash = subProof.proofHash;
+        continue;  // continue
+      }
+      proofHash = subProof.proofHash;
+    } else {
+      proofHash = value;
+    }
+    if (label === StateInfoProperties.STATE_PROOF_HASH) {
+      // fast return
+      return {
+        proofHash: proofHash,
+        isStateProof: true,
+      };
+    }
+    if (label === StateInfoProperties.RADIX_PROOF_HASH) {
+      radixProofHash = proofHash;
+      continue;  // continue
+    }
+    subProofList.push({
+      label,
+      proofHash,
+    });
+  }
+  if (subProofList.length === 0 && stateProofHash === null) {
+    if (radixProofHash !== null) {
+      return {
+        proofHash: radixProofHash,
+        isStateProof: false,
+      };
+    }
+    return null;  // radix proof hash is missing!
+  }
+  let preimage = stateProofHash !== null ? stateProofHash : '';
+  preimage += `${HASH_DELIMITER}`;
+  if (subProofList.length === 0) {
+    preimage += `${HASH_DELIMITER}`;
+  } else {
+    for (const subProof of subProofList) {
+      preimage += `${HASH_DELIMITER}${subProof.label}${HASH_DELIMITER}${subProof.proofHash}`;
+    }
+  }
+  const computedProofHash = CommonUtil.hashString(preimage);
+  if (computedProofHash === radixProofHash) {
+    return {
+      proofHash: radixProofHash,
+      isStateProof: false,
+    }
+  } else {
+    return null;  // proof hash mismatch!
+  }
+}
+
+function verifyStateProof(proof) {
+  const verified = verifyStateProofRecursive(proof);
+  if (verified === null) {
+    return null;
+  }
+  return verified.proofHash;
+}
+
 module.exports = {
   isEmptyNode,
   hasShardConfig,
@@ -668,4 +742,5 @@ module.exports = {
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
   getProofOfStatePath,
+  verifyStateProof,
 };
