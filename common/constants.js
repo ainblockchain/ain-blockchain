@@ -703,7 +703,8 @@ function initializeNetworkEnvronments() {
       TARGET_NUM_OUTBOUND_CONNECTION: process.env.TARGET_NUM_OUTBOUND_CONNECTION ?
           Number(process.env.TARGET_NUM_OUTBOUND_CONNECTION) : GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
       MAX_NUM_INBOUND_CONNECTION: process.env.MAX_NUM_INBOUND_CONNECTION ?
-          Number(process.env.MAX_NUM_INBOUND_CONNECTION) : GenesisParams.consensus.MAX_NUM_VALIDATORS - 1
+          Number(process.env.MAX_NUM_INBOUND_CONNECTION) : GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      REQUEST_BODY_SIZE_LIMIT: GenesisParams.network.REQUEST_BODY_SIZE_LIMIT || '100mb',
     }
   }
 }
