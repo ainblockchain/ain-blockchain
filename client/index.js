@@ -20,13 +20,15 @@ const {
   CHAIN_ID,
   TrafficEventTypes,
   trafficStatsManager,
+  REQUEST_BODY_SIZE_LIMIT,
 } = require('../common/constants');
 const { ConsensusStates } = require('../consensus/constants');
 
 const MAX_BLOCKS = 20;
 
 const app = express();
-app.use(express.json()); // support json encoded bodies
+app.use(express.json({ limit: REQUEST_BODY_SIZE_LIMIT }));
+app.use(express.urlencoded({ limit: REQUEST_BODY_SIZE_LIMIT }));
 
 const node = new BlockchainNode();
 // NOTE(platfowner): This is very useful when the server dies without any logs.
