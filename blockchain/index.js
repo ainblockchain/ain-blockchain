@@ -10,6 +10,7 @@ const {
   GenesisAccounts,
   AccountProperties,
 } = require('../common/constants');
+const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 
 class Blockchain {
@@ -18,6 +19,9 @@ class Blockchain {
     this.chain = [];
     this.blockchainPath = path.resolve(CHAINS_DIR, basePath);
     this.initSnapshotBlockNumber = -1;
+
+    // Mapping of a block number to the finalized block's info
+    this.numberToBlockInfo = {};
   }
 
   /**
@@ -100,6 +104,13 @@ class Blockchain {
     }
   }
 
+  getBlockInfoByNumber(number) {
+    if (number === undefined || number === null) return null;
+    const blockNumber = CommonUtil.toNumberOrNaN(number);
+    if (!CommonUtil.isNumber(blockNumber)) return null;
+    return this.numberToBlockInfo[blockNumber];
+  }
+
   lastBlock() {
     if (this.chain.length === 0) {
       return null;
@@ -141,6 +152,15 @@ class Blockchain {
     logger.info(`[${LOG_HEADER}] Successfully added block ${block.number} to chain.`);
   }
 
+  updateNumberToBlockInfo(block) {
+    this.numberToBlockInfo[block.number] = {
+      finalized_at: Date.now()
+    };
+    if (block.number >= ConsensusConsts.MAX_FINALIZED_BLOCK_INFO_ON_MEM) {
+      delete this.numberToBlockInfo[block.number - ConsensusConsts.MAX_FINALIZED_BLOCK_INFO_ON_MEM];
+    }
+  }
+
   addNewBlockToChain(newBlock) {
     const LOG_HEADER = 'addNewBlockToChain';
 
@@ -156,6 +176,7 @@ class Blockchain {
       newBlock = Block.parse(newBlock);
     }
     this.addBlockToChain(newBlock);
+    this.updateNumberToBlockInfo(newBlock);
     this.writeBlock(newBlock);
     // Keep up to latest ON_MEMORY_CHAIN_LENGTH blocks
     while (this.chain.length > ON_MEMORY_CHAIN_LENGTH) {
