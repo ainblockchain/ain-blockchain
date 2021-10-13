@@ -496,12 +496,21 @@ app.get('/get_block_by_hash', (req, res, next) => {
     .end();
 });
 
-app.get('/get_block_by_number', (req, res, next) => {
+app.get('/get_block_by_number', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
   const block = node.bc.getBlockByNumber(req.query.number);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({ code: 0, result: block })
+    .end();
+});
+
+app.get('/get_block_info_by_number', (req, res) => {
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
+  const blockInfo = node.bc.getBlockInfoByNumber(req.query.number);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: 0, result: blockInfo })
     .end();
 });
 
