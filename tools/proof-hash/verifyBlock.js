@@ -45,13 +45,13 @@ async function verifyBlock(snapshotFile, blockFile) {
   console.log(`  > Root proof hash from block header: ${block.state_proof_hash}`);
   console.log(`  > Root proof hash from recomputation: ${db.stateRoot.getProofHash()}`);
   if (db.stateRoot.getProofHash() === block.state_proof_hash) {
-    console.log(`  ************`);
-    console.log(`  * MATCHED! *`);
-    console.log(`  ************`);
+    console.log(`  *************`);
+    console.log(`  * VERIFIED! *`);
+    console.log(`  *************`);
   } else {
-    console.log(`  ****************`);
-    console.log(`  * MIS-MATCHED! *`);
-    console.log(`  ****************`);
+    console.log(`  *****************`);
+    console.log(`  * NOT-VERIFIED! *`);
+    console.log(`  *****************`);
   }
   console.log(`  Done.`);
 }
