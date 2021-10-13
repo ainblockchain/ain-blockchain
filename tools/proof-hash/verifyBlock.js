@@ -66,8 +66,8 @@ async function processArguments() {
 function usage() {
   console.log('\nUsage:\n  node verifyBlock.js <snapshot file> <block file>\n')
   console.log('Examples:')
-  console.log('  node verifyBlock.js samples/100.json samples/101.json')
-  console.log('  node verifyBlock.js samples/100.json.gz samples/101.json.gz\n')
+  console.log('  node verifyBlock.js samples/snapshot-100.json samples/block-101.json')
+  console.log('  node verifyBlock.js samples/snapshot-100.json.gz samples/block-101.json.gz\n')
   process.exit(0)
 }
 
