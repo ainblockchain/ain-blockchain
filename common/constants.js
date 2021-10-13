@@ -692,7 +692,7 @@ overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
 // NOTE(minsulee2): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
 // The minimum network connections are set based on the MAX_NUM_VALIDATORS otherwise.
-function initializeNetworkEnvronments() {
+function initializeNetworkEnvironments() {
   if (process.env.NETWORK_OPTIMIZATION) {
     return GenesisParams.network;
   } else {
@@ -709,7 +709,7 @@ function initializeNetworkEnvronments() {
   }
 }
 
-const networkEnv = initializeNetworkEnvronments();
+const networkEnv = initializeNetworkEnvironments();
 
 /**
  * Port number helper.
