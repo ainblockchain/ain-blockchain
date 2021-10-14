@@ -656,6 +656,24 @@ const TrafficEventTypes = {
   CLIENT_API_SET: 'client_api_set',
 };
 
+const IpAddressRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
+
+const P2pRouter = (() => {
+  const p2pRouterEnv = process.env.P2P_ROUTER_ENV || '';
+  const lowerEnv = p2pRouterEnv.toLowerCase();
+  switch (lowerEnv) {
+    // In case of local running.
+    case 'local':
+      return 'http://localhost:8081';
+    // In case of given ip address running.
+    case (lowerEnv.match(IpAddressRegex) ? lowerEnv.match(IpAddressRegex).input : null):
+      return lowerEnv;
+    // Default prod running.
+    default:
+      return 'http://node.ainetwork.ai:8080';
+  }
+})();
+
 /**
  * Overwriting environment variables.
  * These parameters are defined in genesis_params.json, but if specified as environment variables,
@@ -935,6 +953,7 @@ module.exports = {
   TrackerMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
+  P2pRouter,
   PredefinedDbPaths,
   TokenProperties,
   TokenBridgeProperties,
