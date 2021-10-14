@@ -706,14 +706,14 @@ function verifyStateProofInternal(proof) {
     let childProofHash = null;
     if (CommonUtil.isDict(value)) {
       const subProof = verifyStateProofInternal(value);
+      if (!subProof.isVerified) {
+        isChildVerified = false;
+      }
       if (subProof.isStateNode === true) {
         childStatePh = subProof.proofHash;
         continue;  // continue
       }
       childProofHash = subProof.proofHash;
-      if (!subProof.isVerified) {
-        isChildVerified = false;
-      }
     } else {
       childProofHash = value;
     }
@@ -742,7 +742,7 @@ function verifyStateProofInternal(proof) {
   return {
     proofHash: computedProofHash,
     isStateNode: isStateNode,
-    isVerified: isChildVerified ? computedProofHash === curProofHash : false,
+    isVerified: isChildVerified && computedProofHash === curProofHash,
   }
 }
 
