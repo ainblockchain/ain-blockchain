@@ -542,6 +542,10 @@ class StateNode {
     }
   }
 
+  getProofHashOfStateNode() {
+    return this.getProofHash();
+  }
+
   deleteRadixTreeVersion() {
     return this.radixTree.deleteRadixTreeVersion();
   }

@@ -652,6 +652,25 @@ function getProofOfStatePath(root, fullPath) {
 }
 
 /**
+ * Returns proof hash of a state path.
+ * 
+ * @param {Object} root root state
+ * @param {Object} fullPath array of parsed full path labels
+ */
+function getProofHashOfStatePath(root, fullPath) {
+  let curNode = root;
+  for (let i = 0; i < fullPath.length; i++) {
+    const childLabel = fullPath[i];
+    const child = curNode.getChild(childLabel);
+    if (child === null) {
+      return null;
+    }
+    curNode = child;
+  }
+  return curNode.getProofHashOfStateNode();
+}
+
+/**
  * Returns proof hash of a radix node.
  * 
  * @param {Object} childStatePh proof hash of child state node. null if not available.
@@ -774,5 +793,6 @@ module.exports = {
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
   getProofOfStatePath,
+  getProofHashOfStatePath,
   verifyStateProof,
 };

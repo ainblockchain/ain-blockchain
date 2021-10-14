@@ -22,6 +22,7 @@ const {
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
   getProofOfStatePath,
+  getProofHashOfStatePath,
   verifyStateProof,
 } = require('../db/state-util');
 const { STATE_LABEL_LENGTH_LIMIT } = require('../common/constants');
@@ -2419,6 +2420,13 @@ describe("state-util", () => {
           "#radix_ph": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60",
         }
       });
+    });
+
+    it("getProofHashOfStatePath", () => {
+      updateStateInfoForStateTree(stateTree);
+      expect(getProofHashOfStatePath(stateTree, [label1, label11])).to.equal(
+        "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb"
+      );
     });
 
     it("verifyStateProof", () => {
