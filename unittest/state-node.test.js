@@ -1367,9 +1367,7 @@ describe("state-node", () => {
     it("leaf node", () => {
       node.setValue(true);  // leaf node
       node.setProofHash('proofHash');
-      assert.deepEqual(node.getProofOfStateNode(), {
-        "#state_ph": "proofHash"
-      });
+      assert.deepEqual(node.getProofOfStateNode(), "proofHash");
     });
 
     it("internal node", () => {
