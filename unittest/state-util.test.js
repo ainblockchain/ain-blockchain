@@ -2467,17 +2467,17 @@ describe("state-util", () => {
 
       // internal state proof hash manipulated
       const proofManipulated2 = JSON.parse(JSON.stringify(proof));
-      _.set(proofManipulated2, '000.1.0x001.#state_ph', 'some other value');
+      _.set(proofManipulated2, '000.1.0x0001.#state_ph', 'some other value');
       assert.deepEqual(verifyStateProof(proofManipulated2), {
-        "rootProofHash": "0x8f6d730a202c45684e9a514cf8549f6615cc20c02fd9f06e7ee617c0b6c6ce65",
+        "rootProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
         "isVerified": false,
       });
 
       // terminal state proof hash manipulated
       const proofManipulated3 = JSON.parse(JSON.stringify(proof));
-      _.set(proofManipulated3, '000.1.0x001.0011.0x0011.#state_ph', 'some other value');
+      _.set(proofManipulated3, '000.1.0x0001.0011.0x0011.#state_ph', 'some other value');
       assert.deepEqual(verifyStateProof(proofManipulated3), {
-        "rootProofHash": "0x5cfaa5ae27dd56038ab146f8b9a60e2e284551231f32905347f495bcf87b8684",
+        "rootProofHash": "0x54b7f39d18471220274c0ac87fef5e26254fde7ac7a016266758497ffad1aecf",
         "isVerified": false,
       });
 
