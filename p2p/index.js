@@ -20,6 +20,7 @@ const {
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
   trafficStatsManager,
+  P2pRouter
 } = require('../common/constants');
 const {
   getAddressFromSocket,
