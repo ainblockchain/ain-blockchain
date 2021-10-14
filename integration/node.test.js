@@ -506,13 +506,17 @@ describe('Blockchain Node', () => {
       it('get_state_proof', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/')
             .body.toString('utf-8'));
-        body.result['#state_ph'] = 'erased';
-        assert.deepEqual(body, {
-          "code": 0,
-          "result": {
-            "#state_ph": "erased"
-          }
-        });
+        expect(body.code).to.equal(0);
+        expect(body.result['#state_ph']).to.not.equal(null);
+      });
+    });
+
+    describe('/get_state_proof_hash', () => {
+      it('get_state_proof_hash', () => {
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof_hash?ref=/')
+            .body.toString('utf-8'));
+        expect(body.code).to.equal(0);
+        expect(body.result).to.not.equal(null);
       });
     });
 
@@ -690,10 +694,18 @@ describe('Blockchain Node', () => {
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
         .then(res => {
-          res.result.result['#state_ph'] = 'erased';
-          assert.deepEqual(res.result.result, {
-            "#state_ph": "erased"
-          });
+          expect(res.result.result['#state_ph']).to.not.equal(null);
+        })
+      })
+    })
+
+    describe('ain_getStateProofHash', () => {
+      it('returns correct value', () => {
+        const ref = '/';
+        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProofHash', request)
+        .then(res => {
+          expect(res.result.result).to.not.equal(null);
         })
       })
     })
