@@ -627,7 +627,7 @@ function verifyStateInfoForStateTree(stateTree) {
  */
 function getProofOfStatePathRecursive(fullPath, node, index) {
   if (index > fullPath.length - 1) {
-    return node.getProofHash();
+    return node.getProofOfStateNode();
   }
   const childLabel = fullPath[index];
   const child = node.getChild(childLabel);

@@ -521,7 +521,7 @@ class StateNode {
 
   getProofOfStateNode(childLabel = null, childProof = null) {
     if (childLabel === null) {
-      return { [StateInfoProperties.STATE_PROOF_HASH]: this.getProofHash() };
+      return this.getProofHash();
     } else {
       if (FeatureFlags.enableRadixTreeLayers) {
         return this.radixTree.getProofOfStateNode(childLabel, childProof);
