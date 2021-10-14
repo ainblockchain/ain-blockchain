@@ -434,7 +434,7 @@ class Consensus {
         validators, recordedInvalidBlockHashSet, blockTime, tempDb);
     const { transactions, receipts, gasAmountTotal, gasCostTotal } = this.getValidTransactions(
         longestNotarizedChain, blockNumber, blockTime, tempDb);
-    const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProof('/');
+    const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getStateProofHash('/');
     const proposalBlock = Block.create(
         lastBlock.hash, lastVotes, evidence, transactions, receipts, blockNumber, epoch,
         stateProofHash, this.node.account.address, validators, gasAmountTotal, gasCostTotal, blockTime);
@@ -758,7 +758,7 @@ class Consensus {
     if (LIGHTWEIGHT) {
       return;
     }
-    const stateProofHash = newDb.getStateProof('/');
+    const stateProofHash = newDb.getStateProofHash('/');
     if (stateProofHash !== expectedStateProofHash) {
       newDb.destroyDb();
       throw new ConsensusError({

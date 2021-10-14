@@ -1367,7 +1367,9 @@ describe("state-node", () => {
     it("leaf node", () => {
       node.setValue(true);  // leaf node
       node.setProofHash('proofHash');
-      assert.deepEqual(node.getProofOfStateNode(), "proofHash");
+      assert.deepEqual(node.getProofOfStateNode(), {
+        "#state_ph": "proofHash"
+      });
     });
 
     it("internal node", () => {
@@ -1410,7 +1412,7 @@ describe("state-node", () => {
       });
 
       assert.deepEqual(stateTree.getProofOfStateNode(label2, 'child_proof2'), {
-        "#radix_ph": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6",
+        "#state_ph": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6",
         "00aaaa": {
           "#radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c",
         },
@@ -1424,9 +1426,7 @@ describe("state-node", () => {
           },
           "bb": {
             "#radix_ph": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184",
-            "0x11bbbb": {
-              "#state_ph": "child_proof2",
-            }
+            "0x11bbbb": "child_proof2",
           }
         }
       });

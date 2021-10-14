@@ -4461,13 +4461,17 @@ describe("State info", () => {
     });
   });
 
-  describe("State proof (getStateProof)", () => {
+  describe("State proof - getStateProof / getStateProofHash", () => {
     it("tests proof with a null case", () => {
       assert.deepEqual(null, node.db.getStateProof('/apps/test/test'));
+      assert.deepEqual(null, node.db.getStateProofHash('/apps/test/test'));
     });
 
     it("tests proof with owners, rules, values and functions", () => {
-      expect(node.db.getStateProof('/')).to.not.equal(null);
+      const proof = node.db.getStateProof('/');
+      expect(proof).to.not.equal(null);
+      expect(proof['#state_ph']).to.not.equal(null);
+      expect(node.db.getStateProofHash('/')).to.not.equal(null);
     });
   });
 });

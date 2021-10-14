@@ -625,12 +625,12 @@ function verifyStateInfoForStateTree(stateTree) {
  * @param {Object} root root state
  * @param {Object} index index of fullPath
  */
-function getProofOfStatePathRecursive(fullPath, node, index) {
+function getProofOfStatePathRecursive(fullPath, curNode, index) {
   if (index > fullPath.length - 1) {
-    return node.getProofOfStateNode();
+    return curNode.getProofOfStateNode();
   }
   const childLabel = fullPath[index];
-  const child = node.getChild(childLabel);
+  const child = curNode.getChild(childLabel);
   if (child === null) {
     return null;
   }
@@ -638,7 +638,7 @@ function getProofOfStatePathRecursive(fullPath, node, index) {
   if (childProof === null) {
     return null;
   }
-  return node.getProofOfStateNode(childLabel, childProof);
+  return curNode.getProofOfStateNode(childLabel, childProof);
 }
 
 /**

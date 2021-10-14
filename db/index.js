@@ -431,13 +431,24 @@ class DB {
   }
 
   /**
-   * Returns a proof of a state node.
+   * Returns proof of a state node.
    * @param {string} statePath full database path to the state node
    */
-  // TODO(platfowner): Consider supporting global path for getStateProof().
   getStateProof(statePath) {
     const parsedPath = CommonUtil.parsePath(statePath);
     return getProofOfStatePath(this.stateRoot, parsedPath);
+  }
+
+  /**
+   * Returns proof hash of a state node.
+   * @param {string} statePath full database path to the state node
+   */
+  getStateProofHash(statePath) {
+    const proof = this.getStateProof(statePath);
+    if (proof === null) {
+      return null;
+    }
+    return proof[StateInfoProperties.STATE_PROOF_HASH];
   }
 
   static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
