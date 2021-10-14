@@ -490,19 +490,21 @@ class RadixNode {
     return true;
   }
 
-  getProofOfRadixNode(childLabel = null, childProof = null, stateProof = null) {
-    const proof = { [StateInfoProperties.RADIX_PROOF_HASH]: this.getProofHash() };
+  getProofOfRadixNode(
+      childLabel = null, childProof = null, childStateProof = null, isRootRadixNode = false) {
+    // NOTE(platfowner): Root radix node uses STATE_PROOF_HASH as the proof label.
+    const proofLabel = isRootRadixNode ?
+        StateInfoProperties.STATE_PROOF_HASH : StateInfoProperties.RADIX_PROOF_HASH;
+    const proof = { [proofLabel]: this.getProofHash() };
     if (this.hasChildStateNode()) {
       const childStateNode = this.getChildStateNode();
-      const childStateProof = {
-        [StateInfoProperties.STATE_PROOF_HASH]: stateProof !== null ?
-            stateProof : childStateNode.getProofHash()
-      };
       Object.assign(proof, {
-        [childStateNode.getLabel()]: childStateProof,
+        [childStateNode.getLabel()]: childStateProof !== null ? childStateProof : {
+          [StateInfoProperties.STATE_PROOF_HASH]: childStateNode.getProofHash()
+        }
       });
     }
-    if (childLabel === null && stateProof !== null) {
+    if (childLabel === null && childStateProof !== null) {
       return proof;
     }
     this.getChildNodes().forEach((child) => {
