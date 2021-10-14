@@ -654,11 +654,11 @@ function getProofOfStatePath(root, fullPath) {
 /**
  * Returns proof hash of a radix node.
  * 
- * @param {Object} stateProofHash proof hash of child state node. null if not available.
+ * @param {Object} childStatePh proof hash of child state node. null if not available.
  * @param {Object} subProofList proof list of child radix nodes
  */
-function getProofHashOfRadixNode(stateProofHash, subProofList) {
-  let preimage = stateProofHash !== null ? stateProofHash : '';
+function getProofHashOfRadixNode(childStatePh, subProofList) {
+  let preimage = childStatePh !== null ? childStatePh : '';
   preimage += `${HASH_DELIMITER}`;
   if (subProofList.length === 0) {
     preimage += `${HASH_DELIMITER}`;
@@ -675,57 +675,56 @@ function getProofHashOfRadixNode(stateProofHash, subProofList) {
  * 
  * @param {Object} proof state proof
  * 
- * Returns { proofHash, isStateProof } when successful, otherwise null.
+ * Returns { proofHash, isStateNode } when successful, otherwise null.
  */
 function verifyStateProofInternal(proof) {
-  let stateProofHash = null;
-  let radixProofHash = null;
+  let childStatePh = null;
+  let curProofHash = null;
+  let isStateNode = false;
   const subProofList = [];
   for (const [label, value] of Object.entries(proof)) {
-    let proofHash = null;
+    let childProofHash = null;
     if (CommonUtil.isDict(value)) {
       const subProof = verifyStateProofInternal(value);
       if (subProof === null) {
         return null;
       }
-      if (subProof.isStateProof === true) {
-        stateProofHash = subProof.proofHash;
+      if (subProof.isStateNode === true) {
+        childStatePh = subProof.proofHash;
         continue;  // continue
       }
-      proofHash = subProof.proofHash;
+      childProofHash = subProof.proofHash;
     } else {
-      proofHash = value;
+      childProofHash = value;
     }
     if (label === StateInfoProperties.STATE_PROOF_HASH) {
-      // fast return
-      return {
-        proofHash: proofHash,
-        isStateProof: true,
-      };
+      curProofHash = childProofHash;
+      isStateNode = true;
+      continue;  // continue
     }
     if (label === StateInfoProperties.RADIX_PROOF_HASH) {
-      radixProofHash = proofHash;
+      curProofHash = childProofHash;
       continue;  // continue
     }
     subProofList.push({
       label,
-      proofHash,
+      proofHash: childProofHash,
     });
   }
-  if (subProofList.length === 0 && stateProofHash === null) {
-    if (radixProofHash !== null) {
+  if (subProofList.length === 0 && childStatePh === null) {
+    if (curProofHash !== null) {
       return {
-        proofHash: radixProofHash,
-        isStateProof: false,
+        proofHash: curProofHash,
+        isStateNode: isStateNode,
       };
     }
     return null;  // radix proof hash is missing!
   }
-  const computedProofHash = getProofHashOfRadixNode(stateProofHash, subProofList);
-  if (computedProofHash === radixProofHash) {
+  const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
+  if (computedProofHash === curProofHash) {
     return {
-      proofHash: radixProofHash,
-      isStateProof: false,
+      proofHash: curProofHash,
+      isStateNode: isStateNode,
     }
   } else {
     return null;  // proof hash mismatch!
@@ -741,7 +740,7 @@ function verifyStateProofInternal(proof) {
  */
 function verifyStateProof(proof) {
   const verified = verifyStateProofInternal(proof);
-  if (verified === null || verified.isStateProof !== false) {
+  if (verified === null || verified.isStateNode !== true) {
     return null;
   }
   return verified.proofHash;
