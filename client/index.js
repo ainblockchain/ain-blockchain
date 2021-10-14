@@ -144,6 +144,18 @@ app.get('/get_state_proof', (req, res, next) => {
 });
 
 /**
+ * Returns the state proof hash at the given full database path.
+ */
+app.get('/get_state_proof_hash', (req, res, next) => {
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
+  const result = node.db.getStateProofHash(req.query.ref);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: result !== null ? 0 : 1, result })
+    .end();
+});
+
+/**
  * Returns the state information at the given full database path.
  */
 app.get('/get_state_info', (req, res, next) => {
