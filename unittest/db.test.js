@@ -4467,7 +4467,7 @@ describe("State info", () => {
     });
 
     it("tests proof with owners, rules, values and functions", () => {
-      expect(node.db.getStateProof('/')['#state_ph']).to.not.equal(null);
+      expect(node.db.getStateProof('/')).to.not.equal(null);
     });
   });
 });
