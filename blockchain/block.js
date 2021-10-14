@@ -350,7 +350,7 @@ class Block {
     }
     const { gasAmountTotal, gasCostTotal } = CommonUtil.getServiceGasCostTotalFromTxList(genesisTxs, resList);
     return {
-      stateProofHash: tempGenesisDb.getStateProof('/')[StateInfoProperties.STATE_PROOF_HASH],
+      stateProofHash: tempGenesisDb.getStateProof('/'),
       gasAmountTotal,
       gasCostTotal,
       receipts: CommonUtil.txResultsToReceipts(resList),

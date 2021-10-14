@@ -6,6 +6,7 @@ const validUrl = require('valid-url');
 const CommonUtil = require('../common/common-util');
 const {
   FeatureFlags,
+  HASH_DELIMITER,
   PredefinedDbPaths,
   FunctionProperties,
   FunctionTypes,
@@ -13,6 +14,7 @@ const {
   RuleProperties,
   OwnerProperties,
   ShardingProperties,
+  StateInfoProperties,
   STATE_LABEL_LENGTH_LIMIT,
 } = require('../common/constants');
 
@@ -616,9 +618,16 @@ function verifyStateInfoForStateTree(stateTree) {
   return true;
 }
 
+/**
+ * An internal version of getProofOfStatePath().
+ * 
+ * @param {Object} fullPath array of parsed full path labels
+ * @param {Object} root root state
+ * @param {Object} index index of fullPath
+ */
 function getProofOfStatePathRecursive(fullPath, node, index) {
   if (index > fullPath.length - 1) {
-    return node.getProofOfStateNode();
+    return node.getProofHash();
   }
   const childLabel = fullPath[index];
   const child = node.getChild(childLabel);
@@ -632,8 +641,110 @@ function getProofOfStatePathRecursive(fullPath, node, index) {
   return node.getProofOfStateNode(childLabel, childProof);
 }
 
+/**
+ * Returns proof of a state path.
+ * 
+ * @param {Object} root root state
+ * @param {Object} fullPath array of parsed full path labels
+ */
 function getProofOfStatePath(root, fullPath) {
   return getProofOfStatePathRecursive(fullPath, root, 0);
+}
+
+/**
+ * Returns proof hash of a radix node.
+ * 
+ * @param {Object} stateProofHash proof hash of child state node. null if not available.
+ * @param {Object} subProofList proof list of child radix nodes
+ */
+function getProofHashOfRadixNode(stateProofHash, subProofList) {
+  let preimage = stateProofHash !== null ? stateProofHash : '';
+  preimage += `${HASH_DELIMITER}`;
+  if (subProofList.length === 0) {
+    preimage += `${HASH_DELIMITER}`;
+  } else {
+    for (const subProof of subProofList) {
+      preimage += `${HASH_DELIMITER}${subProof.label}${HASH_DELIMITER}${subProof.proofHash}`;
+    }
+  }
+  return CommonUtil.hashString(preimage);
+}
+
+/**
+ * An internal version of verifyStateProof().
+ * 
+ * @param {Object} proof state proof
+ * 
+ * Returns { proofHash, isStateProof } when successful, otherwise null.
+ */
+function verifyStateProofInternal(proof) {
+  let stateProofHash = null;
+  let radixProofHash = null;
+  const subProofList = [];
+  for (const [label, value] of Object.entries(proof)) {
+    let proofHash = null;
+    if (CommonUtil.isDict(value)) {
+      const subProof = verifyStateProofInternal(value);
+      if (subProof === null) {
+        return null;
+      }
+      if (subProof.isStateProof === true) {
+        stateProofHash = subProof.proofHash;
+        continue;  // continue
+      }
+      proofHash = subProof.proofHash;
+    } else {
+      proofHash = value;
+    }
+    if (label === StateInfoProperties.STATE_PROOF_HASH) {
+      // fast return
+      return {
+        proofHash: proofHash,
+        isStateProof: true,
+      };
+    }
+    if (label === StateInfoProperties.RADIX_PROOF_HASH) {
+      radixProofHash = proofHash;
+      continue;  // continue
+    }
+    subProofList.push({
+      label,
+      proofHash,
+    });
+  }
+  if (subProofList.length === 0 && stateProofHash === null) {
+    if (radixProofHash !== null) {
+      return {
+        proofHash: radixProofHash,
+        isStateProof: false,
+      };
+    }
+    return null;  // radix proof hash is missing!
+  }
+  const computedProofHash = getProofHashOfRadixNode(stateProofHash, subProofList);
+  if (computedProofHash === radixProofHash) {
+    return {
+      proofHash: radixProofHash,
+      isStateProof: false,
+    }
+  } else {
+    return null;  // proof hash mismatch!
+  }
+}
+
+/**
+ * Verifies a state path.
+ * 
+ * @param {Object} proof state proof
+ * 
+ * Returns root proof hash if successful, otherwise null.
+ */
+function verifyStateProof(proof) {
+  const verified = verifyStateProofInternal(proof);
+  if (verified === null || verified.isStateProof !== false) {
+    return null;
+  }
+  return verified.proofHash;
 }
 
 module.exports = {
@@ -668,4 +779,5 @@ module.exports = {
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
   getProofOfStatePath,
+  verifyStateProof,
 };

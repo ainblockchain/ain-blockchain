@@ -21,6 +21,7 @@ const {
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
   getProofOfStatePath,
+  verifyStateProof,
 } = require('../db/state-util');
 const { STATE_LABEL_LENGTH_LIMIT } = require('../common/constants');
 const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
@@ -2394,7 +2395,7 @@ describe("state-util", () => {
       expect(verifyStateInfoForStateTree(stateTree)).to.equal(false);
     });
 
-    it("getProofOfState", () => {
+    it("getProofOfStatePath", () => {
       updateStateInfoForStateTree(stateTree);
       assert.deepEqual(getProofOfStatePath(stateTree, [label1, label11]), {
         "#radix_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
@@ -2407,9 +2408,7 @@ describe("state-util", () => {
                 "0011": {
                   "#radix_ph": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
                   "0x0011": {
-                    "#state_ph": {
-                      "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb",
-                    }
+                    "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb",
                   }
                 }
               }
@@ -2421,6 +2420,14 @@ describe("state-util", () => {
           "#radix_ph": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60",
         }
       });
+    });
+
+    it("verifyStateProof", () => {
+      updateStateInfoForStateTree(stateTree);
+      const stateProof = getProofOfStatePath(stateTree, [label1, label11]);
+      expect(verifyStateProof(stateProof)).to.not.equal(null);
+      stateProof['000']['1']['#radix_ph'] = 'some other value';
+      expect(verifyStateProof(stateProof)).to.equal(null);
     });
   });
 })

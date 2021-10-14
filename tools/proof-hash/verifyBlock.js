@@ -45,13 +45,13 @@ async function verifyBlock(snapshotFile, blockFile) {
   console.log(`  > Root proof hash from block header: ${block.state_proof_hash}`);
   console.log(`  > Root proof hash from recomputation: ${db.stateRoot.getProofHash()}`);
   if (db.stateRoot.getProofHash() === block.state_proof_hash) {
-    console.log(`  ************`);
-    console.log(`  * MATCHED! *`);
-    console.log(`  ************`);
+    console.log(`  *************`);
+    console.log(`  * VERIFIED! *`);
+    console.log(`  *************`);
   } else {
-    console.log(`  ****************`);
-    console.log(`  * MIS-MATCHED! *`);
-    console.log(`  ****************`);
+    console.log(`  *****************`);
+    console.log(`  * NOT-VERIFIED! *`);
+    console.log(`  *****************`);
   }
   console.log(`  Done.`);
 }
@@ -66,8 +66,8 @@ async function processArguments() {
 function usage() {
   console.log('\nUsage:\n  node verifyBlock.js <snapshot file> <block file>\n')
   console.log('Examples:')
-  console.log('  node verifyBlock.js samples/100.json samples/101.json')
-  console.log('  node verifyBlock.js samples/100.json.gz samples/101.json.gz\n')
+  console.log('  node verifyBlock.js samples/snapshot-100.json samples/block-101.json')
+  console.log('  node verifyBlock.js samples/snapshot-100.json.gz samples/block-101.json.gz\n')
   process.exit(0)
 }
 
