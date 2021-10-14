@@ -696,7 +696,8 @@ function getProofHashOfRadixNode(childStatePh, subProofList) {
  * 
  * Returns { proofHash, isStateNode } when successful, otherwise null.
  */
-function verifyStateProofInternal(proof) {
+function verifyStateProofInternal(proof, curLabels) {
+  const curPath = CommonUtil.formatPath(curLabels);
   let childStatePh = null;
   let curProofHash = null;
   let isStateNode = false;
@@ -705,7 +706,7 @@ function verifyStateProofInternal(proof) {
   for (const [label, value] of Object.entries(proof)) {
     let childProofHash = null;
     if (CommonUtil.isDict(value)) {
-      const subProof = verifyStateProofInternal(value);
+      const subProof = verifyStateProofInternal(value, [...curLabels, label]);
       if (!subProof.isVerified) {
         isChildVerified = false;
       }
@@ -732,17 +733,23 @@ function verifyStateProofInternal(proof) {
     });
   }
   if (subProofList.length === 0 && childStatePh === null) {
+    const isVerified = isChildVerified && curProofHash !== null;
+    const mismatchedPath = isVerified ? null : curPath;
     return {
       proofHash: curProofHash,
       isStateNode: isStateNode,
-      isVerified: curProofHash !== null,
+      isVerified: isVerified,
+      mismatchedPath: mismatchedPath,
     };
   }
   const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
+  const isVerified = isChildVerified && computedProofHash === curProofHash;
+  const mismatchedPath = isVerified ? null : curPath;
   return {
     proofHash: computedProofHash,
     isStateNode: isStateNode,
-    isVerified: isChildVerified && computedProofHash === curProofHash,
+    isVerified: isVerified,
+    mismatchedPath: mismatchedPath,
   }
 }
 
@@ -754,10 +761,11 @@ function verifyStateProofInternal(proof) {
  * Returns root proof hash if successful, otherwise null.
  */
 function verifyStateProof(proof) {
-  const result = verifyStateProofInternal(proof);
+  const result = verifyStateProofInternal(proof, []);
   return {
     rootProofHash: result.proofHash,
     isVerified: result.isVerified,
+    mismatchedPath: result.mismatchedPath,
   };
 }
 
