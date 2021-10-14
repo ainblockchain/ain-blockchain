@@ -677,14 +677,14 @@ function getProofHashOfRadixNode(stateProofHash, subProofList) {
  * 
  * Returns { proofHash, isStateProof } when successful, otherwise null.
  */
-function verifyStateProofRecursive(proof) {
+function verifyStateProofInternal(proof) {
   let stateProofHash = null;
   let radixProofHash = null;
   const subProofList = [];
   for (const [label, value] of Object.entries(proof)) {
     let proofHash = null;
     if (CommonUtil.isDict(value)) {
-      const subProof = verifyStateProofRecursive(value);
+      const subProof = verifyStateProofInternal(value);
       if (subProof === null) {
         return null;
       }
@@ -740,8 +740,8 @@ function verifyStateProofRecursive(proof) {
  * Returns root proof hash if successful, otherwise null.
  */
 function verifyStateProof(proof) {
-  const verified = verifyStateProofRecursive(proof);
-  if (verified === null) {
+  const verified = verifyStateProofInternal(proof);
+  if (verified === null || verified.isStateProof !== false) {
     return null;
   }
   return verified.proofHash;
