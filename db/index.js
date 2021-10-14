@@ -47,6 +47,7 @@ const {
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   getProofOfStatePath,
+  getProofHashOfStatePath,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -444,11 +445,8 @@ class DB {
    * @param {string} statePath full database path to the state node
    */
   getStateProofHash(statePath) {
-    const proof = this.getStateProof(statePath);
-    if (proof === null) {
-      return null;
-    }
-    return proof[StateInfoProperties.STATE_PROOF_HASH];
+    const parsedPath = CommonUtil.parsePath(statePath);
+    return getProofHashOfStatePath(this.stateRoot, parsedPath);
   }
 
   static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
