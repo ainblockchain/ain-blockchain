@@ -618,6 +618,13 @@ function verifyStateInfoForStateTree(stateTree) {
   return true;
 }
 
+/**
+ * An internal version of getProofOfStatePath().
+ * 
+ * @param {Object} fullPath array of parsed full path labels
+ * @param {Object} root root state
+ * @param {Object} index index of fullPath
+ */
 function getProofOfStatePathRecursive(fullPath, node, index) {
   if (index > fullPath.length - 1) {
     return node.getProofHash();
@@ -634,10 +641,42 @@ function getProofOfStatePathRecursive(fullPath, node, index) {
   return node.getProofOfStateNode(childLabel, childProof);
 }
 
+/**
+ * Returns proof of a state path.
+ * 
+ * @param {Object} root root state
+ * @param {Object} fullPath array of parsed full path labels
+ */
 function getProofOfStatePath(root, fullPath) {
   return getProofOfStatePathRecursive(fullPath, root, 0);
 }
 
+/**
+ * Returns proof hash of a radix node.
+ * 
+ * @param {Object} stateProofHash proof hash of child state node. null if not available.
+ * @param {Object} subProofList proof list of child radix nodes
+ */
+function getProofHashOfRadixNode(stateProofHash, subProofList) {
+  let preimage = stateProofHash !== null ? stateProofHash : '';
+  preimage += `${HASH_DELIMITER}`;
+  if (subProofList.length === 0) {
+    preimage += `${HASH_DELIMITER}`;
+  } else {
+    for (const subProof of subProofList) {
+      preimage += `${HASH_DELIMITER}${subProof.label}${HASH_DELIMITER}${subProof.proofHash}`;
+    }
+  }
+  return CommonUtil.hashString(preimage);
+}
+
+/**
+ * An internal version of verifyStateProof().
+ * 
+ * @param {Object} proof state proof
+ * 
+ * Returns { proofHash, isStateProof } when successful, otherwise null.
+ */
 function verifyStateProofRecursive(proof) {
   let stateProofHash = null;
   let radixProofHash = null;
@@ -682,16 +721,7 @@ function verifyStateProofRecursive(proof) {
     }
     return null;  // radix proof hash is missing!
   }
-  let preimage = stateProofHash !== null ? stateProofHash : '';
-  preimage += `${HASH_DELIMITER}`;
-  if (subProofList.length === 0) {
-    preimage += `${HASH_DELIMITER}`;
-  } else {
-    for (const subProof of subProofList) {
-      preimage += `${HASH_DELIMITER}${subProof.label}${HASH_DELIMITER}${subProof.proofHash}`;
-    }
-  }
-  const computedProofHash = CommonUtil.hashString(preimage);
+  const computedProofHash = getProofHashOfRadixNode(stateProofHash, subProofList);
   if (computedProofHash === radixProofHash) {
     return {
       proofHash: radixProofHash,
@@ -702,6 +732,13 @@ function verifyStateProofRecursive(proof) {
   }
 }
 
+/**
+ * Verifies a state path.
+ * 
+ * @param {Object} proof state proof
+ * 
+ * Returns root proof hash if successful, otherwise null.
+ */
 function verifyStateProof(proof) {
   const verified = verifyStateProofRecursive(proof);
   if (verified === null) {
