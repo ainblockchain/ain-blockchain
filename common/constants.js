@@ -121,6 +121,7 @@ const FREE_TREE_SIZE_BUDGET = FREE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
 const STATE_GAS_COEFFICIENT = 1;
 const TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
 const TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
+const DEFAULT_REQUEST_BODY_SIZE_LIMIT = '100mb';
 
 // ** Enums **
 /**
@@ -692,7 +693,7 @@ overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
 // NOTE(minsulee2): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
 // The minimum network connections are set based on the MAX_NUM_VALIDATORS otherwise.
-function initializeNetworkEnvronments() {
+function initializeNetworkEnvironments() {
   if (process.env.NETWORK_OPTIMIZATION) {
     return GenesisParams.network;
   } else {
@@ -703,12 +704,13 @@ function initializeNetworkEnvronments() {
       TARGET_NUM_OUTBOUND_CONNECTION: process.env.TARGET_NUM_OUTBOUND_CONNECTION ?
           Number(process.env.TARGET_NUM_OUTBOUND_CONNECTION) : GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
       MAX_NUM_INBOUND_CONNECTION: process.env.MAX_NUM_INBOUND_CONNECTION ?
-          Number(process.env.MAX_NUM_INBOUND_CONNECTION) : GenesisParams.consensus.MAX_NUM_VALIDATORS - 1
+          Number(process.env.MAX_NUM_INBOUND_CONNECTION) : GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      REQUEST_BODY_SIZE_LIMIT: GenesisParams.network.REQUEST_BODY_SIZE_LIMIT || DEFAULT_REQUEST_BODY_SIZE_LIMIT,
     }
   }
 }
 
-const networkEnv = initializeNetworkEnvronments();
+const networkEnv = initializeNetworkEnvironments();
 
 /**
  * Port number helper.
