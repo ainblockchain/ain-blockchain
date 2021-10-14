@@ -681,19 +681,20 @@ function verifyStateProofInternal(proof) {
   let childStatePh = null;
   let curProofHash = null;
   let isStateNode = false;
+  let isChildVerified = true;
   const subProofList = [];
   for (const [label, value] of Object.entries(proof)) {
     let childProofHash = null;
     if (CommonUtil.isDict(value)) {
       const subProof = verifyStateProofInternal(value);
-      if (subProof === null) {
-        return null;
-      }
       if (subProof.isStateNode === true) {
         childStatePh = subProof.proofHash;
         continue;  // continue
       }
       childProofHash = subProof.proofHash;
+      if (!subProof.isVerified) {
+        isChildVerified = false;
+      }
     } else {
       childProofHash = value;
     }
@@ -712,22 +713,17 @@ function verifyStateProofInternal(proof) {
     });
   }
   if (subProofList.length === 0 && childStatePh === null) {
-    if (curProofHash !== null) {
-      return {
-        proofHash: curProofHash,
-        isStateNode: isStateNode,
-      };
-    }
-    return null;  // radix proof hash is missing!
-  }
-  const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
-  if (computedProofHash === curProofHash) {
     return {
       proofHash: curProofHash,
       isStateNode: isStateNode,
-    }
-  } else {
-    return null;  // proof hash mismatch!
+      isVerified: curProofHash !== null,
+    };
+  }
+  const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
+  return {
+    proofHash: computedProofHash,
+    isStateNode: isStateNode,
+    isVerified: isChildVerified ? computedProofHash === curProofHash : false,
   }
 }
 
@@ -739,11 +735,11 @@ function verifyStateProofInternal(proof) {
  * Returns root proof hash if successful, otherwise null.
  */
 function verifyStateProof(proof) {
-  const verified = verifyStateProofInternal(proof);
-  if (verified === null || verified.isStateNode !== true) {
-    return null;
-  }
-  return verified.proofHash;
+  const result = verifyStateProofInternal(proof);
+  return {
+    rootProofHash: result.proofHash,
+    isVerified: result.isVerified,
+  };
 }
 
 module.exports = {

@@ -14,9 +14,9 @@ async function verifyProof(proofFile) {
   }
   console.log(`  Done.`);
   console.log(`* Trying to verify proof...`);
-  const proofHash = verifyStateProof(proof);
-  console.log(`  > Root proof hash: ${proofHash}`);
-  if (proofHash !== null) {
+  const result = verifyStateProof(proof);
+  console.log(`  > Root proof hash: ${result.rootProofHash}`);
+  if (result.isVerified === true) {
     console.log(`  *************`);
     console.log(`  * VERIFIED! *`);
     console.log(`  *************`);
@@ -38,7 +38,7 @@ async function processArguments() {
 function usage() {
   console.log('\nUsage:\n  node verifyProof.js <proof file>\n')
   console.log('Examples:')
-  console.log('  node verifyProof.js samples/proof-test.json')
+  console.log('  node verifyProof.js samples/proof-test1.json')
   process.exit(0)
 }
 
