@@ -121,6 +121,7 @@ const FREE_TREE_SIZE_BUDGET = FREE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
 const STATE_GAS_COEFFICIENT = 1;
 const TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
 const TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
+const DEFAULT_REQUEST_BODY_SIZE_LIMIT = '100mb';
 
 // ** Enums **
 /**
@@ -704,7 +705,7 @@ function initializeNetworkEnvironments() {
           Number(process.env.TARGET_NUM_OUTBOUND_CONNECTION) : GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
       MAX_NUM_INBOUND_CONNECTION: process.env.MAX_NUM_INBOUND_CONNECTION ?
           Number(process.env.MAX_NUM_INBOUND_CONNECTION) : GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
-      REQUEST_BODY_SIZE_LIMIT: GenesisParams.network.REQUEST_BODY_SIZE_LIMIT || '100mb',
+      REQUEST_BODY_SIZE_LIMIT: GenesisParams.network.REQUEST_BODY_SIZE_LIMIT || DEFAULT_REQUEST_BODY_SIZE_LIMIT,
     }
   }
 }
