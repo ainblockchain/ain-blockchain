@@ -277,11 +277,16 @@ class RadixNode {
   }
 
   getChildLabelRadices() {
-    return [...this.radixChildMap.keys()];
+    // NOTE(platfowner): Sort child nodes by label radix for stability.
+    return [...this.radixChildMap.keys()]
+        .sort((a, b) => a[0].localeCompare(b[0]));
   }
 
   getChildNodes() {
-    return [...this.radixChildMap.values()];
+    // NOTE(platfowner): Sort child nodes by label radix for stability.
+    return [...this.radixChildMap.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map((entry) => entry[1]);
   }
 
   numChildren() {
