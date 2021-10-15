@@ -28,8 +28,6 @@ const FeatureFlags = {
   enableStateTreeTransfer: false,
   // Enables receipts recording to the state.
   enableReceiptsRecording: true,  // Some test cases assume this value true.
-  // Enables radix layers.
-  enableRadixTreeLayers: true,  // Some test cases assume this value true.
   // Enables ntp-sync for global time syncing.
   enableNtpSync: true,
   // Enables traffic monitoring.
