@@ -491,7 +491,7 @@ class RadixNode {
   }
 
   getProofOfRadixNode(
-      childLabel = null, childProof = null, childStateProof = null, isRootRadixNode = false) {
+      childLabel = null, childRadixProof = null, childStateProof = null, isRootRadixNode = false) {
     // NOTE(platfowner): Root radix node uses STATE_PROOF_HASH as the proof label.
     const proofLabel = isRootRadixNode ?
         StateInfoProperties.STATE_PROOF_HASH : StateInfoProperties.RADIX_PROOF_HASH;
@@ -510,7 +510,7 @@ class RadixNode {
     this.getChildNodes().forEach((child) => {
       const label = child.getLabel();
       Object.assign(proof, {
-        [label]: label === childLabel ? childProof : {
+        [label]: label === childLabel ? childRadixProof : {
           [StateInfoProperties.RADIX_PROOF_HASH]: child.getProofHash()
         }
       });
