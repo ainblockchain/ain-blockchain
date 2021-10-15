@@ -1,6 +1,7 @@
 /* eslint no-mixed-operators: "off" */
 const _ = require('lodash');
 const P2pServer = require('./server');
+const P2pRouter = require('./router');
 const Websocket = require('ws');
 const logger = require('../logger')('P2P_CLIENT');
 const { ConsensusStates } = require('../consensus/constants');
@@ -20,7 +21,8 @@ const {
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
   trafficStatsManager,
-  P2pRouter
+  P2pRouterStates,
+  INITIAL_P2P_ROUTER
 } = require('../common/constants');
 const {
   getAddressFromSocket,
@@ -37,6 +39,7 @@ const {
 const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const TRACKER_UPDATE_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const PEER_CONNECTION_INVERVAL_MS = 60 * 1000;  // 1 minute
+const ROUTER_CONNECTION_INVERVAL_MS = 60 * 1000;  // 1 minute
 const HEARTBEAT_INTERVAL_MS = 60 * 1000;  // 1 minute
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
@@ -52,6 +55,7 @@ class P2pClient {
     this.initConnections();
     this.server = new P2pServer(
         this, node, minProtocolVersion, maxProtocolVersion, this.maxInbound);
+    this.router = new P2pRouter(this, this.server);
     this.trackerWebSocket = null;
     this.outbound = {};
     this.p2pState = P2pNetworkStates.STARTING;
@@ -62,7 +66,13 @@ class P2pClient {
   async run() {
     if (CommonUtil.isEmpty(this.server.node.account)) return;
     await this.server.listen();
+    this.router.listen();
     this.connectToTracker();
+    this.connectToRouter();
+    // this.connectToPeers(peerInfoList);
+    // if (this.server.node.state === BlockchainNodeStates.STARTING) {
+    //   await this.startBlockchainNode(data.numLivePeers);
+    // }
   }
 
   initConnections() {
@@ -217,6 +227,43 @@ class P2pClient {
 
   clearIntervalForPeerConnection() {
     clearInterval(this.intervalPeerConnection);
+  }
+
+  setIntervalForRouterConnection() {
+    this.connectToRouter(P2pRouter);
+    this.intervalRouterConnection = setInterval(() => {
+      this.connectToRouter(P2pRouter);
+    }, ROUTER_CONNECTION_INVERVAL_MS);
+  }
+
+  clearIntervalForRouterConnection() {
+    clearInterval(this.intervalPeerConnection);
+  }
+
+  async setRouterEventHandlers() {
+    this.routerWebSocket.on('message', async (message) => {
+      const parsedMessage = JSON.parse(message);
+      logger.info(`\n<< Message from [ROUTER]: ${JSON.stringify(parsedMessage, null, 2)}`);
+      switch(_.get(parsedMessage, 'type')) {
+        case TrackerMessageTypes.NEW_PEERS_RESPONSE:
+          const data = parsedMessage.data;
+          this.connectToPeers(data.newManagedPeerInfoList);
+          if (this.server.node.state === BlockchainNodeStates.STARTING) {
+            await this.startBlockchainNode(data.numLivePeers);
+          }
+          break;
+        default:
+          logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
+              'specified. Ignore the message.');
+          break;
+      }
+    });
+
+    this.routerWebSocket.on('close', (code) => {
+      logger.info(`\nDisconnected from [TRACKER] ${TRACKER_WS_ADDR} with code: ${code}`);
+      this.clearIntervalForTrackerUpdate();
+      this.setIntervalForTrackerConnection();
+    });
   }
 
   async setTrackerEventHandlers() {
@@ -537,6 +584,29 @@ class P2pClient {
           this.waitForAddress(socket);
         }
       });
+  }
+
+  connectToRouter() {
+    // TODO: do not connect to myself if I am a router myself.
+    this.routerWebSocket = new Websocket(INITIAL_P2P_ROUTER);
+    this.routerWebSocket.on('open', () => {
+      logger.info(`Connected to router (${INITIAL_P2P_ROUTER})`);
+      this.clearIntervalForRouterConnection();
+      this.setRouterEventHandlers();
+      // TODO:
+      // 1. ask vacancy
+      // 2-1. connect to peer if available
+      // 2-2. send new peer message if not available
+      // 3. setInterval till full connections.
+      // this.setIntervalForRouterConnection();
+      // this.setIntervalForTrackerUpdate();
+    });
+    this.routerWebSocket.on('error', (error) => {
+      logger.error(`Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
+        `${JSON.stringify(error, null, 2)}`);
+      this.clearIntervalForRouterConnection();
+      this.setIntervalForRouterConnection();
+    });
   }
 
   connectToPeer(peerInfo) {

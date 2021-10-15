@@ -51,6 +51,10 @@ const ENABLE_GAS_FEE_WORKAROUND =
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
+const P2P_DEFAULT_ROUTER_PORT = 6000;
+const P2P_ROUTER_PORT =
+    process.env.P2P_ROUTER_PORT ||
+    getPortNumber(P2P_DEFAULT_ROUTER_PORT - 1, P2P_DEFAULT_ROUTER_PORT - 1);   // start from 6000.
 const LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
 const SYNC_MODE = process.env.SYNC_MODE || 'full';
 const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
@@ -170,6 +174,16 @@ const P2pNetworkStates = {
   STARTING: 'STARTING',
   EXPANDING: 'EXPANDING',
   STEADY: 'STEADY'
+};
+
+/**
+ * States of p2p network.
+ *
+ * @enum {string}
+ */
+const P2pRouterStates = {
+  NEW_PEERS_REQUEST: 'NEW_PEERS_REQUEST',
+  NEW_PEERS_RESPONSE: 'NEW_PEERS_RESPONSE'
 };
 
 /**
@@ -658,19 +672,19 @@ const TrafficEventTypes = {
 
 const IpAddressRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
 
-const P2pRouter = (() => {
+const INITIAL_P2P_ROUTER = (() => {
   const p2pRouterEnv = process.env.P2P_ROUTER_ENV || '';
   const lowerEnv = p2pRouterEnv.toLowerCase();
   switch (lowerEnv) {
     // In case of local running.
     case 'local':
-      return 'http://localhost:8081';
+      return `ws://localhost:${P2P_DEFAULT_ROUTER_PORT}`;
     // In case of given ip address running.
     case (lowerEnv.match(IpAddressRegex) ? lowerEnv.match(IpAddressRegex).input : null):
       return lowerEnv;
     // Default prod running.
     default:
-      return 'http://node.ainetwork.ai:8080';
+      return `ws://node.ainetwork.ai:${P2P_DEFAULT_ROUTER_PORT}`;
   }
 })();
 
@@ -929,6 +943,7 @@ module.exports = {
   KEYSTORE_FILE_PATH,
   PORT,
   P2P_PORT,
+  P2P_ROUTER_PORT,
   LIGHTWEIGHT,
   SYNC_MODE,
   HASH_DELIMITER,
@@ -953,7 +968,8 @@ module.exports = {
   TrackerMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
-  P2pRouter,
+  P2pRouterStates,
+  INITIAL_P2P_ROUTER,
   PredefinedDbPaths,
   TokenProperties,
   TokenBridgeProperties,
