@@ -1235,7 +1235,7 @@ describe("state-node", () => {
 
       stateTree.updateStateInfo();
       assert.deepEqual(stateTree.radixTree.toJsObject(false, false, true), {
-        "#radix_ph": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6",
+        "#radix_ph": "0xea2df03d09e72671391dc8af7e9bc5e5d3ac9ae6d64cb78df2c27e391f89388e",
         "00aaaa": {
           "#radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c",
           "0x00aaaa": {
@@ -1249,7 +1249,7 @@ describe("state-node", () => {
               "#state_ph": "proofHash4",
             }
           },
-          "#radix_ph": "0x099ad81295e3257147362606afc34b47757dd5c1508d441e248302be8577ed44",
+          "#radix_ph": "0xbfbfc5f5c2e7b1d694fa822a0017c8d691dd99e003798cfcc068a26505dd6430",
           "00": {
             "#radix_ph": "0x3dfb52c0d974feb0559c9efafa996fb286717785e98871336e68ffb52d04bdf4",
             "0x11bb00": {
@@ -1266,21 +1266,21 @@ describe("state-node", () => {
       });
 
       assert.deepEqual(stateTree.getProofOfStateNode(label2, 'child_proof2'), {
-        "#state_ph": "0xd9251f484361885000e88f2385777e1c4558a08125199a99c6b3296b459628c6",
+        "#state_ph": "0xea2df03d09e72671391dc8af7e9bc5e5d3ac9ae6d64cb78df2c27e391f89388e",
         "00aaaa": {
-          "#radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c",
+          "#radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c"
         },
         "11bb": {
           "11": {
-            "#radix_ph": "0x741ba4788b06907f8c99c60a6f483f885cc1b4fb27f9e1bed71dfd1d8a213214",
+            "#radix_ph": "0x741ba4788b06907f8c99c60a6f483f885cc1b4fb27f9e1bed71dfd1d8a213214"
           },
-          "#radix_ph": "0x099ad81295e3257147362606afc34b47757dd5c1508d441e248302be8577ed44",
+          "#radix_ph": "0xbfbfc5f5c2e7b1d694fa822a0017c8d691dd99e003798cfcc068a26505dd6430",
           "00": {
-            "#radix_ph": "0x3dfb52c0d974feb0559c9efafa996fb286717785e98871336e68ffb52d04bdf4",
+            "#radix_ph": "0x3dfb52c0d974feb0559c9efafa996fb286717785e98871336e68ffb52d04bdf4"
           },
           "bb": {
             "#radix_ph": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184",
-            "0x11bbbb": "child_proof2",
+            "0x11bbbb": "child_proof2"
           }
         }
       });

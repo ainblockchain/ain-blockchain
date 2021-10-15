@@ -427,6 +427,31 @@ describe("radix-node", () => {
       expect(child2.getLabelSuffix()).to.equal(labelSuffix2);
     });
 
+    it("getChildLabelRadices / getChildNodes", () => {
+      const labelRadix1 = '0';
+      const labelSuffix1 = '0000';
+      const child1 = new RadixNode();
+
+      const labelRadix2 = '1';
+      const labelSuffix2 = '1111';
+      const child2 = new RadixNode();
+
+      const labelRadix3 = '2';
+      const labelSuffix3 = '2222';
+      const child3 = new RadixNode();
+
+      // setChild() with child3 first!
+      node.setChild(labelRadix3, labelSuffix3, child3);
+      // setChild() with child2 first!
+      node.setChild(labelRadix2, labelSuffix2, child2);
+      // setChild() with child1
+      node.setChild(labelRadix1, labelSuffix1, child1);
+      // sorted by label radix
+      assert.deepEqual(node.getChildLabelRadices(), [labelRadix1, labelRadix2, labelRadix3]);
+      // sorted by label radix
+      assert.deepEqual(node.getChildNodes(), [child1, child2, child3]);
+    });
+
     it("set existing child", () => {
       const labelRadix = '0';
       const labelSuffix = '0000';
