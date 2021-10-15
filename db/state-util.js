@@ -701,14 +701,16 @@ function verifyStateProofInternal(proof, curLabels) {
   let childStatePh = null;
   let curProofHash = null;
   let isStateNode = false;
-  let isChildVerified = true;
+  let childIsVerified = true;
+  let childMismatchedPath = null;
   const subProofList = [];
   for (const [label, value] of Object.entries(proof)) {
     let childProofHash = null;
     if (CommonUtil.isDict(value)) {
       const subProof = verifyStateProofInternal(value, [...curLabels, label]);
-      if (!subProof.isVerified) {
-        isChildVerified = false;
+      if (childIsVerified === true && subProof.isVerified !== true) {
+        childIsVerified = false;
+        childMismatchedPath = subProof.mismatchedPath;
       }
       if (subProof.isStateNode === true) {
         childStatePh = subProof.proofHash;
@@ -733,8 +735,8 @@ function verifyStateProofInternal(proof, curLabels) {
     });
   }
   if (subProofList.length === 0 && childStatePh === null) {
-    const isVerified = isChildVerified && curProofHash !== null;
-    const mismatchedPath = isVerified ? null : curPath;
+    const isVerified = childIsVerified && curProofHash !== null;
+    const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
     return {
       proofHash: curProofHash,
       isStateNode: isStateNode,
@@ -743,8 +745,8 @@ function verifyStateProofInternal(proof, curLabels) {
     };
   }
   const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
-  const isVerified = isChildVerified && computedProofHash === curProofHash;
-  const mismatchedPath = isVerified ? null : curPath;
+  const isVerified = childIsVerified && computedProofHash === curProofHash;
+  const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
   return {
     proofHash: computedProofHash,
     isStateNode: isStateNode,

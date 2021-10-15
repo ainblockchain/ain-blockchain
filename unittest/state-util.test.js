@@ -2452,9 +2452,11 @@ describe("state-util", () => {
           "#radix_ph": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60"
         }
       };
+
       assert.deepEqual(verifyStateProof(proof), {
         "rootProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
         "isVerified": true,
+        "mismatchedPath": null,
       });
 
       // radix proof hash manipulated
@@ -2463,6 +2465,7 @@ describe("state-util", () => {
       assert.deepEqual(verifyStateProof(proofManipulated1), {
         "rootProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
         "isVerified": false,
+        "mismatchedPath": "/000/1",
       });
 
       // internal state proof hash manipulated
@@ -2471,6 +2474,7 @@ describe("state-util", () => {
       assert.deepEqual(verifyStateProof(proofManipulated2), {
         "rootProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
         "isVerified": false,
+        "mismatchedPath": "/000/1/0x0001",
       });
 
       // terminal state proof hash manipulated
@@ -2479,6 +2483,7 @@ describe("state-util", () => {
       assert.deepEqual(verifyStateProof(proofManipulated3), {
         "rootProofHash": "0x54b7f39d18471220274c0ac87fef5e26254fde7ac7a016266758497ffad1aecf",
         "isVerified": false,
+        "mismatchedPath": "/000/1/0x0001/0011",
       });
 
       // label changed ('2' -> '3')
@@ -2489,6 +2494,7 @@ describe("state-util", () => {
       assert.deepEqual(verifyStateProof(proofManipulated4), {
         "rootProofHash": "0x5aad1e7b28a46bd987680c6af3a82c49f5c09003b0397a5d972d1275b286084e",
         "isVerified": false,
+        "mismatchedPath": "/000",
       });
     });
   });
