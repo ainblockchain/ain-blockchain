@@ -667,7 +667,7 @@ function getProofHashOfStatePath(root, fullPath) {
     }
     curNode = child;
   }
-  return curNode.getProofHashOfStateNode();
+  return curNode.getProofHash();
 }
 
 /**
