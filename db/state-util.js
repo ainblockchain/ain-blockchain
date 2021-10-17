@@ -619,46 +619,65 @@ function verifyStateInfoForStateTree(stateTree) {
 }
 
 /**
- * An internal version of getProofOfStatePath().
+ * An internal version of getStateProofFromStateRoot().
  * 
  * @param {Object} fullPath array of parsed full path labels
- * @param {Object} root root state
+ * @param {Object} curNode current state node
  * @param {Object} index index of fullPath
  */
-function getProofOfStatePathRecursive(fullPath, node, index) {
+function getStateProofRecursive(fullPath, curNode, index) {
   if (index > fullPath.length - 1) {
-    return node.getProofHash();
+    return curNode.getProofOfStateNode();
   }
   const childLabel = fullPath[index];
-  const child = node.getChild(childLabel);
+  const child = curNode.getChild(childLabel);
   if (child === null) {
     return null;
   }
-  const childProof = getProofOfStatePathRecursive(fullPath, child, index + 1);
+  const childProof = getStateProofRecursive(fullPath, child, index + 1);
   if (childProof === null) {
     return null;
   }
-  return node.getProofOfStateNode(childLabel, childProof);
+  return curNode.getProofOfStateNode(childLabel, childProof);
 }
 
 /**
  * Returns proof of a state path.
  * 
- * @param {Object} root root state
+ * @param {Object} root root state node
  * @param {Object} fullPath array of parsed full path labels
  */
-function getProofOfStatePath(root, fullPath) {
-  return getProofOfStatePathRecursive(fullPath, root, 0);
+function getStateProofFromStateRoot(root, fullPath) {
+  return getStateProofRecursive(fullPath, root, 0);
+}
+
+/**
+ * Returns proof hash of a state path.
+ * 
+ * @param {Object} root root state node
+ * @param {Object} fullPath array of parsed full path labels
+ */
+function getProofHashFromStateRoot(root, fullPath) {
+  let curNode = root;
+  for (let i = 0; i < fullPath.length; i++) {
+    const childLabel = fullPath[i];
+    const child = curNode.getChild(childLabel);
+    if (child === null) {
+      return null;
+    }
+    curNode = child;
+  }
+  return curNode.getProofHash();
 }
 
 /**
  * Returns proof hash of a radix node.
  * 
- * @param {Object} stateProofHash proof hash of child state node. null if not available.
+ * @param {Object} childStatePh proof hash of child state node. null if not available.
  * @param {Object} subProofList proof list of child radix nodes
  */
-function getProofHashOfRadixNode(stateProofHash, subProofList) {
-  let preimage = stateProofHash !== null ? stateProofHash : '';
+function getProofHashOfRadixNode(childStatePh, subProofList) {
+  let preimage = childStatePh !== null ? childStatePh : '';
   preimage += `${HASH_DELIMITER}`;
   if (subProofList.length === 0) {
     preimage += `${HASH_DELIMITER}`;
@@ -675,60 +694,64 @@ function getProofHashOfRadixNode(stateProofHash, subProofList) {
  * 
  * @param {Object} proof state proof
  * 
- * Returns { proofHash, isStateProof } when successful, otherwise null.
+ * Returns { proofHash, isStateNode } when successful, otherwise null.
  */
-function verifyStateProofInternal(proof) {
-  let stateProofHash = null;
-  let radixProofHash = null;
+function verifyStateProofInternal(proof, curLabels) {
+  const curPath = CommonUtil.formatPath(curLabels);
+  let childStatePh = null;
+  let curProofHash = null;
+  let isStateNode = false;
+  let childIsVerified = true;
+  let childMismatchedPath = null;
   const subProofList = [];
   for (const [label, value] of Object.entries(proof)) {
-    let proofHash = null;
+    let childProofHash = null;
     if (CommonUtil.isDict(value)) {
-      const subProof = verifyStateProofInternal(value);
-      if (subProof === null) {
-        return null;
+      const subProof = verifyStateProofInternal(value, [...curLabels, label]);
+      if (childIsVerified === true && subProof.isVerified !== true) {
+        childIsVerified = false;
+        childMismatchedPath = subProof.mismatchedPath;
       }
-      if (subProof.isStateProof === true) {
-        stateProofHash = subProof.proofHash;
+      if (subProof.isStateNode === true) {
+        childStatePh = subProof.proofHash;
         continue;  // continue
       }
-      proofHash = subProof.proofHash;
+      childProofHash = subProof.proofHash;
     } else {
-      proofHash = value;
+      childProofHash = value;
     }
     if (label === StateInfoProperties.STATE_PROOF_HASH) {
-      // fast return
-      return {
-        proofHash: proofHash,
-        isStateProof: true,
-      };
+      curProofHash = childProofHash;
+      isStateNode = true;
+      continue;  // continue
     }
     if (label === StateInfoProperties.RADIX_PROOF_HASH) {
-      radixProofHash = proofHash;
+      curProofHash = childProofHash;
       continue;  // continue
     }
     subProofList.push({
       label,
-      proofHash,
+      proofHash: childProofHash,
     });
   }
-  if (subProofList.length === 0 && stateProofHash === null) {
-    if (radixProofHash !== null) {
-      return {
-        proofHash: radixProofHash,
-        isStateProof: false,
-      };
-    }
-    return null;  // radix proof hash is missing!
-  }
-  const computedProofHash = getProofHashOfRadixNode(stateProofHash, subProofList);
-  if (computedProofHash === radixProofHash) {
+  if (subProofList.length === 0 && childStatePh === null) {
+    const isVerified = childIsVerified && curProofHash !== null;
+    const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
     return {
-      proofHash: radixProofHash,
-      isStateProof: false,
-    }
-  } else {
-    return null;  // proof hash mismatch!
+      proofHash: curProofHash,
+      isStateNode: isStateNode,
+      isVerified: isVerified,
+      mismatchedPath: mismatchedPath,
+    };
+  }
+  const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
+  const isVerified = childIsVerified && computedProofHash === curProofHash;
+  const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
+  return {
+    proofHash: computedProofHash,
+    isStateNode: isStateNode,
+    isVerified: isVerified,
+    mismatchedPath: mismatchedPath,
   }
 }
 
@@ -740,11 +763,12 @@ function verifyStateProofInternal(proof) {
  * Returns root proof hash if successful, otherwise null.
  */
 function verifyStateProof(proof) {
-  const verified = verifyStateProofInternal(proof);
-  if (verified === null || verified.isStateProof !== false) {
-    return null;
-  }
-  return verified.proofHash;
+  const result = verifyStateProofInternal(proof, []);
+  return {
+    rootProofHash: result.proofHash,
+    isVerified: result.isVerified,
+    mismatchedPath: result.mismatchedPath,
+  };
 }
 
 module.exports = {
@@ -778,6 +802,7 @@ module.exports = {
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
-  getProofOfStatePath,
+  getStateProofFromStateRoot,
+  getProofHashFromStateRoot,
   verifyStateProof,
 };

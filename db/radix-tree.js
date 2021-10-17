@@ -402,12 +402,13 @@ class RadixTree {
     return this.root.verifyRadixInfoForRadixTree();
   }
 
-  static getProofOfStateNodeRecursive(radixLabel, curNode, labelIndex, stateProof) {
+  static getProofOfStateNodeRecursive(
+      radixLabel, curNode, isRootRadixNode, labelIndex, stateProof) {
     if (labelIndex === radixLabel.length) {  // Reached the target node
       if (!curNode.hasChildStateNode()) {
         return null;
       }
-      return curNode.getProofOfRadixNode(null, null, stateProof);
+      return curNode.getProofOfRadixNode(null, null, stateProof, isRootRadixNode);
     }
     const labelRadix = radixLabel.charAt(labelIndex);
     const childNode = curNode.getChild(labelRadix);
@@ -415,17 +416,18 @@ class RadixTree {
       return null;
     }
     const childLabelIndex = labelIndex + 1 + childNode.getLabelSuffix().length;
-    const childProof =
-        RadixTree.getProofOfStateNodeRecursive(radixLabel, childNode, childLabelIndex, stateProof);
+    const childProof = RadixTree.getProofOfStateNodeRecursive(
+        radixLabel, childNode, false, childLabelIndex, stateProof);
     if (childProof === null) {
       return null;
     }
-    return curNode.getProofOfRadixNode(childNode.getLabel(), childProof, null);
+    return curNode.getProofOfRadixNode(
+        childNode.getLabel(), childProof, null, isRootRadixNode);
   }
 
   getProofOfStateNode(stateLabel, stateProof) {
     const radixLabel = RadixTree._toRadixLabel(stateLabel);
-    return RadixTree.getProofOfStateNodeRecursive(radixLabel, this.root, 0, stateProof);
+    return RadixTree.getProofOfStateNodeRecursive(radixLabel, this.root, true, 0, stateProof);
   }
 
   deleteRadixTreeVersion() {
