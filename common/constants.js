@@ -56,6 +56,7 @@ const SYNC_MODE = process.env.SYNC_MODE || 'full';
 const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
     Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
 const KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
+const CORS_WHITELIST = CommonUtil.getCorsWhitelist(process.env.CORS_WHITELIST);
 
 // ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -909,6 +910,7 @@ module.exports = {
   ENABLE_GAS_FEE_WORKAROUND,
   ACCOUNT_INDEX,
   KEYSTORE_FILE_PATH,
+  CORS_WHITELIST,
   PORT,
   P2P_PORT,
   LIGHTWEIGHT,
