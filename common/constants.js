@@ -56,7 +56,9 @@ const SYNC_MODE = process.env.SYNC_MODE || 'full';
 const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
     Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
 const KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
-const CORS_WHITELIST = CommonUtil.getCorsWhitelist(process.env.CORS_WHITELIST);
+const DEFAULT_CORS_WHITELIST = ['https://ainetwork.ai', 'https://ainize.ai', /\.ainetwork\.ai$/,
+    /\.ainize\.ai$/, 'http://localhost:3000'];
+const CORS_WHITELIST = CommonUtil.getCorsWhitelist(process.env.CORS_WHITELIST) || DEFAULT_CORS_WHITELIST;
 
 // ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
