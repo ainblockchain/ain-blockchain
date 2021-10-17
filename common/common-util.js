@@ -728,6 +728,16 @@ class CommonUtil {
     if (!CommonUtil.isArray(resList)) return [];
     return resList.map((res) => DB.trimExecutionResult(res));
   }
+
+  static getCorsWhitelist(input) {
+    let whitelist = ['https://ainetwork.ai', 'https://ainize.ai', /\.ainetwork\.ai$/,
+        /\.ainize\.ai$/, 'http://localhost:3000'];
+    if (input) {
+      const inputList = input.split(',').filter((str) => !!str);
+      whitelist = [...new Set([...whitelist, ...inputList])];
+    }
+    return whitelist;
+  }
 }
 
 module.exports = CommonUtil;
