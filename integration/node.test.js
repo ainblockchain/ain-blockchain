@@ -507,6 +507,15 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
+        expect(body.result['#state_ph']).to.not.equal(null);
+      });
+    });
+
+    describe('/get_proof_hash', () => {
+      it('get_proof_hash', () => {
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_proof_hash?ref=/')
+            .body.toString('utf-8'));
+        expect(body.code).to.equal(0);
         expect(body.result).to.not.equal(null);
       });
     });
@@ -685,7 +694,18 @@ describe('Blockchain Node', () => {
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
         .then(res => {
-          expect(res.result.result).to.not.equal(null);  // not null
+          expect(res.result.result['#state_ph']).to.not.equal(null);
+        })
+      })
+    })
+
+    describe('ain_getProofHash', () => {
+      it('returns correct value', () => {
+        const ref = '/';
+        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_getProofHash', request)
+        .then(res => {
+          expect(res.result.result).to.not.equal(null);
         })
       })
     })
