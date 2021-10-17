@@ -21,8 +21,8 @@ const {
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
-  getProofOfStatePath,
-  getProofHashOfStatePath,
+  getStateProofFromStateRoot,
+  getProofHashFromStateRoot,
   verifyStateProof,
 } = require('../db/state-util');
 const { STATE_LABEL_LENGTH_LIMIT } = require('../common/constants');
@@ -2397,9 +2397,9 @@ describe("state-util", () => {
       expect(verifyStateInfoForStateTree(stateTree)).to.equal(false);
     });
 
-    it("getProofOfStatePath", () => {
+    it("getStateProofFromStateRoot", () => {
       updateStateInfoForStateTree(stateTree);
-      assert.deepEqual(getProofOfStatePath(stateTree, [label1, label11]), {
+      assert.deepEqual(getStateProofFromStateRoot(stateTree, [label1, label11]), {
         "#state_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
         "000": {
           "1": {
@@ -2422,9 +2422,9 @@ describe("state-util", () => {
       });
     });
 
-    it("getProofHashOfStatePath", () => {
+    it("getProofHashFromStateRoot", () => {
       updateStateInfoForStateTree(stateTree);
-      expect(getProofHashOfStatePath(stateTree, [label1, label11])).to.equal(
+      expect(getProofHashFromStateRoot(stateTree, [label1, label11])).to.equal(
         "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb"
       );
     });

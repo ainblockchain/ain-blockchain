@@ -619,13 +619,13 @@ function verifyStateInfoForStateTree(stateTree) {
 }
 
 /**
- * An internal version of getProofOfStatePath().
+ * An internal version of getStateProofFromStateRoot().
  * 
  * @param {Object} fullPath array of parsed full path labels
- * @param {Object} root root state
+ * @param {Object} curNode current state node
  * @param {Object} index index of fullPath
  */
-function getProofOfStatePathRecursive(fullPath, curNode, index) {
+function getStateProofRecursive(fullPath, curNode, index) {
   if (index > fullPath.length - 1) {
     return curNode.getProofOfStateNode();
   }
@@ -634,7 +634,7 @@ function getProofOfStatePathRecursive(fullPath, curNode, index) {
   if (child === null) {
     return null;
   }
-  const childProof = getProofOfStatePathRecursive(fullPath, child, index + 1);
+  const childProof = getStateProofRecursive(fullPath, child, index + 1);
   if (childProof === null) {
     return null;
   }
@@ -644,20 +644,20 @@ function getProofOfStatePathRecursive(fullPath, curNode, index) {
 /**
  * Returns proof of a state path.
  * 
- * @param {Object} root root state
+ * @param {Object} root root state node
  * @param {Object} fullPath array of parsed full path labels
  */
-function getProofOfStatePath(root, fullPath) {
-  return getProofOfStatePathRecursive(fullPath, root, 0);
+function getStateProofFromStateRoot(root, fullPath) {
+  return getStateProofRecursive(fullPath, root, 0);
 }
 
 /**
  * Returns proof hash of a state path.
  * 
- * @param {Object} root root state
+ * @param {Object} root root state node
  * @param {Object} fullPath array of parsed full path labels
  */
-function getProofHashOfStatePath(root, fullPath) {
+function getProofHashFromStateRoot(root, fullPath) {
   let curNode = root;
   for (let i = 0; i < fullPath.length; i++) {
     const childLabel = fullPath[i];
@@ -802,7 +802,7 @@ module.exports = {
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
-  getProofOfStatePath,
-  getProofHashOfStatePath,
+  getStateProofFromStateRoot,
+  getProofHashFromStateRoot,
   verifyStateProof,
 };
