@@ -730,13 +730,11 @@ class CommonUtil {
   }
 
   static getCorsWhitelist(input) {
-    let whitelist = ['https://ainetwork.ai', 'https://ainize.ai', /\.ainetwork\.ai$/,
-        /\.ainize\.ai$/, 'http://localhost:3000'];
-    if (input) {
-      const inputList = input.split(',').filter((str) => !!str);
-      whitelist = [...new Set([...whitelist, ...inputList])];
+    if (!input) {
+      return null;
     }
-    return whitelist;
+    const inputList = input.split(',').filter((str) => !!str);
+    return [...new Set([...inputList])];
   }
 }
 
