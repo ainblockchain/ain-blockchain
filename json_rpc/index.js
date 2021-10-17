@@ -360,9 +360,9 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result}));
     },
 
-    ain_getStateProofHash: function(args, done) {
+    ain_getProofHash: function(args, done) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
-      const result = p2pServer.node.db.getStateProofHash(args.ref);
+      const result = p2pServer.node.db.getProofHash(args.ref);
       done(null, addProtocolVersion({result}));
     },
 
