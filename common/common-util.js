@@ -728,6 +728,14 @@ class CommonUtil {
     if (!CommonUtil.isArray(resList)) return [];
     return resList.map((res) => DB.trimExecutionResult(res));
   }
+
+  static getCorsWhitelist(input) {
+    if (!input) {
+      return null;
+    }
+    const inputList = input.split(',').filter((str) => !!str);
+    return [...new Set([...inputList])];
+  }
 }
 
 module.exports = CommonUtil;
