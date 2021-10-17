@@ -1,8 +1,7 @@
 const BlockchainNode = require('../node')
 const rimraf = require('rimraf');
-const chai = require('chai');
-const expect = chai.expect;
-const assert = chai.assert;
+const _ = require("lodash");
+const ainUtil = require('@ainblockchain/ain-util');
 const {
   CHAINS_DIR,
   GenesisToken,
@@ -18,11 +17,16 @@ const {
   StateVersions,
 } = require('../common/constants')
 const {
-  setNodeForTesting,
-} = require('./test-util');
+  verifyStateProof,
+} = require('../db/state-util');
 const Transaction = require('../tx-pool/transaction');
 const CommonUtil = require('../common/common-util');
-const ainUtil = require('@ainblockchain/ain-util');
+const {
+  setNodeForTesting,
+} = require('./test-util');
+const chai = require('chai');
+const expect = chai.expect;
+const assert = chai.assert;
 
 describe("DB initialization", () => {
   let node;
@@ -4461,17 +4465,32 @@ describe("State info", () => {
     });
   });
 
-  describe("State proof - getStateProof / getProofHash", () => {
-    it("tests proof with a null case", () => {
+  describe("getStateProof / verifyStateProof", () => {
+    it("null case", () => {
       assert.deepEqual(null, node.db.getStateProof('/apps/test/test'));
+    });
+
+    it("non-null case", () => {
+      const proof = node.db.getStateProof('/values/token/symbol');
+      expect(proof).to.not.equal(null);
+      expect(proof['#state_ph']).to.not.equal(null);
+      const verifResult = verifyStateProof(proof);
+      _.set(verifResult, 'rootProofHash', 'erased');
+      assert.deepEqual(verifResult, {
+        "isVerified": true,
+        "mismatchedPath": null,
+        "rootProofHash": "erased",
+      });
+    });
+  });
+
+  describe("getProofHash", () => {
+    it("null case", () => {
       assert.deepEqual(null, node.db.getProofHash('/apps/test/test'));
     });
 
-    it("tests proof with owners, rules, values and functions", () => {
-      const proof = node.db.getStateProof('/');
-      expect(proof).to.not.equal(null);
-      expect(proof['#state_ph']).to.not.equal(null);
-      expect(node.db.getProofHash('/')).to.not.equal(null);
+    it("non-null case", () => {
+      expect(node.db.getProofHash('/values/token/symbol')).to.not.equal(null);
     });
   });
 });
