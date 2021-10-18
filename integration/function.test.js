@@ -391,7 +391,6 @@ describe('Native Function', () => {
                   "0x11111": {
                     "function_type": "REST",
                     "event_listener": "https://events.ainetwork.ai/trigger",
-                    "service_name": "https://ainetwork.ai",
                     "function_id": "0x11111"
                   }
                 }

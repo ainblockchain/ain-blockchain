@@ -342,7 +342,6 @@ describe('HE Protocol', () => {
                 "event_listener": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             }
           }
@@ -385,7 +384,6 @@ describe('HE Protocol', () => {
               "event_listener": "https://events.ainetwork.ai/trigger",
               "function_id": "fid",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai"
             }
           }
         });
@@ -443,7 +441,6 @@ describe('HE Protocol', () => {
                 "event_listener": "https://events.ainetwork.ai/trigger",
                 "function_id": "call_he_worker",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             }
           }

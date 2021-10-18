@@ -46,7 +46,6 @@ describe("Functions", () => {
             "0x11111": {
               "function_type": "REST",
               "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
               "function_id": "0x11111"
             }
           }
@@ -56,13 +55,11 @@ describe("Functions", () => {
             "0x11111": {
               "function_type": "REST",
               "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
               "function_id": "0x11111"
             },
             "0x22222": {
               "function_type": "REST",
               "event_listener": "https://events.ainize.ai/trigger",
-              "service_name": "https://ainize.ai",
               "function_id": "0x22222"
             }
           }
@@ -72,7 +69,6 @@ describe("Functions", () => {
             "0x33333": {
               "function_type": "REST",
               "event_listener": "http://localhost:3000/trigger",
-              "service_name": "http://localhost:3000",
               "function_id": "0x33333"
             }
           }
@@ -82,7 +78,6 @@ describe("Functions", () => {
             "0x33333": {
               "function_type": "REST",
               "event_listener": "https://events.comcom.ai/trigger",
-              "service_name": "https://comcom.ai",
               "function_id": "0x33333"
             }
           }
@@ -150,7 +145,7 @@ describe("Functions", () => {
             "bandwidth_gas_amount": 10,
           }
         });
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -161,7 +156,6 @@ describe("Functions", () => {
               "event_listener": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai",
             },
             "transaction": {
               "tx_body": {
@@ -203,7 +197,7 @@ describe("Functions", () => {
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestMulti),
             null, null, null, null, transaction);
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 2,
             trigger_count: 2,
@@ -214,7 +208,6 @@ describe("Functions", () => {
               "event_listener": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai",
             },
             "transaction": {
               "tx_body": {
@@ -238,7 +231,6 @@ describe("Functions", () => {
               "event_listener": "https://events.ainize.ai/trigger",
               "function_id": "0x22222",
               "function_type": "REST",
-              "service_name": "https://ainize.ai",
             },
             "transaction": {
               "tx_body": {
@@ -280,7 +272,7 @@ describe("Functions", () => {
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestWithoutListener),
             null, null, null, null, transaction);
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -309,9 +301,9 @@ describe("Functions", () => {
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestNotWhitelisted),
             null, null, null, null, transaction);
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
-            function_count: 1,
+            func_count: 1,
             trigger_count: 0,
             fail_count: 0,
           });
@@ -338,9 +330,9 @@ describe("Functions", () => {
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathNull),
             null, null, null, null, transaction);
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
-            function_count: 1,
+            func_count: 1,
             trigger_count: 0,
             fail_count: 0,
           });
@@ -359,7 +351,6 @@ describe("Functions", () => {
             "0x11111": {
               "function_type": "REST",
               "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
               "function_id": "0x11111"
             }
           }
@@ -419,7 +410,7 @@ describe("Functions", () => {
             "bandwidth_gas_amount": 1000
           }
         });
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -467,7 +458,7 @@ describe("Functions", () => {
             "bandwidth_gas_amount": 0
           }
         });
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -502,7 +493,7 @@ describe("Functions", () => {
             "bandwidth_gas_amount": 10,
           }
         });
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,

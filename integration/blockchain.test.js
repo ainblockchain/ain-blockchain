@@ -104,7 +104,6 @@ RANDOM_OPERATION = [
         "function_type": "REST",
         "function_id": "fid",
         "event_listener": "https://events.ainetwork.ai/trigger",
-        "service_name": "https://ainetwork.ai",
       },
     }
   }}],
