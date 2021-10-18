@@ -55,7 +55,6 @@ function buildChatbotConfigTxBody(timestamp) {
               "liayoo-ainjs": {
                 function_type: "REST",
                 event_listener: "https://events.ainetwork.ai/trigger",
-                service_name: "https://ainize.ai",
                 function_id: "liayoo-ainjs"
               }
             }
