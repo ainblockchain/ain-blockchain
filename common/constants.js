@@ -155,6 +155,19 @@ const TrackerMessageTypes = {
 };
 
 /**
+ * Message types for communication between routers.
+ *
+ * @enum {string}
+ */
+const RouterMessageTypes = {
+  CONNECTION_REQUEST: 'CONNECTION_REQUEST',
+  CONNECTION_RESPONSE: 'CONNECTION_RESPONSE',
+  NEW_PEERS_REQUEST: 'NEW_PEERS_REQUEST',
+  NEW_PEERS_RESPONSE: 'NEW_PEERS_RESPONSE',
+  PEER_INFO_UPDATE: 'PEER_INFO_UPDATE'
+};
+
+/**
  * States of blockchain nodes.
  *
  * @enum {string}
@@ -174,16 +187,6 @@ const P2pNetworkStates = {
   STARTING: 'STARTING',
   EXPANDING: 'EXPANDING',
   STEADY: 'STEADY'
-};
-
-/**
- * States of p2p network.
- *
- * @enum {string}
- */
-const P2pRouterStates = {
-  NEW_PEERS_REQUEST: 'NEW_PEERS_REQUEST',
-  NEW_PEERS_RESPONSE: 'NEW_PEERS_RESPONSE'
 };
 
 /**
@@ -966,9 +969,9 @@ module.exports = {
   TRAFFIC_DB_MAX_INTERVALS,
   MessageTypes,
   TrackerMessageTypes,
+  RouterMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
-  P2pRouterStates,
   INITIAL_P2P_ROUTER,
   PredefinedDbPaths,
   TokenProperties,
