@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const {
   hasEnabledShardConfig,
   isWritablePathWithSharding,
@@ -20,7 +21,8 @@ const {
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
-  getProofOfStatePath,
+  getStateProofFromStateRoot,
+  getProofHashFromStateRoot,
   verifyStateProof,
 } = require('../db/state-util');
 const { STATE_LABEL_LENGTH_LIMIT } = require('../common/constants');
@@ -2395,21 +2397,19 @@ describe("state-util", () => {
       expect(verifyStateInfoForStateTree(stateTree)).to.equal(false);
     });
 
-    it("getProofOfStatePath", () => {
+    it("getStateProofFromStateRoot", () => {
       updateStateInfoForStateTree(stateTree);
-      assert.deepEqual(getProofOfStatePath(stateTree, [label1, label11]), {
-        "#radix_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+      assert.deepEqual(getStateProofFromStateRoot(stateTree, [label1, label11]), {
+        "#state_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
         "000": {
           "1": {
             "#radix_ph": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
             "0x0001": {
-              "#state_ph": {
-                "#radix_ph": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116",
-                "0011": {
-                  "#radix_ph": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
-                  "0x0011": {
-                    "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb",
-                  }
+              "#state_ph": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116",
+              "0011": {
+                "#radix_ph": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
+                "0x0011": {
+                  "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb",
                 }
               }
             }
@@ -2422,12 +2422,80 @@ describe("state-util", () => {
       });
     });
 
+    it("getProofHashFromStateRoot", () => {
+      updateStateInfoForStateTree(stateTree);
+      expect(getProofHashFromStateRoot(stateTree, [label1, label11])).to.equal(
+        "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb"
+      );
+    });
+
     it("verifyStateProof", () => {
       updateStateInfoForStateTree(stateTree);
-      const stateProof = getProofOfStatePath(stateTree, [label1, label11]);
-      expect(verifyStateProof(stateProof)).to.not.equal(null);
-      stateProof['000']['1']['#radix_ph'] = 'some other value';
-      expect(verifyStateProof(stateProof)).to.equal(null);
+      const proof = {
+        "#state_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+        "000": {
+          "1": {
+            "#radix_ph": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
+            "0x0001": {
+              "#state_ph": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116",
+              "0011": {
+                "#radix_ph": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
+                "0x0011": {
+                  "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb"
+                }
+              }
+            }
+          },
+          "2": {
+            "#radix_ph": "0x201d6a312774b74827e1ae95e37b98558ee25170d1e40f6def42c22ed161dab5"
+          },
+          "#radix_ph": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60"
+        }
+      };
+
+      assert.deepEqual(verifyStateProof(proof), {
+        "rootProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+        "isVerified": true,
+        "mismatchedPath": null,
+      });
+
+      // radix proof hash manipulated
+      const proofManipulated1 = JSON.parse(JSON.stringify(proof));
+      _.set(proofManipulated1, '000.1.#radix_ph', 'some other value');
+      assert.deepEqual(verifyStateProof(proofManipulated1), {
+        "rootProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+        "isVerified": false,
+        "mismatchedPath": "/000/1",
+      });
+
+      // internal state proof hash manipulated
+      const proofManipulated2 = JSON.parse(JSON.stringify(proof));
+      _.set(proofManipulated2, '000.1.0x0001.#state_ph', 'some other value');
+      assert.deepEqual(verifyStateProof(proofManipulated2), {
+        "rootProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+        "isVerified": false,
+        "mismatchedPath": "/000/1/0x0001",
+      });
+
+      // terminal state proof hash manipulated
+      const proofManipulated3 = JSON.parse(JSON.stringify(proof));
+      _.set(proofManipulated3, '000.1.0x0001.0011.0x0011.#state_ph', 'some other value');
+      assert.deepEqual(verifyStateProof(proofManipulated3), {
+        "rootProofHash": "0x54b7f39d18471220274c0ac87fef5e26254fde7ac7a016266758497ffad1aecf",
+        "isVerified": false,
+        "mismatchedPath": "/000/1/0x0001/0011",
+      });
+
+      // label changed ('2' -> '3')
+      const proofManipulated4 = JSON.parse(JSON.stringify(proof));
+      const temp = _.get(proofManipulated4, '000.2');
+      _.unset(proofManipulated4, '000.2');
+      _.set(proofManipulated4, '000.3', temp);
+      assert.deepEqual(verifyStateProof(proofManipulated4), {
+        "rootProofHash": "0x5aad1e7b28a46bd987680c6af3a82c49f5c09003b0397a5d972d1275b286084e",
+        "isVerified": false,
+        "mismatchedPath": "/000",
+      });
     });
   });
 })

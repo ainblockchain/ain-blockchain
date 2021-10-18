@@ -277,11 +277,16 @@ class RadixNode {
   }
 
   getChildLabelRadices() {
-    return [...this.radixChildMap.keys()];
+    // NOTE(platfowner): Sort child nodes by label radix for stability.
+    return [...this.radixChildMap.keys()]
+        .sort((a, b) => a.localeCompare(b));
   }
 
   getChildNodes() {
-    return [...this.radixChildMap.values()];
+    // NOTE(platfowner): Sort child nodes by label radix for stability.
+    return [...this.radixChildMap.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))  // compare keys (label radices)
+        .map((entry) => entry[1]);
   }
 
   numChildren() {
@@ -490,25 +495,27 @@ class RadixNode {
     return true;
   }
 
-  getProofOfRadixNode(childLabel = null, childProof = null, stateProof = null) {
-    const proof = { [StateInfoProperties.RADIX_PROOF_HASH]: this.getProofHash() };
+  getProofOfRadixNode(
+      childLabel = null, childRadixProof = null, childStateProof = null, isRootRadixNode = false) {
+    // NOTE(platfowner): Root radix node uses STATE_PROOF_HASH as the proof label.
+    const proofLabel = isRootRadixNode ?
+        StateInfoProperties.STATE_PROOF_HASH : StateInfoProperties.RADIX_PROOF_HASH;
+    const proof = { [proofLabel]: this.getProofHash() };
     if (this.hasChildStateNode()) {
       const childStateNode = this.getChildStateNode();
-      const childStateProof = {
-        [StateInfoProperties.STATE_PROOF_HASH]: stateProof !== null ?
-            stateProof : childStateNode.getProofHash()
-      };
       Object.assign(proof, {
-        [childStateNode.getLabel()]: childStateProof,
+        [childStateNode.getLabel()]: childStateProof !== null ? childStateProof : {
+          [StateInfoProperties.STATE_PROOF_HASH]: childStateNode.getProofHash()
+        }
       });
     }
-    if (childLabel === null && stateProof !== null) {
+    if (childLabel === null && childStateProof !== null) {
       return proof;
     }
     this.getChildNodes().forEach((child) => {
       const label = child.getLabel();
       Object.assign(proof, {
-        [label]: label === childLabel ? childProof : {
+        [label]: label === childLabel ? childRadixProof : {
           [StateInfoProperties.RADIX_PROOF_HASH]: child.getProofHash()
         }
       });

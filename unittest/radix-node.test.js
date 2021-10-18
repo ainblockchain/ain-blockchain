@@ -427,6 +427,31 @@ describe("radix-node", () => {
       expect(child2.getLabelSuffix()).to.equal(labelSuffix2);
     });
 
+    it("getChildLabelRadices / getChildNodes", () => {
+      const labelRadix1 = '0';
+      const labelSuffix1 = '0000';
+      const child1 = new RadixNode();
+
+      const labelRadix2 = '1';
+      const labelSuffix2 = '1111';
+      const child2 = new RadixNode();
+
+      const labelRadix3 = '2';
+      const labelSuffix3 = '2222';
+      const child3 = new RadixNode();
+
+      // setChild() with child3 first!
+      node.setChild(labelRadix3, labelSuffix3, child3);
+      // setChild() with child2 first!
+      node.setChild(labelRadix2, labelSuffix2, child2);
+      // setChild() with child1
+      node.setChild(labelRadix1, labelSuffix1, child1);
+      // sorted by label radix
+      assert.deepEqual(node.getChildLabelRadices(), [labelRadix1, labelRadix2, labelRadix3]);
+      // sorted by label radix
+      assert.deepEqual(node.getChildNodes(), [child1, child2, child3]);
+    });
+
     it("set existing child", () => {
       const labelRadix = '0';
       const labelSuffix = '0000';
@@ -1052,38 +1077,68 @@ describe("radix-node", () => {
       const label11 = labelRadix11 + labelSuffix11;
       const label21 = labelRadix21 + labelSuffix21;
 
-      // on a node with state node value with child label and child proof
+      // on a node with state node value with child label/proof with isRootRadixNode = false
       assert.deepEqual(child1.getProofOfRadixNode(label11, 'childProof11', null), {
+        "#radix_ph": "0xd56eaf71ba15b95bf26276fe9ce88a4977a71271405c88aeb4f4efd5e34a8399",
         "1011": "childProof11",
         "2012": {
           "#radix_ph": "0x7fc53637a6ff6b7efa8cf7c9ba95552ed7479262ad8c07a61b4d2b1e8002d360",
         },
-        "#radix_ph": "0xd56eaf71ba15b95bf26276fe9ce88a4977a71271405c88aeb4f4efd5e34a8399",
         "stateLabel1": {
           "#state_ph": "stateNodePH1",
         }
       });
 
-      // on a node without state node value with child label and child proof
+      // on a node without state node value with child label/proof with isRootRadixNode = false
       assert.deepEqual(child2.getProofOfRadixNode(label21, 'childProof21', null), {
+        "#radix_ph": "0x763902e3186ec54e6a4bc3a2c01f57f60628d95a27a380a3ec2cea9e68c3928c",
         "1021": "childProof21",
         "2022": {
           "#radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2",
         },
-        "#radix_ph": "0x763902e3186ec54e6a4bc3a2c01f57f60628d95a27a380a3ec2cea9e68c3928c",
       });
 
-      // on a node with state node value with state label/proof
+      // on a node with state node value with state proof with isRootRadixNode = false
       assert.deepEqual(child1.getProofOfRadixNode(null, null, 'stateProof1'), {
         "#radix_ph": "0xd56eaf71ba15b95bf26276fe9ce88a4977a71271405c88aeb4f4efd5e34a8399",
+        "stateLabel1": "stateProof1",
+      });
+
+      // on a node without state node value with state proof with isRootRadixNode = false
+      assert.deepEqual(child2.getProofOfRadixNode(null, null, 'stateProof2'), {
+        "#radix_ph": "0x763902e3186ec54e6a4bc3a2c01f57f60628d95a27a380a3ec2cea9e68c3928c"
+      });
+
+      // on a node with state node value with child label/proof with isRootRadixNode = true
+      assert.deepEqual(child1.getProofOfRadixNode(label11, 'childProof11', null, true), {
+        "#state_ph": "0xd56eaf71ba15b95bf26276fe9ce88a4977a71271405c88aeb4f4efd5e34a8399",
+        "1011": "childProof11",
+        "2012": {
+          "#radix_ph": "0x7fc53637a6ff6b7efa8cf7c9ba95552ed7479262ad8c07a61b4d2b1e8002d360",
+        },
         "stateLabel1": {
-          "#state_ph": "stateProof1",
+          "#state_ph": "stateNodePH1",
         }
       });
 
-      // on a node without state node value with state label/proof
-      assert.deepEqual(child2.getProofOfRadixNode(null, null, 'stateProof2'), {
-        "#radix_ph": "0x763902e3186ec54e6a4bc3a2c01f57f60628d95a27a380a3ec2cea9e68c3928c"
+      // on a node without state node value with child label/proof with isRootRadixNode = true
+      assert.deepEqual(child2.getProofOfRadixNode(label21, 'childProof21', null, true), {
+        "#state_ph": "0x763902e3186ec54e6a4bc3a2c01f57f60628d95a27a380a3ec2cea9e68c3928c",
+        "1021": "childProof21",
+        "2022": {
+          "#radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2",
+        },
+      });
+
+      // on a node with state node value with state proof with isRootRadixNode = true
+      assert.deepEqual(child1.getProofOfRadixNode(null, null, 'stateProof1', true), {
+        "#state_ph": "0xd56eaf71ba15b95bf26276fe9ce88a4977a71271405c88aeb4f4efd5e34a8399",
+        "stateLabel1": "stateProof1",
+      });
+
+      // on a node without state node value with state proof with isRootRadixNode = true
+      assert.deepEqual(child2.getProofOfRadixNode(null, null, 'stateProof2', true), {
+        "#state_ph": "0x763902e3186ec54e6a4bc3a2c01f57f60628d95a27a380a3ec2cea9e68c3928c"
       });
     });
   });

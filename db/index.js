@@ -46,7 +46,8 @@ const {
   applyOwnerChange,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
-  getProofOfStatePath,
+  getStateProofFromStateRoot,
+  getProofHashFromStateRoot,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -431,13 +432,21 @@ class DB {
   }
 
   /**
-   * Returns a proof of a state node.
+   * Returns proof of a state node.
    * @param {string} statePath full database path to the state node
    */
-  // TODO(platfowner): Consider supporting global path for getStateProof().
   getStateProof(statePath) {
     const parsedPath = CommonUtil.parsePath(statePath);
-    return getProofOfStatePath(this.stateRoot, parsedPath);
+    return getStateProofFromStateRoot(this.stateRoot, parsedPath);
+  }
+
+  /**
+   * Returns proof hash of a state node.
+   * @param {string} statePath full database path to the state node
+   */
+  getProofHash(statePath) {
+    const parsedPath = CommonUtil.parsePath(statePath);
+    return getProofHashFromStateRoot(this.stateRoot, parsedPath);
   }
 
   static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {

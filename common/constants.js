@@ -28,10 +28,6 @@ const FeatureFlags = {
   enableStateTreeTransfer: false,
   // Enables receipts recording to the state.
   enableReceiptsRecording: true,  // Some test cases assume this value true.
-  // Enables receipt path's prefix layers.
-  enableReceiptPathPrefixLayers: false,  // Some test cases assume this value false.
-  // Enables radix layers.
-  enableRadixTreeLayers: true,  // Some test cases assume this value true.
   // Enables ntp-sync for global time syncing.
   enableNtpSync: true,
   // Enables traffic monitoring.
@@ -56,6 +52,9 @@ const SYNC_MODE = process.env.SYNC_MODE || 'full';
 const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
     Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
 const KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
+const DEFAULT_CORS_WHITELIST = ['https://ainetwork.ai', 'https://ainize.ai', /\.ainetwork\.ai$/,
+    /\.ainize\.ai$/, 'http://localhost:3000'];
+const CORS_WHITELIST = CommonUtil.getCorsWhitelist(process.env.CORS_WHITELIST) || DEFAULT_CORS_WHITELIST;
 
 // ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -909,6 +908,7 @@ module.exports = {
   ENABLE_GAS_FEE_WORKAROUND,
   ACCOUNT_INDEX,
   KEYSTORE_FILE_PATH,
+  CORS_WHITELIST,
   PORT,
   P2P_PORT,
   LIGHTWEIGHT,
