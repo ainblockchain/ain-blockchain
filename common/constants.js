@@ -52,8 +52,10 @@ const SYNC_MODE = process.env.SYNC_MODE || 'full';
 const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
     Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
 const KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
-const DEFAULT_CORS_WHITELIST = ['https://ainetwork.ai', 'https://ainize.ai', /\.ainetwork\.ai$/,
-    /\.ainize\.ai$/, 'http://localhost:3000'];
+const DEFAULT_CORS_WHITELIST = ['https://ainetwork.ai', 'https://ainize.ai', 'https://afan.ai',
+    /\.ainetwork\.ai$/, /\.ainize\.ai$/, /\.afan\.ai$/, 'http://localhost:3000'];
+// NOTE(liayoo): CORS_WHITELIST env var is a comma-separated list of cors-allowed domains.
+// Note that if it includes '*', it will be set to allow all domains.
 const CORS_WHITELIST = CommonUtil.getCorsWhitelist(process.env.CORS_WHITELIST) || DEFAULT_CORS_WHITELIST;
 
 // ** Constants **
