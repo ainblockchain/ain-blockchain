@@ -98,10 +98,17 @@ class StateNode {
     const obj = {};
     for (const label of this.getChildLabels()) {
       const childNode = this.getChild(label);
-      obj[label] = isShallow ? true : childNode.toJsObject(options);
+      obj[label] = isShallow ?
+          (childNode.getIsLeaf() ?
+              true :
+              { [`${StateInfoProperties.STATE_PROOF_HASH}`]: childNode.getProofHash() }) :
+          childNode.toJsObject(options);
       if (childNode.getIsLeaf()) {
         if (includeVersion) {
           obj[`${StateInfoProperties.VERSION}:${label}`] = childNode.getVersion();
+        }
+        if (includeProof) {
+          obj[`${StateInfoProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
         }
         if (includeTreeInfo) {
           obj[`${StateInfoProperties.NUM_PARENTS}:${label}`] = childNode.numParents();
@@ -109,9 +116,6 @@ class StateNode {
           obj[`${StateInfoProperties.TREE_SIZE}:${label}`] = childNode.getTreeSize();
           obj[`${StateInfoProperties.TREE_BYTES}:${label}`] = childNode.getTreeBytes();
         }
-      }
-      if (includeProof) {
-        obj[`${StateInfoProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
       }
     }
     if (includeVersion) {
