@@ -31,8 +31,12 @@ const MAX_BLOCKS = 20;
 
 const app = express();
 app.use(express.json({ limit: REQUEST_BODY_SIZE_LIMIT }));
-app.use(express.urlencoded({ limit: REQUEST_BODY_SIZE_LIMIT }));
+app.use(express.urlencoded({
+  extended: true,
+  limit: REQUEST_BODY_SIZE_LIMIT
+}));
 app.use(cors({ origin: CORS_WHITELIST }));
+
 
 const node = new BlockchainNode();
 // NOTE(platfowner): This is very useful when the server dies without any logs.
