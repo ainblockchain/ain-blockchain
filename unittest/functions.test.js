@@ -38,6 +38,8 @@ describe("Functions", () => {
       const refPathRestWithoutListener = "/apps/test/test_function/some/path/rest_without_listener";
       const refPathRestNotWhitelisted = "/apps/test/test_function/some/path/rest_not_whitelisted";
       const refPathNull = "/apps/test/test_function/some/path/null";
+      const refFullPathEventListenerWhitelist = '/values/developers/event_listener_whitelist/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0';
+      const refPathRestNewlyWhitelisted = '/apps/test/test_function/some/path/rest_newly_whitelisted';
       let requestBody1 = null, requestBody2 = null;
 
       before(() => {
@@ -309,6 +311,76 @@ describe("Functions", () => {
           });
         });
       })
+
+      it('REST function newly whitelisted', () => {
+        node.db.writeDatabase(CommonUtil.parsePath(refFullPathEventListenerWhitelist), 'http://localhost:3000');
+        node.db.setFunction(refPathRestNewlyWhitelisted, {
+          ".function": {
+            "newly_whitelisted": {
+              "function_type": "REST",
+              "event_listener": "http://localhost:3000",
+              "function_id": "newly_whitelisted"
+            }
+          }
+        }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' });
+        const transaction = {
+          "tx_body": {
+            "operation": {
+              "ref": refPathRestNewlyWhitelisted,
+              "type": "SET_VALUE",
+              "value": 1000
+            },
+            "nonce": 123,
+            "timestamp": 1566736760322,
+            "gas_price": 1,
+          },
+          "extra": {
+            "created_at": 1566736760323,
+            "executed_at": 1566736760324,
+          }
+        }
+        const { promise_results } = functions.triggerFunctions(
+            CommonUtil.parsePath(refPathRestNewlyWhitelisted),
+            null, null, null, null, transaction);
+        return promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 1,
+            fail_count: 1
+          })
+        })
+      });
+
+      it('REST function newly de-whitelisted', () => {
+        // delete function from the whitelist
+        node.db.writeDatabase(CommonUtil.parsePath(refFullPathEventListenerWhitelist), null);
+        const transaction = {
+          "tx_body": {
+            "operation": {
+              "ref": refPathRestNewlyWhitelisted,
+              "type": "SET_VALUE",
+              "value": 1000
+            },
+            "nonce": 123,
+            "timestamp": 1566736760322,
+            "gas_price": 1,
+          },
+          "extra": {
+            "created_at": 1566736760323,
+            "executed_at": 1566736760324,
+          }
+        }
+        const { promise_results } = functions.triggerFunctions(
+            CommonUtil.parsePath(refPathRestNewlyWhitelisted),
+            null, null, null, null, transaction);
+        return promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 0,
+            fail_count: 0
+          })
+        })
+      });
 
       it("null function", () => {
         const transaction = {

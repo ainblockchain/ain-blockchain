@@ -857,6 +857,218 @@ describe('Native Function', () => {
       });
     });
 
+    describe('Event listener whitelist', () => {
+      it('cannot add an event listener if not a whitelisted developer', () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/event_listener_whitelist/${serviceUser}/0`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/event_listener_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('cannot whitelist a developer if not an admin', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/function_register/user_list/${serviceUser}`,
+          value: true,
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/function_register/user_list/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('can whitelist a developer', async () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/developers/function_register/user_list/${serviceUser}`,
+            value: true
+          },
+          timestamp: 1628255843548,
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from('a2b5848760d81afe205884284716f90356ad82be5ab77b8130980bdb0b7ba2ba', 'hex'));
+        const res = await client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        });
+        assert.deepEqual(res.result.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 248
+            }
+          },
+          "gas_cost_total": 0,
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 249
+        });
+      });
+
+      it('can add an event listener', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/event_listener_whitelist/${serviceUser}/0`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 448
+            }
+          },
+          "gas_cost_total": 0,
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 449
+        });
+      });
+
+      it('cannot add more than the max number of event listeners per developer', async () => {
+        // Add 2 more & try to add 1 more
+        const addEventListener2 = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/event_listener_whitelist/${serviceUser}/1`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        expect(addEventListener2.result.result.code).to.be.equal(0);
+        const addEventListener3 = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/event_listener_whitelist/${serviceUser}/2`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        expect(addEventListener3.result.result.code).to.be.equal(0);
+        const userEventListeners = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/developers/event_listener_whitelist/${serviceUser}`).body.toString('utf-8'));
+        assert.deepEqual(userEventListeners, {
+          "code": 0,
+          "result": {
+            "0": "http://localhost:3000",
+            "1": "http://localhost:3000",
+            "2": "http://localhost:3000"
+          }
+        });
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/event_listener_whitelist/${serviceUser}/3`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        console.log(JSON.stringify(body, null, 2));
+      });
+
+      it('can replace an event listener', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/event_listener_whitelist/${serviceUser}/0`,
+          value: 'http://localhost:8080',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('can remove an event listener', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/event_listener_whitelist/${serviceUser}/0`,
+          value: null,
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it(`cannot remove other's event listener`, async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/event_listener_whitelist/0xAAAf6f50A0304F12119D218b94bea8082642515B/0`,
+          value: null,
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/event_listener_whitelist/0xAAAf6f50A0304F12119D218b94bea8082642515B/0",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+    });
+
     describe('Function execution', () => {
       before(async () => {
         const appStakingPath =
