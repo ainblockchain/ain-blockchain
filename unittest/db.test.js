@@ -175,7 +175,6 @@ describe("DB operations", () => {
               "function_type": "REST",
               "function_id": "fid_var",
               "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
             },
           }
         },
@@ -185,7 +184,6 @@ describe("DB operations", () => {
               "function_type": "REST",
               "function_id": "fid",
               "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
             },
           },
           "deeper": {
@@ -195,7 +193,6 @@ describe("DB operations", () => {
                   "function_type": "REST",
                   "function_id": "fid_deeper",
                   "event_listener": "https://events.ainetwork.ai/trigger",
-                  "service_name": "https://ainetwork.ai",
                 }
               }
             }
@@ -564,7 +561,6 @@ describe("DB operations", () => {
               "event_listener": "https://events.ainetwork.ai/trigger",
               "function_id": "fid",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai"
             }
           },
           "deeper": {
@@ -574,7 +570,6 @@ describe("DB operations", () => {
                   "event_listener": "https://events.ainetwork.ai/trigger",
                   "function_id": "fid_deeper",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               }
             }
@@ -686,7 +681,6 @@ describe("DB operations", () => {
                 "function_type": "REST",
                 "function_id": "fid_var",
                 "event_listener": "https://events.ainetwork.ai/trigger",
-                "service_name": "https://ainetwork.ai",
               },
             },
             "path": "/apps/test/test_function/some/$var_path"
@@ -708,7 +702,6 @@ describe("DB operations", () => {
                 "event_listener": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             },
             "path": "/apps/test/test_function/some/path"
@@ -720,7 +713,6 @@ describe("DB operations", () => {
                   "event_listener": "https://events.ainetwork.ai/trigger",
                   "function_id": "fid_deeper",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               },
               "path": "/deeper/path"
@@ -739,7 +731,6 @@ describe("DB operations", () => {
                 "event_listener": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid_deeper",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             },
             "path": "/apps/test/test_function/some/path/deeper/path"
@@ -766,7 +757,6 @@ describe("DB operations", () => {
                   "event_listener": "https://events.ainetwork.ai/trigger",
                   "function_id": "fid_deeper",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               },
               "path": "/path"
@@ -1139,7 +1129,6 @@ describe("DB operations", () => {
                     "event_listener": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid_deeper",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 },
                 "path": "/path"
@@ -1260,7 +1249,6 @@ describe("DB operations", () => {
                 "event_listener": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             },
             "deeper": {
@@ -1270,7 +1258,6 @@ describe("DB operations", () => {
                     "event_listener": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid_deeper",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 }
               }
@@ -1326,7 +1313,6 @@ describe("DB operations", () => {
                   "event_listener": "https://events.ainetwork.ai/trigger",
                   "function_id": "fid",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               },
               "path": "/apps/test/test_function/some/path"
@@ -1338,7 +1324,6 @@ describe("DB operations", () => {
                     "event_listener": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid_deeper",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 },
                 "path": "/deeper/path"
@@ -1607,10 +1592,9 @@ describe("DB operations", () => {
         const functionConfig = {
           ".function": {
             "fid": {
-              "event_listener": "https://events.ainetwork.ai/trigger2",
+              "event_listener": "http://echo-bot.ainetwork.ai/trigger",
               "function_id": "fid",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai"
             }
           }
         };
@@ -1619,10 +1603,9 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getFunction("/apps/test/test_function/some/path"), {
           ".function": {
             "fid": {
-              "event_listener": "https://events.ainetwork.ai/trigger2",  // modified
+              "event_listener": "http://echo-bot.ainetwork.ai/trigger",  // modified
               "function_id": "fid",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai"
             }
           },
           "deeper": {
@@ -1632,7 +1615,6 @@ describe("DB operations", () => {
                   "event_listener": "https://events.ainetwork.ai/trigger",
                   "function_id": "fid_deeper",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               }
             }
@@ -1644,10 +1626,9 @@ describe("DB operations", () => {
         const functionConfig = {
           ".function": {
             "fid_other": {
-              "event_listener": "https://events.ainetwork.ai/trigger2",
+              "event_listener": "http://echo-bot.ainetwork.ai/trigger",
               "function_id": "fid_other",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai"
             }
           }
         };
@@ -1689,10 +1670,9 @@ describe("DB operations", () => {
             "/apps/test/test_function/some/path/.", {
               ".function": {
                 "fid": {
-                  "event_listener": "https://events.ainetwork.ai/trigger2",
+                  "event_listener": "http://echo-bot.ainetwork.ai/trigger",
                   "function_id": "fid",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               }
             }), {
@@ -2131,10 +2111,9 @@ describe("DB operations", () => {
             value: {
               ".function": {
                 "fid": {
-                  "event_listener": "https://events.ainetwork.ai/trigger2",
+                  "event_listener": "http://echo-bot.ainetwork.ai/trigger",
                   "function_id": "fid",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               }
             }
@@ -2210,10 +2189,9 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getFunction("/apps/test/test_function/some/path"), {
           ".function": {
             "fid": {
-              "event_listener": "https://events.ainetwork.ai/trigger2",  // modified
+              "event_listener": "http://echo-bot.ainetwork.ai/trigger",  // modified
               "function_id": "fid",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai"
             }
           },
           "deeper": {
@@ -2223,7 +2201,6 @@ describe("DB operations", () => {
                   "event_listener": "https://events.ainetwork.ai/trigger",
                   "function_id": "fid_deeper",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               }
             }
@@ -2729,7 +2706,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11293042 > 10000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11299700 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
         assert.deepEqual(res.gas_cost_total, 5.59512);
       });
@@ -3602,7 +3579,6 @@ describe("DB sharding config", () => {
                 "function_type": "REST",
                 "function_id": "fid",
                 "event_listener": "https://events.ainetwork.ai/trigger",
-                "service_name": "https://ainetwork.ai",
               }
             },
             "deeper": {
@@ -3611,7 +3587,6 @@ describe("DB sharding config", () => {
                   "function_type": "REST",
                   "function_id": "fid_deeper",
                   "event_listener": "https://events.ainetwork.ai/trigger",
-                  "service_name": "https://ainetwork.ai",
                 }
               }
             }
@@ -3898,7 +3873,6 @@ describe("DB sharding config", () => {
           "function_type": "REST",
           "function_id": "fid",
           "event_listener": "https://events.ainetwork.ai/trigger",
-          "service_name": "https://ainetwork.ai",
         },
       },
       "deeper": {
@@ -3907,7 +3881,6 @@ describe("DB sharding config", () => {
             "function_type": "REST",
             "function_id": "fid_deeper",
             "event_listener": "https://events.ainetwork.ai/trigger",
-            "service_name": "https://ainetwork.ai",
           },
         }
       }
@@ -3917,8 +3890,7 @@ describe("DB sharding config", () => {
         "fid": {
           "function_type": "REST",
           "function_id": "fid",
-          "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
-          "service_name": "https://ainetwork.ai",
+          "event_listener": "http://echo-bot.ainetwork.ai/trigger",  // Listener 2
         },
       }
     };
@@ -3927,8 +3899,7 @@ describe("DB sharding config", () => {
         "fid": {
           "function_type": "REST",
           "function_id": "fid",
-          "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
-          "service_name": "https://ainetwork.ai",
+          "event_listener": "http://echo-bot.ainetwork.ai/trigger",  // Listener 2
         },
       },
       "deeper": {
@@ -3937,7 +3908,6 @@ describe("DB sharding config", () => {
             "function_type": "REST",
             "function_id": "fid_deeper",
             "event_listener": "https://events.ainetwork.ai/trigger",
-            "service_name": "https://ainetwork.ai",
           },
         }
       }
@@ -3993,7 +3963,6 @@ describe("DB sharding config", () => {
               "function_type": "REST",
               "function_id": "fid",
               "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
             }
           },
           "path": "/apps/test/test_sharding/some/path/to"
@@ -4005,7 +3974,6 @@ describe("DB sharding config", () => {
                 "function_type": "REST",
                 "function_id": "fid_deeper",
                 "event_listener": "https://events.ainetwork.ai/trigger",
-                "service_name": "https://ainetwork.ai",
               },
             },
             "path": "/deeper",
@@ -4027,7 +3995,6 @@ describe("DB sharding config", () => {
               "function_type": "REST",
               "function_id": "fid",
               "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
             }
           },
           "path": "/apps/afan/apps/test/test_sharding/some/path/to"
@@ -4039,7 +4006,6 @@ describe("DB sharding config", () => {
                 "function_type": "REST",
                 "function_id": "fid_deeper",
                 "event_listener": "https://events.ainetwork.ai/trigger",
-                "service_name": "https://ainetwork.ai",
               },
             },
             "path": "/deeper",

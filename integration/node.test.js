@@ -126,7 +126,6 @@ async function setUp() {
                 "function_type": "REST",
                 "function_id": "fid",
                 "event_listener": "https://events.ainetwork.ai/trigger",
-                "service_name": "https://ainetwork.ai",
               },
             }
           }
@@ -272,7 +271,6 @@ describe('Blockchain Node', () => {
                 "function_type": "REST",
                 "function_id": "fid",
                 "event_listener": "https://events.ainetwork.ai/trigger",
-                "service_name": "https://ainetwork.ai",
               },
             }
           }
@@ -336,7 +334,6 @@ describe('Blockchain Node', () => {
                 "event_listener": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             },
             "path": "/apps/test/test_function/some/path"
@@ -477,7 +474,6 @@ describe('Blockchain Node', () => {
                   "function_type": "REST",
                   "function_id": "fid",
                   "event_listener": "https://events.ainetwork.ai/trigger",
-                  "service_name": "https://ainetwork.ai",
                 },
               }
             },
@@ -598,7 +594,6 @@ describe('Blockchain Node', () => {
                   "event_listener": "https://events.ainetwork.ai/trigger",
                   "function_id": "fid",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               },
               "path": "/apps/test/test_function/some/path"
@@ -1103,7 +1098,6 @@ describe('Blockchain Node', () => {
               "event_listener": "https://events.ainetwork.ai/trigger",
               "function_id": "fid",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai"
             }
           }
         });
@@ -1113,10 +1107,9 @@ describe('Blockchain Node', () => {
           value: {
             ".function": {
               "fid": {
-                "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+                "event_listener": "http://echo-bot.ainetwork.ai/trigger",  // Listener 2
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             }
           }
@@ -1138,10 +1131,9 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultAfter, {
           ".function": {
             "fid": {
-              "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+              "event_listener": "http://echo-bot.ainetwork.ai/trigger",  // Listener 2
               "function_id": "fid",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai"
             }
           }
         });
@@ -1162,7 +1154,6 @@ describe('Blockchain Node', () => {
                 "event_listener": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             }
           }
@@ -1439,7 +1430,6 @@ describe('Blockchain Node', () => {
                     "event_listener": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 }
               }
@@ -1568,7 +1558,6 @@ describe('Blockchain Node', () => {
                     "event_listener": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 }
               }
@@ -1696,7 +1685,6 @@ describe('Blockchain Node', () => {
                       "event_listener": "https://events.ainetwork.ai/trigger",
                       "function_id": "fid",
                       "function_type": "REST",
-                      "service_name": "https://ainetwork.ai"
                     }
                   }
                 }
@@ -1765,7 +1753,6 @@ describe('Blockchain Node', () => {
                           "event_listener": "https://events.ainetwork.ai/trigger",
                           "function_id": "fid",
                           "function_type": "REST",
-                          "service_name": "https://ainetwork.ai"
                         }
                       }
                     }
@@ -2076,7 +2063,6 @@ describe('Blockchain Node', () => {
                       "event_listener": "https://events.ainetwork.ai/trigger",
                       "function_id": "fid",
                       "function_type": "REST",
-                      "service_name": "https://ainetwork.ai"
                     }
                   }
                 }
@@ -2145,7 +2131,6 @@ describe('Blockchain Node', () => {
                           "event_listener": "https://events.ainetwork.ai/trigger",
                           "function_id": "fid",
                           "function_type": "REST",
-                          "service_name": "https://ainetwork.ai"
                         }
                       }
                     }
@@ -2760,7 +2745,6 @@ describe('Blockchain Node', () => {
                     "event_listener": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 }
               }
@@ -2829,7 +2813,6 @@ describe('Blockchain Node', () => {
                         "event_listener": "https://events.ainetwork.ai/trigger",
                         "function_id": "fid",
                         "function_type": "REST",
-                        "service_name": "https://ainetwork.ai"
                       }
                     }
                   }
