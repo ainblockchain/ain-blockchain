@@ -995,7 +995,21 @@ describe('Native Function', () => {
           timestamp: Date.now(),
           nonce: -1,
         }}).body.toString('utf-8'));
-        console.log(JSON.stringify(body, null, 2));
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/event_listener_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/3",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
       });
 
       it('can replace an event listener', async () => {
