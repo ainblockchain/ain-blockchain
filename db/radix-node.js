@@ -279,13 +279,13 @@ class RadixNode {
   getChildLabelRadices() {
     // NOTE(platfowner): Sort child nodes by label radix for stability.
     return [...this.radixChildMap.keys()]
-        .sort((a, b) => a[0].localeCompare(b[0]));
+        .sort((a, b) => a.localeCompare(b));
   }
 
   getChildNodes() {
     // NOTE(platfowner): Sort child nodes by label radix for stability.
     return [...this.radixChildMap.entries()]
-        .sort((a, b) => a[0].localeCompare(b[0]))
+        .sort((a, b) => a[0].localeCompare(b[0]))  // compare keys (label radices)
         .map((entry) => entry[1]);
   }
 
