@@ -249,6 +249,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         if (block && block.transactions.length > index && index >= 0) {
           result = {
             transaction: block.transactions[index],
+            is_executed: true,
             is_finalized: true
           };
         }
@@ -265,6 +266,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         if (block && block.transactions.length > index && index >= 0) {
           result = {
             transaction: block.transactions[index],
+            is_executed: true,
             is_finalized: true
           };
         }
