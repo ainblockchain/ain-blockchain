@@ -69,6 +69,34 @@ class DB {
     this.stateManager = stateManager;
     this.ownerAddress = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    this.cacheEventListenerWhitelist();
+  }
+
+  static formatRawEventListenerWhitelist(raw) {
+    if (CommonUtil.isEmpty(raw) || !CommonUtil.isDict(raw)) return {};
+    const whitelist = {};
+    for (const val of Object.values(raw)) {
+      for (const eventListener of Object.values(val)) {
+        whitelist[eventListener] = true;
+      }
+    }
+    return whitelist;
+  }
+
+  /**
+   * Compares the state proof hash of the current eventListenerWhitelistCache and the state proof
+   * hash at the path /developers/event_listener_whitelist, and if outdated, update the cache of
+   * the latest hash and the mapping of whitelisted event listeners.
+   */
+  cacheEventListenerWhitelist() {
+    const current = _.get(this.eventListenerWhitelistCache, 'hash');
+    const eventListenerWhitelistPath = PathUtil.getDevelopersEventListenerWhitelistPath();
+    const updated = this.getStateProof(eventListenerWhitelistPath);
+    if (!current || current !== updated) {
+      const rawWhitelist = this.getValue(eventListenerWhitelistPath);
+      const whitelist = DB.formatRawEventListenerWhitelist(rawWhitelist);
+      this.eventListenerWhitelistCache = { hash: updated, whitelist };
+    }
   }
 
   initDbStates(snapshot) {
@@ -396,7 +424,7 @@ class DB {
     const isGlobal = options && options.isGlobal;
     if (!stateRoot) return null;
     const parsedPath = CommonUtil.parsePath(refPath);
-    const localPath = isGlobal ?  DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;

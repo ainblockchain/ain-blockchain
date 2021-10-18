@@ -19,13 +19,6 @@ const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 
-const EventListenerWhitelist = {
-  'https://events.ainetwork.ai/trigger': true,
-  'https://events.ainize.ai/trigger': true,
-  'http://echo-bot.ainetwork.ai/trigger': true,
-  'http://localhost:3000/trigger': true
-};
-
 /**
  * Built-in functions with function paths.
  */
@@ -177,8 +170,9 @@ class Functions {
             }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
+          this.db.cacheEventListenerWhitelist();
           if (functionEntry.event_listener &&
-              functionEntry.event_listener in EventListenerWhitelist) {
+              functionEntry.event_listener in this.db.eventListenerWhitelistCache.whitelist) {
             if (FeatureFlags.enableRichFunctionLogging) {
               logger.info(
                   `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +

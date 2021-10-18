@@ -297,6 +297,17 @@ class RuleUtil {
     const { ValidatorOffenseTypes } = require('../consensus/constants');
     return !!ValidatorOffenseTypes[type];
   }
+
+  validateEventListenerWhitelistData(userAddr, data, newData, getValue) {
+    const PathUtil = require('../common/path-util');
+    if (getValue(PathUtil.getDevelopersFunctionRegisterUserListUserPath(userAddr)) !== true) {
+      return false;
+    }
+    const maxEventListenersPerDeveloper = getValue(PathUtil.getDevelopersMaxEventListenersPerDeveloperPath());
+    const existingEventListeners = getValue(PathUtil.getDevelopersEventListenerWhitelistUserPath(userAddr)) || {};
+    return data !== null || newData === null ||
+        Object.keys(existingEventListeners).length < maxEventListenersPerDeveloper;
+  }
 }
 
 module.exports = RuleUtil;

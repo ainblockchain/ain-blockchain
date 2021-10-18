@@ -327,6 +327,27 @@ class PathUtil {
   static getReceiptPath(txHash) {
     return CommonUtil.formatPath([PredefinedDbPaths.RECEIPTS, txHash]);
   }
+
+  static getDevelopersEventListenerWhitelistPath() {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_EVENT_LISTENER_WHITELIST]);
+  }
+
+  static getDevelopersEventListenerWhitelistUserPath(address) {
+    return CommonUtil.appendPath(PathUtil.getDevelopersEventListenerWhitelistPath(), address);
+  }
+
+  static getDevelopersFunctionRegisterUserListUserPath(address) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_FUNCTION_REGISTER,
+        PredefinedDbPaths.DEVELOPERS_USER_LIST, address]);
+  }
+
+  static getDevelopersMaxEventListenersPerDeveloperPath() {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_FUNCTION_REGISTER,
+        PredefinedDbPaths.DEVELOPERS_PARAMS, PredefinedDbPaths.DEVELOPERS_MAX_EVENT_LISTENERS_PER_DEVELOPER]);
+  }
 }
 
 module.exports = PathUtil;
