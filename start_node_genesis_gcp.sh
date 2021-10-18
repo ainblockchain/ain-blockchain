@@ -166,6 +166,11 @@ export ENABLE_GAS_FEE_WORKAROUND=true
 export LIGHTWEIGHT=false
 export STAKE=100000
 export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
+
+# NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
+export CORS_WHITELIST=*
+printf "CORS_WHITELIST=$CORS_WHITELIST\n"
+
 MAX_OLD_SPACE_SIZE_MB=5500
 
 printf "\nStarting up Blockchain Node server..\n\n"
