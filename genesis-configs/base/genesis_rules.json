@@ -134,6 +134,17 @@
       }
     }
   },
+  "developers": {
+    "event_listener_whitelist": {
+      "$user_addr": {
+        "$key": {
+          ".rule": {
+            "write": "auth.addr === $user_addr && util.validateEventListenerWhitelistData(auth.addr, data, newData, getValue) === true"
+          }
+        }
+      }
+    }
+  },
   "escrow": {
     "$source_account": {
       "$target_account": {

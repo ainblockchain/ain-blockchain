@@ -207,6 +207,13 @@ const PredefinedDbPaths = {
   CONSENSUS_VALIDATORS: 'validators',
   CONSENSUS_VOTE: 'vote',
   CONSENSUS_WHITELIST: 'whitelist',
+  // Developers
+  DEVELOPERS: 'developers',
+  DEVELOPERS_FUNCTION_REGISTER: 'function_register',
+  DEVELOPERS_PARAMS: 'params',
+  DEVELOPERS_MAX_EVENT_LISTENERS_PER_DEVELOPER: 'max_event_listeners_per_developer',
+  DEVELOPERS_USER_LIST: 'user_list',
+  DEVELOPERS_EVENT_LISTENER_WHITELIST: 'event_listener_whitelist',
   // Receipts
   RECEIPTS: 'receipts',
   RECEIPTS_ADDRESS: 'address',
@@ -790,6 +797,7 @@ function getGenesisValues() {
       values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
   CommonUtil.setJsObject(
       values, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
+  CommonUtil.setJsObject(values, [PredefinedDbPaths.DEVELOPERS], getDevelopersValue());
   return values;
 }
 
@@ -804,6 +812,9 @@ function getGenesisRules() {
     CommonUtil.setJsObject(
         rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
   }
+  CommonUtil.setJsObject(
+      rules, [PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_FUNCTION_REGISTER],
+      getDevelopersRule());
   return rules;
 }
 
@@ -817,7 +828,31 @@ function getGenesisOwners() {
   }
   CommonUtil.setJsObject(
       owners, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST], getWhitelistOwner());
+  CommonUtil.setJsObject(owners, [PredefinedDbPaths.DEVELOPERS], getDevelopersOwner());
   return owners;
+}
+
+function getDevelopersValue() {
+  const ownerAddress = CommonUtil.getJsObject(
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+  return {
+    [PredefinedDbPaths.DEVELOPERS_FUNCTION_REGISTER]: {
+      [PredefinedDbPaths.DEVELOPERS_PARAMS]: {
+        [PredefinedDbPaths.DEVELOPERS_MAX_EVENT_LISTENERS_PER_DEVELOPER]: 3
+      },
+      [PredefinedDbPaths.DEVELOPERS_USER_LIST]: {
+        [ownerAddress]: true
+      }
+    },
+    [PredefinedDbPaths.DEVELOPERS_EVENT_LISTENER_WHITELIST]: {
+      [ownerAddress]: {
+        0: 'https://events.ainetwork.ai/trigger',
+        1: 'https://events.ainize.ai/trigger',
+        2: 'http://echo-bot.ainetwork.ai/trigger',
+        3: 'http://localhost:3000/trigger'
+      }
+    }
+  };
 }
 
 function getShardingRule() {
@@ -826,6 +861,16 @@ function getShardingRule() {
   return {
     [PredefinedDbPaths.DOT_RULE]: {
       [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
+    }
+  };
+}
+
+function getDevelopersRule() {
+  const ownerAddress =
+      CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+  return {
+    [PredefinedDbPaths.DOT_RULE]: {
+      [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`
     }
   };
 }
@@ -858,6 +903,27 @@ function getWhitelistOwner() {
       [OwnerProperties.OWNERS]: {
         [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
         [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+      }
+    }
+  };
+}
+
+function getDevelopersOwner() {
+  const ownerAddress =
+      CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+  return {
+    [PredefinedDbPaths.DEVELOPERS_FUNCTION_REGISTER]: {
+      [PredefinedDbPaths.DOT_OWNER]: {
+        [OwnerProperties.OWNERS]: {
+          [ownerAddress]: buildOwnerPermissions(true, true, true, true)
+        }
+      }
+    },
+    [PredefinedDbPaths.DEVELOPERS_EVENT_LISTENER_WHITELIST]: {
+      [PredefinedDbPaths.DOT_OWNER]: {
+        [OwnerProperties.OWNERS]: {
+          [ownerAddress]: buildOwnerPermissions(true, true, true, true)
+        }
       }
     }
   };
