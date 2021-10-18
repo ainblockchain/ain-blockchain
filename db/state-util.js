@@ -204,8 +204,6 @@ function sanitizeFunctionInfo(functionInfoObj) {
         CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.FUNCTION_ID]);
     sanitized[FunctionProperties.EVENT_LISTENER] =
         CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.EVENT_LISTENER]);
-    sanitized[FunctionProperties.SERVICE_NAME] =
-        CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.SERVICE_NAME]);
   }
 
   return sanitized;
