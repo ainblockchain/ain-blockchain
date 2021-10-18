@@ -1,8 +1,7 @@
 const BlockchainNode = require('../node')
 const rimraf = require('rimraf');
-const chai = require('chai');
-const expect = chai.expect;
-const assert = chai.assert;
+const _ = require("lodash");
+const ainUtil = require('@ainblockchain/ain-util');
 const {
   CHAINS_DIR,
   GenesisToken,
@@ -18,11 +17,16 @@ const {
   StateVersions,
 } = require('../common/constants')
 const {
-  setNodeForTesting,
-} = require('./test-util');
+  verifyStateProof,
+} = require('../db/state-util');
 const Transaction = require('../tx-pool/transaction');
 const CommonUtil = require('../common/common-util');
-const ainUtil = require('@ainblockchain/ain-util');
+const {
+  setNodeForTesting,
+} = require('./test-util');
+const chai = require('chai');
+const expect = chai.expect;
+const assert = chai.assert;
 
 describe("DB initialization", () => {
   let node;
@@ -420,9 +424,9 @@ describe("DB operations", () => {
 
       it('when retrieving value with include_proof', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { includeProof: true }), {
-          "#state_ph": "0xf1f51cb458ef3881fefbecf91db5450e601d462099e43776863f2cbb78642286",
+          "#state_ph": "0x147ecaf6c56166b504cce1cbe690bc1d14c8e2f68c7937416eac32aaf97ecf2c",
           "ai": {
-            "#state_ph": "0xc49ca014a4d5328cfdb74164bcb8c00578719335194b07a8b91af1db0048f0bb",
+            "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec",
             "#state_ph:baz": "0x74e6d7e9818333ef5d6f4eb74dc0ee64537c9e142e4fe55e583476a62b539edf",
             "#state_ph:comcom": "0x90840252cdaacaf90d95c14f9d366f633fd53abf7a2c359f7abfb7f651b532b5",
             "#state_ph:foo": "0xea86f62ccb8ed9240afb6c9090be001ef7859bf40e0782f2b8d3579b3d8310a4",
@@ -449,7 +453,7 @@ describe("DB operations", () => {
             }
           },
           "shards": {
-            "#state_ph": "0x8ab46f23c6dddce173709cbc935a33d816825ffebabc4f23d02c3d2aea85fba3",
+            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223",
             "disabled_shard": {
               "#state_ph": "0xc0d5ac161046ecbf67ae597b3e1d96e53e78d71c0193234f78f2514dbf952161",
               "#state_ph:path": "0xd024945cba75febe35837d24c977a187a6339888d99d505c1be63251fec52279",
@@ -458,7 +462,7 @@ describe("DB operations", () => {
                 "#state_ph:sharding_enabled": "0x055600b34c3a8a69ea5dfc2cd2f92336933be237c8b265089f3114b38b4a540a",
                 "sharding_enabled": false,
               },
-              "path": 10,
+              "path": 10
             },
             "enabled_shard": {
               "#state_ph": "0x4b754c4a1a1f99d1ad9bc4a1edbeb7e2ceec6828313b52f8b880ee1cded3e4d3",
@@ -468,10 +472,10 @@ describe("DB operations", () => {
                 "#state_ph:sharding_enabled": "0x1eafc1e61d5b7b28f90a34330bf62265eeb466e012aa7318098003f37e4c61cc",
                 "sharding_enabled": true,
               },
-              "path": 10,
+              "path": 10
             }
           }
-        })
+        });
       });
 
       it('when retrieving value with include_version', () => {
@@ -4461,17 +4465,32 @@ describe("State info", () => {
     });
   });
 
-  describe("State proof - getStateProof / getProofHash", () => {
-    it("tests proof with a null case", () => {
+  describe("getStateProof / verifyStateProof", () => {
+    it("null case", () => {
       assert.deepEqual(null, node.db.getStateProof('/apps/test/test'));
+    });
+
+    it("non-null case", () => {
+      const proof = node.db.getStateProof('/values/token/symbol');
+      expect(proof).to.not.equal(null);
+      expect(proof['#state_ph']).to.not.equal(null);
+      const verifResult = verifyStateProof(proof);
+      _.set(verifResult, 'rootProofHash', 'erased');
+      assert.deepEqual(verifResult, {
+        "isVerified": true,
+        "mismatchedPath": null,
+        "rootProofHash": "erased",
+      });
+    });
+  });
+
+  describe("getProofHash", () => {
+    it("null case", () => {
       assert.deepEqual(null, node.db.getProofHash('/apps/test/test'));
     });
 
-    it("tests proof with owners, rules, values and functions", () => {
-      const proof = node.db.getStateProof('/');
-      expect(proof).to.not.equal(null);
-      expect(proof['#state_ph']).to.not.equal(null);
-      expect(node.db.getProofHash('/')).to.not.equal(null);
+    it("non-null case", () => {
+      expect(node.db.getProofHash('/values/token/symbol')).to.not.equal(null);
     });
   });
 });

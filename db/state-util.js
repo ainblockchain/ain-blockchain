@@ -537,15 +537,7 @@ function deleteStateTreeVersion(node) {
   }
 
   // 1. Delete children
-  if (FeatureFlags.enableRadixTreeLayers) {
-    numAffectedNodes += node.deleteRadixTreeVersion();
-  } else {
-    for (const label of node.getChildLabels()) {
-      const child = node.getChild(label);
-      node.deleteChild(label, false);  // shouldUpdateStateInfo = false
-      numAffectedNodes += deleteStateTreeVersion(child);
-    }
-  }
+  numAffectedNodes += node.deleteRadixTreeVersion();
   // 2. Reset node
   node.reset();
   numAffectedNodes++;
@@ -704,7 +696,9 @@ function verifyStateProofInternal(proof, curLabels) {
   let childIsVerified = true;
   let childMismatchedPath = null;
   const subProofList = [];
-  for (const [label, value] of Object.entries(proof)) {
+  // NOTE(platfowner): Sort child nodes by label radix for stability.
+  const sortedProof = Object.entries(proof).sort((a, b) => a[0].localeCompare(b[0]));
+  for (const [label, value] of sortedProof) {
     let childProofHash = null;
     if (CommonUtil.isDict(value)) {
       const subProof = verifyStateProofInternal(value, [...curLabels, label]);

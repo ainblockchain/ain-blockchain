@@ -21,6 +21,9 @@ const {
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
+const {
+  verifyStateProof,
+} = require('../db/state-util');
 const DB = require('../db');
 const {
   parseOrLog,
@@ -504,16 +507,23 @@ describe('Blockchain Node', () => {
 
     describe('/get_state_proof', () => {
       it('get_state_proof', () => {
-        const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/')
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/values/token/symbol')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['#state_ph']).to.not.equal(null);
+        const verifResult = verifyStateProof(body.result);
+        _.set(verifResult, 'rootProofHash', 'erased');
+        assert.deepEqual(verifResult, {
+          "isVerified": true,
+          "mismatchedPath": null,
+          "rootProofHash": "erased",
+        });
       });
     });
 
     describe('/get_proof_hash', () => {
       it('get_proof_hash', () => {
-        const body = parseOrLog(syncRequest('GET', server1 + '/get_proof_hash?ref=/')
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_proof_hash?ref=/values/token/symbol')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result).to.not.equal(null);
@@ -690,18 +700,25 @@ describe('Blockchain Node', () => {
 
     describe('ain_getStateProof', () => {
       it('returns correct value', () => {
-        const ref = '/';
+        const ref = '/values/token/symbol';
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
         .then(res => {
           expect(res.result.result['#state_ph']).to.not.equal(null);
+          const verifResult = verifyStateProof(res.result.result);
+          _.set(verifResult, 'rootProofHash', 'erased');
+          assert.deepEqual(verifResult, {
+            "isVerified": true,
+            "mismatchedPath": null,
+            "rootProofHash": "erased",
+          });
         })
       })
     })
 
     describe('ain_getProofHash', () => {
       it('returns correct value', () => {
-        const ref = '/';
+        const ref = '/values/token/symbol';
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getProofHash', request)
         .then(res => {
