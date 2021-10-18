@@ -183,6 +183,10 @@ fi
 
 MAX_OLD_SPACE_SIZE_MB=5500
 
+# NOTE(liayoo): This is a temporary setting.
+export CORS_WHITELIST=*
+printf "CORS_WHITELIST=$CORS_WHITELIST\n"
+
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
 printf "START_CMD='$START_CMD'\n"
 eval $START_CMD
