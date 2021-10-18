@@ -734,6 +734,9 @@ class CommonUtil {
       return null;
     }
     const inputList = input.split(',').filter((str) => !!str);
+    if (inputList.includes('*')) {
+      return '*';
+    }
     return [...new Set([...inputList])];
   }
 }
