@@ -2,7 +2,7 @@ const _ = require('lodash');
 const Websocket = require('ws');
 const {
   P2P_ROUTER_PORT,
-  P2pRouterStates
+  RouterMessageTypes
 } = require('../common/constants');
 const logger = require('../logger')('P2P_ROUTER');
 
@@ -41,7 +41,6 @@ class P2pRouter {
     // Set the number of maximum clients.
     this.routeServer.setMaxListeners(MAX_LISTENERS);
     this.routeServer.on('connection', (socket) => {
-      console.log('connected!!!!!!!!!!!!!')
       this.setRouterEventHandlers(socket);
     });
     logger.info(`Listening to peer-to-peer router on: ${P2P_ROUTER_PORT}\n`);
@@ -51,12 +50,23 @@ class P2pRouter {
     socket.on('message', (message) => {
       const parsedMessage = JSON.parse(message);
       switch (_.get(parsedMessage, 'type')) {
-        case P2pRouterStates.NEW_PEERS_REQUEST:
+        case RouterMessageTypes.CONNECTION_REQUEST:
+          if (Object.keys(this.server.inbound).length < this.server.maxInbound) {
+            const message = {
+              type: RouterMessageTypes.CONNECTION_RESPONSE,
+              data: this.client.getStatus()
+            }
+            socket.send(JSON.stringify(message))
+          } else {
+            // TODO(minsulee2): send list back.
+          }
+          break;
+        case RouterMessageTypes.NEW_PEERS_REQUEST:
           const connectionNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
           setPeerNodes(socket, connectionNodeInfo);
           const newManagedPeerInfoList = assignRandomPeers(connectionNodeInfo);
           const connectionMessage = {
-            type: P2pRouterStates.NEW_PEERS_RESPONSE,
+            type: RouterMessageTypes.NEW_PEERS_RESPONSE,
             data: {
               newManagedPeerInfoList,
               numLivePeers: getNumNodesAlive() - 1   // except for me.
@@ -80,16 +90,13 @@ class P2pRouter {
     });
 
     socket.on('close', (code) => {
-      const address = wsList[ws.uuid];
       logger.info(`Disconnected from node [${address ? abbrAddr(address) : 'unknown'}] ` +
         `with code: ${code}`);
-      delete wsList[ws.uuid];
       peerNodes[address].isAlive = false;
       printNodesInfo();
     });
 
     socket.on('error', (error) => {
-      const address = wsList[ws.uuid];
       logger.error(`Error in communication with node [${abbrAddr(address)}]: ` +
         `${JSON.stringify(error, null, 2)}`);
     });

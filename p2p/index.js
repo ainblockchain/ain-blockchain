@@ -21,8 +21,9 @@ const {
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
   trafficStatsManager,
-  P2pRouterStates,
-  INITIAL_P2P_ROUTER
+  RouterMessageTypes,
+  INITIAL_P2P_ROUTER,
+  ACCOUNT_INDEX
 } = require('../common/constants');
 const {
   getAddressFromSocket,
@@ -245,11 +246,18 @@ class P2pClient {
       const parsedMessage = JSON.parse(message);
       logger.info(`\n<< Message from [ROUTER]: ${JSON.stringify(parsedMessage, null, 2)}`);
       switch(_.get(parsedMessage, 'type')) {
-        case TrackerMessageTypes.NEW_PEERS_RESPONSE:
+        case RouterMessageTypes.CONNECTION_RESPONSE:
+          const peerInfo = parsedMessage.data;
+          this.connectToPeer(peerInfo);
+          if (this.server.node.state === BlockchainNodeStates.STARTING) {
+            await this.startBlockchainNode(1);
+          }
+          break;
+        case RouterMessageTypes.NEW_PEERS_RESPONSE:
           const data = parsedMessage.data;
           this.connectToPeers(data.newManagedPeerInfoList);
           if (this.server.node.state === BlockchainNodeStates.STARTING) {
-            await this.startBlockchainNode(data.numLivePeers);
+            await this.startBlockchainNode(1);
           }
           break;
         default:
@@ -323,8 +331,8 @@ class P2pClient {
     this.trackerWebSocket.on('open', () => {
       logger.info(`Connected to tracker (${TRACKER_WS_ADDR})`);
       this.clearIntervalForTrackerConnection();
-      this.setTrackerEventHandlers();
-      this.setIntervalForPeerConnection();
+      // this.setTrackerEventHandlers();
+      // this.setIntervalForPeerConnection();
       this.setIntervalForTrackerUpdate();
     });
     this.trackerWebSocket.on('error', (error) => {
@@ -586,16 +594,29 @@ class P2pClient {
       });
   }
 
+  requestRouterConnection = () => {
+    const message = {
+      type: RouterMessageTypes.CONNECTION_REQUEST,
+    }
+    this.routerWebSocket.send(JSON.stringify(message));
+  }
+
   connectToRouter() {
-    // TODO: do not connect to myself if I am a router myself.
+    // FIXME(minsu): do not connect to myself if I am a router myself.
+    if (Number(ACCOUNT_INDEX) === 0) {
+      this.startBlockchainNode(0);
+      return;
+    }
     this.routerWebSocket = new Websocket(INITIAL_P2P_ROUTER);
     this.routerWebSocket.on('open', () => {
       logger.info(`Connected to router (${INITIAL_P2P_ROUTER})`);
       this.clearIntervalForRouterConnection();
       this.setRouterEventHandlers();
+      this.requestRouterConnection();
       // TODO:
       // 1. ask vacancy
       // 2-1. connect to peer if available
+      // 2-2. close the router socket
       // 2-2. send new peer message if not available
       // 3. setInterval till full connections.
       // this.setIntervalForRouterConnection();
