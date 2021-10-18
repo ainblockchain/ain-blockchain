@@ -103,15 +103,15 @@ class StateNode {
         if (includeVersion) {
           obj[`${StateInfoProperties.VERSION}:${label}`] = childNode.getVersion();
         }
-        if (includeProof) {
-          obj[`${StateInfoProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
-        }
         if (includeTreeInfo) {
           obj[`${StateInfoProperties.NUM_PARENTS}:${label}`] = childNode.numParents();
           obj[`${StateInfoProperties.TREE_HEIGHT}:${label}`] = childNode.getTreeHeight();
           obj[`${StateInfoProperties.TREE_SIZE}:${label}`] = childNode.getTreeSize();
           obj[`${StateInfoProperties.TREE_BYTES}:${label}`] = childNode.getTreeBytes();
         }
+      }
+      if (includeProof) {
+        obj[`${StateInfoProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
       }
     }
     if (includeVersion) {
