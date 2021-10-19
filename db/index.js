@@ -69,6 +69,7 @@ class DB {
     this.stateManager = stateManager;
     this.ownerAddress = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    this.eventListenerWhitelistCache = null;
     this.cacheEventListenerWhitelist();
   }
 
@@ -89,9 +90,9 @@ class DB {
    * the latest hash and the mapping of whitelisted event listeners.
    */
   cacheEventListenerWhitelist() {
-    const current = _.get(this.eventListenerWhitelistCache, 'hash');
+    const current = _.get(this.eventListenerWhitelistCache, 'hash', null);
     const eventListenerWhitelistPath = PathUtil.getDevelopersEventListenerWhitelistPath();
-    const updated = this.getStateProof(eventListenerWhitelistPath);
+    const updated = this.getProofHash(PredefinedDbPaths.VALUES_ROOT + eventListenerWhitelistPath);
     if (!current || current !== updated) {
       const rawWhitelist = this.getValue(eventListenerWhitelistPath);
       const whitelist = DB.formatRawEventListenerWhitelist(rawWhitelist);
