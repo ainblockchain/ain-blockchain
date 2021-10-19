@@ -328,25 +328,27 @@ class PathUtil {
     return CommonUtil.formatPath([PredefinedDbPaths.RECEIPTS, txHash]);
   }
 
-  static getDevelopersEventListenerWhitelistPath() {
+  static getDevelopersRestFunctionsUrlWhitelistPath() {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_EVENT_LISTENER_WHITELIST]);
+        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS,
+        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST]);
   }
 
-  static getDevelopersEventListenerWhitelistUserPath(address) {
-    return CommonUtil.appendPath(PathUtil.getDevelopersEventListenerWhitelistPath(), address);
+  static getDevelopersRestFunctionsUrlWhitelistUserPath(address) {
+    return CommonUtil.appendPath(PathUtil.getDevelopersRestFunctionsUrlWhitelistPath(), address);
   }
 
-  static getDevelopersFunctionRegisterUserListUserPath(address) {
+  static getDevelopersRestFunctionsUserWhitelistUserPath(address) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_FUNCTION_REGISTER,
-        PredefinedDbPaths.DEVELOPERS_USER_LIST, address]);
+        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS,
+        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST, address]);
   }
 
-  static getDevelopersMaxEventListenersPerDeveloperPath() {
+  static getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath() {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_FUNCTION_REGISTER,
-        PredefinedDbPaths.DEVELOPERS_PARAMS, PredefinedDbPaths.DEVELOPERS_MAX_EVENT_LISTENERS_PER_DEVELOPER]);
+        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS,
+        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_PARAMS,
+        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER]);
   }
 }
 

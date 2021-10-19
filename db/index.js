@@ -69,8 +69,8 @@ class DB {
     this.stateManager = stateManager;
     this.ownerAddress = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-    this.eventListenerWhitelistCache = null;
-    this.cacheEventListenerWhitelist();
+    this.restFunctionsUrlWhitelistCache = null;
+    this.cacheRestFunctionsUrlWhitelist();
   }
 
   static formatRawEventListenerWhitelist(raw) {
@@ -86,17 +86,17 @@ class DB {
 
   /**
    * Compares the state proof hash of the current eventListenerWhitelistCache and the state proof
-   * hash at the path /developers/event_listener_whitelist, and if outdated, update the cache of
+   * hash at the path /developers/rest_functions/url_whitelist, and if outdated, update the cache of
    * the latest hash and the mapping of whitelisted event listeners.
    */
-  cacheEventListenerWhitelist() {
-    const current = _.get(this.eventListenerWhitelistCache, 'hash', null);
-    const eventListenerWhitelistPath = PathUtil.getDevelopersEventListenerWhitelistPath();
+  cacheRestFunctionsUrlWhitelist() {
+    const current = _.get(this.restFunctionsUrlWhitelistCache, 'hash', null);
+    const eventListenerWhitelistPath = PathUtil.getDevelopersRestFunctionsUrlWhitelistPath();
     const updated = this.getProofHash(PredefinedDbPaths.VALUES_ROOT + eventListenerWhitelistPath);
     if (!current || current !== updated) {
       const rawWhitelist = this.getValue(eventListenerWhitelistPath);
       const whitelist = DB.formatRawEventListenerWhitelist(rawWhitelist);
-      this.eventListenerWhitelistCache = { hash: updated, whitelist };
+      this.restFunctionsUrlWhitelistCache = { hash: updated, whitelist };
     }
   }
 

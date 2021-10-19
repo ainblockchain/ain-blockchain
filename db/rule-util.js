@@ -300,11 +300,11 @@ class RuleUtil {
 
   validateEventListenerWhitelistData(userAddr, data, newData, getValue) {
     const PathUtil = require('../common/path-util');
-    if (getValue(PathUtil.getDevelopersFunctionRegisterUserListUserPath(userAddr)) !== true) {
+    if (getValue(PathUtil.getDevelopersRestFunctionsUserWhitelistUserPath(userAddr)) !== true) {
       return false;
     }
-    const maxEventListenersPerDeveloper = getValue(PathUtil.getDevelopersMaxEventListenersPerDeveloperPath());
-    const existingEventListeners = getValue(PathUtil.getDevelopersEventListenerWhitelistUserPath(userAddr)) || {};
+    const maxEventListenersPerDeveloper = getValue(PathUtil.getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath());
+    const existingEventListeners = getValue(PathUtil.getDevelopersRestFunctionsUrlWhitelistUserPath(userAddr)) || {};
     return data !== null || newData === null ||
         Object.keys(existingEventListeners).length < maxEventListenersPerDeveloper;
   }
