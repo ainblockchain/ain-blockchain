@@ -295,11 +295,21 @@ describe("DB operations", () => {
 
       it('when retrieving value near top of database with is_shallow', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { isShallow: true }), {
-          'ai': true,
-          'increment': true,
-          'decrement': true,
-          'nested': true,
-          'shards': true,
+          'ai': {
+            "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec"
+          },
+          'increment': {
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8"
+          },
+          'decrement': {
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8"
+          },
+          'nested': {
+            "#state_ph": "0x8763e301c728729e38c1f5500a2af7163783bdf0948a7baf7bc87b35f33b347f"
+          },
+          'shards': {
+            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223"
+          },
         })
       });
 
@@ -584,7 +594,9 @@ describe("DB operations", () => {
 
       it("when retrieving existing function config with is_shallow", () => {
         assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isShallow: true }), {
-          some: true,
+          some: {
+            "#state_ph": "0x14df539ce39f11f6f049adf3013eae1197a71a4ce0bdbfd66d3f8adb9d97f61c"
+          },
         });
       })
     })
@@ -612,7 +624,9 @@ describe("DB operations", () => {
 
       it('when retrieving existing rule config with is_shallow', () => {
         assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isShallow: true }), {
-          some: true,
+          some: {
+            "#state_ph": "0x65d1d444e7f35a54ae9c196d83fda0ffbf93f91341a2470b83d0d512419aaf28"
+          },
         });
       });
     })
@@ -665,7 +679,9 @@ describe("DB operations", () => {
 
       it("when retrieving existing owner config with is_shallow", () => {
         assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isShallow: true }), {
-          some: true,
+          some: {
+            "#state_ph": "0x5086ccf28e98a15e4d1de16b1f78e3b429e3049baeb39ea22041d75dd16f5800"
+          },
         })
       })
     })
