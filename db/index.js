@@ -87,7 +87,7 @@ class DB {
   /**
    * Compares the state proof hash of the current eventListenerWhitelistCache and the state proof
    * hash at the path /developers/rest_functions/url_whitelist, and if outdated, update the cache of
-   * the latest hash and the mapping of whitelisted event listeners.
+   * the latest hash and the mapping of whitelisted REST function urls.
    */
   cacheRestFunctionsUrlWhitelist() {
     const current = _.get(this.restFunctionsUrlWhitelistCache, 'hash', null);
