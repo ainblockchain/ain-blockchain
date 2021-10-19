@@ -158,7 +158,7 @@ class BlockchainNode {
           logger.error(`[${LOG_HEADER}] ${err.stack}`);
         }
       }
-      logger.info(`[${LOG_HEADER}] Fast mode sync done!`);
+      logger.info(`[${LOG_HEADER}] Fast mode DB snapshot loading done!`);
     } else {
       logger.info(`[${LOG_HEADER}] Initializing node in 'full' mode..`);
     }
@@ -259,7 +259,7 @@ class BlockchainNode {
   }
 
   updateSnapshots(blockNumber) {
-    if (blockNumber > 0 && blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
+    if (blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = this.dumpFinalDbStates();
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
