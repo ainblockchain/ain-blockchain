@@ -73,29 +73,29 @@ class DB {
     this.cacheRestFunctionsUrlWhitelist();
   }
 
-  static formatRawEventListenerWhitelist(raw) {
+  static formatRawRestFunctionsWhitelist(raw) {
     if (CommonUtil.isEmpty(raw) || !CommonUtil.isDict(raw)) return {};
     const whitelist = {};
     for (const val of Object.values(raw)) {
-      for (const eventListener of Object.values(val)) {
-        whitelist[eventListener] = true;
+      for (const url of Object.values(val)) {
+        whitelist[url] = true;
       }
     }
     return whitelist;
   }
 
   /**
-   * Compares the state proof hash of the current eventListenerWhitelistCache and the state proof
+   * Compares the state proof hash of the current restFunctionsUrlWhitelistCache and the state proof
    * hash at the path /developers/rest_functions/url_whitelist, and if outdated, update the cache of
    * the latest hash and the mapping of whitelisted REST function urls.
    */
   cacheRestFunctionsUrlWhitelist() {
     const current = _.get(this.restFunctionsUrlWhitelistCache, 'hash', null);
-    const eventListenerWhitelistPath = PathUtil.getDevelopersRestFunctionsUrlWhitelistPath();
-    const updated = this.getProofHash(PredefinedDbPaths.VALUES_ROOT + eventListenerWhitelistPath);
+    const restFunctionsUrlWhitelistPath = PathUtil.getDevelopersRestFunctionsUrlWhitelistPath();
+    const updated = this.getProofHash(PredefinedDbPaths.VALUES_ROOT + restFunctionsUrlWhitelistPath);
     if (!current || current !== updated) {
-      const rawWhitelist = this.getValue(eventListenerWhitelistPath);
-      const whitelist = DB.formatRawEventListenerWhitelist(rawWhitelist);
+      const rawWhitelist = this.getValue(restFunctionsUrlWhitelistPath);
+      const whitelist = DB.formatRawRestFunctionsWhitelist(rawWhitelist);
       this.restFunctionsUrlWhitelistCache = { hash: updated, whitelist };
     }
   }
