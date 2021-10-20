@@ -556,7 +556,7 @@ describe('Blockchain Node', () => {
         assert.deepEqual(body.result, {
           "#tree_height": 23,
           "#tree_size": 61,
-          "#tree_bytes": 11742,
+          "#tree_bytes": 11738,
         });
       });
     });
@@ -751,7 +751,7 @@ describe('Blockchain Node', () => {
         .then(res => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
-            "#tree_bytes": 11742,
+            "#tree_bytes": 11738,
             "#tree_height": 23,
             "#tree_size": 61,
           });
@@ -1500,7 +1500,7 @@ describe('Blockchain Node', () => {
             },
             "state": {
               "app": {
-                "test": 4398
+                "test": 4394
               },
               "service": 0
             }
@@ -1885,7 +1885,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 1328
+                    "test": 1324
                   },
                   "service": 0
                 }
@@ -1978,7 +1978,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 4398
+                    "test": 4394
                   },
                   "service": 0
                 }
@@ -2284,7 +2284,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 1328
+                    "test": 1324
                   },
                   "service": 0
                 }
@@ -2377,7 +2377,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 4398
+                    "test": 4394
                   },
                   "service": 0
                 }
