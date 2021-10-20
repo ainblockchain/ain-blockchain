@@ -874,28 +874,28 @@ describe("state-util", () => {
         "0x11111": {
           // Missing function_type
           "function_id": "0x11111",
-          "event_listener": "https://events.ainetwork.ai/trigger",
+          "function_url": "https://events.ainetwork.ai/trigger",
         }
       }), {isValid: false, invalidPath: '/0x11111'});
       assert.deepEqual(isValidFunctionConfig({
         "0x11111": {
           "function_type": "REST",
           // Missing function_id
-          "event_listener": "https://events.ainetwork.ai/trigger",
+          "function_url": "https://events.ainetwork.ai/trigger",
         }
       }), {isValid: false, invalidPath: '/0x11111'});
       assert.deepEqual(isValidFunctionConfig({
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
-          // Missing event_listener
+          // Missing function_url
         }
       }), {isValid: false, invalidPath: '/0x11111'});
       assert.deepEqual(isValidFunctionConfig({
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
-          "event_listener": "https://events.ainetwork.ai/trigger",
+          "function_url": "https://events.ainetwork.ai/trigger",
           "unknown_property": "some value"  // Unknown property
         }
       }), {isValid: false, invalidPath: '/0x11111'});
@@ -903,14 +903,14 @@ describe("state-util", () => {
         "0x11111": {
           "function_type": "REST",
           "function_id": "some other fid",  // Wrong function_id
-          "event_listener": "https://events.ainetwork.ai/trigger",
+          "function_url": "https://events.ainetwork.ai/trigger",
         }
       }), {isValid: false, invalidPath: '/0x11111/function_id'});
       assert.deepEqual(isValidFunctionConfig({
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
-          "event_listener": "some non-url value",  // Invalid url
+          "function_url": "some non-url value",  // Invalid url
         }
       }), {isValid: false, invalidPath: '/0x11111'});
     })
@@ -924,7 +924,7 @@ describe("state-util", () => {
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
-          "event_listener": "https://events.ainetwork.ai/trigger",
+          "function_url": "https://events.ainetwork.ai/trigger",
         },
         "fid_to_delete": null  // To be deleted
       }), {isValid: true, invalidPath: ''});
@@ -995,7 +995,7 @@ describe("state-util", () => {
           "0x11111": {
             "function_type": "REST",
             "function_id": "0x11111",
-            "event_listener": "https://events.ainetwork.ai/trigger",
+            "function_url": "https://events.ainetwork.ai/trigger",
           }
         }
       }), {isValid: true, invalidPath: ''});
@@ -1009,7 +1009,7 @@ describe("state-util", () => {
             "0x11111": {
               "function_type": "REST",
               "function_id": "0x11111",
-              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_url": "https://events.ainetwork.ai/trigger",
             }
           }
         },
@@ -1022,7 +1022,7 @@ describe("state-util", () => {
             "0x11111": {
               "function_type": "REST",
               "function_id": "0x11111",
-              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_url": "https://events.ainetwork.ai/trigger",
             }
           }
         }

@@ -47,7 +47,7 @@ describe("Functions", () => {
           ".function": {
             "0x11111": {
               "function_type": "REST",
-              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111"
             }
           }
@@ -56,12 +56,12 @@ describe("Functions", () => {
           ".function": {
             "0x11111": {
               "function_type": "REST",
-              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111"
             },
             "0x22222": {
               "function_type": "REST",
-              "event_listener": "https://events.ainize.ai/trigger",
+              "function_url": "https://events.ainize.ai/trigger",
               "function_id": "0x22222"
             }
           }
@@ -70,7 +70,7 @@ describe("Functions", () => {
           ".function": {
             "0x33333": {
               "function_type": "REST",
-              "event_listener": "http://localhost:3000/trigger",
+              "function_url": "http://localhost:3000/trigger",
               "function_id": "0x33333"
             }
           }
@@ -79,7 +79,7 @@ describe("Functions", () => {
           ".function": {
             "0x33333": {
               "function_type": "REST",
-              "event_listener": "https://events.comcom.ai/trigger",
+              "function_url": "https://events.comcom.ai/trigger",
               "function_id": "0x33333"
             }
           }
@@ -155,7 +155,7 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody1, {
             "function": {
-              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111",
               "function_type": "REST",
             },
@@ -207,7 +207,7 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody1, {
             "function": {
-              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111",
               "function_type": "REST",
             },
@@ -230,7 +230,7 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody2, {
             "function": {
-              "event_listener": "https://events.ainize.ai/trigger",
+              "function_url": "https://events.ainize.ai/trigger",
               "function_id": "0x22222",
               "function_type": "REST",
             },
@@ -318,7 +318,7 @@ describe("Functions", () => {
           ".function": {
             "newly_whitelisted": {
               "function_type": "REST",
-              "event_listener": "http://localhost:3000",
+              "function_url": "http://localhost:3000",
               "function_id": "newly_whitelisted"
             }
           }
@@ -422,7 +422,7 @@ describe("Functions", () => {
           ".function": {
             "0x11111": {
               "function_type": "REST",
-              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111"
             }
           }

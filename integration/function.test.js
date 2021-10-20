@@ -390,7 +390,7 @@ describe('Native Function', () => {
                 ".function": {
                   "0x11111": {
                     "function_type": "REST",
-                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "0x11111"
                   }
                 }

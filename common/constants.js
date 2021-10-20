@@ -387,10 +387,9 @@ const RuleProperties = {
  * @enum {string}
  */
 const FunctionProperties = {
-  EVENT_LISTENER: 'event_listener',
   FUNCTION_ID: 'function_id',
   FUNCTION_TYPE: 'function_type',
-  SERVICE_NAME: 'service_name',
+  FUNCTION_URL: 'function_url',
 };
 
 /**
