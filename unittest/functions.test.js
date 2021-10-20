@@ -38,6 +38,8 @@ describe("Functions", () => {
       const refPathRestWithoutListener = "/apps/test/test_function/some/path/rest_without_listener";
       const refPathRestNotWhitelisted = "/apps/test/test_function/some/path/rest_not_whitelisted";
       const refPathNull = "/apps/test/test_function/some/path/null";
+      const refFullPathFunctionUrlWhitelist = '/values/developers/rest_functions/url_whitelist/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0';
+      const refPathRestNewlyWhitelisted = '/apps/test/test_function/some/path/rest_newly_whitelisted';
       let requestBody1 = null, requestBody2 = null;
 
       before(() => {
@@ -45,8 +47,7 @@ describe("Functions", () => {
           ".function": {
             "0x11111": {
               "function_type": "REST",
-              "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111"
             }
           }
@@ -55,14 +56,12 @@ describe("Functions", () => {
           ".function": {
             "0x11111": {
               "function_type": "REST",
-              "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111"
             },
             "0x22222": {
               "function_type": "REST",
-              "event_listener": "https://events.ainize.ai/trigger",
-              "service_name": "https://ainize.ai",
+              "function_url": "https://events.ainize.ai/trigger",
               "function_id": "0x22222"
             }
           }
@@ -71,8 +70,7 @@ describe("Functions", () => {
           ".function": {
             "0x33333": {
               "function_type": "REST",
-              "event_listener": "http://localhost:3000/trigger",
-              "service_name": "http://localhost:3000",
+              "function_url": "http://localhost:3000/trigger",
               "function_id": "0x33333"
             }
           }
@@ -81,8 +79,7 @@ describe("Functions", () => {
           ".function": {
             "0x33333": {
               "function_type": "REST",
-              "event_listener": "https://events.comcom.ai/trigger",
-              "service_name": "https://comcom.ai",
+              "function_url": "https://events.comcom.ai/trigger",
               "function_id": "0x33333"
             }
           }
@@ -150,7 +147,7 @@ describe("Functions", () => {
             "bandwidth_gas_amount": 10,
           }
         });
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -158,10 +155,9 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody1, {
             "function": {
-              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai",
             },
             "transaction": {
               "tx_body": {
@@ -203,7 +199,7 @@ describe("Functions", () => {
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestMulti),
             null, null, null, null, transaction);
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 2,
             trigger_count: 2,
@@ -211,10 +207,9 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody1, {
             "function": {
-              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai",
             },
             "transaction": {
               "tx_body": {
@@ -235,10 +230,9 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody2, {
             "function": {
-              "event_listener": "https://events.ainize.ai/trigger",
+              "function_url": "https://events.ainize.ai/trigger",
               "function_id": "0x22222",
               "function_type": "REST",
-              "service_name": "https://ainize.ai",
             },
             "transaction": {
               "tx_body": {
@@ -280,7 +274,7 @@ describe("Functions", () => {
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestWithoutListener),
             null, null, null, null, transaction);
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -309,14 +303,84 @@ describe("Functions", () => {
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestNotWhitelisted),
             null, null, null, null, transaction);
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
-            function_count: 1,
+            func_count: 1,
             trigger_count: 0,
             fail_count: 0,
           });
         });
       })
+
+      it('REST function newly whitelisted', () => {
+        node.db.writeDatabase(CommonUtil.parsePath(refFullPathFunctionUrlWhitelist), 'http://localhost:3000');
+        node.db.setFunction(refPathRestNewlyWhitelisted, {
+          ".function": {
+            "newly_whitelisted": {
+              "function_type": "REST",
+              "function_url": "http://localhost:3000",
+              "function_id": "newly_whitelisted"
+            }
+          }
+        }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' });
+        const transaction = {
+          "tx_body": {
+            "operation": {
+              "ref": refPathRestNewlyWhitelisted,
+              "type": "SET_VALUE",
+              "value": 1000
+            },
+            "nonce": 123,
+            "timestamp": 1566736760322,
+            "gas_price": 1,
+          },
+          "extra": {
+            "created_at": 1566736760323,
+            "executed_at": 1566736760324,
+          }
+        }
+        const { promise_results } = functions.triggerFunctions(
+            CommonUtil.parsePath(refPathRestNewlyWhitelisted),
+            null, null, null, null, transaction);
+        return promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 1,
+            fail_count: 1
+          })
+        })
+      });
+
+      it('REST function newly de-whitelisted', () => {
+        // delete function from the whitelist
+        node.db.writeDatabase(CommonUtil.parsePath(refFullPathFunctionUrlWhitelist), null);
+        const transaction = {
+          "tx_body": {
+            "operation": {
+              "ref": refPathRestNewlyWhitelisted,
+              "type": "SET_VALUE",
+              "value": 1000
+            },
+            "nonce": 123,
+            "timestamp": 1566736760322,
+            "gas_price": 1,
+          },
+          "extra": {
+            "created_at": 1566736760323,
+            "executed_at": 1566736760324,
+          }
+        }
+        const { promise_results } = functions.triggerFunctions(
+            CommonUtil.parsePath(refPathRestNewlyWhitelisted),
+            null, null, null, null, transaction);
+        return promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 0,
+            fail_count: 0
+          })
+        })
+      });
 
       it("null function", () => {
         const transaction = {
@@ -338,9 +402,9 @@ describe("Functions", () => {
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathNull),
             null, null, null, null, transaction);
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
-            function_count: 1,
+            func_count: 1,
             trigger_count: 0,
             fail_count: 0,
           });
@@ -358,8 +422,7 @@ describe("Functions", () => {
           ".function": {
             "0x11111": {
               "function_type": "REST",
-              "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111"
             }
           }
@@ -419,7 +482,7 @@ describe("Functions", () => {
             "bandwidth_gas_amount": 1000
           }
         });
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -467,7 +530,7 @@ describe("Functions", () => {
             "bandwidth_gas_amount": 0
           }
         });
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -502,7 +565,7 @@ describe("Functions", () => {
             "bandwidth_gas_amount": 10,
           }
         });
-        promise_results.then((resp) => {
+        return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,

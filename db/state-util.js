@@ -202,10 +202,8 @@ function sanitizeFunctionInfo(functionInfoObj) {
     sanitized[FunctionProperties.FUNCTION_TYPE] = functionType;
     sanitized[FunctionProperties.FUNCTION_ID] =
         CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.FUNCTION_ID]);
-    sanitized[FunctionProperties.EVENT_LISTENER] =
-        CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.EVENT_LISTENER]);
-    sanitized[FunctionProperties.SERVICE_NAME] =
-        CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.SERVICE_NAME]);
+    sanitized[FunctionProperties.FUNCTION_URL] =
+        CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.FUNCTION_URL]);
   }
 
   return sanitized;
@@ -221,9 +219,9 @@ function isValidFunctionInfo(functionInfoObj) {
   if (!isIdentical) {
     return false;
   }
-  const eventListener = functionInfoObj[FunctionProperties.EVENT_LISTENER];
-  if (eventListener !== undefined &&
-      !validUrl.isUri(functionInfoObj[FunctionProperties.EVENT_LISTENER])) {
+  const functionUrl = functionInfoObj[FunctionProperties.FUNCTION_URL];
+  if (functionUrl !== undefined &&
+      !validUrl.isUri(functionInfoObj[FunctionProperties.FUNCTION_URL])) {
     return false;
   }
   return true;

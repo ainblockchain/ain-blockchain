@@ -142,10 +142,9 @@ async function setUp() {
           value: {
             ".function": {
               "fid": {
-                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_url": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             }
           }
@@ -548,10 +547,9 @@ describe('Sharding', async () => {
           assert.deepEqual(body.result, {
             '.function': {
               "fid": {
-                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_url": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             }
           });
@@ -565,10 +563,9 @@ describe('Sharding', async () => {
           assert.deepEqual(body.result, {
             '.function': {
               "fid": {
-                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_url": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             }
           });
@@ -655,10 +652,9 @@ describe('Sharding', async () => {
             "matched_config": {
               "config": {
                 "fid": {
-                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_url": "https://events.ainetwork.ai/trigger",
                   "function_id": "fid",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               },
               "path": "/apps/test/test_function/some/path"
@@ -681,10 +677,9 @@ describe('Sharding', async () => {
             "matched_config": {
               "config": {
                 "fid": {
-                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_url": "https://events.ainetwork.ai/trigger",
                   "function_id": "fid",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               },
               "path": "/apps/afan/apps/test/test_function/some/path"
@@ -884,10 +879,9 @@ describe('Sharding', async () => {
               {
                 ".function": {
                   "fid": {
-                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 }
               },
@@ -962,10 +956,9 @@ describe('Sharding', async () => {
               {
                 ".function": {
                   "fid": {
-                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 }
               },
@@ -1051,10 +1044,9 @@ describe('Sharding', async () => {
               "matched_config": {
                 "config": {
                   "fid": {
-                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 },
                 "path": "/apps/test/test_function/some/path"
@@ -1078,10 +1070,9 @@ describe('Sharding', async () => {
               "matched_config": {
                 "config": {
                   "fid": {
-                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 },
                 "path": "/apps/afan/apps/test/test_function/some/path"
@@ -1333,10 +1324,9 @@ describe('Sharding', async () => {
             value: {
               ".function": {
                 "fid": {
-                  "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+                  "function_url": "http://echo-bot.ainetwork.ai/trigger",  // Listener 2
                   "function_id": "fid",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               }
             },
@@ -1354,10 +1344,9 @@ describe('Sharding', async () => {
             value: {
               ".function": {
                 "fid": {
-                  "event_listener": "https://events.ainetwork.ai/trigger3",  // Listener 3
+                  "function_url": "http://localhost:3000/trigger",  // Listener 3
                   "function_id": "fid",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               }
             },
@@ -1480,10 +1469,9 @@ describe('Sharding', async () => {
                 value: {
                   ".function": {
                     "fid": {
-                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_url": "https://events.ainetwork.ai/trigger",
                       "function_id": "fid",
                       "function_type": "REST",
-                      "service_name": "https://ainetwork.ai"
                     }
                   }
                 }
@@ -1555,7 +1543,7 @@ describe('Sharding', async () => {
               },
               "state": {
                 "app": {
-                  "test": 4422
+                  "test": 4198
                 },
                 "service": 0
               }
@@ -1592,10 +1580,9 @@ describe('Sharding', async () => {
                 value: {
                   ".function": {
                     "fid": {
-                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_url": "https://events.ainetwork.ai/trigger",
                       "function_id": "fid",
                       "function_type": "REST",
-                      "service_name": "https://ainetwork.ai"
                     }
                   }
                 },

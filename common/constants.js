@@ -123,6 +123,12 @@ const STATE_GAS_COEFFICIENT = 1;
 const TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
 const TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
 const DEFAULT_REQUEST_BODY_SIZE_LIMIT = '100mb';
+const DEFAULT_DEVELOPERS_URL_WHITELIST = [
+  'https://events.ainetwork.ai/trigger',
+  'https://events.ainize.ai/trigger',
+  'http://echo-bot.ainetwork.ai/trigger',
+  'http://localhost:3000/trigger'
+];
 
 // ** Enums **
 /**
@@ -207,6 +213,13 @@ const PredefinedDbPaths = {
   CONSENSUS_VALIDATORS: 'validators',
   CONSENSUS_VOTE: 'vote',
   CONSENSUS_WHITELIST: 'whitelist',
+  // Developers
+  DEVELOPERS: 'developers',
+  DEVELOPERS_REST_FUNCTIONS: 'rest_functions',
+  DEVELOPERS_REST_FUNCTIONS_PARAMS: 'params',
+  DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER: 'max_urls_per_developer',
+  DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST: 'user_whitelist',
+  DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST: 'url_whitelist',
   // Receipts
   RECEIPTS: 'receipts',
   RECEIPTS_ADDRESS: 'address',
@@ -374,10 +387,9 @@ const RuleProperties = {
  * @enum {string}
  */
 const FunctionProperties = {
-  EVENT_LISTENER: 'event_listener',
   FUNCTION_ID: 'function_id',
   FUNCTION_TYPE: 'function_type',
-  SERVICE_NAME: 'service_name',
+  FUNCTION_URL: 'function_url',
 };
 
 /**
@@ -790,6 +802,7 @@ function getGenesisValues() {
       values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
   CommonUtil.setJsObject(
       values, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
+  CommonUtil.setJsObject(values, [PredefinedDbPaths.DEVELOPERS], getDevelopersValue());
   return values;
 }
 
@@ -804,6 +817,9 @@ function getGenesisRules() {
     CommonUtil.setJsObject(
         rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
   }
+  CommonUtil.setJsObject(
+      rules, [PredefinedDbPaths.DEVELOPERS],
+      getDevelopersRule());
   return rules;
 }
 
@@ -817,7 +833,31 @@ function getGenesisOwners() {
   }
   CommonUtil.setJsObject(
       owners, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST], getWhitelistOwner());
+  CommonUtil.setJsObject(owners, [PredefinedDbPaths.DEVELOPERS], getDevelopersOwner());
   return owners;
+}
+
+function getDevelopersValue() {
+  const ownerAddress = CommonUtil.getJsObject(
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+  const maxFunctionUrlsPerDeveloper = GenesisParams.resource.MAX_FUNCTION_URLS_PER_DEVELOPER;
+  const defaultFunctionUrlWhitelist = {};
+  DEFAULT_DEVELOPERS_URL_WHITELIST.forEach((url, index) => {
+    defaultFunctionUrlWhitelist[index] = url;
+  })
+  return {
+    [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS]: {
+      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_PARAMS]: {
+        [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER]: maxFunctionUrlsPerDeveloper
+      },
+      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST]: {
+        [ownerAddress]: true
+      },
+      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST]: {
+        [ownerAddress]: defaultFunctionUrlWhitelist
+      }
+    }
+  };
 }
 
 function getShardingRule() {
@@ -826,6 +866,27 @@ function getShardingRule() {
   return {
     [PredefinedDbPaths.DOT_RULE]: {
       [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
+    }
+  };
+}
+
+function getDevelopersRule() {
+  const ownerAddress =
+      CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+  return {
+    [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS]: {
+      [PredefinedDbPaths.DOT_RULE]: {
+        [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`
+      },
+      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST]: {
+        '$user_addr': {
+          '$key': {
+            [PredefinedDbPaths.DOT_RULE]: {
+              [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}' || (auth.addr === $user_addr && util.validateRestFunctionsUrlWhitelistData(auth.addr, data, newData, getValue) === true)`
+            }
+          }
+        }
+      }
     }
   };
 }
@@ -858,6 +919,20 @@ function getWhitelistOwner() {
       [OwnerProperties.OWNERS]: {
         [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
         [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+      }
+    }
+  };
+}
+
+function getDevelopersOwner() {
+  const ownerAddress =
+      CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+  return {
+    [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS]: {
+      [PredefinedDbPaths.DOT_OWNER]: {
+        [OwnerProperties.OWNERS]: {
+          [ownerAddress]: buildOwnerPermissions(true, true, true, true)
+        }
       }
     }
   };
