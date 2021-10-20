@@ -103,7 +103,7 @@ RANDOM_OPERATION = [
       "fid": {
         "function_type": "REST",
         "function_id": "fid",
-        "event_listener": "https://events.ainetwork.ai/trigger",
+        "function_url": "https://events.ainetwork.ai/trigger",
       },
     }
   }}],

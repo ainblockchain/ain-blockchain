@@ -125,7 +125,7 @@ async function setUp() {
               "fid": {
                 "function_type": "REST",
                 "function_id": "fid",
-                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_url": "https://events.ainetwork.ai/trigger",
               },
             }
           }
@@ -270,7 +270,7 @@ describe('Blockchain Node', () => {
               "fid": {
                 "function_type": "REST",
                 "function_id": "fid",
-                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_url": "https://events.ainetwork.ai/trigger",
               },
             }
           }
@@ -331,7 +331,7 @@ describe('Blockchain Node', () => {
           "matched_config": {
             "config": {
               "fid": {
-                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_url": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
               }
@@ -473,7 +473,7 @@ describe('Blockchain Node', () => {
                 "fid": {
                   "function_type": "REST",
                   "function_id": "fid",
-                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_url": "https://events.ainetwork.ai/trigger",
                 },
               }
             },
@@ -591,7 +591,7 @@ describe('Blockchain Node', () => {
             "matched_config": {
               "config": {
                 "fid": {
-                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_url": "https://events.ainetwork.ai/trigger",
                   "function_id": "fid",
                   "function_type": "REST",
                 }
@@ -1095,7 +1095,7 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultBefore, {
           ".function": {
             "fid": {
-              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "fid",
               "function_type": "REST",
             }
@@ -1107,7 +1107,7 @@ describe('Blockchain Node', () => {
           value: {
             ".function": {
               "fid": {
-                "event_listener": "http://echo-bot.ainetwork.ai/trigger",  // Listener 2
+                "function_url": "http://echo-bot.ainetwork.ai/trigger",  // Listener 2
                 "function_id": "fid",
                 "function_type": "REST",
               }
@@ -1131,7 +1131,7 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultAfter, {
           ".function": {
             "fid": {
-              "event_listener": "http://echo-bot.ainetwork.ai/trigger",  // Listener 2
+              "function_url": "http://echo-bot.ainetwork.ai/trigger",  // Listener 2
               "function_id": "fid",
               "function_type": "REST",
             }
@@ -1151,7 +1151,7 @@ describe('Blockchain Node', () => {
           value: {
             ".function": {
               "fid": {
-                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_url": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
               }
@@ -1427,7 +1427,7 @@ describe('Blockchain Node', () => {
               value: {
                 ".function": {
                   "fid": {
-                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
                   }
@@ -1555,7 +1555,7 @@ describe('Blockchain Node', () => {
               value: {
                 ".function": {
                   "fid": {
-                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
                   }
@@ -1682,7 +1682,7 @@ describe('Blockchain Node', () => {
                 value: {
                   ".function": {
                     "fid": {
-                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_url": "https://events.ainetwork.ai/trigger",
                       "function_id": "fid",
                       "function_type": "REST",
                     }
@@ -1750,7 +1750,7 @@ describe('Blockchain Node', () => {
                     value: {
                       ".function": {
                         "fid": {
-                          "event_listener": "https://events.ainetwork.ai/trigger",
+                          "function_url": "https://events.ainetwork.ai/trigger",
                           "function_id": "fid",
                           "function_type": "REST",
                         }
@@ -2060,7 +2060,7 @@ describe('Blockchain Node', () => {
                 value: {
                   ".function": {
                     "fid": {
-                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_url": "https://events.ainetwork.ai/trigger",
                       "function_id": "fid",
                       "function_type": "REST",
                     }
@@ -2128,7 +2128,7 @@ describe('Blockchain Node', () => {
                     value: {
                       ".function": {
                         "fid": {
-                          "event_listener": "https://events.ainetwork.ai/trigger",
+                          "function_url": "https://events.ainetwork.ai/trigger",
                           "function_id": "fid",
                           "function_type": "REST",
                         }
@@ -2742,7 +2742,7 @@ describe('Blockchain Node', () => {
               value: {
                 ".function": {
                   "fid": {
-                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
                   }
@@ -2810,7 +2810,7 @@ describe('Blockchain Node', () => {
                   value: {
                     ".function": {
                       "fid": {
-                        "event_listener": "https://events.ainetwork.ai/trigger",
+                        "function_url": "https://events.ainetwork.ai/trigger",
                         "function_id": "fid",
                         "function_type": "REST",
                       }
