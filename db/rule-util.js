@@ -298,15 +298,15 @@ class RuleUtil {
     return !!ValidatorOffenseTypes[type];
   }
 
-  validateEventListenerWhitelistData(userAddr, data, newData, getValue) {
+  validateRestFunctionsUrlWhitelistData(userAddr, data, newData, getValue) {
     const PathUtil = require('../common/path-util');
     if (getValue(PathUtil.getDevelopersRestFunctionsUserWhitelistUserPath(userAddr)) !== true) {
       return false;
     }
-    const maxEventListenersPerDeveloper = getValue(PathUtil.getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath());
-    const existingEventListeners = getValue(PathUtil.getDevelopersRestFunctionsUrlWhitelistUserPath(userAddr)) || {};
+    const maxUrlsPerDeveloper = getValue(PathUtil.getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath());
+    const existingUrls = getValue(PathUtil.getDevelopersRestFunctionsUrlWhitelistUserPath(userAddr)) || {};
     return data !== null || newData === null ||
-        Object.keys(existingEventListeners).length < maxEventListenersPerDeveloper;
+        Object.keys(existingUrls).length < maxUrlsPerDeveloper;
   }
 }
 

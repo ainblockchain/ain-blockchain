@@ -124,11 +124,11 @@ const TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
 const TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
 const DEFAULT_REQUEST_BODY_SIZE_LIMIT = '100mb';
 const DEFAULT_DEVELOPERS_URL_WHITELIST = [
-      'https://events.ainetwork.ai/trigger',
-      'https://events.ainize.ai/trigger',
-      'http://echo-bot.ainetwork.ai/trigger',
-      'http://localhost:3000/trigger'
-    ];
+  'https://events.ainetwork.ai/trigger',
+  'https://events.ainize.ai/trigger',
+  'http://echo-bot.ainetwork.ai/trigger',
+  'http://localhost:3000/trigger'
+];
 
 // ** Enums **
 /**
@@ -841,21 +841,21 @@ function getGenesisOwners() {
 function getDevelopersValue() {
   const ownerAddress = CommonUtil.getJsObject(
       GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-  const maxEventListenersPerDeveloper = GenesisParams.resource.MAX_FUNCTION_URLS_PER_DEVELOPER;
-  const defaultEventListenerWhitelist = {};
+  const maxFunctionUrlsPerDeveloper = GenesisParams.resource.MAX_FUNCTION_URLS_PER_DEVELOPER;
+  const defaultFunctionUrlWhitelist = {};
   DEFAULT_DEVELOPERS_URL_WHITELIST.forEach((url, index) => {
-    defaultEventListenerWhitelist[index] = url;
+    defaultFunctionUrlWhitelist[index] = url;
   })
   return {
     [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS]: {
       [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_PARAMS]: {
-        [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER]: maxEventListenersPerDeveloper
+        [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER]: maxFunctionUrlsPerDeveloper
       },
       [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST]: {
         [ownerAddress]: true
       },
       [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST]: {
-        [ownerAddress]: defaultEventListenerWhitelist
+        [ownerAddress]: defaultFunctionUrlWhitelist
       }
     }
   };
@@ -883,7 +883,7 @@ function getDevelopersRule() {
         '$user_addr': {
           '$key': {
             [PredefinedDbPaths.DOT_RULE]: {
-              [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}' || (auth.addr === $user_addr && util.validateEventListenerWhitelistData(auth.addr, data, newData, getValue) === true)`
+              [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}' || (auth.addr === $user_addr && util.validateRestFunctionsUrlWhitelistData(auth.addr, data, newData, getValue) === true)`
             }
           }
         }

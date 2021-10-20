@@ -977,29 +977,29 @@ describe('Native Function', () => {
 
       it('cannot add more than the max number of function urls per developer', async () => {
         // Add 2 more & try to add 1 more
-        const addEventListener2 = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+        const addRestFunctionUrl2 = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `/developers/rest_functions/url_whitelist/${serviceUser}/1`,
           value: 'http://localhost:3000',
           timestamp: Date.now(),
           nonce: -1,
         }}).body.toString('utf-8'));
-        if (!(await waitUntilTxFinalized([server2], _.get(addEventListener2, 'result.tx_hash')))) {
+        if (!(await waitUntilTxFinalized([server2], _.get(addRestFunctionUrl2, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
-        expect(addEventListener2.result.result.code).to.be.equal(0);
-        const addEventListener3 = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+        expect(addRestFunctionUrl2.result.result.code).to.be.equal(0);
+        const addRestFunctionUrl3 = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `/developers/rest_functions/url_whitelist/${serviceUser}/2`,
           value: 'http://localhost:3000',
           timestamp: Date.now(),
           nonce: -1,
         }}).body.toString('utf-8'));
-        if (!(await waitUntilTxFinalized([server2], _.get(addEventListener3, 'result.tx_hash')))) {
+        if (!(await waitUntilTxFinalized([server2], _.get(addRestFunctionUrl3, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
-        expect(addEventListener3.result.result.code).to.be.equal(0);
-        const userEventListeners = parseOrLog(syncRequest('GET',
+        expect(addRestFunctionUrl3.result.result.code).to.be.equal(0);
+        const userRestFunctionUrls = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/developers/rest_functions/url_whitelist/${serviceUser}`).body.toString('utf-8'));
-        assert.deepEqual(userEventListeners, {
+        assert.deepEqual(userRestFunctionUrls, {
           "code": 0,
           "result": {
             "0": "http://localhost:3000",
