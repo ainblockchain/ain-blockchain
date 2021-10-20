@@ -51,7 +51,7 @@
     "@ainblockchain/ain-util": "^1.1.6",
     "@google-cloud/logging-winston": "^4.0.2",
     "ajv": "^5.5.2",
-    "axios": "^0.21.1",
+    "axios": "^0.21.2",
     "bluebird": "^3.5.3",
     "cors": "^2.8.5",
     "diskusage": "^1.1.3",
