@@ -98,7 +98,9 @@ class StateNode {
     const obj = {};
     for (const label of this.getChildLabels()) {
       const childNode = this.getChild(label);
-      obj[label] = isShallow ? true : childNode.toJsObject(options);
+      obj[label] = (isShallow && !childNode.getIsLeaf()) ?
+          { [`${StateInfoProperties.STATE_PROOF_HASH}`]: childNode.getProofHash() } :
+          childNode.toJsObject(options);
       if (childNode.getIsLeaf()) {
         if (includeVersion) {
           obj[`${StateInfoProperties.VERSION}:${label}`] = childNode.getVersion();
