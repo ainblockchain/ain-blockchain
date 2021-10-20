@@ -12,13 +12,15 @@ const {
   PORT,
   ACCOUNT_INDEX,
   HOSTING_ENV,
-  LIGHTWEIGHT
+  LIGHTWEIGHT,
+  KEYSTORE_FILE_PATH,
 } = require('../common/constants');
 
 const { combine, timestamp, label, printf, colorize } = winston.format;
 
 const logDir = path.join(LOGS_DIR, String(PORT));
-const prefix = ACCOUNT_INDEX ? `node-${ACCOUNT_INDEX}-${PORT}` : `tracker-${PORT}`;
+const prefix = ACCOUNT_INDEX ? `node-${ACCOUNT_INDEX}-${PORT}` :
+    KEYSTORE_FILE_PATH ? `node-${PORT}` : `tracker-${PORT}`;
 const logFormat = printf(({level, message, label, timestamp}) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
 });

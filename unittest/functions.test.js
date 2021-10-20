@@ -25,7 +25,7 @@ describe("Functions", () => {
 
       node = new BlockchainNode();
       setNodeForTesting(node);
-      functions = new Functions(node.db, null);
+      functions = new Functions(node.db);
     })
 
     after(() => {
@@ -143,7 +143,7 @@ describe("Functions", () => {
         }
         const { func_results, promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRest),
-            null, null, null, transaction);
+            null, null, null, null, transaction);
         assert.deepEqual(func_results, {
           "0x11111": {
             "code": 0,
@@ -202,7 +202,7 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestMulti),
-            null, null, null, transaction);
+            null, null, null, null, transaction);
         promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 2,
@@ -279,7 +279,7 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestWithoutListener),
-            null, null, null, transaction);
+            null, null, null, null, transaction);
         promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -308,7 +308,7 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestNotWhitelisted),
-            null, null, null, transaction);
+            null, null, null, null, transaction);
         promise_results.then((resp) => {
           assert.deepEqual(resp, {
             function_count: 1,
@@ -337,7 +337,7 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathNull),
-            null, null, null, transaction);
+            null, null, null, null, transaction);
         promise_results.then((resp) => {
           assert.deepEqual(resp, {
             function_count: 1,
@@ -394,7 +394,7 @@ describe("Functions", () => {
         }
         const tx = Transaction.fromTxBody(txBody, null);
         const { func_results, promise_results } = functions.triggerFunctions(
-            CommonUtil.parsePath(refPathTransfer), 10,
+            CommonUtil.parsePath(refPathTransfer), 10, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
             tx);
         assert.deepEqual(func_results, {
@@ -409,13 +409,6 @@ describe("Functions", () => {
               },
               "1": {
                 "path": "/accounts/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/balance",
-                "result": {
-                  "code": 0,
-                  "bandwidth_gas_amount": 1
-                }
-              },
-              "2": {
-                "path": "/transfer/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/0/result",
                 "result": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
@@ -449,7 +442,7 @@ describe("Functions", () => {
         }
         const tx = Transaction.fromTxBody(txBody, null);
         const { func_results, promise_results } = functions.triggerFunctions(
-            CommonUtil.parsePath(refPathTransfer), 10,
+            CommonUtil.parsePath(refPathTransfer), 10, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
             tx);
         assert.deepEqual(func_results, {
@@ -464,13 +457,6 @@ describe("Functions", () => {
               },
               "1": {
                 "path": "/accounts/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/balance",
-                "result": {
-                  "code": 0,
-                  "bandwidth_gas_amount": 1
-                }
-              },
-              "2": {
-                "path": "/transfer/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/0/result",
                 "result": {
                   "code": 0,
                   "bandwidth_gas_amount": 1
@@ -509,7 +495,7 @@ describe("Functions", () => {
         }
         const { func_results, promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRest),
-            null, null, null, transaction);
+            null, null, null, null, transaction);
         assert.deepEqual(func_results, {
           "0x11111": {
             "code": 0,

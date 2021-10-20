@@ -166,11 +166,17 @@ class CommonUtil {
   /**
    * Converts the given string to a hex string (with lower case).
    */
-  static toHexString(str) {
+  static toHexString(str, withPrefix = false) {
     if (this.isHexString(str)) {
-      return str.toLowerCase();
+      if (withPrefix) {
+        return str.toLowerCase();
+      }
+      return str.slice(2).toLowerCase();
     }
     const hexStr = this.isString(str) ? Buffer.from(str).toString('hex') : '';
+    if (!withPrefix) {
+      return hexStr;
+    }
     return '0x' + hexStr;
   }
 
@@ -207,6 +213,9 @@ class CommonUtil {
     }
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    if (args.is_final !== undefined) {
+      options.isFinal = CommonUtil.toBool(args.is_final);
     }
     if (args.include_tree_info !== undefined) {
       options.includeTreeInfo = CommonUtil.toBool(args.include_tree_info);
@@ -304,7 +313,7 @@ class CommonUtil {
   /**
    * Sets a value to the given path of an object. If the given path is empty, it tries to copy
    * the first-level properties of the value to the object.
-   * 
+   *
    * @param {object} obj target object
    * @param {array} path target path
    * @param {*} value value to set
@@ -425,7 +434,7 @@ class CommonUtil {
     return false;
   }
 
-  // TODO(platfowner): Consider some code (e.g. IN_LOCKUP_PERIOD, INSUFFICIENT_BALANCE) no failure 
+  // TODO(platfowner): Consider some code (e.g. IN_LOCKUP_PERIOD, INSUFFICIENT_BALANCE) no failure
   // so that their transactions are not reverted.
   static isFailedFuncResultCode(code) {
     const { FunctionResultCode } = require('../common/constants');
@@ -583,10 +592,10 @@ class CommonUtil {
   /**
    * Calculate the gas cost (unit = ain).
    * Only the service bandwidth gas amount is counted toward gas cost.
-   * 
+   *
    * @param {Number} gasPrice gas price in microain
    * @param {Object} gasAmount gas amount
-   * @returns 
+   * @returns
    */
   static getTotalGasCost(gasPrice, gasAmount) {
     const { MICRO_AIN } = require('./constants');
@@ -624,7 +633,7 @@ class CommonUtil {
 
   /**
    * Logs and returns transaction result.
-   * 
+   *
    * @param logger logger to log with
    * @param code error code
    * @param message error message
@@ -712,6 +721,23 @@ class CommonUtil {
   static getDayTimestamp(timestamp) {
     const date = new Date(timestamp);
     return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  }
+
+  static txResultsToReceipts(resList) {
+    const DB = require('../db');
+    if (!CommonUtil.isArray(resList)) return [];
+    return resList.map((res) => DB.trimExecutionResult(res));
+  }
+
+  static getCorsWhitelist(input) {
+    if (!input) {
+      return null;
+    }
+    const inputList = input.split(',').filter((str) => !!str);
+    if (inputList.includes('*')) {
+      return '*';
+    }
+    return [...new Set([...inputList])];
   }
 }
 

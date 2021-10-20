@@ -1,19 +1,29 @@
 const _get = require('lodash/get');
-const { WriteDbOperations, PredefinedDbPaths } = require('../common/constants');
+const { WriteDbOperations, PredefinedDbPaths, LIGHTWEIGHT } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const { ConsensusErrorCodesToVoteAgainst } = require('./constants');
+const Transaction = require('../tx-pool/transaction');
 
 class ConsensusUtil {
   static isValidConsensusTx(tx) {
+    const executableTx = Transaction.toExecutable(tx);
+    if (!Transaction.isExecutable(executableTx)) {
+      return false;
+    }
+    if (!LIGHTWEIGHT) {
+      if (!Transaction.verifyTransaction(executableTx)) {
+        return false;
+      }
+    }
     const op = _get(tx, 'tx_body.operation');
     if (!op) return false;
     const consensusTxPrefix = CommonUtil.formatPath(
         [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER]);
-    if (op.type === WriteDbOperations.SET_VALUE) {
+    if (op.type === WriteDbOperations.SET_VALUE) { // vote tx
       return op.ref.startsWith(consensusTxPrefix);
-    } else if (op.type === WriteDbOperations.SET) {
+    } else if (op.type === WriteDbOperations.SET) { // propose tx
       const opList = op.op_list;
-      if (!opList || opList.length !== 2) {
+      if (!opList || opList.length > 2) {
         return false;
       }
       opList.forEach((innerOp) => {
@@ -27,13 +37,8 @@ class ConsensusUtil {
 
   static isProposalTx(tx) {
     const op = _get(tx, 'tx_body.operation');
-    if (!op) return false;
-    if (op.type === WriteDbOperations.SET_VALUE) {
-      return op.ref.endsWith(PredefinedDbPaths.CONSENSUS_PROPOSE);
-    } else if (op.type === WriteDbOperations.SET) {
-      return _get(op, 'op_list.0.ref', '').endsWith(PredefinedDbPaths.CONSENSUS_PROPOSE);
-    }
-    return false;
+    if (!op || op.type !== WriteDbOperations.SET) return false;
+    return _get(op, 'op_list.0.ref', '').endsWith(PredefinedDbPaths.CONSENSUS_PROPOSE);
   }
 
   static filterProposalFromVotes(votes) {
@@ -45,9 +50,9 @@ class ConsensusUtil {
   static getBlockHashFromConsensusTx(tx) {
     const op = _get(tx, 'tx_body.operation');
     if (!tx || !op) return null;
-    if (op.type === WriteDbOperations.SET_VALUE) {
+    if (op.type === WriteDbOperations.SET_VALUE) { // vote tx
       return _get(op, 'value.block_hash');
-    } else if (op.type === WriteDbOperations.SET) {
+    } else if (op.type === WriteDbOperations.SET) { // propose tx
       return _get(op, 'op_list.0.value.block_hash');
     } else {
       return null;
@@ -67,7 +72,8 @@ class ConsensusUtil {
   }
 
   static getOffensesFromProposalTx(tx) {
-    return _get(tx, 'tx_body.operation.value.offenses', {});
+    if (!ConsensusUtil.isProposalTx(tx)) return {};
+    return _get(tx, 'tx_body.operation.op_list.0.value.offenses', {});
   }
 
   static getTotalAtStake(validators) {

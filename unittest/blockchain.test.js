@@ -7,7 +7,7 @@ const Blockchain = require('../blockchain/');
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const BlockchainNode = require('../node');
-const { setNodeForTesting, getTransaction } = require('./test-util');
+const { setNodeForTesting, getTransaction, txsToDummyReceipts  } = require('./test-util');
 
 describe('Blockchain', () => {
   let node1, node2;
@@ -35,9 +35,11 @@ describe('Blockchain', () => {
       gas_price: 1
     });
     const lastBlock = node1.bc.lastBlock();
+    const txs = [tx];
+    const receipts = txsToDummyReceipts(txs);
     node1.addNewBlock(Block.create(
-        lastBlock.hash, [], {}, [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
-        node1.account.address, {}, 0, 0));
+        lastBlock.hash, [], {}, txs, receipts,
+        lastBlock.number + 1, lastBlock.epoch + 1, '', node1.account.address, {}, 0, 0));
     assert.deepEqual(
         node1.bc.chain[node1.bc.chain.length -1].transactions[0],
         Transaction.toJsObject(tx));
@@ -65,9 +67,11 @@ describe('Blockchain', () => {
       gas_price: 1
     });
     const lastBlock = node1.bc.lastBlock();
+    const txs = [tx];
+    const receipts = txsToDummyReceipts(txs);
     node1.addNewBlock(Block.create(
-        lastBlock.hash, [], {}, [tx], lastBlock.number + 1, lastBlock.epoch + 1, '',
-        node1.account.address, {}, 0, 0));
+        lastBlock.hash, [], {}, txs, receipts,
+        lastBlock.number + 1, lastBlock.epoch + 1, '', node1.account.address, {}, 0, 0));
     node1.bc.chain[node1.bc.chain.length - 1].transactions = ':(';
     expect(Blockchain.validateChainSegment(node1.bc.chain)).to.equal(false);
   });
@@ -90,8 +94,10 @@ describe('Blockchain', () => {
         });
         const lastBlock = node1.bc.lastBlock();
         const finalRoot = node1.stateManager.getFinalRoot();
+        const transactions = node1.tp.getValidTransactions();
+        const receipts = txsToDummyReceipts(transactions);
         const block = Block.create(
-            lastBlock.hash, [], {}, node1.tp.getValidTransactions(), lastBlock.number + 1, i,
+            lastBlock.hash, [], {}, transactions, receipts, lastBlock.number + 1, i,
             finalRoot.getProofHash(), node1.account.address, [], 0, 0);
         if (block.number === 500) {
           blockHash = block.hash;

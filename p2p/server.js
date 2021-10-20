@@ -1,7 +1,7 @@
 /* eslint no-mixed-operators: "off" */
 const Websocket = require('ws');
 const ip = require('ip');
-const publicIp = require('public-ip');
+const extIp = require('ext-ip')();
 const axios = require('axios');
 const disk = require('diskusage');
 const os = require('os');
@@ -14,6 +14,7 @@ const Consensus = require('../consensus');
 const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
 const {
+  FeatureFlags,
   CURRENT_PROTOCOL_VERSION,
   DATA_PROTOCOL_VERSION,
   P2P_PORT,
@@ -31,9 +32,11 @@ const {
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
+  TrafficEventTypes,
   LIGHTWEIGHT,
-  FeatureFlags,
-  NETWORK_ID
+  NETWORK_ID,
+  GenesisParams,
+  trafficStatsManager,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const {
@@ -109,11 +112,11 @@ class P2pServer {
   }
 
   getNodeAddress() {
-    return this.node.account.address;
+    return this.node.account ? this.node.account.address : null;
   }
 
   getNodePrivateKey() {
-    return this.node.account.private_key;
+    return this.node.account ? this.node.account.private_key : null;
   }
 
   getInternalIp() {
@@ -163,6 +166,10 @@ class P2pServer {
       timestamp,
       elapsedTimeMs,
     };
+  }
+
+  getBlockchainConfig() {
+    return GenesisParams;
   }
 
   getNodeStatus() {
@@ -220,7 +227,7 @@ class P2pServer {
   getDiskUsage() {
     try {
       const diskUsage = disk.checkSync(DISK_USAGE_PATH);
-      const free =  _.get(diskUsage, 'free', 0);
+      const free = _.get(diskUsage, 'free', 0);
       const total = _.get(diskUsage, 'total', 0);
       const usage = total - free;
       const usagePercent = total ? usage / total * 100 : 0;
@@ -274,12 +281,16 @@ class P2pServer {
   }
 
   stop() {
-    logger.info(`Stop consensus interval.`);
-    this.consensus.stop();
+    if (this.consensus) {
+      logger.info(`Stop consensus interval.`);
+      this.consensus.stop();
+    }
     logger.info(`Disconnect from connected peers.`);
     this.disconnectFromPeers();
-    logger.info(`Close server.`);
-    this.wsServer.close();
+    if (this.wsServer) {
+      logger.info(`Close server.`);
+      this.wsServer.close();
+    }
   }
 
   getIpAddress(internal = false) {
@@ -297,16 +308,12 @@ class P2pServer {
           logger.error(`Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
           process.exit(0);
         });
-      } else if (HOSTING_ENV === 'comcom') {
+      } else {
         if (internal) {
           return ip.address();
         } else {
-          return publicIp.v4();
+          return extIp.get();
         }
-      } else if (HOSTING_ENV === 'local') {
-        return ip.address();
-      } else {
-        return publicIp.v4();
       }
     }).then((ipAddr) => {
       return ipAddr;
@@ -352,6 +359,7 @@ class P2pServer {
   setServerSidePeerEventHandlers(socket) {
     const LOG_HEADER = 'setServerSidePeerEventHandlers';
     socket.on('message', (message) => {
+      trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER);
       try {
         const parsedMessage = JSON.parse(message);
         const networkId = _.get(parsedMessage, 'networkId');
@@ -384,8 +392,13 @@ class P2pServer {
               // this.convertAddressMessage();
             }
             const address = _.get(parsedMessage, 'data.body.address');
+            const peerInfo = _.get(parsedMessage, 'data.body.peerInfo');
             if (!address) {
               logger.error(`Providing an address is compulsary when initiating p2p communication.`);
+              closeSocketSafe(this.inbound, socket);
+              return;
+            } else if (!peerInfo) {
+              logger.error(`Providing peerInfo is compulsary when initiating p2p communication.`);
               closeSocketSafe(this.inbound, socket);
               return;
             } else if (!_.get(parsedMessage, 'data.signature')) {
@@ -410,6 +423,7 @@ class P2pServer {
                 socket: socket,
                 version: dataProtoVer
               };
+              this.client.updatePeerInfoToTracker();
               const body = {
                 address: this.getNodeAddress(),
                 timestamp: Date.now(),
@@ -426,6 +440,9 @@ class P2pServer {
                 return;
               }
               socket.send(JSON.stringify(payload));
+              if (!this.client.outbound[address]) {
+                this.client.connectToPeer(peerInfo);
+              }
             }
             break;
           case MessageTypes.CONSENSUS:

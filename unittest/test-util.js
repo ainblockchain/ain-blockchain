@@ -63,21 +63,27 @@ function getTransaction(node, inputTxBody) {
   return node.createTransaction(txBody);
 }
 
+function txsToDummyReceipts(txs) {
+  return new Array(txs.length).fill({ code: 0, gas_amount_charged: 0, gas_cost_total: 0 });
+}
+
 function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
   const finalDb = DB.create(
       node.stateManager.getFinalVersion(), `${StateVersions.FINAL}:${lastBlock.number + 1}`,
-      node.bc, node.tp, true, false, lastBlock.number, node.stateManager);
+      node.bc, true, lastBlock.number, node.stateManager);
   finalDb.executeTransactionList(votes, true);
   finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1);
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
+  const receipts = txsToDummyReceipts(txs);
   node.addNewBlock(Block.create(
-      lastBlock.hash, votes, {}, txs, lastBlock.number + 1, lastBlock.epoch + 1, '',
+      lastBlock.hash, votes, {}, txs, receipts, lastBlock.number + 1, lastBlock.epoch + 1, '',
       node.account.address, validators, 0, 0));
 }
 
 async function waitUntilTxFinalized(servers, txHash) {
-  const MAX_ITERATION = 40;
+  const MAX_ITERATION = 100;
+  const SLEEP_TIME_MS = 1000;
   let iterCount = 0;
   const unchecked = new Set(servers);
   while (true) {
@@ -96,7 +102,7 @@ async function waitUntilTxFinalized(servers, txHash) {
         unchecked.delete(server);
       }
     }
-    await CommonUtil.sleep(3000);
+    await CommonUtil.sleep(SLEEP_TIME_MS);
     iterCount++;
   }
 }
@@ -199,11 +205,12 @@ function getBlockByNumber(server, number) {
       .body.toString('utf-8')).result;
 }
 
-function eraseStateGas(result, appNameList = []) {
+function eraseStateGas(result) {
   const erased = JSON.parse(JSON.stringify(result));
   _.set(erased, 'gas_amount_charged', 'erased');
   _.set(erased, 'gas_amount_total.state.service', 'erased');
-  for (const appName of appNameList) {
+  const stateApp = _.get(erased, 'gas_amount_total.state.app', {});
+  for (const appName of Object.keys(stateApp)) {
     _.set(erased, `gas_amount_total.state.app.${appName}`, 'erased');
   }
   return erased;
@@ -225,4 +232,5 @@ module.exports = {
   getLastBlockNumber,
   getBlockByNumber,
   eraseStateGas,
+  txsToDummyReceipts,
 };

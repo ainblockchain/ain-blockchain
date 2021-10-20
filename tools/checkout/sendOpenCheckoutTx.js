@@ -6,11 +6,9 @@ function buildOpenCheckoutTxBody(fromAddr, tokenAmount, checkoutId) {
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/checkout/requests/${fromAddr}/${checkoutId}`,
+      ref: `/checkout/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkoutId}`,
       value: {
         amount: tokenAmount,
-        type: 'ETH',
-        token_id: '0xB16c0C80a81f73204d454426fC413CAe455525A7',
         recipient: config.recipientAddr
       },
       is_global: true,

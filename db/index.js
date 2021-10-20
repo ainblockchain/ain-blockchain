@@ -30,7 +30,6 @@ const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('./state-node');
 const {
-  isEmptyNode,
   hasFunctionConfig,
   getFunctionConfig,
   hasRuleConfig,
@@ -47,7 +46,8 @@ const {
   applyOwnerChange,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
-  getProofOfStatePath,
+  getStateProofFromStateRoot,
+  getProofHashFromStateRoot,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -55,7 +55,7 @@ const PathUtil = require('../common/path-util');
 const _ = require('lodash');
 
 class DB {
-  constructor(stateRoot, stateVersion, bc, tp, isNodeDb, blockNumberSnapshot, stateManager) {
+  constructor(stateRoot, stateVersion, bc, blockNumberSnapshot, stateManager) {
     this.shardingPath = null;
     this.isRootBlockchain = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
@@ -63,9 +63,8 @@ class DB {
     this.backupStateRoot = null;
     this.backupStateVersion = null;
     this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
-    this.func = new Functions(this, tp);
+    this.func = new Functions(this);
     this.bc = bc;
-    this.isNodeDb = isNodeDb;
     this.blockNumberSnapshot = blockNumberSnapshot;
     this.stateManager = stateManager;
     this.ownerAddress = CommonUtil.getJsObject(
@@ -129,7 +128,7 @@ class DB {
    */
   setBackupStateVersion(backupStateVersion, backupStateRoot) {
     const LOG_HEADER = 'setBackupStateVersion';
-    if (!this.backupStateVersion === backupStateVersion) {
+    if (this.backupStateVersion === backupStateVersion) {
       logger.error(
           `[${LOG_HEADER}] Backup state version already set with version: ${backupStateVersion}`);
       return false;
@@ -238,7 +237,8 @@ class DB {
     this.deleteBackupStateVersion();
   }
 
-  static create(baseVersion, newVersion, bc, tp, finalizeVersion, isNodeDb, blockNumberSnapshot, stateManager) {
+  static create(
+      baseVersion, newVersion, bc, finalizeVersion, blockNumberSnapshot, stateManager) {
     const LOG_HEADER = 'create';
 
     logger.debug(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
@@ -252,7 +252,7 @@ class DB {
     if (finalizeVersion) {
       stateManager.finalizeVersion(newVersion);
     }
-    return new DB(newRoot, newVersion, bc, tp, isNodeDb, blockNumberSnapshot, stateManager);
+    return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager);
   }
 
   dumpDbStates(options) {
@@ -313,8 +313,9 @@ class DB {
     let node = stateRoot;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
-      if (node.hasChild(label)) {
-        node = node.getChild(label);
+      const child = node.getChild(label);
+      if (child !== null) {
+        node = child;
       } else {
         return null;
       }
@@ -344,37 +345,23 @@ class DB {
   //
   static getRefForWritingToStateRoot(stateRoot, fullPath) {
     let node = stateRoot;
-    let hasMultipleRoots = node.numParents() > 1;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
-      if (FeatureFlags.enableStateVersionOpt) {
-        if (node.hasChild(label)) {
-          const child = node.getChild(label);
-          if (hasMultipleRoots || child.numParents() > 1) {
-            const clonedChild = child.clone(this.stateVersion);
-            clonedChild.resetValue();
-            node.setChild(label, clonedChild);
-            node = clonedChild;
-          } else {
-            child.resetValue();
-            node = child;
-          }
+      const child = node.getChild(label);
+      if (child !== null) {
+        if (child.hasMultipleParents()) {
+          const clonedChild = child.clone(this.stateVersion);
+          clonedChild.resetValue();
+          node.setChild(label, clonedChild);
+          node = clonedChild;
         } else {
-          const newChild = new StateNode(this.stateVersion);
-          node.setChild(label, newChild);
-          node = newChild;
-        }
-        hasMultipleRoots = hasMultipleRoots || node.numParents() > 1;
-      } else {
-        if (node.hasChild(label)) {
-          const child = node.getChild(label);
           child.resetValue();
           node = child;
-        } else {
-          const newChild = new StateNode(this.stateVersion);
-          node.setChild(label, newChild);
-          node = newChild;
         }
+      } else {
+        const newChild = new StateNode(this.stateVersion);
+        node.setChild(label, newChild);
+        node = newChild;
       }
     }
     return node;
@@ -396,8 +383,8 @@ class DB {
       const treeLabel = fullPath[fullPath.length - 1];
       const parent = DB.getRefForWritingToStateRoot(stateRoot, pathToParent);
       parent.setChild(treeLabel, tree);
+      updateStateInfoForAllRootPaths(parent, treeLabel);
     }
-    updateStateInfoForAllRootPaths(fullPath, stateRoot);
     return stateRoot;
   }
 
@@ -423,10 +410,11 @@ class DB {
   }
 
   readDatabase(refPath, rootLabel, options) {
-    return DB.readFromStateRoot(this.stateRoot, rootLabel, refPath, options, this.shardingPath);
+    const isFinal = _.get(options, 'isFinal', false);
+    const targetStateRoot = isFinal ? this.stateManager.getFinalRoot() : this.stateRoot;
+    return DB.readFromStateRoot(targetStateRoot, rootLabel, refPath, options, this.shardingPath);
   }
 
-  // TODO(platfowner): Support lookups on the final version.
   getValue(valuePath, options) {
     return this.readDatabase(valuePath, PredefinedDbPaths.VALUES_ROOT, options);
   }
@@ -444,13 +432,21 @@ class DB {
   }
 
   /**
-   * Returns a proof of a state node.
+   * Returns proof of a state node.
    * @param {string} statePath full database path to the state node
    */
-  // TODO(platfowner): Consider supporting global path for getStateProof().
   getStateProof(statePath) {
     const parsedPath = CommonUtil.parsePath(statePath);
-    return getProofOfStatePath(this.stateRoot, parsedPath);
+    return getStateProofFromStateRoot(this.stateRoot, parsedPath);
+  }
+
+  /**
+   * Returns proof hash of a state node.
+   * @param {string} statePath full database path to the state node
+   */
+  getProofHash(statePath) {
+    const parsedPath = CommonUtil.parsePath(statePath);
+    return getProofHashFromStateRoot(this.stateRoot, parsedPath);
   }
 
   static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
@@ -472,7 +468,7 @@ class DB {
       [StateInfoProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
       [StateInfoProperties.TREE_SIZE]: stateNode.getTreeSize(),
       [StateInfoProperties.TREE_BYTES]: stateNode.getTreeBytes(),
-      [StateInfoProperties.PROOF_HASH]: stateNode.getProofHash(),
+      [StateInfoProperties.STATE_PROOF_HASH]: stateNode.getProofHash(),
       [StateInfoProperties.VERSION]: stateNode.getVersion(),
     };
   }
@@ -594,21 +590,12 @@ class DB {
 
   static updateAccountNonceAndTimestampToStateRoot(
       stateRoot, stateVersion, address, nonce, timestamp) {
-    const LOG_HEADER = 'updateAccountNonceAndTimestampToStateRoot';
-    if (!CommonUtil.isNumber(nonce)) {
-      logger.error(`[${LOG_HEADER}] Invalid nonce: ${nonce} for address: ${address}`);
-      return false;
-    }
     if (nonce >= 0) { // numbered nonce
       const noncePath = PathUtil.getAccountNoncePath(address);
       const fullNoncePath =
           DB.getFullPath(CommonUtil.parsePath(noncePath), PredefinedDbPaths.VALUES_ROOT);
       DB.writeToStateRoot(stateRoot, stateVersion, fullNoncePath, nonce + 1);
     } else if (nonce === -2) { // ordered nonce
-      if (!CommonUtil.isNumber(timestamp)) {
-        logger.error(`[${LOG_HEADER}] Invalid timestamp: ${timestamp} for address: ${address}`);
-        return false;
-      }
       const timestampPath = PathUtil.getAccountTimestampPath(address);
       const fullTimestampPath =
           DB.getFullPath(CommonUtil.parsePath(timestampPath), PredefinedDbPaths.VALUES_ROOT);
@@ -676,13 +663,21 @@ class DB {
             104, `Non-writable path with shard config: ${isWritablePath.invalidPath}`, 1);
       }
     }
+    const prevValue = this.getValue(valuePath, { isShallow: false, isGlobal });
+    const prevValueCopy = CommonUtil.isDict(prevValue) ? JSON.parse(JSON.stringify(prevValue)) : prevValue;
     const valueCopy = CommonUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
     let funcResults = null;
     if (auth && (auth.addr || auth.fid)) {
+      if (blockTime === null) {
+        blockTime = this.lastBlockTimestamp();
+      }
       const { func_results } =
-          this.func.triggerFunctions(localPath, valueCopy, auth, timestamp, transaction, blockTime);
+          this.func.triggerFunctions(localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockTime);
       funcResults = func_results;
+      if (CommonUtil.isFailedFuncTrigger(funcResults)) {
+        return CommonUtil.returnTxResult(105, `Triggered function call failed`, 1, funcResults);
+      }
     }
 
     return CommonUtil.returnTxResult(0, null, 1, funcResults);
@@ -909,25 +904,10 @@ class DB {
       DB.updateGasAmountTotal(tx, gasAmountTotal, result);
       return result;
     }
-    if (tx && auth && auth.addr && !auth.fid) {
-      const { nonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(auth.addr);
-      if (tx.tx_body.nonce >= 0 && tx.tx_body.nonce !== nonce) {
-        Object.assign(result, CommonUtil.returnTxResult(
-            12, `Invalid nonce: ${tx.tx_body.nonce} !== ${nonce}`, 1));
-        DB.updateGasAmountTotal(tx, gasAmountTotal, result);
-        return result;
-      }
-      if (tx.tx_body.nonce === -2 && tx.tx_body.timestamp <= accountTimestamp) {
-        Object.assign(result, CommonUtil.returnTxResult(
-            13, `Invalid timestamp: ${tx.tx_body.timestamp} <= ${accountTimestamp}`, 1));
-        DB.updateGasAmountTotal(tx, gasAmountTotal, result);
-        return result;
-      }
-    }
     const allStateUsageBefore = this.getAllStateUsages();
     const stateUsagePerAppBefore = this.getStateUsagePerApp(op);
     if (op.type === WriteDbOperations.SET) {
-      Object.assign(result, this.executeMultiSetOperation(op.op_list, auth, timestamp, tx));
+      Object.assign(result, this.executeMultiSetOperation(op.op_list, auth, timestamp, tx, blockTime));
     } else {
       Object.assign(result, this.executeSingleSetOperation(op, auth, timestamp, tx, blockTime));
     }
@@ -1010,7 +990,7 @@ class DB {
       return acc;
     }, {});
     delete usage[StateInfoProperties.VERSION];
-    delete usage[StateInfoProperties.PROOF_HASH];
+    delete usage[StateInfoProperties.STATE_PROOF_HASH];
     return usage;
   }
 
@@ -1191,6 +1171,25 @@ class DB {
         PathUtil.getManageAppBillingUsersPath(billingAppName, billingId) + '/' + userAddr) === true;
   }
 
+  precheckNonceAndTimestamp(nonce, timestamp, addr) {
+    if (!CommonUtil.isNumber(nonce)) {
+      return CommonUtil.returnTxResult(19, `Invalid nonce value: ${nonce}`);
+    }
+    if (!CommonUtil.isNumber(timestamp)) {
+      return CommonUtil.returnTxResult(20, `Invalid timestamp value: ${timestamp}`);
+    }
+    const { nonce: accountNonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(addr);
+    if (nonce >= 0 && nonce !== accountNonce) {
+      return CommonUtil.returnTxResult(
+          12, `Invalid nonce: ${nonce} !== ${accountNonce}`);
+    }
+    if (nonce === -2 && timestamp <= accountTimestamp) {
+      return CommonUtil.returnTxResult(
+          13, `Invalid timestamp: ${timestamp} <= ${accountTimestamp}`);
+    }
+    return true;
+  }
+
   precheckTxBillingParams(op, addr, billing, blockNumber) {
     const LOG_HEADER = 'precheckTxBillingParams';
     if (!billing || blockNumber === 0) {
@@ -1265,6 +1264,11 @@ class DB {
     const billing = tx.tx_body.billing;
     const op = tx.tx_body.operation;
     const addr = tx.address;
+    const checkNonceTimestampResult = this.precheckNonceAndTimestamp(
+        tx.tx_body.nonce, tx.tx_body.timestamp, addr);
+    if (checkNonceTimestampResult !== true) {
+      return checkNonceTimestampResult;
+    }
     const checkBillingResult = this.precheckTxBillingParams(op, addr, billing, blockNumber);
     if (checkBillingResult !== true) {
       return checkBillingResult;
@@ -1305,7 +1309,9 @@ class DB {
     }
     if (!skipFees) {
       this.collectFee(auth, timestamp, tx, blockNumber, executionResult);
-      this.recordReceipt(auth, tx, blockNumber, executionResult);
+      if (FeatureFlags.enableReceiptsRecording) {
+        this.recordReceipt(auth, tx, blockNumber, executionResult);
+      }
     }
     return executionResult;
   }
@@ -1717,6 +1723,10 @@ class DB {
 
   lastBlockNumber() {
     return this.bc ? this.bc.lastBlockNumber() : this.blockNumberSnapshot;
+  }
+
+  lastBlockTimestamp() {
+    return this.bc ? this.bc.lastBlockTimestamp() : Date.now();
   }
 
   matchOwnerPathRecursive(parsedRefPath, depth, curOwnerNode) {
