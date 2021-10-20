@@ -92,7 +92,8 @@ class DB {
   updateRestFunctionsUrlWhitelistCache() {
     const currentHash = this.restFunctionsUrlWhitelistCache.hash;
     const restFunctionsUrlWhitelistPath = PathUtil.getDevelopersRestFunctionsUrlWhitelistPath();
-    const updatedHash = this.getProofHash(PredefinedDbPaths.VALUES_ROOT + restFunctionsUrlWhitelistPath);
+    const updatedHash = this.getProofHash(
+        CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, restFunctionsUrlWhitelistPath));
     if (!currentHash || currentHash !== updatedHash) {
       const rawWhitelist = this.getValue(restFunctionsUrlWhitelistPath);
       const whitelist = DB.formatRawRestFunctionsWhitelist(rawWhitelist);
