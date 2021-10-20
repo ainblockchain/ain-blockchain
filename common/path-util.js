@@ -327,6 +327,29 @@ class PathUtil {
   static getReceiptPath(txHash) {
     return CommonUtil.formatPath([PredefinedDbPaths.RECEIPTS, txHash]);
   }
+
+  static getDevelopersRestFunctionsUrlWhitelistPath() {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS,
+        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST]);
+  }
+
+  static getDevelopersRestFunctionsUrlWhitelistUserPath(address) {
+    return CommonUtil.appendPath(PathUtil.getDevelopersRestFunctionsUrlWhitelistPath(), address);
+  }
+
+  static getDevelopersRestFunctionsUserWhitelistUserPath(address) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS,
+        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST, address]);
+  }
+
+  static getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath() {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS,
+        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_PARAMS,
+        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER]);
+  }
 }
 
 module.exports = PathUtil;

@@ -69,6 +69,41 @@ class DB {
     this.stateManager = stateManager;
     this.ownerAddress = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: {} };
+    this.updateRestFunctionsUrlWhitelistCache();
+  }
+
+  static formatRawRestFunctionsWhitelist(raw) {
+    if (CommonUtil.isEmpty(raw) || !CommonUtil.isDict(raw)) return {};
+    const whitelist = {};
+    for (const val of Object.values(raw)) {
+      for (const url of Object.values(val)) {
+        whitelist[url] = true;
+      }
+    }
+    return whitelist;
+  }
+
+  /**
+   * Compares the state proof hash of the current restFunctionsUrlWhitelistCache and the state proof
+   * hash at the path /developers/rest_functions/url_whitelist, and if outdated, update the cache of
+   * the latest hash and the mapping of whitelisted REST function urls.
+   */
+  updateRestFunctionsUrlWhitelistCache() {
+    const currentHash = this.restFunctionsUrlWhitelistCache.hash;
+    const restFunctionsUrlWhitelistPath = PathUtil.getDevelopersRestFunctionsUrlWhitelistPath();
+    const updatedHash = this.getProofHash(
+        CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, restFunctionsUrlWhitelistPath));
+    if (!currentHash || currentHash !== updatedHash) {
+      const rawWhitelist = this.getValue(restFunctionsUrlWhitelistPath);
+      const whitelist = DB.formatRawRestFunctionsWhitelist(rawWhitelist);
+      this.restFunctionsUrlWhitelistCache = { hash: updatedHash, whitelist };
+    }
+  }
+
+  getRestFunctionsUrlWhitelist() {
+    this.updateRestFunctionsUrlWhitelistCache();
+    return this.restFunctionsUrlWhitelistCache.whitelist;
   }
 
   initDbStates(snapshot) {
@@ -396,7 +431,7 @@ class DB {
     const isGlobal = options && options.isGlobal;
     if (!stateRoot) return null;
     const parsedPath = CommonUtil.parsePath(refPath);
-    const localPath = isGlobal ?  DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;

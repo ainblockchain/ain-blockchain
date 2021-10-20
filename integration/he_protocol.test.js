@@ -339,10 +339,9 @@ describe('HE Protocol', () => {
           value: {
             ".function": {
               "fid": {
-                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_url": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             }
           }
@@ -382,10 +381,9 @@ describe('HE Protocol', () => {
         assert.deepEqual(functionAfter, {
           ".function": {
             "fid": {
-              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "fid",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai"
             }
           }
         });
@@ -440,10 +438,9 @@ describe('HE Protocol', () => {
           value: {
             ".function": {
               "call_he_worker": {
-                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_url": "https://events.ainetwork.ai/trigger",
                 "function_id": "call_he_worker",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             }
           }

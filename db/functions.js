@@ -19,13 +19,6 @@ const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 
-const EventListenerWhitelist = {
-  'https://events.ainetwork.ai/trigger': true,
-  'https://events.ainize.ai/trigger': true,
-  'http://echo-bot.ainetwork.ai/trigger': true,
-  'http://localhost:3000/trigger': true
-};
-
 /**
  * Built-in functions with function paths.
  */
@@ -177,15 +170,15 @@ class Functions {
             }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
-          if (functionEntry.event_listener &&
-              functionEntry.event_listener in EventListenerWhitelist) {
+          if (functionEntry.function_url &&
+              functionEntry.function_url in this.db.getRestFunctionsUrlWhitelist()) {
             if (FeatureFlags.enableRichFunctionLogging) {
               logger.info(
                   `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
-                  `event listener '${functionEntry.event_listener}' with:\n` +
+                  `function_url '${functionEntry.function_url}' with:\n` +
                   formattedParams);
             }
-            promises.push(axios.post(functionEntry.event_listener, {
+            promises.push(axios.post(functionEntry.function_url, {
               function: functionEntry,
               transaction,
             }, {
@@ -194,7 +187,7 @@ class Functions {
               if (FeatureFlags.enableRichFunctionLogging) {
                 logger.error(
                     `Failed to trigger REST function [[ ${functionEntry.function_id} ]] of ` +
-                    `event listener '${functionEntry.event_listener}' with error: \n` +
+                    `function_url '${functionEntry.function_url}' with error: \n` +
                     `${JSON.stringify(error)}` +
                     formattedParams);
               }
