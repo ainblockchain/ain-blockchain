@@ -386,15 +386,17 @@ describe("state-node", () => {
     it("internal node", () => {
       assert.deepEqual(StateNode.fromJsObject({ a: 1, b: 2, c: 3 }).toJsObject({ isShallow: true }),
           {
-            a: true,
-            b: true,
-            c: true,
+            a: 1,
+            b: 2,
+            c: 3,
           },
       );
       assert.deepEqual(StateNode.fromJsObject({ a: { aa: 11 }, b: 2 }).toJsObject({ isShallow: true }),
           {
-            a: true,
-            b: true,
+            a: {
+              "#state_ph": null
+            },
+            b: 2,
           },
       );
     })
