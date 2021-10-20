@@ -69,8 +69,8 @@ class DB {
     this.stateManager = stateManager;
     this.ownerAddress = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-    this.restFunctionsUrlWhitelistCache = null;
-    this.cacheRestFunctionsUrlWhitelist();
+    this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: {} };
+    this.updateRestFunctionsUrlWhitelistCache();
   }
 
   static formatRawRestFunctionsWhitelist(raw) {
@@ -89,15 +89,20 @@ class DB {
    * hash at the path /developers/rest_functions/url_whitelist, and if outdated, update the cache of
    * the latest hash and the mapping of whitelisted REST function urls.
    */
-  cacheRestFunctionsUrlWhitelist() {
-    const current = _.get(this.restFunctionsUrlWhitelistCache, 'hash', null);
+  updateRestFunctionsUrlWhitelistCache() {
+    const currentHash = this.restFunctionsUrlWhitelistCache.hash;
     const restFunctionsUrlWhitelistPath = PathUtil.getDevelopersRestFunctionsUrlWhitelistPath();
-    const updated = this.getProofHash(PredefinedDbPaths.VALUES_ROOT + restFunctionsUrlWhitelistPath);
-    if (!current || current !== updated) {
+    const updatedHash = this.getProofHash(PredefinedDbPaths.VALUES_ROOT + restFunctionsUrlWhitelistPath);
+    if (!currentHash || currentHash !== updatedHash) {
       const rawWhitelist = this.getValue(restFunctionsUrlWhitelistPath);
       const whitelist = DB.formatRawRestFunctionsWhitelist(rawWhitelist);
-      this.restFunctionsUrlWhitelistCache = { hash: updated, whitelist };
+      this.restFunctionsUrlWhitelistCache = { hash: updatedHash, whitelist };
     }
+  }
+
+  getRestFunctionsUrlWhitelist() {
+    this.updateRestFunctionsUrlWhitelistCache();
+    return this.restFunctionsUrlWhitelistCache.whitelist;
   }
 
   initDbStates(snapshot) {

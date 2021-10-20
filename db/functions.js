@@ -170,9 +170,8 @@ class Functions {
             }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
-          this.db.cacheRestFunctionsUrlWhitelist();
           if (functionEntry.event_listener &&
-              functionEntry.event_listener in this.db.restFunctionsUrlWhitelistCache.whitelist) {
+              functionEntry.event_listener in this.db.getRestFunctionsUrlWhitelist()) {
             if (FeatureFlags.enableRichFunctionLogging) {
               logger.info(
                   `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
