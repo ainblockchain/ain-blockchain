@@ -5,6 +5,8 @@ const _ = require('lodash');
 const validUrl = require('valid-url');
 const CommonUtil = require('../common/common-util');
 const {
+  FeatureFlags,
+  HASH_DELIMITER,
   PredefinedDbPaths,
   FunctionProperties,
   FunctionTypes,
@@ -12,6 +14,7 @@ const {
   RuleProperties,
   OwnerProperties,
   ShardingProperties,
+  StateInfoProperties,
   STATE_LABEL_LENGTH_LIMIT,
 } = require('../common/constants');
 
@@ -20,7 +23,7 @@ function isEmptyNode(node) {
 }
 
 function hasConfig(node, label) {
-  return node && node.hasChild(label);
+  return node && node.getChild(label) !== null;
 }
 
 function getConfig(node, label) {
@@ -77,8 +80,9 @@ function isWritablePathWithSharding(fullPath, root) {
       isValid = false;
       break;
     }
-    if (curNode.hasChild(label)) {
-      curNode = curNode.getChild(label);
+    const child = curNode.getChild(label);
+    if (child !== null) {
+      curNode = child;
       path.push(label);
     } else {
       break;
@@ -497,25 +501,6 @@ function applyOwnerChange(curOwnerTree, ownerChange) {
 }
 
 /**
- * Returns affected nodes' number.
- */
-function setStateTreeVersion(node, version) {
-  let numAffectedNodes = 0;
-  if (node === null) {
-    return numAffectedNodes;
-  }
-  if (node.getVersion() !== version) {
-    node.setVersion(version);
-    numAffectedNodes++;
-  }
-  for (const child of node.getChildNodes()) {
-    numAffectedNodes += setStateTreeVersion(child, version);
-  }
-
-  return numAffectedNodes;
-}
-
-/**
  * Renames the version of the given state tree. Each node's version of the state tree is set with
  * given to-version if its value is equal to the given from-version.
  * 
@@ -544,145 +529,80 @@ function renameStateTreeVersion(node, fromVersion, toVersion, isRootNode = true)
 /**
  * Returns affected nodes' number.
  */
-function deleteStateTree(node) {
-  let numAffectedNodes = 0;
-  for (const label of node.getChildLabels()) {
-    const child = node.getChild(label);
-    node.deleteChild(label);
-    numAffectedNodes += deleteStateTree(child);
-  }
-  node.resetValue();
-  node.resetProofHash();
-  numAffectedNodes++;
-
-  return numAffectedNodes;
-}
-
-/**
- * Returns affected nodes' number.
- */
 function deleteStateTreeVersion(node) {
   let numAffectedNodes = 0;
-  if (node.numParents() > 0) {
+  if (node.hasAtLeastOneParent()) {
     // Does nothing.
     return numAffectedNodes;
   }
-  node.resetValue();
-  node.resetProofHash();
+
+  // 1. Delete children
+  numAffectedNodes += node.deleteRadixTreeVersion();
+  // 2. Reset node
+  node.reset();
   numAffectedNodes++;
 
-  for (const label of node.getChildLabels()) {
-    const child = node.getChild(label);
-    node.deleteChild(label);
-    numAffectedNodes += deleteStateTreeVersion(child);
-  }
-
   return numAffectedNodes;
-}
-
-function makeCopyOfStateTree(node) {
-  const copy = node.clone();
-  for (const label of node.getChildLabels()) {
-    const child = node.getChild(label);
-    copy.setChild(label, makeCopyOfStateTree(child));
-  }
-  return copy;
-}
-
-function equalStateTrees(node1, node2) {
-  if (!node1 && !node2) {
-    return true;
-  }
-  if (!node1 || !node2) {
-    return false;
-  }
-  if (!node1.equal(node2)) {
-    return false;
-  }
-  // NOTE: The child label order matters.
-  for (const label of node1.getChildLabels()) {
-    const child1 = node1.getChild(label);
-    const child2 = node2.getChild(label);
-    if (!equalStateTrees(child1, child2)) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 function updateStateInfoForAllRootPathsRecursive(
-    curNode, needToUpdate, updatedChildLabel = null) {
+    curNode, updatedChildLabel = null, updatedChildEmpty = false) {
   let numAffectedNodes = 0;
-  const curLabel = curNode.getLabel();
-  const parentNodes = curNode.getParentNodes();
-  const isEmpty = isEmptyNode(curNode);
-  if (isEmpty) {
-    for (const parent of parentNodes) {
-      parent.deleteChild(curLabel);
-      numAffectedNodes++;
+  if (updatedChildEmpty) {
+    curNode.deleteChild(updatedChildLabel, true);  // shouldUpdateStateInfo = true
+  } else {
+    if (!FeatureFlags.enableStateInfoUpdates) {
+      return 0;
     }
-  } else if (needToUpdate) {  // Update state info of only parents.
-    curNode.updateStateInfo(updatedChildLabel);
-    numAffectedNodes++;
+    curNode.updateStateInfo(updatedChildLabel, true);  // shouldRebuildRadixInfo = true
   }
-  for (const parent of parentNodes) {
+  const curLabel = curNode.getLabel();
+  const curNodeEmpty = updatedChildEmpty && isEmptyNode(curNode);
+  numAffectedNodes++;
+  for (const parent of curNode.getParentNodes()) {
     numAffectedNodes +=
-        updateStateInfoForAllRootPathsRecursive(parent, true, isEmpty ? null : curLabel);
+        updateStateInfoForAllRootPathsRecursive(parent, curLabel, curNodeEmpty);
   }
   return numAffectedNodes;
 }
 
-function updateStateInfoForAllRootPaths(fullPath, root) {
+function updateStateInfoForAllRootPaths(curNode, updatedChildLabel = null) {
   const LOG_HEADER = 'updateStateInfoForAllRootPaths';
 
-  if (fullPath.length === 0) {
-    // No parents to update.
+  const childNode = curNode.getChild(updatedChildLabel);
+  if (childNode === null) {
+    logger.error(
+        `[${LOG_HEADER}] Updating state info with non-existing label: ${updatedChildLabel} ` +
+        `at: ${new Error().stack}.`);
     return 0;
   }
-  if (!root) {
-    logger.error(`[${LOG_HEADER}] Updating state info for invalid root: ${root} ` +
-    `at: ${new Error().stack}.`);
-    return 0;
-  }
-  let curNode = root;
-  let needToUpdate = false;
-  for (let i = 0; i < fullPath.length; i++) {
-    const childLabel = fullPath[i];
-    const child = curNode.getChild(childLabel);
-    if (child === null) {
-      logger.debug(
-          `[${LOG_HEADER}] Updating state info for non-existing path: ` +
-          `${CommonUtil.formatPath(fullPath.slice(0, i + 1))} ` +
-          `at: ${new Error().stack}.`);
-      needToUpdate = true;
-      break;
-    }
-    curNode = child;
-  }
-  return updateStateInfoForAllRootPathsRecursive(curNode, needToUpdate, null);
+  return updateStateInfoForAllRootPathsRecursive(
+      curNode, updatedChildLabel, isEmptyNode(childNode));
 }
 
 function updateStateInfoForStateTree(stateTree) {
+  if (!FeatureFlags.enableStateInfoUpdates) {
+    return 0;
+  }
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
     for (const node of stateTree.getChildNodes()) {
       numAffectedNodes += updateStateInfoForStateTree(node);
     }
   }
-  stateTree.updateStateInfo();
+  stateTree.updateStateInfo(null, true);  // shouldRebuildRadixInfo = true
   numAffectedNodes++;
 
   return numAffectedNodes;
 }
 
-function verifyProofHashForStateTree(stateTree) {
-  if (!stateTree.verifyProofHash()) {
+function verifyStateInfoForStateTree(stateTree) {
+  if (!stateTree.verifyStateInfo()) {
     return false;
   }
   if (!stateTree.getIsLeaf()) {
     for (const childNode of stateTree.getChildNodes()) {
-      if (!verifyProofHashForStateTree(childNode)) {
+      if (!verifyStateInfoForStateTree(childNode)) {
         return false;
       }
     }
@@ -690,24 +610,159 @@ function verifyProofHashForStateTree(stateTree) {
   return true;
 }
 
-function getProofOfStatePathRecursive(node, fullPath, labelIndex) {
-  if (labelIndex > fullPath.length - 1) {
-    return node.getProofOfState();
+/**
+ * An internal version of getStateProofFromStateRoot().
+ * 
+ * @param {Object} fullPath array of parsed full path labels
+ * @param {Object} curNode current state node
+ * @param {Object} index index of fullPath
+ */
+function getStateProofRecursive(fullPath, curNode, index) {
+  if (index > fullPath.length - 1) {
+    return curNode.getProofOfStateNode();
   }
-  const childLabel = fullPath[labelIndex];
-  if (!node.hasChild(childLabel)) {
+  const childLabel = fullPath[index];
+  const child = curNode.getChild(childLabel);
+  if (child === null) {
     return null;
   }
-  const child = node.getChild(childLabel);
-  const childProof = getProofOfStatePathRecursive(child, fullPath, labelIndex + 1);
+  const childProof = getStateProofRecursive(fullPath, child, index + 1);
   if (childProof === null) {
     return null;
   }
-  return node.getProofOfState(childLabel, childProof);
+  return curNode.getProofOfStateNode(childLabel, childProof);
 }
 
-function getProofOfStatePath(root, fullPath) {
-  return getProofOfStatePathRecursive(root, fullPath, 0);
+/**
+ * Returns proof of a state path.
+ * 
+ * @param {Object} root root state node
+ * @param {Object} fullPath array of parsed full path labels
+ */
+function getStateProofFromStateRoot(root, fullPath) {
+  return getStateProofRecursive(fullPath, root, 0);
+}
+
+/**
+ * Returns proof hash of a state path.
+ * 
+ * @param {Object} root root state node
+ * @param {Object} fullPath array of parsed full path labels
+ */
+function getProofHashFromStateRoot(root, fullPath) {
+  let curNode = root;
+  for (let i = 0; i < fullPath.length; i++) {
+    const childLabel = fullPath[i];
+    const child = curNode.getChild(childLabel);
+    if (child === null) {
+      return null;
+    }
+    curNode = child;
+  }
+  return curNode.getProofHash();
+}
+
+/**
+ * Returns proof hash of a radix node.
+ * 
+ * @param {Object} childStatePh proof hash of child state node. null if not available.
+ * @param {Object} subProofList proof list of child radix nodes
+ */
+function getProofHashOfRadixNode(childStatePh, subProofList) {
+  let preimage = childStatePh !== null ? childStatePh : '';
+  preimage += `${HASH_DELIMITER}`;
+  if (subProofList.length === 0) {
+    preimage += `${HASH_DELIMITER}`;
+  } else {
+    for (const subProof of subProofList) {
+      preimage += `${HASH_DELIMITER}${subProof.label}${HASH_DELIMITER}${subProof.proofHash}`;
+    }
+  }
+  return CommonUtil.hashString(preimage);
+}
+
+/**
+ * An internal version of verifyStateProof().
+ * 
+ * @param {Object} proof state proof
+ * 
+ * Returns { proofHash, isStateNode } when successful, otherwise null.
+ */
+function verifyStateProofInternal(proof, curLabels) {
+  const curPath = CommonUtil.formatPath(curLabels);
+  let childStatePh = null;
+  let curProofHash = null;
+  let isStateNode = false;
+  let childIsVerified = true;
+  let childMismatchedPath = null;
+  const subProofList = [];
+  // NOTE(platfowner): Sort child nodes by label radix for stability.
+  const sortedProof = Object.entries(proof).sort((a, b) => a[0].localeCompare(b[0]));
+  for (const [label, value] of sortedProof) {
+    let childProofHash = null;
+    if (CommonUtil.isDict(value)) {
+      const subProof = verifyStateProofInternal(value, [...curLabels, label]);
+      if (childIsVerified === true && subProof.isVerified !== true) {
+        childIsVerified = false;
+        childMismatchedPath = subProof.mismatchedPath;
+      }
+      if (subProof.isStateNode === true) {
+        childStatePh = subProof.proofHash;
+        continue;  // continue
+      }
+      childProofHash = subProof.proofHash;
+    } else {
+      childProofHash = value;
+    }
+    if (label === StateInfoProperties.STATE_PROOF_HASH) {
+      curProofHash = childProofHash;
+      isStateNode = true;
+      continue;  // continue
+    }
+    if (label === StateInfoProperties.RADIX_PROOF_HASH) {
+      curProofHash = childProofHash;
+      continue;  // continue
+    }
+    subProofList.push({
+      label,
+      proofHash: childProofHash,
+    });
+  }
+  if (subProofList.length === 0 && childStatePh === null) {
+    const isVerified = childIsVerified && curProofHash !== null;
+    const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
+    return {
+      proofHash: curProofHash,
+      isStateNode: isStateNode,
+      isVerified: isVerified,
+      mismatchedPath: mismatchedPath,
+    };
+  }
+  const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
+  const isVerified = childIsVerified && computedProofHash === curProofHash;
+  const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
+  return {
+    proofHash: computedProofHash,
+    isStateNode: isStateNode,
+    isVerified: isVerified,
+    mismatchedPath: mismatchedPath,
+  }
+}
+
+/**
+ * Verifies a state path.
+ * 
+ * @param {Object} proof state proof
+ * 
+ * Returns root proof hash if successful, otherwise null.
+ */
+function verifyStateProof(proof) {
+  const result = verifyStateProofInternal(proof, []);
+  return {
+    rootProofHash: result.proofHash,
+    isVerified: result.isVerified,
+    mismatchedPath: result.mismatchedPath,
+  };
 }
 
 module.exports = {
@@ -736,14 +791,12 @@ module.exports = {
   isValidOwnerTree,
   applyFunctionChange,
   applyOwnerChange,
-  setStateTreeVersion,
   renameStateTreeVersion,
-  deleteStateTree,
   deleteStateTreeVersion,
-  makeCopyOfStateTree,
-  equalStateTrees,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
-  verifyProofHashForStateTree,
-  getProofOfStatePath,
+  verifyStateInfoForStateTree,
+  getStateProofFromStateRoot,
+  getProofHashFromStateRoot,
+  verifyStateProof,
 };

@@ -7,6 +7,7 @@ const {
   FeatureFlags,
   PORT,
   ACCOUNT_INDEX,
+  KEYSTORE_FILE_PATH,
   SYNC_MODE,
   ON_MEMORY_CHAIN_LENGTH,
   SNAPSHOTS_ROOT_DIR,
@@ -25,6 +26,7 @@ const {
   TX_POOL_SIZE_LIMIT,
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
   MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
+  KEYS_ROOT_DIR,
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
 const CommonUtil = require('../common/common-util');
@@ -37,32 +39,83 @@ const Transaction = require('../tx-pool/transaction');
 
 class BlockchainNode {
   constructor() {
-    const LOG_HEADER = 'constructor';
-    // TODO(liayoo): Add account importing functionality.
-    this.account = ACCOUNT_INDEX !== null ?
-        GenesisAccounts.others[ACCOUNT_INDEX] : ainUtil.createAccount();
-    logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
-        `${this.account.address}`);
-    this.isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
-    this.isShardReporter =
-        this.isShardChain &&
-        CommonUtil.areSameAddrs(
-            GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
+    this.keysDir = path.resolve(KEYS_ROOT_DIR, `${PORT}`);
+    FileUtil.createDir(this.keysDir);
+    this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
+    FileUtil.createSnapshotDir(this.snapshotDir);
+
+    this.account = null;
+    this.bootstrapAccount = null;
     this.ipAddrInternal = null;
     this.ipAddrExternal = null;
     this.urlInternal = null;
     this.urlExternal = null;
+
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = DB.create(
-        StateVersions.EMPTY, initialVersion, this.bc, this.tp, false, true,
-        this.bc.lastBlockNumber(), this.stateManager);
+        StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
+        this.stateManager);
+
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
-    this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
-    FileUtil.createSnapshotDir(this.snapshotDir);
+    this.initAccount();
+  }
+
+  setAccount(account) {
+    this.account = account;
+    this.bootstrapAccount = null;
+  }
+
+  initAccount() {
+    const LOG_HEADER = 'initAccount';
+    if (ACCOUNT_INDEX !== null) {
+      this.setAccount(GenesisAccounts.others[ACCOUNT_INDEX]);
+      if (!this.account) {
+        throw Error(`[${LOG_HEADER}] Failed to initialize with an account`);
+      }
+      logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
+          `${this.account.address}`);
+      this.initShardSetting();
+    } else if (KEYSTORE_FILE_PATH !== null) {
+      // Create a bootstrap account & wait for the password
+      this.bootstrapAccount = ainUtil.createAccount();
+    } else {
+      throw Error(`[${LOG_HEADER}] Must specify either KEYSTORE_FILE_PATH or ACCOUNT_INDEX.`);
+    }
+  }
+
+  async injectAccount(encryptedPassword) {
+    const LOG_HEADER = 'injectAccount';
+    if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
+      return false;
+    }
+    try {
+      const password = await ainUtil.decryptWithPrivateKey(
+          this.bootstrapAccount.private_key, encryptedPassword);
+      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(KEYSTORE_FILE_PATH, password);
+      if (accountFromKeystore !== null) {
+        this.setAccount(accountFromKeystore);
+        logger.info(`[${LOG_HEADER}] Injecting an account from a keystore file: ` +
+            `${this.account.address}`);
+        this.initShardSetting();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Failed to inject an account: ${err.stack}`);
+      return false;
+    }
+  }
+
+  initShardSetting() {
+    this.isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
+    this.isShardReporter =
+        this.isShardChain &&
+        CommonUtil.areSameAddrs(
+            GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
   }
 
   // For testing purpose only.
@@ -105,7 +158,7 @@ class BlockchainNode {
           logger.error(`[${LOG_HEADER}] ${err.stack}`);
         }
       }
-      logger.info(`[${LOG_HEADER}] Fast mode sync done!`);
+      logger.info(`[${LOG_HEADER}] Fast mode DB snapshot loading done!`);
     } else {
       logger.info(`[${LOG_HEADER}] Initializing node in 'full' mode..`);
     }
@@ -113,8 +166,8 @@ class BlockchainNode {
     // 2. Initialize DB (with the latest snapshot, if it exists)
     logger.info(`[${LOG_HEADER}] Initializing DB..`);
     const startingDb = DB.create(
-        StateVersions.EMPTY, StateVersions.START, this.bc, this.tp, true, false,
-        latestSnapshotBlockNumber, this.stateManager);
+        StateVersions.EMPTY, StateVersions.START, this.bc, true, latestSnapshotBlockNumber,
+        this.stateManager);
     startingDb.initDbStates(latestSnapshot);
 
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
@@ -153,7 +206,7 @@ class BlockchainNode {
           `[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`);
       return null;
     }
-    return new DB(tempRoot, tempVersion, null, null, false, blockNumberSnapshot, this.stateManager);
+    return new DB(tempRoot, tempVersion, null, blockNumberSnapshot, this.stateManager);
   }
 
   syncDbAndNonce(newVersion) {
@@ -206,7 +259,7 @@ class BlockchainNode {
   }
 
   updateSnapshots(blockNumber) {
-    if (blockNumber > 0 && blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
+    if (blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = this.dumpFinalDbStates();
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
@@ -219,6 +272,7 @@ class BlockchainNode {
   }
 
   getTransactionByHash(hash) {
+    const LOG_HEADER = 'getTransactionByHash';
     const transactionInfo = this.tp.transactionTracker[hash];
     if (!transactionInfo) {
       return null;
@@ -228,9 +282,11 @@ class BlockchainNode {
       const block = this.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
       if (!block) {
-        // TODO(liayoo): Ask peers for the transaction / block
+        logger.debug(`[${LOG_HEADER}] Block of number ${transactionInfo.number} is missing`);
+        return transactionInfo;
       } else if (index >= 0) {
         transactionInfo.transaction = block.transactions[index];
+        transactionInfo.receipt = block.receipts[index];
       } else {
         transactionInfo.transaction =
             _.find(block.last_votes, (tx) => tx.hash === hash) || null;
@@ -378,6 +434,16 @@ class BlockchainNode {
           logger, 2, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
     const executableTx = Transaction.toExecutable(tx);
+    if (!Transaction.isExecutable(executableTx)) {
+      return CommonUtil.logAndReturnTxResult(
+          logger, 5,
+          `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
+    }
+    if (!LIGHTWEIGHT) {
+      if (!Transaction.verifyTransaction(executableTx)) {
+        return CommonUtil.logAndReturnTxResult(logger, 6, `[${LOG_HEADER}] Invalid signature`);
+      }
+    }
     if (!this.tp.hasPerAccountRoomForNewTransaction(executableTx.address)) {
       const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
       return CommonUtil.logAndReturnTxResult(
@@ -408,7 +474,6 @@ class BlockchainNode {
   addNewBlock(block) {
     if (this.bc.addNewBlockToChain(block)) {
       this.tp.cleanUpForNewBlock(block);
-      this.tp.checkRemoteTransactions();
       return true;
     }
     return false;
@@ -416,6 +481,9 @@ class BlockchainNode {
 
   removeOldReceipts(blockNumber, db) {
     const LOG_HEADER = 'removeOldReceipts';
+    if (!FeatureFlags.enableReceiptsRecording) {
+      return;
+    }
     if (blockNumber > MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
       const oldBlock = this.bc.getBlockByNumber(blockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS);
       if (oldBlock) {

@@ -1,8 +1,7 @@
 const BlockchainNode = require('../node')
 const rimraf = require('rimraf');
-const chai = require('chai');
-const expect = chai.expect;
-const assert = chai.assert;
+const _ = require("lodash");
+const ainUtil = require('@ainblockchain/ain-util');
 const {
   CHAINS_DIR,
   GenesisToken,
@@ -15,14 +14,19 @@ const {
   PredefinedDbPaths,
   StateInfoProperties,
   SERVICE_STATE_BUDGET,
+  StateVersions,
 } = require('../common/constants')
+const {
+  verifyStateProof,
+} = require('../db/state-util');
+const Transaction = require('../tx-pool/transaction');
+const CommonUtil = require('../common/common-util');
 const {
   setNodeForTesting,
 } = require('./test-util');
-const DB = require('../db');
-const Transaction = require('../tx-pool/transaction');
-const CommonUtil = require('../common/common-util');
-const ainUtil = require('@ainblockchain/ain-util');
+const chai = require('chai');
+const expect = chai.expect;
+const assert = chai.assert;
 
 describe("DB initialization", () => {
   let node;
@@ -277,135 +281,152 @@ describe("DB operations", () => {
   });
 
   describe("Read operations", () => {
-    describe("getValue()", () => {
+    describe("getValue", () => {
       it("when retrieving high value near top of database", () => {
         assert.deepEqual(node.db.getValue("/apps/test"), dbValues)
       })
 
+      it("when retrieving high value near top of database with is_final", () => {
+        const backupFinalVersion = node.db.stateManager.getFinalVersion();
+        node.db.stateManager.finalizeVersion(StateVersions.EMPTY);
+        assert.deepEqual(node.db.getValue("/apps/test", { isFinal: true }), null)
+        node.db.stateManager.finalizeVersion(backupFinalVersion);
+      })
+
       it('when retrieving value near top of database with is_shallow', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { isShallow: true }), {
-          'ai': true,
-          'increment': true,
-          'decrement': true,
-          'nested': true,
-          'shards': true,
+          'ai': {
+            "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec"
+          },
+          'increment': {
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8"
+          },
+          'decrement': {
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8"
+          },
+          'nested': {
+            "#state_ph": "0x8763e301c728729e38c1f5500a2af7163783bdf0948a7baf7bc87b35f33b347f"
+          },
+          'shards': {
+            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223"
+          },
         })
       });
 
       it('when retrieving value with include_tree_info', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { includeTreeInfo: true }), {
-          ".num_parents": 1,
-          ".tree_bytes": 3708,
-          ".tree_height": 4,
-          ".tree_size": 21,
+          "#num_parents": 1,
+          "#tree_bytes": 3708,
+          "#tree_height": 4,
+          "#tree_size": 21,
           "ai": {
-            ".num_parents": 1,
-            ".num_parents:baz": 1,
-            ".num_parents:comcom": 1,
-            ".num_parents:foo": 1,
-            ".tree_bytes": 684,
-            ".tree_bytes:baz": 166,
-            ".tree_bytes:comcom": 168,
-            ".tree_bytes:foo": 166,
-            ".tree_height": 1,
-            ".tree_height:baz": 0,
-            ".tree_height:comcom": 0,
-            ".tree_height:foo": 0,
-            ".tree_size": 4,
-            ".tree_size:baz": 1,
-            ".tree_size:comcom": 1,
-            ".tree_size:foo": 1,
+            "#num_parents": 1,
+            "#num_parents:baz": 1,
+            "#num_parents:comcom": 1,
+            "#num_parents:foo": 1,
+            "#tree_bytes": 684,
+            "#tree_bytes:baz": 166,
+            "#tree_bytes:comcom": 168,
+            "#tree_bytes:foo": 166,
+            "#tree_height": 1,
+            "#tree_height:baz": 0,
+            "#tree_height:comcom": 0,
+            "#tree_height:foo": 0,
+            "#tree_size": 4,
+            "#tree_size:baz": 1,
+            "#tree_size:comcom": 1,
+            "#tree_size:foo": 1,
             "baz": "qux",
             "comcom": 123,
             "foo": "bar",
           },
           "decrement": {
-            ".num_parents": 1,
-            ".num_parents:value": 1,
-            ".tree_bytes": 338,
-            ".tree_bytes:value": 168,
-            ".tree_height": 1,
-            ".tree_height:value": 0,
-            ".tree_size": 2,
-            ".tree_size:value": 1,
+            "#num_parents": 1,
+            "#num_parents:value": 1,
+            "#tree_bytes": 338,
+            "#tree_bytes:value": 168,
+            "#tree_height": 1,
+            "#tree_height:value": 0,
+            "#tree_size": 2,
+            "#tree_size:value": 1,
             "value": 20,
           },
           "increment": {
-            ".num_parents": 1,
-            ".num_parents:value": 1,
-            ".tree_bytes": 338,
-            ".tree_bytes:value": 168,
-            ".tree_height": 1,
-            ".tree_height:value": 0,
-            ".tree_size": 2,
-            ".tree_size:value": 1,
+            "#num_parents": 1,
+            "#num_parents:value": 1,
+            "#tree_bytes": 338,
+            "#tree_bytes:value": 168,
+            "#tree_height": 1,
+            "#tree_height:value": 0,
+            "#tree_size": 2,
+            "#tree_size:value": 1,
             "value": 20,
           },
           "nested": {
-            ".num_parents": 1,
-            ".tree_bytes": 502,
-            ".tree_height": 2,
-            ".tree_size": 3,
+            "#num_parents": 1,
+            "#tree_bytes": 502,
+            "#tree_height": 2,
+            "#tree_size": 3,
             "far": {
-              ".num_parents": 1,
-              ".num_parents:down": 1,
-              ".tree_bytes": 336,
-              ".tree_bytes:down": 168,
-              ".tree_height": 1,
-              ".tree_height:down": 0,
-              ".tree_size": 2,
-              ".tree_size:down": 1,
+              "#num_parents": 1,
+              "#num_parents:down": 1,
+              "#tree_bytes": 336,
+              "#tree_bytes:down": 168,
+              "#tree_height": 1,
+              "#tree_height:down": 0,
+              "#tree_size": 2,
+              "#tree_size:down": 1,
               "down": 456,
-            },
+            }
           },
           "shards": {
-            ".num_parents": 1,
-            ".tree_bytes": 1622,
-            ".tree_height": 3,
-            ".tree_size": 9,
+            "#num_parents": 1,
+            "#tree_bytes": 1622,
+            "#tree_height": 3,
+            "#tree_size": 9,
             "disabled_shard": {
-              ".num_parents": 1,
-              ".num_parents:path": 1,
+              "#num_parents": 1,
+              "#num_parents:path": 1,
+              "#tree_bytes": 704,
+              "#tree_bytes:path": 168,
+              "#tree_height": 2,
+              "#tree_height:path": 0,
+              "#tree_size": 4,
+              "#tree_size:path": 1,
               ".shard": {
-                ".num_parents": 1,
-                ".num_parents:sharding_enabled": 1,
-                ".tree_bytes": 356,
-                ".tree_bytes:sharding_enabled": 164,
-                ".tree_height": 1,
-                ".tree_height:sharding_enabled": 0,
-                ".tree_size": 2,
-                ".tree_size:sharding_enabled": 1,
+                "#num_parents": 1,
+                "#num_parents:sharding_enabled": 1,
+                "#tree_bytes": 356,
+                "#tree_bytes:sharding_enabled": 164,
+                "#tree_height": 1,
+                "#tree_height:sharding_enabled": 0,
+                "#tree_size": 2,
+                "#tree_size:sharding_enabled": 1,
                 "sharding_enabled": false,
               },
-              ".tree_bytes": 704,
-              ".tree_bytes:path": 168,
-              ".tree_height": 2,
-              ".tree_height:path": 0,
-              ".tree_size": 4,
-              ".tree_size:path": 1,
               "path": 10,
             },
             "enabled_shard": {
-              ".num_parents": 1,
-              ".num_parents:path": 1,
+              "#num_parents": 1,
+              "#num_parents:path": 1,
+              "#tree_bytes": 704,
+              "#tree_bytes:path": 168,
+              "#tree_height": 2,
+              "#tree_height:path": 0,
+              "#tree_size": 4,
+              "#tree_size:path": 1,
               ".shard": {
-                ".num_parents": 1,
-                ".num_parents:sharding_enabled": 1,
-                ".tree_bytes": 356,
-                ".tree_bytes:sharding_enabled": 164,
-                ".tree_height": 1,
-                ".tree_height:sharding_enabled": 0,
-                ".tree_size": 2,
-                ".tree_size:sharding_enabled": 1,
+                "#num_parents": 1,
+                "#num_parents:sharding_enabled": 1,
+                "#tree_bytes": 356,
+                "#tree_bytes:sharding_enabled": 164,
+                "#tree_height": 1,
+                "#tree_height:sharding_enabled": 0,
+                "#tree_size": 2,
+                "#tree_size:sharding_enabled": 1,
                 "sharding_enabled": true,
               },
-              ".tree_bytes": 704,
-              ".tree_bytes:path": 168,
-              ".tree_height": 2,
-              ".tree_height:path": 0,
-              ".tree_size": 4,
-              ".tree_size:path": 1,
-              "path": 10,
+              "path": 10
             }
           }
         })
@@ -413,110 +434,110 @@ describe("DB operations", () => {
 
       it('when retrieving value with include_proof', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { includeProof: true }), {
-          ".proof_hash": "0xf1f51cb458ef3881fefbecf91db5450e601d462099e43776863f2cbb78642286",
+          "#state_ph": "0x147ecaf6c56166b504cce1cbe690bc1d14c8e2f68c7937416eac32aaf97ecf2c",
           "ai": {
-            ".proof_hash": "0xc49ca014a4d5328cfdb74164bcb8c00578719335194b07a8b91af1db0048f0bb",
-            ".proof_hash:baz": "0x74e6d7e9818333ef5d6f4eb74dc0ee64537c9e142e4fe55e583476a62b539edf",
-            ".proof_hash:comcom": "0x90840252cdaacaf90d95c14f9d366f633fd53abf7a2c359f7abfb7f651b532b5",
-            ".proof_hash:foo": "0xea86f62ccb8ed9240afb6c9090be001ef7859bf40e0782f2b8d3579b3d8310a4",
-            "baz": "qux",
-            "comcom": 123,
-            "foo": "bar"
-          },
-          "decrement": {
-            ".proof_hash": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
-            ".proof_hash:value": "0xc3c28ad8a683cb7f3d8cf05420651e08e14564e18a1805fe33720cd9d7d2deb2",
-            "value": 20
-          },
-          "increment": {
-            ".proof_hash": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
-            ".proof_hash:value": "0xc3c28ad8a683cb7f3d8cf05420651e08e14564e18a1805fe33720cd9d7d2deb2",
-            "value": 20
-          },
-          "nested": {
-            ".proof_hash": "0x8763e301c728729e38c1f5500a2af7163783bdf0948a7baf7bc87b35f33b347f",
-            "far": {
-              ".proof_hash": "0xc8b9114b37d8ece398eb8dde73b00bf5037f6b11d97eff11b5212b5f30f32417",
-              ".proof_hash:down": "0x4611868537ffbffa17f70f8ddb7cf5aacc6b4d1b32817315f631a2c7d6b6481d",
-              "down": 456
-            }
-          },
-          "shards": {
-            ".proof_hash": "0x8ab46f23c6dddce173709cbc935a33d816825ffebabc4f23d02c3d2aea85fba3",
-            "disabled_shard": {
-              ".proof_hash": "0xc0d5ac161046ecbf67ae597b3e1d96e53e78d71c0193234f78f2514dbf952161",
-              ".proof_hash:path": "0xd024945cba75febe35837d24c977a187a6339888d99d505c1be63251fec52279",
-              ".shard": {
-                ".proof_hash": "0x1908ddba2acbc0181cdc29b035c7ce371d3ed38f39b39cad3eb7e0704ccaa57b",
-                ".proof_hash:sharding_enabled": "0x055600b34c3a8a69ea5dfc2cd2f92336933be237c8b265089f3114b38b4a540a",
-                "sharding_enabled": false
-              },
-              "path": 10
-            },
-            "enabled_shard": {
-              ".proof_hash": "0x4b754c4a1a1f99d1ad9bc4a1edbeb7e2ceec6828313b52f8b880ee1cded3e4d3",
-              ".proof_hash:path": "0xd024945cba75febe35837d24c977a187a6339888d99d505c1be63251fec52279",
-              ".shard": {
-                ".proof_hash": "0xc308394fc297eb293cbef148c58665e9208a96e3664e86695db9d29c273dae96",
-                ".proof_hash:sharding_enabled": "0x1eafc1e61d5b7b28f90a34330bf62265eeb466e012aa7318098003f37e4c61cc",
-                "sharding_enabled": true
-              },
-              "path": 10
-            }
-          }
-        })
-      });
-
-      it('when retrieving value with include_version', () => {
-        assert.deepEqual(node.db.getValue('/apps/test', { includeVersion: true }), {
-          ".version": "NODE:0",
-          "ai": {
-            ".version": "NODE:0",
-            ".version:baz": "NODE:0",
-            ".version:comcom": "NODE:0",
-            ".version:foo": "NODE:0",
+            "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec",
+            "#state_ph:baz": "0x74e6d7e9818333ef5d6f4eb74dc0ee64537c9e142e4fe55e583476a62b539edf",
+            "#state_ph:comcom": "0x90840252cdaacaf90d95c14f9d366f633fd53abf7a2c359f7abfb7f651b532b5",
+            "#state_ph:foo": "0xea86f62ccb8ed9240afb6c9090be001ef7859bf40e0782f2b8d3579b3d8310a4",
             "baz": "qux",
             "comcom": 123,
             "foo": "bar",
           },
           "decrement": {
-            ".version": "NODE:0",
-            ".version:value": "NODE:0",
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
+            "#state_ph:value": "0xc3c28ad8a683cb7f3d8cf05420651e08e14564e18a1805fe33720cd9d7d2deb2",
             "value": 20,
           },
           "increment": {
-            ".version": "NODE:0",
-            ".version:value": "NODE:0",
+            "#state_ph": "0x11d1aa4946a3e44e3d467d4da85617d56aecd2559fdd6d9e5dd8fb6b5ded71b8",
+            "#state_ph:value": "0xc3c28ad8a683cb7f3d8cf05420651e08e14564e18a1805fe33720cd9d7d2deb2",
             "value": 20,
           },
           "nested": {
-            ".version": "NODE:0",
+            "#state_ph": "0x8763e301c728729e38c1f5500a2af7163783bdf0948a7baf7bc87b35f33b347f",
             "far": {
-              ".version": "NODE:0",
-              ".version:down": "NODE:0",
+              "#state_ph": "0xc8b9114b37d8ece398eb8dde73b00bf5037f6b11d97eff11b5212b5f30f32417",
+              "#state_ph:down": "0x4611868537ffbffa17f70f8ddb7cf5aacc6b4d1b32817315f631a2c7d6b6481d",
               "down": 456,
             }
           },
           "shards": {
-            ".version": "NODE:0",
+            "#state_ph": "0xbe0fbf9fec28b21de391ebb202517a420f47ee199aece85153e8fb4d9453f223",
             "disabled_shard": {
+              "#state_ph": "0xc0d5ac161046ecbf67ae597b3e1d96e53e78d71c0193234f78f2514dbf952161",
+              "#state_ph:path": "0xd024945cba75febe35837d24c977a187a6339888d99d505c1be63251fec52279",
               ".shard": {
-                ".version": "NODE:0",
-                ".version:sharding_enabled": "NODE:0",
+                "#state_ph": "0x1908ddba2acbc0181cdc29b035c7ce371d3ed38f39b39cad3eb7e0704ccaa57b",
+                "#state_ph:sharding_enabled": "0x055600b34c3a8a69ea5dfc2cd2f92336933be237c8b265089f3114b38b4a540a",
                 "sharding_enabled": false,
               },
-              ".version": "NODE:0",
-              ".version:path": "NODE:0",
+              "path": 10
+            },
+            "enabled_shard": {
+              "#state_ph": "0x4b754c4a1a1f99d1ad9bc4a1edbeb7e2ceec6828313b52f8b880ee1cded3e4d3",
+              "#state_ph:path": "0xd024945cba75febe35837d24c977a187a6339888d99d505c1be63251fec52279",
+              ".shard": {
+                "#state_ph": "0xc308394fc297eb293cbef148c58665e9208a96e3664e86695db9d29c273dae96",
+                "#state_ph:sharding_enabled": "0x1eafc1e61d5b7b28f90a34330bf62265eeb466e012aa7318098003f37e4c61cc",
+                "sharding_enabled": true,
+              },
+              "path": 10
+            }
+          }
+        });
+      });
+
+      it('when retrieving value with include_version', () => {
+        assert.deepEqual(node.db.getValue('/apps/test', { includeVersion: true }), {
+          "#version": "NODE:0",
+          "ai": {
+            "#version": "NODE:0",
+            "#version:baz": "NODE:0",
+            "#version:comcom": "NODE:0",
+            "#version:foo": "NODE:0",
+            "baz": "qux",
+            "comcom": 123,
+            "foo": "bar",
+          },
+          "decrement": {
+            "#version": "NODE:0",
+            "#version:value": "NODE:0",
+            "value": 20,
+          },
+          "increment": {
+            "#version": "NODE:0",
+            "#version:value": "NODE:0",
+            "value": 20,
+          },
+          "nested": {
+            "#version": "NODE:0",
+            "far": {
+              "#version": "NODE:0",
+              "#version:down": "NODE:0",
+              "down": 456,
+            }
+          },
+          "shards": {
+            "#version": "NODE:0",
+            "disabled_shard": {
+              "#version": "NODE:0",
+              "#version:path": "NODE:0",
+              ".shard": {
+                "#version": "NODE:0",
+                "#version:sharding_enabled": "NODE:0",
+                "sharding_enabled": false,
+              },
               "path": 10,
             },
             "enabled_shard": {
+              "#version": "NODE:0",
+              "#version:path": "NODE:0",
               ".shard": {
-                ".version": "NODE:0",
-                ".version:sharding_enabled": "NODE:0",
+                "#version": "NODE:0",
+                "#version:sharding_enabled": "NODE:0",
                 "sharding_enabled": true,
               },
-              ".version": "NODE:0",
-              ".version:path": "NODE:0",
               "path": 10,
             }
           }
@@ -540,7 +561,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("getFunction()", () => {
+    describe("getFunction", () => {
       it("when retrieving non-existing function config", () => {
         expect(node.db.getFunction("/apps/test/test_function/other/function/path")).to.equal(null);
         expect(node.db.getFunction("/apps/test/test_function/some/other_path")).to.equal(null);
@@ -573,12 +594,14 @@ describe("DB operations", () => {
 
       it("when retrieving existing function config with is_shallow", () => {
         assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isShallow: true }), {
-          some: true,
+          some: {
+            "#state_ph": "0x14df539ce39f11f6f049adf3013eae1197a71a4ce0bdbfd66d3f8adb9d97f61c"
+          },
         });
       })
     })
 
-    describe("getRule()", () => {
+    describe("getRule", () => {
       it("when retrieving non-existing rule config", () => {
         expect(node.db.getRule("/test/test_rule/other/rule/path")).to.equal(null);
         expect(node.db.getRule("/test/test_rule/some/other_path")).to.equal(null);
@@ -601,12 +624,14 @@ describe("DB operations", () => {
 
       it('when retrieving existing rule config with is_shallow', () => {
         assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isShallow: true }), {
-          some: true,
+          some: {
+            "#state_ph": "0x65d1d444e7f35a54ae9c196d83fda0ffbf93f91341a2470b83d0d512419aaf28"
+          },
         });
       });
     })
 
-    describe("getOwner()", () => {
+    describe("getOwner", () => {
       it("when retrieving non-existing owner config", () => {
         expect(node.db.getOwner("/apps/test/test_owner/other/owner/path")).to.equal(null)
       })
@@ -654,12 +679,14 @@ describe("DB operations", () => {
 
       it("when retrieving existing owner config with is_shallow", () => {
         assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isShallow: true }), {
-          some: true,
+          some: {
+            "#state_ph": "0x5086ccf28e98a15e4d1de16b1f78e3b429e3049baeb39ea22041d75dd16f5800"
+          },
         })
       })
     })
 
-    describe("matchFunction()", () => {
+    describe("matchFunction", () => {
       it("when matching existing variable path function", () => {
         assert.deepEqual(node.db.matchFunction("/apps/test/test_function/some/var_path"), {
           "matched_path": {
@@ -765,7 +792,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("matchRule()", () => {
+    describe("matchRule", () => {
       it("when matching existing variable path rule", () => {
         assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/var_path"), {
           "matched_path": {
@@ -848,7 +875,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("matchOwner()", () => {
+    describe("matchOwner", () => {
       it("when matching existing owner with matching address", () => {
         assert.deepEqual(node.db.matchOwner("/apps/test/test_owner/some/path", 'write_owner', 'abcd'), {
           "matched_path": {
@@ -979,7 +1006,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("evalRule()", () => {
+    describe("evalRule", () => {
       it("when evaluating existing variable path rule", () => {
         expect(node.db.evalRule(
             "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, Date.now()))
@@ -1012,7 +1039,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("evalOwner()", () => {
+    describe("evalOwner", () => {
       it("when evaluating existing owner with matching address", () => {
         expect(node.db.evalOwner(
             "/apps/test/test_owner/some/path", 'write_owner',
@@ -1061,7 +1088,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("get()", () => {
+    describe("get", () => {
       it("when retrieving non-existing value or function or rule or owner", () => {
         assert.deepEqual(node.db.get([
           {
@@ -1387,7 +1414,7 @@ describe("DB operations", () => {
   })
 
   describe("Write operations", () => {
-    describe("setValue()", () => {
+    describe("setValue", () => {
       it("when overwriting nested value", () => {
         const newValue = {"new": 12345}
         expect(node.db.setValue("/apps/test/nested/far/down", newValue).code).to.equal(0)
@@ -1521,7 +1548,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("incValue()", () => {
+    describe("incValue", () => {
       it("when increasing value successfully", () => {
         expect(node.db.incValue("/apps/test/increment/value", 10).code).to.equal(0)
         expect(node.db.getValue("/apps/test/increment/value")).to.equal(30)
@@ -1556,7 +1583,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("decValue()", () => {
+    describe("decValue", () => {
       it("when decreasing value successfully", () => {
         expect(node.db.decValue("/apps/test/decrement/value", 10).code).to.equal(0)
         expect(node.db.getValue("/apps/test/decrement/value")).to.equal(10)
@@ -1591,7 +1618,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("setFunction()", () => {
+    describe("setFunction", () => {
       it("when overwriting existing function config with simple path", () => {
         const functionConfig = {
           ".function": {
@@ -1692,7 +1719,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("setRule()", () => {
+    describe("setRule", () => {
       it("when overwriting existing rule config with simple path", () => {
         const ruleConfig = {
           ".rule": {
@@ -1760,7 +1787,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("setOwner()", () => {
+    describe("setOwner", () => {
       it("when overwriting existing owner config", () => {
         const ownerTree = {
           ".owner": {
@@ -1854,7 +1881,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("executeSingleSetOperation()", () => {
+    describe("executeSingleSetOperation", () => {
       it("when successful", () => {
         assert.deepEqual(node.db.executeSingleSetOperation({
           // Default type: SET_VALUE
@@ -2076,7 +2103,8 @@ describe("DB operations", () => {
                         "bandwidth_gas_amount": 0,
                       }
                     },
-                    "code": 0,
+                    "code": 105,
+                    "error_message": "Triggered function call failed",
                     "bandwidth_gas_amount": 1
                   }
                 }
@@ -2085,14 +2113,15 @@ describe("DB operations", () => {
               "bandwidth_gas_amount": 0,
             }
           },
-          "code": 0,
+          "code": 105,
+          "error_message": "Triggered function call failed",
           "bandwidth_gas_amount": 1,
         });
         assert.deepEqual(node.db.getValue(valuePath), value)
       })
     })
 
-    describe("executeMultiSetOperation()", () => {
+    describe("executeMultiSetOperation", () => {
       it("when all operations applied successfully", () => {
         assert.deepEqual(node.db.executeMultiSetOperation([
           {
@@ -2510,7 +2539,8 @@ describe("DB operations", () => {
                             "bandwidth_gas_amount": 0,
                           }
                         },
-                        "code": 0,
+                        "code": 105,
+                        "error_message": "Triggered function call failed",
                         "bandwidth_gas_amount": 1
                       }
                     }
@@ -2519,7 +2549,8 @@ describe("DB operations", () => {
                   "bandwidth_gas_amount": 0,
                 }
               },
-              "code": 0,
+              "code": 105,
+              "error_message": "Triggered function call failed",
               "bandwidth_gas_amount": 1
             },
           },
@@ -2562,7 +2593,7 @@ describe("DB operations", () => {
       rimraf.sync(CHAINS_DIR);
     });
 
-    describe("executeTransaction()", () => {
+    describe("executeTransaction", () => {
       it("returns code 0 for executable transaction", () => {
         expect(executableTx.extra).to.not.equal(undefined);
         expect(executableTx.extra.executed_at).to.equal(null);
@@ -2686,15 +2717,14 @@ describe("DB operations", () => {
             valueObj);
         node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
         expect(node.db.getStateUsageAtPath('/')[StateInfoProperties.TREE_BYTES]).to.be.lessThan(SERVICE_STATE_BUDGET);
-        
+
         const expectedGasAmountTotal = {
           bandwidth: {
-            service: 4500,
-            app: {},
+            service: 1509000,
           },
           state: {
-            service: 3541560
-          } 
+            service: 4086120
+          }
         };
         const overSizeTxBody = {
           operation: {
@@ -2708,17 +2738,16 @@ describe("DB operations", () => {
         for (let i = 0; i < 1500; i++) {
           overSizeTxBody.operation.op_list.push({
             type: 'SET_VALUE',
-            ref: `/manage_app/app_${i}/create/${i}`,
-            value: { admin: { [node.account.address]: true } }
+            ref: `/staking/app_${i}/${node.account.address}/0/stake/${i}/value`,
+            value: 1
           });
-          expectedGasAmountTotal.bandwidth.app[`app_${i}`] = 2;
         }
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (10757870 > 10000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11293042 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
-        assert.deepEqual(res.gas_cost_total, 3.5460599999999998);
+        assert.deepEqual(res.gas_cost_total, 5.59512);
       });
 
       it("cannot exceed apps state budget", () => {
@@ -4343,7 +4372,7 @@ describe("DB sharding config", () => {
   })
 })
 
-describe("Proof hash", () => {
+describe("State info", () => {
   let node, valuesObject;
 
   beforeEach(() => {
@@ -4382,18 +4411,18 @@ describe("Proof hash", () => {
   });
 
   describe("Check proof for setValue(), setOwner(), setRule(), and setFunction()", () => {
-    it("checks proof hash of under $root_path/test", () => {
+    it("checks state info of under $root_path/test", () => {
       const valuesNode = node.db.getRefForReading(['values', 'apps', 'test']);
       const ownersNode = node.db.getRefForReading(['owners', 'apps', 'test']);
       const rulesNode = node.db.getRefForReading(['rules', 'apps', 'test']);
       const functionNode = node.db.getRefForReading(['functions', 'apps', 'test']);
-      expect(valuesNode.getProofHash()).to.equal(valuesNode.buildProofHash());
-      expect(ownersNode.getProofHash()).to.equal(ownersNode.buildProofHash());
-      expect(rulesNode.getProofHash()).to.equal(rulesNode.buildProofHash());
-      expect(functionNode.getProofHash()).to.equal(functionNode.buildProofHash());
+      expect(valuesNode.verifyStateInfo()).to.equal(true);
+      expect(ownersNode.verifyStateInfo()).to.equal(true);
+      expect(rulesNode.verifyStateInfo()).to.equal(true);
+      expect(functionNode.verifyStateInfo()).to.equal(true);
     });
 
-    it("checks newly setup proof hash", () => {
+    it("checks newly setup state info", () => {
       const nestedRules = {
         "nested": {
           "$var_path": {
@@ -4445,25 +4474,44 @@ describe("Proof hash", () => {
       const ownersNode = node.db.getRefForReading(['owners', 'apps', 'test']);
       const rulesNode = node.db.getRefForReading(['rules', 'apps', 'test']);
       const functionNode = node.db.getRefForReading(['functions', 'apps', 'test']);
-      expect(valuesNode.getProofHash()).to.equal(valuesNode.buildProofHash());
-      expect(ownersNode.getProofHash()).to.equal(ownersNode.buildProofHash());
-      expect(rulesNode.getProofHash()).to.equal(rulesNode.buildProofHash());
-      expect(functionNode.getProofHash()).to.equal(functionNode.buildProofHash());
+      expect(valuesNode.verifyStateInfo()).to.equal(true);
+      expect(ownersNode.verifyStateInfo()).to.equal(true);
+      expect(rulesNode.verifyStateInfo()).to.equal(true);
+      expect(functionNode.verifyStateInfo()).to.equal(true);
     });
   });
 
-  describe("State proof (getStateProof)", () => {
-    it("tests proof with a null case", () => {
+  describe("getStateProof / verifyStateProof", () => {
+    it("null case", () => {
       assert.deepEqual(null, node.db.getStateProof('/apps/test/test'));
     });
 
-    it("tests proof with owners, rules, values and functions", () => {
-      expect(node.db.getStateProof('/')['.proof_hash']).to.not.equal(null);
+    it("non-null case", () => {
+      const proof = node.db.getStateProof('/values/token/symbol');
+      expect(proof).to.not.equal(null);
+      expect(proof['#state_ph']).to.not.equal(null);
+      const verifResult = verifyStateProof(proof);
+      _.set(verifResult, 'rootProofHash', 'erased');
+      assert.deepEqual(verifResult, {
+        "isVerified": true,
+        "mismatchedPath": null,
+        "rootProofHash": "erased",
+      });
+    });
+  });
+
+  describe("getProofHash", () => {
+    it("null case", () => {
+      assert.deepEqual(null, node.db.getProofHash('/apps/test/test'));
+    });
+
+    it("non-null case", () => {
+      expect(node.db.getProofHash('/values/token/symbol')).to.not.equal(null);
     });
   });
 });
 
-describe("State info (getStateInfo)", () => {
+describe("State info - getStateInfo", () => {
   let node, valuesObject;
 
   beforeEach(() => {
@@ -4505,60 +4553,60 @@ describe("State info (getStateInfo)", () => {
 
       // Existing paths.
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
-        "proof_hash": "0xe4fd1f81f45b74ccd16540efa905abde37b6660d3fe9fb18eb3bf6b3e7cd215a",
-        "tree_bytes": 922,
-        "tree_height": 2,
-        "tree_size": 5,
-        "version": "NODE:0"
+        "#state_ph": "0xe4fd1f81f45b74ccd16540efa905abde37b6660d3fe9fb18eb3bf6b3e7cd215a",
+        "#tree_bytes": 922,
+        "#tree_height": 2,
+        "#tree_size": 5,
+        "#version": "NODE:0"
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label11'), {
-        "proof_hash": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
-        "tree_bytes": 174,
-        "tree_height": 0,
-        "tree_size": 1,
-        "version": "NODE:0",
+        "#state_ph": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
+        "#tree_bytes": 174,
+        "#tree_height": 0,
+        "#tree_size": 1,
+        "#version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12'), {
-        "proof_hash": "0x19037329315c0182c0f965a786e6d0659bb374e907a3937f885f0da3984cfa6e",
-        "tree_bytes": 560,
-        "tree_height": 1,
-        "tree_size": 3,
-        "version": "NODE:0",
+        "#state_ph": "0x19037329315c0182c0f965a786e6d0659bb374e907a3937f885f0da3984cfa6e",
+        "#tree_bytes": 560,
+        "#tree_height": 1,
+        "#tree_size": 3,
+        "#version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12/label121'), {
-        "proof_hash": "0xfbe04067ec980e5d7364e8b6cf45f4bee9d53be89419211d0233aada9151ad50",
-        "tree_bytes": 184,
-        "tree_height": 0,
-        "tree_size": 1,
-        "version": "NODE:0",
+        "#state_ph": "0xfbe04067ec980e5d7364e8b6cf45f4bee9d53be89419211d0233aada9151ad50",
+        "#tree_bytes": 184,
+        "#tree_height": 0,
+        "#tree_size": 1,
+        "#version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12/label122'), {
-        "proof_hash": "0x8f17965ac862bad15172d21facff45ff3efb8a55ae50ca085131a3012e001c1f",
-        "tree_bytes": 184,
-        "tree_height": 0,
-        "tree_size": 1,
-        "version": "NODE:0",
+        "#state_ph": "0x8f17965ac862bad15172d21facff45ff3efb8a55ae50ca085131a3012e001c1f",
+        "#tree_bytes": 184,
+        "#tree_height": 0,
+        "#tree_size": 1,
+        "#version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2'), {
-        "proof_hash": "0x0088bff9a36081510c230f5fd6b6581b81966b185414e625df7553693d6517e3",
-        "tree_bytes": 536,
-        "tree_height": 1,
-        "tree_size": 3,
-        "version": "NODE:0",
+        "#state_ph": "0x0088bff9a36081510c230f5fd6b6581b81966b185414e625df7553693d6517e3",
+        "#tree_bytes": 536,
+        "#tree_height": 1,
+        "#tree_size": 3,
+        "#version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21'), {
-        "proof_hash": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
-        "tree_bytes": 174,
-        "tree_height": 0,
-        "tree_size": 1,
-        "version": "NODE:0",
+        "#state_ph": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
+        "#tree_bytes": 174,
+        "#tree_height": 0,
+        "#tree_size": 1,
+        "#version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label22'), {
-        "proof_hash": "0xc0da1458b190e12347891ab14253518f5e43d95473cd2546dbf8852dfb3dc281",
-        "tree_bytes": 174,
-        "tree_height": 0,
-        "tree_size": 1,
-        "version": "NODE:0",
+        "#state_ph": "0xc0da1458b190e12347891ab14253518f5e43d95473cd2546dbf8852dfb3dc281",
+        "#tree_bytes": 174,
+        "#tree_height": 0,
+        "#tree_size": 1,
+        "#version": "NODE:0",
       });
 
       // Non-existing paths.
@@ -4572,26 +4620,26 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(result.code, 0);
 
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
-        "proof_hash": "0xe037f0083e30127f0e5088be69c2629a7e14e18518ee736fc31d86ec39b3c459",
-        "tree_bytes": 348,
-        "tree_height": 1,
-        "tree_size": 2,
-        "version": "NODE:0"
+        "#state_ph": "0xe037f0083e30127f0e5088be69c2629a7e14e18518ee736fc31d86ec39b3c459",
+        "#tree_bytes": 348,
+        "#tree_height": 1,
+        "#tree_size": 2,
+        "#version": "NODE:0"
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label11'), {
-        "proof_hash": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
-        "tree_bytes": 174,
-        "tree_height": 0,
-        "tree_size": 1,
-        "version": "NODE:0",
+        "#state_ph": "0xa8681012b27ff56a45aa80f6f4d95c66c3349046cdd18cdc77028b6a634c9b0b",
+        "#tree_bytes": 174,
+        "#tree_height": 0,
+        "#tree_size": 1,
+        "#version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1/label12'), null);
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2'), {
-        "proof_hash": "0x0088bff9a36081510c230f5fd6b6581b81966b185414e625df7553693d6517e3",
-        "tree_bytes": 536,
-        "tree_height": 1,
-        "tree_size": 3,
-        "version": "NODE:0",
+        "#state_ph": "0x0088bff9a36081510c230f5fd6b6581b81966b185414e625df7553693d6517e3",
+        "#tree_bytes": 536,
+        "#tree_height": 1,
+        "#tree_size": 3,
+        "#version": "NODE:0",
       });
     });
   });
@@ -4605,46 +4653,46 @@ describe("State info (getStateInfo)", () => {
       assert.deepEqual(result.code, 0);
 
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label1'), {
-        "proof_hash": "0xc751739c3275e0b4c143835fcc0342b80af43a74cf338a8571c17e727643bbe7",
-        "tree_bytes": 906,
-        "tree_height": 2,
-        "tree_size": 5,
-        "version": "NODE:0"
+        "#state_ph": "0xc751739c3275e0b4c143835fcc0342b80af43a74cf338a8571c17e727643bbe7",
+        "#tree_bytes": 906,
+        "#tree_height": 2,
+        "#tree_size": 5,
+        "#version": "NODE:0"
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2'), {
-        "proof_hash": "0xdd1c06ba6d6ff93fea2f2a1a3a026692858cd3528424b2f86197e1761539b0e4",
-        "tree_bytes": 906,
-        "tree_height": 2,
-        "tree_size": 5,
-        "version": "NODE:0",
+        "#state_ph": "0xdd1c06ba6d6ff93fea2f2a1a3a026692858cd3528424b2f86197e1761539b0e4",
+        "#tree_bytes": 906,
+        "#tree_height": 2,
+        "#tree_size": 5,
+        "#version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21'), {
-        "proof_hash": "0xdfe61d4a6c026b34261bc83f4c9d5d24deaed1671177fee24a889930588edd89",
-        "tree_bytes": 544,
-        "tree_height": 1,
-        "tree_size": 3,
-        "version": "NODE:0",
+        "#state_ph": "0xdfe61d4a6c026b34261bc83f4c9d5d24deaed1671177fee24a889930588edd89",
+        "#tree_bytes": 544,
+        "#tree_height": 1,
+        "#tree_size": 3,
+        "#version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21/label211'), {
-        "proof_hash": "0xc7b107bdd716d26c8fe34fbcec5b91d738c3f53ee09fdf047678e85181e5f90c",
-        "tree_bytes": 176,
-        "tree_height": 0,
-        "tree_size": 1,
-        "version": "NODE:0",
+        "#state_ph": "0xc7b107bdd716d26c8fe34fbcec5b91d738c3f53ee09fdf047678e85181e5f90c",
+        "#tree_bytes": 176,
+        "#tree_height": 0,
+        "#tree_size": 1,
+        "#version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label21/label212'), {
-        "proof_hash": "0x736c5dded3f67ab5717c8c7c1b15580cb0bbf23562edd4a6898f2c1a6ca63200",
-        "tree_bytes": 176,
-        "tree_height": 0,
-        "tree_size": 1,
-        "version": "NODE:0",
+        "#state_ph": "0x736c5dded3f67ab5717c8c7c1b15580cb0bbf23562edd4a6898f2c1a6ca63200",
+        "#tree_bytes": 176,
+        "#tree_height": 0,
+        "#tree_size": 1,
+        "#version": "NODE:0",
       });
       assert.deepEqual(node.db.getStateInfo('/values/apps/test/label2/label22'), {
-        "proof_hash": "0xc0da1458b190e12347891ab14253518f5e43d95473cd2546dbf8852dfb3dc281",
-        "tree_bytes": 174,
-        "tree_height": 0,
-        "tree_size": 1,
-        "version": "NODE:0",
+        "#state_ph": "0xc0da1458b190e12347891ab14253518f5e43d95473cd2546dbf8852dfb3dc281",
+        "#tree_bytes": 174,
+        "#tree_height": 0,
+        "#tree_size": 1,
+        "#version": "NODE:0",
       });
     });
   });

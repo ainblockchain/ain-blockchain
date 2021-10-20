@@ -1,19 +1,22 @@
 #!/bin/bash
 
-if [[ "$#" -lt 4 ]] || [[ "$#" -gt 4 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full]\n"
-    printf "Example: bash start_node_incremental_gcp.sh spring 0 0 fast\n"
+if [[ "$#" -lt 4 ]] || [[ "$#" -gt 5 ]]; then
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full] [--keystore]\n"
+    printf "Example: bash start_node_incremental_gcp.sh spring 0 0 fast --keystore\n"
     exit
 fi
 
-# 1. Configure env vars (GENESIS_CONFIGS_DIR, TRACKER_WS_ADDR, ACCOUNT_INDEX, ...)
+# 1. Configure env vars (GENESIS_CONFIGS_DIR, TRACKER_WS_ADDR, ...)
 printf "\n#### [Step 1] Configure env vars ####\n\n"
 
 export GENESIS_CONFIGS_DIR=genesis-configs/testnet
+KEYSTORE_DIR=testnet_dev_staging_keys
 if [[ "$1" = 'spring' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
+    KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$1" = 'summer' ]]; then
     export TRACKER_WS_ADDR=ws://35.194.172.106:5000
+    KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$1" = 'staging' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.150.73:5000
 elif [[ "$1" = 'dev' ]]; then
@@ -81,14 +84,12 @@ fi
 
 printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
 printf "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR\n"
+printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 
 if [[ "$3" -lt 0 ]] || [[ "$3" -gt 4 ]]; then
     printf "Invalid <Node Index> argument: $3\n"
     exit
 fi
-
-export ACCOUNT_INDEX="$3"
-printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
 
 if [[ "$4" != 'fast' ]] && [[ "$4" != 'full' ]]; then
     printf "Invalid <Sync Mode> argument: $2\n"
@@ -97,6 +98,8 @@ fi
 
 export SYNC_MODE="$4"
 printf "SYNC_MODE=$SYNC_MODE\n"
+KEYSTORE_OPTION=$5
+printf "KEYSTORE_OPTION=$KEYSTORE_OPTION\n"
 
 export DEBUG=false
 export CONSOLE_LOG=false
@@ -107,7 +110,7 @@ export LIGHTWEIGHT=false
 export STAKE=100000
 export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
 
-date=$(date '+%Y-%m-%dT%H:%M')
+date=$(date '+%Y-%m-%dT%H-%M')
 printf "date=$date\n"
 NEW_DIR_PATH="../ain-blockchain-$date"
 printf "NEW_DIR_PATH=$NEW_DIR_PATH\n"
@@ -125,10 +128,10 @@ MKDIR_CMD="sudo mkdir $NEW_DIR_PATH"
 printf "MKDIR_CMD=$MKDIR_CMD\n"
 eval $MKDIR_CMD
 
-sudo chmod 777 $NEW_DIR_PATH
+sudo chmod -R 777 $NEW_DIR_PATH
 mv * $NEW_DIR_PATH
 sudo mkdir -p $BLOCKCHAIN_DATA_DIR
-sudo chmod 777 $BLOCKCHAIN_DATA_DIR
+sudo chmod -R 777 $BLOCKCHAIN_DATA_DIR
 
 # 4. Install dependencies
 printf "\n#### [Step 4] Install dependencies ####\n\n"
@@ -144,49 +147,48 @@ printf "KILL_CMD='$KILL_CMD'\n\n"
 eval $KILL_CMD
 sleep 10
 
-# 6. Start a new node server
-printf "\n#### [Step 6] Start new node server ####\n\n"
-
-MAX_OLD_SPACE_SIZE_MB=6000
-
-START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
-printf "START_CMD='$START_CMD'\n"
-eval $START_CMD
-
-# 7. Wait until the new node server catches up
-printf "\n#### [Step 7] Wait until the new node server catches up ####\n\n"
-
-SECONDS=0
-loopCount=0
-
-generate_post_data()
-{
-  cat <<EOF
-  {"method":"$1","params":{"protoVer":"0.8.0"},"jsonrpc":"2.0","id":"1"}
-EOF
-}
-
-while :
-do
-    healthCheck=$(curl -m 20 -X GET -H "Content-Type: application/json" "http://localhost:8080/health_check")
-    printf "\nhealthCheck = ${healthCheck}\n"
-    lastBlockNumber=$(curl -m 20 -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'ain_getRecentBlockNumber')" "http://localhost:8080/json-rpc" | jq -r '.result.result')
-    printf "\nlastBlockNumber = ${lastBlockNumber}\n"
-    if [[ "$healthCheck" = "true" ]]; then
-        printf "\nBlockchain Node server is synced & running!\n"
-        printf "\nTime it took to sync in seconds: $SECONDS\n"
-        break
-    fi
-    ((loopCount++))
-    printf "\nLoop count: ${loopCount}\n"
-    sleep 20
-done
-
-# 8. Remove old directory keeping the chain data
-printf "\n#### [Step 8] Remove old directory keeping the chain data ####\n\n"
+# 6. Remove old directory keeping the chain data
+printf "\n#### [Step 6] Remove old directory keeping the chain data ####\n\n"
 
 RM_CMD="sudo rm -rf $OLD_DIR_PATH"
 printf "RM_CMD='$RM_CMD'\n"
 eval $RM_CMD
+
+# 7. Start a new node server
+printf "\n#### [Step 7] Start new node server ####\n\n"
+
+# NOTE(liayoo): Currently this script supports --keystore option only for the parent chain.
+if [[ "$KEYSTORE_OPTION" != '--keystore' ]] || [[ "$2" -gt 0 ]]; then
+    export ACCOUNT_INDEX="$3"
+    printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
+    COMMAND_PREFIX=""
+else
+    if [[ "$3" = 0 ]]; then
+        KEYSTORE_FILENAME="keystore_node_0.json"
+    elif [[ "$3" = 1 ]]; then
+        KEYSTORE_FILENAME="keystore_node_1.json"
+    elif [[ "$3" = 2 ]]; then
+        KEYSTORE_FILENAME="keystore_node_2.json"
+    elif [[ "$3" = 3 ]]; then
+        KEYSTORE_FILENAME="keystore_node_3.json"
+    else
+        KEYSTORE_FILENAME="keystore_node_4.json"
+    fi
+    printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
+    sudo mkdir -p $BLOCKCHAIN_DATA_DIR/keys/8080
+    sudo mv $NEW_DIR_PATH/$KEYSTORE_DIR/$KEYSTORE_FILENAME $BLOCKCHAIN_DATA_DIR/keys/8080/
+    export KEYSTORE_FILE_PATH=$BLOCKCHAIN_DATA_DIR/keys/8080/$KEYSTORE_FILENAME
+    echo "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH"
+fi
+
+MAX_OLD_SPACE_SIZE_MB=5500
+
+# NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
+export CORS_WHITELIST=*
+printf "CORS_WHITELIST=$CORS_WHITELIST\n"
+
+START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
+printf "START_CMD='$START_CMD'\n"
+eval $START_CMD
 
 printf "\n* << Node server successfully deployed! ***************************************\n\n"

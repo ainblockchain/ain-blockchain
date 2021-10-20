@@ -29,7 +29,7 @@ MKDIR_CMD="sudo mkdir $NEW_DIR_PATH"
 printf "MKDIR_CMD=$MKDIR_CMD\n"
 eval $MKDIR_CMD
 
-sudo chmod 777 $NEW_DIR_PATH
+sudo chmod -R 777 $NEW_DIR_PATH
 mv * $NEW_DIR_PATH
 
 # 4. Install dependencies
@@ -63,9 +63,9 @@ loopCount=0
 
 while :
 do
-    numAliveNodes=$(curl -m 20 -X GET -H "Content-Type: application/json" "http://localhost:8080/network_status" | jq -r '.numAliveNodes')
-    printf "\nnumAliveNodes = ${numAliveNodes}\n"
-    if [[ "$numAliveNodes" = "$NUM_NODES" ]]; then
+    numNodesAlive=$(curl -m 20 -X GET -H "Content-Type: application/json" "http://localhost:8080/network_status" | jq -r '.numNodesAlive')
+    printf "\nnumNodesAlive = ${numNodesAlive}\n"
+    if [[ "$numNodesAlive" = "$NUM_NODES" ]]; then
         printf "\nBlockchain Tracker server is running!\n"
         printf "\nTime it took to sync in seconds: $SECONDS\n"
         break

@@ -1,9 +1,7 @@
 const logger = require('../logger')('STATE_MANAGER');
 const StateNode = require('./state-node');
 const {
-  makeCopyOfStateTree,
   renameStateTreeVersion,
-  deleteStateTree,
   deleteStateTreeVersion,
 } = require('./state-util');
 const {
@@ -133,12 +131,7 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] Null root of version: ${version}`);
       return null;
     }
-    let newRoot = null;
-    if (FeatureFlags.enableStateVersionOpt) {
-      newRoot = root.clone(newVersion);
-    } else {
-      newRoot = makeCopyOfStateTree(root);
-    }
+    const newRoot = root.clone(newVersion);
     this._setRoot(newVersion, newRoot);
     return newRoot;
   }
@@ -191,12 +184,7 @@ class StateManager {
       logger.error(`[${LOG_HEADER}] Null root of version: ${version}`);
       return false;
     }
-    let numDeletedNodes = null;
-    if (FeatureFlags.enableStateVersionOpt) {
-      numDeletedNodes = deleteStateTreeVersion(root);
-    } else {
-      numDeletedNodes = deleteStateTree(root);
-    }
+    const numDeletedNodes = deleteStateTreeVersion(root);
     logger.debug(`[${LOG_HEADER}] Deleted ${numDeletedNodes} state nodes.`);
     this._deleteRoot(version);
     return true;

@@ -5,37 +5,23 @@ const {
   FeatureFlags,
   TRANSACTION_POOL_TIMEOUT_MS,
   TRANSACTION_TRACKER_TIMEOUT_MS,
-  LIGHTWEIGHT,
   TX_POOL_SIZE_LIMIT,
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
   SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
   APPS_BANDWIDTH_BUDGET_PER_BLOCK,
   FREE_BANDWIDTH_BUDGET_PER_BLOCK,
-  GenesisSharding,
-  GenesisAccounts,
-  ShardingProperties,
   TransactionStates,
   WriteDbOperations,
-  AccountProperties,
   StateVersions,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
-const {
-  sendGetRequest,
-  signAndSendTx
-} = require('../common/network-util');
 const Transaction = require('./transaction');
-
-const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 
 class TransactionPool {
   constructor(node) {
     this.node = node;
     this.transactions = {};
     this.transactionTracker = {};
-    // Track transactions in remote blockchains (e.g. parent blockchain).
-    this.remoteTransactionTracker = {};
-    this.isChecking = false;
     this.txCountTotal = 0;
   }
 
@@ -46,15 +32,6 @@ class TransactionPool {
       logger.error(`Not executable transaction: ${JSON.stringify(tx)}`);
       return false;
     }
-    // Quick verification of transaction on entry
-    if (!LIGHTWEIGHT) {
-      if (!Transaction.verifyTransaction(tx)) {
-        logger.error('Invalid transaction');
-        logger.debug(`NOT ADDING: ${JSON.stringify(tx)}`);
-        return false;
-      }
-    }
-
     if (!(tx.address in this.transactions)) {
       this.transactions[tx.address] = [];
     }
@@ -64,6 +41,7 @@ class TransactionPool {
       address: tx.address,
       index: this.transactions[tx.address].length - 1,
       timestamp: tx.tx_body.timestamp,
+      is_executed: isExecutedTx,
       is_finalized: false,
       finalized_at: -1,
       tracked_at: tx.extra.created_at,
@@ -428,6 +406,7 @@ class TransactionPool {
         index: -1,
         address: voteTx.address,
         timestamp: txTimestamp,
+        is_executed: true,
         is_finalized: true,
         finalized_at: finalizedAt,
         tracked_at: finalizedAt,
@@ -445,6 +424,7 @@ class TransactionPool {
         index: i,
         address: tx.address,
         timestamp: tx.tx_body.timestamp,
+        is_executed: true,
         is_finalized: true,
         finalized_at: finalizedAt,
         tracked_at: finalizedAt,
@@ -491,83 +471,6 @@ class TransactionPool {
 
   getPerAccountPoolSize(address) {
     return this.transactions[address] ? this.transactions[address].length : 0;
-  }
-
-  addRemoteTransaction(txHash, action) {
-    if (!action.ref || !action.valueFunction) {
-      logger.debug(
-          `  =>> remote tx action is missing required fields: ${JSON.stringify(action)}`);
-      return;
-    }
-    const trackingInfo = {
-      txHash,
-      action,
-    };
-    logger.info(
-        `  =>> Added remote transaction to the tracker: ${JSON.stringify(trackingInfo, null, 2)}`);
-    this.remoteTransactionTracker[txHash] = trackingInfo;
-  }
-
-  checkRemoteTransactions() {
-    if (this.isChecking) {
-      return;
-    }
-    this.isChecking = true;
-    const tasks = [];
-    for (const txHash in this.remoteTransactionTracker) {
-      tasks.push(sendGetRequest(
-          parentChainEndpoint,
-          'ain_getTransactionByHash',
-          {hash: txHash}
-      ).then((resp) => {
-        const trackingInfo = this.remoteTransactionTracker[txHash];
-        const result = _.get(resp, 'data.result.result', null);
-        logger.info(
-            `  =>> Checked remote transaction: ${JSON.stringify(trackingInfo, null, 2)} ` +
-            `with result: ${JSON.stringify(result, null, 2)}`);
-        if (result && (result.is_finalized ||
-            result.state === TransactionStates.FAILED ||
-            result.state === TransactionStates.TIMED_OUT)) {
-          this.doAction(trackingInfo.action, result.is_finalized);
-          delete this.remoteTransactionTracker[txHash];
-        }
-        return result ? result.is_finalized : null;
-      }));
-    }
-    return Promise.all(tasks)
-    .then(() => {
-      this.isChecking = false;
-    });
-  }
-
-  doAction(action, success) {
-    const triggerTxBody = action.tx_body;
-    let value = null;
-    if (!action.valueFunction) {
-      logger.info(`  =>> No valueFunction in action: ${JSON.stringify(action, null, 2)}`);
-      return;
-    }
-    try {
-      value = action.valueFunction(success);
-    } catch (err) {
-      logger.info(`  =>> valueFunction() failed: ${err} ${err.stack}`);
-      return;
-    }
-    const actionTxBody = {
-      operation: {
-        type: WriteDbOperations.SET_VALUE,
-        ref: action.ref,
-        value: value,
-        is_global: action.is_global
-      },
-      timestamp: triggerTxBody.timestamp,
-      nonce: -1
-    };
-    logger.info(`  =>> Doing action with actionTxBody: ${JSON.stringify(actionTxBody, null, 2)}`);
-    const ownerPrivateKey = CommonUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-    const endpoint = `${this.node.urlInternal}/json-rpc`;
-    signAndSendTx(endpoint, actionTxBody, ownerPrivateKey);
   }
 }
 

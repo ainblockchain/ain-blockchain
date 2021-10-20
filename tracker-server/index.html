@@ -1,0 +1,76 @@
+<!-- ref: http://bl.ocks.org/jose187/4733747 -->
+<!-- ref: https://bl.ocks.org/d3noob/5141278 -->
+
+<!DOCTYPE html>
+<meta charset='utf-8'>
+<script src='https://d3js.org/d3.v3.min.js'></script>
+<body>
+  <script>
+    const width = 1000;
+    const height = 1000;
+    const data = { /* replace this */ };
+
+    const svg = d3.select('body').append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    const force = d3.layout.force()
+      .gravity(.05)
+      .distance(100)
+      .charge(-500)
+      .size([width, height])
+      .nodes(data.nodes)
+      .links(data.links)
+      .start();
+
+    // build triangle
+    svg.append('svg:defs').selectAll('marker')
+      .data(['end'])
+      .enter().append('svg:marker')
+      .attr('id', String)
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', 15)
+      .attr('refY', -1.5)
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .attr('orient', 'auto')
+      .append('svg:path')
+      .attr('d', 'M0,-5L10,0L0,5');
+
+    const link = svg
+      .selectAll('line')
+      .data(data.links)
+      .enter()
+      .append('line')
+      .attr('stroke', '#aaa')
+      .style('stroke-width', d => Math.sqrt(d.weight));
+
+    const node = svg
+      .selectAll('node')
+      .data(data.nodes)
+      .enter()
+      .append('g')
+      .call(force.drag);
+
+    node.append('circle')
+      .attr('stroke', '#fff')
+      .attr('stroke-width', '1px')
+      .attr('fill', '#555')
+      .attr('r', '5');
+
+    node.append('text')
+      .attr('dx', 12)
+      .attr('dy', '.35em')
+      .attr('stroke', '#333')
+      .text(d => d.address );
+
+    force.on('tick', () => {
+      link.attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y)
+        .attr('marker-end', 'url(#end)');
+      node.attr('transform', d => { return 'translate(' + d.x + ',' + d.y + ')'; });
+    });
+  </script>
+</body>

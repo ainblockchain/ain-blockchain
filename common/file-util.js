@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const _ = require('lodash');
+const ainUtil = require('@ainblockchain/ain-util');
 const {
   CHAINS_N2B_DIR_NAME,
   CHAINS_H2N_DIR_NAME,
@@ -88,15 +89,9 @@ class FileUtil {
     const n2bPath = path.join(chainPath, CHAINS_N2B_DIR_NAME);
     const h2nPath = path.join(chainPath, CHAINS_H2N_DIR_NAME);
     let isBlocksDirEmpty = true;
-    if (!fs.existsSync(chainPath)) {
-      fs.mkdirSync(chainPath, {recursive: true});
-    }
-    if (!fs.existsSync(n2bPath)) {
-      fs.mkdirSync(n2bPath);
-    }
-    if (!fs.existsSync(h2nPath)) {
-      fs.mkdirSync(h2nPath);
-    }
+    FileUtil.createDir(chainPath);
+    FileUtil.createDir(n2bPath);
+    FileUtil.createDir(h2nPath);
     if (fs.readdirSync(n2bPath).length > 0) {
       isBlocksDirEmpty = false;
     }
@@ -104,19 +99,34 @@ class FileUtil {
   }
 
   static createSnapshotDir(snapshotPath) {
-    if (!fs.existsSync(snapshotPath)) {
-      fs.mkdirSync(snapshotPath, { recursive: true });
-    }
-    if (!fs.existsSync(path.join(snapshotPath, SNAPSHOTS_N2S_DIR_NAME))) {
-      fs.mkdirSync(path.join(snapshotPath, SNAPSHOTS_N2S_DIR_NAME));
+    FileUtil.createDir(snapshotPath);
+    FileUtil.createDir(path.join(snapshotPath, SNAPSHOTS_N2S_DIR_NAME));
+  }
+
+  static createDir(dirPath) {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
     }
   }
 
+  static isCompressedFile(filePath) {
+    return _.endsWith(filePath, '.gz');
+  }
+
   // TODO(cshcomcom): Change to asynchronous.
-  static readCompressedJson(blockPath) {
+  static readCompressedJson(filePath) {
     try {
-      const zippedFs = fs.readFileSync(blockPath);
+      const zippedFs = fs.readFileSync(filePath);
       return JSON.parse(zlib.gunzipSync(zippedFs).toString());
+    } catch (err) {
+      return null;
+    }
+  }
+
+  static readJson(filePath) {
+    try {
+      const fileStr = fs.readFileSync(filePath);
+      return JSON.parse(fileStr);
     } catch (err) {
       return null;
     }
@@ -132,9 +142,7 @@ class FileUtil {
     const blockPath = FileUtil.getBlockPath(chainPath, block.number);
     if (!fs.existsSync(blockPath)) {
       const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
-      if (!fs.existsSync(blockDirPath)) {
-        fs.mkdirSync(blockDirPath);
-      }
+      FileUtil.createDir(blockDirPath);
       const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
       fs.writeFileSync(blockPath, compressed);
     } else {
@@ -158,10 +166,8 @@ class FileUtil {
     const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
     if (!fs.existsSync(h2nPath)) {
       const h2nDirPath = FileUtil.getH2nDirPath(chainPath, blockHash);
-      if (!fs.existsSync(h2nDirPath)) {
-        fs.mkdirSync(h2nDirPath);
-      }
-      fs.writeFileSync(h2nPath, blockNumber);
+      FileUtil.createDir(h2nDirPath);
+      fs.writeFileSync(h2nPath, blockNumber.toString());
     } else {
       logger.debug(`${h2nPath} file already exists!`);
     }
@@ -198,6 +204,11 @@ class FileUtil {
       // TODO(liayoo): Change this operation to be asynchronous
       fs.writeFileSync(filePath, zlib.gzipSync(Buffer.from(JSON.stringify(snapshot))));
     }
+  }
+
+  static getAccountFromKeystoreFile(keystorePath, password) {
+    const keystore = JSON.parse(fs.readFileSync(keystorePath));
+    return ainUtil.privateToAccount(ainUtil.v3KeystoreToPrivate(keystore, password));
   }
 
   static getNumFiles(path) {

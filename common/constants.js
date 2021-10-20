@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const semver = require('semver');
 const CommonUtil = require('./common-util');
+const TrafficStatsManager = require('../traffic/traffic-stats-manager');
 
 // ** Genesis configs **
 const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/base';
@@ -15,10 +16,6 @@ const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
 // NOTE(platfowner): If there is a corresponding env variable (e.g. force... flags),
 //                   the flag value will be OR-ed to the value.
 const FeatureFlags = {
-  // Enables state version optimization.
-  enableStateVersionOpt: true,
-  // Enables state tree transfer.
-  enableStateTreeTransfer: false,
   // Enables rich logging for functions.
   enableRichFunctionLogging: false,
   // Enables rich logging for transactions.
@@ -27,14 +24,16 @@ const FeatureFlags = {
   enableRichP2pCommunicationLogging: false,
   // Enables rich logging for tx selection in tx pool.
   enableRichTxSelectionLogging: false,
-  // Enables receipt path's prefix layers.
-  enableReceiptPathPrefixLayers: false,  // Some test cases assume this value false.
-  // Enables radix layers.
-  enableRadixTreeLayers: true,  // Some test cases assume this value true.
-  // Enables hex label cache.
-  enableHexLabelCache: false,
-  // Enables array radix child map.
-  enableArrayRadixChildMap: false,
+  // Enables state tree transfer.
+  enableStateTreeTransfer: false,
+  // Enables receipts recording to the state.
+  enableReceiptsRecording: true,  // Some test cases assume this value true.
+  // Enables ntp-sync for global time syncing.
+  enableNtpSync: true,
+  // Enables traffic monitoring.
+  enableTrafficMonitoring: true,
+  // Enables state info updates.
+  enableStateInfoUpdates: true,
 };
 
 // ** Environment variables **
@@ -52,6 +51,12 @@ const LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT)
 const SYNC_MODE = process.env.SYNC_MODE || 'full';
 const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
     Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
+const KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
+const DEFAULT_CORS_WHITELIST = ['https://ainetwork.ai', 'https://ainize.ai', 'https://afan.ai',
+    /\.ainetwork\.ai$/, /\.ainize\.ai$/, /\.afan\.ai$/, 'http://localhost:3000'];
+// NOTE(liayoo): CORS_WHITELIST env var is a comma-separated list of cors-allowed domains.
+// Note that if it includes '*', it will be set to allow all domains.
+const CORS_WHITELIST = CommonUtil.getCorsWhitelist(process.env.CORS_WHITELIST) || DEFAULT_CORS_WHITELIST;
 
 // ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -88,6 +93,7 @@ const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
 // NOTE(platfowner): Should have a value bigger than ON_MEMORY_CHAIN_LENGTH.
 const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
 const MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
+const KEYS_ROOT_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'keys');
 const HASH_DELIMITER = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
@@ -114,6 +120,9 @@ const SERVICE_TREE_SIZE_BUDGET = SERVICE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_
 const APPS_TREE_SIZE_BUDGET = APPS_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
 const FREE_TREE_SIZE_BUDGET = FREE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
 const STATE_GAS_COEFFICIENT = 1;
+const TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
+const TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
+const DEFAULT_REQUEST_BODY_SIZE_LIMIT = '100mb';
 
 // ** Enums **
 /**
@@ -132,7 +141,18 @@ const MessageTypes = {
 };
 
 /**
- * Status of blockchain nodes.
+ * Message types for communication between tracker and node.
+ *
+ * @enum {string}
+ */
+const TrackerMessageTypes = {
+  NEW_PEERS_REQUEST: 'NEW_PEERS_REQUEST',
+  NEW_PEERS_RESPONSE: 'NEW_PEERS_RESPONSE',
+  PEER_INFO_UPDATE: 'PEER_INFO_UPDATE'
+};
+
+/**
+ * States of blockchain nodes.
  *
  * @enum {string}
  */
@@ -140,6 +160,17 @@ const BlockchainNodeStates = {
   STARTING: 'STARTING',
   SYNCING: 'SYNCING',
   SERVING: 'SERVING',
+};
+
+/**
+ * States of p2p network.
+ *
+ * @enum {string}
+ */
+const P2pNetworkStates = {
+  STARTING: 'STARTING',
+  EXPANDING: 'EXPANDING',
+  STEADY: 'STEADY'
 };
 
 /**
@@ -248,17 +279,20 @@ const PredefinedDbPaths = {
   ESCROW_OPEN: 'open',
   ESCROW_RELEASE: 'release',
   ESCROW_RESULT: 'result',
-  // Remote transaction action
-  REMOTE_TX_ACTION_RESULT: 'result',
   // Sharding
   SHARDING: 'sharding',
   SHARDING_CONFIG: 'config',
   SHARDING_SHARD: 'shard',
   // Check-in & Check-out
   CHECKIN: 'checkin',
-  CHECKIN_REQUEST: 'request',
-  CHECKIN_PAYLOAD: 'payload',
-  CHECKIN_PARENT_FINALIZE: 'parent_finalize',
+  CHECKIN_AMOUNT: 'amount',
+  CHECKIN_HISTORY: 'history',
+  CHECKIN_REQUESTS: 'requests',
+  CHECKIN_STATS: 'stats',
+  CHECKIN_STATS_COMPLETE: 'complete',
+  CHECKIN_STATS_PENDING: 'pending',
+  CHECKIN_STATS_TOTAL: 'total',
+  CHECKIN_TOKEN_POOL: 'token_pool',
   CHECKOUT: 'checkout',
   CHECKOUT_HISTORY: 'history',
   CHECKOUT_HISTORY_REFUND: 'refund',
@@ -357,28 +391,19 @@ const FunctionTypes = {
 };
 
 /**
- * Properties of state proof.
- *
- * @enum {string}
- */
-const ProofProperties = {
-  LABEL: '.label',
-  PROOF_HASH: '.proof_hash',
-  RADIX_PROOF_HASH: '.radix_ph',
-};
-
-/**
  * Properties of state info.
  *
  * @enum {string}
  */
 const StateInfoProperties = {
-  NUM_PARENTS: 'num_parents',
-  PROOF_HASH: 'proof_hash',
-  VERSION: 'version',
-  TREE_HEIGHT: 'tree_height',
-  TREE_SIZE: 'tree_size',
-  TREE_BYTES: 'tree_bytes',
+  NUM_PARENTS: '#num_parents',
+  RADIX_PROOF_HASH: '#radix_ph',
+  SERIAL: '#serial',
+  STATE_PROOF_HASH: '#state_ph',
+  VERSION: '#version',
+  TREE_HEIGHT: '#tree_height',
+  TREE_SIZE: '#tree_size',
+  TREE_BYTES: '#tree_bytes',
 };
 
 /**
@@ -387,6 +412,7 @@ const StateInfoProperties = {
  * @enum {string}
  */
 const NativeFunctionIds = {
+  CANCEL_CHECKIN: '_cancelCheckin',
   CLAIM: '_claim',
   CLAIM_REWARD: '_claimReward',
   CLOSE_CHECKIN: '_closeCheckin',
@@ -503,11 +529,14 @@ const FunctionResultCode = {
   IN_LOCKUP_PERIOD: 200,
   // Create app
   INVALID_SERVICE_NAME: 300,
-  // Checkout
+  // Check-in & Check-out
   INVALID_ACCOUNT_NAME: 400,
   INVALID_CHECKOUT_AMOUNT: 401,
   INVALID_RECIPIENT: 402,
   INVALID_TOKEN_BRIDGE_CONFIG: 403,
+  INVALID_SENDER: 405,
+  UNPROCESSED_REQUEST_EXISTS: 406,
+  INVALID_CHECKIN_AMOUNT: 407,
   // Claim reward
   INVALID_AMOUNT: 500,
 };
@@ -614,7 +643,19 @@ function isAppDependentServiceType(type) {
 const SyncModeOptions = {
   FULL: 'full',
   FAST: 'fast',
-}
+};
+
+const TrafficEventTypes = {
+  // JSON-RPC APIs
+  JSON_RPC_GET: 'json_rpc_get',
+  JSON_RPC_SET: 'json_rpc_set',
+  // P2P messages
+  P2P_MESSAGE_CLIENT: 'p2p_message_client',
+  P2P_MESSAGE_SERVER: 'p2p_message_server',
+  // Client APIs
+  CLIENT_API_GET: 'client_api_get',
+  CLIENT_API_SET: 'client_api_set',
+};
 
 /**
  * Overwriting environment variables.
@@ -653,20 +694,24 @@ overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 
 // NOTE(minsulee2): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
 // The minimum network connections are set based on the MAX_NUM_VALIDATORS otherwise.
-function initializeNetworkEnvronments() {
+function initializeNetworkEnvironments() {
   if (process.env.NETWORK_OPTIMIZATION) {
     return GenesisParams.network;
   } else {
     return {
       P2P_MESSAGE_TIMEOUT_MS: 600000,
-      MAX_NUM_PEER_CANDIDATES_AT_ONCE: 2,
-      DEFAULT_MAX_OUTBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
-      DEFAULT_MAX_INBOUND: GenesisParams.consensus.MAX_NUM_VALIDATORS - 1
+      // NOTE(minsulee2): This will be updated, after network extension experiment done.
+      // NOTE(liayoo): The following env vars are temporary as well.
+      TARGET_NUM_OUTBOUND_CONNECTION: process.env.TARGET_NUM_OUTBOUND_CONNECTION ?
+          Number(process.env.TARGET_NUM_OUTBOUND_CONNECTION) : GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      MAX_NUM_INBOUND_CONNECTION: process.env.MAX_NUM_INBOUND_CONNECTION ?
+          Number(process.env.MAX_NUM_INBOUND_CONNECTION) : GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+      REQUEST_BODY_SIZE_LIMIT: GenesisParams.network.REQUEST_BODY_SIZE_LIMIT || DEFAULT_REQUEST_BODY_SIZE_LIMIT,
     }
   }
 }
 
-const networkEnv = initializeNetworkEnvronments();
+const networkEnv = initializeNetworkEnvironments();
 
 /**
  * Port number helper.
@@ -835,6 +880,9 @@ function buildRulePermission(rule) {
   };
 }
 
+const trafficStatsManager = new TrafficStatsManager(
+    TRAFFIC_DB_INTERVAL_MS, TRAFFIC_DB_MAX_INTERVALS, FeatureFlags.enableTrafficMonitoring);
+
 module.exports = {
   FeatureFlags,
   CURRENT_PROTOCOL_VERSION,
@@ -854,12 +902,15 @@ module.exports = {
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
   MAX_NUM_SNAPSHOTS,
   MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
+  KEYS_ROOT_DIR,
   DEBUG,
   CONSOLE_LOG,
   ENABLE_DEV_SET_CLIENT_API,
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
   ACCOUNT_INDEX,
+  KEYSTORE_FILE_PATH,
+  CORS_WHITELIST,
   PORT,
   P2P_PORT,
   LIGHTWEIGHT,
@@ -880,8 +931,12 @@ module.exports = {
   APPS_TREE_SIZE_BUDGET,
   FREE_TREE_SIZE_BUDGET,
   STATE_GAS_COEFFICIENT,
+  TRAFFIC_DB_INTERVAL_MS,
+  TRAFFIC_DB_MAX_INTERVALS,
   MessageTypes,
+  TrackerMessageTypes,
   BlockchainNodeStates,
+  P2pNetworkStates,
   PredefinedDbPaths,
   TokenProperties,
   TokenBridgeProperties,
@@ -891,7 +946,6 @@ module.exports = {
   FunctionProperties,
   FunctionTypes,
   FunctionResultCode,
-  ProofProperties,
   StateInfoProperties,
   NativeFunctionIds,
   isNativeFunctionId,
@@ -911,6 +965,7 @@ module.exports = {
   GenesisOwners,
   GasFeeConstants,
   SyncModeOptions,
+  TrafficEventTypes,
   isServiceType,
   isServiceAccountServiceType,
   isAppDependentServiceType,
@@ -919,5 +974,7 @@ module.exports = {
   ...GenesisParams.blockchain,
   ...GenesisParams.consensus,
   ...GenesisParams.resource,
-  ...networkEnv
+  ...networkEnv,
+  GenesisParams,
+  trafficStatsManager,
 };
