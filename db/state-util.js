@@ -569,9 +569,8 @@ function updateStateInfoForAllRootPaths(curNode, updatedChildLabel = null) {
 
   const childNode = curNode.getChild(updatedChildLabel);
   if (childNode === null) {
-    logger.error(
-        `[${LOG_HEADER}] Updating state info with non-existing label: ${updatedChildLabel} ` +
-        `at: ${new Error().stack}.`);
+    CommonUtil.logWithStackTrace(logger, 
+        `[${LOG_HEADER}] Updating state info with non-existing label: ${updatedChildLabel}`);
     return 0;
   }
   return updateStateInfoForAllRootPathsRecursive(

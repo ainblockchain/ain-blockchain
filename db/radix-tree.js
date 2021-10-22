@@ -169,18 +169,16 @@ class RadixTree {
 
       // Case 1: Has no child with the label radix.
       if (!curNode.hasChild(childLabelRadix)) {
-        logger.error(
-            `[${LOG_HEADER}] No radix node exists for state label: ${stateLabel} ` +
-            `at: ${new Error().stack}.`);
+        CommonUtil.logWithStackTrace(logger, 
+            `[${LOG_HEADER}] No radix node exists for state label: ${stateLabel}`);
         return null;
       }
       const child = curNode.getChild(childLabelRadix);
 
       // Case 2: Has a child with the label radix but no match with the label suffix.
       if (!RadixTree._matchLabelSuffix(child, radixLabel, labelIndex + 1)) {
-        logger.error(
-            `[${LOG_HEADER}] No radix node exists for state label: ${stateLabel} ` +
-            `at: ${new Error().stack}.`);
+        CommonUtil.logWithStackTrace(logger, 
+            `[${LOG_HEADER}] No radix node exists for state label: ${stateLabel}`);
         return null;
       }
 
@@ -207,9 +205,8 @@ class RadixTree {
       return null;
     }
     if (!node.hasChildStateNode()) {
-      logger.error(
-          `[${LOG_HEADER}] A node without state node with label: ` +
-          `${node.getLabel()} at: ${new Error().stack}.`);
+      CommonUtil.logWithStackTrace(logger, 
+          `[${LOG_HEADER}] A node without state node with label: ${node.getLabel()}`);
       return null;
     }
     return node.getChildStateNode();
@@ -239,22 +236,20 @@ class RadixTree {
     const LOG_HEADER = '_mergeToChild';
 
     if (node.numParents() === 0) {
-      logger.error(
-          `[${LOG_HEADER}] Trying to merge a root node at: ${new Error().stack}.`);
+      CommonUtil.logWithStackTrace(logger, `[${LOG_HEADER}] Trying to merge a root node.`);
       // Does nothing.
       return [node];
     }
     if (node.numChildren() !== 1) {
-      logger.error(
+      CommonUtil.logWithStackTrace(logger, 
           `[${LOG_HEADER}] Trying to merge a node having ${node.numChildren()} children: ` +
-          `${node.getLabel()} at: ${new Error().stack}.`);
+          `${node.getLabel()}`);
       // Does nothing.
       return [node];
     }
     if (node.hasChildStateNode()) {
-      logger.error(
-          `[${LOG_HEADER}] Trying to merge a node having a state node: ${node.getLabel()} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logWithStackTrace(logger, 
+          `[${LOG_HEADER}] Trying to merge a node having a state node: ${node.getLabel()}`);
       // Does nothing.
       return [node];
     }
@@ -283,16 +278,14 @@ class RadixTree {
 
     const node = this._getRadixNodeForDeleting(stateLabel);
     if (node === null || !node.hasChildStateNode()) {
-      logger.error(
-          `[${LOG_HEADER}] Deleting a non-existing child of label: ${stateLabel} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logWithStackTrace(logger, 
+          `[${LOG_HEADER}] Deleting a non-existing child of label: ${stateLabel}`);
       // Does nothing.
       return false;
     }
     if (node.numParents() === 0) {
-      logger.error(
-          `[${LOG_HEADER}] Deleting the root node with label: ${stateLabel} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logWithStackTrace(logger, 
+          `[${LOG_HEADER}] Deleting the root node with label: ${stateLabel}`);
       // Does nothing.
       return false;
     }
@@ -307,9 +300,8 @@ class RadixTree {
       }
     } else if (node.numChildren() === 0) {
       if (node.numParents() !== 1) {
-        logger.error(
-            `[${LOG_HEADER}] Multiple parents of a cloned node with label: ${stateLabel} ` +
-            `at: ${new Error().stack}.`);
+        CommonUtil.logWithStackTrace(logger, 
+            `[${LOG_HEADER}] Multiple parents of a cloned node with label: ${stateLabel}`);
         // Does nothing.
         return false;
       } else {  // the node has only 1 parent.
@@ -389,9 +381,9 @@ class RadixTree {
 
     const node = this._getRadixNodeForReading(updatedNodeLabel);
     if (node === null) {
-      logger.error(
+      CommonUtil.logWithStackTrace(logger, 
           `[${LOG_HEADER}] Updating proof hash for non-existing child with label: ` +
-          `${updatedNodeLabel} at: ${new Error().stack}.`);
+          `${updatedNodeLabel}`);
       // Does nothing.
       return 0;
     }
