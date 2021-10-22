@@ -217,6 +217,8 @@ function isValidFunctionInfo(functionInfoObj) {
   const isIdentical =
       _.isEqual(JSON.parse(JSON.stringify(sanitized)), functionInfoObj, { strict: true });
   if (!isIdentical) {
+    const diffLines = CommonUtil.getDiffJson(sanitized, functionInfoObj);
+    logger.info(`Function info is in a non-standard format:\n${diffLines}\n`);
     return false;
   }
   const functionUrl = functionInfoObj[FunctionProperties.FUNCTION_URL];
@@ -282,6 +284,10 @@ function isValidOwnerPermissions(ownerPermissionsObj) {
   const sanitized = sanitizeOwnerPermissions(ownerPermissionsObj);
   const isIdentical =
       _.isEqual(JSON.parse(JSON.stringify(sanitized)), ownerPermissionsObj, { strict: true });
+  if (!isIdentical) {
+    const diffLines = CommonUtil.getDiffJson(sanitized, ownerPermissionsObj);
+    logger.info(`Owner permission is in a non-standard format:\n${diffLines}\n`);
+  }
   return isIdentical;
 }
 
