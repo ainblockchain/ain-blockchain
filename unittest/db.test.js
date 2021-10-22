@@ -590,7 +590,7 @@ describe("DB operations", () => {
       it("when retrieving existing function config with is_shallow", () => {
         assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isShallow: true }), {
           some: {
-            "#state_ph": "0x14df539ce39f11f6f049adf3013eae1197a71a4ce0bdbfd66d3f8adb9d97f61c"
+            "#state_ph": "0x637e4fb9edc3f569e3a4bced647d706bf33742bca14b1aae3ca01fd5b44120d5"
           },
         });
       })
