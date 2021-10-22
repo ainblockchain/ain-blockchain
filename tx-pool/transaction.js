@@ -239,10 +239,8 @@ class Transaction {
     const sanitized = Transaction.sanitizeTxBody(txBody);
     const isIdentical = _.isEqual(JSON.parse(JSON.stringify(sanitized)), txBody, { strict: true });
     if (!isIdentical) {
-      logger.info(
-          `Transaction body in a non-standard format ` +
-          `- input:\n${JSON.stringify(txBody, null, 2)}\n\n` +
-          `- sanitized:\n${JSON.stringify(sanitized, null, 2)}\n\n`);
+      const diffLines = CommonUtil.getDiffJson(sanitized, txBody);
+      logger.info(`Transaction body is in a non-standard format:\n${diffLines}\n`);
       return false;
     }
     return true;
