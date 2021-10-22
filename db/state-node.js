@@ -171,9 +171,9 @@ class StateNode {
   addParentRadixNode(parentRadixNode) {
     const LOG_HEADER = 'addParentRadixNode';
     if (this.hasParentRadixNode(parentRadixNode)) {
-      logger.error(
+      CommonUtil.logWithStackTrace(logger, 
           `[${LOG_HEADER}] Adding an existing parent radix node of label: ` +
-          `${parentRadixNode.getLabel()} at: ${new Error().stack}.`);
+          `${parentRadixNode.getLabel()}`);
       // Does nothing.
       return;
     }
@@ -187,9 +187,9 @@ class StateNode {
   deleteParentRadixNode(parentRadixNode) {
     const LOG_HEADER = 'deleteParentRadixNode';
     if (!this.parentRadixNodeSet.has(parentRadixNode)) {
-      logger.error(
+      CommonUtil.logWithStackTrace(logger, 
           `[${LOG_HEADER}] Deleting a non-existing parent radix node of label: ` +
-          `${parentRadixNode.getLabel()} at: ${new Error().stack}.`);
+          `${parentRadixNode.getLabel()}`);
       // Does nothing.
       return;
     }
@@ -222,9 +222,8 @@ class StateNode {
   addParent(parent) {
     const LOG_HEADER = 'addParent';
     if (this.hasParent(parent)) {
-      logger.error(
-          `[${LOG_HEADER}] Adding an existing parent of label: ${parent.getLabel()} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logWithStackTrace(logger, 
+          `[${LOG_HEADER}] Adding an existing parent of label: ${parent.getLabel()}`);
       // Does nothing.
       return;
     }
@@ -238,9 +237,8 @@ class StateNode {
   deleteParent(parent) {
     const LOG_HEADER = 'deleteParent';
     if (!this.parentSet.has(parent)) {
-      logger.error(
-          `[${LOG_HEADER}] Deleting a non-existing parent of label: ${parent.getLabel()} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logWithStackTrace(logger, 
+          `[${LOG_HEADER}] Deleting a non-existing parent of label: ${parent.getLabel()}`);
       // Does nothing.
       return;
     }
@@ -277,9 +275,8 @@ class StateNode {
     const child = this.getChild(label);
     if (child !== null) {
       if (child === node) {
-        logger.error(
-            `[${LOG_HEADER}] Setting a child with label ${label} which is already a child ` +
-            `at: ${new Error().stack}.`);
+        CommonUtil.logWithStackTrace(logger, 
+            `[${LOG_HEADER}] Setting a child with label ${label} which is already a child.`);
         // Does nothing.
         return;
       }
@@ -295,9 +292,8 @@ class StateNode {
     const LOG_HEADER = 'deleteChild';
     const child = this.getChild(label);
     if (child === null) {
-      logger.error(
-          `[${LOG_HEADER}] Deleting a non-existing child with label: ${label} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logWithStackTrace(logger, 
+          `[${LOG_HEADER}] Deleting a non-existing child with label: ${label}`);
       // Does nothing.
       return;
     }
