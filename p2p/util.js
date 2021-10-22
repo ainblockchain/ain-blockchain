@@ -70,7 +70,7 @@ function getAddressFromMessage(message) {
     return null;
   } else {
     const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.data.body));
-    return CommonUtil.getAddressFromSignature(hashedMessage, message.data.signature);
+    return CommonUtil.getAddressFromSignature(logger, hashedMessage, message.data.signature);
   }
 }
 

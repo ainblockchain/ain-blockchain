@@ -50,8 +50,7 @@ class CommonUtil {
   /**
    * Gets address from hash and signature.
    */
-  static getAddressFromSignature(hash, signature) {
-    const logger = require('../logger')('CHAIN_UTIL');
+  static getAddressFromSignature(logger, hash, signature) {
     const LOG_HEADER = 'getAddressFromSignature';
     let address = '';
     try {
@@ -648,6 +647,27 @@ class CommonUtil {
       logger.debug(message);
     }
     return CommonUtil.returnTxResult(code, message);
+  }
+
+  /**
+   * Logs an error message with stack trace.
+   *
+   * @param logger logger to log with
+   * @param message message to log
+   */
+  static logWithStackTrace(logger, message) {
+    logger.error(message + `\n${new Error().stack}.`);
+  }
+
+  /**
+   * Exits the process after logging with stack trace.
+   *
+   * @param logger logger to log with
+   * @param message message to log
+   */
+  static exitWithStackTrace(logger, message) {
+    CommonUtil.logWithStackTrace(logger, message);
+    process.exit(0);
   }
 
   static keyStackToMetricName(keyStack) {
