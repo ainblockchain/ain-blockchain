@@ -1,3 +1,4 @@
+const logger = require('../logger')('FILE-UTIL');
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
@@ -12,7 +13,6 @@ const {
 } = require('./constants');
 const CommonUtil = require('./common-util');
 const JSON_GZIP_FILE_EXTENSION = 'json.gz';
-const logger = require('../logger')('FILE-UTIL');
 
 class FileUtil {
   static getBlockDirPath(chainPath, blockNumber) {

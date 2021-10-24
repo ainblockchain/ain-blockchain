@@ -1,4 +1,5 @@
 const stringify = require('fast-json-stable-stringify');
+const Diff = require('diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -50,8 +51,7 @@ class CommonUtil {
   /**
    * Gets address from hash and signature.
    */
-  static getAddressFromSignature(hash, signature) {
-    const logger = require('../logger')('CHAIN_UTIL');
+  static getAddressFromSignature(logger, hash, signature) {
     const LOG_HEADER = 'getAddressFromSignature';
     let address = '';
     try {
@@ -650,6 +650,27 @@ class CommonUtil {
     return CommonUtil.returnTxResult(code, message);
   }
 
+  /**
+   * Logs an error message with stack trace.
+   *
+   * @param logger logger to log with
+   * @param message message to log
+   */
+  static logErrorWithStackTrace(logger, message) {
+    logger.error(message + `\n${new Error().stack}.`);
+  }
+
+  /**
+   * Exits the process after logging with stack trace.
+   *
+   * @param logger logger to log with
+   * @param message message to log
+   */
+  static exitWithStackTrace(logger, message) {
+    CommonUtil.logErrorWithStackTrace(logger, message);
+    process.exit(0);
+  }
+
   static keyStackToMetricName(keyStack) {
     return _.join(keyStack, ':');
   }
@@ -738,6 +759,22 @@ class CommonUtil {
       return '*';
     }
     return [...new Set([...inputList])];
+  }
+
+  static getDiffJson(base, target) {
+    if (!CommonUtil.isDict(base) || !CommonUtil.isDict(target)) {
+      return '';
+    }
+    const diff = Diff.diffJson(base, target);
+    let diffLines = '> begin diff >>>';
+    for (const line of diff) {
+      const sign = line.added ? '+' : (line.removed ? '-' : null);
+      if (sign !== null) {
+        diffLines += `\n${sign} ${JSON.stringify(line.value)}`;
+      }
+    }
+    diffLines += '\n<<< end diff <';
+    return diffLines;
   }
 }
 
