@@ -115,8 +115,8 @@ class RadixNode {
   setChildStateNode(childStateNode) {
     const LOG_HEADER = 'setChildStateNode';
     if (!childStateNode) {
-      CommonUtil.logWithStackTrace(logger, 
-          `[${LOG_HEADER}] Setting invalid state node: ${childStateNode}`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Setting invalid state node: ${childStateNode}`);
       // Does nothing.
       return;
     }
@@ -172,8 +172,8 @@ class RadixNode {
   addParent(parent) {
     const LOG_HEADER = 'addParent';
     if (this.hasParent(parent)) {
-      CommonUtil.logWithStackTrace(logger, 
-          `[${LOG_HEADER}] Adding an existing parent of label: ${parent.getLabel()}`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Adding an existing parent of label: ${parent.getLabel()}`);
       // Does nothing.
       return;
     }
@@ -187,8 +187,8 @@ class RadixNode {
   deleteParent(parent) {
     const LOG_HEADER = 'deleteParent';
     if (!this.parentSet.has(parent)) {
-      CommonUtil.logWithStackTrace(logger, 
-          `[${LOG_HEADER}] Deleting a non-existing parent of label: ${parent.getLabel()}`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Deleting a non-existing parent of label: ${parent.getLabel()}`);
       // Does nothing.
       return;
     }
@@ -214,21 +214,22 @@ class RadixNode {
   setChild(labelRadix, labelSuffix, node) {
     const LOG_HEADER = 'setChild';
     if (!CommonUtil.isString(labelRadix) || labelRadix.length !== 1) {
-      CommonUtil.logWithStackTrace(logger, 
-          `[${LOG_HEADER}] Setting a child with invalid label radix ${labelRadix}`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Setting a child with invalid label radix ${labelRadix}`);
       // Does nothing.
       return false;
     }
     if (!CommonUtil.isString(labelSuffix)) {
-      CommonUtil.logWithStackTrace(logger, 
-          `[${LOG_HEADER}] Setting a child with invalid label suffix ${labelRadix}`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Setting a child with invalid label suffix ${labelRadix}`);
       // Does nothing.
       return false;
     }
     if (this.hasChild(labelRadix)) {
       const child = this.getChild(labelRadix);
       if (child === node) {
-        CommonUtil.logWithStackTrace(logger, 
+        CommonUtil.logErrorWithStackTrace(
+            logger,
             `[${LOG_HEADER}] Setting an existing child with label ${labelRadix + labelSuffix}`);
         // Does nothing.
         return false;
@@ -251,14 +252,14 @@ class RadixNode {
   deleteChild(labelRadix) {
     const LOG_HEADER = 'deleteChild';
     if (!CommonUtil.isString(labelRadix) || labelRadix.length !== 1) {
-      CommonUtil.logWithStackTrace(logger, 
-          `[${LOG_HEADER}] Deleting a child with invalid label radix ${labelRadix}`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Deleting a child with invalid label radix ${labelRadix}`);
       // Does nothing.
       return false;
     }
     if (!this.hasChild(labelRadix)) {
-      CommonUtil.logWithStackTrace(logger, 
-          `[${LOG_HEADER}] Deleting a non-existing child with label radix: ${labelRadix}`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Deleting a non-existing child with label radix: ${labelRadix}`);
       // Does nothing.
       return false;
     }
