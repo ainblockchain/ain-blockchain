@@ -1277,5 +1277,32 @@ describe("CommonUtil", () => {
         ]
       }), ['app_a', 'app_b']);
     });
+  });
+
+  describe('getDiffJson', () => { 
+    it("when abnormal input", () => {
+      assert.deepEqual(CommonUtil.getDiffJson(null, null), '');
+      assert.deepEqual(CommonUtil.getDiffJson(null, undefined), '');
+      assert.deepEqual(CommonUtil.getDiffJson(null, []), '');
+      assert.deepEqual(CommonUtil.getDiffJson({}, null), '');
+      assert.deepEqual(CommonUtil.getDiffJson({}, undefined), '');
+      assert.deepEqual(CommonUtil.getDiffJson({}, []), '');
+    });
+
+    it("when normal input", () => {
+      assert.deepEqual(CommonUtil.getDiffJson({
+        a: 'aaa',
+        b: {
+          bb: 'bbbbbb'
+        },
+        c: 'ccc'
+      }, {
+        b: {
+          bc: 'bcbcbc'
+        },
+        c: 'ccc',
+        d: 'ddd',
+      }), '> begin diff >>>\n- "  \\"a\\": \\"aaa\\",\\n"\n- "    \\"bb\\": \\"bbbbbb\\"\\n"\n+ "    \\"bc\\": \\"bcbcbc\\"\\n"\n+ "  \\"d\\": \\"ddd\\"\\n"\n<<< end diff <');
+    });
   })
 })
