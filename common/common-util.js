@@ -656,7 +656,7 @@ class CommonUtil {
    * @param logger logger to log with
    * @param message message to log
    */
-  static logWithStackTrace(logger, message) {
+  static logErrorWithStackTrace(logger, message) {
     logger.error(message + `\n${new Error().stack}.`);
   }
 
@@ -667,7 +667,7 @@ class CommonUtil {
    * @param message message to log
    */
   static exitWithStackTrace(logger, message) {
-    CommonUtil.logWithStackTrace(logger, message);
+    CommonUtil.logErrorWithStackTrace(logger, message);
     process.exit(0);
   }
 
