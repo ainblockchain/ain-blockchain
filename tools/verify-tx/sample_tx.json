@@ -1,0 +1,32 @@
+{
+  "state": "IN_BLOCK",
+  "number": 363,
+  "index": 0,
+  "address": "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00",
+  "timestamp": 1634625849021,
+  "is_executed": true,
+  "is_finalized": true,
+  "finalized_at": 1634626050475,
+  "tracked_at": 1634626050475,
+  "transaction": {
+    "tx_body": {
+      "operation": {
+        "type": "SET_VALUE",
+        "ref": "/transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/3/value",
+        "value": 33
+      },
+      "nonce": 0,
+      "timestamp": 1634625849021,
+      "gas_price": 0
+    },
+    "signature": "0x21e045cb01d8417319e8cd2544c038bf87b3db34f1c9a9fd59f3f39005d6991267e090e44a5d033c1fa7e498b4b86f6898f90d0d2c3f44118f686d12de58f33a25b4e05d08338d1f0c9b164bde4dbadedcaa11a485795618cd11945a2ba34e661b",
+    "hash": "0x21e045cb01d8417319e8cd2544c038bf87b3db34f1c9a9fd59f3f39005d69912",
+    "address": "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00"
+  },
+  "receipt": {
+    "code": 103,
+    "error_message": "No write permission on: /transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/3/value",
+    "gas_amount_charged": 1,
+    "gas_cost_total": 0
+  }
+}
