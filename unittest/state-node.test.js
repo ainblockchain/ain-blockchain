@@ -1282,7 +1282,7 @@ describe("state-node", () => {
           },
           "bb": {
             "#radix_ph": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184",
-            "0x11bbbb": "child_proof2"
+            "#state_label:0x11bbbb": "child_proof2"
           }
         }
       });

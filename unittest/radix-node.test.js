@@ -1084,7 +1084,7 @@ describe("radix-node", () => {
         "2012": {
           "#radix_ph": "0x7fc53637a6ff6b7efa8cf7c9ba95552ed7479262ad8c07a61b4d2b1e8002d360",
         },
-        "stateLabel1": {
+        "#state_label:stateLabel1": {
           "#state_ph": "stateNodePH1",
         }
       });
@@ -1101,7 +1101,7 @@ describe("radix-node", () => {
       // on a node with state node value with state proof with isRootRadixNode = false
       assert.deepEqual(child1.getProofOfRadixNode(null, null, 'stateProof1'), {
         "#radix_ph": "0xd56eaf71ba15b95bf26276fe9ce88a4977a71271405c88aeb4f4efd5e34a8399",
-        "stateLabel1": "stateProof1",
+        "#state_label:stateLabel1": "stateProof1"
       });
 
       // on a node without state node value with state proof with isRootRadixNode = false
@@ -1116,7 +1116,7 @@ describe("radix-node", () => {
         "2012": {
           "#radix_ph": "0x7fc53637a6ff6b7efa8cf7c9ba95552ed7479262ad8c07a61b4d2b1e8002d360",
         },
-        "stateLabel1": {
+        "#state_label:stateLabel1": {
           "#state_ph": "stateNodePH1",
         }
       });
@@ -1133,7 +1133,7 @@ describe("radix-node", () => {
       // on a node with state node value with state proof with isRootRadixNode = true
       assert.deepEqual(child1.getProofOfRadixNode(null, null, 'stateProof1', true), {
         "#state_ph": "0xd56eaf71ba15b95bf26276fe9ce88a4977a71271405c88aeb4f4efd5e34a8399",
-        "stateLabel1": "stateProof1",
+        "#state_label:stateLabel1": "stateProof1",
       });
 
       // on a node without state node value with state proof with isRootRadixNode = true
