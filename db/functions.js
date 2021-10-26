@@ -14,6 +14,7 @@ const {
   REST_FUNCTION_CALL_TIMEOUT_MS,
   buildOwnerPermissions,
   buildRulePermission,
+  ENABLE_REST_FUNCTION_CALL,
 } = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
@@ -170,7 +171,8 @@ class Functions {
             }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
-          if (functionEntry.function_url &&
+          if (ENABLE_REST_FUNCTION_CALL &&
+              functionEntry.function_url &&
               functionEntry.function_url in this.db.getRestFunctionsUrlWhitelist()) {
             if (FeatureFlags.enableRichFunctionLogging) {
               logger.info(
