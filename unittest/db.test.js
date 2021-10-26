@@ -4459,9 +4459,10 @@ describe("State info", () => {
       const verifResult = verifyStateProof(proof);
       _.set(verifResult, 'rootProofHash', 'erased');
       assert.deepEqual(verifResult, {
+        "rootProofHash": "erased",
         "isVerified": true,
         "mismatchedPath": null,
-        "rootProofHash": "erased",
+        "mismatchedProofHash": null,
       });
     });
   });
