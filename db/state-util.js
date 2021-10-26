@@ -699,6 +699,7 @@ function verifyStateProofInternal(proof, curLabels) {
   let isStateNode = false;
   let childIsVerified = true;
   let childMismatchedPath = null;
+  let childMismatchedProofHash = null;
   const subProofList = [];
   // NOTE(platfowner): Sort child nodes by label radix for stability.
   const sortedProof = Object.entries(proof).sort((a, b) => a[0].localeCompare(b[0]));
@@ -709,6 +710,7 @@ function verifyStateProofInternal(proof, curLabels) {
       if (childIsVerified === true && subProof.isVerified !== true) {
         childIsVerified = false;
         childMismatchedPath = subProof.mismatchedPath;
+        childMismatchedProofHash = subProof.mismatchedProofHash;
       }
       if (subProof.isStateNode === true) {
         childStatePh = subProof.proofHash;
@@ -735,21 +737,25 @@ function verifyStateProofInternal(proof, curLabels) {
   if (subProofList.length === 0 && childStatePh === null) {
     const isVerified = childIsVerified && curProofHash !== null;
     const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
+    const mismatchedProofHash = childIsVerified ? (isVerified ? null : curProofHash) : childMismatchedProofHash;
     return {
       proofHash: curProofHash,
       isStateNode: isStateNode,
       isVerified: isVerified,
       mismatchedPath: mismatchedPath,
+      mismatchedProofHash: mismatchedProofHash,
     };
   }
   const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
   const isVerified = childIsVerified && computedProofHash === curProofHash;
   const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
+  const mismatchedProofHash = childIsVerified ? (isVerified ? null : curProofHash) : childMismatchedProofHash;
   return {
-    proofHash: computedProofHash,
+    proofHash: curProofHash,
     isStateNode: isStateNode,
     isVerified: isVerified,
     mismatchedPath: mismatchedPath,
+    mismatchedProofHash: mismatchedProofHash,
   }
 }
 
@@ -766,6 +772,7 @@ function verifyStateProof(proof) {
     rootProofHash: result.proofHash,
     isVerified: result.isVerified,
     mismatchedPath: result.mismatchedPath,
+    mismatchedProofHash: result.mismatchedProofHash,
   };
 }
 
