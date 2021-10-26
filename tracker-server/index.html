@@ -4,10 +4,11 @@
 <!DOCTYPE html>
 <meta charset='utf-8'>
 <script src='https://d3js.org/d3.v3.min.js'></script>
-<body>
+<body id="body" style ="height:100vh;">
   <script>
-    const width = 1000;
-    const height = 1000;
+    const body = document.getElementById("body");
+    const width = body.clientWidth;
+    const height = body.clientHeight;
     const data = { /* replace this */ };
 
     const svg = d3.select('body').append('svg')
