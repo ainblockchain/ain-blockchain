@@ -26,7 +26,7 @@ async function getBlockList(from, to, endpointUrl) {
     })
 }
 
-async function getProposerInfo(startBlockNumber, endBlockNumber, endpointUrl) {
+async function getProposerStats(startBlockNumber, endBlockNumber, endpointUrl) {
   console.log(`* Gathering blockchain info... ${startBlockNumber} ... ${endBlockNumber}`);
   const blocksProposed = {};
   let totalCount = 0;
@@ -57,12 +57,12 @@ async function processArguments() {
   const startBlockNumber = CommonUtil.numberOrZero(Number(process.argv[2]));
   const endBlockNumber = CommonUtil.numberOrZero(Number(process.argv[3]));
   const endpointUrl = process.argv[4];
-  await getProposerInfo(startBlockNumber, endBlockNumber, endpointUrl);
+  await getProposerStats(startBlockNumber, endBlockNumber, endpointUrl);
 }
 
 function usage() {
-  console.log('\nUsage: node getProposerInfo.js <start block number> <end block number> <node url>\n');
-  console.log('Example:  node getProposerInfo.js 0 200 http://localhost:8081');
+  console.log('\nUsage: node getProposerStats.js <start block number> <end block number> <node url>\n');
+  console.log('Example:  node getProposerStats.js 0 200 http://localhost:8081');
   process.exit(0)
 }
 
