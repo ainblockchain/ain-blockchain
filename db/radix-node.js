@@ -496,8 +496,10 @@ class RadixNode {
     const proof = { [proofLabel]: this.getProofHash() };
     if (this.hasChildStateNode()) {
       const childStateNode = this.getChildStateNode();
+      const stateProofLabel =
+          StateInfoProperties.STATE_PROOF_LABEL_PREFIX + childStateNode.getLabel();
       Object.assign(proof, {
-        [childStateNode.getLabel()]: childStateProof !== null ? childStateProof : {
+        [stateProofLabel]: childStateProof !== null ? childStateProof : {
           [StateInfoProperties.STATE_PROOF_HASH]: childStateNode.getProofHash()
         }
       });

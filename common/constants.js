@@ -411,6 +411,7 @@ const StateInfoProperties = {
   NUM_PARENTS: '#num_parents',
   RADIX_PROOF_HASH: '#radix_ph',
   SERIAL: '#serial',
+  STATE_PROOF_LABEL_PREFIX: '#state_label:',
   STATE_PROOF_HASH: '#state_ph',
   VERSION: '#version',
   TREE_HEIGHT: '#tree_height',

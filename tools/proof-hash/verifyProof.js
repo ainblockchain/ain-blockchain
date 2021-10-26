@@ -18,6 +18,7 @@ async function verifyProof(proofFile) {
   console.log(`  > Root proof hash: ${result.rootProofHash}`);
   console.log(`  > Is verified: ${result.isVerified}`);
   console.log(`  > Mismatched path: ${result.mismatchedPath}`);
+  console.log(`  > Mismatched proof hash: ${result.mismatchedProofHash}`);
   if (result.isVerified === true) {
     console.log(`  *************`);
     console.log(`  * VERIFIED! *`);
