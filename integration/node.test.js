@@ -508,11 +508,14 @@ describe('Blockchain Node', () => {
         expect(body.code).to.equal(0);
         expect(body.result['#state_ph']).to.not.equal(null);
         const verifResult = verifyStateProof(body.result);
-        _.set(verifResult, 'rootProofHash', 'erased');
+        _.set(verifResult, 'proofHash', 'erased');
         assert.deepEqual(verifResult, {
+          "proofHash": "erased",
+          "isStateNode": true,
           "isVerified": true,
           "mismatchedPath": null,
-          "rootProofHash": "erased",
+          "mismatchedProofHash": null,
+          "mismatchedProofHashComputed": null,
         });
       });
     });
@@ -701,11 +704,14 @@ describe('Blockchain Node', () => {
         .then(res => {
           expect(res.result.result['#state_ph']).to.not.equal(null);
           const verifResult = verifyStateProof(res.result.result);
-          _.set(verifResult, 'rootProofHash', 'erased');
+          _.set(verifResult, 'proofHash', 'erased');
           assert.deepEqual(verifResult, {
+            "proofHash": "erased",
+            "isStateNode": true,
             "isVerified": true,
             "mismatchedPath": null,
-            "rootProofHash": "erased",
+            "mismatchedProofHash": null,
+            "mismatchedProofHashComputed": null,
           });
         })
       })
