@@ -7,6 +7,7 @@ const nock = require('nock');
 const _ = require('lodash');
 const {
   CHAINS_DIR,
+  ENABLE_REST_FUNCTION_CALL,
 } = require('../common/constants')
 const BlockchainNode = require('../node')
 const {
@@ -141,41 +142,54 @@ describe("Functions", () => {
         const { func_results, promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRest),
             null, null, null, null, transaction);
-        assert.deepEqual(func_results, {
-          "0x11111": {
-            "code": 0,
-            "bandwidth_gas_amount": 10,
-          }
-        });
-        return promise_results.then((resp) => {
-          assert.deepEqual(resp, {
-            func_count: 1,
-            trigger_count: 1,
-            fail_count: 0,
-          });
-          assert.deepEqual(requestBody1, {
-            "function": {
-              "function_url": "https://events.ainetwork.ai/trigger",
-              "function_id": "0x11111",
-              "function_type": "REST",
-            },
-            "transaction": {
-              "tx_body": {
-                "operation": {
-                  "ref": refPathRest,
-                  "type": "SET_VALUE",
-                  "value": 1000,
-                },
-                "nonce": 123,
-                "timestamp": 1566736760322,
-                "gas_price": 1,
-              },
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
-              }
+        if (ENABLE_REST_FUNCTION_CALL) {
+          assert.deepEqual(func_results, {
+            "0x11111": {
+              "code": 0,
+              "bandwidth_gas_amount": 10,
             }
           });
+        } else {
+          assert.deepEqual(func_results, {});
+        }
+        return promise_results.then((resp) => {
+          if (ENABLE_REST_FUNCTION_CALL) {
+            assert.deepEqual(resp, {
+              func_count: 1,
+              trigger_count: 1,
+              fail_count: 0,
+            });
+            assert.deepEqual(requestBody1, {
+              "function": {
+                "function_url": "https://events.ainetwork.ai/trigger",
+                "function_id": "0x11111",
+                "function_type": "REST",
+              },
+              "transaction": {
+                "tx_body": {
+                  "operation": {
+                    "ref": refPathRest,
+                    "type": "SET_VALUE",
+                    "value": 1000,
+                  },
+                  "nonce": 123,
+                  "timestamp": 1566736760322,
+                  "gas_price": 1,
+                },
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                }
+              }
+            });
+          } else {
+            assert.deepEqual(resp, {
+              func_count: 1,
+              trigger_count: 0,
+              fail_count: 0,
+            });
+            assert.deepEqual(requestBody1, null);
+          }
         });
       })
 
@@ -200,57 +214,67 @@ describe("Functions", () => {
             CommonUtil.parsePath(refPathRestMulti),
             null, null, null, null, transaction);
         return promise_results.then((resp) => {
-          assert.deepEqual(resp, {
-            func_count: 2,
-            trigger_count: 2,
-            fail_count: 0,
-          });
-          assert.deepEqual(requestBody1, {
-            "function": {
-              "function_url": "https://events.ainetwork.ai/trigger",
-              "function_id": "0x11111",
-              "function_type": "REST",
-            },
-            "transaction": {
-              "tx_body": {
-                "operation": {
-                  "ref": refPathRestMulti,
-                  "type": "SET_VALUE",
-                  "value": 1000,
-                },
-                "nonce": 123,
-                "timestamp": 1566736760322,
-                "gas_price": 1,
+          if (ENABLE_REST_FUNCTION_CALL) {
+            assert.deepEqual(resp, {
+              func_count: 2,
+              trigger_count: 2,
+              fail_count: 0,
+            });
+            assert.deepEqual(requestBody1, {
+              "function": {
+                "function_url": "https://events.ainetwork.ai/trigger",
+                "function_id": "0x11111",
+                "function_type": "REST",
               },
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
-              }
-            }
-          });
-          assert.deepEqual(requestBody2, {
-            "function": {
-              "function_url": "https://events.ainize.ai/trigger",
-              "function_id": "0x22222",
-              "function_type": "REST",
-            },
-            "transaction": {
-              "tx_body": {
-                "operation": {
-                  "ref": refPathRestMulti,
-                  "type": "SET_VALUE",
-                  "value": 1000,
+              "transaction": {
+                "tx_body": {
+                  "operation": {
+                    "ref": refPathRestMulti,
+                    "type": "SET_VALUE",
+                    "value": 1000,
+                  },
+                  "nonce": 123,
+                  "timestamp": 1566736760322,
+                  "gas_price": 1,
                 },
-                "nonce": 123,
-                "timestamp": 1566736760322,
-                "gas_price": 1,
-              },
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                }
               }
-            }
-          });
+            });
+            assert.deepEqual(requestBody2, {
+              "function": {
+                "function_url": "https://events.ainize.ai/trigger",
+                "function_id": "0x22222",
+                "function_type": "REST",
+              },
+              "transaction": {
+                "tx_body": {
+                  "operation": {
+                    "ref": refPathRestMulti,
+                    "type": "SET_VALUE",
+                    "value": 1000,
+                  },
+                  "nonce": 123,
+                  "timestamp": 1566736760322,
+                  "gas_price": 1,
+                },
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                }
+              }
+            });
+          } else {
+            assert.deepEqual(resp, {
+              func_count: 2,
+              trigger_count: 0,
+              fail_count: 0,
+            });
+            assert.deepEqual(requestBody1, null);
+            assert.deepEqual(requestBody2, null);
+          }
         });
       })
 
@@ -275,11 +299,19 @@ describe("Functions", () => {
             CommonUtil.parsePath(refPathRestWithoutListener),
             null, null, null, null, transaction);
         return promise_results.then((resp) => {
-          assert.deepEqual(resp, {
-            func_count: 1,
-            trigger_count: 1,
-            fail_count: 1,
-          });
+          if (ENABLE_REST_FUNCTION_CALL) {
+            assert.deepEqual(resp, {
+              func_count: 1,
+              trigger_count: 1,
+              fail_count: 1,
+            });
+          } else {
+            assert.deepEqual(resp, {
+              func_count: 1,
+              trigger_count: 0,
+              fail_count: 0,
+            });
+          }
         });
       })
 
@@ -343,11 +375,19 @@ describe("Functions", () => {
             CommonUtil.parsePath(refPathRestNewlyWhitelisted),
             null, null, null, null, transaction);
         return promise_results.then((resp) => {
-          assert.deepEqual(resp, {
-            func_count: 1,
-            trigger_count: 1,
-            fail_count: 1
-          })
+          if (ENABLE_REST_FUNCTION_CALL) {
+            assert.deepEqual(resp, {
+              func_count: 1,
+              trigger_count: 1,
+              fail_count: 1
+            });
+          } else {
+            assert.deepEqual(resp, {
+              func_count: 1,
+              trigger_count: 0,
+              fail_count: 0
+            })
+          }
         })
       });
 
@@ -559,18 +599,30 @@ describe("Functions", () => {
         const { func_results, promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRest),
             null, null, null, null, transaction);
-        assert.deepEqual(func_results, {
-          "0x11111": {
-            "code": 0,
-            "bandwidth_gas_amount": 10,
-          }
-        });
-        return promise_results.then((resp) => {
-          assert.deepEqual(resp, {
-            func_count: 1,
-            trigger_count: 1,
-            fail_count: 0,
+        if (ENABLE_REST_FUNCTION_CALL) {
+          assert.deepEqual(func_results, {
+            "0x11111": {
+              "code": 0,
+              "bandwidth_gas_amount": 10,
+            }
           });
+        } else {
+          assert.deepEqual(func_results, {});
+        }
+        return promise_results.then((resp) => {
+          if (ENABLE_REST_FUNCTION_CALL) {
+            assert.deepEqual(resp, {
+              func_count: 1,
+              trigger_count: 1,
+              fail_count: 0,
+            });
+          } else {
+            assert.deepEqual(resp, {
+              func_count: 1,
+              trigger_count: 0,
+              fail_count: 0,
+            });
+          }
         });
       })
     });
