@@ -305,8 +305,8 @@ class P2pServer {
           return res.data;
         })
         .catch((err) => {
-          logger.error(`Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
-          process.exit(0);
+          CommonUtil.exitWithStackTrace(
+              logger, `Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
         });
       } else {
         if (internal) {

@@ -15,9 +15,11 @@ async function verifyProof(proofFile) {
   console.log(`  Done.`);
   console.log(`* Trying to verify proof...`);
   const result = verifyStateProof(proof);
-  console.log(`  > Root proof hash: ${result.rootProofHash}`);
+  console.log(`  > Root proof hash: ${result.proofHash}`);
   console.log(`  > Is verified: ${result.isVerified}`);
   console.log(`  > Mismatched path: ${result.mismatchedPath}`);
+  console.log(`  > Mismatched proof hash: ${result.mismatchedProofHash}`);
+  console.log(`  > Mismatched proof hash computed: ${result.mismatchedProofHashComputed}`);
   if (result.isVerified === true) {
     console.log(`  *************`);
     console.log(`  * VERIFIED! *`);

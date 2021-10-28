@@ -90,6 +90,7 @@ const CHAIN_SEGMENT_LENGTH = 20;
 const ON_MEMORY_CHAIN_LENGTH = 10;
 const SNAPSHOTS_ROOT_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'snapshots');
 const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
+const DEBUG_SNAPSHOT_FILE_PREFIX = 'debug_'; // Prefix for debug snapshot files.
 // NOTE(platfowner): Should have a value bigger than ON_MEMORY_CHAIN_LENGTH.
 const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
 const MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
@@ -411,6 +412,7 @@ const StateInfoProperties = {
   NUM_PARENTS: '#num_parents',
   RADIX_PROOF_HASH: '#radix_ph',
   SERIAL: '#serial',
+  STATE_PROOF_LABEL_PREFIX: '#state_label:',
   STATE_PROOF_HASH: '#state_ph',
   VERSION: '#version',
   TREE_HEIGHT: '#tree_height',
@@ -974,6 +976,7 @@ module.exports = {
   ON_MEMORY_CHAIN_LENGTH,
   SNAPSHOTS_ROOT_DIR,
   SNAPSHOTS_N2S_DIR_NAME,
+  DEBUG_SNAPSHOT_FILE_PREFIX,
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
   MAX_NUM_SNAPSHOTS,
   MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
