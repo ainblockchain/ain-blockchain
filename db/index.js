@@ -138,7 +138,7 @@ class DB {
    */
   setStateVersion(stateVersion, stateRoot) {
     const LOG_HEADER = 'setStateVersion';
-    if (!this.stateVersion === stateVersion) {
+    if (this.stateVersion === stateVersion) {
       logger.error(`[${LOG_HEADER}] State version already set with version: ${stateVersion}`);
       return false;
     }
