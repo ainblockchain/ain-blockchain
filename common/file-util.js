@@ -10,6 +10,7 @@ const {
   CHAINS_N2B_MAX_NUM_FILES,
   CHAINS_H2N_HASH_PREFIX_LENGTH,
   SNAPSHOTS_N2S_DIR_NAME,
+  DEBUG_SNAPSHOT_FILE_PREFIX,
 } = require('./constants');
 const CommonUtil = require('./common-util');
 const JSON_GZIP_FILE_EXTENSION = 'json.gz';
@@ -27,9 +28,11 @@ class FileUtil {
         FileUtil.getBlockFilenameByNumber(blockNumber));
   }
 
-  static getSnapshotPathByBlockNumber(snapshotPath, blockNumber) {
+  static getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug = false) {
     return path.join(
-        snapshotPath, SNAPSHOTS_N2S_DIR_NAME, FileUtil.getBlockFilenameByNumber(blockNumber));
+        snapshotPath,
+        SNAPSHOTS_N2S_DIR_NAME,
+        FileUtil.getSnapshotFilenameByNumber(blockNumber, isDebug));
   }
 
   static getH2nDirPath(chainPath, blockHash) {
@@ -41,6 +44,11 @@ class FileUtil {
     return path.join(FileUtil.getH2nDirPath(chainPath, blockHash), blockHash);
   }
 
+  static getSnapshotFilenameByNumber(blockNumber, isDebug = false) {
+    const filenamePrefix = isDebug ? DEBUG_SNAPSHOT_FILE_PREFIX : '';
+    return `${filenamePrefix}${blockNumber}.${JSON_GZIP_FILE_EXTENSION}`;
+  }
+
   static getBlockFilenameByNumber(blockNumber) {
     return `${blockNumber}.${JSON_GZIP_FILE_EXTENSION}`;
   }
@@ -50,6 +58,8 @@ class FileUtil {
   }
 
   static getLatestSnapshotInfo(snapshotPath) {
+    const LOG_HEADER = 'getLatestSnapshotInfo';
+
     const snapshotPathPrefix = path.join(snapshotPath, SNAPSHOTS_N2S_DIR_NAME);
     let latestSnapshotPath = null;
     let latestSnapshotBlockNumber = -1;
@@ -57,11 +67,16 @@ class FileUtil {
     try {
       files = fs.readdirSync(snapshotPathPrefix);
     } catch (err) {
-      logger.debug(`Failed to read snapshots: ${err.stack}`);
+      logger.debug(`[${LOG_HEADER}] Failed to read snapshots: ${err.stack}`);
       return { latestSnapshotPath, latestSnapshotBlockNumber };
     }
     for (const file of files) {
-      const blockNumber = _.get(file.split(`.${JSON_GZIP_FILE_EXTENSION}`), 0);
+      // NOTE(platfowner): Skips the file if its name starts with debug snapshot file prefix.
+      if (_.startsWith(file, DEBUG_SNAPSHOT_FILE_PREFIX)) {
+        logger.info(`[${LOG_HEADER}] Skipping debug snapshot file: ${file}`);
+        continue;
+      }
+      const blockNumber = _.get(_.split(file, `.${JSON_GZIP_FILE_EXTENSION}`), 0);
       if (blockNumber !== undefined && blockNumber > latestSnapshotBlockNumber) {
         latestSnapshotPath = path.join(snapshotPathPrefix, file);
         latestSnapshotBlockNumber = Number(blockNumber);
@@ -71,6 +86,8 @@ class FileUtil {
   }
 
   static getBlockPathList(chainPath, from, size) {
+    const LOG_HEADER = 'getBlockPathList';
+
     const blockPaths = [];
     if (size <= 0) return blockPaths;
     for (let number = from; number < from + size; number++) {
@@ -78,7 +95,7 @@ class FileUtil {
       if (fs.existsSync(blockFile)) {
         blockPaths.push(blockFile);
       } else {
-        logger.debug(`blockFile (${blockFile}) does not exist`);
+        logger.debug(`[${LOG_HEADER}] blockFile (${blockFile}) does not exist`);
         return blockPaths;
       }
     }
@@ -139,6 +156,8 @@ class FileUtil {
 
   // TODO(cshcomcom): Change to asynchronous.
   static writeBlockFile(chainPath, block) {
+    const LOG_HEADER = 'writeBlockFile';
+
     const blockPath = FileUtil.getBlockPath(chainPath, block.number);
     if (!fs.existsSync(blockPath)) {
       const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
@@ -146,12 +165,14 @@ class FileUtil {
       const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
       fs.writeFileSync(blockPath, compressed);
     } else {
-      logger.debug(`${blockPath} file already exists!`);
+      logger.debug(`[${LOG_HEADER}] ${blockPath} file already exists!`);
     }
   }
 
   static deleteBlockFile(chainPath, blockNumber) {
-    logger.info(`Deleting block file with block number: ${blockNumber}`);
+    const LOG_HEADER = 'deleteBlockFile';
+
+    logger.info(`[${LOG_HEADER}] Deleting block file with block number: ${blockNumber}`);
     const blockPath = FileUtil.getBlockPath(chainPath, blockNumber);
     if (fs.existsSync(blockPath)) {
       fs.unlinkSync(blockPath);
@@ -159,8 +180,10 @@ class FileUtil {
   }
 
   static writeH2nFile(chainPath, blockHash, blockNumber) {
+    const LOG_HEADER = 'writeH2nFile';
+
     if (!blockHash || !CommonUtil.isNumber(blockNumber) || blockNumber < 0) {
-      logger.error(`Invalid parameters: '${blockHash}', '${blockNumber}'`);
+      logger.error(`[${LOG_HEADER}] Invalid parameters: '${blockHash}', '${blockNumber}'`);
       return;
     }
     const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
@@ -169,12 +192,14 @@ class FileUtil {
       FileUtil.createDir(h2nDirPath);
       fs.writeFileSync(h2nPath, blockNumber.toString());
     } else {
-      logger.debug(`${h2nPath} file already exists!`);
+      logger.debug(`[${LOG_HEADER}] ${h2nPath} file already exists!`);
     }
   }
 
   static deleteH2nFile(chainPath, blockHash) {
-    logger.info(`Deleting h2n file with block hash: ${blockHash}`);
+    const LOG_HEADER = 'deleteH2nFile';
+
+    logger.info(`[${LOG_HEADER}] Deleting h2n file with block hash: ${blockHash}`);
     const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
     if (fs.existsSync(h2nPath)) {
       fs.unlinkSync(h2nPath);
@@ -190,14 +215,16 @@ class FileUtil {
     }
   }
 
-  static writeSnapshot(snapshotPath, blockNumber, snapshot) {
-    const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber);
+  static writeSnapshot(snapshotPath, blockNumber, snapshot, isDebug = false) {
+    const LOG_HEADER = 'writeSnapshot';
+
+    const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
     if (snapshot === null) { // Delete
       if (fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);
         } catch (err) {
-          logger.debug(`Failed to delete ${filePath}: ${err.stack}`);
+          logger.debug(`[${LOG_HEADER}] Failed to delete ${filePath}: ${err.stack}`);
         }
       }
     } else {

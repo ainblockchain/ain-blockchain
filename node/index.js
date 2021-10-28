@@ -616,8 +616,9 @@ class BlockchainNode {
     }
     if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
 
+      // NOTE(platfowner): Write the current snapshot for debugging.
       const snapshot = db.stateRoot.toJsObject();
-      FileUtil.writeSnapshot(this.snapshotDir, block.number, snapshot);
+      FileUtil.writeSnapshot(this.snapshotDir, block.number, snapshot, true);
 
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
       CommonUtil.exitWithStackTrace(
