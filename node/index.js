@@ -604,21 +604,27 @@ class BlockchainNode {
     this.removeOldReceipts(block.number, db);
     if (block.number > 0) {
       if (!db.executeTransactionList(block.last_votes, true, false, block.number, block.timestamp)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        process.exit(1);
+        CommonUtil.exitWithStackTrace(
+            logger, `[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
       }
     }
     if (!db.executeTransactionList(block.transactions, block.number === 0, false, block.number, block.timestamp)) {
-      logger.error(`[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-      process.exit(1);
+      CommonUtil.exitWithStackTrace(
+            logger, `[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
     }
     if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
-      logger.error(`[${LOG_HEADER}] Invalid state proof hash (${block.number}): ` +
-          `${db.stateRoot.getProofHash()}, ${block.state_proof_hash}`);
+
+      // NOTE(platfowner): Write the current snapshot for debugging.
+      const snapshot = db.stateRoot.toJsObject();
+      FileUtil.writeSnapshot(this.snapshotDir, block.number, snapshot, true);
+
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-      process.exit(1);
+      CommonUtil.exitWithStackTrace(
+          logger,
+          `[${LOG_HEADER}] Invalid state proof hash (${block.number}): ` +
+          `${db.stateRoot.getProofHash()}, ${block.state_proof_hash}`);
     }
     this.tp.cleanUpForNewBlock(block);
     logger.info(`[${LOG_HEADER}] Successfully executed block ${block.number} on DB.`);
@@ -635,15 +641,15 @@ class BlockchainNode {
     for (let number = fromBlockNumber; number < numBlockFiles; number++) {
       const block = this.bc.loadBlock(number);
       if (!block) {
-        logger.error(`[${LOG_HEADER}] Failed to load block ${number}.`);
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        process.exit(1);
+        CommonUtil.exitWithStackTrace(
+            logger, `[${LOG_HEADER}] Failed to load block ${number}.`);
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
       if (!Blockchain.validateBlock(block, prevBlockNumber, prevBlockHash)) {
-        logger.error(`[${LOG_HEADER}] Failed to validate block ${number}.`);
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        process.exit(1);
+        CommonUtil.exitWithStackTrace(
+            logger, `[${LOG_HEADER}] Failed to validate block ${number}.`);
       }
       // NOTE(liayoo): we don't have the votes for the last block, so remove it and try to
       //               receive from peers.

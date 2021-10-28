@@ -3015,7 +3015,7 @@ describe("radix-tree", () => {
             "#radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
             "aaa": {
               "#radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0",
-              "0x000aaa": "state_proof1",
+              "#state_label:0x000aaa": "state_proof1"
             },
             "bbb": {
               "#radix_ph": "0x78d50ec884283d1759dc14ae88aa3e832199ff650b450da3b45cd507c2cd8474",
@@ -3037,7 +3037,7 @@ describe("radix-tree", () => {
               },
               "222": {
                 "#radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2",
-                "0x000bbb222": "state_proof22",
+                "#state_label:0x000bbb222": "state_proof22"
               },
               "#radix_ph": "0x78d50ec884283d1759dc14ae88aa3e832199ff650b450da3b45cd507c2cd8474",
             }

@@ -699,6 +699,8 @@ function verifyStateProofInternal(proof, curLabels) {
   let isStateNode = false;
   let childIsVerified = true;
   let childMismatchedPath = null;
+  let childMismatchedProofHash = null;
+  let childMismatchedProofHashComputed = null;
   const subProofList = [];
   // NOTE(platfowner): Sort child nodes by label radix for stability.
   const sortedProof = Object.entries(proof).sort((a, b) => a[0].localeCompare(b[0]));
@@ -709,6 +711,8 @@ function verifyStateProofInternal(proof, curLabels) {
       if (childIsVerified === true && subProof.isVerified !== true) {
         childIsVerified = false;
         childMismatchedPath = subProof.mismatchedPath;
+        childMismatchedProofHash = subProof.mismatchedProofHash;
+        childMismatchedProofHashComputed = subProof.mismatchedProofHashComputed;
       }
       if (subProof.isStateNode === true) {
         childStatePh = subProof.proofHash;
@@ -735,21 +739,29 @@ function verifyStateProofInternal(proof, curLabels) {
   if (subProofList.length === 0 && childStatePh === null) {
     const isVerified = childIsVerified && curProofHash !== null;
     const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
+    const mismatchedProofHash = childIsVerified ? (isVerified ? null : curProofHash) : childMismatchedProofHash;
+    const mismatchedProofHashComputed = childIsVerified ? null : childMismatchedProofHashComputed;
     return {
       proofHash: curProofHash,
-      isStateNode: isStateNode,
-      isVerified: isVerified,
-      mismatchedPath: mismatchedPath,
+      isStateNode,
+      isVerified,
+      mismatchedPath,
+      mismatchedProofHash,
+      mismatchedProofHashComputed,
     };
   }
   const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
   const isVerified = childIsVerified && computedProofHash === curProofHash;
   const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
+  const mismatchedProofHash = childIsVerified ? (isVerified ? null : curProofHash) : childMismatchedProofHash;
+  const mismatchedProofHashComputed = childIsVerified ? (isVerified ? null : computedProofHash) : childMismatchedProofHashComputed;
   return {
-    proofHash: computedProofHash,
-    isStateNode: isStateNode,
-    isVerified: isVerified,
-    mismatchedPath: mismatchedPath,
+    proofHash: curProofHash,
+    isStateNode,
+    isVerified,
+    mismatchedPath,
+    mismatchedProofHash,
+    mismatchedProofHashComputed,
   }
 }
 
@@ -761,12 +773,7 @@ function verifyStateProofInternal(proof, curLabels) {
  * Returns root proof hash if successful, otherwise null.
  */
 function verifyStateProof(proof) {
-  const result = verifyStateProofInternal(proof, []);
-  return {
-    rootProofHash: result.proofHash,
-    isVerified: result.isVerified,
-    mismatchedPath: result.mismatchedPath,
-  };
+  return verifyStateProofInternal(proof, []);
 }
 
 module.exports = {
