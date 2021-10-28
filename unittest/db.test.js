@@ -4457,12 +4457,14 @@ describe("State info", () => {
       expect(proof).to.not.equal(null);
       expect(proof['#state_ph']).to.not.equal(null);
       const verifResult = verifyStateProof(proof);
-      _.set(verifResult, 'rootProofHash', 'erased');
+      _.set(verifResult, 'proofHash', 'erased');
       assert.deepEqual(verifResult, {
-        "rootProofHash": "erased",
+        "proofHash": "erased",
+        "isStateNode": true,
         "isVerified": true,
         "mismatchedPath": null,
         "mismatchedProofHash": null,
+        "mismatchedProofHashComputed": null,
       });
     });
   });
