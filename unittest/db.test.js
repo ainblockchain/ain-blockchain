@@ -3726,7 +3726,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true", () => {
       expect(node.db.setValue(
           "/apps/afan/apps/test/test_sharding/some/path/to/value", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 1234567890000, { isGlobal: true }).code)
+          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
               .to.equal(0);
       expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(newValue);
     })
@@ -3734,7 +3734,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and non-existing path", () => {
       expect(node.db.setValue(
           "/apps/some/non-existing/path", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 1234567890000, { isGlobal: true }).code)
+          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
               .to.equal(0);
     })
 
@@ -3749,7 +3749,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and non-writable path with sharding", () => {
       expect(node.db.setValue(
           "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 20, '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', null, null,
-          1234567890000, { isGlobal: true }).code)
+          100, 1234567890000, { isGlobal: true }).code)
               .to.equal(0);
       expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
           .to.equal(10);  // value unchanged
@@ -3764,7 +3764,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and writable path with sharding", () => {
       expect(node.db.setValue(
           "apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 20, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 1234567890000, { isGlobal: true }).code)
+          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
               .to.equal(0);
       expect(node.db.getValue("apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
           .to.equal(20);  // value changed
@@ -3781,14 +3781,14 @@ describe("DB sharding config", () => {
     it("incValue with isGlobal = true", () => {
       expect(node.db.incValue(
           "/apps/afan/apps/test/test_sharding/some/path/to/number", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 1234567890000, { isGlobal: true }).code)
+          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
               .to.equal(0);
       expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
     })
 
     it("incValue with isGlobal = true and non-existing path", () => {
       expect(node.db.incValue(
-          "/apps/some/non-existing/path", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 1234567890000, { isGlobal: true }).code)
+          "/apps/some/non-existing/path", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 100, 1234567890000, { isGlobal: true }).code)
               .to.equal(0);
     })
 
@@ -3803,7 +3803,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and non-writable path with sharding", () => {
       expect(node.db.incValue(
           "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, null, 1234567890000, { isGlobal: true }).code)
+          null, null, 100, 1234567890000, { isGlobal: true }).code)
               .to.equal(0);
       expect(node.db.getValue("apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
           .to.equal(10);  // value unchanged
@@ -3818,7 +3818,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and writable path with sharding", () => {
       expect(node.db.incValue(
           "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 1234567890000, { isGlobal: true }).code)
+          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
               .to.equal(0);
       expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
           .to.equal(15);  // value changed
@@ -3835,14 +3835,14 @@ describe("DB sharding config", () => {
     it("decValue with isGlobal = true", () => {
       expect(node.db.decValue(
           "/apps/afan/apps/test/test_sharding/some/path/to/number", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 1234567890000, { isGlobal: true }).code)
+          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
               .to.equal(0);
       expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
     })
 
     it("decValue with isGlobal = true and non-existing path", () => {
       expect(node.db.decValue(
-          "/apps/some/non-existing/path", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 1234567890000, { isGlobal: true }).code)
+          "/apps/some/non-existing/path", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 100, 1234567890000, { isGlobal: true }).code)
               .to.equal(0);
     })
 
@@ -3857,7 +3857,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and non-writable path with sharding", () => {
       expect(node.db.decValue(
           "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, null, 1234567890000, { isGlobal: true }).code)
+          null, null, 100, 1234567890000, { isGlobal: true }).code)
               .to.equal(0);
       expect(node.db.getValue(
           "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
@@ -3874,7 +3874,7 @@ describe("DB sharding config", () => {
     it("setValue with isGlobal = true and writable path with sharding", () => {
       expect(node.db.decValue(
           "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 1234567890000, { isGlobal: true }).code)
+          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
               .to.equal(0);
       expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
         .to.equal(5);  // value changed
