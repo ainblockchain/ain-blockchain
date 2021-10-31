@@ -349,18 +349,42 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
             .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: {
-          "matched_path": {
-            "target_path": "/apps/test/test_rule/some/path",
-            "ref_path": "/apps/test/test_rule/some/path",
-            "path_vars": {},
-          },
-          "matched_config": {
-            "config": {
-              "write": "auth.addr === 'abcd'"
+          "write": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/path",
+              "ref_path": "/apps/test/test_rule/some/path",
+              "path_vars": {},
             },
-            "path": "/apps/test/test_rule/some/path"
+            "matched_config": {
+              "config": {
+                "write": "auth.addr === 'abcd'"
+              },
+              "path": "/apps/test/test_rule/some/path"
+            },
+            "subtree_configs": []
           },
-          "subtree_configs": []
+          "state": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/path",
+              "ref_path": "/apps/test/test_rule/some/path",
+              "path_vars": {},
+            },
+            "matched_config": {
+              "config": null,
+              "path": "/"
+            },
+            "parent_configs": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some",
+                "ref_path": "/apps/test/test_rule/some",
+                "path_vars": {},
+              },
+              "matched_config": {
+                "config": null,
+                "path": "/"
+              }
+            }
+          }
         }});
       })
     })
@@ -614,18 +638,42 @@ describe('Blockchain Node', () => {
         return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
         .then(res => {
           assert.deepEqual(res.result.result, {
-            "matched_path": {
-              "target_path": "/apps/test/test_rule/some/path",
-              "ref_path": "/apps/test/test_rule/some/path",
-              "path_vars": {},
-            },
-            "matched_config": {
-              "config": {
-                "write": "auth.addr === 'abcd'"
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some/path",
+                "ref_path": "/apps/test/test_rule/some/path",
+                "path_vars": {},
               },
-              "path": "/apps/test/test_rule/some/path"
+              "matched_config": {
+                "config": {
+                  "write": "auth.addr === 'abcd'"
+                },
+                "path": "/apps/test/test_rule/some/path"
+              },
+              "subtree_configs": []
             },
-            "subtree_configs": []
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some/path",
+                "ref_path": "/apps/test/test_rule/some/path",
+                "path_vars": {},
+              },
+              "matched_config": {
+                "config": null,
+                "path": "/"
+              },
+              "parent_configs": {
+                "matched_path": {
+                  "target_path": "/apps/test/test_rule/some",
+                  "ref_path": "/apps/test/test_rule/some",
+                  "path_vars": {},
+                },
+                "matched_config": {
+                  "config": null,
+                  "path": "/"
+                }
+              }
+            }
           });
         })
       })

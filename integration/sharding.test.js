@@ -695,18 +695,42 @@ describe('Sharding', async () => {
           const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
             .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
-            "matched_path": {
-              "target_path": "/apps/test/test_rule/some/path",
-              "ref_path": "/apps/test/test_rule/some/path",
-              "path_vars": {},
-            },
-            "matched_config": {
-              "config": {
-                "write": "auth.addr === 'abcd'"
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some/path",
+                "ref_path": "/apps/test/test_rule/some/path",
+                "path_vars": {},
               },
-              "path": "/apps/test/test_rule/some/path"
+              "matched_config": {
+                "config": {
+                  "write": "auth.addr === 'abcd'"
+                },
+                "path": "/apps/test/test_rule/some/path"
+              },
+              "subtree_configs": []
             },
-            "subtree_configs": []
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some/path",
+                "ref_path": "/apps/test/test_rule/some/path",
+                "path_vars": {},
+              },
+              "matched_config": {
+                "config": null,
+                "path": "/"
+              },
+              "parent_configs": {
+                "matched_path": {
+                  "target_path": "/apps/test/test_rule/some",
+                  "ref_path": "/apps/test/test_rule/some",
+                  "path_vars": {},
+                },
+                "matched_config": {
+                  "config": null,
+                  "path": "/"
+                }
+              }
+            }
           }});
         })
 
@@ -716,18 +740,42 @@ describe('Sharding', async () => {
               parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}&is_global=true`)
             .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
-            "matched_path": {
-              "target_path": "/apps/afan/apps/test/test_rule/some/path",
-              "ref_path": "/apps/afan/apps/test/test_rule/some/path",
-              "path_vars": {},
-            },
-            "matched_config": {
-              "config": {
-                "write": "auth.addr === 'abcd'"
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/afan/apps/test/test_rule/some/path",
+                "ref_path": "/apps/afan/apps/test/test_rule/some/path",
+                "path_vars": {},
               },
-              "path": "/apps/afan/apps/test/test_rule/some/path"
+              "matched_config": {
+                "config": {
+                  "write": "auth.addr === 'abcd'"
+                },
+                "path": "/apps/afan/apps/test/test_rule/some/path"
+              },
+              "subtree_configs": []
             },
-            "subtree_configs": []
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/afan/apps/test/test_rule/some/path",
+                "ref_path": "/apps/afan/apps/test/test_rule/some/path",
+                "path_vars": {},
+              },
+              "matched_config": {
+                "config": null,
+                "path": "/apps/afan"
+              },
+              "parent_configs": {
+                "matched_path": {
+                  "target_path": "/apps/afan/apps/test/test_rule/some",
+                  "ref_path": "/apps/afan/apps/test/test_rule/some",
+                  "path_vars": {},
+                },
+                "matched_config": {
+                  "config": null,
+                  "path": "/apps/afan"
+                }
+              }
+            }
           }});
         })
       })
@@ -1090,18 +1138,42 @@ describe('Sharding', async () => {
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
-              "matched_path": {
-                "target_path": "/apps/test/test_rule/some/path",
-                "ref_path": "/apps/test/test_rule/some/path",
-                "path_vars": {},
-              },
-              "matched_config": {
-                "config": {
-                  "write": "auth.addr === 'abcd'"
+              "write": {
+                "matched_path": {
+                  "target_path": "/apps/test/test_rule/some/path",
+                  "ref_path": "/apps/test/test_rule/some/path",
+                  "path_vars": {},
                 },
-                "path": "/apps/test/test_rule/some/path"
+                "matched_config": {
+                  "config": {
+                    "write": "auth.addr === 'abcd'"
+                  },
+                  "path": "/apps/test/test_rule/some/path"
+                },
+                "subtree_configs": []
               },
-              "subtree_configs": []
+              "state": {
+                "matched_path": {
+                  "target_path": "/apps/test/test_rule/some/path",
+                  "ref_path": "/apps/test/test_rule/some/path",
+                  "path_vars": {},
+                },
+                "matched_config": {
+                  "config": null,
+                  "path": "/"
+                },
+                "parent_configs": {
+                  "matched_path": {
+                    "target_path": "/apps/test/test_rule/some",
+                    "ref_path": "/apps/test/test_rule/some",
+                    "path_vars": {},
+                  },
+                  "matched_config": {
+                    "config": null,
+                    "path": "/"
+                  }
+                }
+              }
             });
           })
         })
@@ -1112,18 +1184,42 @@ describe('Sharding', async () => {
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
-              "matched_path": {
-                "target_path": "/apps/afan/apps/test/test_rule/some/path",
-                "ref_path": "/apps/afan/apps/test/test_rule/some/path",
-                "path_vars": {},
-              },
-              "matched_config": {
-                "config": {
-                  "write": "auth.addr === 'abcd'"
+              "write": {
+                "matched_path": {
+                  "target_path": "/apps/afan/apps/test/test_rule/some/path",
+                  "ref_path": "/apps/afan/apps/test/test_rule/some/path",
+                  "path_vars": {},
                 },
-                "path": "/apps/afan/apps/test/test_rule/some/path"
+                "matched_config": {
+                  "config": {
+                    "write": "auth.addr === 'abcd'"
+                  },
+                  "path": "/apps/afan/apps/test/test_rule/some/path"
+                },
+                "subtree_configs": []
               },
-              "subtree_configs": []
+              "state": {
+                "matched_path": {
+                  "target_path": "/apps/afan/apps/test/test_rule/some/path",
+                  "ref_path": "/apps/afan/apps/test/test_rule/some/path",
+                  "path_vars": {},
+                },
+                "matched_config": {
+                  "config": null,
+                  "path": "/apps/afan"
+                },
+                "parent_configs": {
+                  "matched_path": {
+                    "target_path": "/apps/afan/apps/test/test_rule/some",
+                    "ref_path": "/apps/afan/apps/test/test_rule/some",
+                    "path_vars": {},
+                  },
+                  "matched_config": {
+                    "config": null,
+                    "path": "/apps/afan"
+                  }
+                }
+              }
             });
           })
         })
@@ -1543,7 +1639,7 @@ describe('Sharding', async () => {
               },
               "state": {
                 "app": {
-                  "test": 4198
+                  "test": 4194
                 },
                 "service": 0
               }
