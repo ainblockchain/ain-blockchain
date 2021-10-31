@@ -785,82 +785,180 @@ describe("DB operations", () => {
     describe("matchRule", () => {
       it("when matching existing variable path rule", () => {
         assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/var_path"), {
-          "matched_path": {
-            "target_path": "/apps/test/test_rule/some/$var_path",
-            "ref_path": "/apps/test/test_rule/some/var_path",
-            "path_vars": {
-              "$var_path": "var_path"
+          "write": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/$var_path",
+              "ref_path": "/apps/test/test_rule/some/var_path",
+              "path_vars": {
+                "$var_path": "var_path"
+              },
             },
-          },
-          "matched_config": {
-            "config": {
-              "write": "auth.addr !== 'abcd'"
+            "matched_config": {
+              "config": {
+                "write": "auth.addr !== 'abcd'"
+              },
+              "path": "/apps/test/test_rule/some/$var_path"
             },
-            "path": "/apps/test/test_rule/some/$var_path"
+            "subtree_configs": []
           },
-          "subtree_configs": []
+          "state": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/$var_path",
+              "ref_path": "/apps/test/test_rule/some/var_path",
+              "path_vars": {
+                "$var_path": "var_path"
+              }
+            },
+            "matched_config": {
+              "path": "/",
+              "config": null
+            },
+            "parent_configs": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some",
+                "ref_path": "/apps/test/test_rule/some",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/",
+                "config": null
+              }
+            }
+          }
         });
       })
 
       it("when matching existing non-variable path rule", () => {
         assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/path"), {
-          "matched_path": {
-            "target_path": "/apps/test/test_rule/some/path",
-            "ref_path": "/apps/test/test_rule/some/path",
-            "path_vars": {},
-          },
-          "matched_config": {
-            "config": {
-              "write": "auth.addr === 'abcd'"
+          "write": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/path",
+              "ref_path": "/apps/test/test_rule/some/path",
+              "path_vars": {},
             },
-            "path": "/apps/test/test_rule/some/path"
+            "matched_config": {
+              "config": {
+                "write": "auth.addr === 'abcd'"
+              },
+              "path": "/apps/test/test_rule/some/path"
+            },
+            "subtree_configs": [
+              {
+                "config": {
+                  "write": "auth.addr === 'ijkl'"
+                },
+                "path": "/deeper/path"
+              }
+            ]
           },
-          "subtree_configs": [
-            {
+          "state": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/path",
+              "ref_path": "/apps/test/test_rule/some/path",
+              "path_vars": {}
+            },
+            "matched_config": {
+              "path": "/",
+              "config": null
+            },
+            "parent_configs": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some",
+                "ref_path": "/apps/test/test_rule/some",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/",
+                "config": null
+              }
+            }
+          }
+        });
+        assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/path/deeper/path"), {
+          "write": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/path/deeper/path",
+              "ref_path": "/apps/test/test_rule/some/path/deeper/path",
+              "path_vars": {},
+            },
+            "matched_config": {
               "config": {
                 "write": "auth.addr === 'ijkl'"
               },
-              "path": "/deeper/path"
-            }
-          ]
-        });
-        assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/path/deeper/path"), {
-          "matched_path": {
-            "target_path": "/apps/test/test_rule/some/path/deeper/path",
-            "ref_path": "/apps/test/test_rule/some/path/deeper/path",
-            "path_vars": {},
-          },
-          "matched_config": {
-            "config": {
-              "write": "auth.addr === 'ijkl'"
+              "path": "/apps/test/test_rule/some/path/deeper/path"
             },
-            "path": "/apps/test/test_rule/some/path/deeper/path"
+            "subtree_configs": []
           },
-          "subtree_configs": []
+          "state": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/path/deeper/path",
+              "ref_path": "/apps/test/test_rule/some/path/deeper/path",
+              "path_vars": {}
+            },
+            "matched_config": {
+              "path": "/",
+              "config": null
+            },
+            "parent_configs": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some/path/deeper",
+                "ref_path": "/apps/test/test_rule/some/path/deeper",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/",
+                "config": null
+              }
+            }
+          }
         });
       })
 
       it("when matching existing closest non-variable path rule", () => {
         assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/path/deeper"), {
-          "matched_path": {
-            "target_path": "/apps/test/test_rule/some/path/deeper",
-            "ref_path": "/apps/test/test_rule/some/path/deeper",
-            "path_vars": {},
-          },
-          "matched_config": {
-            "config": {
-              "write": "auth.addr === 'abcd'"
+          "write": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/path/deeper",
+              "ref_path": "/apps/test/test_rule/some/path/deeper",
+              "path_vars": {},
             },
-            "path": "/apps/test/test_rule/some/path"
-          },
-          "subtree_configs": [
-            {
+            "matched_config": {
               "config": {
-                "write": "auth.addr === 'ijkl'"
+                "write": "auth.addr === 'abcd'"
               },
-              "path": "/path"
+              "path": "/apps/test/test_rule/some/path"
+            },
+            "subtree_configs": [
+              {
+                "config": {
+                  "write": "auth.addr === 'ijkl'"
+                },
+                "path": "/path"
+              }
+            ]
+          },
+          "state": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/path/deeper",
+              "ref_path": "/apps/test/test_rule/some/path/deeper",
+              "path_vars": {}
+            },
+            "matched_config": {
+              "path": "/",
+              "config": null
+            },
+            "parent_configs": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some/path",
+                "ref_path": "/apps/test/test_rule/some/path",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/",
+                "config": null
+              }
             }
-          ]
+          }
         });
       })
     })
@@ -1152,25 +1250,49 @@ describe("DB operations", () => {
             ]
           },
           {
-            "matched_path": {
-              "target_path": "/apps/test/test_rule/some/path/deeper",
-              "ref_path": "/apps/test/test_rule/some/path/deeper",
-              "path_vars": {},
-            },
-            "matched_config": {
-              "config": {
-                "write": "auth.addr === 'abcd'"
+            "write": {
+                "matched_path": {
+                "target_path": "/apps/test/test_rule/some/path/deeper",
+                "ref_path": "/apps/test/test_rule/some/path/deeper",
+                "path_vars": {},
               },
-              "path": "/apps/test/test_rule/some/path"
-            },
-            "subtree_configs": [
-              {
+              "matched_config": {
                 "config": {
-                  "write": "auth.addr === 'ijkl'"
+                  "write": "auth.addr === 'abcd'"
                 },
-                "path": "/path"
+                "path": "/apps/test/test_rule/some/path"
+              },
+              "subtree_configs": [
+                {
+                  "config": {
+                    "write": "auth.addr === 'ijkl'"
+                  },
+                  "path": "/path"
+                }
+              ]
+            },
+            "state": {
+              "matched_config": {
+                "config": null,
+                "path": "/"
+              },
+              "matched_path": {
+                "path_vars": {},
+                "ref_path": "/apps/test/test_rule/some/path/deeper",
+                "target_path": "/apps/test/test_rule/some/path/deeper"
+              },
+              "parent_configs": {
+                "matched_path": {
+                  "target_path": "/apps/test/test_rule/some/path",
+                  "ref_path": "/apps/test/test_rule/some/path",
+                  "path_vars": {}
+                },
+                "matched_config": {
+                  "path": "/",
+                  "config": null
+                }
               }
-            ]
+            }
           },
           {
             "matched_path": {
@@ -1347,25 +1469,49 @@ describe("DB operations", () => {
             ]
           },
           {
-            "matched_path": {
-              "target_path": "/apps/test/test_rule/some/path",
-              "ref_path": "/apps/test/test_rule/some/path",
-              "path_vars": {},
-            },
-            "matched_config": {
-              "config": {
-                "write": "auth.addr === 'abcd'"
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some/path",
+                "ref_path": "/apps/test/test_rule/some/path",
+                "path_vars": {},
               },
-              "path": "/apps/test/test_rule/some/path"
-            },
-            "subtree_configs": [
-              {
+              "matched_config": {
                 "config": {
-                  "write": "auth.addr === 'ijkl'"
+                  "write": "auth.addr === 'abcd'"
                 },
-                "path": "/deeper/path"
+                "path": "/apps/test/test_rule/some/path"
+              },
+              "subtree_configs": [
+                {
+                  "config": {
+                    "write": "auth.addr === 'ijkl'"
+                  },
+                  "path": "/deeper/path"
+                }
+              ]
+            },
+            "state": {
+              "matched_config": {
+                "config": null,
+                "path": "/"
+              },
+              "matched_path": {
+                "path_vars": {},
+                "ref_path": "/apps/test/test_rule/some/path",
+                "target_path": "/apps/test/test_rule/some/path"
+              },
+              "parent_configs": {
+                "matched_path": {
+                  "target_path": "/apps/test/test_rule/some",
+                  "ref_path": "/apps/test/test_rule/some",
+                  "path_vars": {}
+                },
+                "matched_config": {
+                  "path": "/",
+                  "config": null
+                }
               }
-            ]
+            }
           },
           {
             "matched_path": {
@@ -1530,6 +1676,55 @@ describe("DB operations", () => {
         expect(node.db.getValue("/apps/test/shards/disabled_shard")).to.equal(20)
         expect(node.db.setValue("/apps/test/shards/disabled_shard/path", 20).code).to.equal(0);
         expect(node.db.getValue("/apps/test/shards/disabled_shard/path")).to.equal(20)
+      })
+
+      it("when writing more than max_children in state rule config", () => {
+        // Set state rule
+        expect(node.db.setRule("/apps/test/test_rule/some/path/more/than/max", {
+          ".rule": {
+            "state": {
+              "max_children": 1,
+              "ordering": "FIFO"
+            }
+          }
+        }).code).to.equal(0);
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path/more/than/max"), {
+          ".rule": {
+            "state": {
+              "max_children": 1,
+              "ordering": "FIFO"
+            }
+          }
+        });
+        // Set 1st child
+        expect(node.db.setValue("/apps/test/test_rule/some/path/more/than/max/child1", 1, { addr: 'abcd' },
+            null, { extra: { executed_at: 1234567890000 }}).code).to.equal(0);
+        assert.deepEqual(node.db.getValue("/apps/test/test_rule/some/path/more/than/max"), { "child1": 1 });
+        // Set 2nd child
+        expect(node.db.setValue("/apps/test/test_rule/some/path/more/than/max/child2", 2, { addr: 'abcd' },
+            null, { extra: { executed_at: 1234567890000 }}).code).to.equal(0);
+        // 1st child removed
+        assert.deepEqual(node.db.getValue("/apps/test/test_rule/some/path/more/than/max"), { "child2": 2 });
+      })
+
+      it("when writing value with more than max_children keys", () => {
+        expect(node.db.setRule("/apps/test/test_rule/some/path/more/than/max", {
+          ".rule": {
+            "state": {
+              "max_children": 1,
+              "ordering": "FIFO"
+            }
+          }
+        }).code).to.equal(0);
+        assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/path/more/than/max", {
+            child1: 1,
+            child2: 2
+          }, { addr: 'abcd' },
+          null, { extra: { executed_at: 1234567890000 }}), {
+          error_message: 'No state permission on: /apps/test/test_rule/some/path/more/than/max',
+          code: 106,
+          bandwidth_gas_amount: 1
+        });
       })
     })
 
@@ -1707,7 +1902,7 @@ describe("DB operations", () => {
           }
         };
         expect(node.db.setRule("/apps/test/test_rule/some/path", ruleConfig).code).to.equal(0);
-        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleConfig)
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleConfig);
       })
 
       it("when writing with variable path", () => {
@@ -1763,6 +1958,49 @@ describe("DB operations", () => {
           "code": 502,
           "error_message": "Invalid path: /apps/test/test_rule/some/path/.",
           "bandwidth_gas_amount": 1
+        });
+      })
+
+      it("when writing state rule", () => {
+        const ruleConfig = {
+          ".rule": {
+            "state": {
+              "max_children": 1,
+              "ordering": "FIFO"
+            }
+          }
+        };
+        expect(node.db.setRule("/apps/test/test_rule/some/path", ruleConfig).code).to.equal(0);
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
+          ".rule": {
+            "state": {
+              "max_children": 1,
+              "ordering": "FIFO"
+            },
+            "write": "auth.addr === 'abcd'"
+          }
+        });
+      })
+
+      it("when writing both state and write rules", () => {
+        const ruleConfig = {
+          ".rule": {
+            "state": {
+              "max_children": 1,
+              "ordering": "FIFO"
+            },
+            "write": "auth.addr === 'ijkl'"
+          }
+        };
+        expect(node.db.setRule("/apps/test/test_rule/some/path", ruleConfig).code).to.equal(0);
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
+          ".rule": {
+            "state": {
+              "max_children": 1,
+              "ordering": "FIFO"
+            },
+            "write": "auth.addr === 'ijkl'" // updated
+          }
         });
       })
     })
@@ -2722,7 +2960,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11299334 > 10000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11307210 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
         assert.deepEqual(res.gas_cost_total, 5.59512);
       });
@@ -4090,49 +4328,97 @@ describe("DB sharding config", () => {
 
     it("matchRule with isGlobal = false", () => {
       assert.deepEqual(node.db.matchRule("/apps/test/test_sharding/some/path/to"), {
-        "matched_path": {
-          "target_path": "/apps/test/test_sharding/some/path/to",
-          "ref_path": "/apps/test/test_sharding/some/path/to",
-          "path_vars": {},
-        },
-        "matched_config": {
-          "config": {
-            "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
+        "write": {
+          "matched_path": {
+            "target_path": "/apps/test/test_sharding/some/path/to",
+            "ref_path": "/apps/test/test_sharding/some/path/to",
+            "path_vars": {},
           },
-          "path": "/apps/test/test_sharding/some/path/to"
-        },
-        "subtree_configs": [
-          {
+          "matched_config": {
             "config": {
-              "write": "some deeper rule config"
+              "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
             },
-            "path": "/deeper",
+            "path": "/apps/test/test_sharding/some/path/to"
+          },
+          "subtree_configs": [
+            {
+              "config": {
+                "write": "some deeper rule config"
+              },
+              "path": "/deeper",
+            }
+          ]
+        },
+        "state": {
+          "matched_path": {
+            "target_path": "/apps/test/test_sharding/some/path/to",
+            "ref_path": "/apps/test/test_sharding/some/path/to",
+            "path_vars": {}
+          },
+          "matched_config": {
+            "path": "/",
+            "config": null
+          },
+          "parent_configs": {
+            "matched_path": {
+              "target_path": "/apps/test/test_sharding/some/path",
+              "ref_path": "/apps/test/test_sharding/some/path",
+              "path_vars": {}
+            },
+            "matched_config": {
+              "path": "/",
+              "config": null
+            }
           }
-        ]
+        }
       });
     })
 
     it("matchRule with isGlobal = true", () => {
       assert.deepEqual(node.db.matchRule("/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
-        "matched_path": {
-          "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
-          "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
-          "path_vars": {},
-        },
-        "matched_config": {
-          "config": {
-            "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
+        "write": {
+          "matched_path": {
+            "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
+            "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
+            "path_vars": {},
           },
-          "path": "/apps/afan/apps/test/test_sharding/some/path/to"
-        },
-        "subtree_configs": [
-          {
+          "matched_config": {
             "config": {
-              "write": "some deeper rule config"
+              "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
             },
-            "path": "/deeper",
+            "path": "/apps/afan/apps/test/test_sharding/some/path/to"
+          },
+          "subtree_configs": [
+            {
+              "config": {
+                "write": "some deeper rule config"
+              },
+              "path": "/deeper",
+            }
+          ]
+        },
+        "state": {
+          "matched_config": {
+            "config": null,
+            "path": "/apps/afan"
+          },
+          "matched_path": {
+            "path_vars": {},
+            "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
+            "target_path": "/apps/afan/apps/test/test_sharding/some/path/to"
+          },
+          "parent_configs": {
+            "matched_path": {
+              "target_path": "/apps/afan/apps/test/test_sharding/some/path",
+              "ref_path": "/apps/afan/apps/test/test_sharding/some/path",
+              "path_vars": {}
+            },
+            "matched_config": {
+              "path": "/apps/afan",
+              "config": null
+            }
           }
-        ]
+        }
       });
     })
 
