@@ -382,6 +382,13 @@ const OwnerProperties = {
  */
 const RuleProperties = {
   WRITE: 'write',
+  STATE: 'state',
+  STATE_MAX_CHILDREN: 'max_children',
+  STATE_ORDERING: 'ordering',
+};
+
+const StateRuleOrderingType = {
+  FIFO: 'FIFO',
 };
 
 /**
@@ -821,9 +828,7 @@ function getGenesisRules() {
     CommonUtil.setJsObject(
         rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
   }
-  CommonUtil.setJsObject(
-      rules, [PredefinedDbPaths.DEVELOPERS],
-      getDevelopersRule());
+  CommonUtil.setJsObject(rules, [PredefinedDbPaths.DEVELOPERS], getDevelopersRule());
   return rules;
 }
 
@@ -1024,6 +1029,7 @@ module.exports = {
   AccountProperties,
   OwnerProperties,
   RuleProperties,
+  StateRuleOrderingType,
   FunctionProperties,
   FunctionTypes,
   FunctionResultCode,
