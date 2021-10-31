@@ -305,7 +305,7 @@ class Consensus {
           if (ConsensusUtil.isVoteAgainstBlockError(e.code)) {
             this.blockPool.addSeenBlock(proposalBlock, proposalTx, false);
             this.server.client.broadcastConsensusMessage(msg);
-            this.tryVoteAgainstInvalidBlock(proposalBlock, proposalTx);
+            this.tryVoteAgainstInvalidBlock(proposalBlock);
           }
         } else {
           logger.error(`[${LOG_HEADER}] Error while checking proposal: ${e.stack}`);
@@ -937,10 +937,10 @@ class Consensus {
     this.handleConsensusMessage(consensusMsg);
   }
 
-  tryVoteAgainstInvalidBlock(proposalBlock, proposalTx) {
+  tryVoteAgainstInvalidBlock(proposalBlock) {
     const LOG_HEADER = 'tryVoteAgainstInvalidBlock';
     logger.info(`[${LOG_HEADER}] Trying to vote against ${proposalBlock.number} / ` +
-        `${proposalBlock.epoch} / ${proposalBlock.hash}`);
+        `${proposalBlock.epoch} / ${proposalBlock.hash} / ${proposalBlock.proposer}`);
     if (this.votedForBlock(proposalBlock.hash)) {
       logger.info(`[${LOG_HEADER}] Already voted against block ${proposalBlock.hash}`);
       return;
