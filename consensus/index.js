@@ -606,6 +606,7 @@ class Consensus {
       this.blockPool.addSeenVote(vote);
     }
     if (!this.blockPool.hashToBlockInfo[lastHash].notarized) {
+      newDb.destroyDb();
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_LAST_VOTES_STAKES,
         message: `Block's last_votes don't correctly notarize its previous block of number ` +
