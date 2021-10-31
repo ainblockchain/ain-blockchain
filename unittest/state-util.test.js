@@ -8,12 +8,14 @@ const {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  isValidStateRule,
   isValidRuleConfig,
   isValidRuleTree,
   isValidFunctionConfig,
   isValidFunctionTree,
   isValidOwnerConfig,
   isValidOwnerTree,
+  applyRuleChange,
   applyFunctionChange,
   applyOwnerChange,
   renameStateTreeVersion,
@@ -642,6 +644,45 @@ describe("state-util", () => {
     })
   })
 
+  describe("isValidStateRule", () => {
+    it('when invalid input', () => {
+      expect(isValidStateRule(null)).to.equal(false);
+      expect(isValidStateRule(undefined)).to.equal(false);
+      expect(isValidStateRule({})).to.equal(false);
+      expect(isValidStateRule([])).to.equal(false);
+      expect(isValidStateRule([1, 2, 3])).to.equal(false);
+      expect(isValidStateRule(0)).to.equal(false);
+      expect(isValidStateRule(true)).to.equal(false);
+      expect(isValidStateRule(false)).to.equal(false);
+      expect(isValidStateRule({ "invalid_field": true })).to.equal(false);
+      expect(isValidStateRule({ "max_children": 1 })).to.equal(false);
+      expect(isValidStateRule({ "ordering": 'FIFO' })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": '123',
+        "ordering": 'FIFO'
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": -1,
+        "ordering": 'FIFO'
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": 0,
+        "ordering": 'FIFO'
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": '123',
+        "ordering": 'invalid_ordering'
+      })).to.equal(false);
+    })
+
+    it('when valid input', () => {
+      expect(isValidStateRule({
+        "max_children": 10,
+        "ordering": 'FIFO'
+      })).to.equal(true);
+    })
+  })
+
   describe("isValidRuleConfig", () => {
     it("when invalid input", () => {
       assert.deepEqual(isValidRuleConfig(null), {isValid: false, invalidPath: '/'});
@@ -686,6 +727,13 @@ describe("state-util", () => {
           'b*': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        "state": {
+          "max_children": 123,
+          "ordering": 'FIFO',
+          "invalid_field": true
+        }
+      }), {isValid: false, invalidPath: '/'});
     })
 
     it("when valid input", () => {
@@ -694,6 +742,19 @@ describe("state-util", () => {
       assert.deepEqual(isValidRuleConfig({ "write": "auth.addr === 'abcd'" }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig({
         "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({
+        "state": {
+          "max_children": 1,
+          "ordering": "FIFO"
+        }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({
+        "write": "auth.addr === 'abcd'",
+        "state": {
+          "max_children": 1,
+          "ordering": "FIFO"
+        }
       }), {isValid: true, invalidPath: ''});
     })
   })
@@ -732,7 +793,7 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/some_key'});
     })
 
-    it("when invalid input with invalid owner config", () => {
+    it("when invalid input with invalid rule config", () => {
       assert.deepEqual(isValidRuleTree({
         some_path: {
           '.rule': {
@@ -753,7 +814,7 @@ describe("state-util", () => {
             'write': undefined
           }
         }
-      }), {isValid: false, invalidPath: '/some_path/.rule/write'});
+      }), {isValid: false, invalidPath: '/some_path/.rule'});
     })
 
     it("when valid input", () => {
@@ -1312,6 +1373,101 @@ describe("state-util", () => {
         }
       }), {isValid: true, invalidPath: ''});
     })
+  })
+
+  describe("applyRuleChange()", () => {
+    const curRule = {
+      ".rule": {
+        "write": "auth.addr === 'abcd'",
+        "state": {
+          "max_children": 10,
+          "ordering": "FIFO"
+        }
+      },
+      "deeper": {
+        ".rule": {  // deeper rule
+          "write": true,
+          "state": {
+            "max_children": 10,
+            "ordering": "FIFO"
+          }
+        }
+      }
+    };
+
+    it("add / delete / modify non-existing rule", () => {
+      assert.deepEqual(applyRuleChange(null, curRule), curRule); // the same as the given rule change.
+    });
+
+    it("delete / modify existing rule", () => {
+      assert.deepEqual(applyRuleChange(curRule, {
+        ".rule": {
+          "write": null,  // delete
+          "state": {  // modify
+            "max_children": 100,
+            "ordering": "FIFO"
+          }
+        }
+      }), {
+        ".rule": {
+          // write: deleted
+          "state": {  // modified
+            "max_children": 100,
+            "ordering": "FIFO"
+          }
+        }
+        // deeper rule deleted
+      });
+
+      assert.deepEqual(applyRuleChange({
+        ".rule": {
+          "write": true
+        }
+      }, {
+        ".rule": {
+          "state": { // add
+            "max_children": 10,
+            "ordering": "FIFO"
+          }
+        }
+      }), {
+        ".rule": {
+          "write": true,
+          "state": { // added
+            "max_children": 10,
+            "ordering": "FIFO"
+          }
+        }
+      });
+    });
+
+    it("replace existing rule with deeper rule", () => {
+      assert.deepEqual(applyRuleChange(curRule, {
+        ".rule": {
+          "write": "auth.addr === 'efgh'", // modify
+          "state": null // delete
+        },
+        "deeper": {
+          ".rule": { // deeper function
+            "write": false
+          }
+        }
+      }), {
+        ".rule": {
+          "write": "auth.addr === 'efgh'", // modified
+          "state": null // deleted
+        },
+        "deeper": {
+          ".rule": { // replaced
+            "write": false
+          }
+        }
+      });
+    });
+
+    it("with null rule change", () => {
+      assert.deepEqual(applyRuleChange(curRule, null), null);
+    });
   })
 
   describe("applyFunctionChange()", () => {
