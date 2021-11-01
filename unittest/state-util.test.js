@@ -804,13 +804,6 @@ describe("state-util", () => {
       assert.deepEqual(isValidRuleTree({
         some_path: {
           '.rule': {
-            'write': null 
-          }
-        }
-      }), {isValid: false, invalidPath: '/some_path/.rule/write'});
-      assert.deepEqual(isValidRuleTree({
-        some_path: {
-          '.rule': {
             'write': undefined
           }
         }
