@@ -60,6 +60,8 @@ const SYNC_MODE = process.env.SYNC_MODE || 'full';
 const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
     Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
 const KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
+const DISABLE_TRACKER_REPORT =
+    CommonUtil.convertEnvVarInputToBool(process.env.DISABLE_TRACKER_REPORT);
 
 // ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -944,6 +946,7 @@ module.exports = {
   ENABLE_GAS_FEE_WORKAROUND,
   ACCOUNT_INDEX,
   KEYSTORE_FILE_PATH,
+  DISABLE_TRACKER_REPORT,
   PORT,
   P2P_PORT,
   P2P_ROUTER_PORT,
