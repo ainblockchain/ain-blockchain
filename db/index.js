@@ -1283,7 +1283,7 @@ class DB {
     return true;
   }
 
-  precheckTransaction(tx, blockNumber) {
+  precheckTransaction(tx, skipFees, blockNumber) {
     const LOG_HEADER = 'precheckTransaction';
     // NOTE(platfowner): A transaction needs to be converted to an executable form
     //                   before being executed.
@@ -1304,20 +1304,22 @@ class DB {
     if (checkNonceTimestampResult !== true) {
       return checkNonceTimestampResult;
     }
-    const checkBillingResult = this.precheckTxBillingParams(op, addr, billing, blockNumber);
-    if (checkBillingResult !== true) {
-      return checkBillingResult;
-    }
-    const checkBalanceResult = this.precheckBalanceAndStakes(op, addr, billing, blockNumber);
-    if (checkBalanceResult !== true) {
-      return checkBalanceResult;
+    if (!skipFees) {
+      const checkBillingResult = this.precheckTxBillingParams(op, addr, billing, blockNumber);
+      if (checkBillingResult !== true) {
+        return checkBillingResult;
+      }
+      const checkBalanceResult = this.precheckBalanceAndStakes(op, addr, billing, blockNumber);
+      if (checkBalanceResult !== true) {
+        return checkBalanceResult;
+      }
     }
     return true;
   }
 
   executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
     const LOG_HEADER = 'executeTransaction';
-    const precheckResult = this.precheckTransaction(tx, blockNumber);
+    const precheckResult = this.precheckTransaction(tx, skipFees, blockNumber);
     if (precheckResult !== true) {
       logger.debug(`[${LOG_HEADER}] Pre-check failed`);
       return precheckResult;
