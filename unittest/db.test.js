@@ -1938,7 +1938,9 @@ describe("DB operations", () => {
             "/apps/test/test_rule/some/path",
             {
               ".rule": {
-                "write": null
+                "write": {
+                  "a": true
+                }
               }
             }), {
           "code": 504,
