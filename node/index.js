@@ -513,7 +513,7 @@ class BlockchainNode {
           return false;
         }
       }
-      if (!db.executeTransactionList(block.transactions, block.number === 0, false, block.number, block.timestamp)) {
+      if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number, block.timestamp)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
             `${JSON.stringify(block, null, 2)}`);
         return false;
@@ -609,7 +609,7 @@ class BlockchainNode {
             logger, `[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
       }
     }
-    if (!db.executeTransactionList(block.transactions, block.number === 0, false, block.number, block.timestamp)) {
+    if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number, block.timestamp)) {
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
       CommonUtil.exitWithStackTrace(
             logger, `[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
