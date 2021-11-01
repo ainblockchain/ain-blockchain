@@ -1304,16 +1304,15 @@ class DB {
     if (checkNonceTimestampResult !== true) {
       return checkNonceTimestampResult;
     }
-    if (skipFees) {
-      return true;
-    }
-    const checkBillingResult = this.precheckTxBillingParams(op, addr, billing, blockNumber);
-    if (checkBillingResult !== true) {
-      return checkBillingResult;
-    }
-    const checkBalanceResult = this.precheckBalanceAndStakes(op, addr, billing, blockNumber);
-    if (checkBalanceResult !== true) {
-      return checkBalanceResult;
+    if (!skipFees) {
+      const checkBillingResult = this.precheckTxBillingParams(op, addr, billing, blockNumber);
+      if (checkBillingResult !== true) {
+        return checkBillingResult;
+      }
+      const checkBalanceResult = this.precheckBalanceAndStakes(op, addr, billing, blockNumber);
+      if (checkBalanceResult !== true) {
+        return checkBalanceResult;
+      }
     }
     return true;
   }
