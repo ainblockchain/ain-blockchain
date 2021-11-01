@@ -97,7 +97,11 @@ fi
 FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh restart_tracker_gcp.sh"
 FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ genesis-configs/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh restart_node_gcp.sh wait_until_node_sync_gcp.sh $KEYSTORE_DIR"
 
-NUM_PARENT_NODES=5
+if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "dev" ]] || [[ "$SEASON" = 'staging' ]]; then
+    NUM_PARENT_NODES=7
+else
+    NUM_PARENT_NODES=5
+fi
 NUM_SHARD_NODES=3
 
 TRACKER_ZONE="asia-east1-b"
@@ -106,7 +110,10 @@ NODE_ZONE_LIST=(
     "us-west1-b" \
     "asia-southeast1-b" \
     "us-central1-a" \
-    "europe-west4-a")
+    "europe-west4-a" \
+    "asia-east1-b" \
+    "us-west1-b" \
+)
 
 function deploy_tracker() {
     local num_nodes="$1"
@@ -178,7 +185,7 @@ function deploy_node() {
 
     #4. Wait until node is synced
     printf "\n\n[[[[ Waiting until node is synced $node_index ]]]]\n\n"
-    WAIT_CMD="gcloud compute ssh $node_target_addr --command 'cd \$(find /home/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync_gcp.sh'"
+    WAIT_CMD="gcloud compute ssh $node_target_addr --command 'cd \$(find /home/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync_gcp.sh' --project $PROJECT_ID --zone $node_zone"
     printf "WAIT_CMD='$WAIT_CMD'\n\n"
     eval $WAIT_CMD
 }
@@ -193,7 +200,10 @@ NODE_TARGET_ADDR_LIST=(
     "${GCP_USER}@${SEASON}-node-1-oregon" \
     "${GCP_USER}@${SEASON}-node-2-singapore" \
     "${GCP_USER}@${SEASON}-node-3-iowa" \
-    "${GCP_USER}@${SEASON}-node-4-netherlands")
+    "${GCP_USER}@${SEASON}-node-4-netherlands" \
+    "${GCP_USER}@${SEASON}-node-5-taiwan" \
+    "${GCP_USER}@${SEASON}-node-6-oregon" \
+)
 
 if [[ $RUN_MODE = "canary" ]]; then
     deploy_node "0"
