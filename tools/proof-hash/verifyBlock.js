@@ -42,7 +42,7 @@ async function verifyBlock(snapshotFile, blockFileList) {
         process.exit(0);
       }
     }
-    if (!db.executeTransactionList(block.transactions, block.number === 0, false, block.number, block.timestamp)) {
+    if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number, block.timestamp)) {
       logger.error(`  Failed to execute transactions (${block.number})`)
       process.exit(0);
     }
