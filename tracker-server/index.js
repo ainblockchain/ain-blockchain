@@ -131,22 +131,6 @@ server.on('connection', (ws) => {
   ws.on('message', (message) => {
     const parsedMessage = JSON.parse(message);
     switch(_.get(parsedMessage, 'type')) {
-      case TrackerMessageTypes.NEW_PEERS_REQUEST:
-        const connectionNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
-        setPeerNodes(ws, connectionNodeInfo);
-        const newManagedPeerInfoList = assignRandomPeers(connectionNodeInfo);
-        const connectionMessage = {
-          type: TrackerMessageTypes.NEW_PEERS_RESPONSE,
-          data: {
-            newManagedPeerInfoList,
-            numLivePeers: getNumNodesAlive() - 1   // except for me.
-          }
-        };
-        logger.info(`>> Message to node [${abbrAddr(connectionNodeInfo.address)}]: ` +
-            `${JSON.stringify(connectionMessage, null, 2)}`);
-        ws.send(JSON.stringify(connectionMessage));
-        printNodesInfo();
-        break;
       case TrackerMessageTypes.PEER_INFO_UPDATE:
         const updateNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
         setPeerNodes(ws, updateNodeInfo);

@@ -58,7 +58,6 @@ class P2pRouter {
 
   assignRandomPeers(nodeInfo) {
     const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers(nodeInfo);
-    console.log(this.server.inbound)
     if (maxNumberOfNewPeers) {
       const candidates = Object.values(this.server.inbound)
         .filter(peer =>
