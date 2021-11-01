@@ -420,7 +420,8 @@ class P2pServer {
               }
               logger.info(`A new websocket(${address}) is established.`);
               this.inbound[address] = {
-                socket: socket,
+                socket,
+                peerInfo,
                 version: dataProtoVer
               };
               this.client.updatePeerInfoToTracker();

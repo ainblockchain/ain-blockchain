@@ -46,6 +46,37 @@ class P2pRouter {
     logger.info(`Listening to peer-to-peer router on: ${P2P_ROUTER_PORT}\n`);
   }
 
+  getMaxNumberOfNewPeers(nodeInfo) {
+    const numOfCandidates = nodeInfo.networkStatus.connectionStatus.targetOutBound -
+        nodeInfo.networkStatus.connectionStatus.outgoingPeers.length;
+    if (numOfCandidates > 0) {
+      return numOfCandidates;
+    } else {
+      return 0;
+    }
+  }
+
+  assignRandomPeers(nodeInfo) {
+    const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers(nodeInfo);
+    console.log(this.server.inbound)
+    if (maxNumberOfNewPeers) {
+      const candidates = Object.values(this.server.inbound)
+        .filter(peer =>
+          peer.peerInfo.address !== nodeInfo.address &&
+          // peer.peerInfo.isAlive === true &&   // FIXME(minsulee2): need to update
+          !peer.peerInfo.networkStatus.connectionStatus.incomingPeers.includes(nodeInfo.address) &&
+          peer.peerInfo.networkStatus.connectionStatus.incomingPeers.length <
+              peer.peerInfo.networkStatus.connectionStatus.maxInbound)
+        .sort((a, b) =>
+          a.peerInfo.networkStatus.connectionStatus.incomingPeers -
+              b.peerInfo.networkStatus.connectionStatus.incomingPeers)
+        .slice(0, maxNumberOfNewPeers);
+      return candidates;
+    } else {
+      return [];
+    }
+  }
+
   setRouterEventHandlers(socket) {
     socket.on('message', (message) => {
       const parsedMessage = JSON.parse(message);
@@ -56,27 +87,18 @@ class P2pRouter {
               type: RouterMessageTypes.CONNECTION_RESPONSE,
               data: this.client.getStatus()
             }
-            socket.send(JSON.stringify(message))
+            socket.send(JSON.stringify(message));
           } else {
-            // TODO(minsulee2): send list back.
+            const connectionNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
+            const newManagedPeerInfoList = this.assignRandomPeers(connectionNodeInfo);
+            const connectionMessage = {
+              type: RouterMessageTypes.NEW_PEERS_RESPONSE,
+              data: newManagedPeerInfoList
+            };
+            socket.send(JSON.stringify(connectionMessage));
           }
           break;
-        case RouterMessageTypes.NEW_PEERS_REQUEST:
-          const connectionNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
-          setPeerNodes(socket, connectionNodeInfo);
-          const newManagedPeerInfoList = assignRandomPeers(connectionNodeInfo);
-          const connectionMessage = {
-            type: RouterMessageTypes.NEW_PEERS_RESPONSE,
-            data: {
-              newManagedPeerInfoList,
-              numLivePeers: getNumNodesAlive() - 1   // except for me.
-            }
-          };
-          logger.info(`>> Message to node [${abbrAddr(connectionNodeInfo.address)}]: ` +
-            `${JSON.stringify(connectionMessage, null, 2)}`);
-            socket.send(JSON.stringify(connectionMessage));
-          printNodesInfo();
-          break;
+        // FIXME(minsulee2): This should be done in peerEventHandlers
         // case TrackerMessageTypes.PEER_INFO_UPDATE:
         //   const updateNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
         //   setPeerNodes(socket, updateNodeInfo);
@@ -90,14 +112,11 @@ class P2pRouter {
     });
 
     socket.on('close', (code) => {
-      logger.info(`Disconnected from node [${address ? abbrAddr(address) : 'unknown'}] ` +
-        `with code: ${code}`);
-      peerNodes[address].isAlive = false;
-      printNodesInfo();
+      logger.info(`Disconnected from router [${socket.url} : 'unknown'}] with code: ${code}`);
     });
 
     socket.on('error', (error) => {
-      logger.error(`Error in communication with node [${abbrAddr(address)}]: ` +
+      logger.error(`Error in communication with router [${abbrAddr(address)}]: ` +
         `${JSON.stringify(error, null, 2)}`);
     });
   }

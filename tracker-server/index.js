@@ -192,36 +192,6 @@ function getNumNodes() {
   return Object.keys(peerNodes).length;
 }
 
-function getMaxNumberOfNewPeers(nodeInfo) {
-  const numOfCandidates = nodeInfo.networkStatus.connectionStatus.targetOutBound -
-      nodeInfo.networkStatus.connectionStatus.outgoingPeers.length;
-  if (numOfCandidates > 0) {
-    return numOfCandidates;
-  } else {
-    return 0;
-  }
-}
-
-function assignRandomPeers(nodeInfo) {
-  const maxNumberOfNewPeers = getMaxNumberOfNewPeers(nodeInfo);
-  if (maxNumberOfNewPeers) {
-    const candidates = Object.values(peerNodes)
-      .filter(peer =>
-        peer.address !== nodeInfo.address &&
-        peer.isAlive === true &&
-        !peer.networkStatus.connectionStatus.incomingPeers.includes(nodeInfo.address) &&
-        peer.networkStatus.connectionStatus.incomingPeers.length <
-            peer.networkStatus.connectionStatus.maxInbound)
-      .sort((a, b) =>
-        a.networkStatus.connectionStatus.incomingPeers -
-            b.networkStatus.connectionStatus.incomingPeers)
-      .slice(0, maxNumberOfNewPeers);
-    return candidates;
-  } else {
-    return [];
-  }
-}
-
 function printNodesInfo() {
   logger.info(`Updated [peerNodes]: Number of nodes: (${getNumNodesAlive()}/${getNumNodes()})`);
   const nodeInfoList = Object.values(peerNodes).sort((x, y) => {

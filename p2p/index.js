@@ -40,7 +40,7 @@ const {
 const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const TRACKER_UPDATE_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const PEER_CONNECTION_INVERVAL_MS = 60 * 1000;  // 1 minute
-const ROUTER_CONNECTION_INVERVAL_MS = 60 * 1000;  // 1 minute
+const ROUTER_CONNECTION_INVERVAL_MS = 15 * 1000;  // 1 minute
 const HEARTBEAT_INTERVAL_MS = 60 * 1000;  // 1 minute
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
@@ -69,11 +69,7 @@ class P2pClient {
     await this.server.listen();
     this.router.listen();
     this.connectToTracker();
-    this.connectToRouter();
-    // this.connectToPeers(peerInfoList);
-    // if (this.server.node.state === BlockchainNodeStates.STARTING) {
-    //   await this.startBlockchainNode(data.numLivePeers);
-    // }
+    await this.connectToRouter();
   }
 
   initConnections() {
@@ -231,47 +227,15 @@ class P2pClient {
   }
 
   setIntervalForRouterConnection() {
-    this.connectToRouter(P2pRouter);
     this.intervalRouterConnection = setInterval(() => {
-      this.connectToRouter(P2pRouter);
+      if (this.routerWebSocket.readyState === Websocket.CLOSED) {
+        this.connectToRouter();
+      }
     }, ROUTER_CONNECTION_INVERVAL_MS);
   }
 
   clearIntervalForRouterConnection() {
-    clearInterval(this.intervalPeerConnection);
-  }
-
-  async setRouterEventHandlers() {
-    this.routerWebSocket.on('message', async (message) => {
-      const parsedMessage = JSON.parse(message);
-      logger.info(`\n<< Message from [ROUTER]: ${JSON.stringify(parsedMessage, null, 2)}`);
-      switch(_.get(parsedMessage, 'type')) {
-        case RouterMessageTypes.CONNECTION_RESPONSE:
-          const peerInfo = parsedMessage.data;
-          this.connectToPeer(peerInfo);
-          if (this.server.node.state === BlockchainNodeStates.STARTING) {
-            await this.startBlockchainNode(1);
-          }
-          break;
-        case RouterMessageTypes.NEW_PEERS_RESPONSE:
-          const data = parsedMessage.data;
-          this.connectToPeers(data.newManagedPeerInfoList);
-          if (this.server.node.state === BlockchainNodeStates.STARTING) {
-            await this.startBlockchainNode(1);
-          }
-          break;
-        default:
-          logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
-              'specified. Ignore the message.');
-          break;
-      }
-    });
-
-    this.routerWebSocket.on('close', (code) => {
-      logger.info(`\nDisconnected from [TRACKER] ${TRACKER_WS_ADDR} with code: ${code}`);
-      this.clearIntervalForTrackerUpdate();
-      this.setIntervalForTrackerConnection();
-    });
+    clearInterval(this.intervalRouterConnection);
   }
 
   async setTrackerEventHandlers() {
@@ -594,36 +558,72 @@ class P2pClient {
       });
   }
 
+  async setRouterEventHandlers() {
+    this.routerWebSocket.on('message', async (message) => {
+      const parsedMessage = JSON.parse(message);
+      switch(_.get(parsedMessage, 'type')) {
+        case RouterMessageTypes.CONNECTION_RESPONSE:
+          const peerInfo = parsedMessage.data;
+          this.connectToPeer(peerInfo);
+          if (this.server.node.state === BlockchainNodeStates.STARTING) {
+            await this.startBlockchainNode(1);
+          }
+          break;
+        case RouterMessageTypes.NEW_PEERS_RESPONSE:
+          const newManagedPeerInfoList = parsedMessage.data;
+          this.connectToPeers(newManagedPeerInfoList);
+          if (this.server.node.state === BlockchainNodeStates.STARTING) {
+            await this.startBlockchainNode(1);
+          }
+          break;
+        default:
+          logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
+              'specified. Ignore the message.');
+          break;
+      }
+      this.routerWebSocket.close();
+      this.setIntervalForRouterConnection();
+    });
+
+    this.routerWebSocket.on('close', (code) => {
+      logger.info(`\nDisconnected from [ROUTER] ${TRACKER_WS_ADDR} with code: ${code}`);
+      this.clearIntervalForTrackerUpdate();
+      this.setIntervalForRouterConnection();
+    });
+  }
+
   requestRouterConnection = () => {
     const message = {
       type: RouterMessageTypes.CONNECTION_REQUEST,
+      data: this.getStatus()
     }
     this.routerWebSocket.send(JSON.stringify(message));
   }
 
-  connectToRouter() {
+  async connectToRouter() {
+    if (Object.keys(this.outbound).length >= TARGET_NUM_OUTBOUND_CONNECTION) {
+      return;
+    }
     // FIXME(minsu): do not connect to myself if I am a router myself.
-    if (Number(ACCOUNT_INDEX) === 0) {
+    if (Number(ACCOUNT_INDEX) === 0 && this.server.node.state === BlockchainNodeStates.STARTING) {
       this.startBlockchainNode(0);
       return;
     }
     this.routerWebSocket = new Websocket(INITIAL_P2P_ROUTER);
-    this.routerWebSocket.on('open', () => {
-      logger.info(`Connected to router (${INITIAL_P2P_ROUTER})`);
+    this.routerWebSocket.on('open', async () => {
+      logger.info(`Connected to the router(${INITIAL_P2P_ROUTER})`);
       this.clearIntervalForRouterConnection();
-      this.setRouterEventHandlers();
+      await this.setRouterEventHandlers();
       this.requestRouterConnection();
       // TODO:
       // 1. ask vacancy
       // 2-1. connect to peer if available
-      // 2-2. close the router socket
       // 2-2. send new peer message if not available
+      // 2-3. close the router socket
       // 3. setInterval till full connections.
-      // this.setIntervalForRouterConnection();
-      // this.setIntervalForTrackerUpdate();
     });
     this.routerWebSocket.on('error', (error) => {
-      logger.error(`Error in communication with tracker (${TRACKER_WS_ADDR}): ` +
+      logger.error(`Error in communication with the router(${INITIAL_P2P_ROUTER}): ` +
         `${JSON.stringify(error, null, 2)}`);
       this.clearIntervalForRouterConnection();
       this.setIntervalForRouterConnection();
@@ -654,7 +654,9 @@ class P2pClient {
   }
 
   connectToPeers(newPeerInfoList) {
-    newPeerInfoList.forEach((peerInfo) => {
+    newPeerInfoList.forEach(peer => {
+      const peerInfo = peer.peerInfo;
+      console.log(peerInfo)
       if (peerInfo.address in this.outbound) {
         logger.info(`Node ${peerInfo.address} is already a managed peer. Something went wrong.`);
       } else {
