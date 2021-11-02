@@ -1,8 +1,9 @@
+const logger = new (require('../logger'))('BLOCK');
+
 const stringify = require('fast-json-stable-stringify');
 const sizeof = require('object-sizeof');
 const moment = require('moment');
 const _ = require('lodash');
-const logger = require('../logger')('BLOCK');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('../db/state-node');

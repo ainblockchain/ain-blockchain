@@ -1,6 +1,7 @@
+const logger = new (require('../logger'))('BLOCKCHAIN');
+
 const path = require('path');
 const fs = require('fs');
-const logger = require('../logger')('BLOCKCHAIN');
 const { Block } = require('./block');
 const FileUtil = require('../common/file-util');
 const {

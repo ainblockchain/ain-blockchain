@@ -1,4 +1,6 @@
 /* eslint no-mixed-operators: "off" */
+const logger = new (require('../logger'))('P2P_SERVER');
+
 const Websocket = require('ws');
 const ip = require('ip');
 const extIp = require('ext-ip')();
@@ -9,7 +11,6 @@ const v8 = require('v8');
 const _ = require('lodash');
 const semver = require('semver');
 const ainUtil = require('@ainblockchain/ain-util');
-const logger = require('../logger')('P2P_SERVER');
 const Consensus = require('../consensus');
 const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');

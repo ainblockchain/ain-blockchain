@@ -1,4 +1,5 @@
-const logger = require('../logger')('STATE_MANAGER');
+const logger = new (require('../logger'))('STATE_MANAGER');
+
 const StateNode = require('./state-node');
 const {
   renameStateTreeVersion,

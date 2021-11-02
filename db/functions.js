@@ -1,4 +1,5 @@
-const logger = require('../logger')('FUNCTIONS');
+const logger = new (require('../logger'))('FUNCTIONS');
+
 const axios = require('axios');
 const _ = require('lodash');
 const {

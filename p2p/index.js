@@ -1,8 +1,9 @@
 /* eslint no-mixed-operators: "off" */
+const logger = new (require('../logger'))('P2P_CLIENT');
+
 const _ = require('lodash');
 const P2pServer = require('./server');
 const Websocket = require('ws');
-const logger = require('../logger')('P2P_CLIENT');
 const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
