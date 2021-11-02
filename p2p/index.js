@@ -40,8 +40,8 @@ const {
 
 const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const TRACKER_UPDATE_INTERVAL_MS = 10 * 1000;  // 10 seconds
-const ROUTER_CONNECTION_INVERVAL_MS = 60 * 1000;  // 1 minute
-const HEARTBEAT_INTERVAL_MS = 60 * 1000;  // 1 minute
+const ROUTER_CONNECTION_INVERVAL_MS = 10 * 1000;  // 1 minute
+const HEARTBEAT_INTERVAL_MS = 5 * 1000;  // 15 seconds
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
   '5m': 300,  // 5 minutes
@@ -513,6 +513,7 @@ class P2pClient {
 
     socket.on('pong', () => {
       const address = getAddressFromSocket(this.outbound, socket);
+      this.outbound[address].peerInfo.isAlive = true;
       logger.info(`The peer(${address}) is alive.`);
     });
 
@@ -613,6 +614,7 @@ class P2pClient {
     const url = peerInfo.networkStatus.p2p.url;
     const socket = new Websocket(url);
     socket.on('open', async () => {
+      peerInfo.isAlive = true;
       this.outbound[peerInfo.address] = {
         socket,
         peerInfo
@@ -663,6 +665,16 @@ class P2pClient {
     logger.info('Disconnect from connected peers.');
   }
 
+  updatePeerInfoToPeer(socket, address) {
+    const payload = encapsulateMessage(MessageTypes.PEER_INFO_UPDATE, this.getStatus());
+    if (!payload) {
+      logger.error('The address cannot be sent because of msg encapsulation failure.');
+      return;
+    }
+    socket.send(JSON.stringify(payload));
+    logger.debug(`\n >> Update to ${address}: ${JSON.stringify(payload, null, 2)}`);
+  }
+
   startHeartbeat() {
     this.intervalHeartbeat = setInterval(() => {
       Object.values(this.outbound).forEach(node => {
@@ -676,6 +688,7 @@ class P2pClient {
               `The readyState is(${socket.readyState})`);
         } else {
           socket.ping();
+          this.updatePeerInfoToPeer(socket, node.peerInfo.address);
         }
       });
     }, HEARTBEAT_INTERVAL_MS);
