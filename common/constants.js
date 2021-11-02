@@ -672,22 +672,35 @@ const TrafficEventTypes = {
   CLIENT_API_SET: 'client_api_set',
 };
 
-const IpAddressRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
+const IpAddressRegex = /^(ws:\/\/)((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
+const localhostRegex = /^(ws:\/\/)localhost(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
 
 const INITIAL_P2P_ROUTER = (() => {
-  const p2pRouterEnv = process.env.P2P_ROUTER_ENV || '';
+  const hostingEnv = GenesisParams.blockchain.HOSTING_ENV;
+  const p2pRouterEnv = process.env.P2P_ROUTER_URL || '';
   const lowerEnv = p2pRouterEnv.toLowerCase();
-  switch (lowerEnv) {
-    // In case of local running.
+  let url;
+  switch (hostingEnv) {
     case 'local':
-      return `ws://localhost:${P2P_DEFAULT_ROUTER_PORT}`;
-    // In case of given ip address running.
-    case (lowerEnv.match(IpAddressRegex) ? lowerEnv.match(IpAddressRegex).input : null):
-      return lowerEnv;
-    // Default prod running.
+      const matchedLocalEnv = lowerEnv.match(localhostRegex);
+      if (matchedLocalEnv) {
+        url = matchedLocalEnv.input;
+      } else {
+        url = `ws://localhost:${P2P_DEFAULT_ROUTER_PORT}`;
+      }
+      break;
+    case 'gcp':
+      const matchedGcpEnv = lowerEnv.match(IpAddressRegex);
+      if (matchedGcpEnv) {
+        url = matchedGcpEnv.input;
+      } else {
+        url = `ws://node.ainetwork.ai:${P2P_DEFAULT_ROUTER_PORT}`;
+      }
+      break;
     default:
-      return `ws://node.ainetwork.ai:${P2P_DEFAULT_ROUTER_PORT}`;
+      throw Error(`Wrong hosting environment(${hostingEnv}) is set. Please try again.`);
   }
+  return url;
 })();
 
 /**

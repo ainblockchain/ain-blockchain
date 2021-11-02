@@ -62,7 +62,7 @@ class P2pRouter {
       const candidates = Object.values(this.server.inbound)
         .filter(peer =>
           peer.peerInfo.address !== nodeInfo.address &&
-          // peer.peerInfo.isAlive === true &&
+          peer.peerInfo.isAlive === true &&
           !peer.peerInfo.networkStatus.connectionStatus.incomingPeers.includes(nodeInfo.address) &&
           peer.peerInfo.networkStatus.connectionStatus.incomingPeers.length <
               peer.peerInfo.networkStatus.connectionStatus.maxInbound)

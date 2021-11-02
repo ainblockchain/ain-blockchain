@@ -39,9 +39,9 @@ const {
 } = require('./util');
 
 const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
-const TRACKER_UPDATE_INTERVAL_MS = 10 * 1000;  // 10 seconds
-const ROUTER_CONNECTION_INVERVAL_MS = 10 * 1000;  // 1 minute
-const HEARTBEAT_INTERVAL_MS = 5 * 1000;  // 15 seconds
+const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
+const ROUTER_CONNECTION_INVERVAL_MS = 60 * 1000;  // 1 minute
+const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
   '5m': 300,  // 5 minutes
