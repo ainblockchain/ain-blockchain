@@ -182,6 +182,9 @@ class BlockchainNode {
     if (!wasBlockDirEmpty || isGenesisStart) {
       lastBlockWithoutProposal =
           this.loadAndExecuteChainOnDb(latestSnapshotBlockNumber, !wasBlockDirEmpty, startingDb);
+      if (lastBlockWithoutProposal < -1) {
+        return lastBlockWithoutProposal;
+      }
     }
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
 
@@ -618,6 +621,7 @@ class BlockchainNode {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
         CommonUtil.exitWithStackTrace(
             logger, `[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
+        return false;
       }
     }
     if (!CommonUtil.isEmpty(block.evidence)) {
@@ -626,6 +630,7 @@ class BlockchainNode {
           if (!db.executeTransactionList(evidenceForOffense.votes, true, false, block.number, block.timestamp)) {
             CommonUtil.exitWithStackTrace(
                 logger, `[${LOG_HEADER}] Failed to execute evidence (${block.number})`);
+            return false;
           }
         }
       }
@@ -634,6 +639,7 @@ class BlockchainNode {
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
       CommonUtil.exitWithStackTrace(
             logger, `[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
+      return false;
     }
     if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
 
@@ -646,9 +652,12 @@ class BlockchainNode {
           logger,
           `[${LOG_HEADER}] Invalid state proof hash (${block.number}): ` +
           `${db.stateRoot.getProofHash()}, ${block.state_proof_hash}`);
+      return false;
     }
     this.tp.cleanUpForNewBlock(block);
     logger.info(`[${LOG_HEADER}] Successfully executed block ${block.number} on DB.`);
+
+    return true;
   }
 
   loadAndExecuteChainOnDb(latestSnapshotBlockNumber, deleteLastBlock, db) {
@@ -678,7 +687,9 @@ class BlockchainNode {
         lastBlockWithoutProposal = block;
         this.bc.deleteBlock(lastBlockWithoutProposal);
       } else {
-        this.executeBlockOnDb(block, db);
+        if (!this.executeBlockOnDb(block, db)) {
+          return -2;
+        }
         this.bc.addBlockToChain(block);
       }
       prevBlockNumber = block.number;
