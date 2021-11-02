@@ -1543,7 +1543,7 @@ describe('Sharding', async () => {
               },
               "state": {
                 "app": {
-                  "test": 4198
+                  "test": 4194
                 },
                 "service": 0
               }
