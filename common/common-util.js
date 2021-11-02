@@ -668,7 +668,9 @@ class CommonUtil {
    */
   static exitWithStackTrace(logger, message) {
     CommonUtil.logErrorWithStackTrace(logger, message);
-    process.exit(0);
+    logger.onFinish((info) => {
+      process.exit(0);
+    });
   }
 
   static keyStackToMetricName(keyStack) {

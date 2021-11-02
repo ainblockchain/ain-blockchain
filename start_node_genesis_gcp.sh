@@ -128,7 +128,7 @@ echo "TRACKER_WS_ADDR=$TRACKER_WS_ADDR"
 echo "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR"
 echo "KEYSTORE_DIR=$KEYSTORE_DIR"
 
-if [[ "$3" -lt 0 ]] || [[ "$3" -gt 4 ]]; then
+if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
     echo "Invalid account_index argument: $2"
     exit
 fi
@@ -146,8 +146,12 @@ else
         KEYSTORE_FILENAME="keystore_node_2.json"
     elif [[ "$3" = 3 ]]; then
         KEYSTORE_FILENAME="keystore_node_3.json"
-    else
+    elif [[ "$3" = 4 ]]; then
         KEYSTORE_FILENAME="keystore_node_4.json"
+    elif [[ "$3" = 5 ]]; then
+        KEYSTORE_FILENAME="keystore_node_5.json"
+    elif [[ "$3" = 6 ]]; then
+        KEYSTORE_FILENAME="keystore_node_6.json"
     fi
     echo "KEYSTORE_FILENAME=$KEYSTORE_FILENAME"
     if [[ "$KEEP_CODE_OPTION" = "" ]]; then
@@ -171,7 +175,7 @@ export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
 export CORS_WHITELIST=*
 printf "CORS_WHITELIST=$CORS_WHITELIST\n"
 
-MAX_OLD_SPACE_SIZE_MB=5500
+MAX_OLD_SPACE_SIZE_MB=11000
 
 printf "\nStarting up Blockchain Node server..\n\n"
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
