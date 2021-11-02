@@ -513,6 +513,16 @@ class BlockchainNode {
           return false;
         }
       }
+      if (!CommonUtil.isEmpty(block.evidence)) {
+        for (const evidenceList of Object.values(block.evidence)) {
+          for (const evidenceForOffense of evidenceList) {
+            if (!db.executeTransactionList(evidenceForOffense.votes, true, false, block.number, block.timestamp)) {
+              logger.error(`[${LOG_HEADER}] Failed to execute evidence (${block.number})`);
+              return false;
+            }
+          }
+        }
+      }
       if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number, block.timestamp)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
             `${JSON.stringify(block, null, 2)}`);
@@ -607,6 +617,16 @@ class BlockchainNode {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
         CommonUtil.exitWithStackTrace(
             logger, `[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
+      }
+    }
+    if (!CommonUtil.isEmpty(block.evidence)) {
+      for (const evidenceList of Object.values(block.evidence)) {
+        for (const evidenceForOffense of evidenceList) {
+          if (!db.executeTransactionList(evidenceForOffense.votes, true, false, block.number, block.timestamp)) {
+            CommonUtil.exitWithStackTrace(
+                logger, `[${LOG_HEADER}] Failed to execute evidence (${block.number})`);
+          }
+        }
       }
     }
     if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number, block.timestamp)) {

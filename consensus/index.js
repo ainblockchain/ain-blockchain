@@ -788,7 +788,7 @@ class Consensus {
     }
     const { proposer, number, epoch, hash, last_hash, validators, last_votes, transactions,
       receipts, gas_amount_total, gas_cost_total, state_proof_hash, timestamp } = block;
-    logger.info(`[${LOG_HEADER}] Checking block proposal: ${number} / ${epoch}`);
+    logger.info(`[${LOG_HEADER}] Checking block proposal: ${number} / ${epoch} / ${hash} / ${proposer}`);
     this.precheckProposal(block, proposalTx, proposer, hash, number, validators);
 
     const prevBlockInfo = this.getPrevBlockInfo(number, last_hash);
