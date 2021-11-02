@@ -666,10 +666,11 @@ class CommonUtil {
    * @param logger logger to log with
    * @param message message to log
    */
-  static async exitWithStackTrace(logger, message) {
+  static exitWithStackTrace(logger, message) {
     CommonUtil.logErrorWithStackTrace(logger, message);
-    await CommonUtil.sleep(10000);
-    process.exit(0);
+    logger.onFinish((info) => {
+      process.exit(0);
+    });
   }
 
   static keyStackToMetricName(keyStack) {
