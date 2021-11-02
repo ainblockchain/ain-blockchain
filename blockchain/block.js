@@ -243,7 +243,7 @@ class Block {
     };
     const tx = Transaction.fromTxBody(txBody, privateKey);
     if (!tx) {
-      CommonUtil.exitWithStackTrace(
+      CommonUtil.finishWithStackTrace(
           logger, `Failed to build DB setup tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
     }
     return tx;
@@ -278,7 +278,7 @@ class Block {
     };
     const tx = Transaction.fromTxBody(txBody, privateKey);
     if (!tx) {
-      CommonUtil.exitWithStackTrace(
+      CommonUtil.finishWithStackTrace(
           logger, `Failed to build account setup tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
     }
     return tx;
@@ -306,7 +306,7 @@ class Block {
     }
     const tx = Transaction.fromTxBody(txBody, privateKey);
     if (!tx) {
-      CommonUtil.exitWithStackTrace(
+      CommonUtil.finishWithStackTrace(
           logger, `Failed to build consensus app tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
     }
     return tx;
@@ -332,7 +332,7 @@ class Block {
       };
       const tx = Transaction.fromTxBody(txBody, privateKey);
       if (!tx) {
-        CommonUtil.exitWithStackTrace(
+        CommonUtil.finishWithStackTrace(
             logger, `Failed to build genesis staking txs with tx body: ${JSON.stringify(txBody, null, 2)}`);
       }
       txs.push(tx);

@@ -10,7 +10,7 @@ const winstonLogger = new winston.createLogger({
 
 winston.addColors(getWinstonColors());
 
-global.isLoggerOff = false;
+global.isFinished = false;
 
 class Logger {
   constructor(prefix) {
@@ -18,26 +18,25 @@ class Logger {
   }
 
   error(text) {
-    if (!isLoggerOff) {
+    if (!isFinished) {
       winstonLogger.error(`[${this.prefix}] ${text}`)
     }
   }
 
   info(text) {
-    if (!isLoggerOff) {
+    if (!isFinished) {
       winstonLogger.info(`[${this.prefix}] ${text}`)
     }
   }
 
   debug(text) {
-    if (!isLoggerOff) {
+    if (!isFinished) {
       winstonLogger.debug(`[${this.prefix}] ${text}`)
     }
   }
 
-  onFinish(callback) {
-    winstonLogger.on('finish', callback);
-    isLoggerOff = true;
+  finish() {
+    isFinished = true;
   }
 }
 

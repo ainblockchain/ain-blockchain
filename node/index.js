@@ -156,7 +156,7 @@ class BlockchainNode {
         try {
           latestSnapshot = FileUtil.readCompressedJson(latestSnapshotPath);
         } catch (err) {
-          CommonUtil.exitWithStackTrace(
+          CommonUtil.finishWithStackTrace(
               logger, 
               `[${LOG_HEADER}] Failed to read latest snapshot file (${latestSnapshotPath}) ` +
               `with error: ${err.stack}`);
@@ -623,7 +623,7 @@ class BlockchainNode {
     if (block.number > 0) {
       if (!db.executeTransactionList(block.last_votes, true, false, block.number, block.timestamp)) {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        CommonUtil.exitWithStackTrace(
+        CommonUtil.finishWithStackTrace(
             logger, `[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
         return false;
       }
@@ -632,7 +632,7 @@ class BlockchainNode {
       for (const evidenceList of Object.values(block.evidence)) {
         for (const evidenceForOffense of evidenceList) {
           if (!db.executeTransactionList(evidenceForOffense.votes, true, false, block.number, block.timestamp)) {
-            CommonUtil.exitWithStackTrace(
+            CommonUtil.finishWithStackTrace(
                 logger, `[${LOG_HEADER}] Failed to execute evidence (${block.number})`);
             return false;
           }
@@ -641,7 +641,7 @@ class BlockchainNode {
     }
     if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number, block.timestamp)) {
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-      CommonUtil.exitWithStackTrace(
+      CommonUtil.finishWithStackTrace(
             logger, `[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
       return false;
     }
@@ -652,7 +652,7 @@ class BlockchainNode {
       FileUtil.writeSnapshot(this.snapshotDir, block.number, snapshot, true);
 
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-      CommonUtil.exitWithStackTrace(
+      CommonUtil.finishWithStackTrace(
           logger,
           `[${LOG_HEADER}] Invalid state proof hash (${block.number}): ` +
           `${db.stateRoot.getProofHash()}, ${block.state_proof_hash}`);
@@ -676,13 +676,13 @@ class BlockchainNode {
       const block = this.bc.loadBlock(number);
       if (!block) {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        CommonUtil.exitWithStackTrace(
+        CommonUtil.finishWithStackTrace(
             logger, `[${LOG_HEADER}] Failed to load block ${number}.`);
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
       if (!Blockchain.validateBlock(block, prevBlockNumber, prevBlockHash)) {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        CommonUtil.exitWithStackTrace(
+        CommonUtil.finishWithStackTrace(
             logger, `[${LOG_HEADER}] Failed to validate block ${number}.`);
       }
       // NOTE(liayoo): we don't have the votes for the last block, so remove it and try to
