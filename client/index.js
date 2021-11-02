@@ -1,11 +1,12 @@
 'use strict';
 
+const logger = new (require('../logger'))('CLIENT');
+
 const express = require('express');
 const cors = require('cors');
 // NOTE(liayoo): To use async/await (ref: https://github.com/tedeh/jayson#promises)
 const jayson = require('jayson/promise');
 const _ = require('lodash');
-const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
 const CommonUtil = require('../common/common-util');
@@ -27,7 +28,6 @@ const {
 const { ConsensusStates } = require('../consensus/constants');
 
 const MAX_BLOCKS = 20;
-
 
 const app = express();
 app.use(express.json({ limit: REQUEST_BODY_SIZE_LIMIT }));

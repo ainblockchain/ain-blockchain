@@ -1,12 +1,12 @@
+const logger = new (require('../logger'))('NETWORK-UTIL');
+
 const _ = require('lodash');
 const axios = require('axios');
-const logger = require('../logger')('NETWORK-UTIL');
 const {
   CURRENT_PROTOCOL_VERSION,
   CHAIN_ID
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
-
 
 async function _waitUntilTxFinalize(endpoint, txHash) {
   while (true) {

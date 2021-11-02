@@ -1,8 +1,9 @@
 /* eslint guard-for-in: "off" */
+const logger = new (require('../logger'))('NODE');
+
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const path = require('path');
-const logger = require('../logger')('NODE');
 const {
   FeatureFlags,
   PORT,
