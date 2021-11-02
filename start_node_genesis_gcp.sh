@@ -175,7 +175,7 @@ export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
 export CORS_WHITELIST=*
 printf "CORS_WHITELIST=$CORS_WHITELIST\n"
 
-MAX_OLD_SPACE_SIZE_MB=5500
+MAX_OLD_SPACE_SIZE_MB=11000
 
 printf "\nStarting up Blockchain Node server..\n\n"
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
