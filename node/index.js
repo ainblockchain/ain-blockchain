@@ -678,9 +678,7 @@ class BlockchainNode {
         this.bc.deleteBlock(lastBlockWithoutProposal);
       } else {
         this.executeBlockOnDb(block, db);
-        if (numBlockFiles - number <= ON_MEMORY_CHAIN_LENGTH) {
-          this.bc.addBlockToChain(block)
-        }
+        this.bc.addBlockToChain(block);
       }
       prevBlockNumber = block.number;
       prevBlockHash = block.hash;

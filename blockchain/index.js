@@ -150,6 +150,11 @@ class Blockchain {
 
     this.chain.push(block);
     logger.info(`[${LOG_HEADER}] Successfully added block ${block.number} to chain.`);
+
+    // Keep up to latest ON_MEMORY_CHAIN_LENGTH blocks
+    while (this.chain.length > ON_MEMORY_CHAIN_LENGTH) {
+      this.chain.shift();
+    }
   }
 
   updateNumberToBlockInfo(block) {
@@ -178,10 +183,6 @@ class Blockchain {
     this.addBlockToChain(newBlock);
     this.updateNumberToBlockInfo(newBlock);
     this.writeBlock(newBlock);
-    // Keep up to latest ON_MEMORY_CHAIN_LENGTH blocks
-    while (this.chain.length > ON_MEMORY_CHAIN_LENGTH) {
-      this.chain.shift();
-    }
     return true;
   }
 
