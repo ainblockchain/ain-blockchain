@@ -156,7 +156,11 @@ class BlockchainNode {
         try {
           latestSnapshot = FileUtil.readCompressedJson(latestSnapshotPath);
         } catch (err) {
-          logger.error(`[${LOG_HEADER}] ${err.stack}`);
+          CommonUtil.exitWithStackTrace(
+              logger, 
+              `[${LOG_HEADER}] Failed to read latest snapshot file (${latestSnapshotPath}) ` +
+              `with error: ${err.stack}`);
+          return -2;
         }
       }
       logger.info(`[${LOG_HEADER}] Fast mode DB snapshot loading done!`);
