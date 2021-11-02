@@ -666,8 +666,9 @@ class CommonUtil {
    * @param logger logger to log with
    * @param message message to log
    */
-  static exitWithStackTrace(logger, message) {
+  static async exitWithStackTrace(logger, message) {
     CommonUtil.logErrorWithStackTrace(logger, message);
+    await CommonUtil.sleep(10000);
     process.exit(0);
   }
 
