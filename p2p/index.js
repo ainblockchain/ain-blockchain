@@ -251,6 +251,7 @@ class P2pClient {
       logger.info(`[${LOG_HEADER}] Starting blockchain node without peers..`);
       const lastBlockWithoutProposal = this.server.node.init(true);
       if (lastBlockWithoutProposal < -1) {
+        this.server.node.state = BlockchainNodeStates.STOPPED;
         logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
         return;
       }
@@ -270,6 +271,7 @@ class P2pClient {
       // Consensus will be initialized after syncing with peers
       logger.info(`[${LOG_HEADER}] Starting blockchain node with ${numLivePeers} peers..`);
       if (this.server.node.init(false) < -1) {
+        this.server.node.state = BlockchainNodeStates.STOPPED;
         logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
         return;
       }

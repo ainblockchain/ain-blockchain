@@ -169,6 +169,7 @@ const BlockchainNodeStates = {
   STARTING: 'STARTING',
   SYNCING: 'SYNCING',
   SERVING: 'SERVING',
+  STOPPED: 'STOPPED',
 };
 
 /**
