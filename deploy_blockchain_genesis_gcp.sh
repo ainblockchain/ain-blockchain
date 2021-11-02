@@ -122,11 +122,8 @@ gcloud compute ssh $NODE_1_TARGET_ADDR --command "sudo killall node" --project $
 gcloud compute ssh $NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
 gcloud compute ssh $NODE_3_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_3_ZONE
 gcloud compute ssh $NODE_4_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_4_ZONE
-
-if [[ "$SEASON" = 'spring' ]] || [[ "$SEASON" = 'dev' ]] || [[ "$SEASON" = 'staging' ]]; then
-    gcloud compute ssh $NODE_5_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_5_ZONE
-    gcloud compute ssh $NODE_6_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_6_ZONE
-fi
+gcloud compute ssh $NODE_5_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_5_ZONE
+gcloud compute ssh $NODE_6_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_6_ZONE
 
 if [[ "$NUM_SHARDS" -gt 0 ]]; then
     for i in $(seq $NUM_SHARDS)
@@ -159,13 +156,10 @@ printf "\nDeploying files to parent node 3 (${NODE_3_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_3_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_3_ZONE
 printf "\nDeploying files to parent node 4 (${NODE_4_TARGET_ADDR})...\n\n"
 gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_4_ZONE
-
-if [[ "$SEASON" = 'spring' ]] || [[ "$SEASON" = 'dev' ]] || [[ "$SEASON" = 'staging' ]]; then
-    printf "\nDeploying files to parent node 5 (${NODE_5_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_5_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_5_ZONE
-    printf "\nDeploying files to parent node 6 (${NODE_6_TARGET_ADDR})...\n\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_6_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_6_ZONE
-fi
+printf "\nDeploying files to parent node 5 (${NODE_5_TARGET_ADDR})...\n\n"
+gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_5_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_5_ZONE
+printf "\nDeploying files to parent node 6 (${NODE_6_TARGET_ADDR})...\n\n"
+gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_6_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_6_ZONE
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
 if [[ $SETUP_OPTION = "--setup" ]]; then
@@ -181,13 +175,10 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
     gcloud compute ssh $NODE_3_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_3_ZONE
     printf "\n\n##########################\n# Setting up parent node 4 #\n##########################\n\n"
     gcloud compute ssh $NODE_4_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_4_ZONE
-
-    if [[ "$SEASON" = 'spring' ]] || [[ "$SEASON" = 'dev' ]] || [[ "$SEASON" = 'staging' ]]; then
-        printf "\n\n##########################\n# Setting up parent node 5 #\n##########################\n\n"
-        gcloud compute ssh $NODE_5_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_5_ZONE
-        printf "\n\n##########################\n# Setting up parent node 6 #\n##########################\n\n"
-        gcloud compute ssh $NODE_6_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_6_ZONE
-    fi
+    printf "\n\n##########################\n# Setting up parent node 5 #\n##########################\n\n"
+    gcloud compute ssh $NODE_5_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_5_ZONE
+    printf "\n\n##########################\n# Setting up parent node 6 #\n##########################\n\n"
+    gcloud compute ssh $NODE_6_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_6_ZONE
 fi
 
 # ssh into each instance, install packages and start up the server
@@ -208,15 +199,12 @@ inject_account "3"
 printf "\n\n##########################\n# Starting parent node 4 #\n##########################\n\n"
 gcloud compute ssh $NODE_4_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 4 $KEYSTORE_OPTION" --project $PROJECT_ID --zone $NODE_4_ZONE
 inject_account "4"
-
-if [[ "$SEASON" = 'spring' ]] || [[ "$SEASON" = 'dev' ]] || [[ "$SEASON" = 'staging' ]]; then
-    printf "\n\n##########################\n# Starting parent node 5 #\n##########################\n\n"
-    gcloud compute ssh $NODE_5_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 5 $KEYSTORE_OPTION" --project $PROJECT_ID --zone $NODE_5_ZONE
-    inject_account "5"
-    printf "\n\n##########################\n# Starting parent node 6 #\n##########################\n\n"
-    gcloud compute ssh $NODE_6_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 6 $KEYSTORE_OPTION" --project $PROJECT_ID --zone $NODE_6_ZONE
-    inject_account "6"
-fi
+printf "\n\n##########################\n# Starting parent node 5 #\n##########################\n\n"
+gcloud compute ssh $NODE_5_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 5 $KEYSTORE_OPTION" --project $PROJECT_ID --zone $NODE_5_ZONE
+inject_account "5"
+printf "\n\n##########################\n# Starting parent node 6 #\n##########################\n\n"
+gcloud compute ssh $NODE_6_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 6 $KEYSTORE_OPTION" --project $PROJECT_ID --zone $NODE_6_ZONE
+inject_account "6"
 
 
 if [[ "$NUM_SHARDS" -gt 0 ]]; then
