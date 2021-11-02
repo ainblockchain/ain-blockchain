@@ -425,7 +425,6 @@ class P2pServer {
                 peerInfo,
                 version: dataProtoVer
               };
-              this.client.updatePeerInfoToTracker();
               const body = {
                 address: this.getNodeAddress(),
                 timestamp: Date.now(),
@@ -553,8 +552,11 @@ class P2pServer {
           case MessageTypes.PEER_INFO_UPDATE:
             const updatePeerInfo = parsedMessage.data;
             const addressFromSocket = getAddressFromSocket(this.inbound, socket);
+            // Keep updating both inbound and outbound.
             this.inbound[addressFromSocket].peerInfo = updatePeerInfo;
             this.inbound[addressFromSocket].peerInfo.isAlive = true;
+            this.client.outbound[addressFromSocket].peerInfo = updatePeerInfo;
+            this.client.outbound[addressFromSocket].peerInfo.isAlive = true;
             break;
           default:
             logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
