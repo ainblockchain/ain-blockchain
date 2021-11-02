@@ -62,7 +62,7 @@ class P2pRouter {
       const candidates = Object.values(this.server.inbound)
         .filter(peer =>
           peer.peerInfo.address !== nodeInfo.address &&
-          // peer.peerInfo.isAlive === true &&   // FIXME(minsulee2): need to update
+          // peer.peerInfo.isAlive === true &&
           !peer.peerInfo.networkStatus.connectionStatus.incomingPeers.includes(nodeInfo.address) &&
           peer.peerInfo.networkStatus.connectionStatus.incomingPeers.length <
               peer.peerInfo.networkStatus.connectionStatus.maxInbound)
@@ -88,7 +88,7 @@ class P2pRouter {
             }
             socket.send(JSON.stringify(message));
           } else {
-            const connectionNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
+            const connectionNodeInfo = parsedMessage.data;
             const newManagedPeerInfoList = this.assignRandomPeers(connectionNodeInfo);
             const connectionMessage = {
               type: RouterMessageTypes.NEW_PEERS_RESPONSE,
@@ -97,12 +97,6 @@ class P2pRouter {
             socket.send(JSON.stringify(connectionMessage));
           }
           break;
-        // FIXME(minsulee2): This should be done in peerEventHandlers
-        // case TrackerMessageTypes.PEER_INFO_UPDATE:
-        //   const updateNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
-        //   setPeerNodes(socket, updateNodeInfo);
-        //   printNodesInfo();
-        //   break;
         default:
           logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
             'specified. Ignore the message.');
