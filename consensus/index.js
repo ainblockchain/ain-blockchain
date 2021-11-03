@@ -375,17 +375,6 @@ class Consensus {
       type: WriteDbOperations.SET,
       op_list: [proposeOp]
     };
-    if (FeatureFlags.enableHardCodedStateGC && blockNumber > ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES) {
-      setOp.op_list.push({
-        type: WriteDbOperations.SET_VALUE,
-        ref: CommonUtil.formatPath([
-          PredefinedDbPaths.CONSENSUS,
-          PredefinedDbPaths.CONSENSUS_NUMBER,
-          blockNumber - ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES
-        ]),
-        value: null
-      });
-    }
     return this.node.createTransaction({ operation: setOp, nonce: -1, gas_price: 1 });
   }
 
@@ -430,7 +419,6 @@ class Consensus {
       throw Error(`[${LOG_HEADER}] Not enough validators: ${JSON.stringify(validators)}`);
     }
     const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
-    this.node.removeOldReceipts(blockNumber, tempDb);
     const { offenses, evidence } = this.blockPool.getOffensesAndEvidence(
         validators, recordedInvalidBlockHashSet, blockTime, tempDb);
     const { transactions, receipts, gasAmountTotal, gasCostTotal } = this.getValidTransactions(
@@ -802,7 +790,6 @@ class Consensus {
     const newDb = this.getNewDbForProposal(prevBlock, number, baseVersion, prevDb, isSnapDb);
     const prevBlockTotalAtStake = ConsensusUtil.getTotalAtStake(prevBlock.validators);
     const prevBlockMajority = prevBlockTotalAtStake * ConsensusConsts.MAJORITY;
-    this.node.removeOldReceipts(number, newDb);
     this.validateLastVotesAndExecuteOnNewDb(last_votes, last_hash, number, timestamp, newDb);
     this.validateOffensesAndEvidence(block, proposalTx, validators, prevBlockMajority, timestamp, newDb);
     this.validateTransactions(transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, newDb);
