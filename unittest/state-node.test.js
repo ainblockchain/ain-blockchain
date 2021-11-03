@@ -218,7 +218,7 @@ describe("state-node", () => {
     });
   });
 
-  describe("fromJsObject / toJsObject", () => {
+  describe("toJsObject", () => {
     it("leaf node", () => {
       expect(StateNode.fromJsObject(true).toJsObject()).to.equal(true);
       expect(StateNode.fromJsObject(false).toJsObject()).to.equal(false);
@@ -287,12 +287,12 @@ describe("state-node", () => {
     })
   })
 
-  describe("fromJsObject / toJsObject with includeVersion / includeTreeInfo / includeProof / includeChildIndex", () => {
+  describe("toJsObject with includeVersion / includeTreeInfo / includeProof / includeChildIndex", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
       expect(StateNode.fromJsObject('str', ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal('str');
-      expect(StateNode.fromJsObject(10, ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal(10);
+      expect(StateNode.fromJsObject(100, ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal(100);
     })
 
     it("internal node", () => {
@@ -432,27 +432,52 @@ describe("state-node", () => {
     })
   })
 
-  describe("fromJsObject / toJsObject with isShallow", () => {
+  describe("toJsObject with isShallow", () => {
     it("leaf node", () => {
       expect(StateNode.fromJsObject('str').toJsObject({ isShallow: true })).to.equal('str');
+      expect(StateNode.fromJsObject(100).toJsObject({ isShallow: true })).to.equal(100);
     })
 
     it("internal node", () => {
-      assert.deepEqual(StateNode.fromJsObject({ a: 1, b: 2, c: 3 }).toJsObject({ isShallow: true }),
-          {
-            a: 1,
-            b: 2,
-            c: 3,
-          },
-      );
-      assert.deepEqual(StateNode.fromJsObject({ a: { aa: 11 }, b: 2 }).toJsObject({ isShallow: true }),
-          {
-            a: {
-              "#state_ph": null
-            },
-            b: 2,
-          },
-      );
+      assert.deepEqual(StateNode.fromJsObject({ a: 1, b: 2, c: 3 }).toJsObject({ isShallow: true }), {
+        a: 1,
+        b: 2,
+        c: 3,
+      });
+      assert.deepEqual(StateNode.fromJsObject({ a: { aa: 11 }, b: 2 }).toJsObject({ isShallow: true }), {
+        a: {
+          "#state_ph": null
+        },
+        b: 2,
+      });
+    })
+  })
+
+  describe("fromJsObject", () => {
+    const ver1 = 'ver1';
+    const stateObj = {
+      str01: 'str01',
+      str02: 200,
+      subobj1: {
+        str11: 'str11',
+        str12: 1200,
+      },
+      subobj2: {
+        str21: 'str21',
+        str22: 2200,
+      }
+    };
+    const stateTree = StateNode.fromJsObject(stateObj, ver1);
+    updateStateInfoForStateTree(stateTree);
+
+    it("without options", () => {
+      const stateObjWithoutOptions = stateTree.toJsObject();
+      assert.deepEqual(StateNode.fromJsObject(stateObjWithoutOptions).toJsObject(), stateObj);
+    })
+
+    it("with options", () => {
+      const stateObjWithOptions = stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL);
+      assert.deepEqual(StateNode.fromJsObject(stateObjWithOptions).toJsObject(), stateObj);
     })
   })
 
