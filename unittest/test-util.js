@@ -11,6 +11,7 @@ const GET_OPTIONS_INCLUDE_ALL = {
   includeTreeInfo: true,
   includeProof: true,
   includeVersion: true,
+  includeChildIndex: true,
 };
 
 function readConfigFile(filePath) {
