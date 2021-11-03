@@ -208,14 +208,17 @@ class CommonUtil {
 
   static toGetOptions(args) {
     const options = {};
-    if (args.is_shallow !== undefined) {
-      options.isShallow = CommonUtil.toBool(args.is_shallow);
-    }
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
     }
     if (args.is_final !== undefined) {
       options.isFinal = CommonUtil.toBool(args.is_final);
+    }
+    if (args.is_shallow !== undefined) {
+      options.isShallow = CommonUtil.toBool(args.is_shallow);
+    }
+    if (args.include_version !== undefined) {
+      options.includeVersion = CommonUtil.toBool(args.include_version);
     }
     if (args.include_tree_info !== undefined) {
       options.includeTreeInfo = CommonUtil.toBool(args.include_tree_info);
@@ -223,8 +226,8 @@ class CommonUtil {
     if (args.include_proof !== undefined) {
       options.includeProof = CommonUtil.toBool(args.include_proof);
     }
-    if (args.include_version !== undefined) {
-      options.includeVersion = CommonUtil.toBool(args.include_version);
+    if (args.include_child_index !== undefined) {
+      options.includeChildIndex = CommonUtil.toBool(args.include_child_index);
     }
     return options;
   }

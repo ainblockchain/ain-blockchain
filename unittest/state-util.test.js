@@ -1888,6 +1888,9 @@ describe("state-util", () => {
         "#tree_size": 0,
         "#version": "ver3",
         "label1": {
+          "#child_index": 0,
+          "#child_index:label11": 0,
+          "#child_index:label12": 1,
           "#num_parents": 1,
           "#num_parents:label11": 1,
           "#num_parents:label12": 1,
@@ -1910,6 +1913,9 @@ describe("state-util", () => {
           "label12": "value12",
         },
         "label2": {
+          "#child_index": 1,
+          "#child_index:label21": 0,
+          "#child_index:label22": 1,
           "#num_parents": 1,
           "#num_parents:label21": 1,
           "#num_parents:label22": 1,
@@ -1943,6 +1949,9 @@ describe("state-util", () => {
         "#tree_size": 0,
         "#version": "ver3",
         "label1": {
+          "#child_index": 0,
+          "#child_index:label11": 0,
+          "#child_index:label12": 1,
           "#num_parents": 1,
           "#num_parents:label11": 1,
           "#num_parents:label12": 1,
@@ -1965,6 +1974,9 @@ describe("state-util", () => {
           "label12": "value12",
         },
         "label2": {
+          "#child_index": 1,
+          "#child_index:label21": 0,
+          "#child_index:label22": 1,
           "#num_parents": 1,
           "#num_parents:label21": 1,
           "#num_parents:label22": 1,
@@ -2071,6 +2083,8 @@ describe("state-util", () => {
       expect(deleteStateTreeVersion(stateTree)).to.equal(0);
       // State tree is not deleted.
       assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+        "#child_index:label1": 0,
+        "#child_index:label2": 1,
         "#num_parents": 1,
         "#num_parents:label1": 1,
         "#num_parents:label2": 1,

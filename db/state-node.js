@@ -90,23 +90,20 @@ class StateNode {
   toJsObject(options) {
     const isShallow = options && options.isShallow;
     const includeVersion = options && options.includeVersion;
-    const includeProof = options && options.includeProof;
     const includeTreeInfo = options && options.includeTreeInfo;
+    const includeProof = options && options.includeProof;
+    const includeChildIndex = options && options.includeChildIndex;
     if (this.getIsLeaf()) {
       return this.getValue();
     }
     const obj = {};
+    let childIndex = 0;
     for (const label of this.getChildLabels()) {
       const childNode = this.getChild(label);
-      obj[label] = (isShallow && !childNode.getIsLeaf()) ?
-          { [`${StateInfoProperties.STATE_PROOF_HASH}`]: childNode.getProofHash() } :
-          childNode.toJsObject(options);
       if (childNode.getIsLeaf()) {
+        obj[label] = childNode.toJsObject(options);
         if (includeVersion) {
           obj[`${StateInfoProperties.VERSION}:${label}`] = childNode.getVersion();
-        }
-        if (includeProof) {
-          obj[`${StateInfoProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
         }
         if (includeTreeInfo) {
           obj[`${StateInfoProperties.NUM_PARENTS}:${label}`] = childNode.numParents();
@@ -114,19 +111,32 @@ class StateNode {
           obj[`${StateInfoProperties.TREE_SIZE}:${label}`] = childNode.getTreeSize();
           obj[`${StateInfoProperties.TREE_BYTES}:${label}`] = childNode.getTreeBytes();
         }
+        if (includeProof) {
+          obj[`${StateInfoProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
+        }
+        if (includeChildIndex) {
+          obj[`${StateInfoProperties.CHILD_INDEX}:${label}`] = childIndex++;
+        }
+      } else {
+        obj[label] = isShallow ?
+            { [`${StateInfoProperties.STATE_PROOF_HASH}`]: childNode.getProofHash() } :
+            childNode.toJsObject(options);
+        if (includeChildIndex) {
+          obj[label][`${StateInfoProperties.CHILD_INDEX}`] = childIndex++;
+        }
       }
     }
     if (includeVersion) {
       obj[`${StateInfoProperties.VERSION}`] = this.getVersion();
-    }
-    if (includeProof) {
-      obj[`${StateInfoProperties.STATE_PROOF_HASH}`] = this.getProofHash();
     }
     if (includeTreeInfo) {
       obj[`${StateInfoProperties.NUM_PARENTS}`] = this.numParents();
       obj[`${StateInfoProperties.TREE_HEIGHT}`] = this.getTreeHeight();
       obj[`${StateInfoProperties.TREE_SIZE}`] = this.getTreeSize();
       obj[`${StateInfoProperties.TREE_BYTES}`] = this.getTreeBytes();
+    }
+    if (includeProof) {
+      obj[`${StateInfoProperties.STATE_PROOF_HASH}`] = this.getProofHash();
     }
 
     return obj;

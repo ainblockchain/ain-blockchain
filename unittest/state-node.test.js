@@ -287,92 +287,146 @@ describe("state-node", () => {
     })
   })
 
-  describe("fromJsObject with version / toJsObject", () => {
+  describe("fromJsObject / toJsObject with includeVersion / includeTreeInfo / includeProof / includeChildIndex", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
       expect(StateNode.fromJsObject('str', ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal('str');
+      expect(StateNode.fromJsObject(10, ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal(10);
     })
 
     it("internal node", () => {
       const ver1 = 'ver1';
-
       const stateObj = {
-        str: 'str',
+        str01: 'str01',
+        str02: 200,
         subobj1: {
-          str: 'str1',
+          str11: 'str11',
+          str12: 1200,
         },
         subobj2: {
-          str: 'str2',
+          str21: 'str21',
+          str22: 2200,
         }
       };
+      const stateTree = StateNode.fromJsObject(stateObj, ver1);
+      updateStateInfoForStateTree(stateTree);
 
       // includeVersion = true
-      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeVersion: true }), {
+      assert.deepEqual(stateTree.toJsObject({ includeVersion: true }), {
         "#version": "ver1",
-        "#version:str": "ver1",
-        "str": "str",
+        "#version:str01": "ver1",
+        "#version:str02": "ver1",
+        "str01": "str01",
+        "str02": 200,
         "subobj1": {
           "#version": "ver1",
-          "#version:str": "ver1",
-          "str": "str1",
+          "#version:str11": "ver1",
+          "#version:str12": "ver1",
+          "str11": "str11",
+          "str12": 1200,
         },
         "subobj2": {
           "#version": "ver1",
-          "#version:str": "ver1",
-          "str": "str2",
+          "#version:str21": "ver1",
+          "#version:str22": "ver1",
+          "str21": "str21",
+          "str22": 2200,
         }
       });
 
       // includeTreeInfo = true
-      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeTreeInfo: true }), {
+      assert.deepEqual(stateTree.toJsObject({ includeTreeInfo: true }), {
         "#num_parents": 0,
-        "#num_parents:str": 1,
-        "#tree_bytes": 0,
-        "#tree_bytes:str": 0,
-        "#tree_height": 0,
-        "#tree_height:str": 0,
-        "#tree_size": 0,
-        "#tree_size:str": 0,
-        "str": "str",
+        "#num_parents:str01": 1,
+        "#num_parents:str02": 1,
+        "#tree_bytes": 1582,
+        "#tree_bytes:str01": 170,
+        "#tree_bytes:str02": 168,
+        "#tree_height": 2,
+        "#tree_height:str01": 0,
+        "#tree_height:str02": 0,
+        "#tree_size": 9,
+        "#tree_size:str01": 1,
+        "#tree_size:str02": 1,
+        "str01": "str01",
+        "str02": 200,
         "subobj1": {
           "#num_parents": 1,
-          "#num_parents:str": 1,
-          "#tree_bytes": 0,
-          "#tree_bytes:str": 0,
-          "#tree_height": 0,
-          "#tree_height:str": 0,
-          "#tree_size": 0,
-          "#tree_size:str": 0,
-          "str": "str1",
+          "#num_parents:str11": 1,
+          "#num_parents:str12": 1,
+          "#tree_bytes": 518,
+          "#tree_bytes:str11": 170,
+          "#tree_bytes:str12": 168,
+          "#tree_height": 1,
+          "#tree_height:str11": 0,
+          "#tree_height:str12": 0,
+          "#tree_size": 3,
+          "#tree_size:str11": 1,
+          "#tree_size:str12": 1,
+          "str11": "str11",
+          "str12": 1200,
         },
         "subobj2": {
           "#num_parents": 1,
-          "#num_parents:str": 1,
-          "#tree_bytes": 0,
-          "#tree_bytes:str": 0,
-          "#tree_height": 0,
-          "#tree_height:str": 0,
-          "#tree_size": 0,
-          "#tree_size:str": 0,
-          "str": "str2",
+          "#num_parents:str21": 1,
+          "#num_parents:str22": 1,
+          "#tree_bytes": 518,
+          "#tree_bytes:str21": 170,
+          "#tree_bytes:str22": 168,
+          "#tree_height": 1,
+          "#tree_height:str21": 0,
+          "#tree_height:str22": 0,
+          "#tree_size": 3,
+          "#tree_size:str21": 1,
+          "#tree_size:str22": 1,
+          "str21": "str21",
+          "str22": 2200,
         }
       });
 
       // includeProof = true
-      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeProof: true }), {
-        "#state_ph": null,
-        "#state_ph:str": null,
-        "str": "str",
+      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+        "#state_ph": "0x5cc9d4e0cbd4976e88ee75fb5e4191d468dcfad348c8e2259628f475a9e707d4",
+        "#state_ph:str01": "0x497b9cbb642630206b4268dc296bff12d71a5ba80f839c94a20e135eb2c2258e",
+        "#state_ph:str02": "0xd18f7d1798901b66c318da94cc5eb8d954f7b53d7206fe54469b46e88505b524",
+        "str01": "str01",
+        "str02": 200,
         "subobj1": {
-          "#state_ph": null,
-          "#state_ph:str": null,
-          "str": "str1",
+          "#state_ph": "0xeaa75601c557e2d190ccbe2a1feb4a46d83347fda83b6b68550d7a313261cc29",
+          "#state_ph:str11": "0x7e6a10bc94238515d1f386def42e2eea7a522af93a0433732a777f82dfd89539",
+          "#state_ph:str12": "0xa9fce7f26e612d7075711f56536bebf1367eab988f73ec32961c24117b7c4c6d",
+          "str11": "str11",
+          "str12": 1200,
         },
         "subobj2": {
-          "#state_ph": null,
-          "#state_ph:str": null,
-          "str": "str2",
+          "#state_ph": "0x024daff3b1a45c2ac6eeb91a67ebe2c82cb4ef4744c105c543ca5a602b013853",
+          "#state_ph:str21": "0x7a17707de8439ee72c68a39389efd4b347ba36a513548731a320d83566379242",
+          "#state_ph:str22": "0x9ec9f212475947ed2c2398cb947da5be9a9c58887bdb8a0ccc856cb7b5ad53cf",
+          "str21": "str21",
+          "str22": 2200,
+        }
+      });
+
+      // includeChildIndex = true
+      assert.deepEqual(stateTree.toJsObject({ includeChildIndex: true }), {
+        "#child_index:str01": 0,
+        "#child_index:str02": 1,
+        "str01": "str01",
+        "str02": 200,
+        "subobj1": {
+          "#child_index": 2,
+          "#child_index:str11": 0,
+          "#child_index:str12": 1,
+          "str11": "str11",
+          "str12": 1200,
+        },
+        "subobj2": {
+          "#child_index": 3,
+          "#child_index:str21": 0,
+          "#child_index:str22": 1,
+          "str21": "str21",
+          "str22": 2200,
         }
       });
     })

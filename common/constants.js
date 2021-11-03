@@ -416,6 +416,7 @@ const FunctionTypes = {
  * @enum {string}
  */
 const StateInfoProperties = {
+  CHILD_INDEX: '#child_index',
   NUM_PARENTS: '#num_parents',
   RADIX_PROOF_HASH: '#radix_ph',
   SERIAL: '#serial',
