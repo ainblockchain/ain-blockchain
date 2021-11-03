@@ -1,5 +1,4 @@
 const {
-  FeatureFlags,
   PredefinedDbPaths,
   ShardingProperties
 } = require('./constants');
