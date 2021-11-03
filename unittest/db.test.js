@@ -812,17 +812,6 @@ describe("DB operations", () => {
             "matched_config": {
               "path": "/",
               "config": null
-            },
-            "parent_configs": {
-              "matched_path": {
-                "target_path": "/apps/test/test_rule/some",
-                "ref_path": "/apps/test/test_rule/some",
-                "path_vars": {}
-              },
-              "matched_config": {
-                "path": "/",
-                "config": null
-              }
             }
           }
         });
@@ -860,17 +849,6 @@ describe("DB operations", () => {
             "matched_config": {
               "path": "/",
               "config": null
-            },
-            "parent_configs": {
-              "matched_path": {
-                "target_path": "/apps/test/test_rule/some",
-                "ref_path": "/apps/test/test_rule/some",
-                "path_vars": {}
-              },
-              "matched_config": {
-                "path": "/",
-                "config": null
-              }
             }
           }
         });
@@ -898,17 +876,6 @@ describe("DB operations", () => {
             "matched_config": {
               "path": "/",
               "config": null
-            },
-            "parent_configs": {
-              "matched_path": {
-                "target_path": "/apps/test/test_rule/some/path/deeper",
-                "ref_path": "/apps/test/test_rule/some/path/deeper",
-                "path_vars": {}
-              },
-              "matched_config": {
-                "path": "/",
-                "config": null
-              }
             }
           }
         });
@@ -946,17 +913,6 @@ describe("DB operations", () => {
             "matched_config": {
               "path": "/",
               "config": null
-            },
-            "parent_configs": {
-              "matched_path": {
-                "target_path": "/apps/test/test_rule/some/path",
-                "ref_path": "/apps/test/test_rule/some/path",
-                "path_vars": {}
-              },
-              "matched_config": {
-                "path": "/",
-                "config": null
-              }
             }
           }
         });
@@ -1280,17 +1236,6 @@ describe("DB operations", () => {
                 "path_vars": {},
                 "ref_path": "/apps/test/test_rule/some/path/deeper",
                 "target_path": "/apps/test/test_rule/some/path/deeper"
-              },
-              "parent_configs": {
-                "matched_path": {
-                  "target_path": "/apps/test/test_rule/some/path",
-                  "ref_path": "/apps/test/test_rule/some/path",
-                  "path_vars": {}
-                },
-                "matched_config": {
-                  "path": "/",
-                  "config": null
-                }
               }
             }
           },
@@ -1499,17 +1444,6 @@ describe("DB operations", () => {
                 "path_vars": {},
                 "ref_path": "/apps/test/test_rule/some/path",
                 "target_path": "/apps/test/test_rule/some/path"
-              },
-              "parent_configs": {
-                "matched_path": {
-                  "target_path": "/apps/test/test_rule/some",
-                  "ref_path": "/apps/test/test_rule/some",
-                  "path_vars": {}
-                },
-                "matched_config": {
-                  "path": "/",
-                  "config": null
-                }
               }
             }
           },
@@ -1678,21 +1612,19 @@ describe("DB operations", () => {
         expect(node.db.getValue("/apps/test/shards/disabled_shard/path")).to.equal(20)
       })
 
-      it("when writing more than max_children in state rule config", () => {
+      it("when writing more than gc_max_siblings in state rule config", () => {
         // Set state rule
-        expect(node.db.setRule("/apps/test/test_rule/some/path/more/than/max", {
+        expect(node.db.setRule("/apps/test/test_rule/some/path/more/than/max/$sibling", {
           ".rule": {
             "state": {
-              "max_children": 1,
-              "ordering": "FIFO"
+              "gc_max_siblings": 1
             }
           }
         }).code).to.equal(0);
-        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path/more/than/max"), {
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path/more/than/max/$sibling"), {
           ".rule": {
             "state": {
-              "max_children": 1,
-              "ordering": "FIFO"
+              "gc_max_siblings": 1
             }
           }
         });
@@ -1711,8 +1643,7 @@ describe("DB operations", () => {
         expect(node.db.setRule("/apps/test/test_rule/some/path/more/than/max", {
           ".rule": {
             "state": {
-              "max_children": 1,
-              "ordering": "FIFO"
+              "max_children": 1
             }
           }
         }).code).to.equal(0);
@@ -1967,8 +1898,7 @@ describe("DB operations", () => {
         const ruleConfig = {
           ".rule": {
             "state": {
-              "max_children": 1,
-              "ordering": "FIFO"
+              "max_children": 1
             }
           }
         };
@@ -1976,8 +1906,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
           ".rule": {
             "state": {
-              "max_children": 1,
-              "ordering": "FIFO"
+              "max_children": 1
             },
             "write": "auth.addr === 'abcd'"
           }
@@ -1988,8 +1917,7 @@ describe("DB operations", () => {
         const ruleConfig = {
           ".rule": {
             "state": {
-              "max_children": 1,
-              "ordering": "FIFO"
+              "max_children": 1
             },
             "write": "auth.addr === 'ijkl'"
           }
@@ -1998,8 +1926,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
           ".rule": {
             "state": {
-              "max_children": 1,
-              "ordering": "FIFO"
+              "max_children": 1
             },
             "write": "auth.addr === 'ijkl'" // updated
           }
@@ -2962,7 +2889,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11307210 > 10000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11305320 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
         assert.deepEqual(res.gas_cost_total, 5.59512);
       });
@@ -4360,17 +4287,6 @@ describe("DB sharding config", () => {
           "matched_config": {
             "path": "/",
             "config": null
-          },
-          "parent_configs": {
-            "matched_path": {
-              "target_path": "/apps/test/test_sharding/some/path",
-              "ref_path": "/apps/test/test_sharding/some/path",
-              "path_vars": {}
-            },
-            "matched_config": {
-              "path": "/",
-              "config": null
-            }
           }
         }
       });
@@ -4408,17 +4324,6 @@ describe("DB sharding config", () => {
             "path_vars": {},
             "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
             "target_path": "/apps/afan/apps/test/test_sharding/some/path/to"
-          },
-          "parent_configs": {
-            "matched_path": {
-              "target_path": "/apps/afan/apps/test/test_sharding/some/path",
-              "ref_path": "/apps/afan/apps/test/test_sharding/some/path",
-              "path_vars": {}
-            },
-            "matched_config": {
-              "path": "/apps/afan",
-              "config": null
-            }
           }
         }
       });
