@@ -1,5 +1,5 @@
 /* eslint guard-for-in: "off" */
-const logger = require('../logger')('STATE_UTIL');
+const logger = new (require('../logger'))('STATE_UTIL');
 
 const _ = require('lodash');
 const validUrl = require('valid-url');

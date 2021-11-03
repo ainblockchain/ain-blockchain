@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const { StateVersions } = require('../../common/constants');
+const CommonUtil = require('../../common/common-util');
 const FileUtil = require('../../common/file-util');
 const Blockchain = require('../../blockchain');
 const StateManager = require('../../db/state-manager');
@@ -42,7 +43,17 @@ async function verifyBlock(snapshotFile, blockFileList) {
         process.exit(0);
       }
     }
-    if (!db.executeTransactionList(block.transactions, block.number === 0, false, block.number, block.timestamp)) {
+    if (!CommonUtil.isEmpty(block.evidence)) {
+      for (const evidenceList of Object.values(block.evidence)) {
+        for (const evidenceForOffense of evidenceList) {
+          if (!db.executeTransactionList(evidenceForOffense.votes, true, false, block.number, block.timestamp)) {
+            logger.error(`  Failed to execute evidence (${block.number})`);
+            process.exit(0);
+          }
+        }
+      }
+    }
+    if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number, block.timestamp)) {
       logger.error(`  Failed to execute transactions (${block.number})`)
       process.exit(0);
     }

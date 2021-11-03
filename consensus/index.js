@@ -1,9 +1,10 @@
+const logger = new (require('../logger'))('CONSENSUS');
+
 const seedrandom = require('seedrandom');
 const _ = require('lodash');
 const ntpsync = require('ntpsync');
 const sizeof = require('object-sizeof');
 const semver = require('semver');
-const logger = require('../logger')('CONSENSUS');
 const { Block } = require('../blockchain/block');
 const BlockPool = require('./block-pool');
 const Transaction = require('../tx-pool/transaction');
@@ -374,7 +375,7 @@ class Consensus {
       type: WriteDbOperations.SET,
       op_list: [proposeOp]
     };
-    if (blockNumber > ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES) {
+    if (FeatureFlags.enableHardCodedStateGC && blockNumber > ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES) {
       setOp.op_list.push({
         type: WriteDbOperations.SET_VALUE,
         ref: CommonUtil.formatPath([
@@ -789,7 +790,7 @@ class Consensus {
     }
     const { proposer, number, epoch, hash, last_hash, validators, last_votes, transactions,
       receipts, gas_amount_total, gas_cost_total, state_proof_hash, timestamp } = block;
-    logger.info(`[${LOG_HEADER}] Checking block proposal: ${number} / ${epoch}`);
+    logger.info(`[${LOG_HEADER}] Checking block proposal: ${number} / ${epoch} / ${hash} / ${proposer}`);
     this.precheckProposal(block, proposalTx, proposer, hash, number, validators);
 
     const prevBlockInfo = this.getPrevBlockInfo(number, last_hash);
@@ -1318,7 +1319,7 @@ class Consensus {
           value: block.state_proof_hash
         });
         this.lastReportedBlockNumberSent = blockNumberToReport;
-        if (blockNumberToReport >= MAX_SHARD_REPORT) {
+        if (FeatureFlags.enableHardCodedStateGC && blockNumberToReport >= MAX_SHARD_REPORT) {
           // Remove old reports
           opList.push({
             type: WriteDbOperations.SET_VALUE,

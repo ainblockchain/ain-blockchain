@@ -1,4 +1,5 @@
-const logger = require('../logger')('FILE-UTIL');
+const logger = new (require('../logger'))('FILE-UTIL');
+
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');

@@ -181,7 +181,7 @@ else
     echo "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH"
 fi
 
-MAX_OLD_SPACE_SIZE_MB=5500
+MAX_OLD_SPACE_SIZE_MB=11000
 
 # NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
 export CORS_WHITELIST=*

@@ -661,14 +661,14 @@ class CommonUtil {
   }
 
   /**
-   * Exits the process after logging with stack trace.
+   * Finishes logging after stack trace logging.
    *
    * @param logger logger to log with
    * @param message message to log
    */
-  static exitWithStackTrace(logger, message) {
+  static finishWithStackTrace(logger, message) {
     CommonUtil.logErrorWithStackTrace(logger, message);
-    process.exit(0);
+    logger.finish();
   }
 
   static keyStackToMetricName(keyStack) {
