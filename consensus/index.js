@@ -374,7 +374,7 @@ class Consensus {
       type: WriteDbOperations.SET,
       op_list: [proposeOp]
     };
-    if (blockNumber > ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES) {
+    if (FeatureFlags.enableHardCodedStateGC && blockNumber > ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES) {
       setOp.op_list.push({
         type: WriteDbOperations.SET_VALUE,
         ref: CommonUtil.formatPath([
@@ -1317,7 +1317,7 @@ class Consensus {
           value: block.state_proof_hash
         });
         this.lastReportedBlockNumberSent = blockNumberToReport;
-        if (blockNumberToReport >= MAX_SHARD_REPORT) {
+        if (FeatureFlags.enableHardCodedStateGC && blockNumberToReport >= MAX_SHARD_REPORT) {
           // Remove old reports
           opList.push({
             type: WriteDbOperations.SET_VALUE,
