@@ -387,11 +387,7 @@ const RuleProperties = {
   WRITE: 'write',
   STATE: 'state',
   STATE_MAX_CHILDREN: 'max_children',
-  STATE_ORDERING: 'ordering',
-};
-
-const StateRuleOrderingType = {
-  FIFO: 'FIFO',
+  STATE_GC_MAX_SIBLINGS: 'gc_max_siblings',
 };
 
 /**
@@ -472,10 +468,10 @@ function isNativeFunctionId(fid) {
  * @enum {string}
  */
 const ShardingProperties = {
-  LATEST: 'latest',
   LATEST_BLOCK_NUMBER: 'latest_block_number',
   PARENT_CHAIN_POC: 'parent_chain_poc',
   PROOF_HASH: 'proof_hash',
+  PROOF_HASH_GC_MAX_SIBLINGS: 'proof_hash_gc_max_siblings',
   PROOF_HASH_MAP: 'proof_hash_map',
   REPORTING_PERIOD: 'reporting_period',
   SHARD_OWNER: 'shard_owner',
@@ -1032,7 +1028,6 @@ module.exports = {
   AccountProperties,
   OwnerProperties,
   RuleProperties,
-  StateRuleOrderingType,
   FunctionProperties,
   FunctionTypes,
   FunctionResultCode,

@@ -1319,17 +1319,6 @@ class Consensus {
           value: block.state_proof_hash
         });
         this.lastReportedBlockNumberSent = blockNumberToReport;
-        if (FeatureFlags.enableHardCodedStateGC && blockNumberToReport >= MAX_SHARD_REPORT) {
-          // Remove old reports
-          opList.push({
-            type: WriteDbOperations.SET_VALUE,
-            ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
-                `${ShardingProperties.PROOF_HASH_MAP}/` +
-                `${blockNumberToReport - MAX_SHARD_REPORT}/` +
-                `${ShardingProperties.PROOF_HASH}`,
-            value: null
-          });
-        }
         blockNumberToReport++;
       }
       logger.debug(`Reporting op_list: ${JSON.stringify(opList, null, 2)}`);
@@ -1359,8 +1348,7 @@ class Consensus {
         'ain_get',
         {
           type: ReadDbOperations.GET_VALUE,
-          ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
-          `${ShardingProperties.PROOF_HASH_MAP}/${ShardingProperties.LATEST}`
+          ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/${ShardingProperties.LATEST_BLOCK_NUMBER}`
         }
     );
     return _.get(resp, 'data.result.result', null);
