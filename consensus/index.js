@@ -1,9 +1,10 @@
+const logger = new (require('../logger'))('CONSENSUS');
+
 const seedrandom = require('seedrandom');
 const _ = require('lodash');
 const ntpsync = require('ntpsync');
 const sizeof = require('object-sizeof');
 const semver = require('semver');
-const logger = require('../logger')('CONSENSUS');
 const { Block } = require('../blockchain/block');
 const BlockPool = require('./block-pool');
 const Transaction = require('../tx-pool/transaction');

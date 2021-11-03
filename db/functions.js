@@ -1,4 +1,5 @@
-const logger = require('../logger')('FUNCTIONS');
+const logger = new (require('../logger'))('FUNCTIONS');
+
 const axios = require('axios');
 const _ = require('lodash');
 const {
@@ -88,7 +89,8 @@ class Functions {
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, prevValue, auth, timestamp, transaction, blockTime) {
+  triggerFunctions(
+      parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
@@ -144,6 +146,7 @@ class Functions {
                     timestamp,
                     executedAt,
                     transaction,
+                    blockNumber, 
                     blockTime,
                     auth: newAuth,
                     opResultList: [],
@@ -330,8 +333,11 @@ class Functions {
   setValueOrLog(valuePath, value, context) {
     const timestamp = context.timestamp;
     const transaction = context.transaction;
+    const blockNumber = context.blockNumber;
+    const blockTime = context.blockTime;
     const auth = context.auth;
-    const result = this.db.setValue(valuePath, value, auth, timestamp, transaction);
+    const result =
+        this.db.setValue(valuePath, value, auth, timestamp, transaction, blockNumber, blockTime);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -343,8 +349,11 @@ class Functions {
   incValueOrLog(valuePath, delta, context) {
     const timestamp = context.timestamp;
     const transaction = context.transaction;
+    const blockNumber = context.blockNumber;
+    const blockTime = context.blockTime;
     const auth = context.auth;
-    const result = this.db.incValue(valuePath, delta, auth, timestamp, transaction);
+    const result =
+        this.db.incValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -356,9 +365,11 @@ class Functions {
   decValueOrLog(valuePath, delta, context) {
     const timestamp = context.timestamp;
     const transaction = context.transaction;
+    const blockNumber = context.blockNumber;
+    const blockTime = context.blockTime;
     const auth = context.auth;
-
-    const result = this.db.decValue(valuePath, delta, auth, timestamp, transaction);
+    const result =
+        this.db.decValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to decValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -875,7 +886,7 @@ class Functions {
   }
 
   _updateLatestShardReport(value, context) {
-    const blockNumber = Number(context.params.block_number);
+    const blockNumberReported = Number(context.params.block_number);
     const parsedValuePath = context.valuePath;
     if (!CommonUtil.isArray(context.functionPath)) {
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
@@ -886,11 +897,12 @@ class Functions {
     }
     const latestReportPath = PathUtil.getLatestShardReportPathFromValuePath(parsedValuePath);
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
-    if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
+    if (currentLatestBlockNumber !== null &&
+        Number(currentLatestBlockNumber) >= blockNumberReported) {
       // Nothing to update
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
-    const result = this.setValueOrLog(latestReportPath, blockNumber, context);
+    const result = this.setValueOrLog(latestReportPath, blockNumberReported, context);
     if (!CommonUtil.isFailedTx(result)) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
@@ -898,7 +910,8 @@ class Functions {
     }
   }
 
-  updateStatsForPendingCheckin(networkName, chainId, tokenId, sender, tokenPool, amount, isIncrease, context) {
+  updateStatsForPendingCheckin(
+      networkName, chainId, tokenId, sender, tokenPool, amount, isIncrease, context) {
     if (isIncrease) {
       if (CommonUtil.isFailedTx(
           this.incValueOrLog(

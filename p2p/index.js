@@ -1,8 +1,9 @@
 /* eslint no-mixed-operators: "off" */
+const logger = new (require('../logger'))('P2P_CLIENT');
+
 const _ = require('lodash');
 const P2pServer = require('./server');
 const Websocket = require('ws');
-const logger = require('../logger')('P2P_CLIENT');
 const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
@@ -247,8 +248,13 @@ class P2pClient {
     const LOG_HEADER = 'startBlockchainNode';
 
     if (numLivePeers === 0) {
-      logger.info(`[${LOG_HEADER}] Starting node without peers..`);
+      logger.info(`[${LOG_HEADER}] Starting blockchain node without peers..`);
       const lastBlockWithoutProposal = this.server.node.init(true);
+      if (lastBlockWithoutProposal < -1) {
+        this.server.node.state = BlockchainNodeStates.STOPPED;
+        logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
+        return;
+      }
       logger.info(`[${LOG_HEADER}] lastBlockWithoutProposal=${lastBlockWithoutProposal}`);
       logger.info(`[${LOG_HEADER}] Trying to initializing shard..`);
       if (await this.server.tryInitializeShard()) {
@@ -257,15 +263,19 @@ class P2pClient {
         logger.info(`[${LOG_HEADER}] No need to initialize shard.`);
       }
       this.server.node.state = BlockchainNodeStates.SERVING;
-      logger.info(`[${LOG_HEADER}] Now node in SERVING state!`);
+      logger.info(`[${LOG_HEADER}] Now blockchain node in SERVING state!`);
       logger.info(`[${LOG_HEADER}] Initializing consensus process..`);
       this.server.consensus.init(lastBlockWithoutProposal);
       logger.info(`[${LOG_HEADER}] Consensus process initialized!`);
     } else {
       // Consensus will be initialized after syncing with peers
-      logger.info(`[${LOG_HEADER}] Starting node with ${numLivePeers} peers..`);
-      this.server.node.init(false);
-      logger.info(`[${LOG_HEADER}] Node initialized!`);
+      logger.info(`[${LOG_HEADER}] Starting blockchain node with ${numLivePeers} peers..`);
+      if (this.server.node.init(false) < -1) {
+        this.server.node.state = BlockchainNodeStates.STOPPED;
+        logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
+        return;
+      }
+      logger.info(`[${LOG_HEADER}] Blockchain node initialized!`);
     }
   }
 

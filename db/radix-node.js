@@ -1,4 +1,4 @@
-const logger = require('../logger')('RADIX_NODE');
+const logger = new (require('../logger'))('RADIX_NODE');
 
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');

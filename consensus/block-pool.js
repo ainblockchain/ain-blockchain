@@ -1,5 +1,6 @@
+const logger = new (require('../logger'))('BLOCK_POOL');
+
 const _get = require('lodash/get');
-const logger = require('../logger')('BLOCK_POOL');
 const { ConsensusConsts, ValidatorOffenseTypes } = require('./constants');
 const { StateVersions } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
