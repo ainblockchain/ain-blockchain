@@ -481,7 +481,7 @@ class BlockchainNode {
 
   removeOldReceipts(blockNumber, db) {
     const LOG_HEADER = 'removeOldReceipts';
-    if (!FeatureFlags.enableReceiptsRecording) {
+    if (!FeatureFlags.enableHardCodedStateGC || !FeatureFlags.enableReceiptsRecording) {
       return;
     }
     if (blockNumber > MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
