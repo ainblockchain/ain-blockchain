@@ -1,8 +1,9 @@
+const logger = new (require('../logger'))('BLOCK');
+
 const stringify = require('fast-json-stable-stringify');
 const sizeof = require('object-sizeof');
 const moment = require('moment');
 const _ = require('lodash');
-const logger = require('../logger')('BLOCK');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('../db/state-node');
@@ -242,7 +243,7 @@ class Block {
     };
     const tx = Transaction.fromTxBody(txBody, privateKey);
     if (!tx) {
-      CommonUtil.exitWithStackTrace(
+      CommonUtil.finishWithStackTrace(
           logger, `Failed to build DB setup tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
     }
     return tx;
@@ -277,7 +278,7 @@ class Block {
     };
     const tx = Transaction.fromTxBody(txBody, privateKey);
     if (!tx) {
-      CommonUtil.exitWithStackTrace(
+      CommonUtil.finishWithStackTrace(
           logger, `Failed to build account setup tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
     }
     return tx;
@@ -305,7 +306,7 @@ class Block {
     }
     const tx = Transaction.fromTxBody(txBody, privateKey);
     if (!tx) {
-      CommonUtil.exitWithStackTrace(
+      CommonUtil.finishWithStackTrace(
           logger, `Failed to build consensus app tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
     }
     return tx;
@@ -331,7 +332,7 @@ class Block {
       };
       const tx = Transaction.fromTxBody(txBody, privateKey);
       if (!tx) {
-        CommonUtil.exitWithStackTrace(
+        CommonUtil.finishWithStackTrace(
             logger, `Failed to build genesis staking txs with tx body: ${JSON.stringify(txBody, null, 2)}`);
       }
       txs.push(tx);

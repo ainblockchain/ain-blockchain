@@ -3,10 +3,10 @@
  * the parent_chain_poc through API calls. In the future, these should be refactored
  * into a module, or replaced with another protocol for cross-shard communication.
  */
+const logger = new (require('../logger'))('SERVER_UTIL');
 
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const logger = require('../logger')('SERVER_UTIL');
 const {
   CURRENT_PROTOCOL_VERSION,
   DATA_PROTOCOL_VERSION,

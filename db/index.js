@@ -1,4 +1,5 @@
-const logger = require('../logger')('DATABASE');
+const logger = new (require('../logger'))('DATABASE');
+
 const {
   FeatureFlags,
   AccountProperties,
@@ -668,7 +669,7 @@ class DB {
   // TODO(platfowner): Define error code explicitly.
   // TODO(platfowner): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
   //                   and setOwner() as well.
-  setValue(valuePath, value, auth, timestamp, transaction, blockTime, options) {
+  setValue(valuePath, value, auth, timestamp, transaction, blockNumber, blockTime, options) {
     const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
@@ -708,7 +709,7 @@ class DB {
         blockTime = this.lastBlockTimestamp();
       }
       const { func_results } =
-          this.func.triggerFunctions(localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockTime);
+          this.func.triggerFunctions(localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime);
       funcResults = func_results;
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
         return CommonUtil.returnTxResult(105, `Triggered function call failed`, 1, funcResults);
@@ -718,7 +719,7 @@ class DB {
     return CommonUtil.returnTxResult(0, null, 1, funcResults);
   }
 
-  incValue(valuePath, delta, auth, timestamp, transaction, blockTime, options) {
+  incValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
     const isGlobal = options && options.isGlobal;
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -726,10 +727,11 @@ class DB {
       return CommonUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`, 1);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) + delta;
-    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, blockTime, options);
+    return this.setValue(
+        valuePath, valueAfter, auth, timestamp, transaction, blockNumber, blockTime, options);
   }
 
-  decValue(valuePath, delta, auth, timestamp, transaction, blockTime, options) {
+  decValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
     const isGlobal = options && options.isGlobal;
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -737,7 +739,8 @@ class DB {
       return CommonUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`, 1);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, blockTime, options);
+    return this.setValue(
+        valuePath, valueAfter, auth, timestamp, transaction, blockNumber, blockTime, options);
   }
 
   setFunction(functionPath, func, auth, options) {
@@ -878,18 +881,24 @@ class DB {
     return globalPath;
   }
 
-  executeSingleSetOperation(op, auth, timestamp, tx, blockTime) {
+  executeSingleSetOperation(op, auth, timestamp, tx, blockNumber, blockTime) {
     let result;
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        result = this.setValue(op.ref, op.value, auth, timestamp, tx, blockTime, CommonUtil.toSetOptions(op));
+        result = this.setValue(
+            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime,
+            CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.INC_VALUE:
-        result = this.incValue(op.ref, op.value, auth, timestamp, tx, blockTime, CommonUtil.toSetOptions(op));
+        result = this.incValue(
+            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime,
+            CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.DEC_VALUE:
-        result = this.decValue(op.ref, op.value, auth, timestamp, tx, blockTime, CommonUtil.toSetOptions(op));
+        result = this.decValue(
+            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime,
+            CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_FUNCTION:
         result = this.setFunction(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
@@ -906,11 +915,12 @@ class DB {
     return result;
   }
 
-  executeMultiSetOperation(opList, auth, timestamp, tx, blockTime) {
+  executeMultiSetOperation(opList, auth, timestamp, tx, blockNumber, blockTime) {
     const resultList = {};
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
-      const result = this.executeSingleSetOperation(op, auth, timestamp, tx, blockTime);
+      const result =
+          this.executeSingleSetOperation(op, auth, timestamp, tx, blockNumber, blockTime);
       resultList[i] = result;
       if (CommonUtil.isFailedTx(result)) {
         break;
@@ -920,12 +930,13 @@ class DB {
   }
 
   static updateGasAmountTotal(tx, gasAmountTotal, executionResult) {
-    gasAmountTotal.bandwidth = CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, executionResult);
+    gasAmountTotal.bandwidth =
+        CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, executionResult);
     executionResult.gas_amount_total = gasAmountTotal;
     tx.setExtraField('gas', gasAmountTotal);
   }
 
-  executeOperation(op, auth, timestamp, tx, blockTime) {
+  executeOperation(op, auth, timestamp, tx, blockNumber, blockTime) {
     const gasAmountTotal = {
       bandwidth: { service: 0 },
       state: { service: 0 }
@@ -942,9 +953,12 @@ class DB {
     const allStateUsageBefore = this.getAllStateUsages();
     const stateUsagePerAppBefore = this.getStateUsagePerApp(op);
     if (op.type === WriteDbOperations.SET) {
-      Object.assign(result, this.executeMultiSetOperation(op.op_list, auth, timestamp, tx, blockTime));
+      Object.assign(
+          result,
+          this.executeMultiSetOperation(op.op_list, auth, timestamp, tx, blockNumber, blockTime));
     } else {
-      Object.assign(result, this.executeSingleSetOperation(op, auth, timestamp, tx, blockTime));
+      Object.assign(
+          result, this.executeSingleSetOperation(op, auth, timestamp, tx, blockNumber, blockTime));
     }
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
     DB.updateGasAmountTotal(tx, gasAmountTotal, result);
@@ -957,8 +971,10 @@ class DB {
       //                   done in isValidTxBody() when transactions are created.
       const allStateUsageAfter = this.getAllStateUsages();
       DB.updateStateGasAmount(
-          tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore, stateUsagePerAppAfter);
-      const stateGasBudgetCheck = this.checkStateGasBudgets(op, allStateUsageAfter.apps, allStateUsageAfter.service, result);
+          tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore,
+          stateUsagePerAppAfter);
+      const stateGasBudgetCheck = this.checkStateGasBudgets(
+          op, allStateUsageAfter.apps, allStateUsageAfter.service, result);
       if (stateGasBudgetCheck !== true) {
         return stateGasBudgetCheck;
       }
@@ -969,7 +985,9 @@ class DB {
     return result;
   }
 
-  static updateStateGasAmount(tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore, stateUsagePerAppAfter) {
+  static updateStateGasAmount(
+      tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore,
+      stateUsagePerAppAfter) {
     const LOG_HEADER = 'updateStateGasAmounts';
     const serviceTreeBytesDelta =
         _.get(allStateUsageAfter, `service.${StateInfoProperties.TREE_BYTES}`, 0) -
@@ -1130,7 +1148,8 @@ class DB {
         (CommonUtil.isFailedTx(executionResult) ? 0 : serviceStateGasAmount);
     if (gasAmountChargedByTransfer <= 0 || gasPrice === 0) { // No fees to collect
       executionResult.gas_amount_charged = gasAmountChargedByTransfer;
-      executionResult.gas_cost_total = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer);
+      executionResult.gas_cost_total =
+          CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer);
       return;
     }
     const billing = tx.tx_body.billing;
@@ -1154,11 +1173,14 @@ class DB {
       gasAmountChargedByTransfer = Math.min(balance, serviceBandwidthGasAmount);
     }
     executionResult.gas_amount_charged = gasAmountChargedByTransfer;
-    executionResult.gas_cost_total = CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged);
+    executionResult.gas_cost_total =
+        CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged);
     if (executionResult.gas_cost_total <= 0) return;
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(blockNumber, billedTo, tx.hash);
     const gasFeeCollectRes = this.setValue(
-        gasFeeCollectPath, { amount: executionResult.gas_cost_total }, auth, timestamp, tx, null);
+        gasFeeCollectPath,
+        { amount: executionResult.gas_cost_total },
+        auth, timestamp, tx, blockNumber, null);
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) { // Should not happend
       Object.assign(executionResult, {
         code: 18,
@@ -1176,7 +1198,8 @@ class DB {
     ]);
     if (executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST]) {
       trimmed[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST] = {};
-      for (const [key, val] of Object.entries(executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST])) {
+      for (const [key, val] of Object.entries(
+          executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST])) {
         trimmed[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST][key] = _.pick(val, [
           PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
           PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
@@ -1336,7 +1359,8 @@ class DB {
     // NOTE(platfowner): It's not allowed for users to send transactions with auth.fid.
     const auth = { addr: tx.address };
     const timestamp = txBody.timestamp;
-    const executionResult = this.executeOperation(txBody.operation, auth, timestamp, tx, blockTime);
+    const executionResult =
+        this.executeOperation(txBody.operation, auth, timestamp, tx, blockNumber, blockTime);
     if (CommonUtil.isFailedTx(executionResult)) {
       if (restoreIfFails) {
         this.restoreDb();
@@ -1353,12 +1377,14 @@ class DB {
     return executionResult;
   }
 
-  executeTransactionList(txList, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
+  executeTransactionList(
+      txList, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
       const executableTx = Transaction.toExecutable(tx);
-      const res = this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime);
+      const res =
+        this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime);
       if (CommonUtil.isFailedTx(res)) {
         logger.debug(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);
