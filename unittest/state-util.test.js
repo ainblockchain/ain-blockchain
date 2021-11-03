@@ -646,7 +646,6 @@ describe("state-util", () => {
 
   describe("isValidStateRule", () => {
     it('when invalid input', () => {
-      expect(isValidStateRule(null)).to.equal(false);
       expect(isValidStateRule(undefined)).to.equal(false);
       expect(isValidStateRule({})).to.equal(false);
       expect(isValidStateRule([])).to.equal(false);
@@ -655,30 +654,40 @@ describe("state-util", () => {
       expect(isValidStateRule(true)).to.equal(false);
       expect(isValidStateRule(false)).to.equal(false);
       expect(isValidStateRule({ "invalid_field": true })).to.equal(false);
-      expect(isValidStateRule({ "max_children": 1 })).to.equal(false);
-      expect(isValidStateRule({ "ordering": 'FIFO' })).to.equal(false);
       expect(isValidStateRule({
-        "max_children": '123',
-        "ordering": 'FIFO'
+        "max_children": '123'
       })).to.equal(false);
       expect(isValidStateRule({
-        "max_children": -1,
-        "ordering": 'FIFO'
+        "max_children": -1
       })).to.equal(false);
       expect(isValidStateRule({
-        "max_children": 0,
-        "ordering": 'FIFO'
+        "max_children": 0
       })).to.equal(false);
       expect(isValidStateRule({
-        "max_children": '123',
-        "ordering": 'invalid_ordering'
+        "gc_max_siblings": ''
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": -1
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": 0
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": 10,
+        "gc_max_siblings": -1
       })).to.equal(false);
     })
 
     it('when valid input', () => {
       expect(isValidStateRule({
+        "max_children": 10
+      })).to.equal(true);
+      expect(isValidStateRule({
+        "gc_max_siblings": 1
+      })).to.equal(true);
+      expect(isValidStateRule({
         "max_children": 10,
-        "ordering": 'FIFO'
+        "gc_max_siblings": 2
       })).to.equal(true);
     })
   })
@@ -730,7 +739,6 @@ describe("state-util", () => {
       assert.deepEqual(isValidRuleConfig({
         "state": {
           "max_children": 123,
-          "ordering": 'FIFO',
           "invalid_field": true
         }
       }), {isValid: false, invalidPath: '/'});
@@ -745,15 +753,19 @@ describe("state-util", () => {
       }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig({
         "state": {
-          "max_children": 1,
-          "ordering": "FIFO"
+          "max_children": 1
+        }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({
+        "state": {
+          "gc_max_siblings": 1
         }
       }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig({
         "write": "auth.addr === 'abcd'",
         "state": {
           "max_children": 1,
-          "ordering": "FIFO"
+          "gc_max_siblings": 1
         }
       }), {isValid: true, invalidPath: ''});
     })
