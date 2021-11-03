@@ -347,8 +347,7 @@ class BlockchainNode {
           [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(CommonUtil.appendPath(
               shardPath, PredefinedDbPaths.DOT_SHARD, ShardingProperties.SHARDING_ENABLED)),
           [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(CommonUtil.appendPath(
-              shardPath, PredefinedDbPaths.DOT_SHARD, ShardingProperties.PROOF_HASH_MAP,
-              ShardingProperties.LATEST)),
+              shardPath, PredefinedDbPaths.DOT_SHARD, ShardingProperties.LATEST_BLOCK_NUMBER)),
         };
       }
     }

@@ -15,7 +15,6 @@ const {
   OwnerProperties,
   ShardingProperties,
   StateInfoProperties,
-  StateRuleOrderingType,
   STATE_LABEL_LENGTH_LIMIT,
 } = require('../common/constants');
 
@@ -183,23 +182,45 @@ function sanitizeRuleConfig(rule) {
     CommonUtil.setJsObject(sanitized, [RuleProperties.WRITE], rule[RuleProperties.WRITE]);
   }
   if (rule.hasOwnProperty(RuleProperties.STATE)) {
-    if (rule.hasOwnProperty(RuleProperties.STATE) === null) {
+    if (rule[RuleProperties.STATE] === null) {
       CommonUtil.setJsObject(sanitized, [RuleProperties.STATE], null);
     } else {
-      CommonUtil.setJsObject(sanitized, [RuleProperties.STATE], {
-        [RuleProperties.STATE_MAX_CHILDREN]: rule[RuleProperties.STATE][RuleProperties.STATE_MAX_CHILDREN],
-        [RuleProperties.STATE_ORDERING]: rule[RuleProperties.STATE][RuleProperties.STATE_ORDERING]
-      });
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.STATE_MAX_CHILDREN)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.STATE_MAX_CHILDREN],
+            rule[RuleProperties.STATE][RuleProperties.STATE_MAX_CHILDREN]);
+      }
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.STATE_GC_MAX_SIBLINGS)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.STATE_GC_MAX_SIBLINGS],
+            rule[RuleProperties.STATE][RuleProperties.STATE_GC_MAX_SIBLINGS]);
+      }
     }
   }
   return sanitized;
 }
 
 function isValidStateRule(stateRule) {
-  return CommonUtil.isDict(stateRule) &&
-      CommonUtil.isNumber(stateRule[RuleProperties.STATE_MAX_CHILDREN]) &&
-      stateRule[RuleProperties.STATE_MAX_CHILDREN] > 0 &&
-      !!StateRuleOrderingType[stateRule[RuleProperties.STATE_ORDERING]];
+  if (stateRule === null) {
+    return true;
+  }
+  if (!CommonUtil.isDict(stateRule) || CommonUtil.isEmpty(stateRule)) {
+    return false;
+  }
+  let hasValidProperty = false;
+  if (stateRule.hasOwnProperty(RuleProperties.STATE_MAX_CHILDREN)) {
+    if (!CommonUtil.isNumber(stateRule[RuleProperties.STATE_MAX_CHILDREN]) ||
+        stateRule[RuleProperties.STATE_MAX_CHILDREN] <= 0) {
+      return false;
+    }
+    hasValidProperty = true;
+  }
+  if (stateRule.hasOwnProperty(RuleProperties.STATE_GC_MAX_SIBLINGS)) {
+    if (!CommonUtil.isNumber(stateRule[RuleProperties.STATE_GC_MAX_SIBLINGS]) ||
+      stateRule[RuleProperties.STATE_GC_MAX_SIBLINGS] <= 0) {
+      return false;
+    }
+    hasValidProperty = true;
+  }
+  return hasValidProperty;
 }
 
 /**
@@ -225,8 +246,7 @@ function isValidStateRule(stateRule) {
       !CommonUtil.isBool(writeRule) && !CommonUtil.isString(writeRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
   }
-  if (sanitized.hasOwnProperty(RuleProperties.STATE) && stateRule !== null &&
-      !isValidStateRule(stateRule)) {
+  if (sanitized.hasOwnProperty(RuleProperties.STATE) && !isValidStateRule(stateRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.STATE]) };
   }
 

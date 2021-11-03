@@ -698,13 +698,6 @@ class DB {
     if (!ruleEvalRes.statePermission) {
       return CommonUtil.returnTxResult(106, `No state permission on: ${valuePath}`, 1);
     }
-    if (value !== null && ruleEvalRes.matched.state.parentRules.matchedValuePath.length === localPath.length - 1) {
-      // NOTE(liayoo): Only apply the state rules at the exactly matching path of the parent,
-      // and only check when it's not a deletion.
-      const applyParentStateRuleRes = this.applyStateRule(
-          ruleEvalRes.matched.state.parentRules, localPath.slice(0, -1));
-      logger.debug(`[${LOG_HEADER}] applyParentStateRuleRes: deleted ${applyParentStateRuleRes} child nodes`);
-    }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);
     if (!isWritablePath.isValid) {
@@ -731,6 +724,11 @@ class DB {
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
         return CommonUtil.returnTxResult(105, `Triggered function call failed`, 1, funcResults);
       }
+    }
+    if (value !== null) {
+      // NOTE(liayoo): Only apply the state garbage collection rules when it's not a deletion.
+      const applyParentStateRuleRes = this.applyStateGarbageCollectionRule(ruleEvalRes.matched.state, localPath);
+      logger.debug(`[${LOG_HEADER}] applyParentStateRuleRes: deleted ${applyParentStateRuleRes} child nodes`);
     }
 
     return CommonUtil.returnTxResult(0, null, 1, funcResults);
@@ -1228,6 +1226,7 @@ class DB {
   }
 
   recordReceipt(auth, tx, blockNumber, executionResult) {
+    const LOG_HEADER = 'recordReceipt';
     const receiptPath = PathUtil.getReceiptPath(tx.hash);
     const receipt = {
       [PredefinedDbPaths.RECEIPTS_ADDRESS]: auth.addr,
@@ -1239,7 +1238,16 @@ class DB {
     }
     // NOTE(liayoo): necessary balance & permission checks have been done in precheckTransaction()
     //               and collectFee().
-    this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...CommonUtil.parsePath(receiptPath)], receipt);
+    const parsedPath = CommonUtil.parsePath(receiptPath);
+    this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...parsedPath], receipt);
+    // Garbage collection for old receipts.
+    const matchedStateRule = this.matchRulePath(parsedPath, RuleProperties.STATE);
+    const closestRule = {
+      path: matchedStateRule.matchedRulePath.slice(0, matchedStateRule.closestConfigDepth),
+      config: getRuleConfig(matchedStateRule.closestConfigNode)
+    };
+    const applyParentStateRuleRes = this.applyStateGarbageCollectionRule({ closestRule }, parsedPath);
+    logger.debug(`[${LOG_HEADER}] applyParentStateRuleRes: deleted ${applyParentStateRuleRes} child nodes`);
   }
 
   isBillingUser(billingAppName, billingId, userAddr) {
@@ -1469,8 +1477,7 @@ class DB {
             `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
             `timestamp: ${timestamp}\n`);
       }
-      evalStateRuleRes = this.evalStateRuleConfig(
-          matchedStateRules.closestRule.config, matchedStateRules.matchedValuePath, parsedValuePath, newValue);
+      evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
       if (!evalStateRuleRes) {
         logger.error(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
             `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
@@ -1758,7 +1765,6 @@ class DB {
   matchRuleForParsedPath(parsedValuePath) {
     const matchedWriteRule = this.matchRulePath(parsedValuePath, RuleProperties.WRITE);
     const matchedStateRule = this.matchRulePath(parsedValuePath, RuleProperties.STATE);
-    const matchedParentStateRule = this.matchRulePath(parsedValuePath.slice(0, -1), RuleProperties.STATE);
     // Only write rules matched for the subtree
     const subtreeRules = this.getSubtreeRules(matchedWriteRule.matchedRuleNode, RuleProperties.WRITE);
     return {
@@ -1779,15 +1785,6 @@ class DB {
         closestRule: {
           path: matchedStateRule.matchedRulePath.slice(0, matchedStateRule.closestConfigDepth),
           config: getRuleConfig(matchedStateRule.closestConfigNode)
-        },
-        parentRules: {
-          matchedValuePath: matchedParentStateRule.matchedValuePath,
-          matchedRulePath: matchedParentStateRule.matchedRulePath,
-          pathVars: matchedParentStateRule.pathVars,
-          closestRule: {
-            path: matchedParentStateRule.matchedRulePath.slice(0, matchedParentStateRule.closestConfigDepth),
-            config: getRuleConfig(matchedParentStateRule.closestConfigNode)
-          }
         }
       }
     };
@@ -1809,9 +1806,6 @@ class DB {
     if (matched.subtreeRules) {
       converted.subtree_configs = matched.subtreeRules.map((entry) =>
           this.convertPathAndConfig(entry, false));
-    }
-    if (matched.parentRules) {
-      converted.parent_configs = this.convertRuleMatch(matched.parentRules, isGlobal);
     }
     return converted;
   }
@@ -1841,12 +1835,8 @@ class DB {
         new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
   }
 
-  evalStateRuleConfig(stateRuleConfig, matchedValuePath, parsedValuePath, newValue) {
+  evalStateRuleConfig(stateRuleConfig, newValue) {
     if (!CommonUtil.isDict(stateRuleConfig)) {
-      return true;
-    }
-    if (matchedValuePath.length !== parsedValuePath.length) {
-      // Only apply a state rule at the exactly matching path
       return true;
     }
     if (!CommonUtil.isDict(newValue)) {
@@ -1856,34 +1846,38 @@ class DB {
     if (CommonUtil.isEmpty(stateRuleObj)) {
       return false;
     }
+    if (!stateRuleObj.hasOwnProperty(RuleProperties.STATE_MAX_CHILDREN)) {
+      return true;
+    }
     const maxChildren = stateRuleObj[RuleProperties.STATE_MAX_CHILDREN];
     return Object.keys(newValue).length <= maxChildren;
   }
 
-  applyStateRule(matchedRules, parsedValuePath) {
+  applyStateGarbageCollectionRule(matchedRules, parsedValuePath) {
     const stateRuleConfig = matchedRules.closestRule.config;
     if (!CommonUtil.isDict(stateRuleConfig)) {
       return 0;
     }
     const stateRuleObj = stateRuleConfig[RuleProperties.STATE];
-    if (CommonUtil.isEmpty(stateRuleObj)) {
+    if (CommonUtil.isEmpty(stateRuleObj) || !stateRuleObj[RuleProperties.STATE_GC_MAX_SIBLINGS]) {
       return 0;
     }
-    const maxChildren = stateRuleObj[RuleProperties.STATE_MAX_CHILDREN];
+    const gcMaxSiblings = stateRuleObj[RuleProperties.STATE_GC_MAX_SIBLINGS];
     // Check the number of children of the parent
-    const fullPath = [PredefinedDbPaths.VALUES_ROOT, ...parsedValuePath];
-    const stateNodeForReading = this.getRefForReading(fullPath);
+    const parentPathLen = matchedRules.closestRule.path.length - 1;
+    const parentPath = [PredefinedDbPaths.VALUES_ROOT, ...parsedValuePath.slice(0, parentPathLen)];
+    const stateNodeForReading = this.getRefForReading(parentPath);
     if (stateNodeForReading === null) {
       return 0;
     }
-    if (stateNodeForReading.numChildren() < maxChildren) {
+    if (stateNodeForReading.numChildren() <= gcMaxSiblings) {
       return 0;
     }
     let numDeleted = 0;
-    const stateNodeForWriting = this.getRefForWriting(fullPath);
+    const stateNodeForWriting = this.getRefForWriting(parentPath);
     const childLabelList = stateNodeForWriting.getChildLabels();
     const numChildren = childLabelList.length;
-    while (numChildren - numDeleted >= maxChildren) {
+    while (numChildren - numDeleted > gcMaxSiblings) {
       const childLabel = childLabelList[numDeleted++];
       stateNodeForWriting.setChild(childLabel, StateNode.fromJsObject(null));
       updateStateInfoForAllRootPaths(stateNodeForWriting, childLabel);
