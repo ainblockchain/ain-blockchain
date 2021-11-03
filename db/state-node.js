@@ -1,11 +1,11 @@
 const logger = new (require('../logger'))('STATE_NODE');
 
+const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
-  FeatureFlags,
   LIGHTWEIGHT,
-  HASH_DELIMITER,
+  STATE_INFO_PREFIX,
   StateInfoProperties,
 } = require('../common/constants');
 const RadixTree = require('./radix-tree');
@@ -77,6 +77,9 @@ class StateNode {
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
         for (const key in obj) {
+          if (_.startsWith(key, STATE_INFO_PREFIX)) {
+            continue;
+          }
           const childObj = obj[key];
           node.setChild(key, StateNode.fromJsObject(childObj, version));
         }
