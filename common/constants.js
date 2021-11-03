@@ -34,6 +34,8 @@ const FeatureFlags = {
   enableTrafficMonitoring: true,
   // Enables state info updates.
   enableStateInfoUpdates: true,
+  // Enables hard coded state garbage collection.
+  enableHardCodedStateGC: false,
 };
 
 // ** Environment variables **
