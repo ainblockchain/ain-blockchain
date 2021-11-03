@@ -1,8 +1,9 @@
 /* eslint guard-for-in: "off" */
+const logger = new (require('../logger'))('NODE');
+
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const path = require('path');
-const logger = require('../logger')('NODE');
 const {
   FeatureFlags,
   PORT,
@@ -155,7 +156,11 @@ class BlockchainNode {
         try {
           latestSnapshot = FileUtil.readCompressedJson(latestSnapshotPath);
         } catch (err) {
-          logger.error(`[${LOG_HEADER}] ${err.stack}`);
+          CommonUtil.finishWithStackTrace(
+              logger, 
+              `[${LOG_HEADER}] Failed to read latest snapshot file (${latestSnapshotPath}) ` +
+              `with error: ${err.stack}`);
+          return -2;
         }
       }
       logger.info(`[${LOG_HEADER}] Fast mode DB snapshot loading done!`);
@@ -181,6 +186,9 @@ class BlockchainNode {
     if (!wasBlockDirEmpty || isGenesisStart) {
       lastBlockWithoutProposal =
           this.loadAndExecuteChainOnDb(latestSnapshotBlockNumber, !wasBlockDirEmpty, startingDb);
+      if (lastBlockWithoutProposal < -1) {
+        return lastBlockWithoutProposal;
+      }
     }
     this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
 
@@ -481,7 +489,7 @@ class BlockchainNode {
 
   removeOldReceipts(blockNumber, db) {
     const LOG_HEADER = 'removeOldReceipts';
-    if (!FeatureFlags.enableReceiptsRecording) {
+    if (!FeatureFlags.enableHardCodedStateGC || !FeatureFlags.enableReceiptsRecording) {
       return;
     }
     if (blockNumber > MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
@@ -513,7 +521,17 @@ class BlockchainNode {
           return false;
         }
       }
-      if (!db.executeTransactionList(block.transactions, block.number === 0, false, block.number, block.timestamp)) {
+      if (!CommonUtil.isEmpty(block.evidence)) {
+        for (const evidenceList of Object.values(block.evidence)) {
+          for (const evidenceForOffense of evidenceList) {
+            if (!db.executeTransactionList(evidenceForOffense.votes, true, false, block.number, block.timestamp)) {
+              logger.error(`[${LOG_HEADER}] Failed to execute evidence (${block.number})`);
+              return false;
+            }
+          }
+        }
+      }
+      if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number, block.timestamp)) {
         logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
             `${JSON.stringify(block, null, 2)}`);
         return false;
@@ -605,14 +623,27 @@ class BlockchainNode {
     if (block.number > 0) {
       if (!db.executeTransactionList(block.last_votes, true, false, block.number, block.timestamp)) {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        CommonUtil.exitWithStackTrace(
+        CommonUtil.finishWithStackTrace(
             logger, `[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
+        return false;
       }
     }
-    if (!db.executeTransactionList(block.transactions, block.number === 0, false, block.number, block.timestamp)) {
+    if (!CommonUtil.isEmpty(block.evidence)) {
+      for (const evidenceList of Object.values(block.evidence)) {
+        for (const evidenceForOffense of evidenceList) {
+          if (!db.executeTransactionList(evidenceForOffense.votes, true, false, block.number, block.timestamp)) {
+            CommonUtil.finishWithStackTrace(
+                logger, `[${LOG_HEADER}] Failed to execute evidence (${block.number})`);
+            return false;
+          }
+        }
+      }
+    }
+    if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number, block.timestamp)) {
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-      CommonUtil.exitWithStackTrace(
+      CommonUtil.finishWithStackTrace(
             logger, `[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
+      return false;
     }
     if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
 
@@ -621,13 +652,16 @@ class BlockchainNode {
       FileUtil.writeSnapshot(this.snapshotDir, block.number, snapshot, true);
 
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-      CommonUtil.exitWithStackTrace(
+      CommonUtil.finishWithStackTrace(
           logger,
           `[${LOG_HEADER}] Invalid state proof hash (${block.number}): ` +
           `${db.stateRoot.getProofHash()}, ${block.state_proof_hash}`);
+      return false;
     }
     this.tp.cleanUpForNewBlock(block);
     logger.info(`[${LOG_HEADER}] Successfully executed block ${block.number} on DB.`);
+
+    return true;
   }
 
   loadAndExecuteChainOnDb(latestSnapshotBlockNumber, deleteLastBlock, db) {
@@ -642,13 +676,13 @@ class BlockchainNode {
       const block = this.bc.loadBlock(number);
       if (!block) {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        CommonUtil.exitWithStackTrace(
+        CommonUtil.finishWithStackTrace(
             logger, `[${LOG_HEADER}] Failed to load block ${number}.`);
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
       if (!Blockchain.validateBlock(block, prevBlockNumber, prevBlockHash)) {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        CommonUtil.exitWithStackTrace(
+        CommonUtil.finishWithStackTrace(
             logger, `[${LOG_HEADER}] Failed to validate block ${number}.`);
       }
       // NOTE(liayoo): we don't have the votes for the last block, so remove it and try to
@@ -657,10 +691,10 @@ class BlockchainNode {
         lastBlockWithoutProposal = block;
         this.bc.deleteBlock(lastBlockWithoutProposal);
       } else {
-        this.executeBlockOnDb(block, db);
-        if (numBlockFiles - number <= ON_MEMORY_CHAIN_LENGTH) {
-          this.bc.addBlockToChain(block)
+        if (!this.executeBlockOnDb(block, db)) {
+          return -2;
         }
+        this.bc.addBlockToChain(block);
       }
       prevBlockNumber = block.number;
       prevBlockHash = block.hash;

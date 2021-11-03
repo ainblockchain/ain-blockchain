@@ -1,4 +1,4 @@
-const logger = require('../logger')('RADIX_TREE');
+const logger = new (require('../logger'))('RADIX_TREE');
 
 const CommonUtil = require('../common/common-util');
 const {

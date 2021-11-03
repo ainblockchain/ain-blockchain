@@ -1,6 +1,7 @@
+const logger = new (require('../logger'))('TRANSACTION');
+
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const logger = require('../logger')('TRANSACTION');
 const {
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
