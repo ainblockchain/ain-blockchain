@@ -1865,6 +1865,9 @@ class DB {
     const gcMaxSiblings = stateRuleObj[RuleProperties.GC_MAX_SIBLINGS];
     // Check the number of children of the parent
     const parentPathLen = matchedRules.closestRule.path.length - 1;
+    if (parentPathLen < 0) {
+      return 0;
+    }
     const parentPath = [PredefinedDbPaths.VALUES_ROOT, ...parsedValuePath.slice(0, parentPathLen)];
     const stateNodeForReading = this.getRefForReading(parentPath);
     if (stateNodeForReading === null) {
