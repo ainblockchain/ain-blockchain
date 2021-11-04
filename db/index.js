@@ -1874,13 +1874,11 @@ class DB {
       return 0;
     }
     let numDeleted = 0;
-    const stateNodeForWriting = this.getRefForWriting(parentPath);
-    const childLabelList = stateNodeForWriting.getChildLabels();
+    const childLabelList = stateNodeForReading.getChildLabels();
     const numChildren = childLabelList.length;
     while (numChildren - numDeleted > gcMaxSiblings) {
       const childLabel = childLabelList[numDeleted++];
-      stateNodeForWriting.setChild(childLabel, StateNode.fromJsObject(null));
-      updateStateInfoForAllRootPaths(stateNodeForWriting, childLabel);
+      this.writeDatabase([...parentPath, childLabel], null);
     }
     return numDeleted;
   }
