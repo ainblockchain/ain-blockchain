@@ -16,10 +16,8 @@ const {
   PredefinedDbPaths,
   GenesisSharding,
   ShardingProperties,
-  StateInfoProperties,
   StateVersions,
   TX_BYTES_LIMIT,
-  MAX_SHARD_REPORT,
   GENESIS_WHITELIST,
   LIGHTWEIGHT,
   MIN_NUM_VALIDATORS,
@@ -306,7 +304,7 @@ class Consensus {
           if (ConsensusUtil.isVoteAgainstBlockError(e.code)) {
             this.blockPool.addSeenBlock(proposalBlock, proposalTx, false);
             this.server.client.broadcastConsensusMessage(msg);
-            this.tryVoteAgainstInvalidBlock(proposalBlock, proposalTx);
+            this.tryVoteAgainstInvalidBlock(proposalBlock);
           }
         } else {
           logger.error(`[${LOG_HEADER}] Error while checking proposal: ${e.stack}`);
@@ -375,17 +373,6 @@ class Consensus {
       type: WriteDbOperations.SET,
       op_list: [proposeOp]
     };
-    if (FeatureFlags.enableHardCodedStateGC && blockNumber > ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES) {
-      setOp.op_list.push({
-        type: WriteDbOperations.SET_VALUE,
-        ref: CommonUtil.formatPath([
-          PredefinedDbPaths.CONSENSUS,
-          PredefinedDbPaths.CONSENSUS_NUMBER,
-          blockNumber - ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES
-        ]),
-        value: null
-      });
-    }
     return this.node.createTransaction({ operation: setOp, nonce: -1, gas_price: 1 });
   }
 
@@ -430,7 +417,6 @@ class Consensus {
       throw Error(`[${LOG_HEADER}] Not enough validators: ${JSON.stringify(validators)}`);
     }
     const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
-    this.node.removeOldReceipts(blockNumber, tempDb);
     const { offenses, evidence } = this.blockPool.getOffensesAndEvidence(
         validators, recordedInvalidBlockHashSet, blockTime, tempDb);
     const { transactions, receipts, gasAmountTotal, gasCostTotal } = this.getValidTransactions(
@@ -607,6 +593,7 @@ class Consensus {
       this.blockPool.addSeenVote(vote);
     }
     if (!this.blockPool.hashToBlockInfo[lastHash].notarized) {
+      newDb.destroyDb();
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_LAST_VOTES_STAKES,
         message: `Block's last_votes don't correctly notarize its previous block of number ` +
@@ -801,7 +788,6 @@ class Consensus {
     const newDb = this.getNewDbForProposal(prevBlock, number, baseVersion, prevDb, isSnapDb);
     const prevBlockTotalAtStake = ConsensusUtil.getTotalAtStake(prevBlock.validators);
     const prevBlockMajority = prevBlockTotalAtStake * ConsensusConsts.MAJORITY;
-    this.node.removeOldReceipts(number, newDb);
     this.validateLastVotesAndExecuteOnNewDb(last_votes, last_hash, number, timestamp, newDb);
     this.validateOffensesAndEvidence(block, proposalTx, validators, prevBlockMajority, timestamp, newDb);
     this.validateTransactions(transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, newDb);
@@ -938,10 +924,10 @@ class Consensus {
     this.handleConsensusMessage(consensusMsg);
   }
 
-  tryVoteAgainstInvalidBlock(proposalBlock, proposalTx) {
+  tryVoteAgainstInvalidBlock(proposalBlock) {
     const LOG_HEADER = 'tryVoteAgainstInvalidBlock';
     logger.info(`[${LOG_HEADER}] Trying to vote against ${proposalBlock.number} / ` +
-        `${proposalBlock.epoch} / ${proposalBlock.hash}`);
+        `${proposalBlock.epoch} / ${proposalBlock.hash} / ${proposalBlock.proposer}`);
     if (this.votedForBlock(proposalBlock.hash)) {
       logger.info(`[${LOG_HEADER}] Already voted against block ${proposalBlock.hash}`);
       return;
@@ -1318,17 +1304,6 @@ class Consensus {
           value: block.state_proof_hash
         });
         this.lastReportedBlockNumberSent = blockNumberToReport;
-        if (FeatureFlags.enableHardCodedStateGC && blockNumberToReport >= MAX_SHARD_REPORT) {
-          // Remove old reports
-          opList.push({
-            type: WriteDbOperations.SET_VALUE,
-            ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
-                `${ShardingProperties.PROOF_HASH_MAP}/` +
-                `${blockNumberToReport - MAX_SHARD_REPORT}/` +
-                `${ShardingProperties.PROOF_HASH}`,
-            value: null
-          });
-        }
         blockNumberToReport++;
       }
       logger.debug(`Reporting op_list: ${JSON.stringify(opList, null, 2)}`);
@@ -1358,8 +1333,7 @@ class Consensus {
         'ain_get',
         {
           type: ReadDbOperations.GET_VALUE,
-          ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
-          `${ShardingProperties.PROOF_HASH_MAP}/${ShardingProperties.LATEST}`
+          ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/${ShardingProperties.LATEST_BLOCK_NUMBER}`
         }
     );
     return _.get(resp, 'data.result.result', null);

@@ -34,8 +34,6 @@ const FeatureFlags = {
   enableTrafficMonitoring: true,
   // Enables state info updates.
   enableStateInfoUpdates: true,
-  // Enables hard coded state garbage collection.
-  enableHardCodedStateGC: false,
 };
 
 // ** Environment variables **
@@ -385,6 +383,10 @@ const OwnerProperties = {
  */
 const RuleProperties = {
   WRITE: 'write',
+  STATE: 'state',
+  MAX_CHILDREN: 'max_children',
+  GC_MAX_SIBLINGS: 'gc_max_siblings',
+  // TODO(liayoo): Add more properties (max_height, max_size, max_bytes)
 };
 
 /**
@@ -465,7 +467,6 @@ function isNativeFunctionId(fid) {
  * @enum {string}
  */
 const ShardingProperties = {
-  LATEST: 'latest',
   LATEST_BLOCK_NUMBER: 'latest_block_number',
   PARENT_CHAIN_POC: 'parent_chain_poc',
   PROOF_HASH: 'proof_hash',
@@ -824,9 +825,7 @@ function getGenesisRules() {
     CommonUtil.setJsObject(
         rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
   }
-  CommonUtil.setJsObject(
-      rules, [PredefinedDbPaths.DEVELOPERS],
-      getDevelopersRule());
+  CommonUtil.setJsObject(rules, [PredefinedDbPaths.DEVELOPERS], getDevelopersRule());
   return rules;
 }
 
