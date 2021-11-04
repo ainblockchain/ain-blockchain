@@ -560,7 +560,7 @@ class RadixNode {
     if (childStateLabel === null) {
       return null;
     }
-    const childStateNode = StateNode.fromJsObjectWithFullNodes(childStateObj);
+    const childStateNode = StateNode.fromSnapshotObject(childStateObj);
     childStateNode.setLabel(childStateLabel);
     const version = obj[`${StateInfoProperties.VERSION}:${childStateLabel}`];
     if (version) {
@@ -573,7 +573,7 @@ class RadixNode {
   /**
    * Constructs a sub-tree from the given js object with full nodes.
    */
-  static fromJsObjectWithFullNodes(obj) {
+  static fromSnapshotObject(obj) {
     const version = obj[StateInfoProperties.VERSION];
     const serial = obj[StateInfoProperties.SERIAL];
     const curNode = new RadixNode(version, serial);
@@ -588,7 +588,7 @@ class RadixNode {
         if (CommonUtil.isEmpty(childLabel)) {
           return null;
         }
-        const childNode = RadixNode.fromJsObjectWithFullNodes(childObj);
+        const childNode = RadixNode.fromSnapshotObject(childObj);
         const childLabelRadix = childLabel.charAt(0);
         const childLabelSuffix = childLabel.slice(1);
         curNode.setChild(childLabelRadix, childLabelSuffix, childNode);
@@ -600,7 +600,7 @@ class RadixNode {
   /**
    * Converts this sub-tree to a js object with full nodes.
    */
-  toJsObjectWithFullNodes(nextSerial = null) {
+  toSnapshotObject(nextSerial = null) {
     const obj = {};
     if (nextSerial !== null) {
       obj[StateInfoProperties.NEXT_SERIAL] = nextSerial;
@@ -610,7 +610,7 @@ class RadixNode {
     if (this.hasChildStateNode()) {
       const childStateNode = this.getChildStateNode();
       obj[StateInfoProperties.STATE_LABEL_PREFIX + childStateNode.getLabel()] =
-          childStateNode.toJsObjectWithFullNodes();
+          childStateNode.toSnapshotObject();
       if (childStateNode.getIsLeaf()) {
         obj[`${StateInfoProperties.VERSION}:${childStateNode.getLabel()}`] =
             childStateNode.getVersion();
@@ -618,7 +618,7 @@ class RadixNode {
     }
     for (const child of this.getChildNodes()) {
       obj[StateInfoProperties.RADIX_LABEL_PREFIX + child.getLabel()] =
-          child.toJsObjectWithFullNodes();
+          child.toSnapshotObject();
     }
     return obj;
   }

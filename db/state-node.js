@@ -75,7 +75,7 @@ class StateNode {
   /**
    * Constructs a sub-tree from the given js object with full nodes.
    */
-  static fromJsObjectWithFullNodes(obj) {
+  static fromSnapshotObject(obj) {
     const node = new StateNode();
     node.setValue('val');
     return node;
@@ -85,11 +85,11 @@ class StateNode {
   /**
    * Converts this sub-tree to a js object with full nodes.
    */
-  toJsObjectWithFullNodes() {
+  toSnapshotObject() {
     if (this.getIsLeaf()) {
       return this.getValue();
     }
-    return this.radixTree.toJsObjectWithFullNodes();
+    return this.radixTree.toSnapshotObject();
   }
 
   /**
