@@ -2553,20 +2553,20 @@ describe("state-util", () => {
         updateStateInfoForStateTree(stateTree);
         assert.deepEqual(getStateProofFromStateRoot(stateTree, [label1, label11]), {
           "#state_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-          "000": {
-            "1": {
+          "#radix:000": {
+            "#radix:1": {
               "#radix_ph": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
-              "#state_label:0x0001": {
-                "#state_ph": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116",
-                "0011": {
+              "#state:0x0001": {
+                "#radix:0011": {
                   "#radix_ph": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
-                  "#state_label:0x0011": {
+                  "#state:0x0011": {
                     "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb"
                   }
-                }
+                },
+                "#state_ph": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116"
               }
             },
-            "2": {
+            "#radix:2": {
               "#radix_ph": "0x201d6a312774b74827e1ae95e37b98558ee25170d1e40f6def42c22ed161dab5"
             },
             "#radix_ph": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60"
@@ -2588,36 +2588,35 @@ describe("state-util", () => {
         });
         updateStateInfoForStateTree(stateTree2);
         assert.deepEqual(getStateProofFromStateRoot(stateTree2, ['31', '31-1']), {
-          "33": {
-            "3": {
-              "0": {
+          "#state_ph": "0x8c2734c83cbcdc673190a8d164892c1489f908b3f80d6068257753a39de16181",
+          "#radix:33": {
+            "#radix:3": {
+              "#radix:0": {
                 "#radix_ph": "0xda7fde2ca07a62397245f255309752fb69ef011c03e48be00e16e9b89edb992e"
               },
-              "1": {
+              "#radix:1": {
                 "#radix_ph": "0xc2171aa7a68514ee8d10163f01936e6b057f0dd9d1c09965987455c423cc0083",
-                "#state_label:31": {
-                  "#state_ph": "0x444d17cf54ec9db68a38c29f8d3fd9fc4ca33162bbe118980eb84264f1e5cb50",
-                  "33312d31": {
+                "#state:31": {
+                  "#radix:33312d31": {
                     "#radix_ph": "0xcbb7f3f7590245dcd747fea8d019b093a366dc055722488bfa6e88b4e85ba5f5",
-                    "#state_label:31-1": {
+                    "#state:31-1": {
                       "#state_ph": "0xb5db965c4f86627bf107f798f5946ce1eb24cb5a86c16a78e34e3b224262e1d5"
                     }
-                  }
+                  },
+                  "#state_ph": "0x444d17cf54ec9db68a38c29f8d3fd9fc4ca33162bbe118980eb84264f1e5cb50"
                 }
               },
               "#radix_ph": "0x19502261f0280695c3ad696c08068ffbed1f76c075e7a985351e1fd3359e7cc3"
             },
             "#radix_ph": "0xa79f73e0527ebdeb2df5c7501723d99a23b3afb9c0cf1d15d6e04d0c842ff8d4",
-            "#state_label:3": {
+            "#state:3": {
               "#state_ph": "0x4d8ff5217be0d6876e37d4509e05929aeb8ecc65d06a7a3b0a863d9694b51a3a"
             }
-          },
-          "#state_ph": "0x8c2734c83cbcdc673190a8d164892c1489f908b3f80d6068257753a39de16181"
+          }
         });
         const proof = getStateProofFromStateRoot(stateTree2, ['31', '31-1']);
         assert.deepEqual(verifyStateProof(proof), {
           "proofHash": "0x8c2734c83cbcdc673190a8d164892c1489f908b3f80d6068257753a39de16181",
-          "isStateNode": true,
           "isVerified": true,
           "mismatchedPath": null,
           "mismatchedProofHash": null,
@@ -2636,20 +2635,20 @@ describe("state-util", () => {
     describe("verifyStateProof", () => {
       const proof = {
         "#state_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-        "000": {
-          "1": {
+        "#radix:000": {
+          "#radix:1": {
             "#radix_ph": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
-            "0x0001": {
+            "#state:0x0001": {
               "#state_ph": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116",
-              "0011": {
+              "#radix:0011": {
                 "#radix_ph": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
-                "0x0011": {
+                "#state:0x0011": {
                   "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb"
                 }
               }
             }
           },
-          "2": {
+          "#radix:2": {
             "#radix_ph": "0x201d6a312774b74827e1ae95e37b98558ee25170d1e40f6def42c22ed161dab5"
           },
           "#radix_ph": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60"
@@ -2659,7 +2658,6 @@ describe("state-util", () => {
       it("verified", () => {
         assert.deepEqual(verifyStateProof(proof), {
           "proofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-          "isStateNode": true,
           "isVerified": true,
           "mismatchedPath": null,
           "mismatchedProofHash": null,
@@ -2669,12 +2667,11 @@ describe("state-util", () => {
 
       it("not verified with radix proof hash manipulated", () => {
         const proofManipulated1 = JSON.parse(JSON.stringify(proof));
-        _.set(proofManipulated1, '000.1.#radix_ph', 'some other value');
+        _.set(proofManipulated1, '#radix:000.#radix:1.#radix_ph', 'some other value');
         assert.deepEqual(verifyStateProof(proofManipulated1), {
           "proofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-          "isStateNode": true,
           "isVerified": false,
-          "mismatchedPath": "/000/1",
+          "mismatchedPath": "/#radix:000/#radix:1",
           "mismatchedProofHash": "some other value",
           "mismatchedProofHashComputed": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
         });
@@ -2683,12 +2680,11 @@ describe("state-util", () => {
 
       it("not verified with internal state proof hash manipulated", () => {
         const proofManipulated2 = JSON.parse(JSON.stringify(proof));
-        _.set(proofManipulated2, '000.1.0x0001.#state_ph', 'some other value');
+        _.set(proofManipulated2, '#radix:000.#radix:1.#state:0x0001.#state_ph', 'some other value');
         assert.deepEqual(verifyStateProof(proofManipulated2), {
           "proofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-          "isStateNode": true,
           "isVerified": false,
-          "mismatchedPath": "/000/1/0x0001",
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001",
           "mismatchedProofHash": "some other value",
           "mismatchedProofHashComputed": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116",
         });
@@ -2696,12 +2692,11 @@ describe("state-util", () => {
 
       it("not verified with terminal state proof hash manipulated", () => {
         const proofManipulated3 = JSON.parse(JSON.stringify(proof));
-        _.set(proofManipulated3, '000.1.0x0001.0011.0x0011.#state_ph', 'some other value');
+        _.set(proofManipulated3, '#radix:000.#radix:1.#state:0x0001.#radix:0011.#state:0x0011.#state_ph', 'some other value');
         assert.deepEqual(verifyStateProof(proofManipulated3), {
           "proofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-          "isStateNode": true,
           "isVerified": false,
-          "mismatchedPath": "/000/1/0x0001/0011",
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001/#radix:0011",
           "mismatchedProofHash": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
           "mismatchedProofHashComputed": "0x7798ecb6063003183a0370ec083260912b756f52054fa3d0ca8e5a88db4a40a8",
         });
@@ -2709,14 +2704,13 @@ describe("state-util", () => {
 
       it("not verified with label changed: '2' -> '3'", () => {
         const proofManipulated4 = JSON.parse(JSON.stringify(proof));
-        const temp = _.get(proofManipulated4, '000.2');
-        _.unset(proofManipulated4, '000.2');
-        _.set(proofManipulated4, '000.3', temp);
+        const temp = _.get(proofManipulated4, '#radix:000.#radix:2');
+        _.unset(proofManipulated4, '#radix:000.#radix:2');
+        _.set(proofManipulated4, '#radix:000.#radix:3', temp);
         assert.deepEqual(verifyStateProof(proofManipulated4), {
           "proofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-          "isStateNode": true,
           "isVerified": false,
-          "mismatchedPath": "/000",
+          "mismatchedPath": "/#radix:000",
           "mismatchedProofHash": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60",
           "mismatchedProofHashComputed": "0x0c479cea57cfd0b5d2f6b0e91f30d802002deda19a26cc44581b56b1be882b6c",
         });

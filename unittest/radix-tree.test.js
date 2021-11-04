@@ -3011,13 +3011,13 @@ describe("radix-tree", () => {
         // on an internal radix node
         assert.deepEqual(tree.getProofOfStateNode(label1, 'state_proof1'), {
           "#state_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
-          "000": {
+          "#radix:000": {
             "#radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
-            "aaa": {
+            "#radix:aaa": {
               "#radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0",
-              "#state_label:0x000aaa": "state_proof1"
+              "#state:0x000aaa": "state_proof1"
             },
-            "bbb": {
+            "#radix:bbb": {
               "#radix_ph": "0x78d50ec884283d1759dc14ae88aa3e832199ff650b450da3b45cd507c2cd8474",
             }
           }
@@ -3026,18 +3026,18 @@ describe("radix-tree", () => {
         // on a terminal radix node
         assert.deepEqual(tree.getProofOfStateNode(label22, 'state_proof22'), {
           "#state_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
-          "000": {
+          "#radix:000": {
             "#radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
-            "aaa": {
+            "#radix:aaa": {
               "#radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0",
             },
-            "bbb": {
-              "121": {
+            "#radix:bbb": {
+              "#radix:121": {
                 "#radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7",
               },
-              "222": {
+              "#radix:222": {
                 "#radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2",
-                "#state_label:0x000bbb222": "state_proof22"
+                "#state:0x000bbb222": "state_proof22"
               },
               "#radix_ph": "0x78d50ec884283d1759dc14ae88aa3e832199ff650b450da3b45cd507c2cd8474",
             }
