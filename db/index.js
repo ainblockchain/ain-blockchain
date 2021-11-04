@@ -727,8 +727,8 @@ class DB {
     }
     if (value !== null) {
       // NOTE(liayoo): Only apply the state garbage collection rules when it's not a deletion.
-      const applyParentStateRuleRes = this.applyStateGarbageCollectionRule(ruleEvalRes.matched.state, localPath);
-      logger.debug(`[${LOG_HEADER}] applyParentStateRuleRes: deleted ${applyParentStateRuleRes} child nodes`);
+      const applyStateGcRuleRes = this.applyStateGarbageCollectionRule(ruleEvalRes.matched.state, localPath);
+      logger.debug(`[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
     }
 
     return CommonUtil.returnTxResult(0, null, 1, funcResults);
@@ -1246,8 +1246,8 @@ class DB {
       path: matchedStateRule.matchedRulePath.slice(0, matchedStateRule.closestConfigDepth),
       config: getRuleConfig(matchedStateRule.closestConfigNode)
     };
-    const applyParentStateRuleRes = this.applyStateGarbageCollectionRule({ closestRule }, parsedPath);
-    logger.debug(`[${LOG_HEADER}] applyParentStateRuleRes: deleted ${applyParentStateRuleRes} child nodes`);
+    const applyStateGcRuleRes = this.applyStateGarbageCollectionRule({ closestRule }, parsedPath);
+    logger.debug(`[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
   }
 
   isBillingUser(billingAppName, billingId, userAddr) {
