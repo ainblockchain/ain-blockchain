@@ -50,6 +50,10 @@ function hasRuleConfig(ruleNode) {
   return hasConfig(ruleNode, PredefinedDbPaths.DOT_RULE);
 }
 
+function hasRuleConfigWithProp(ruleNode, ruleProp) {
+  return hasRuleConfig(ruleNode) && ruleNode.getChild(PredefinedDbPaths.DOT_RULE).getChild(ruleProp) !== null;
+}
+
 function getRuleConfig(ruleNode) {
   return getConfig(ruleNode, PredefinedDbPaths.DOT_RULE);
 }
@@ -169,6 +173,56 @@ function isValidJsObjectForStates(obj) {
   return isValidJsObjectForStatesRecursive(obj, []);
 }
 
+function sanitizeRuleConfig(rule) {
+  if (!rule) {
+    return null;
+  }
+  const sanitized = {};
+  if (rule.hasOwnProperty(RuleProperties.WRITE)) {
+    CommonUtil.setJsObject(sanitized, [RuleProperties.WRITE], rule[RuleProperties.WRITE]);
+  }
+  if (rule.hasOwnProperty(RuleProperties.STATE)) {
+    if (rule[RuleProperties.STATE] === null) {
+      CommonUtil.setJsObject(sanitized, [RuleProperties.STATE], null);
+    } else {
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.MAX_CHILDREN],
+            rule[RuleProperties.STATE][RuleProperties.MAX_CHILDREN]);
+      }
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.GC_MAX_SIBLINGS)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.GC_MAX_SIBLINGS],
+            rule[RuleProperties.STATE][RuleProperties.GC_MAX_SIBLINGS]);
+      }
+    }
+  }
+  return sanitized;
+}
+
+function isValidStateRule(stateRule) {
+  if (stateRule === null) {
+    return true;
+  }
+  if (!CommonUtil.isDict(stateRule) || CommonUtil.isEmpty(stateRule)) {
+    return false;
+  }
+  let hasValidProperty = false;
+  if (stateRule.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+    if (!CommonUtil.isNumber(stateRule[RuleProperties.MAX_CHILDREN]) ||
+        stateRule[RuleProperties.MAX_CHILDREN] <= 0) {
+      return false;
+    }
+    hasValidProperty = true;
+  }
+  if (stateRule.hasOwnProperty(RuleProperties.GC_MAX_SIBLINGS)) {
+    if (!CommonUtil.isNumber(stateRule[RuleProperties.GC_MAX_SIBLINGS]) ||
+      stateRule[RuleProperties.GC_MAX_SIBLINGS] <= 0) {
+      return false;
+    }
+    hasValidProperty = true;
+  }
+  return hasValidProperty;
+}
+
 /**
  * Checks the validity of the given rule configuration.
  */
@@ -176,12 +230,24 @@ function isValidJsObjectForStates(obj) {
   if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
-  if (!ruleConfigObj.hasOwnProperty(RuleProperties.WRITE)) {
+  if (!ruleConfigObj.hasOwnProperty(RuleProperties.WRITE) &&
+      !ruleConfigObj.hasOwnProperty(RuleProperties.STATE)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
-  const writeProp = ruleConfigObj[RuleProperties.WRITE];
-  if (!CommonUtil.isBool(writeProp) && !CommonUtil.isString(writeProp)) {
+
+  const sanitized = sanitizeRuleConfig(ruleConfigObj);
+  const isIdentical = _.isEqual(JSON.parse(JSON.stringify(sanitized)), ruleConfigObj);
+  if (!isIdentical) {
+    return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
+  }
+  const writeRule = sanitized[RuleProperties.WRITE];
+  const stateRule = sanitized[RuleProperties.STATE];
+  if (sanitized.hasOwnProperty(RuleProperties.WRITE) && writeRule !== null &&
+      !CommonUtil.isBool(writeRule) && !CommonUtil.isString(writeRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
+  }
+  if (sanitized.hasOwnProperty(RuleProperties.STATE) && !isValidStateRule(stateRule)) {
+    return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.STATE]) };
   }
 
   return { isValid: true, invalidPath: '' };
@@ -425,6 +491,46 @@ function hasConfigLabelOnly(stateTreeObj, configLabel) {
   }
 
   return true;
+}
+
+/**
+ * Returns a new rule tree created by applying the rule change to
+ * the current rule tree.
+ * @param {Object} curRuleTree current rule tree (to be modified by this rule)
+ * @param {Object} ruleChange rule change
+ */
+function applyRuleChange(curRuleTree, ruleChange) {
+  // NOTE(platfowner): Partial set is applied only when the current rule tree has
+  // .rule property and the rule change has .rule property as the only property.
+  if (!hasConfigLabel(curRuleTree, PredefinedDbPaths.DOT_RULE) ||
+      !hasConfigLabelOnly(ruleChange, PredefinedDbPaths.DOT_RULE)) {
+    return CommonUtil.isDict(ruleChange) ?
+        JSON.parse(JSON.stringify(ruleChange)) : ruleChange;
+  }
+  const ruleChangeMap = CommonUtil.getJsObject(ruleChange, [PredefinedDbPaths.DOT_RULE]);
+  if (!ruleChangeMap || Object.keys(ruleChangeMap).length === 0) {
+    return curRuleTree;
+  }
+  const newRuleConfig = {}
+  if (CommonUtil.isDict(curRuleTree) && curRuleTree[PredefinedDbPaths.DOT_RULE]) {
+    CommonUtil.setJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE], curRuleTree[PredefinedDbPaths.DOT_RULE]);
+  }
+  let newRuleMap = CommonUtil.getJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
+  if (!CommonUtil.isDict(newRuleMap)) {
+    // Add a place holder.
+    CommonUtil.setJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE], {});
+    newRuleMap = CommonUtil.getJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
+  }
+  for (const ruleKey in ruleChangeMap) {
+    const ruleInfo = ruleChangeMap[ruleKey];
+    if (ruleInfo === null) {
+      delete newRuleMap[ruleKey];
+    } else {
+      newRuleMap[ruleKey] = ruleInfo;
+    }
+  }
+
+  return newRuleConfig;
 }
 
 /**
@@ -783,6 +889,7 @@ module.exports = {
   hasFunctionConfig,
   getFunctionConfig,
   hasRuleConfig,
+  hasRuleConfigWithProp,
   getRuleConfig,
   hasOwnerConfig,
   getOwnerConfig,
@@ -794,12 +901,14 @@ module.exports = {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  isValidStateRule,
   isValidRuleConfig,
   isValidRuleTree,
   isValidFunctionConfig,
   isValidFunctionTree,
   isValidOwnerConfig,
   isValidOwnerTree,
+  applyRuleChange,
   applyFunctionChange,
   applyOwnerChange,
   renameStateTreeVersion,

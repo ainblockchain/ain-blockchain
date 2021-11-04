@@ -347,8 +347,7 @@ class BlockchainNode {
           [ShardingProperties.SHARDING_ENABLED]: this.db.getValue(CommonUtil.appendPath(
               shardPath, PredefinedDbPaths.DOT_SHARD, ShardingProperties.SHARDING_ENABLED)),
           [ShardingProperties.LATEST_BLOCK_NUMBER]: this.db.getValue(CommonUtil.appendPath(
-              shardPath, PredefinedDbPaths.DOT_SHARD, ShardingProperties.PROOF_HASH_MAP,
-              ShardingProperties.LATEST)),
+              shardPath, PredefinedDbPaths.DOT_SHARD, ShardingProperties.LATEST_BLOCK_NUMBER)),
         };
       }
     }
@@ -487,33 +486,10 @@ class BlockchainNode {
     return false;
   }
 
-  removeOldReceipts(blockNumber, db) {
-    const LOG_HEADER = 'removeOldReceipts';
-    if (!FeatureFlags.enableHardCodedStateGC || !FeatureFlags.enableReceiptsRecording) {
-      return;
-    }
-    if (blockNumber > MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
-      const oldBlock = this.bc.getBlockByNumber(blockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS);
-      if (oldBlock) {
-        oldBlock.transactions.forEach((tx) => {
-          db.writeDatabase(
-              [
-                PredefinedDbPaths.VALUES_ROOT,
-                ...CommonUtil.parsePath(PathUtil.getReceiptPath(tx.hash))
-              ], null);
-        });
-      } else {
-        logger.error(
-            `[${LOG_HEADER}] Non-existing block ${blockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS}.`);
-      }
-    }
-  }
-
   applyBlocksToDb(blockList, db) {
     const LOG_HEADER = 'applyBlocksToDb';
 
     for (const block of blockList) {
-      this.removeOldReceipts(block.number, db);
       if (block.number > 0) {
         if (!db.executeTransactionList(block.last_votes, true, false, 0, block.timestamp)) {
           logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
@@ -619,7 +595,6 @@ class BlockchainNode {
   executeBlockOnDb(block, db) {
     const LOG_HEADER = 'executeBlockOnDb';
 
-    this.removeOldReceipts(block.number, db);
     if (block.number > 0) {
       if (!db.executeTransactionList(block.last_votes, true, false, block.number, block.timestamp)) {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.

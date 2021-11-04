@@ -306,9 +306,7 @@ describe('Sharding', async () => {
           code: 0,
           result: {
             sharding_enabled: true,
-            proof_hash_map: {
-              latest: -1
-            }
+            latest_block_number: -1
           },
         });
       });
@@ -436,8 +434,7 @@ describe('Sharding', async () => {
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         let blockNumber = 0;
-        const sortedReports = _.without(
-            Object.keys(body.result), 'latest').sort((a, b) => Number(a) - Number(b));
+        const sortedReports = Object.keys(body.result).sort((a, b) => Number(a) - Number(b));
         for (const key of sortedReports) {
           expect(blockNumber).to.equal(Number(key));
           blockNumber++;
@@ -451,9 +448,10 @@ describe('Sharding', async () => {
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        const latest = body.result.latest;
-        const sortedReports = _.without(
-            Object.keys(body.result), 'latest').sort((a, b) => Number(a) - Number(b));
+        const latest = parseOrLog(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/latest_block_number`)
+            .body.toString('utf-8')).result;
+        const sortedReports = Object.keys(body.result).sort((a, b) => Number(a) - Number(b));
         const highest = sortedReports[sortedReports.length - 1];
         expect(latest).to.equal(Number(highest));
       });
@@ -461,9 +459,9 @@ describe('Sharding', async () => {
 
     describe('Shard reporter node restart', () => {
       it('can resume reporting after missing some reports', async () => {
-        const reportsBefore = parseOrLog(syncRequest(
-            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
-          .body.toString('utf-8'));
+        const latestBefore = parseOrLog(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/latest_block_number`)
+          .body.toString('utf-8')).result;
         console.log(`        --> Shutting down server[0]...`);
         server1_proc.kill();
         await waitForNewBlocks(server2, sharding.reporting_period);
@@ -475,14 +473,16 @@ describe('Sharding', async () => {
         const reportsAfter = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
+        const latestAfter = parseOrLog(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/latest_block_number`)
+          .body.toString('utf-8')).result;
         let blockNumber = 0;
-        const sortedReports = _.without(
-            Object.keys(reportsAfter.result), 'latest').sort((a, b) => Number(a) - Number(b));
+        const sortedReports = Object.keys(reportsAfter.result).sort((a, b) => Number(a) - Number(b));
         for (const key of sortedReports) {
           expect(blockNumber).to.equal(Number(key));
           blockNumber++;
         }
-        expect(reportsAfter.result.latest).to.be.greaterThan(reportsBefore.result.latest);
+        expect(latestAfter).to.be.greaterThan(latestBefore);
       });
     });
   });
@@ -695,18 +695,31 @@ describe('Sharding', async () => {
           const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
             .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
-            "matched_path": {
-              "target_path": "/apps/test/test_rule/some/path",
-              "ref_path": "/apps/test/test_rule/some/path",
-              "path_vars": {},
-            },
-            "matched_config": {
-              "config": {
-                "write": "auth.addr === 'abcd'"
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some/path",
+                "ref_path": "/apps/test/test_rule/some/path",
+                "path_vars": {},
               },
-              "path": "/apps/test/test_rule/some/path"
+              "matched_config": {
+                "config": {
+                  "write": "auth.addr === 'abcd'"
+                },
+                "path": "/apps/test/test_rule/some/path"
+              },
+              "subtree_configs": []
             },
-            "subtree_configs": []
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some/path",
+                "ref_path": "/apps/test/test_rule/some/path",
+                "path_vars": {},
+              },
+              "matched_config": {
+                "config": null,
+                "path": "/"
+              }
+            }
           }});
         })
 
@@ -716,18 +729,31 @@ describe('Sharding', async () => {
               parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}&is_global=true`)
             .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: {
-            "matched_path": {
-              "target_path": "/apps/afan/apps/test/test_rule/some/path",
-              "ref_path": "/apps/afan/apps/test/test_rule/some/path",
-              "path_vars": {},
-            },
-            "matched_config": {
-              "config": {
-                "write": "auth.addr === 'abcd'"
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/afan/apps/test/test_rule/some/path",
+                "ref_path": "/apps/afan/apps/test/test_rule/some/path",
+                "path_vars": {},
               },
-              "path": "/apps/afan/apps/test/test_rule/some/path"
+              "matched_config": {
+                "config": {
+                  "write": "auth.addr === 'abcd'"
+                },
+                "path": "/apps/afan/apps/test/test_rule/some/path"
+              },
+              "subtree_configs": []
             },
-            "subtree_configs": []
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/afan/apps/test/test_rule/some/path",
+                "ref_path": "/apps/afan/apps/test/test_rule/some/path",
+                "path_vars": {},
+              },
+              "matched_config": {
+                "config": null,
+                "path": "/apps/afan"
+              }
+            }
           }});
         })
       })
@@ -1090,18 +1116,31 @@ describe('Sharding', async () => {
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
-              "matched_path": {
-                "target_path": "/apps/test/test_rule/some/path",
-                "ref_path": "/apps/test/test_rule/some/path",
-                "path_vars": {},
-              },
-              "matched_config": {
-                "config": {
-                  "write": "auth.addr === 'abcd'"
+              "write": {
+                "matched_path": {
+                  "target_path": "/apps/test/test_rule/some/path",
+                  "ref_path": "/apps/test/test_rule/some/path",
+                  "path_vars": {},
                 },
-                "path": "/apps/test/test_rule/some/path"
+                "matched_config": {
+                  "config": {
+                    "write": "auth.addr === 'abcd'"
+                  },
+                  "path": "/apps/test/test_rule/some/path"
+                },
+                "subtree_configs": []
               },
-              "subtree_configs": []
+              "state": {
+                "matched_path": {
+                  "target_path": "/apps/test/test_rule/some/path",
+                  "ref_path": "/apps/test/test_rule/some/path",
+                  "path_vars": {},
+                },
+                "matched_config": {
+                  "config": null,
+                  "path": "/"
+                }
+              }
             });
           })
         })
@@ -1112,18 +1151,31 @@ describe('Sharding', async () => {
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
-              "matched_path": {
-                "target_path": "/apps/afan/apps/test/test_rule/some/path",
-                "ref_path": "/apps/afan/apps/test/test_rule/some/path",
-                "path_vars": {},
-              },
-              "matched_config": {
-                "config": {
-                  "write": "auth.addr === 'abcd'"
+              "write": {
+                "matched_path": {
+                  "target_path": "/apps/afan/apps/test/test_rule/some/path",
+                  "ref_path": "/apps/afan/apps/test/test_rule/some/path",
+                  "path_vars": {},
                 },
-                "path": "/apps/afan/apps/test/test_rule/some/path"
+                "matched_config": {
+                  "config": {
+                    "write": "auth.addr === 'abcd'"
+                  },
+                  "path": "/apps/afan/apps/test/test_rule/some/path"
+                },
+                "subtree_configs": []
               },
-              "subtree_configs": []
+              "state": {
+                "matched_path": {
+                  "target_path": "/apps/afan/apps/test/test_rule/some/path",
+                  "ref_path": "/apps/afan/apps/test/test_rule/some/path",
+                  "path_vars": {},
+                },
+                "matched_config": {
+                  "config": null,
+                  "path": "/apps/afan"
+                }
+              }
             });
           })
         })
@@ -2022,7 +2074,7 @@ describe('Sharding', async () => {
             op_list: [
               {
                 type: WriteDbOperations.SET_RULE,
-                ref: `${sharding_path}/${ShardingProperties.LATEST}`,
+                ref: `${sharding_path}/${ShardingProperties.LATEST_BLOCK_NUMBER}`,
                 value: {
                   [PredefinedDbPaths.DOT_RULE]: {
                     [RuleProperties.WRITE]: `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`
@@ -2031,7 +2083,7 @@ describe('Sharding', async () => {
               },
               {
                 type: WriteDbOperations.SET_FUNCTION,
-                ref: `${sharding_path}/$block_number/${ShardingProperties.PROOF_HASH}`,
+                ref: `${sharding_path}/proof_hash_map/$block_number/${ShardingProperties.PROOF_HASH}`,
                 value: {
                   [PredefinedDbPaths.DOT_FUNCTION]: {
                     [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
@@ -2061,7 +2113,7 @@ describe('Sharding', async () => {
 
       it('update latest shard report', async () => {
         const reportVal = {
-          ref: `${shardingPath}/5/proof_hash`,
+          ref: `${shardingPath}/proof_hash_map/5/proof_hash`,
           value: "0xPROOF_HASH_5",
           nonce: -1,
         }
@@ -2076,7 +2128,7 @@ describe('Sharding', async () => {
               "bandwidth_gas_amount": 0,
               "op_results": {
                 "0": {
-                  "path": "/apps/a_dapp/latest",
+                  "path": "/apps/a_dapp/latest_block_number",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1,
@@ -2096,7 +2148,7 @@ describe('Sharding', async () => {
             },
             "state": {
               "app": {
-                "a_dapp": 710
+                "a_dapp": 924
               },
               "service": 0
             }
@@ -2109,9 +2161,11 @@ describe('Sharding', async () => {
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
         assert.deepEqual(shardingPathRes, {
-          latest: 5,
-          5: {
-            proof_hash: "0xPROOF_HASH_5"
+          latest_block_number: 5,
+          proof_hash_map: {
+            5: {
+              proof_hash: "0xPROOF_HASH_5"
+            }
           }
         });
       });
@@ -2120,11 +2174,11 @@ describe('Sharding', async () => {
         const multipleReportVal = {
           op_list: [
             {
-              ref: `${shardingPath}/15/proof_hash`,
+              ref: `${shardingPath}/proof_hash_map/15/proof_hash`,
               value: "0xPROOF_HASH_15"
             },
             {
-              ref: `${shardingPath}/10/proof_hash`,
+              ref: `${shardingPath}/proof_hash_map/10/proof_hash`,
               value: "0xPROOF_HASH_10"
             }
           ],
@@ -2143,7 +2197,7 @@ describe('Sharding', async () => {
                   "bandwidth_gas_amount": 0,
                   "op_results": {
                     "0": {
-                      "path": "/apps/a_dapp/latest",
+                      "path": "/apps/a_dapp/latest_block_number",
                       "result": {
                         "code": 0,
                         "bandwidth_gas_amount": 1,
@@ -2188,15 +2242,17 @@ describe('Sharding', async () => {
             'GET', parentServer + `/get_value?ref=${shardingPath}`).body.toString('utf-8')
         ).result;
         assert.deepEqual(shardingPathRes, {
-          latest: 15,
-          5: {
-            proof_hash: "0xPROOF_HASH_5"
-          },
-          10: {
-            proof_hash: "0xPROOF_HASH_10"
-          },
-          15: {
-            proof_hash: "0xPROOF_HASH_15"
+          latest_block_number: 15,
+          proof_hash_map: {
+            5: {
+              proof_hash: "0xPROOF_HASH_5"
+            },
+            10: {
+              proof_hash: "0xPROOF_HASH_10"
+            },
+            15: {
+              proof_hash: "0xPROOF_HASH_15"
+            }
           }
         });
       })
