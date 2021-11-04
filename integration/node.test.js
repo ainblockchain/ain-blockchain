@@ -372,17 +372,6 @@ describe('Blockchain Node', () => {
             "matched_config": {
               "config": null,
               "path": "/"
-            },
-            "parent_configs": {
-              "matched_path": {
-                "target_path": "/apps/test/test_rule/some",
-                "ref_path": "/apps/test/test_rule/some",
-                "path_vars": {},
-              },
-              "matched_config": {
-                "config": null,
-                "path": "/"
-              }
             }
           }
         }});
@@ -661,17 +650,6 @@ describe('Blockchain Node', () => {
               "matched_config": {
                 "config": null,
                 "path": "/"
-              },
-              "parent_configs": {
-                "matched_path": {
-                  "target_path": "/apps/test/test_rule/some",
-                  "ref_path": "/apps/test/test_rule/some",
-                  "path_vars": {},
-                },
-                "matched_config": {
-                  "config": null,
-                  "path": "/"
-                }
               }
             }
           });
@@ -3711,29 +3689,6 @@ describe('Blockchain Node', () => {
         "gas_cost_total": 0
       });
     });
-
-    // TODO(liayoo): Uncomment once invalid state proof hash issue has been fixed & state management
-    // scheme has been implemented.
-    // it(`removes an old transaction receipt`, async () => {
-    //   const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = 100;
-    //   let lastBlockNumber = getLastBlockNumber(server1);
-    //   if (lastBlockNumber <= MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
-    //     await waitForNewBlocks(server1, MAX_BLOCK_NUMBERS_FOR_RECEIPTS - lastBlockNumber + 1);
-    //     lastBlockNumber = getLastBlockNumber(server1);
-    //   }
-    //   let oldBlockNumber = lastBlockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS;
-    //   let oldBlock = getBlockByNumber(server1, oldBlockNumber);
-    //   while (!oldBlock.transactions.length) {
-    //     oldBlock = getBlockByNumber(server1, --oldBlockNumber);
-    //     await CommonUtil.sleep(2000);
-    //   }
-    //   for (const tx of oldBlock.transactions) {
-    //     const receipt = parseOrLog(syncRequest(
-    //       'GET', server1 + `/get_value?ref=${PathUtil.getReceiptPath(tx.hash)}`)
-    //       .body.toString('utf-8')).result;
-    //     assert.deepEqual(receipt, null);
-    //   }
-    // });
 
     it('failed transaction', async () => {
       const server1Address = parseOrLog(syncRequest(
