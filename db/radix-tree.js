@@ -20,14 +20,14 @@ class RadixTree {
 
   clone(version, parentStateNode) {
     const clonedTree = new RadixTree(version);
-    clonedTree.nextSerial = this.nextSerial;
-    clonedTree.root = this.root.clone(version, parentStateNode);
+    clonedTree.setNextSerial(this.getNextSerial());
+    clonedTree.setRoot(this.root.clone(version, parentStateNode));
     clonedTree.numTerminalNodes = this.numTerminalNodes;
     return clonedTree;
   }
 
   _newRadixNode(parentStateNode = null) {
-    return new RadixNode(this.version, this.nextSerial++, parentStateNode);
+    return new RadixNode(this.getVersion(), this.getAndIncNextSerial(), parentStateNode);
   }
 
   static _toRadixLabel(stateLabel) {
@@ -104,7 +104,7 @@ class RadixTree {
       // Case 2: Has a child with the label radix but no match with the label suffix.
       if (!RadixTree._matchLabelSuffix(child, radixLabel, labelIndex + 1)) {
         if (child.numParents() > 1) {
-          child = child.clone(this.root.getVersion());
+          child = child.clone(this.getVersion());
         }
 
         const labelSuffix = radixLabel.slice(labelIndex + 1);
@@ -146,7 +146,7 @@ class RadixTree {
       // Case 3: Has a child with matching label suffix.
       const childLabelSuffix = child.getLabelSuffix();
       if (child.numParents() > 1) {
-        const clonedChild = child.clone(this.root.getVersion());
+        const clonedChild = child.clone(this.getVersion());
         curNode.setChild(childLabelRadix, childLabelSuffix, clonedChild);
         curNode = clonedChild;
       } else {
@@ -185,7 +185,7 @@ class RadixTree {
       // Case 3: Has a child with matching label suffix.
       const childLabelSuffix = child.getLabelSuffix();
       if (child.numParents() > 1) {
-        const clonedChild = child.clone(this.root.getVersion());
+        const clonedChild = child.clone(this.getVersion());
         curNode.setChild(childLabelRadix, childLabelSuffix, clonedChild);
         curNode = clonedChild;
       } else {
@@ -220,7 +220,7 @@ class RadixTree {
     const node = this._getRadixNodeForSetting(stateLabel);
     if (!node.hasChildStateNode()) {
       // Update the node serial with a new value to keep the insertion order.
-      node.setSerial(this.nextSerial++);
+      node.setSerial(this.getAndIncNextSerial());
       // Increase the number of the terminal numbers.
       this.numTerminalNodes++;
     }
@@ -336,6 +336,26 @@ class RadixTree {
     return radixNode.hasMultipleParentStateNodes();
   }
 
+  getVersion() {
+    return this.version;
+  }
+
+  getNextSerial() {
+    return this.nextSerial;
+  }
+
+  getAndIncNextSerial() {
+    return this.nextSerial++;
+  }
+
+  setNextSerial(nextSerial) {
+    this.nextSerial = nextSerial;
+  }
+
+  setRoot(root) {
+    this.root = root;
+  }
+
   getChildStateLabels() {
     const labelList = [];
     for (const stateNode of this.getChildStateNodes()) {
@@ -430,22 +450,22 @@ class RadixTree {
   }
 
   /**
-   * Constructs a radix tree from the given js object with full nodes.
+   * Constructs a radix tree from the given snapshot object.
    */
   static fromSnapshotObject(obj) {
     const root = RadixNode.fromSnapshotObject(obj);
     const version = root.getVersion();
     const tree = new RadixTree(version);
-    tree.root = root;
-    tree.nextSerial = obj[StateInfoProperties.NEXT_SERIAL];
+    tree.setRoot(root);
+    tree.setNextSerial(obj[StateInfoProperties.NEXT_SERIAL]);
     return tree;
   }
 
   /**
-   * Converts this radix tree to a js object with full nodes.
+   * Converts this radix tree to a snapshot object.
    */
   toSnapshotObject() {
-    return this.root.toSnapshotObject(this.nextSerial);
+    return this.root.toSnapshotObject(this.getNextSerial());
   }
 
   /**

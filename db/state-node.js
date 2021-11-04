@@ -59,7 +59,7 @@ class StateNode {
         this.isLeaf, this.value, this.proofHash, this.treeHeight,
         this.treeSize, this.treeBytes);
     if (!this.getIsLeaf()) {
-      cloned.radixTree = this.radixTree.clone(version, cloned);
+      cloned.setRadixTree(this.radixTree.clone(version, cloned));
     }
     return cloned;
   }
@@ -73,17 +73,25 @@ class StateNode {
   }
 
   /**
-   * Constructs a sub-tree from the given js object with full nodes.
+   * Constructs a sub-tree from the given snapshot object.
    */
   static fromSnapshotObject(obj) {
-    const node = new StateNode();
-    node.setValue('val');
-    return node;
-    // TODO(platfowner): implement this.
+    const curNode = new StateNode();
+    if (CommonUtil.isDict(obj)) {
+      if (!CommonUtil.isEmpty(obj)) {
+        const radixTree = RadixTree.fromSnapshotObject(obj);
+        curNode.setRadixTree(radixTree);
+        curNode.setIsLeaf(false);
+        curNode.setVersion(radixTree.getVersion());
+      }
+    } else {
+      curNode.setValue(obj);
+    }
+    return curNode;
   }
 
   /**
-   * Converts this sub-tree to a js object with full nodes.
+   * Converts this sub-tree to a snapshot object.
    */
   toSnapshotObject() {
     if (this.getIsLeaf()) {
@@ -426,6 +434,10 @@ class StateNode {
 
   numChildren() {
     return this.radixTree.numChildStateNodes();
+  }
+
+  setRadixTree(radixTree) {
+    this.radixTree = radixTree;
   }
 
   getProofHash() {

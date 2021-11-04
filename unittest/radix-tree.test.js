@@ -2765,6 +2765,26 @@ describe("radix-tree", () => {
       });
     });
 
+    describe("other getters and setters", () => {
+      it("getVersion", () => {
+        expect(tree.getVersion()).to.equal(version);
+      });
+
+      it("getNextSerial / getAndIncNextSerial / setNextSerial", () => {
+        expect(tree.getNextSerial()).to.equal(1);
+        expect(tree.getAndIncNextSerial()).to.equal(1);
+        expect(tree.getNextSerial()).to.equal(2);
+        tree.setNextSerial(1000);
+        expect(tree.getNextSerial()).to.equal(1000);
+      });
+
+      it("setRoot", () => {
+        const newRoot = new RadixNode();
+        tree.setRoot(newRoot);
+        assert.deepEqual(tree.root, newRoot);
+      });
+    });
+
     describe("child state nodes", () => {
       const version = 'ver';
       const version2 = 'ver2';
@@ -3279,8 +3299,8 @@ describe("radix-tree", () => {
       stateNode22.setLabel(label22);
 
       // toSnapshotObject()
-      const jsObj = tree.toSnapshotObject();
-      assert.deepEqual(jsObj, {
+      const snapshot = tree.toSnapshotObject();
+      assert.deepEqual(snapshot, {
         "#next_serial": 10,
         "#radix:000": {
           "#radix:aaa": {
@@ -3315,30 +3335,30 @@ describe("radix-tree", () => {
       });
 
       // fromSnapshotObject()
-      assert.deepEqual(RadixTree.fromSnapshotObject(jsObj).toSnapshotObject(), {
+      assert.deepEqual(RadixTree.fromSnapshotObject(snapshot).toSnapshotObject(), {
         "#next_serial": 10,
         "#radix:000": {
           "#radix:aaa": {
             "#serial": 2,
-            "#state:0x000aaa": "val",
+            "#state:0x000aaa": "value1",
             "#version": "ver",
             "#version:0x000aaa": "ver",
           },
           "#radix:bbb": {
             "#radix:111": {
               "#serial": 7,
-              "#state:0x000bbb111": "val",
+              "#state:0x000bbb111": "value21",
               "#version": "ver",
               "#version:0x000bbb111": "ver",
             },
             "#radix:222": {
               "#serial": 9,
-              "#state:0x000bbb222": "val",
+              "#state:0x000bbb222": "value22",
               "#version": "ver",
               "#version:0x000bbb222": "ver",
             },
             "#serial": 5,
-            "#state:0x000bbb": "val",
+            "#state:0x000bbb": "value2",
             "#version": "ver",
             "#version:0x000bbb": "ver",
           },
@@ -3348,7 +3368,7 @@ describe("radix-tree", () => {
         "#serial": 0,
         "#version": "ver",
       });
-      //assert.deepEqual(RadixTree.fromSnapshotObject(jsObj).toSnapshotObject(), jsObj);
+      assert.deepEqual(RadixTree.fromSnapshotObject(snapshot).toSnapshotObject(), snapshot);
     });
   });
 });

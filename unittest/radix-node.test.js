@@ -1496,8 +1496,8 @@ describe("radix-node", () => {
 
     it("fromSnapshotObject / toSnapshotObject", () => {
       // toSnapshotObject()
-      const jsObj = node.toSnapshotObject();
-      assert.deepEqual(jsObj, {
+      const snapshot = node.toSnapshotObject();
+      assert.deepEqual(snapshot, {
         "#radix:1001": {
           "#serial": 3,
           "#state:1001": "value1",
@@ -1529,37 +1529,37 @@ describe("radix-node", () => {
       });
 
       // fromSnapshotObject()
-      assert.deepEqual(RadixNode.fromSnapshotObject(jsObj).toSnapshotObject(), {
+      assert.deepEqual(RadixNode.fromSnapshotObject(snapshot).toSnapshotObject(), {
         "#radix:1001": {
           "#serial": 3,
-          "#state:1001": "val",
+          "#state:1001": "value1",
           "#version": "ver",
           "#version:1001": "childStateNodeVer1",
         },
         "#radix:2002": {
           "#radix:1021": {
             "#serial": 2,
-            "#state:1021": "val",
+            "#state:1021": "value21",
             "#version": "ver",
             "#version:1021": "childStateNodeVer21",
           },
           "#radix:2022": {
             "#serial": 1,
-            "#state:2022": "val",
+            "#state:2022": "value22",
             "#version": "ver",
             "#version:2022": "childStateNodeVer22",
           },
           "#serial": 4,
-          "#state:2002": "val",
+          "#state:2002": "value2",
           "#version": "ver",
           "#version:2002": "childStateNodeVer2",
         },
         "#serial": 0,
-        "#state:0000": "val",
+        "#state:0000": "value",
         "#version": "ver",
         "#version:0000": "stateNodeVer",
       });
-      //assert.deepEqual(RadixNode.fromSnapshotObject(jsObj).toSnapshotObject(), jsObj);
+      assert.deepEqual(RadixNode.fromSnapshotObject(snapshot).toSnapshotObject(), snapshot);
     });
 
     it("toJsObject", () => {

@@ -571,7 +571,7 @@ class RadixNode {
   }
 
   /**
-   * Constructs a sub-tree from the given js object with full nodes.
+   * Constructs a sub-tree from the given snspshot object.
    */
   static fromSnapshotObject(obj) {
     const version = obj[StateInfoProperties.VERSION];
@@ -598,7 +598,7 @@ class RadixNode {
   }
 
   /**
-   * Converts this sub-tree to a js object with full nodes.
+   * Converts this sub-tree to a snapshot object.
    */
   toSnapshotObject(nextSerial = null) {
     const obj = {};
