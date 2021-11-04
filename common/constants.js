@@ -386,6 +386,7 @@ const RuleProperties = {
   STATE: 'state',
   MAX_CHILDREN: 'max_children',
   GC_MAX_SIBLINGS: 'gc_max_siblings',
+  // TODO(liayoo): Add more properties (max_height, max_size, max_bytes)
 };
 
 /**
