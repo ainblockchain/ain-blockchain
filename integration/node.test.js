@@ -118,6 +118,25 @@ async function setUp() {
           }
         },
         {
+          type: 'SET_RULE',
+          ref: '/apps/test/test_rule/state',
+          value: {
+            ".rule": {
+              "state": {
+                "max_children": 10,
+                "gc_max_siblings": 100,
+              }
+            },
+            "and": {
+              "write": {
+                ".rule": {
+                  "write": true
+                }
+              }
+            }
+          }
+        },
+        {
           type: 'SET_FUNCTION',
           ref: '/apps/test/test_function/some/path',
           value: {
@@ -344,7 +363,7 @@ describe('Blockchain Node', () => {
     })
 
     describe('/match_rule', () => {
-      it('match_rule', () => {
+      it('match_rule (write)', () => {
         const ref = "/apps/test/test_rule/some/path";
         const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
             .body.toString('utf-8'));
@@ -375,6 +394,95 @@ describe('Blockchain Node', () => {
             }
           }
         }});
+      })
+
+      it('match_rule (state)', () => {
+        const ref = "/apps/test/test_rule/state";
+        const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
+            .body.toString('utf-8'));
+        assert.deepEqual(body, {
+          "code": 0,
+          "result": {
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state",
+                "ref_path": "/apps/test/test_rule/state",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test",
+                "config": {
+                  "write": "auth.addr === '0x00ADEc28B6a845a085e03591bE7550dd68673C1C' || auth.addr === '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204' || auth.addr === '0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00' || auth.addr === '0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A'"
+                }
+              },
+              "subtree_configs": [
+                {
+                  "path": "/and/write",
+                  "config": {
+                    "write": true
+                  }
+                }
+              ]
+            },
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state",
+                "ref_path": "/apps/test/test_rule/state",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test/test_rule/state",
+                "config": {
+                  "state": {
+                    "max_children": 10,
+                    "gc_max_siblings": 100
+                  }
+                }
+              }
+            }
+          }
+        });
+      })
+
+      it('match_rule (state & write)', () => {
+        const ref = "/apps/test/test_rule/state/and/write";
+        const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
+            .body.toString('utf-8'));
+        assert.deepEqual(body, {
+          "code": 0,
+          "result": {
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state/and/write",
+                "ref_path": "/apps/test/test_rule/state/and/write",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test/test_rule/state/and/write",
+                "config": {
+                  "write": true
+                }
+              },
+              "subtree_configs": []
+            },
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state/and/write",
+                "ref_path": "/apps/test/test_rule/state/and/write",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test/test_rule/state",
+                "config": {
+                  "state": {
+                    "max_children": 10,
+                    "gc_max_siblings": 100
+                  }
+                }
+              }
+            }
+          }
+        });
       })
     })
 
@@ -570,9 +678,9 @@ describe('Blockchain Node', () => {
             'GET', server1 + `/get_state_usage?app_name=test`)
                 .body.toString('utf-8'));
         assert.deepEqual(body.result, {
-          "#tree_height": 23,
-          "#tree_size": 61,
-          "#tree_bytes": 11738,
+          "#tree_height": 24,
+          "#tree_size": 70,
+          "#tree_bytes": 13318,
         });
       });
     });
@@ -621,7 +729,7 @@ describe('Blockchain Node', () => {
     })
 
     describe('ain_matchRule', () => {
-      it('returns correct value', () => {
+      it('returns correct value (write)', () => {
         const ref = "/apps/test/test_rule/some/path";
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
@@ -654,6 +762,93 @@ describe('Blockchain Node', () => {
             }
           });
         })
+      })
+
+      it('returns correct value (state)', () => {
+        const ref = "/apps/test/test_rule/state";
+        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
+        .then(res => {
+          assert.deepEqual(res.result.result, {
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state",
+                "ref_path": "/apps/test/test_rule/state",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test",
+                "config": {
+                  "write": "auth.addr === '0x00ADEc28B6a845a085e03591bE7550dd68673C1C' || auth.addr === '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204' || auth.addr === '0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00' || auth.addr === '0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A'"
+                }
+              },
+              "subtree_configs": [
+                {
+                  "path": "/and/write",
+                  "config": {
+                    "write": true
+                  }
+                }
+              ]
+            },
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state",
+                "ref_path": "/apps/test/test_rule/state",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test/test_rule/state",
+                "config": {
+                  "state": {
+                    "max_children": 10,
+                    "gc_max_siblings": 100
+                  }
+                }
+              }
+            }
+          });
+        });
+      })
+
+      it('returns correct value (state & write)', () => {
+        const ref = "/apps/test/test_rule/state/and/write";
+        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
+        .then(res => {
+          assert.deepEqual(res.result.result, {
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state/and/write",
+                "ref_path": "/apps/test/test_rule/state/and/write",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test/test_rule/state/and/write",
+                "config": {
+                  "write": true
+                }
+              },
+              "subtree_configs": []
+            },
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state/and/write",
+                "ref_path": "/apps/test/test_rule/state/and/write",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test/test_rule/state",
+                "config": {
+                  "state": {
+                    "max_children": 10,
+                    "gc_max_siblings": 100
+                  }
+                }
+              }
+            }
+          });
+        });
       })
     })
 
@@ -783,9 +978,9 @@ describe('Blockchain Node', () => {
         .then(res => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
-            "#tree_bytes": 11738,
-            "#tree_height": 23,
-            "#tree_size": 61,
+            "#tree_bytes": 13318,
+            "#tree_height": 24,
+            "#tree_size": 70,
           });
         })
       })
