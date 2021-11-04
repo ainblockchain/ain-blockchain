@@ -419,9 +419,10 @@ const FunctionTypes = {
 const StateInfoProperties = {
   CHILD_INDEX: '#child_index',
   NUM_PARENTS: '#num_parents',
+  RADIX_LABEL_PREFIX: '#radix:',
   RADIX_PROOF_HASH: '#radix_ph',
   SERIAL: '#serial',
-  STATE_PROOF_LABEL_PREFIX: '#state_label:',
+  STATE_LABEL_PREFIX: '#state:',
   STATE_PROOF_HASH: '#state_ph',
   VERSION: '#version',
   TREE_HEIGHT: '#tree_height',

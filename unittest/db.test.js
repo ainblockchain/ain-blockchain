@@ -4653,7 +4653,6 @@ describe("State info", () => {
       _.set(verifResult, 'proofHash', 'erased');
       assert.deepEqual(verifResult, {
         "proofHash": "erased",
-        "isStateNode": true,
         "isVerified": true,
         "mismatchedPath": null,
         "mismatchedProofHash": null,

@@ -785,7 +785,8 @@ function getProofHashOfRadixNode(childStatePh, subProofList) {
     preimage += `${HASH_DELIMITER}`;
   } else {
     for (const subProof of subProofList) {
-      preimage += `${HASH_DELIMITER}${subProof.label}${HASH_DELIMITER}${subProof.proofHash}`;
+      const radixLabel = subProof.label.slice(StateInfoProperties.RADIX_LABEL_PREFIX.length);
+      preimage += `${HASH_DELIMITER}${radixLabel}${HASH_DELIMITER}${subProof.proofHash}`;
     }
   }
   return CommonUtil.hashString(preimage);
@@ -795,14 +796,11 @@ function getProofHashOfRadixNode(childStatePh, subProofList) {
  * An internal version of verifyStateProof().
  * 
  * @param {Object} proof state proof
- * 
- * Returns { proofHash, isStateNode } when successful, otherwise null.
  */
 function verifyStateProofInternal(proof, curLabels) {
   const curPath = CommonUtil.formatPath(curLabels);
   let childStatePh = null;
   let curProofHash = null;
-  let isStateNode = false;
   let childIsVerified = true;
   let childMismatchedPath = null;
   let childMismatchedProofHash = null;
@@ -820,7 +818,7 @@ function verifyStateProofInternal(proof, curLabels) {
         childMismatchedProofHash = subProof.mismatchedProofHash;
         childMismatchedProofHashComputed = subProof.mismatchedProofHashComputed;
       }
-      if (subProof.isStateNode === true) {
+      if (_.startsWith(label, StateInfoProperties.STATE_LABEL_PREFIX)) {
         childStatePh = subProof.proofHash;
         continue;  // continue
       }
@@ -830,17 +828,14 @@ function verifyStateProofInternal(proof, curLabels) {
     }
     if (label === StateInfoProperties.STATE_PROOF_HASH) {
       curProofHash = childProofHash;
-      isStateNode = true;
-      continue;  // continue
-    }
-    if (label === StateInfoProperties.RADIX_PROOF_HASH) {
+    } else if (label === StateInfoProperties.RADIX_PROOF_HASH) {
       curProofHash = childProofHash;
-      continue;  // continue
+    } else {
+      subProofList.push({
+        label,
+        proofHash: childProofHash,
+      });
     }
-    subProofList.push({
-      label,
-      proofHash: childProofHash,
-    });
   }
   if (subProofList.length === 0 && childStatePh === null) {
     const isVerified = childIsVerified && curProofHash !== null;
@@ -849,7 +844,6 @@ function verifyStateProofInternal(proof, curLabels) {
     const mismatchedProofHashComputed = childIsVerified ? null : childMismatchedProofHashComputed;
     return {
       proofHash: curProofHash,
-      isStateNode,
       isVerified,
       mismatchedPath,
       mismatchedProofHash,
@@ -863,7 +857,6 @@ function verifyStateProofInternal(proof, curLabels) {
   const mismatchedProofHashComputed = childIsVerified ? (isVerified ? null : computedProofHash) : childMismatchedProofHashComputed;
   return {
     proofHash: curProofHash,
-    isStateNode,
     isVerified,
     mismatchedPath,
     mismatchedProofHash,
