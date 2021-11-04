@@ -1846,10 +1846,10 @@ class DB {
     if (CommonUtil.isEmpty(stateRuleObj)) {
       return false;
     }
-    if (!stateRuleObj.hasOwnProperty(RuleProperties.STATE_MAX_CHILDREN)) {
+    if (!stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
       return true;
     }
-    const maxChildren = stateRuleObj[RuleProperties.STATE_MAX_CHILDREN];
+    const maxChildren = stateRuleObj[RuleProperties.MAX_CHILDREN];
     return Object.keys(newValue).length <= maxChildren;
   }
 
@@ -1859,10 +1859,10 @@ class DB {
       return 0;
     }
     const stateRuleObj = stateRuleConfig[RuleProperties.STATE];
-    if (CommonUtil.isEmpty(stateRuleObj) || !stateRuleObj[RuleProperties.STATE_GC_MAX_SIBLINGS]) {
+    if (CommonUtil.isEmpty(stateRuleObj) || !stateRuleObj[RuleProperties.GC_MAX_SIBLINGS]) {
       return 0;
     }
-    const gcMaxSiblings = stateRuleObj[RuleProperties.STATE_GC_MAX_SIBLINGS];
+    const gcMaxSiblings = stateRuleObj[RuleProperties.GC_MAX_SIBLINGS];
     // Check the number of children of the parent
     const parentPathLen = matchedRules.closestRule.path.length - 1;
     const parentPath = [PredefinedDbPaths.VALUES_ROOT, ...parsedValuePath.slice(0, parentPathLen)];

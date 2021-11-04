@@ -721,7 +721,7 @@ class P2pServer {
             value: {
               [PredefinedDbPaths.DOT_RULE]: {
                 [RuleProperties.STATE]: {
-                  [RuleProperties.STATE_GC_MAX_SIBLINGS]: MAX_SHARD_REPORT
+                  [RuleProperties.GC_MAX_SIBLINGS]: MAX_SHARD_REPORT
                 }
               }
             }
