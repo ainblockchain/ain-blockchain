@@ -5,6 +5,7 @@ const assert = chai.assert;
 
 const CommonUtil = require('../common/common-util');
 const RadixNode = require('../db/radix-node');
+const RadixTree = require('../db/radix-tree');
 const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 const {
   updateStateInfoForStateTree,
@@ -217,6 +218,186 @@ describe("state-node", () => {
       expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
     });
   });
+
+  describe("fromSnapshotObject / toSnapshotObject", () => {
+    it("leaf node", () => {
+      const ver1 = 'ver1';
+
+      const snapshot1 = StateNode.fromJsObject('str', ver1).toSnapshotObject();
+      expect(snapshot1).to.equal('str');
+      expect(StateNode.fromSnapshotObject(snapshot1).toSnapshotObject()).to.equal('str');
+
+      const snapshot2 = StateNode.fromJsObject(100, ver1).toSnapshotObject();
+      expect(snapshot2).to.equal(100);
+      expect(StateNode.fromSnapshotObject(snapshot2).toSnapshotObject()).to.equal(100);
+    })
+
+    it("internal node", () => {
+      const ver1 = 'ver1';
+      const stateObj = {
+        a: 'str_a',
+        b: 200,
+        c: {
+          ca: 'str_ca',
+          cb: 1200,
+        },
+        d: {
+          da: 'str_da',
+          db: 2200,
+        }
+      };
+      const stateTree = StateNode.fromJsObject(stateObj, ver1);
+      updateStateInfoForStateTree(stateTree);
+
+      // toSnapshotObject()
+      const snapshot = stateTree.toSnapshotObject();
+      assert.deepEqual(snapshot, {
+        "#next_serial": 19,
+        "#radix:6": {
+          "#radix:1": {
+            "#serial": 11,
+            "#state:a": "str_a",
+            "#version": "ver1",
+            "#version:a": "ver1",
+          },
+          "#radix:2": {
+            "#serial": 14,
+            "#state:b": 200,
+            "#version": "ver1",
+            "#version:b": "ver1",
+          },
+          "#radix:3": {
+            "#serial": 16,
+            "#state:c": {
+              "#next_serial": 11,
+              "#radix:636": {
+                "#radix:1": {
+                  "#serial": 7,
+                  "#state:ca": "str_ca",
+                  "#version": "ver1",
+                  "#version:ca": "ver1",
+                },
+                "#radix:2": {
+                  "#serial": 10,
+                  "#state:cb": 1200,
+                  "#version": "ver1",
+                  "#version:cb": "ver1",
+                },
+                "#serial": 8,
+                "#version": "ver1",
+              },
+              "#serial": 0,
+              "#version": "ver1",
+            },
+            "#version": "ver1",
+          },
+          "#radix:4": {
+            "#serial": 18,
+            "#state:d": {
+              "#next_serial": 11,
+              "#radix:646": {
+                "#radix:1": {
+                  "#serial": 7,
+                  "#state:da": "str_da",
+                  "#version": "ver1",
+                  "#version:da": "ver1",
+                },
+                "#radix:2": {
+                  "#serial": 10,
+                  "#state:db": 2200,
+                  "#version": "ver1",
+                  "#version:db": "ver1",
+                },
+                "#serial": 8,
+                "#version": "ver1",
+              },
+              "#serial": 0,
+              "#version": "ver1",
+            },
+            "#version": "ver1",
+          },
+          "#serial": 12,
+          "#version": "ver1",
+        },
+        "#serial": 0,
+        "#version": "ver1",
+      });
+
+      // fromSnapshotObject()
+      assert.deepEqual(StateNode.fromSnapshotObject(snapshot).toSnapshotObject(), {
+        "#next_serial": 19,
+        "#radix:6": {
+          "#radix:1": {
+            "#serial": 11,
+            "#state:a": "str_a",
+            "#version": "ver1",
+            "#version:a": "ver1",
+          },
+          "#radix:2": {
+            "#serial": 14,
+            "#state:b": 200,
+            "#version": "ver1",
+            "#version:b": "ver1",
+          },
+          "#radix:3": {
+            "#serial": 16,
+            "#state:c": {
+              "#next_serial": 11,
+              "#radix:636": {
+                "#radix:1": {
+                  "#serial": 7,
+                  "#state:ca": "str_ca",
+                  "#version": "ver1",
+                  "#version:ca": "ver1",
+                },
+                "#radix:2": {
+                  "#serial": 10,
+                  "#state:cb": 1200,
+                  "#version": "ver1",
+                  "#version:cb": "ver1",
+                },
+                "#serial": 8,
+                "#version": "ver1",
+              },
+              "#serial": 0,
+              "#version": "ver1",
+            },
+            "#version": "ver1",
+          },
+          "#radix:4": {
+            "#serial": 18,
+            "#state:d": {
+              "#next_serial": 11,
+              "#radix:646": {
+                "#radix:1": {
+                  "#serial": 7,
+                  "#state:da": "str_da",
+                  "#version": "ver1",
+                  "#version:da": "ver1",
+                },
+                "#radix:2": {
+                  "#serial": 10,
+                  "#state:db": 2200,
+                  "#version": "ver1",
+                  "#version:db": "ver1",
+                },
+                "#serial": 8,
+                "#version": "ver1",
+              },
+              "#serial": 0,
+              "#version": "ver1",
+            },
+            "#version": "ver1",
+          },
+          "#serial": 12,
+          "#version": "ver1",
+        },
+        "#serial": 0,
+        "#version": "ver1",
+      });
+      assert.deepEqual(StateNode.fromSnapshotObject(snapshot).toSnapshotObject(), snapshot);
+    })
+  })
 
   describe("toJsObject", () => {
     it("leaf node", () => {
@@ -1072,6 +1253,14 @@ describe("state-node", () => {
       expect(child1.getIsLeaf()).to.equal(true);
       expect(child2.getIsLeaf()).to.equal(true);
       expect(parent1.getIsLeaf()).to.equal(true);
+    });
+  });
+
+  describe("radix tree", () => {
+    it("setRadixTree", () => {
+      const newRadixTree = new RadixTree();
+      node.setRadixTree(newRadixTree);
+      assert.deepEqual(node.radixTree, newRadixTree);
     });
   });
 
