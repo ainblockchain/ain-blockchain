@@ -268,7 +268,8 @@ class BlockchainNode {
 
   updateSnapshots(blockNumber) {
     if (blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
-      const snapshot = this.dumpFinalDbStates();
+      const snapshot = FeatureFlags.enableFullNodeSnapshots ? this.snapshotFinalDbStates() :
+          this.dumpFinalDbStates();
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
           this.snapshotDir, blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
@@ -277,6 +278,10 @@ class BlockchainNode {
 
   dumpFinalDbStates(options) {
     return this.stateManager.getFinalRoot().toJsObject(options);
+  }
+
+  snapshotFinalDbStates() {
+    return this.stateManager.getFinalRoot().toSnapshotObject();
   }
 
   getTransactionByHash(hash) {
@@ -623,7 +628,8 @@ class BlockchainNode {
     if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
 
       // NOTE(platfowner): Write the current snapshot for debugging.
-      const snapshot = db.stateRoot.toJsObject();
+      const snapshot = FeatureFlags.enableFullNodeSnapshots ? db.stateRoot.toSnapshotObject() :
+          db.stateRoot.toJsObject();
       FileUtil.writeSnapshot(this.snapshotDir, block.number, snapshot, true);
 
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.

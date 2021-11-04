@@ -108,12 +108,18 @@ class DB {
     return this.restFunctionsUrlWhitelistCache.whitelist;
   }
 
-  initDbStates(snapshot) {
-    if (snapshot) {
-      this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.OWNERS_ROOT])));
-      this.writeDatabase([PredefinedDbPaths.RULES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.RULES_ROOT])));
-      this.writeDatabase([PredefinedDbPaths.VALUES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.VALUES_ROOT])));
-      this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.FUNCTIONS_ROOT])));
+  initDbStates(snapshot = null) {
+    if (snapshot !== null) {
+      if (FeatureFlags.enableFullNodeSnapshots) {
+        const newRoot = StateNode.fromSnapshotObject(snapshot);
+        updateStateInfoForStateTree(newRoot);
+        this.replaceStateRoot(newRoot);
+      } else {
+        this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.OWNERS_ROOT])));
+        this.writeDatabase([PredefinedDbPaths.RULES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.RULES_ROOT])));
+        this.writeDatabase([PredefinedDbPaths.VALUES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.VALUES_ROOT])));
+        this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.FUNCTIONS_ROOT])));
+      }
     } else {
       // Initialize DB owners.
       this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
@@ -154,6 +160,22 @@ class DB {
     this.stateVersion = stateVersion;
     this.stateRoot = stateRoot;
 
+    return true;
+  }
+
+  /**
+   * Replaces the state root.
+   *
+   * @param {StateNode} newRoot new root to replace with
+   */
+  replaceStateRoot(newRoot) {
+    const LOG_HEADER = 'replaceStateRoot';
+    if (this.stateVersion === null) {
+      logger.error(`[${LOG_HEADER}] Null state version: ${this.stateVersion}`);
+      return false;
+    }
+    this.stateManager.setRoot(this.stateVersion, newRoot);
+    this.stateRoot = newRoot;
     return true;
   }
 
@@ -292,11 +314,11 @@ class DB {
     return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager);
   }
 
-  dumpDbStates(options) {
+  snapshotDbStates() {
     if (this.stateRoot === null) {
       return null;
     }
-    return this.stateRoot.toJsObject(options);
+    return this.stateRoot.toSnapshotObject();
   }
 
   // For testing purpose only.

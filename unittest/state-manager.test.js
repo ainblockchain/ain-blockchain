@@ -29,14 +29,14 @@ describe("state-manager", () => {
     beforeEach(() => {
       const finalRoot = new StateNode();
       finalRoot.setValue('final value');
-      manager._setRoot(finalVersion, finalRoot);
+      manager.setRoot(finalVersion, finalRoot);
       manager.finalizeVersion(finalVersion);
     })
 
     it("numVersions", () => {
       expect(manager.numVersions()).to.equal(2);
       const newRoot = new StateNode();
-      manager._setRoot('new version', newRoot);
+      manager.setRoot('new version', newRoot);
       expect(manager.numVersions()).to.equal(3);
     });
 
@@ -79,17 +79,17 @@ describe("state-manager", () => {
     beforeEach(() => {
       const finalRoot = new StateNode();
       finalRoot.setValue(finalVersion);
-      manager._setRoot(finalVersion, finalRoot);
+      manager.setRoot(finalVersion, finalRoot);
       manager.finalizeVersion(finalVersion);
     })
 
-    describe("_setRoot", () => {
-      it("_setRoot", () => {
+    describe("setRoot", () => {
+      it("setRoot", () => {
         expect(manager.numVersions()).to.equal(2);
 
         const newRoot = new StateNode();
         newRoot.setValue('some value');
-        manager._setRoot('new version', newRoot);
+        manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
         expect(manager.hasVersion(StateVersions.EMPTY)).to.equal(true);
         expect(manager.hasVersion(finalVersion)).to.equal(true);
@@ -126,7 +126,7 @@ describe("state-manager", () => {
       it("cloneVersion", () => {
         const newRoot = new StateNode();
         newRoot.setValue('some value');
-        manager._setRoot('new version', newRoot);
+        manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
         assert.deepEqual(
             manager.getVersionList(), [StateVersions.EMPTY, finalVersion, 'new version']);
@@ -151,7 +151,7 @@ describe("state-manager", () => {
       it("transferStateTree w/ existing version", () => {
         const newRoot = new StateNode();
         newRoot.setValue('some value');
-        manager._setRoot('new version', newRoot);
+        manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
         assert.deepEqual(
             manager.getVersionList(), [StateVersions.EMPTY, finalVersion, 'new version']);
@@ -162,7 +162,7 @@ describe("state-manager", () => {
       it("transferStateTree w/ non-existing version", () => {
         const newRoot = new StateNode();
         newRoot.setValue('some value');
-        manager._setRoot('new version', newRoot);
+        manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
         assert.deepEqual(
             manager.getVersionList(), [StateVersions.EMPTY, finalVersion, 'new version']);
@@ -171,7 +171,7 @@ describe("state-manager", () => {
       });
 
       it("transferStateTree w/ a version of null root", () => {
-        manager._setRoot('new version', null);
+        manager.setRoot('new version', null);
         expect(manager.numVersions()).to.equal(3);
         assert.deepEqual(
             manager.getVersionList(), [StateVersions.EMPTY, finalVersion, 'new version']);
@@ -184,7 +184,7 @@ describe("state-manager", () => {
       it("deleteVersion w/ non-final version", () => {
         const newRoot = new StateNode();
         newRoot.setValue('some value');
-        manager._setRoot('new version', newRoot);
+        manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
         expect(manager.hasVersion(StateVersions.EMPTY)).to.equal(true);
         expect(manager.hasVersion(finalVersion)).to.equal(true);
@@ -222,7 +222,7 @@ describe("state-manager", () => {
       it("finalizeVersion w/ non-final version", () => {
         const newRoot = new StateNode();
         newRoot.setValue('some value');
-        manager._setRoot('new version', newRoot);
+        manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
         expect(manager.hasVersion(StateVersions.EMPTY)).to.equal(true);
         expect(manager.hasVersion(finalVersion)).to.equal(true);
@@ -248,7 +248,7 @@ describe("state-manager", () => {
       it("finalizeVersion w/ final version", () => {
         const newRoot = new StateNode();
         newRoot.setValue('some value');
-        manager._setRoot('new version', newRoot);
+        manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
         expect(manager.hasVersion(StateVersions.EMPTY)).to.equal(true);
         expect(manager.hasVersion(finalVersion)).to.equal(true);

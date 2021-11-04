@@ -34,6 +34,8 @@ const FeatureFlags = {
   enableTrafficMonitoring: true,
   // Enables state info updates.
   enableStateInfoUpdates: true,
+  // Enables full node snapshots.
+  enableFullNodeSnapshots: false,
 };
 
 // ** Environment variables **
