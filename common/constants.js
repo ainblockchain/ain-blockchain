@@ -469,7 +469,6 @@ const ShardingProperties = {
   LATEST_BLOCK_NUMBER: 'latest_block_number',
   PARENT_CHAIN_POC: 'parent_chain_poc',
   PROOF_HASH: 'proof_hash',
-  PROOF_HASH_GC_MAX_SIBLINGS: 'proof_hash_gc_max_siblings',
   PROOF_HASH_MAP: 'proof_hash_map',
   REPORTING_PERIOD: 'reporting_period',
   SHARD_OWNER: 'shard_owner',
