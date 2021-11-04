@@ -3251,7 +3251,7 @@ describe("radix-tree", () => {
       expect(stateNodeAnother1.numParentRadixNodes()).to.equal(1);  // decreased!!
     });
 
-    it("fromJsObjectWithFullNodes / toJsObjectWithFullNodes", () => {
+    it("fromSnapshotObject / toSnapshotObject", () => {
       const label1 = '0x000aaa';
       const label2 = '0x000bbb';
       const label21 = '0x000bbb111';
@@ -3278,8 +3278,8 @@ describe("radix-tree", () => {
       stateNode21.setLabel(label21);
       stateNode22.setLabel(label22);
 
-      // toJsObjectWithFullNodes()
-      const jsObj = tree.toJsObjectWithFullNodes();
+      // toSnapshotObject()
+      const jsObj = tree.toSnapshotObject();
       assert.deepEqual(jsObj, {
         "#next_serial": 10,
         "#radix:000": {
@@ -3314,8 +3314,8 @@ describe("radix-tree", () => {
         "#version": "ver",
       });
 
-      // fromJsObjectWithFullNodes()
-      assert.deepEqual(RadixTree.fromJsObjectWithFullNodes(jsObj).toJsObjectWithFullNodes(), {
+      // fromSnapshotObject()
+      assert.deepEqual(RadixTree.fromSnapshotObject(jsObj).toSnapshotObject(), {
         "#next_serial": 10,
         "#radix:000": {
           "#radix:aaa": {
@@ -3348,7 +3348,7 @@ describe("radix-tree", () => {
         "#serial": 0,
         "#version": "ver",
       });
-      //assert.deepEqual(RadixTree.fromJsObjectWithFullNodes(jsObj).toJsObjectWithFullNodes(), jsObj);
+      //assert.deepEqual(RadixTree.fromSnapshotObject(jsObj).toSnapshotObject(), jsObj);
     });
   });
 });

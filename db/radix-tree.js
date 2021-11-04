@@ -432,8 +432,8 @@ class RadixTree {
   /**
    * Constructs a radix tree from the given js object with full nodes.
    */
-  static fromJsObjectWithFullNodes(obj) {
-    const root = RadixNode.fromJsObjectWithFullNodes(obj);
+  static fromSnapshotObject(obj) {
+    const root = RadixNode.fromSnapshotObject(obj);
     const version = root.getVersion();
     const tree = new RadixTree(version);
     tree.root = root;
@@ -444,8 +444,8 @@ class RadixTree {
   /**
    * Converts this radix tree to a js object with full nodes.
    */
-  toJsObjectWithFullNodes() {
-    return this.root.toJsObjectWithFullNodes(this.nextSerial);
+  toSnapshotObject() {
+    return this.root.toSnapshotObject(this.nextSerial);
   }
 
   /**
