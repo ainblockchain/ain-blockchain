@@ -72,22 +72,86 @@ class StateNode {
     return sizeof(this.value) + 160;
   }
 
-  static fromJsObject(obj, version) {
-    const node = new StateNode(version);
+  /**
+   * Returns a state tree with child indices constructed from the given javascript object.
+   * 
+   * @param {Object} obj input javascript object
+   * @param {String} version version of the state nodes
+   * @returns root node of the state tree
+   */
+  static fromJsObjectWithChildIndex(obj, version) {
+    const curNode = new StateNode(version);
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
         for (const key in obj) {
-          if (_.startsWith(key, STATE_INFO_PREFIX)) {
+          if (_.startsWith(key, STATE_INFO_PREFIX) &&
+              !_.startsWith(key, StateInfoProperties.CHILD_INDEX)) {
+            // Skip non-child-index state properties.
             continue;
           }
           const childObj = obj[key];
-          node.setChild(key, StateNode.fromJsObject(childObj, version));
+          curNode.setChild(key, StateNode.fromJsObjectWithChildIndex(childObj, version));
         }
       }
     } else {
-      node.setValue(obj);
+      curNode.setValue(obj);
     }
-    return node;
+    return curNode;
+  }
+
+  /**
+   * Orders child nodes by the child indices and the insertion order.
+   * 
+   * @param {StateNode} curNode current node
+   * @returns root node of the state tree
+   */
+  static orderChildrenByChildIndex(curNode) {
+    // Phase I: Get the child node list with their child indices and insertion order.
+    const childList = [];
+    let insertionIndex = 0;
+    for (const childLabel of curNode.getChildLabels()) {
+      if (_.startsWith(childLabel, StateInfoProperties.CHILD_INDEX)) {
+        // Skip child-index state properties.
+        continue;
+      }
+      const childNode = curNode.getChild(childLabel);
+      const childIndexNode = childNode.getIsLeaf() ?
+          curNode.getChild(`${StateInfoProperties.CHILD_INDEX}:${childLabel}`) :
+          childNode.getChild(StateInfoProperties.CHILD_INDEX);
+      let childIndex = Number.MAX_SAFE_INTEGER;
+      if (childIndexNode && CommonUtil.isNumber(childIndexNode.getValue())) {
+        childIndex = childIndexNode.getValue();
+      }
+      curNode.deleteChild(childLabel);
+      childList.push({
+        label: childLabel,
+        node: childNode,
+        childIndex: childIndex,
+        insertionIndex: insertionIndex++,
+      })
+    }
+    // Delete all remaining children.
+    for (const childLabel of curNode.getChildLabels()) {
+      curNode.deleteChild(childLabel);
+    }
+    // Phase II: Sort the child node list by their child indices and insertion order.
+    const sorted = childList.sort((a, b) => {
+      if (a.childIndex != b.childIndex) {
+        return a.childIndex - b.childIndex;
+      }
+      return a.insertionIndex - b.insertionIndex;
+    });
+    // Phase III: Add child nodes by the new order.
+    for (const child of sorted) {
+      curNode.setChild(child.label, StateNode.orderChildrenByChildIndex(child.node));
+    }
+
+    return curNode;
+  }
+
+  static fromJsObject(obj, version) {
+    const root = StateNode.fromJsObjectWithChildIndex(obj, version);
+    return StateNode.orderChildrenByChildIndex(root);
   }
 
   toJsObject(options) {

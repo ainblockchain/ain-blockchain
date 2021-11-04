@@ -298,15 +298,15 @@ describe("state-node", () => {
     it("internal node", () => {
       const ver1 = 'ver1';
       const stateObj = {
-        str01: 'str01',
-        str02: 200,
-        subobj1: {
-          str11: 'str11',
-          str12: 1200,
+        a: 'str_a',
+        b: 200,
+        c: {
+          ca: 'str_ca',
+          cb: 1200,
         },
-        subobj2: {
-          str21: 'str21',
-          str22: 2200,
+        d: {
+          da: 'str_da',
+          db: 2200,
         }
       };
       const stateTree = StateNode.fromJsObject(stateObj, ver1);
@@ -315,118 +315,118 @@ describe("state-node", () => {
       // includeVersion = true
       assert.deepEqual(stateTree.toJsObject({ includeVersion: true }), {
         "#version": "ver1",
-        "#version:str01": "ver1",
-        "#version:str02": "ver1",
-        "str01": "str01",
-        "str02": 200,
-        "subobj1": {
+        "#version:a": "ver1",
+        "#version:b": "ver1",
+        "a": "str_a",
+        "b": 200,
+        "c": {
           "#version": "ver1",
-          "#version:str11": "ver1",
-          "#version:str12": "ver1",
-          "str11": "str11",
-          "str12": 1200,
+          "#version:ca": "ver1",
+          "#version:cb": "ver1",
+          "ca": "str_ca",
+          "cb": 1200,
         },
-        "subobj2": {
+        "d": {
           "#version": "ver1",
-          "#version:str21": "ver1",
-          "#version:str22": "ver1",
-          "str21": "str21",
-          "str22": 2200,
+          "#version:da": "ver1",
+          "#version:db": "ver1",
+          "da": "str_da",
+          "db": 2200,
         }
       });
 
       // includeTreeInfo = true
       assert.deepEqual(stateTree.toJsObject({ includeTreeInfo: true }), {
         "#num_parents": 0,
-        "#num_parents:str01": 1,
-        "#num_parents:str02": 1,
-        "#tree_bytes": 1582,
-        "#tree_bytes:str01": 170,
-        "#tree_bytes:str02": 168,
+        "#num_parents:a": 1,
+        "#num_parents:b": 1,
+        "#tree_bytes": 1522,
+        "#tree_bytes:a": 170,
+        "#tree_bytes:b": 168,
         "#tree_height": 2,
-        "#tree_height:str01": 0,
-        "#tree_height:str02": 0,
+        "#tree_height:a": 0,
+        "#tree_height:b": 0,
         "#tree_size": 9,
-        "#tree_size:str01": 1,
-        "#tree_size:str02": 1,
-        "str01": "str01",
-        "str02": 200,
-        "subobj1": {
+        "#tree_size:a": 1,
+        "#tree_size:b": 1,
+        "a": "str_a",
+        "b": 200,
+        "c": {
           "#num_parents": 1,
-          "#num_parents:str11": 1,
-          "#num_parents:str12": 1,
-          "#tree_bytes": 518,
-          "#tree_bytes:str11": 170,
-          "#tree_bytes:str12": 168,
+          "#num_parents:ca": 1,
+          "#num_parents:cb": 1,
+          "#tree_bytes": 508,
+          "#tree_bytes:ca": 172,
+          "#tree_bytes:cb": 168,
           "#tree_height": 1,
-          "#tree_height:str11": 0,
-          "#tree_height:str12": 0,
+          "#tree_height:ca": 0,
+          "#tree_height:cb": 0,
           "#tree_size": 3,
-          "#tree_size:str11": 1,
-          "#tree_size:str12": 1,
-          "str11": "str11",
-          "str12": 1200,
+          "#tree_size:ca": 1,
+          "#tree_size:cb": 1,
+          "ca": "str_ca",
+          "cb": 1200,
         },
-        "subobj2": {
+        "d": {
           "#num_parents": 1,
-          "#num_parents:str21": 1,
-          "#num_parents:str22": 1,
-          "#tree_bytes": 518,
-          "#tree_bytes:str21": 170,
-          "#tree_bytes:str22": 168,
+          "#num_parents:da": 1,
+          "#num_parents:db": 1,
+          "#tree_bytes": 508,
+          "#tree_bytes:da": 172,
+          "#tree_bytes:db": 168,
           "#tree_height": 1,
-          "#tree_height:str21": 0,
-          "#tree_height:str22": 0,
+          "#tree_height:da": 0,
+          "#tree_height:db": 0,
           "#tree_size": 3,
-          "#tree_size:str21": 1,
-          "#tree_size:str22": 1,
-          "str21": "str21",
-          "str22": 2200,
+          "#tree_size:da": 1,
+          "#tree_size:db": 1,
+          "da": "str_da",
+          "db": 2200,
         }
       });
 
       // includeProof = true
       assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
-        "#state_ph": "0x5cc9d4e0cbd4976e88ee75fb5e4191d468dcfad348c8e2259628f475a9e707d4",
-        "#state_ph:str01": "0x497b9cbb642630206b4268dc296bff12d71a5ba80f839c94a20e135eb2c2258e",
-        "#state_ph:str02": "0xd18f7d1798901b66c318da94cc5eb8d954f7b53d7206fe54469b46e88505b524",
-        "str01": "str01",
-        "str02": 200,
-        "subobj1": {
-          "#state_ph": "0xeaa75601c557e2d190ccbe2a1feb4a46d83347fda83b6b68550d7a313261cc29",
-          "#state_ph:str11": "0x7e6a10bc94238515d1f386def42e2eea7a522af93a0433732a777f82dfd89539",
-          "#state_ph:str12": "0xa9fce7f26e612d7075711f56536bebf1367eab988f73ec32961c24117b7c4c6d",
-          "str11": "str11",
-          "str12": 1200,
+        "#state_ph": "0xfe4f999d2f9f44b2453ea833fe85ce2129da0417f57451f74e7649a4c32536e3",
+        "#state_ph:a": "0xc9040497a73c7fa9cbe01a045e446f5a47dec8e09f46fefd983bd591f637c296",
+        "#state_ph:b": "0xd18f7d1798901b66c318da94cc5eb8d954f7b53d7206fe54469b46e88505b524",
+        "a": "str_a",
+        "b": 200,
+        "c": {
+          "#state_ph": "0xacc963071682d6b4115f0051c8f6b97682e3a69e7a999a2506c780f3c3745799",
+          "#state_ph:ca": "0x1803ea1322e9d14397425d8ed561b57413674e61f24ea1bc6ff9999bf35c8ce0",
+          "#state_ph:cb": "0xa9fce7f26e612d7075711f56536bebf1367eab988f73ec32961c24117b7c4c6d",
+          "ca": "str_ca",
+          "cb": 1200,
         },
-        "subobj2": {
-          "#state_ph": "0x024daff3b1a45c2ac6eeb91a67ebe2c82cb4ef4744c105c543ca5a602b013853",
-          "#state_ph:str21": "0x7a17707de8439ee72c68a39389efd4b347ba36a513548731a320d83566379242",
-          "#state_ph:str22": "0x9ec9f212475947ed2c2398cb947da5be9a9c58887bdb8a0ccc856cb7b5ad53cf",
-          "str21": "str21",
-          "str22": 2200,
+        "d": {
+          "#state_ph": "0xa24b96cf34fb0720b5c677c75a233d67e67d1d1e8ebbf9789406c9ba422ddfba",
+          "#state_ph:da": "0xc3326d413c73a0c17d13dea87e8d0cd2d5c3e9561a269c6699e9c85ba349913f",
+          "#state_ph:db": "0x9ec9f212475947ed2c2398cb947da5be9a9c58887bdb8a0ccc856cb7b5ad53cf",
+          "da": "str_da",
+          "db": 2200,
         }
       });
 
       // includeChildIndex = true
       assert.deepEqual(stateTree.toJsObject({ includeChildIndex: true }), {
-        "#child_index:str01": 0,
-        "#child_index:str02": 1,
-        "str01": "str01",
-        "str02": 200,
-        "subobj1": {
+        "#child_index:a": 0,
+        "#child_index:b": 1,
+        "a": "str_a",
+        "b": 200,
+        "c": {
           "#child_index": 2,
-          "#child_index:str11": 0,
-          "#child_index:str12": 1,
-          "str11": "str11",
-          "str12": 1200,
+          "#child_index:ca": 0,
+          "#child_index:cb": 1,
+          "ca": "str_ca",
+          "cb": 1200,
         },
-        "subobj2": {
+        "d": {
           "#child_index": 3,
-          "#child_index:str21": 0,
-          "#child_index:str22": 1,
-          "str21": "str21",
-          "str22": 2200,
+          "#child_index:da": 0,
+          "#child_index:db": 1,
+          "da": "str_da",
+          "db": 2200,
         }
       });
     })
@@ -456,15 +456,15 @@ describe("state-node", () => {
   describe("fromJsObject", () => {
     const ver1 = 'ver1';
     const stateObj = {
-      str01: 'str01',
-      str02: 200,
-      subobj1: {
-        str11: 'str11',
-        str12: 1200,
+      a: 'str_a',
+      b: 200,
+      c: {
+        ca: 'str_ca',
+        cb: 1200,
       },
-      subobj2: {
-        str21: 'str21',
-        str22: 2200,
+      d: {
+        da: 'str_da',
+        db: 2200,
       }
     };
     const stateTree = StateNode.fromJsObject(stateObj, ver1);
@@ -472,12 +472,104 @@ describe("state-node", () => {
 
     it("without options", () => {
       const stateObjWithoutOptions = stateTree.toJsObject();
-      assert.deepEqual(StateNode.fromJsObject(stateObjWithoutOptions).toJsObject(), stateObj);
+      const stateTreeParsed = StateNode.fromJsObject(stateObjWithoutOptions);
+
+      // child order
+      assert.deepEqual(stateTreeParsed.getChildLabels(), [
+        "a",
+        "b",
+        "c",
+        "d",
+      ]);
+      // compare the objects
+      assert.deepEqual(stateTreeParsed.toJsObject(), stateObj);
     })
 
     it("with options", () => {
       const stateObjWithOptions = stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL);
-      assert.deepEqual(StateNode.fromJsObject(stateObjWithOptions).toJsObject(), stateObj);
+      const stateTreeParsed = StateNode.fromJsObject(stateObjWithOptions);
+
+      // child order
+      assert.deepEqual(stateTreeParsed.getChildLabels(), [
+        "a",
+        "b",
+        "c",
+        "d",
+      ]);
+      // compare the objects
+      assert.deepEqual(stateTreeParsed.toJsObject(), stateObj);
+    })
+
+    it("with altered child indices", () => {
+      const stateObjWithChildIndex = stateTree.toJsObject({ includeChildIndex: true });
+      // original child order
+      assert.deepEqual(stateTree.getChildLabels(), [
+        "a",
+        "b",
+        "c",
+        "d",
+      ]);
+      // original child indices
+      assert.deepEqual(stateObjWithChildIndex, {
+        "#child_index:a": 0,
+        "#child_index:b": 1,
+        "a": "str_a",
+        "b": 200,
+        "c": {
+          "#child_index": 2,
+          "#child_index:ca": 0,
+          "#child_index:cb": 1,
+          "ca": "str_ca",
+          "cb": 1200,
+        },
+        "d": {
+          "#child_index": 3,
+          "#child_index:da": 0,
+          "#child_index:db": 1,
+          "da": "str_da",
+          "db": 2200,
+        }
+      });
+
+      // alter child indices
+      stateObjWithChildIndex['#child_index:a'] = 3;
+      stateObjWithChildIndex['#child_index:b'] = 1;
+      stateObjWithChildIndex['c']['#child_index'] = 2;
+      stateObjWithChildIndex['d']['#child_index'] = 0;
+      stateObjWithChildIndex['d']['#child_index:da'] = 1;
+      stateObjWithChildIndex['d']['#child_index:db'] = 0;
+      // altered child indices
+      assert.deepEqual(stateObjWithChildIndex, {
+        "#child_index:a": 3,
+        "#child_index:b": 1,
+        "a": "str_a",
+        "b": 200,
+        "c": {
+          "#child_index": 2,
+          "#child_index:ca": 0,
+          "#child_index:cb": 1,
+          "ca": "str_ca",
+          "cb": 1200,
+        },
+        "d": {
+          "#child_index": 0,
+          "#child_index:da": 1,
+          "#child_index:db": 0,
+          "da": "str_da",
+          "db": 2200,
+        }
+      });
+
+      const stateTreeParsed = StateNode.fromJsObject(stateObjWithChildIndex);
+      // altered child order
+      assert.deepEqual(stateTreeParsed.getChildLabels(), [
+        "d",
+        "b",
+        "c",
+        "a",
+      ]);
+      // compare the objects
+      assert.deepEqual(stateTreeParsed.toJsObject(), stateObj);
     })
   })
 
