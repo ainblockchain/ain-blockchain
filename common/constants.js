@@ -418,6 +418,7 @@ const FunctionTypes = {
  */
 const StateInfoProperties = {
   CHILD_INDEX: '#child_index',
+  NEXT_SERIAL: '#next_serial',
   NUM_PARENTS: '#num_parents',
   RADIX_LABEL_PREFIX: '#radix:',
   RADIX_PROOF_HASH: '#radix_ph',
