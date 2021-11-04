@@ -1844,7 +1844,7 @@ class DB {
     }
     const stateRuleObj = stateRuleConfig[RuleProperties.STATE];
     if (CommonUtil.isEmpty(stateRuleObj)) {
-      return false;
+      return true;
     }
     if (!stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
       return true;
