@@ -490,6 +490,16 @@ app.get('/dump_final_db_states', (req, res) => {
     .end();
 });
 
+// TODO(platfowner): Support for subtree dumping (i.e. with ref path).
+app.get('/snapshot_final_db_states', (req, res) => {
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
+  const result = node.snapshotFinalDbStates();
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: 0, result })
+    .end();
+});
+
 app.get('/tx_pool_size_util', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
   const address = req.query.address;
