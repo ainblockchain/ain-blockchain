@@ -73,6 +73,26 @@ class StateNode {
   }
 
   /**
+   * Constructs a sub-tree from the given js object with full nodes.
+   */
+  static fromJsObjectWithFullNodes(obj) {
+    const node = new StateNode();
+    node.setValue('val');
+    return node;
+    // TODO(platfowner): implement this.
+  }
+
+  /**
+   * Converts this sub-tree to a js object with full nodes.
+   */
+  toJsObjectWithFullNodes() {
+    if (this.getIsLeaf()) {
+      return this.getValue();
+    }
+    return this.radixTree.toJsObjectWithFullNodes();
+  }
+
+  /**
    * Returns a state tree with child indices constructed from the given javascript object.
    * 
    * @param {Object} obj input javascript object
@@ -149,11 +169,17 @@ class StateNode {
     return curNode;
   }
 
+  /**
+   * Constructs a sub-tree from the given js object.
+   */
   static fromJsObject(obj, version) {
     const root = StateNode.fromJsObjectWithChildIndex(obj, version);
     return StateNode.orderChildrenByChildIndex(root);
   }
 
+  /**
+   * Converts this sub-tree to a js object.
+   */
   toJsObject(options) {
     const isShallow = options && options.isShallow;
     const includeVersion = options && options.includeVersion;

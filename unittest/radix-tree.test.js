@@ -10,7 +10,7 @@ describe("radix-tree", () => {
     it("construct without version", () => {
       const tree = new RadixTree();
       expect(tree.version).to.equal(null);
-      expect(tree.nodeSerial).to.equal(1);
+      expect(tree.nextSerial).to.equal(1);
       expect(tree.numTerminalNodes).to.equal(0);
       expect(tree.root.getVersion()).to.equal(null);
       expect(tree.root.getSerial()).to.equal(0);
@@ -21,7 +21,7 @@ describe("radix-tree", () => {
       const version = 'ver';
       const tree = new RadixTree(version);
       expect(tree.version).to.equal(version);
-      expect(tree.nodeSerial).to.equal(1);
+      expect(tree.nextSerial).to.equal(1);
       expect(tree.numTerminalNodes).to.equal(0);
       expect(tree.root.getVersion()).to.equal(version);
       expect(tree.root.getSerial()).to.equal(0);
@@ -32,7 +32,7 @@ describe("radix-tree", () => {
       const parentStateNode = new StateNode();
       const tree = new RadixTree(null, parentStateNode);
       expect(tree.version).to.equal(null);
-      expect(tree.nodeSerial).to.equal(1);
+      expect(tree.nextSerial).to.equal(1);
       expect(tree.numTerminalNodes).to.equal(0);
       expect(tree.root.getVersion()).to.equal(null);
       expect(tree.root.getSerial()).to.equal(0);
@@ -119,7 +119,7 @@ describe("radix-tree", () => {
 
       assert.deepEqual(cloned.root.getParentStateNode(), parentStateNode2);
       expect(cloned.version).to.equal(version2);
-      expect(cloned.nodeSerial).to.equal(tree.nodeSerial);
+      expect(cloned.nextSerial).to.equal(tree.nextSerial);
       expect(cloned.numTerminalNodes).to.equal(4);
       assert.deepEqual(cloned.toJsObject(true, true), {
         "#serial": 0,
@@ -178,19 +178,19 @@ describe("radix-tree", () => {
       expect(node1.getVersion()).to.equal(version);
       expect(node1.getSerial()).to.equal(1);
       expect(node1.getParentStateNode()).to.equal(null);
-      expect(tree.nodeSerial).to.equal(2);
+      expect(tree.nextSerial).to.equal(2);
 
       const node2 = tree._newRadixNode();
       expect(node2.getVersion()).to.equal(version);
       expect(node2.getSerial()).to.equal(2);
       expect(node2.getParentStateNode()).to.equal(null);
-      expect(tree.nodeSerial).to.equal(3);
+      expect(tree.nextSerial).to.equal(3);
 
       const node3 = tree._newRadixNode();
       expect(node3.getVersion()).to.equal(version);
       expect(node3.getSerial()).to.equal(3);
       expect(node3.getParentStateNode()).to.equal(null);
-      expect(tree.nodeSerial).to.equal(4);
+      expect(tree.nextSerial).to.equal(4);
     });
   });
 
@@ -3249,6 +3249,106 @@ describe("radix-tree", () => {
       expect(stateNode21.numParentRadixNodes()).to.equal(1);
       expect(stateNode22.numParentRadixNodes()).to.equal(1);
       expect(stateNodeAnother1.numParentRadixNodes()).to.equal(1);  // decreased!!
+    });
+
+    it("fromJsObjectWithFullNodes / toJsObjectWithFullNodes", () => {
+      const label1 = '0x000aaa';
+      const label2 = '0x000bbb';
+      const label21 = '0x000bbb111';
+      const label22 = '0x000bbb222';
+
+      const stateNode1 = new StateNode(version);
+      const stateNode2 = new StateNode(version);
+      const stateNode21 = new StateNode(version);
+      const stateNode22 = new StateNode(version);
+
+      // set state nodes
+      tree.set(label1, stateNode1);
+      tree.set(label2, stateNode2);
+      tree.set(label21, stateNode21);
+      tree.set(label22, stateNode22);
+
+      stateNode1.setValue('value1');
+      stateNode2.setValue('value2');
+      stateNode21.setValue('value21');
+      stateNode22.setValue('value22');
+
+      stateNode1.setLabel(label1);
+      stateNode2.setLabel(label2);
+      stateNode21.setLabel(label21);
+      stateNode22.setLabel(label22);
+
+      // toJsObjectWithFullNodes()
+      const jsObj = tree.toJsObjectWithFullNodes();
+      assert.deepEqual(jsObj, {
+        "#next_serial": 10,
+        "#radix:000": {
+          "#radix:aaa": {
+            "#serial": 2,
+            "#state:0x000aaa": "value1",
+            "#version": "ver",
+            "#version:0x000aaa": "ver",
+          },
+          "#radix:bbb": {
+            "#radix:111": {
+              "#serial": 7,
+              "#state:0x000bbb111": "value21",
+              "#version": "ver",
+              "#version:0x000bbb111": "ver",
+            },
+            "#radix:222": {
+              "#serial": 9,
+              "#state:0x000bbb222": "value22",
+              "#version": "ver",
+              "#version:0x000bbb222": "ver",
+            },
+            "#serial": 5,
+            "#state:0x000bbb": "value2",
+            "#version": "ver",
+            "#version:0x000bbb": "ver",
+          },
+          "#serial": 3,
+          "#version": "ver",
+        },
+        "#serial": 0,
+        "#version": "ver",
+      });
+
+      // fromJsObjectWithFullNodes()
+      assert.deepEqual(RadixTree.fromJsObjectWithFullNodes(jsObj).toJsObjectWithFullNodes(), {
+        "#next_serial": 10,
+        "#radix:000": {
+          "#radix:aaa": {
+            "#serial": 2,
+            "#state:0x000aaa": "val",
+            "#version": "ver",
+            "#version:0x000aaa": "ver",
+          },
+          "#radix:bbb": {
+            "#radix:111": {
+              "#serial": 7,
+              "#state:0x000bbb111": "val",
+              "#version": "ver",
+              "#version:0x000bbb111": "ver",
+            },
+            "#radix:222": {
+              "#serial": 9,
+              "#state:0x000bbb222": "val",
+              "#version": "ver",
+              "#version:0x000bbb222": "ver",
+            },
+            "#serial": 5,
+            "#state:0x000bbb": "val",
+            "#version": "ver",
+            "#version:0x000bbb": "ver",
+          },
+          "#serial": 3,
+          "#version": "ver",
+        },
+        "#serial": 0,
+        "#version": "ver",
+      });
+      //assert.deepEqual(RadixTree.fromJsObjectWithFullNodes(jsObj).toJsObjectWithFullNodes(), jsObj);
     });
   });
 });

@@ -1152,6 +1152,7 @@ describe("radix-node", () => {
     let parentStateNode1;
     let parentStateNode21;
     let parentStateNode22;
+    let stateNode;
     let childStateNode1;
     let childStateNode2;
     let childStateNode21;
@@ -1177,6 +1178,7 @@ describe("radix-node", () => {
       stateNode = new StateNode();
       stateNode.setVersion('stateNodeVer');
       stateNode.setProofHash('stateNodePH');
+      stateNode.setValue('value');
       stateNode.setTreeHeight(1);
       stateNode.setTreeSize(10);
       stateNode.setTreeBytes(100);
@@ -1184,6 +1186,7 @@ describe("radix-node", () => {
       childStateNode1 = new StateNode();
       childStateNode1.setVersion('childStateNodeVer1');
       childStateNode1.setProofHash('childStateNodePH1');
+      childStateNode1.setValue('value1');
       childStateNode1.setTreeHeight(2);
       childStateNode1.setTreeSize(20);
       childStateNode1.setTreeBytes(200);
@@ -1191,6 +1194,7 @@ describe("radix-node", () => {
       childStateNode2 = new StateNode();
       childStateNode2.setVersion('childStateNodeVer2');
       childStateNode2.setProofHash('childStateNodePH2');
+      childStateNode2.setValue('value2');
       childStateNode2.setTreeHeight(3);
       childStateNode2.setTreeSize(30);
       childStateNode2.setTreeBytes(300);
@@ -1198,6 +1202,7 @@ describe("radix-node", () => {
       childStateNode21 = new StateNode();
       childStateNode21.setVersion('childStateNodeVer21');
       childStateNode21.setProofHash('childStateNodePH21');
+      childStateNode21.setValue('value21');
       childStateNode21.setTreeHeight(4);
       childStateNode21.setTreeSize(40);
       childStateNode21.setTreeBytes(400);
@@ -1205,6 +1210,7 @@ describe("radix-node", () => {
       childStateNode22 = new StateNode();
       childStateNode22.setVersion('childStateNodeVer22');
       childStateNode22.setProofHash('childStateNodePH22');
+      childStateNode22.setValue('value22');
       childStateNode22.setTreeHeight(5);
       childStateNode22.setTreeSize(50);
       childStateNode22.setTreeBytes(500);
@@ -1486,6 +1492,74 @@ describe("radix-node", () => {
       expect(childStateNode22.numParentRadixNodes()).to.equal(1);
       expect(stateNodeAnother.numParentRadixNodes()).to.equal(0);  // decreased!!
       expect(childStateNodeAnother1.numParentRadixNodes()).to.equal(1);  // decreased!!
+    });
+
+    it("fromJsObjectWithFullNodes / toJsObjectWithFullNodes", () => {
+      // toJsObjectWithFullNodes()
+      const jsObj = node.toJsObjectWithFullNodes();
+      assert.deepEqual(jsObj, {
+        "#radix:1001": {
+          "#serial": 3,
+          "#state:1001": "value1",
+          "#version": "ver",
+          "#version:1001": "childStateNodeVer1",
+        },
+        "#radix:2002": {
+          "#radix:1021": {
+            "#serial": 2,
+            "#state:1021": "value21",
+            "#version": "ver",
+            "#version:1021": "childStateNodeVer21",
+          },
+          "#radix:2022": {
+            "#serial": 1,
+            "#state:2022": "value22",
+            "#version": "ver",
+            "#version:2022": "childStateNodeVer22",
+          },
+          "#serial": 4,
+          "#state:2002": "value2",
+          "#version": "ver",
+          "#version:2002": "childStateNodeVer2",
+        },
+        "#serial": 0,
+        "#state:0000": "value",
+        "#version": "ver",
+        "#version:0000": "stateNodeVer",
+      });
+
+      // fromJsObjectWithFullNodes()
+      assert.deepEqual(RadixNode.fromJsObjectWithFullNodes(jsObj).toJsObjectWithFullNodes(), {
+        "#radix:1001": {
+          "#serial": 3,
+          "#state:1001": "val",
+          "#version": "ver",
+          "#version:1001": "childStateNodeVer1",
+        },
+        "#radix:2002": {
+          "#radix:1021": {
+            "#serial": 2,
+            "#state:1021": "val",
+            "#version": "ver",
+            "#version:1021": "childStateNodeVer21",
+          },
+          "#radix:2022": {
+            "#serial": 1,
+            "#state:2022": "val",
+            "#version": "ver",
+            "#version:2022": "childStateNodeVer22",
+          },
+          "#serial": 4,
+          "#state:2002": "val",
+          "#version": "ver",
+          "#version:2002": "childStateNodeVer2",
+        },
+        "#serial": 0,
+        "#state:0000": "val",
+        "#version": "ver",
+        "#version:0000": "stateNodeVer",
+      });
+      //assert.deepEqual(RadixNode.fromJsObjectWithFullNodes(jsObj).toJsObjectWithFullNodes(), jsObj);
     });
 
     it("toJsObject", () => {

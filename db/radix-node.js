@@ -1,5 +1,6 @@
 const logger = new (require('../logger'))('RADIX_NODE');
 
+const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
@@ -546,8 +547,84 @@ class RadixNode {
     return numAffectedNodes;
   }
 
+  static parseChildStateNode(obj) {
+    const StateNode = require('./state-node');
+    let childStateLabel = null;
+    let childStateObj = null;
+    for (const key in obj) {
+      if (_.startsWith(key, StateInfoProperties.STATE_LABEL_PREFIX)) {
+        childStateLabel = key.slice(StateInfoProperties.STATE_LABEL_PREFIX.length);
+        childStateObj = obj[key];
+      }
+    }
+    if (childStateLabel === null) {
+      return null;
+    }
+    const childStateNode = StateNode.fromJsObjectWithFullNodes(childStateObj);
+    childStateNode.setLabel(childStateLabel);
+    const version = obj[`${StateInfoProperties.VERSION}:${childStateLabel}`];
+    if (version) {
+      // leaf node case
+      childStateNode.setVersion(version);
+    }
+    return childStateNode;
+  }
+
   /**
-   * Converts the subtree to a js object.
+   * Constructs a sub-tree from the given js object with full nodes.
+   */
+  static fromJsObjectWithFullNodes(obj) {
+    const version = obj[StateInfoProperties.VERSION];
+    const serial = obj[StateInfoProperties.SERIAL];
+    const curNode = new RadixNode(version, serial);
+    const childStateNode = RadixNode.parseChildStateNode(obj);
+    if (childStateNode !== null) {
+      curNode.setChildStateNode(childStateNode);
+    }
+    for (const key in obj) {
+      if (_.startsWith(key, StateInfoProperties.RADIX_LABEL_PREFIX)) {
+        const childLabel = key.slice(StateInfoProperties.RADIX_LABEL_PREFIX.length);
+        const childObj = obj[key];
+        if (CommonUtil.isEmpty(childLabel)) {
+          return null;
+        }
+        const childNode = RadixNode.fromJsObjectWithFullNodes(childObj);
+        const childLabelRadix = childLabel.charAt(0);
+        const childLabelSuffix = childLabel.slice(1);
+        curNode.setChild(childLabelRadix, childLabelSuffix, childNode);
+      }
+    }
+    return curNode;
+  }
+
+  /**
+   * Converts this sub-tree to a js object with full nodes.
+   */
+  toJsObjectWithFullNodes(nextSerial = null) {
+    const obj = {};
+    if (nextSerial !== null) {
+      obj[StateInfoProperties.NEXT_SERIAL] = nextSerial;
+    }
+    obj[StateInfoProperties.VERSION] = this.getVersion();
+    obj[StateInfoProperties.SERIAL] = this.getSerial();
+    if (this.hasChildStateNode()) {
+      const childStateNode = this.getChildStateNode();
+      obj[StateInfoProperties.STATE_LABEL_PREFIX + childStateNode.getLabel()] =
+          childStateNode.toJsObjectWithFullNodes();
+      if (childStateNode.getIsLeaf()) {
+        obj[`${StateInfoProperties.VERSION}:${childStateNode.getLabel()}`] =
+            childStateNode.getVersion();
+      }
+    }
+    for (const child of this.getChildNodes()) {
+      obj[StateInfoProperties.RADIX_LABEL_PREFIX + child.getLabel()] =
+          child.toJsObjectWithFullNodes();
+    }
+    return obj;
+  }
+
+  /**
+   * Converts this sub-tree to a js object.
    * This is for testing / debugging purpose.
    */
   toJsObject(

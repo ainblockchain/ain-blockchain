@@ -2,7 +2,7 @@ const logger = new (require('../logger'))('RADIX_TREE');
 
 const CommonUtil = require('../common/common-util');
 const {
-  FeatureFlags,
+  StateInfoProperties,
 } = require('../common/constants');
 const RadixNode = require('./radix-node');
 
@@ -13,21 +13,21 @@ const RadixNode = require('./radix-node');
 class RadixTree {
   constructor(version = null, parentStateNode = null) {
     this.version = version;
-    this.nodeSerial = 0;
+    this.nextSerial = 0;
     this.root = this._newRadixNode(parentStateNode);
     this.numTerminalNodes = 0;
   }
 
   clone(version, parentStateNode) {
     const clonedTree = new RadixTree(version);
-    clonedTree.nodeSerial = this.nodeSerial;
+    clonedTree.nextSerial = this.nextSerial;
     clonedTree.root = this.root.clone(version, parentStateNode);
     clonedTree.numTerminalNodes = this.numTerminalNodes;
     return clonedTree;
   }
 
   _newRadixNode(parentStateNode = null) {
-    return new RadixNode(this.version, this.nodeSerial++, parentStateNode);
+    return new RadixNode(this.version, this.nextSerial++, parentStateNode);
   }
 
   static _toRadixLabel(stateLabel) {
@@ -220,7 +220,7 @@ class RadixTree {
     const node = this._getRadixNodeForSetting(stateLabel);
     if (!node.hasChildStateNode()) {
       // Update the node serial with a new value to keep the insertion order.
-      node.setSerial(this.nodeSerial++);
+      node.setSerial(this.nextSerial++);
       // Increase the number of the terminal numbers.
       this.numTerminalNodes++;
     }
@@ -430,7 +430,26 @@ class RadixTree {
   }
 
   /**
-   * Converts the tree to a javascript object.
+   * Constructs a radix tree from the given js object with full nodes.
+   */
+  static fromJsObjectWithFullNodes(obj) {
+    const root = RadixNode.fromJsObjectWithFullNodes(obj);
+    const version = root.getVersion();
+    const tree = new RadixTree(version);
+    tree.root = root;
+    tree.nextSerial = obj[StateInfoProperties.NEXT_SERIAL];
+    return tree;
+  }
+
+  /**
+   * Converts this radix tree to a js object with full nodes.
+   */
+  toJsObjectWithFullNodes() {
+    return this.root.toJsObjectWithFullNodes(this.nextSerial);
+  }
+
+  /**
+   * Converts this tree to a javascript object.
    * This is for testing / debugging purpose.
    */
   toJsObject(
