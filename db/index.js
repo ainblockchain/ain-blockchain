@@ -1472,14 +1472,14 @@ class DB {
       evalWriteRuleRes = !!this.evalWriteRuleConfig(
         matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
       if (!evalWriteRuleRes) {
-        logger.error(`[${LOG_HEADER}] evalWriteRuleRes ${evalWriteRuleRes}, ` +
+        logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${evalWriteRuleRes}, ` +
             `matched: ${JSON.stringify(matchedWriteRules, null, 2)}, data: ${JSON.stringify(data)}, ` +
             `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
             `timestamp: ${timestamp}\n`);
       }
       evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
       if (!evalStateRuleRes) {
-        logger.error(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
+        logger.debug(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
             `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
             `newValue: ${JSON.stringify(newValue)}\n`);
       }
