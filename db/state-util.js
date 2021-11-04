@@ -185,13 +185,13 @@ function sanitizeRuleConfig(rule) {
     if (rule[RuleProperties.STATE] === null) {
       CommonUtil.setJsObject(sanitized, [RuleProperties.STATE], null);
     } else {
-      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.STATE_MAX_CHILDREN)) {
-        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.STATE_MAX_CHILDREN],
-            rule[RuleProperties.STATE][RuleProperties.STATE_MAX_CHILDREN]);
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.MAX_CHILDREN],
+            rule[RuleProperties.STATE][RuleProperties.MAX_CHILDREN]);
       }
-      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.STATE_GC_MAX_SIBLINGS)) {
-        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.STATE_GC_MAX_SIBLINGS],
-            rule[RuleProperties.STATE][RuleProperties.STATE_GC_MAX_SIBLINGS]);
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.GC_MAX_SIBLINGS)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.GC_MAX_SIBLINGS],
+            rule[RuleProperties.STATE][RuleProperties.GC_MAX_SIBLINGS]);
       }
     }
   }
@@ -206,16 +206,16 @@ function isValidStateRule(stateRule) {
     return false;
   }
   let hasValidProperty = false;
-  if (stateRule.hasOwnProperty(RuleProperties.STATE_MAX_CHILDREN)) {
-    if (!CommonUtil.isNumber(stateRule[RuleProperties.STATE_MAX_CHILDREN]) ||
-        stateRule[RuleProperties.STATE_MAX_CHILDREN] <= 0) {
+  if (stateRule.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+    if (!CommonUtil.isNumber(stateRule[RuleProperties.MAX_CHILDREN]) ||
+        stateRule[RuleProperties.MAX_CHILDREN] <= 0) {
       return false;
     }
     hasValidProperty = true;
   }
-  if (stateRule.hasOwnProperty(RuleProperties.STATE_GC_MAX_SIBLINGS)) {
-    if (!CommonUtil.isNumber(stateRule[RuleProperties.STATE_GC_MAX_SIBLINGS]) ||
-      stateRule[RuleProperties.STATE_GC_MAX_SIBLINGS] <= 0) {
+  if (stateRule.hasOwnProperty(RuleProperties.GC_MAX_SIBLINGS)) {
+    if (!CommonUtil.isNumber(stateRule[RuleProperties.GC_MAX_SIBLINGS]) ||
+      stateRule[RuleProperties.GC_MAX_SIBLINGS] <= 0) {
       return false;
     }
     hasValidProperty = true;

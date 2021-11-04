@@ -384,8 +384,8 @@ const OwnerProperties = {
 const RuleProperties = {
   WRITE: 'write',
   STATE: 'state',
-  STATE_MAX_CHILDREN: 'max_children',
-  STATE_GC_MAX_SIBLINGS: 'gc_max_siblings',
+  MAX_CHILDREN: 'max_children',
+  GC_MAX_SIBLINGS: 'gc_max_siblings',
 };
 
 /**
