@@ -411,7 +411,7 @@ describe("state-node", () => {
             "#num_parents": 1,
             "#serial": 2,
             "#version": "ver1",
-            "a": {
+            "#state:a": {
               "#version": "ver1",
             }
           },
@@ -420,7 +420,7 @@ describe("state-node", () => {
             "#num_parents": 1,
             "#serial": 5,
             "#version": "ver1",
-            "b": {
+            "#state:b": {
               "#version": "ver1",
             }
           },
@@ -429,7 +429,7 @@ describe("state-node", () => {
             "#num_parents": 1,
             "#serial": 7,
             "#version": "ver1",
-            "c": {
+            "#state:c": {
               "#version": "ver1",
             }
           },
@@ -438,7 +438,7 @@ describe("state-node", () => {
             "#num_parents": 1,
             "#serial": 9,
             "#version": "ver1",
-            "d": {
+            "#state:d": {
               "#version": "ver1",
             }
           },
@@ -1563,27 +1563,27 @@ describe("state-node", () => {
         "#radix_ph": "0xea2df03d09e72671391dc8af7e9bc5e5d3ac9ae6d64cb78df2c27e391f89388e",
         "00aaaa": {
           "#radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c",
-          "0x00aaaa": {
+          "#state:0x00aaaa": {
             "#state_ph": "proofHash1",
           }
         },
         "11bb": {
           "11": {
             "#radix_ph": "0x741ba4788b06907f8c99c60a6f483f885cc1b4fb27f9e1bed71dfd1d8a213214",
-            "0x11bb11": {
+            "#state:0x11bb11": {
               "#state_ph": "proofHash4",
             }
           },
           "#radix_ph": "0xbfbfc5f5c2e7b1d694fa822a0017c8d691dd99e003798cfcc068a26505dd6430",
           "00": {
             "#radix_ph": "0x3dfb52c0d974feb0559c9efafa996fb286717785e98871336e68ffb52d04bdf4",
-            "0x11bb00": {
+            "#state:0x11bb00": {
               "#state_ph": "proofHash3",
             }
           },
           "bb": {
             "#radix_ph": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184",
-            "0x11bbbb": {
+            "#state:0x11bbbb": {
               "#state_ph": "proofHash2",
             }
           }
