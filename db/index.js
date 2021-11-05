@@ -1243,7 +1243,7 @@ class DB {
 
   removeOldReceipts() {
     const LOG_HEADER = 'removeOldReceipts';
-    const receiptsPath = [PredefinedDbPaths.RECEIPTS, 'a']; // dummy value
+    const receiptsPath = [PredefinedDbPaths.RECEIPTS, 'a']; // dummy value to garbage-collect at /receipts/$tx_hash.
     const matchedStateRule = this.matchRulePath(receiptsPath, RuleProperties.STATE);
     const closestRule = {
       path: matchedStateRule.matchedRulePath.slice(0, matchedStateRule.closestConfigDepth),
