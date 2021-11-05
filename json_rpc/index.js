@@ -468,6 +468,13 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
       const result = p2pServer.consensus.getRawStatus();
       done(null, addProtocolVersion({ result }));
+    },
+
+    // Route API
+    route_getRouteStatus: function (args, done) {
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
+      const result = p2pServer.client.getRouteStatus();
+      done (null, addProtocolVersion({ result }));
     }
   };
 };
