@@ -51,6 +51,8 @@ BlockchainConfigs.ENABLE_REST_FUNCTION_CALL =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_REST_FUNCTION_CALL);
 BlockchainConfigs.ENABLE_EXPRESS_RATE_LIMIT =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_EXPRESS_RATE_LIMIT, true);
+BlockchainConfigs.ENABLE_EVENT_HANDLER =
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_EVENT_HANDLER);
 BlockchainConfigs.ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 BlockchainConfigs.PORT = process.env.PORT || getPortNumber(8080, 8080);
 BlockchainConfigs.P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
