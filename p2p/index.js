@@ -3,6 +3,7 @@ const _ = require('lodash');
 const P2pServer = require('./server');
 const P2pRouter = require('./router');
 const Websocket = require('ws');
+const jayson = require('jayson');
 const logger = require('../logger')('P2P_CLIENT');
 const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
@@ -25,7 +26,8 @@ const {
   RouterMessageTypes,
   INITIAL_P2P_ROUTER,
   ACCOUNT_INDEX,
-  DISABLE_TRACKER_REPORT
+  DISABLE_TRACKER_REPORT,
+  CURRENT_PROTOCOL_VERSION
 } = require('../common/constants');
 const {
   getAddressFromSocket,
@@ -51,6 +53,9 @@ const TRAFFIC_STATS_PERIOD_SECS_LIST = {
   '3h': 10800,  // 3 hours
 };
 
+const JSON_RPC_GET_ROUTE_STATUS = 'route_getRouteStatus';
+const JSON_RPC_ENDPOINT = '/json-rpc';
+const jsonRpcClient = jayson.client.http('http://localhost:8081' + JSON_RPC_ENDPOINT);
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -170,6 +175,13 @@ class P2pClient {
     return stats;
   }
 
+  getRouteStatus() {
+    return {
+      availableForConnect: this.maxInbound > Object.keys(this.server.inbound).length,
+      networkStatus: this.getNetworkStatus()
+    }
+  }
+
   updatePeerInfoToTracker() {
     const message = {
       type: TrackerMessageTypes.PEER_INFO_UPDATE,
@@ -220,8 +232,6 @@ class P2pClient {
     if (shuffledList.length > 0) {
       const peer = shuffledList[0];
       const router = peer.peerInfo.networkStatus.router.url;
-      console.log('asdfadsfsdfasdfasdfasdf');
-      console.log(router);
       return router;
     } else {
       return INITIAL_P2P_ROUTER;
@@ -578,6 +588,19 @@ class P2pClient {
     });
   }
 
+  async queryOnNode(api, params) {
+    return new Promise((resolve, reject) => {
+      jsonRpcClient.request(api, params, (err, response) => {
+        if (err) {
+          reject(err);
+        }
+        else {
+          resolve(response.result.result);
+        }
+      });
+    });
+  }
+
   requestRouterConnection = () => {
     const message = {
       type: RouterMessageTypes.CONNECTION_REQUEST,
@@ -592,6 +615,9 @@ class P2pClient {
       this.startBlockchainNode(0);
       return;
     }
+
+    const status = await this.queryOnNode(JSON_RPC_GET_ROUTE_STATUS, { protoVer: CURRENT_PROTOCOL_VERSION });
+    console.log(status);
     this.routerWebSocket = new Websocket(router);
     this.routerWebSocket.on('open', async () => {
       logger.info(`Connected to the router(${router})`);
