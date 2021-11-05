@@ -51,10 +51,6 @@ const ENABLE_GAS_FEE_WORKAROUND =
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
-const P2P_DEFAULT_ROUTER_PORT = 6000;
-const P2P_ROUTER_PORT =
-    process.env.P2P_ROUTER_PORT ||
-    getPortNumber(P2P_DEFAULT_ROUTER_PORT - 1, P2P_DEFAULT_ROUTER_PORT - 1);   // start from 6000.
 const LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
 const SYNC_MODE = process.env.SYNC_MODE || 'full';
 const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
@@ -152,18 +148,6 @@ const MessageTypes = {
  */
 const TrackerMessageTypes = {
   PEER_INFO_UPDATE: 'PEER_INFO_UPDATE'
-};
-
-/**
- * Message types for communication between routers.
- *
- * @enum {string}
- */
-const RouterMessageTypes = {
-  CONNECTION_REQUEST: 'CONNECTION_REQUEST',
-  CONNECTION_RESPONSE: 'CONNECTION_RESPONSE',
-  NEW_PEERS_REQUEST: 'NEW_PEERS_REQUEST',
-  NEW_PEERS_RESPONSE: 'NEW_PEERS_RESPONSE'
 };
 
 /**
@@ -672,8 +656,8 @@ const TrafficEventTypes = {
   CLIENT_API_SET: 'client_api_set',
 };
 
-const IpAddressRegex = /^(ws:\/\/)((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
-const localhostRegex = /^(ws:\/\/)localhost(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
+const IpAddressRegex = /^(http(s)?:\/\/)((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
+const localhostRegex = /^(http(s)?:\/\/)localhost(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
 
 const INITIAL_P2P_ROUTER = (() => {
   const hostingEnv = GenesisParams.blockchain.HOSTING_ENV;
@@ -686,7 +670,7 @@ const INITIAL_P2P_ROUTER = (() => {
       if (matchedLocalEnv) {
         url = matchedLocalEnv.input;
       } else {
-        url = `ws://localhost:${P2P_DEFAULT_ROUTER_PORT}`;
+        url = `http://localhost:8081`;
       }
       break;
     case 'gcp':
@@ -694,7 +678,7 @@ const INITIAL_P2P_ROUTER = (() => {
       if (matchedGcpEnv) {
         url = matchedGcpEnv.input;
       } else {
-        url = `ws://node.ainetwork.ai:${P2P_DEFAULT_ROUTER_PORT}`;
+        url = 'https://testnet-api.ainetwork.ai';
       }
       break;
     default:
@@ -959,7 +943,6 @@ module.exports = {
   DISABLE_TRACKER_REPORT,
   PORT,
   P2P_PORT,
-  P2P_ROUTER_PORT,
   LIGHTWEIGHT,
   SYNC_MODE,
   HASH_DELIMITER,
@@ -982,7 +965,6 @@ module.exports = {
   TRAFFIC_DB_MAX_INTERVALS,
   MessageTypes,
   TrackerMessageTypes,
-  RouterMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
   INITIAL_P2P_ROUTER,
