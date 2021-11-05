@@ -113,7 +113,11 @@ class DB {
       if (FeatureFlags.enableFullNodeSnapshots) {
         const newRoot = StateNode.fromSnapshotObject(snapshot);
         updateStateInfoForStateTree(newRoot);
-        this.replaceStateRoot(newRoot);
+        if (!this.replaceStateRoot(newRoot)) {
+          logger.error(
+              `[${LOG_HEADER}] Failed to replace state root for version: ${this.stateVersion}`);
+        }
+        // NOTE(platfowner): No need to finalize the version ('START'), it's already final.
       } else {
         this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.OWNERS_ROOT])));
         this.writeDatabase([PredefinedDbPaths.RULES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.RULES_ROOT])));
