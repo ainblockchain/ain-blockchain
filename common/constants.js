@@ -419,7 +419,6 @@ const FunctionTypes = {
  * @enum {string}
  */
 const StateInfoProperties = {
-  CHILD_INDEX: '#child_index',
   HAS_PARENT_STATE_NODE: '#has_parent_state_node',
   NEXT_SERIAL: '#next_serial',
   NUM_PARENTS: '#num_parents',

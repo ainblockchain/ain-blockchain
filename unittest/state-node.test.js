@@ -252,38 +252,38 @@ describe("state-node", () => {
       // toSnapshotObject()
       const snapshot = stateTree.toSnapshotObject();
       assert.deepEqual(snapshot, {
-        "#next_serial": 19,
+        "#next_serial": 10,
         "#radix:6": {
           "#radix:1": {
-            "#serial": 11,
+            "#serial": 2,
             "#state:a": "str_a",
             "#version": "ver1",
             "#version:a": "ver1",
           },
           "#radix:2": {
-            "#serial": 14,
+            "#serial": 5,
             "#state:b": 200,
             "#version": "ver1",
             "#version:b": "ver1",
           },
           "#radix:3": {
-            "#serial": 16,
+            "#serial": 7,
             "#state:c": {
-              "#next_serial": 11,
+              "#next_serial": 6,
               "#radix:636": {
                 "#radix:1": {
-                  "#serial": 7,
+                  "#serial": 2,
                   "#state:ca": "str_ca",
                   "#version": "ver1",
                   "#version:ca": "ver1",
                 },
                 "#radix:2": {
-                  "#serial": 10,
+                  "#serial": 5,
                   "#state:cb": 1200,
                   "#version": "ver1",
                   "#version:cb": "ver1",
                 },
-                "#serial": 8,
+                "#serial": 3,
                 "#version": "ver1",
               },
               "#serial": 0,
@@ -292,23 +292,23 @@ describe("state-node", () => {
             "#version": "ver1",
           },
           "#radix:4": {
-            "#serial": 18,
+            "#serial": 9,
             "#state:d": {
-              "#next_serial": 11,
+              "#next_serial": 6,
               "#radix:646": {
                 "#radix:1": {
-                  "#serial": 7,
+                  "#serial": 2,
                   "#state:da": "str_da",
                   "#version": "ver1",
                   "#version:da": "ver1",
                 },
                 "#radix:2": {
-                  "#serial": 10,
+                  "#serial": 5,
                   "#state:db": 2200,
                   "#version": "ver1",
                   "#version:db": "ver1",
                 },
-                "#serial": 8,
+                "#serial": 3,
                 "#version": "ver1",
               },
               "#serial": 0,
@@ -316,7 +316,7 @@ describe("state-node", () => {
             },
             "#version": "ver1",
           },
-          "#serial": 12,
+          "#serial": 3,
           "#version": "ver1",
         },
         "#serial": 0,
@@ -326,38 +326,38 @@ describe("state-node", () => {
       // fromSnapshotObject()
       const stateTreeRebuilt = StateNode.fromSnapshotObject(snapshot);
       assert.deepEqual(stateTreeRebuilt.toSnapshotObject(), {
-        "#next_serial": 19,
+        "#next_serial": 10,
         "#radix:6": {
           "#radix:1": {
-            "#serial": 11,
+            "#serial": 2,
             "#state:a": "str_a",
             "#version": "ver1",
             "#version:a": "ver1",
           },
           "#radix:2": {
-            "#serial": 14,
+            "#serial": 5,
             "#state:b": 200,
             "#version": "ver1",
             "#version:b": "ver1",
           },
           "#radix:3": {
-            "#serial": 16,
+            "#serial": 7,
             "#state:c": {
-              "#next_serial": 11,
+              "#next_serial": 6,
               "#radix:636": {
                 "#radix:1": {
-                  "#serial": 7,
+                  "#serial": 2,
                   "#state:ca": "str_ca",
                   "#version": "ver1",
                   "#version:ca": "ver1",
                 },
                 "#radix:2": {
-                  "#serial": 10,
+                  "#serial": 5,
                   "#state:cb": 1200,
                   "#version": "ver1",
                   "#version:cb": "ver1",
                 },
-                "#serial": 8,
+                "#serial": 3,
                 "#version": "ver1",
               },
               "#serial": 0,
@@ -366,23 +366,23 @@ describe("state-node", () => {
             "#version": "ver1",
           },
           "#radix:4": {
-            "#serial": 18,
+            "#serial": 9,
             "#state:d": {
-              "#next_serial": 11,
+              "#next_serial": 6,
               "#radix:646": {
                 "#radix:1": {
-                  "#serial": 7,
+                  "#serial": 2,
                   "#state:da": "str_da",
                   "#version": "ver1",
                   "#version:da": "ver1",
                 },
                 "#radix:2": {
-                  "#serial": 10,
+                  "#serial": 5,
                   "#state:db": 2200,
                   "#version": "ver1",
                   "#version:db": "ver1",
                 },
-                "#serial": 8,
+                "#serial": 3,
                 "#version": "ver1",
               },
               "#serial": 0,
@@ -390,7 +390,7 @@ describe("state-node", () => {
             },
             "#version": "ver1",
           },
-          "#serial": 12,
+          "#serial": 3,
           "#version": "ver1",
         },
         "#serial": 0,
@@ -409,7 +409,7 @@ describe("state-node", () => {
           "1": {
             "#has_parent_state_node": false,
             "#num_parents": 1,
-            "#serial": 11,
+            "#serial": 2,
             "#version": "ver1",
             "a": {
               "#version": "ver1",
@@ -418,7 +418,7 @@ describe("state-node", () => {
           "2": {
             "#has_parent_state_node": false,
             "#num_parents": 1,
-            "#serial": 14,
+            "#serial": 5,
             "#version": "ver1",
             "b": {
               "#version": "ver1",
@@ -427,7 +427,7 @@ describe("state-node", () => {
           "3": {
             "#has_parent_state_node": false,
             "#num_parents": 1,
-            "#serial": 16,
+            "#serial": 7,
             "#version": "ver1",
             "c": {
               "#version": "ver1",
@@ -436,7 +436,7 @@ describe("state-node", () => {
           "4": {
             "#has_parent_state_node": false,
             "#num_parents": 1,
-            "#serial": 18,
+            "#serial": 9,
             "#version": "ver1",
             "d": {
               "#version": "ver1",
@@ -444,7 +444,7 @@ describe("state-node", () => {
           },
           "#has_parent_state_node": false,
           "#num_parents": 1,
-          "#serial": 12,
+          "#serial": 3,
           "#version": "ver1",
         },
         "#has_parent_state_node": true,
@@ -524,7 +524,7 @@ describe("state-node", () => {
     })
   })
 
-  describe("toJsObject with includeVersion / includeTreeInfo / includeProof / includeChildIndex", () => {
+  describe("toJsObject with includeVersion / includeTreeInfo / includeProof", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
@@ -644,28 +644,6 @@ describe("state-node", () => {
           "db": 2200,
         }
       });
-
-      // includeChildIndex = true
-      assert.deepEqual(stateTree.toJsObject({ includeChildIndex: true }), {
-        "#child_index:a": 0,
-        "#child_index:b": 1,
-        "a": "str_a",
-        "b": 200,
-        "c": {
-          "#child_index": 2,
-          "#child_index:ca": 0,
-          "#child_index:cb": 1,
-          "ca": "str_ca",
-          "cb": 1200,
-        },
-        "d": {
-          "#child_index": 3,
-          "#child_index:da": 0,
-          "#child_index:db": 1,
-          "da": "str_da",
-          "db": 2200,
-        }
-      });
     })
   })
 
@@ -732,78 +710,6 @@ describe("state-node", () => {
         "b",
         "c",
         "d",
-      ]);
-      // compare the objects
-      assert.deepEqual(stateTreeParsed.toJsObject(), stateObj);
-    })
-
-    it("with altered child indices", () => {
-      const stateObjWithChildIndex = stateTree.toJsObject({ includeChildIndex: true });
-      // original child order
-      assert.deepEqual(stateTree.getChildLabels(), [
-        "a",
-        "b",
-        "c",
-        "d",
-      ]);
-      // original child indices
-      assert.deepEqual(stateObjWithChildIndex, {
-        "#child_index:a": 0,
-        "#child_index:b": 1,
-        "a": "str_a",
-        "b": 200,
-        "c": {
-          "#child_index": 2,
-          "#child_index:ca": 0,
-          "#child_index:cb": 1,
-          "ca": "str_ca",
-          "cb": 1200,
-        },
-        "d": {
-          "#child_index": 3,
-          "#child_index:da": 0,
-          "#child_index:db": 1,
-          "da": "str_da",
-          "db": 2200,
-        }
-      });
-
-      // alter child indices
-      stateObjWithChildIndex['#child_index:a'] = 3;
-      stateObjWithChildIndex['#child_index:b'] = 1;
-      stateObjWithChildIndex['c']['#child_index'] = 2;
-      stateObjWithChildIndex['d']['#child_index'] = 0;
-      stateObjWithChildIndex['d']['#child_index:da'] = 1;
-      stateObjWithChildIndex['d']['#child_index:db'] = 0;
-      // altered child indices
-      assert.deepEqual(stateObjWithChildIndex, {
-        "#child_index:a": 3,
-        "#child_index:b": 1,
-        "a": "str_a",
-        "b": 200,
-        "c": {
-          "#child_index": 2,
-          "#child_index:ca": 0,
-          "#child_index:cb": 1,
-          "ca": "str_ca",
-          "cb": 1200,
-        },
-        "d": {
-          "#child_index": 0,
-          "#child_index:da": 1,
-          "#child_index:db": 0,
-          "da": "str_da",
-          "db": 2200,
-        }
-      });
-
-      const stateTreeParsed = StateNode.fromJsObject(stateObjWithChildIndex);
-      // altered child order
-      assert.deepEqual(stateTreeParsed.getChildLabels(), [
-        "d",
-        "b",
-        "c",
-        "a",
       ]);
       // compare the objects
       assert.deepEqual(stateTreeParsed.toJsObject(), stateObj);

@@ -226,9 +226,6 @@ class CommonUtil {
     if (args.include_proof !== undefined) {
       options.includeProof = CommonUtil.toBool(args.include_proof);
     }
-    if (args.include_child_index !== undefined) {
-      options.includeChildIndex = CommonUtil.toBool(args.include_child_index);
-    }
     return options;
   }
 
