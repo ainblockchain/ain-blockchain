@@ -356,6 +356,22 @@ class RadixTree {
     this.root = root;
   }
 
+  getNumChildStateNodes() {
+    return this.numChildStateNodes;
+  }
+
+  setNumChildStateNodes(numChildStateNodes) {
+    this.numChildStateNodes = numChildStateNodes;
+  }
+
+  incNumChildStateNodes() {
+    this.numChildStateNodes++;
+  }
+
+  decNumChildStateNodes() {
+    this.numChildStateNodes--
+  }
+
   getChildStateLabels() {
     const labelList = [];
     for (const stateNode of this.getChildStateNodes()) {
@@ -371,22 +387,6 @@ class RadixTree {
 
   hasChildStateNodes() {
     return this.numChildStateNodes > 0;
-  }
-
-  getNumChildStateNodes() {
-    return this.numChildStateNodes;
-  }
-
-  setNumChildStateNodes(numChildStateNodes) {
-    this.numChildStateNodes = numChildStateNodes;
-  }
-
-  incNumChildStateNodes() {
-    this.numChildStateNodes++;
-  }
-
-  decNumChildStateNodes() {
-    this.numChildStateNodes--
   }
 
   getRootProofHash() {
