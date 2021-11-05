@@ -421,6 +421,7 @@ class Consensus {
         validators, recordedInvalidBlockHashSet, blockTime, tempDb);
     const { transactions, receipts, gasAmountTotal, gasCostTotal } = this.getValidTransactions(
         longestNotarizedChain, blockNumber, blockTime, tempDb);
+    tempDb.removeOldReceipts();
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getProofHash('/');
     const proposalBlock = Block.create(
         lastBlock.hash, lastVotes, evidence, transactions, receipts, blockNumber, epoch,
@@ -703,6 +704,7 @@ class Consensus {
         level: 'error'
       });
     }
+    newDb.removeOldReceipts();
   }
 
   validateProposalTx(proposalTx, number, blockTime, newDb) {
