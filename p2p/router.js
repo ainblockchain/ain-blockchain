@@ -46,36 +46,6 @@ class P2pRouter {
     logger.info(`Listening to peer-to-peer router on: ${P2P_ROUTER_PORT}\n`);
   }
 
-  getMaxNumberOfNewPeers(nodeInfo) {
-    const numOfCandidates = nodeInfo.networkStatus.connectionStatus.targetOutBound -
-        nodeInfo.networkStatus.connectionStatus.outgoingPeers.length;
-    if (numOfCandidates > 0) {
-      return numOfCandidates;
-    } else {
-      return 0;
-    }
-  }
-
-  assignRandomPeers(nodeInfo) {
-    const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers(nodeInfo);
-    if (maxNumberOfNewPeers) {
-      const candidates = Object.values(this.server.inbound)
-        .filter(peer =>
-          peer.peerInfo.address !== nodeInfo.address &&
-          peer.peerInfo.isAlive === true &&
-          !peer.peerInfo.networkStatus.connectionStatus.incomingPeers.includes(nodeInfo.address) &&
-          peer.peerInfo.networkStatus.connectionStatus.incomingPeers.length <
-              peer.peerInfo.networkStatus.connectionStatus.maxInbound)
-        .sort((a, b) =>
-          a.peerInfo.networkStatus.connectionStatus.incomingPeers -
-              b.peerInfo.networkStatus.connectionStatus.incomingPeers)
-        .slice(0, maxNumberOfNewPeers);
-      return candidates;
-    } else {
-      return [];
-    }
-  }
-
   setRouterEventHandlers(socket) {
     socket.on('message', (message) => {
       const parsedMessage = JSON.parse(message);

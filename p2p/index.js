@@ -12,7 +12,6 @@ const {
   HOSTING_ENV,
   PORT,
   P2P_PORT,
-  P2P_ROUTER_PORT,
   TRACKER_WS_ADDR,
   MessageTypes,
   TrackerMessageTypes,
@@ -23,7 +22,6 @@ const {
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
   trafficStatsManager,
-  RouterMessageTypes,
   INITIAL_P2P_ROUTER,
   ACCOUNT_INDEX,
   DISABLE_TRACKER_REPORT,
@@ -55,14 +53,13 @@ const TRAFFIC_STATS_PERIOD_SECS_LIST = {
 
 const JSON_RPC_GET_ROUTE_STATUS = 'route_getRouteStatus';
 const JSON_RPC_ENDPOINT = '/json-rpc';
-const jsonRpcClient = jayson.client.http('http://localhost:8081' + JSON_RPC_ENDPOINT);
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.initConnections();
     this.server = new P2pServer(
         this, node, minProtocolVersion, maxProtocolVersion, this.maxInbound);
-    this.router = new P2pRouter(this, this.server);
+    this.router = {};
     this.trackerWebSocket = null;
     this.outbound = {};
     this.p2pState = P2pNetworkStates.STARTING;
@@ -73,11 +70,17 @@ class P2pClient {
   async run() {
     if (CommonUtil.isEmpty(this.server.node.account)) return;
     await this.server.listen();
-    this.router.listen();
+    // this.router.listen();
     if (!DISABLE_TRACKER_REPORT) this.connectToTracker();
+    if (Number(ACCOUNT_INDEX) === 0 && this.server.node.state === BlockchainNodeStates.STARTING) {
+      this.startBlockchainNode(0);
+      return;
+    }
     await this.connectToRouter(INITIAL_P2P_ROUTER);
+    this.setIntervalForRouterConnection();
   }
 
+  // FIXME(minsulee2): this should be removed?
   initConnections() {
     this.targetOutBound = process.env.MAX_OUTBOUND ?
         Number(process.env.MAX_OUTBOUND) : TARGET_NUM_OUTBOUND_CONNECTION;
@@ -126,14 +129,10 @@ class P2pClient {
     const extIp = this.server.getExternalIp();
     const intP2pUrl = new URL(`ws://${intIp}:${P2P_PORT}`);
     const extP2pUrl = new URL(`ws://${extIp}:${P2P_PORT}`);
-    const intRouterUrl = new URL(`ws://${intIp}:${P2P_ROUTER_PORT}`);
-    const extRouterUrl = new URL(`ws://${extIp}:${P2P_ROUTER_PORT}`);
     // NOTE(liayoo): The 'comcom', 'local' HOSTING_ENV settings assume that multiple blockchain
     // nodes are on the same machine.
     const p2pUrl = HOSTING_ENV === 'comcom' || HOSTING_ENV === 'local' ?
         intP2pUrl.toString() : extP2pUrl.toString();
-    const routerUrl = HOSTING_ENV === 'comcom' || HOSTING_ENV === 'local' ?
-        intRouterUrl.toString() : extRouterUrl.toString();
     extP2pUrl.protocol = 'http:';
     extP2pUrl.port = PORT;
     const clientApiUrl = extP2pUrl.toString();
@@ -144,10 +143,6 @@ class P2pClient {
       p2p: {
         url: p2pUrl,
         port: P2P_PORT,
-      },
-      router: {
-        url: routerUrl,
-        port: P2P_ROUTER_PORT
       },
       clientApi: {
         url: clientApiUrl,
@@ -227,11 +222,11 @@ class P2pClient {
     }
   }
 
-  assignRouter() {
+  assignRandomRouter() {
     const shuffledList = _.shuffle(Object.values(this.outbound));
     if (shuffledList.length > 0) {
       const peer = shuffledList[0];
-      const router = peer.peerInfo.networkStatus.router.url;
+      const router = peer.networkStatus.jsonRpcUrl.url;
       return router;
     } else {
       return INITIAL_P2P_ROUTER;
@@ -240,8 +235,8 @@ class P2pClient {
 
   setIntervalForRouterConnection() {
     this.intervalRouterConnection = setInterval(() => {
-      if (this.routerWebSocket.readyState === Websocket.CLOSED && this.updateP2pState()) {
-        const nextRouter = this.assignRouter();
+      if (this.updateP2pState()) {
+        const nextRouter = this.assignRandomRouter();
         this.connectToRouter(nextRouter);
       }
     }, ROUTER_CONNECTION_INVERVAL_MS);
@@ -426,6 +421,11 @@ class P2pClient {
               return;
             }
             logger.info(`[${LOG_HEADER}] A new websocket(${address}) is established.`);
+            this.outbound[address] = {
+              socket,
+              networkStatus: _.get(parsedMessage, 'data.body.networkStatus'),
+              isAlive: true
+            };
             Object.assign(this.outbound[address], { version: dataProtoVer });
             this.updatePeerInfoToTracker();
           }
@@ -529,7 +529,7 @@ class P2pClient {
 
     socket.on('pong', () => {
       const address = getAddressFromSocket(this.outbound, socket);
-      this.outbound[address].peerInfo.isAlive = true;
+      this.outbound[address].isAlive = true;
       logger.info(`The peer(${address}) is alive.`);
     });
 
@@ -554,43 +554,10 @@ class P2pClient {
       });
   }
 
-  async setRouterEventHandlers() {
-    this.routerWebSocket.on('message', async (message) => {
-      const parsedMessage = JSON.parse(message);
-      switch(_.get(parsedMessage, 'type')) {
-        case RouterMessageTypes.CONNECTION_RESPONSE:
-          const peerInfo = parsedMessage.data;
-          this.connectToPeer(peerInfo);
-          if (this.server.node.state === BlockchainNodeStates.STARTING) {
-            await this.startBlockchainNode(1);
-          }
-          break;
-        case RouterMessageTypes.NEW_PEERS_RESPONSE:
-          const newManagedPeerInfoList = parsedMessage.data;
-          this.connectToPeers(newManagedPeerInfoList);
-          if (this.server.node.state === BlockchainNodeStates.STARTING) {
-            await this.startBlockchainNode(1);
-          }
-          break;
-        default:
-          logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
-              'specified. Ignore the message.');
-          break;
-      }
-      this.routerWebSocket.close();
-      this.setIntervalForRouterConnection();
-    });
-
-    this.routerWebSocket.on('close', (code) => {
-      logger.info(`\nDisconnected from [ROUTER] ${TRACKER_WS_ADDR} with code: ${code}`);
-      this.clearIntervalForTrackerUpdate();
-      this.setIntervalForRouterConnection();
-    });
-  }
-
-  async queryOnNode(api, params) {
+  async queryOnNode(jsonRpcClient) {
     return new Promise((resolve, reject) => {
-      jsonRpcClient.request(api, params, (err, response) => {
+      jsonRpcClient.request(JSON_RPC_GET_ROUTE_STATUS, { protoVer: CURRENT_PROTOCOL_VERSION },
+          (err, response) => {
         if (err) {
           reject(err);
         }
@@ -601,53 +568,76 @@ class P2pClient {
     });
   }
 
-  requestRouterConnection = () => {
-    const message = {
-      type: RouterMessageTypes.CONNECTION_REQUEST,
-      data: this.getStatus()
+  getMaxNumberOfNewPeers() {
+    const numOfCandidates = this.targetOutBound - Object.keys(this.outbound).length;
+    if (numOfCandidates > 0) {
+      return numOfCandidates;
+    } else {
+      return 0;
     }
-    this.routerWebSocket.send(JSON.stringify(message));
+  }
+
+  assignRandomPeers() {
+    const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
+    if (maxNumberOfNewPeers) {
+      const candidates = Object.values(this.server.inbound)
+        .filter(peer =>
+          peer.peerInfo.address !== this.server.getNodeAddress() &&
+          peer.peerInfo.isAlive === true &&
+          !peer.peerInfo.networkStatus.connectionStatus.incomingPeers.includes(nodeInfo.address) &&
+          peer.peerInfo.networkStatus.connectionStatus.incomingPeers.length <
+              peer.peerInfo.networkStatus.connectionStatus.maxInbound)
+        .sort((a, b) =>
+          a.peerInfo.networkStatus.connectionStatus.incomingPeers -
+              b.peerInfo.networkStatus.connectionStatus.incomingPeers)
+        .slice(0, maxNumberOfNewPeers);
+      return candidates;
+    } else {
+      return [];
+    }
   }
 
   async connectToRouter(router) {
-    // FIXME(minsu): do not connect to myself if I am a router myself.
-    if (Number(ACCOUNT_INDEX) === 0 && this.server.node.state === BlockchainNodeStates.STARTING) {
-      this.startBlockchainNode(0);
-      return;
+    const jsonRpcClient = jayson.client.http(router + JSON_RPC_ENDPOINT);
+    const status = await this.queryOnNode(jsonRpcClient);
+    this.router = {
+      [router]: {
+        queryToConnect: true,
+        queriedAt: Date.now(),
+      }
+    };
+
+    const myAddress = this.server.getNodeAddress();
+    const connectionStatus = status.networkStatus.connectionStatus;
+    console.log(connectionStatus);
+    if (status.availableForConnect && !connectionStatus.outgoingPeers[myAddress]) {
+      console.log('asdfasdfadsfasdfasdfasdfasdfasdfasdfasdf')
+      this.connectToPeer(status.networkStatus);
+      if (this.server.node.state === BlockchainNodeStates.STARTING) {
+        await this.startBlockchainNode(1);
+      }
+    } else {
+      Object.keys(connectionStatus.outbound).forEach(address => {
+        if (!this.router[address]) {
+          this.router = {
+            [router]: {
+              queryToConnect: false,
+              queriedAt: Date.now(),
+            }
+          }
+        }
+      });
+      this.connectToPeers(newPeerInfoList);
+      if (this.server.node.state === BlockchainNodeStates.STARTING) {
+        await this.startBlockchainNode(1);
+      }
     }
-
-    const status = await this.queryOnNode(JSON_RPC_GET_ROUTE_STATUS, { protoVer: CURRENT_PROTOCOL_VERSION });
-    console.log(status);
-    this.routerWebSocket = new Websocket(router);
-    this.routerWebSocket.on('open', async () => {
-      logger.info(`Connected to the router(${router})`);
-      this.clearIntervalForRouterConnection();
-      await this.setRouterEventHandlers();
-      this.requestRouterConnection();
-      // 1. ask vacancy
-      // 2-1. connect to peer if available
-      // 2-2. send new peer message if not available
-      // 2-3. close the router socket
-      // 3. setInterval till full connections.
-    });
-
-    this.routerWebSocket.on('error', (error) => {
-      logger.error(`Error in communication with the router(${router}): ` +
-          `${JSON.stringify(error, null, 2)}`);
-      this.clearIntervalForRouterConnection();
-      this.setIntervalForRouterConnection();
-    });
   }
 
-  connectToPeer(peerInfo) {
-    const url = peerInfo.networkStatus.p2p.url;
+  connectToPeer(networkStatus) {
+    const url = networkStatus.p2p.url;
     const socket = new Websocket(url);
     socket.on('open', async () => {
-      peerInfo.isAlive = true;
-      this.outbound[peerInfo.address] = {
-        socket,
-        peerInfo
-      };
       logger.info(`Connected to peer(${url}),`);
       this.setClientSidePeerEventHandlers(socket);
       // TODO(minsulee2): Send an encrypted form of address(pubkey can be recoverable from address),
@@ -717,7 +707,8 @@ class P2pClient {
               `The readyState is(${socket.readyState})`);
         } else {
           socket.ping();
-          this.updatePeerInfoToPeer(socket, node.peerInfo.address);
+          const address = getAddressFromSocket(socket);
+          this.updatePeerInfoToPeer(socket, address);
         }
       });
     }, HEARTBEAT_INTERVAL_MS);

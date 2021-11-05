@@ -427,6 +427,7 @@ class P2pServer {
               };
               const body = {
                 address: this.getNodeAddress(),
+                networkStatus: this.client.getNetworkStatus(),
                 timestamp: Date.now(),
               };
               const signature = signMessage(body, this.getNodePrivateKey());
@@ -442,7 +443,7 @@ class P2pServer {
               }
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
-                this.client.connectToPeer(peerInfo);
+                this.client.connectToPeer(peerInfo.networkStatus);
               }
             }
             break;
@@ -555,8 +556,8 @@ class P2pServer {
             // Keep updating both inbound and outbound.
             this.inbound[addressFromSocket].peerInfo = updatePeerInfo;
             this.inbound[addressFromSocket].peerInfo.isAlive = true;
-            this.client.outbound[addressFromSocket].peerInfo = updatePeerInfo;
-            this.client.outbound[addressFromSocket].peerInfo.isAlive = true;
+            this.client.outbound[addressFromSocket].networkStatus = updatePeerInfo.networkStatus;
+            this.client.outbound[addressFromSocket].isAlive = true;
             break;
           default:
             logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
