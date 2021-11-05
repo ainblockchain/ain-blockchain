@@ -1241,12 +1241,24 @@ class DB {
     const parsedPath = CommonUtil.parsePath(receiptPath);
     this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...parsedPath], receipt);
     // Garbage collection for old receipts.
-    const matchedStateRule = this.matchRulePath(parsedPath, RuleProperties.STATE);
+    // const matchedStateRule = this.matchRulePath(parsedPath, RuleProperties.STATE);
+    // const closestRule = {
+    //   path: matchedStateRule.matchedRulePath.slice(0, matchedStateRule.closestConfigDepth),
+    //   config: getRuleConfig(matchedStateRule.closestConfigNode)
+    // };
+    // const applyStateGcRuleRes = this.applyStateGarbageCollectionRule({ closestRule }, parsedPath);
+    // logger.debug(`[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
+  }
+
+  removeOldReceipts() {
+    const LOG_HEADER = 'removeOldReceipts';
+    const receiptsPath = [PredefinedDbPaths.RECEIPTS, 'a']; // dummy value
+    const matchedStateRule = this.matchRulePath(receiptsPath, RuleProperties.STATE);
     const closestRule = {
       path: matchedStateRule.matchedRulePath.slice(0, matchedStateRule.closestConfigDepth),
       config: getRuleConfig(matchedStateRule.closestConfigNode)
     };
-    const applyStateGcRuleRes = this.applyStateGarbageCollectionRule({ closestRule }, parsedPath);
+    const applyStateGcRuleRes = this.applyStateGarbageCollectionRule({ closestRule }, receiptsPath);
     logger.debug(`[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
   }
 

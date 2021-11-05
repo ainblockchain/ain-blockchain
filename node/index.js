@@ -512,6 +512,7 @@ class BlockchainNode {
             `${JSON.stringify(block, null, 2)}`);
         return false;
       }
+      db.removeOldReceipts();
       if (!LIGHTWEIGHT) {
         if (db.stateRoot.getProofHash() !== block.state_proof_hash) {
           logger.error(`[${LOG_HEADER}] Failed to validate state proof of block: ` +
@@ -620,6 +621,7 @@ class BlockchainNode {
             logger, `[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
       return false;
     }
+    db.removeOldReceipts();
     if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
 
       // NOTE(platfowner): Write the current snapshot for debugging.
