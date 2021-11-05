@@ -1529,7 +1529,8 @@ describe("radix-node", () => {
       });
 
       // fromSnapshotObject()
-      assert.deepEqual(RadixNode.fromSnapshotObject(snapshot).toSnapshotObject(), {
+      const nodeRebuilt = RadixNode.fromSnapshotObject(snapshot);
+      assert.deepEqual(nodeRebuilt.toSnapshotObject(), {
         "#radix:1001": {
           "#serial": 3,
           "#state:1001": "value1",
@@ -1559,7 +1560,52 @@ describe("radix-node", () => {
         "#version": "ver",
         "#version:0000": "stateNodeVer",
       });
-      assert.deepEqual(RadixNode.fromSnapshotObject(snapshot).toSnapshotObject(), snapshot);
+      assert.deepEqual(nodeRebuilt.toSnapshotObject(), snapshot);
+      assert.deepEqual(nodeRebuilt.toJsObject(true, true, false, false, true, true), {
+        "1001": {
+          "1001": {
+            "#version": "childStateNodeVer1",
+          },
+          "#has_parent_state_node": false,
+          "#num_parents": 1,
+          "#serial": 3,
+          "#version": "ver",
+        },
+        "2002": {
+          "1021": {
+            "1021": {
+              "#version": "childStateNodeVer21",
+            },
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 2,
+            "#version": "ver",
+          },
+          "2002": {
+            "#version": "childStateNodeVer2",
+          },
+          "2022": {
+            "2022": {
+              "#version": "childStateNodeVer22",
+            },
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 1,
+            "#version": "ver",
+          },
+          "#has_parent_state_node": false,
+          "#num_parents": 1,
+          "#serial": 4,
+          "#version": "ver",
+        },
+        "#has_parent_state_node": false,
+        "#num_parents": 0,
+        "#serial": 0,
+        "#version": "ver",
+        "0000": {
+          "#version": "stateNodeVer",
+        }
+      });
     });
 
     it("toJsObject", () => {
