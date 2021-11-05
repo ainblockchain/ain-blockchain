@@ -660,7 +660,7 @@ class RadixNode {
       if (withProofHash) {
         stateObj[StateInfoProperties.STATE_PROOF_HASH] = childStateNode.getProofHash();
       }
-      obj[childStateNode.getLabel()] = stateObj;
+      obj[`${StateInfoProperties.STATE_LABEL_PREFIX}${childStateNode.getLabel()}`] = stateObj;
     }
     for (const child of this.getChildNodes()) {
       obj[child.getLabel()] = child.toJsObject(
