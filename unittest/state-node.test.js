@@ -52,8 +52,8 @@ describe("state-node", () => {
       expect(node.isLeaf).to.equal(true);
       expect(node.value).to.equal(null);
       expect(node.parentSet.size).to.equal(0);
-      expect(node.radixTree.numChildStateNodes()).to.equal(0);
-      expect(node.radixTree.root.version).to.equal(null);
+      expect(node.radixTree.getNumChildStateNodes()).to.equal(0);
+      expect(node.radixTree.getVersion()).to.equal(null);
       expect(node.proofHash).to.equal(null);
       expect(node.treeHeight).to.equal(0);
       expect(node.treeSize).to.equal(0);
@@ -88,8 +88,8 @@ describe("state-node", () => {
       expect(node.isLeaf).to.equal(true);
       expect(node.value).to.equal(null);
       expect(node.parentSet.size).to.equal(0);
-      expect(node.radixTree.numChildStateNodes()).to.equal(0);
-      expect(node.radixTree.root.version).to.equal(null);
+      expect(node.radixTree.getNumChildStateNodes()).to.equal(0);
+      expect(node.radixTree.getVersion()).to.equal(null);
       expect(node.proofHash).to.equal(null);
       expect(node.treeHeight).to.equal(0);
       expect(node.treeSize).to.equal(0);
@@ -105,8 +105,8 @@ describe("state-node", () => {
       expect(node2.isLeaf).to.equal(true);
       expect(node2.value).to.equal(null);
       expect(node2.parentSet.size).to.equal(0);
-      expect(node2.radixTree.numChildStateNodes()).to.equal(0);
-      expect(node2.radixTree.root.version).to.equal('version1');
+      expect(node2.radixTree.getNumChildStateNodes()).to.equal(0);
+      expect(node2.radixTree.getVersion()).to.equal('version1');
       expect(node2.proofHash).to.equal(null);
       expect(node2.treeHeight).to.equal(0);
       expect(node2.treeSize).to.equal(0);
@@ -324,7 +324,8 @@ describe("state-node", () => {
       });
 
       // fromSnapshotObject()
-      assert.deepEqual(StateNode.fromSnapshotObject(snapshot).toSnapshotObject(), {
+      const stateTreeRebuilt = StateNode.fromSnapshotObject(snapshot);
+      assert.deepEqual(stateTreeRebuilt.toSnapshotObject(), {
         "#next_serial": 19,
         "#radix:6": {
           "#radix:1": {
@@ -395,7 +396,62 @@ describe("state-node", () => {
         "#serial": 0,
         "#version": "ver1",
       });
-      assert.deepEqual(StateNode.fromSnapshotObject(snapshot).toSnapshotObject(), snapshot);
+      assert.deepEqual(stateTreeRebuilt.toSnapshotObject(), snapshot);
+      assert.deepEqual(stateTreeRebuilt.getChildLabels(), [
+        "a",
+        "b",
+        "c",
+        "d",
+      ]);
+      expect(stateTreeRebuilt.numChildren()).to.equal(4);
+      assert.deepEqual(stateTreeRebuilt.radixTree.toJsObject(true, true, false, false, true, true), {
+        "6": {
+          "1": {
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 11,
+            "#version": "ver1",
+            "a": {
+              "#version": "ver1",
+            }
+          },
+          "2": {
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 14,
+            "#version": "ver1",
+            "b": {
+              "#version": "ver1",
+            }
+          },
+          "3": {
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 16,
+            "#version": "ver1",
+            "c": {
+              "#version": "ver1",
+            }
+          },
+          "4": {
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 18,
+            "#version": "ver1",
+            "d": {
+              "#version": "ver1",
+            }
+          },
+          "#has_parent_state_node": false,
+          "#num_parents": 1,
+          "#serial": 12,
+          "#version": "ver1",
+        },
+        "#has_parent_state_node": true,
+        "#num_parents": 0,
+        "#serial": 0,
+        "#version": "ver1",
+      });
     })
   })
 
@@ -1261,6 +1317,7 @@ describe("state-node", () => {
       const newRadixTree = new RadixTree();
       node.setRadixTree(newRadixTree);
       assert.deepEqual(node.radixTree, newRadixTree);
+      assert.deepEqual(newRadixTree.root.getParentStateNode(), node);
     });
   });
 

@@ -629,7 +629,7 @@ class RadixNode {
    */
   toJsObject(
       withVersion = false, withSerial = false, withProofHash = false, withTreeInfo = false,
-      withNumParents = false) {
+      withNumParents = false, withHasParentStateNode = false) {
     const obj = {};
     if (withVersion) {
       obj[StateInfoProperties.VERSION] = this.getVersion();
@@ -648,6 +648,9 @@ class RadixNode {
     if (withNumParents) {
       obj[StateInfoProperties.NUM_PARENTS] = this.numParents();
     }
+    if (withHasParentStateNode) {
+      obj[StateInfoProperties.HAS_PARENT_STATE_NODE] = this.hasParentStateNode();
+    }
     if (this.hasChildStateNode()) {
       const stateObj = {};
       const childStateNode = this.getChildStateNode();
@@ -661,7 +664,8 @@ class RadixNode {
     }
     for (const child of this.getChildNodes()) {
       obj[child.getLabel()] = child.toJsObject(
-          withVersion, withSerial, withProofHash, withTreeInfo, withNumParents);
+          withVersion, withSerial, withProofHash, withTreeInfo, withNumParents,
+          withHasParentStateNode);
     }
     return obj;
   }

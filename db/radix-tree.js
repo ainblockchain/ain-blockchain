@@ -15,14 +15,14 @@ class RadixTree {
     this.version = version;
     this.nextSerial = 0;
     this.root = this._newRadixNode(parentStateNode);
-    this.numTerminalNodes = 0;
+    this.numChildStateNodes = 0;
   }
 
   clone(version, parentStateNode) {
     const clonedTree = new RadixTree(version);
     clonedTree.setNextSerial(this.getNextSerial());
     clonedTree.setRoot(this.root.clone(version, parentStateNode));
-    clonedTree.numTerminalNodes = this.numTerminalNodes;
+    clonedTree.setNumChildStateNodes(this.getNumChildStateNodes());
     return clonedTree;
   }
 
@@ -222,7 +222,7 @@ class RadixTree {
       // Update the node serial with a new value to keep the insertion order.
       node.setSerial(this.getAndIncNextSerial());
       // Increase the number of the terminal numbers.
-      this.numTerminalNodes++;
+      this.incNumChildStateNodes();
     }
     node.setChildStateNode(stateNode);
   }
@@ -291,7 +291,7 @@ class RadixTree {
       return false;
     }
     node.resetChildStateNode();
-    this.numTerminalNodes--;
+    this.decNumChildStateNodes();
     const labelRadix = node.getLabelRadix();
     let nodesToUpdate = [node];
     if (node.numChildren() === 1) {  // the node has only 1 child.
@@ -370,11 +370,23 @@ class RadixTree {
   }
 
   hasChildStateNodes() {
-    return this.numTerminalNodes > 0;
+    return this.numChildStateNodes > 0;
   }
 
-  numChildStateNodes() {
-    return this.numTerminalNodes;
+  getNumChildStateNodes() {
+    return this.numChildStateNodes;
+  }
+
+  setNumChildStateNodes(numChildStateNodes) {
+    this.numChildStateNodes = numChildStateNodes;
+  }
+
+  incNumChildStateNodes() {
+    this.numChildStateNodes++;
+  }
+
+  decNumChildStateNodes() {
+    this.numChildStateNodes--
   }
 
   getRootProofHash() {
@@ -445,7 +457,7 @@ class RadixTree {
   }
 
   deleteRadixTreeVersion() {
-    this.numTerminalNodes = 0;
+    this.setNumChildStateNodes(0);
     return this.root.deleteRadixTreeVersion();
   }
 
@@ -458,6 +470,9 @@ class RadixTree {
     const tree = new RadixTree(version);
     tree.setRoot(root);
     tree.setNextSerial(obj[StateInfoProperties.NEXT_SERIAL]);
+    // NOTE(platfowner): Need to recompute and set numChildStateNodes.
+    const numChildStateNodes = tree.getChildStateLabels().length;
+    tree.setNumChildStateNodes(numChildStateNodes);
     return tree;
   }
 
@@ -474,9 +489,10 @@ class RadixTree {
    */
   toJsObject(
       withVersion = false, withSerial = false, withProofHash = false, withTreeInfo = false,
-      withNumParents = false) {
+      withNumParents = false, withHasParentStateNode = false) {
     return this.root.toJsObject(
-        withVersion, withSerial, withProofHash, withTreeInfo, withNumParents);
+        withVersion, withSerial, withProofHash, withTreeInfo, withNumParents,
+        withHasParentStateNode);
   }
 }
 

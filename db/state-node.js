@@ -433,11 +433,13 @@ class StateNode {
   }
 
   numChildren() {
-    return this.radixTree.numChildStateNodes();
+    return this.radixTree.getNumChildStateNodes();
   }
 
   setRadixTree(radixTree) {
     this.radixTree = radixTree;
+    // NOTE(platfowner): Need to set parent state node of the root radix node.
+    radixTree.root.setParentStateNode(this);
   }
 
   getProofHash() {

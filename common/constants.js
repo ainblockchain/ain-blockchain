@@ -35,7 +35,7 @@ const FeatureFlags = {
   // Enables state info updates.
   enableStateInfoUpdates: true,
   // Enables full node snapshots.
-  enableFullNodeSnapshots: false,
+  enableFullNodeSnapshots: true,
 };
 
 // ** Environment variables **
@@ -420,6 +420,7 @@ const FunctionTypes = {
  */
 const StateInfoProperties = {
   CHILD_INDEX: '#child_index',
+  HAS_PARENT_STATE_NODE: '#has_parent_state_node',
   NEXT_SERIAL: '#next_serial',
   NUM_PARENTS: '#num_parents',
   RADIX_LABEL_PREFIX: '#radix:',

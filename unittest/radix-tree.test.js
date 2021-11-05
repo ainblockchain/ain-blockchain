@@ -9,9 +9,9 @@ describe("radix-tree", () => {
   describe("initialization", () => {
     it("construct without version", () => {
       const tree = new RadixTree();
-      expect(tree.version).to.equal(null);
-      expect(tree.nextSerial).to.equal(1);
-      expect(tree.numTerminalNodes).to.equal(0);
+      expect(tree.getVersion()).to.equal(null);
+      expect(tree.getNextSerial()).to.equal(1);
+      expect(tree.getNumChildStateNodes()).to.equal(0);
       expect(tree.root.getVersion()).to.equal(null);
       expect(tree.root.getSerial()).to.equal(0);
       expect(tree.root.getParentStateNode()).to.equal(null);
@@ -20,9 +20,9 @@ describe("radix-tree", () => {
     it("construct with version", () => {
       const version = 'ver';
       const tree = new RadixTree(version);
-      expect(tree.version).to.equal(version);
-      expect(tree.nextSerial).to.equal(1);
-      expect(tree.numTerminalNodes).to.equal(0);
+      expect(tree.getVersion()).to.equal(version);
+      expect(tree.getNextSerial()).to.equal(1);
+      expect(tree.getNumChildStateNodes()).to.equal(0);
       expect(tree.root.getVersion()).to.equal(version);
       expect(tree.root.getSerial()).to.equal(0);
       expect(tree.root.getParentStateNode()).to.equal(null);
@@ -31,9 +31,9 @@ describe("radix-tree", () => {
     it("construct with parent state node", () => {
       const parentStateNode = new StateNode();
       const tree = new RadixTree(null, parentStateNode);
-      expect(tree.version).to.equal(null);
-      expect(tree.nextSerial).to.equal(1);
-      expect(tree.numTerminalNodes).to.equal(0);
+      expect(tree.getVersion()).to.equal(null);
+      expect(tree.getNextSerial()).to.equal(1);
+      expect(tree.getNumChildStateNodes()).to.equal(0);
       expect(tree.root.getVersion()).to.equal(null);
       expect(tree.root.getSerial()).to.equal(0);
       expect(tree.root.getParentStateNode()).to.equal(parentStateNode);
@@ -68,7 +68,7 @@ describe("radix-tree", () => {
       tree.set(label22, stateNode22);
 
       assert.deepEqual(tree.root.getParentStateNode(), parentStateNode);
-      expect(tree.numChildStateNodes()).to.equal(4);
+      expect(tree.getNumChildStateNodes()).to.equal(4);
       assert.deepEqual(tree.toJsObject(true, true), {
         "#serial": 0,
         "#version": "ver",
@@ -118,9 +118,9 @@ describe("radix-tree", () => {
       const cloned = tree.clone(version2, parentStateNode2);
 
       assert.deepEqual(cloned.root.getParentStateNode(), parentStateNode2);
-      expect(cloned.version).to.equal(version2);
-      expect(cloned.nextSerial).to.equal(tree.nextSerial);
-      expect(cloned.numTerminalNodes).to.equal(4);
+      expect(cloned.getVersion()).to.equal(version2);
+      expect(cloned.getNextSerial()).to.equal(tree.nextSerial);
+      expect(cloned.getNumChildStateNodes()).to.equal(4);
       assert.deepEqual(cloned.toJsObject(true, true), {
         "#serial": 0,
         "#version": "ver2",
@@ -178,19 +178,19 @@ describe("radix-tree", () => {
       expect(node1.getVersion()).to.equal(version);
       expect(node1.getSerial()).to.equal(1);
       expect(node1.getParentStateNode()).to.equal(null);
-      expect(tree.nextSerial).to.equal(2);
+      expect(tree.getNextSerial()).to.equal(2);
 
       const node2 = tree._newRadixNode();
       expect(node2.getVersion()).to.equal(version);
       expect(node2.getSerial()).to.equal(2);
       expect(node2.getParentStateNode()).to.equal(null);
-      expect(tree.nextSerial).to.equal(3);
+      expect(tree.getNextSerial()).to.equal(3);
 
       const node3 = tree._newRadixNode();
       expect(node3.getVersion()).to.equal(version);
       expect(node3.getSerial()).to.equal(3);
       expect(node3.getParentStateNode()).to.equal(null);
-      expect(tree.nextSerial).to.equal(4);
+      expect(tree.getNextSerial()).to.equal(4);
     });
   });
 
@@ -3335,7 +3335,8 @@ describe("radix-tree", () => {
       });
 
       // fromSnapshotObject()
-      assert.deepEqual(RadixTree.fromSnapshotObject(snapshot).toSnapshotObject(), {
+      const treeRebuilt = RadixTree.fromSnapshotObject(snapshot);
+      assert.deepEqual(treeRebuilt.toSnapshotObject(), {
         "#next_serial": 10,
         "#radix:000": {
           "#radix:aaa": {
@@ -3368,7 +3369,62 @@ describe("radix-tree", () => {
         "#serial": 0,
         "#version": "ver",
       });
-      assert.deepEqual(RadixTree.fromSnapshotObject(snapshot).toSnapshotObject(), snapshot);
+      assert.deepEqual(treeRebuilt.toSnapshotObject(), snapshot);
+      assert.deepEqual(treeRebuilt.getChildStateLabels(), [
+        "0x000aaa",
+        "0x000bbb",
+        "0x000bbb111",
+        "0x000bbb222",
+      ]);
+      expect(treeRebuilt.getNumChildStateNodes()).to.equal(4);
+      assert.deepEqual(treeRebuilt.toJsObject(true, true, false, false, true, true), {
+        "#has_parent_state_node": false,
+        "#num_parents": 0,
+        "#serial": 0,
+        "#version": "ver",
+        "000": {
+          "#has_parent_state_node": false,
+          "#num_parents": 1,
+          "#serial": 3,
+          "#version": "ver",
+          "aaa": {
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 2,
+            "#version": "ver",
+            "0x000aaa": {
+              "#version": "ver",
+            }
+          },
+          "bbb": {
+            "111": {
+              "#has_parent_state_node": false,
+              "#num_parents": 1,
+              "#serial": 7,
+              "#version": "ver",
+              "0x000bbb111": {
+                "#version": "ver",
+              }
+            },
+            "222": {
+              "#has_parent_state_node": false,
+              "#num_parents": 1,
+              "#serial": 9,
+              "#version": "ver",
+              "0x000bbb222": {
+                "#version": "ver",
+              }
+            },
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 5,
+            "#version": "ver",
+            "0x000bbb": {
+              "#version": "ver",
+            }
+          }
+        }
+      });
     });
   });
 });
