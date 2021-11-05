@@ -74,6 +74,7 @@ function addBlock(node, txs, votes, validators) {
       node.bc, true, lastBlock.number, node.stateManager);
   finalDb.executeTransactionList(votes, true);
   finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1);
+  finalDb.removeOldReceipts();
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   const receipts = txsToDummyReceipts(txs);
   node.addNewBlock(Block.create(

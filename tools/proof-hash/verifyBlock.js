@@ -57,6 +57,7 @@ async function verifyBlock(snapshotFile, blockFileList) {
       logger.error(`  Failed to execute transactions (${block.number})`)
       process.exit(0);
     }
+    db.removeOldReceipts();
     console.log(`  Done.`);
     console.log(`* Comparing root proof hashes...`);
     console.log(`  > Root proof hash from block header: ${block.state_proof_hash}`);
