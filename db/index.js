@@ -1226,7 +1226,6 @@ class DB {
   }
 
   recordReceipt(auth, tx, blockNumber, executionResult) {
-    const LOG_HEADER = 'recordReceipt';
     const receiptPath = PathUtil.getReceiptPath(tx.hash);
     const receipt = {
       [PredefinedDbPaths.RECEIPTS_ADDRESS]: auth.addr,
@@ -1240,14 +1239,6 @@ class DB {
     //               and collectFee().
     const parsedPath = CommonUtil.parsePath(receiptPath);
     this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...parsedPath], receipt);
-    // Garbage collection for old receipts.
-    // const matchedStateRule = this.matchRulePath(parsedPath, RuleProperties.STATE);
-    // const closestRule = {
-    //   path: matchedStateRule.matchedRulePath.slice(0, matchedStateRule.closestConfigDepth),
-    //   config: getRuleConfig(matchedStateRule.closestConfigNode)
-    // };
-    // const applyStateGcRuleRes = this.applyStateGarbageCollectionRule({ closestRule }, parsedPath);
-    // logger.debug(`[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
   }
 
   removeOldReceipts() {
