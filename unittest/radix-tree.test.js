@@ -2783,6 +2783,16 @@ describe("radix-tree", () => {
         tree.setRoot(newRoot);
         assert.deepEqual(tree.root, newRoot);
       });
+
+      it("getNumChildStateNodes / setNumChildStateNodes / incNumChildStateNodes / decNumChildStateNodes", () => {
+        expect(tree.getNumChildStateNodes()).to.equal(0);
+        tree.setNumChildStateNodes(100);
+        expect(tree.getNumChildStateNodes()).to.equal(100);
+        tree.incNumChildStateNodes();
+        expect(tree.getNumChildStateNodes()).to.equal(101);
+        tree.decNumChildStateNodes();
+        expect(tree.getNumChildStateNodes()).to.equal(100);
+      });
     });
 
     describe("child state nodes", () => {
