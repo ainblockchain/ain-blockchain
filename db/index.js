@@ -113,10 +113,7 @@ class DB {
       if (FeatureFlags.enableFullNodeSnapshots) {
         const newRoot = StateNode.fromSnapshotObject(snapshot);
         updateStateInfoForStateTree(newRoot);
-        if (!this.replaceStateRoot(newRoot)) {
-          logger.error(
-              `[${LOG_HEADER}] Failed to replace state root for version: ${this.stateVersion}`);
-        }
+        this.replaceStateRoot(newRoot);
         // NOTE(platfowner): No need to finalize the version ('START'), it's already final.
       } else {
         this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.OWNERS_ROOT])));
@@ -173,14 +170,10 @@ class DB {
    * @param {StateNode} newRoot new root to replace with
    */
   replaceStateRoot(newRoot) {
-    const LOG_HEADER = 'replaceStateRoot';
-    if (this.stateVersion === null) {
-      logger.error(`[${LOG_HEADER}] Null state version: ${this.stateVersion}`);
-      return false;
-    }
-    this.stateManager.setRoot(this.stateVersion, newRoot);
+    const newVersion = newRoot.getVersion();
+    this.stateManager.setRoot(newVersion, newRoot);
+    this.stateVersion = newVersion;
     this.stateRoot = newRoot;
-    return true;
   }
 
   /**
