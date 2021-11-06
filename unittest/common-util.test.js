@@ -1279,18 +1279,18 @@ describe("CommonUtil", () => {
     });
   });
 
-  describe('getDiffJson', () => { 
+  describe('getJsonDiff', () => { 
     it("when abnormal input", () => {
-      assert.deepEqual(CommonUtil.getDiffJson(null, null), '');
-      assert.deepEqual(CommonUtil.getDiffJson(null, undefined), '');
-      assert.deepEqual(CommonUtil.getDiffJson(null, []), '');
-      assert.deepEqual(CommonUtil.getDiffJson({}, null), '');
-      assert.deepEqual(CommonUtil.getDiffJson({}, undefined), '');
-      assert.deepEqual(CommonUtil.getDiffJson({}, []), '');
+      assert.deepEqual(CommonUtil.getJsonDiff(null, null), '');
+      assert.deepEqual(CommonUtil.getJsonDiff(null, undefined), '');
+      assert.deepEqual(CommonUtil.getJsonDiff(null, []), '');
+      assert.deepEqual(CommonUtil.getJsonDiff({}, null), '');
+      assert.deepEqual(CommonUtil.getJsonDiff({}, undefined), '');
+      assert.deepEqual(CommonUtil.getJsonDiff({}, []), '');
     });
 
     it("when normal input", () => {
-      assert.deepEqual(CommonUtil.getDiffJson({
+      const diffLines = CommonUtil.getJsonDiff({
         a: 'aaa',
         b: {
           bb: 'bbbbbb'
@@ -1298,11 +1298,22 @@ describe("CommonUtil", () => {
         c: 'ccc'
       }, {
         b: {
-          bc: 'bcbcbc'
+          bb: 'bbbbbb_new'
         },
         c: 'ccc',
-        d: 'ddd',
-      }), '> begin diff >>>\n- "  \\"a\\": \\"aaa\\",\\n"\n- "    \\"bb\\": \\"bbbbbb\\"\\n"\n+ "    \\"bc\\": \\"bcbcbc\\"\\n"\n+ "  \\"d\\": \\"ddd\\"\\n"\n<<< end diff <');
+        d: 'ddd'
+      });
+      assert.deepEqual(diffLines.split('\n'), [
+        " {",
+        "-  a: \"aaa\"",
+        "+  d: \"ddd\"",
+        "   b: {",
+        "-    bb: \"bbbbbb\"",
+        "+    bb: \"bbbbbb_new\"",
+        "   }",
+        " }",
+        "",
+      ]);
     });
   })
 })
