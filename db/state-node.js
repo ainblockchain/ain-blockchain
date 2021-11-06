@@ -385,6 +385,7 @@ class StateNode {
 
   setVersion(version) {
     this.version = version;
+    this.radixTree.setVersion(version);
   }
 
   getTreeHeight() {

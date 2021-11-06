@@ -340,6 +340,11 @@ class RadixTree {
     return this.version;
   }
 
+  setVersion(version) {
+    this.version = version;
+    this.root.setVersion(version);
+  }
+
   getNextSerial() {
     return this.nextSerial;
   }
