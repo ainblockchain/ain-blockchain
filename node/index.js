@@ -4,10 +4,13 @@ const logger = new (require('../logger'))('NODE');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const path = require('path');
+const bip39 = require('bip39');
 const {
   FeatureFlags,
+  AIN_HD_DERIVATION_PATH,
   PORT,
   ACCOUNT_INDEX,
+  ACCOUNT_INJECTION_OPTION,
   KEYSTORE_FILE_PATH,
   SYNC_MODE,
   ON_MEMORY_CHAIN_LENGTH,
@@ -80,7 +83,7 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
           `${this.account.address}`);
       this.initShardSetting();
-    } else if (KEYSTORE_FILE_PATH !== null) {
+    } else if (KEYSTORE_FILE_PATH !== null || ACCOUNT_INJECTION_OPTION === '--mnemonic') {
       // Create a bootstrap account & wait for the password
       this.bootstrapAccount = ainUtil.createAccount();
     } else {
@@ -107,6 +110,42 @@ class BlockchainNode {
       return false;
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Failed to inject an account: ${err.stack}`);
+      return false;
+    }
+  }
+
+  async injectAccountFromHDWallet(encryptedMnemonic, index = 0) {
+    const LOG_HEADER = 'injectAccount';
+    try {
+      if (index < 0) {
+        throw new Error('[injectAccountFromHDWallet] index should be greater than 0');
+      }
+
+      const mnemonic = await ainUtil.decryptWithPrivateKey(
+        this.bootstrapAccount.private_key, encryptedMnemonic);
+
+      //TODO(doheun): make seedPhraseToPrivate function in ain-util.
+      if (!bip39.validateMnemonic(mnemonic)) {
+        throw new Error('[injectAccountFromHDWallet] Invalid mnemonic');
+      }
+
+      const seed = bip39.mnemonicToSeedSync(mnemonic);
+      const HDkey = require('hdkey');
+      const hdkey = HDkey.fromMasterSeed(seed);
+      const path = AIN_HD_DERIVATION_PATH + index;
+      const wallet = hdkey.derive(path);
+
+      const accountFromHDWallet = ainUtil.privateToAccount(wallet.privateKey);
+      if (accountFromHDWallet !== null) {
+        this.setAccount(accountFromHDWallet);
+        logger.info(`[${LOG_HEADER}] Injecting an account using mnemonic: ` +
+            `${this.account.address}`);
+        this.initShardSetting();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Failed to inject an account: ${err}`);
       return false;
     }
   }

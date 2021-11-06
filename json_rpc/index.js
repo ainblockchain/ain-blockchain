@@ -398,6 +398,16 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       return addProtocolVersion({ result });
     },
 
+    ain_injectAccountFromHDWallet: async function(args, done) {
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
+      let result = false;
+      if (await p2pServer.node.injectAccountFromHDWallet(args.encryptedMnemonic)) {
+        result = true;
+        p2pServer.client.run();
+      }
+      return addProtocolVersion({ result });
+    },
+
     ain_getAddress: function(args, done) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
       done(null, addProtocolVersion({
