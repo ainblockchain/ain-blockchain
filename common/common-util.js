@@ -1,5 +1,5 @@
 const stringify = require('fast-json-stable-stringify');
-const Diff = require('diff');
+const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -761,20 +761,11 @@ class CommonUtil {
     return [...new Set([...inputList])];
   }
 
-  static getDiffJson(base, target) {
+  static getJsonDiff(base, target) {
     if (!CommonUtil.isDict(base) || !CommonUtil.isDict(target)) {
       return '';
     }
-    const diff = Diff.diffJson(base, target);
-    let diffLines = '> begin diff >>>';
-    for (const line of diff) {
-      const sign = line.added ? '+' : (line.removed ? '-' : null);
-      if (sign !== null) {
-        diffLines += `\n${sign} ${JSON.stringify(line.value)}`;
-      }
-    }
-    diffLines += '\n<<< end diff <';
-    return diffLines;
+    return jsonDiff.diffString(base, target, { color: "" });
   }
 }
 
