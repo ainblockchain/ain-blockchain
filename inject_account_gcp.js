@@ -58,34 +58,58 @@ async function sendInjectAccountRequest(endpointUrl, encryptedPassword) {
       });
 }
 
-async function injectAccount(endpointUrl, password) {
+async function sendInjectAccountRequestWithMemonic(endpointUrl, encryptedMnemonic) {
+  return await axios.post(
+      `${endpointUrl}/json-rpc`,
+      {
+        method: 'ain_injectAccountFromHDWallet',
+        params: {
+          protoVer: CURRENT_PROTOCOL_VERSION,
+          encryptedMnemonic,
+        },
+        jsonrpc: '2.0',
+        id: 0
+      })
+      .then(function(resp) {
+        return _.get(resp, 'data.result.result');
+      });
+}
+
+async function injectAccount(endpointUrl, accountInjectionOption, input) {
   let bootstrapPubKey = null;
+  let res = null;
   while (bootstrapPubKey === null) {
     await sleep(1000);
     bootstrapPubKey = await sendGetBootstrapPubKeyRequest(endpointUrl);
   }
   console.log('bootstrapPubKey:', JSON.stringify(bootstrapPubKey, null, 2));
-  const encryptedPassword = await ainUtil.encryptWithPublicKey(bootstrapPubKey, password);
-  const res = await sendInjectAccountRequest(endpointUrl, encryptedPassword);
+  const encryptedInput = await ainUtil.encryptWithPublicKey(bootstrapPubKey, input);
+  if (accountInjectionOption === '--keystore') {
+    res = await sendInjectAccountRequest(endpointUrl, encryptedInput);
+  } else if (accountInjectionOption === '--mnemonic') {
+    res = await sendInjectAccountRequestWithMemonic(endpointUrl, encryptedInput);
+  }
   console.log('injectAccount result:', res);
 }
 
 async function processArguments() {
-  if (process.argv.length !== 3) {
+  if (process.argv.length != 4) {
     usage();
   }
-  const password = await new Promise((resolve) => {
-    readlineInterface.question('Enter password: ', (input) => {
+  const endpointUrl = process.argv[2];
+  const accountInjectionOption = process.argv[3];
+  const input = await new Promise((resolve) => {
+    readlineInterface.question(`Enter ${accountInjectionOption === '--keystore' ? 'password' : 'mnemonic'}: `, (input) => {
       readlineInterface.output.write('\n\r');
       readlineInterface.close();
       resolve(input);
     });
   })
-  await injectAccount(process.argv[2], password);
+  await injectAccount(endpointUrl, accountInjectionOption, input);
 }
 
 function usage() {
-  console.log('\nExample commandlines:\n  node inject_account_gcp.js <ENDPOINT_URL>\n');
+  console.log('\nExample commandlines:\n  node inject_account_gcp.js <ENDPOINT_URL> <ACCOUNT_INJECTION_OPTION>\n');
   process.exit(0);
 }
 
