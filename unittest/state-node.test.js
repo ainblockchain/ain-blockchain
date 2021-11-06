@@ -248,6 +248,7 @@ describe("state-node", () => {
       };
       const stateTree = StateNode.fromJsObject(stateObj, version);
       // set versions of state nodes and radix nodes
+      stateTree.setVersion('ver_root');
       stateTree.getChild('a').setVersion('ver_a');
       stateTree.getChild('a').getParentRadixNodes()[0].setVersion('ver_a_radix_p');
       stateTree.getChild('b').setVersion('ver_b');
@@ -337,7 +338,7 @@ describe("state-node", () => {
           "#version": "ver",
         },
         "#serial": 0,
-        "#version": "ver",
+        "#version": "ver_root",
       });
 
       // fromSnapshotObject()
@@ -411,7 +412,7 @@ describe("state-node", () => {
           "#version": "ver",
         },
         "#serial": 0,
-        "#version": "ver",
+        "#version": "ver_root",
       });
       assert.deepEqual(stateTreeRebuilt.toSnapshotObject(), snapshot);
       assert.deepEqual(stateTreeRebuilt.getChildLabels(), [
@@ -467,7 +468,7 @@ describe("state-node", () => {
         "#has_parent_state_node": true,
         "#num_parents": 0,
         "#serial": 0,
-        "#version": "ver",
+        "#version": "ver_root",
       });
     })
   })
