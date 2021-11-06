@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$#" -lt 3 ]] || [[ "$#" -gt 5 ]]; then
-    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore] [--keep-code]"
+    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore|--mnemonic] [--keep-code]"
     echo "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore"
     exit
 fi
@@ -12,7 +12,17 @@ function parse_options() {
     if [[ "$option" = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
     elif [[ "$option" = '--keystore' ]]; then
-        KEYSTORE_OPTION="$option"
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            echo "You cannot use both keystore and mnemonic"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ "$option" = '--mnemonic' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            echo "You cannot use both keystore and mnemonic"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
     else
         echo "Invalid options: $option"
         exit
@@ -21,7 +31,7 @@ function parse_options() {
 
 # Parse options.
 KEEP_CODE_OPTION=""
-KEYSTORE_OPTION=""
+ACCOUNT_INJECTION_OPTION=""
 if [[ "$#" -gt 3 ]]; then
     parse_options "$4"
     if [[ "$#" = 5 ]]; then
@@ -29,7 +39,8 @@ if [[ "$#" -gt 3 ]]; then
     fi
 fi
 echo "KEEP_CODE_OPTION=$KEEP_CODE_OPTION"
-echo "KEYSTORE_OPTION=$KEYSTORE_OPTION"
+echo "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION"
+export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
 
 echo 'Killing old jobs..'
 sudo killall node
@@ -133,11 +144,11 @@ if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
     exit
 fi
 
-# NOTE(liayoo): Currently this script supports --keystore option only for the parent chain.
-if [[ "$KEYSTORE_OPTION" != '--keystore' ]] || [[ "$2" -gt 0 ]]; then
+# NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]] || [[ "$2" -gt 0 ]]; then
     export ACCOUNT_INDEX="$3"
     echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
-else
+elif [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     if [[ "$3" = 0 ]]; then
         KEYSTORE_FILENAME="keystore_node_0.json"
     elif [[ "$3" = 1 ]]; then
