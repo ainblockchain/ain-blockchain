@@ -233,7 +233,7 @@ describe("state-node", () => {
     })
 
     it("internal node", () => {
-      const ver1 = 'ver1';
+      const version = 'ver';
       const stateObj = {
         a: 'str_a',
         b: 200,
@@ -246,7 +246,24 @@ describe("state-node", () => {
           db: 2200,
         }
       };
-      const stateTree = StateNode.fromJsObject(stateObj, ver1);
+      const stateTree = StateNode.fromJsObject(stateObj, version);
+      // set versions of state nodes and radix nodes
+      stateTree.getChild('a').setVersion('ver_a');
+      stateTree.getChild('a').getParentRadixNodes()[0].setVersion('ver_a_radix_p');
+      stateTree.getChild('b').setVersion('ver_b');
+      stateTree.getChild('b').getParentRadixNodes()[0].setVersion('ver_b_radix_p');
+      stateTree.getChild('c').setVersion('ver_c');
+      stateTree.getChild('c').getParentRadixNodes()[0].setVersion('ver_c_radix_p');
+      stateTree.getChild('c').getChild('ca').setVersion('ver_ca');
+      stateTree.getChild('c').getChild('ca').getParentRadixNodes()[0].setVersion('ver_ca_radix_p');
+      stateTree.getChild('c').getChild('cb').setVersion('ver_cb');
+      stateTree.getChild('c').getChild('cb').getParentRadixNodes()[0].setVersion('ver_cb_radix_p');
+      stateTree.getChild('d').setVersion('ver_d');
+      stateTree.getChild('d').getParentRadixNodes()[0].setVersion('ver_d_radix_p');
+      stateTree.getChild('d').getChild('da').setVersion('ver_da');
+      stateTree.getChild('d').getChild('da').getParentRadixNodes()[0].setVersion('ver_da_radix_p');
+      stateTree.getChild('d').getChild('db').setVersion('ver_db');
+      stateTree.getChild('d').getChild('db').getParentRadixNodes()[0].setVersion('ver_db_radix_p');
       updateStateInfoForStateTree(stateTree);
 
       // toSnapshotObject()
@@ -257,14 +274,14 @@ describe("state-node", () => {
           "#radix:1": {
             "#serial": 2,
             "#state:a": "str_a",
-            "#version": "ver1",
-            "#version:a": "ver1",
+            "#version": "ver_a_radix_p",
+            "#version:a": "ver_a",
           },
           "#radix:2": {
             "#serial": 5,
             "#state:b": 200,
-            "#version": "ver1",
-            "#version:b": "ver1",
+            "#version": "ver_b_radix_p",
+            "#version:b": "ver_b",
           },
           "#radix:3": {
             "#serial": 7,
@@ -274,22 +291,22 @@ describe("state-node", () => {
                 "#radix:1": {
                   "#serial": 2,
                   "#state:ca": "str_ca",
-                  "#version": "ver1",
-                  "#version:ca": "ver1",
+                  "#version": "ver_ca_radix_p",
+                  "#version:ca": "ver_ca",
                 },
                 "#radix:2": {
                   "#serial": 5,
                   "#state:cb": 1200,
-                  "#version": "ver1",
-                  "#version:cb": "ver1",
+                  "#version": "ver_cb_radix_p",
+                  "#version:cb": "ver_cb",
                 },
                 "#serial": 3,
-                "#version": "ver1",
+                "#version": "ver",
               },
               "#serial": 0,
-              "#version": "ver1",
+              "#version": "ver_c",
             },
-            "#version": "ver1",
+            "#version": "ver_c_radix_p",
           },
           "#radix:4": {
             "#serial": 9,
@@ -299,28 +316,28 @@ describe("state-node", () => {
                 "#radix:1": {
                   "#serial": 2,
                   "#state:da": "str_da",
-                  "#version": "ver1",
-                  "#version:da": "ver1",
+                  "#version": "ver_da_radix_p",
+                  "#version:da": "ver_da",
                 },
                 "#radix:2": {
                   "#serial": 5,
                   "#state:db": 2200,
-                  "#version": "ver1",
-                  "#version:db": "ver1",
+                  "#version": "ver_db_radix_p",
+                  "#version:db": "ver_db",
                 },
                 "#serial": 3,
-                "#version": "ver1",
+                "#version": "ver",
               },
               "#serial": 0,
-              "#version": "ver1",
+              "#version": "ver_d",
             },
-            "#version": "ver1",
+            "#version": "ver_d_radix_p",
           },
           "#serial": 3,
-          "#version": "ver1",
+          "#version": "ver",
         },
         "#serial": 0,
-        "#version": "ver1",
+        "#version": "ver",
       });
 
       // fromSnapshotObject()
@@ -331,14 +348,14 @@ describe("state-node", () => {
           "#radix:1": {
             "#serial": 2,
             "#state:a": "str_a",
-            "#version": "ver1",
-            "#version:a": "ver1",
+            "#version": "ver_a_radix_p",
+            "#version:a": "ver_a",
           },
           "#radix:2": {
             "#serial": 5,
             "#state:b": 200,
-            "#version": "ver1",
-            "#version:b": "ver1",
+            "#version": "ver_b_radix_p",
+            "#version:b": "ver_b",
           },
           "#radix:3": {
             "#serial": 7,
@@ -348,22 +365,22 @@ describe("state-node", () => {
                 "#radix:1": {
                   "#serial": 2,
                   "#state:ca": "str_ca",
-                  "#version": "ver1",
-                  "#version:ca": "ver1",
+                  "#version": "ver_ca_radix_p",
+                  "#version:ca": "ver_ca",
                 },
                 "#radix:2": {
                   "#serial": 5,
                   "#state:cb": 1200,
-                  "#version": "ver1",
-                  "#version:cb": "ver1",
+                  "#version": "ver_cb_radix_p",
+                  "#version:cb": "ver_cb",
                 },
                 "#serial": 3,
-                "#version": "ver1",
+                "#version": "ver",
               },
               "#serial": 0,
-              "#version": "ver1",
+              "#version": "ver_c",
             },
-            "#version": "ver1",
+            "#version": "ver_c_radix_p",
           },
           "#radix:4": {
             "#serial": 9,
@@ -373,28 +390,28 @@ describe("state-node", () => {
                 "#radix:1": {
                   "#serial": 2,
                   "#state:da": "str_da",
-                  "#version": "ver1",
-                  "#version:da": "ver1",
+                  "#version": "ver_da_radix_p",
+                  "#version:da": "ver_da",
                 },
                 "#radix:2": {
                   "#serial": 5,
                   "#state:db": 2200,
-                  "#version": "ver1",
-                  "#version:db": "ver1",
+                  "#version": "ver_db_radix_p",
+                  "#version:db": "ver_db",
                 },
                 "#serial": 3,
-                "#version": "ver1",
+                "#version": "ver",
               },
               "#serial": 0,
-              "#version": "ver1",
+              "#version": "ver_d",
             },
-            "#version": "ver1",
+            "#version": "ver_d_radix_p",
           },
           "#serial": 3,
-          "#version": "ver1",
+          "#version": "ver",
         },
         "#serial": 0,
-        "#version": "ver1",
+        "#version": "ver",
       });
       assert.deepEqual(stateTreeRebuilt.toSnapshotObject(), snapshot);
       assert.deepEqual(stateTreeRebuilt.getChildLabels(), [
@@ -410,47 +427,47 @@ describe("state-node", () => {
             "#has_parent_state_node": false,
             "#num_parents": 1,
             "#serial": 2,
-            "#version": "ver1",
             "#state:a": {
-              "#version": "ver1",
-            }
+              "#version": "ver_a",
+            },
+            "#version": "ver_a_radix_p",
           },
           "2": {
             "#has_parent_state_node": false,
             "#num_parents": 1,
             "#serial": 5,
-            "#version": "ver1",
             "#state:b": {
-              "#version": "ver1",
-            }
+              "#version": "ver_b",
+            },
+            "#version": "ver_b_radix_p",
           },
           "3": {
             "#has_parent_state_node": false,
             "#num_parents": 1,
             "#serial": 7,
-            "#version": "ver1",
             "#state:c": {
-              "#version": "ver1",
-            }
+              "#version": "ver_c",
+            },
+            "#version": "ver_c_radix_p",
           },
           "4": {
             "#has_parent_state_node": false,
             "#num_parents": 1,
             "#serial": 9,
-            "#version": "ver1",
             "#state:d": {
-              "#version": "ver1",
-            }
+              "#version": "ver_d",
+            },
+            "#version": "ver_d_radix_p",
           },
           "#has_parent_state_node": false,
           "#num_parents": 1,
           "#serial": 3,
-          "#version": "ver1",
+          "#version": "ver",
         },
         "#has_parent_state_node": true,
         "#num_parents": 0,
         "#serial": 0,
-        "#version": "ver1",
+        "#version": "ver",
       });
     })
   })
@@ -1237,13 +1254,16 @@ describe("state-node", () => {
 
   describe("version", () => {
     it("getVersion / setVersion", () => {
-      const version1 = 'version1';
-      const version2 = 'version2';
+      const version1 = 'ver1';
+      const version2 = 'ver2';
       expect(node.getVersion()).to.equal(null);
+      expect(node.radixTree.getVersion()).to.equal(null);
       node.setVersion(version1);
       expect(node.getVersion()).to.equal(version1);
+      expect(node.radixTree.getVersion()).to.equal(version1);
       node.setVersion(version2);
       expect(node.getVersion()).to.equal(version2);
+      expect(node.radixTree.getVersion()).to.equal(version2);
     });
   });
 

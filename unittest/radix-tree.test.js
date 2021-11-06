@@ -2768,6 +2768,9 @@ describe("radix-tree", () => {
     describe("other getters and setters", () => {
       it("getVersion", () => {
         expect(tree.getVersion()).to.equal(version);
+        tree.setVersion('ver2');
+        expect(tree.getVersion()).to.equal('ver2');
+        expect(tree.root.getVersion()).to.equal('ver2');
       });
 
       it("getNextSerial / getAndIncNextSerial / setNextSerial", () => {
@@ -3293,16 +3296,22 @@ describe("radix-tree", () => {
       const label21 = '0x000bbb111';
       const label22 = '0x000bbb222';
 
-      const stateNode1 = new StateNode(version);
-      const stateNode2 = new StateNode(version);
-      const stateNode21 = new StateNode(version);
-      const stateNode22 = new StateNode(version);
+      const stateNode1 = new StateNode('ver1');
+      const stateNode2 = new StateNode('ver2');
+      const stateNode21 = new StateNode('ver21');
+      const stateNode22 = new StateNode('ver22');
 
       // set state nodes
       tree.set(label1, stateNode1);
       tree.set(label2, stateNode2);
       tree.set(label21, stateNode21);
       tree.set(label22, stateNode22);
+
+      // set versions of radix nodes
+      tree.get(label1).getParentRadixNodes()[0].setVersion('ver1_radix_p');
+      tree.get(label2).getParentRadixNodes()[0].setVersion('ver2_radix_p');
+      tree.get(label21).getParentRadixNodes()[0].setVersion('ver21_radix_p');
+      tree.get(label22).getParentRadixNodes()[0].setVersion('ver22_radix_p');
 
       stateNode1.setValue('value1');
       stateNode2.setValue('value2');
@@ -3322,26 +3331,26 @@ describe("radix-tree", () => {
           "#radix:aaa": {
             "#serial": 2,
             "#state:0x000aaa": "value1",
-            "#version": "ver",
-            "#version:0x000aaa": "ver",
+            "#version": "ver1_radix_p",
+            "#version:0x000aaa": "ver1",
           },
           "#radix:bbb": {
             "#radix:111": {
               "#serial": 7,
               "#state:0x000bbb111": "value21",
-              "#version": "ver",
-              "#version:0x000bbb111": "ver",
+              "#version": "ver21_radix_p",
+              "#version:0x000bbb111": "ver21",
             },
             "#radix:222": {
               "#serial": 9,
               "#state:0x000bbb222": "value22",
-              "#version": "ver",
-              "#version:0x000bbb222": "ver",
+              "#version": "ver22_radix_p",
+              "#version:0x000bbb222": "ver22",
             },
             "#serial": 5,
             "#state:0x000bbb": "value2",
-            "#version": "ver",
-            "#version:0x000bbb": "ver",
+            "#version": "ver2_radix_p",
+            "#version:0x000bbb": "ver2",
           },
           "#serial": 3,
           "#version": "ver",
@@ -3358,26 +3367,26 @@ describe("radix-tree", () => {
           "#radix:aaa": {
             "#serial": 2,
             "#state:0x000aaa": "value1",
-            "#version": "ver",
-            "#version:0x000aaa": "ver",
+            "#version": "ver1_radix_p",
+            "#version:0x000aaa": "ver1",
           },
           "#radix:bbb": {
             "#radix:111": {
               "#serial": 7,
               "#state:0x000bbb111": "value21",
-              "#version": "ver",
-              "#version:0x000bbb111": "ver",
+              "#version": "ver21_radix_p",
+              "#version:0x000bbb111": "ver21",
             },
             "#radix:222": {
               "#serial": 9,
               "#state:0x000bbb222": "value22",
-              "#version": "ver",
-              "#version:0x000bbb222": "ver",
+              "#version": "ver22_radix_p",
+              "#version:0x000bbb222": "ver22",
             },
             "#serial": 5,
             "#state:0x000bbb": "value2",
-            "#version": "ver",
-            "#version:0x000bbb": "ver",
+            "#version": "ver2_radix_p",
+            "#version:0x000bbb": "ver2",
           },
           "#serial": 3,
           "#version": "ver",
@@ -3407,37 +3416,37 @@ describe("radix-tree", () => {
             "#has_parent_state_node": false,
             "#num_parents": 1,
             "#serial": 2,
-            "#version": "ver",
             "#state:0x000aaa": {
-              "#version": "ver",
-            }
+              "#version": "ver1",
+            },
+            "#version": "ver1_radix_p",
           },
           "bbb": {
             "111": {
               "#has_parent_state_node": false,
               "#num_parents": 1,
               "#serial": 7,
-              "#version": "ver",
               "#state:0x000bbb111": {
-                "#version": "ver",
-              }
+                "#version": "ver21",
+              },
+              "#version": "ver21_radix_p",
             },
             "222": {
               "#has_parent_state_node": false,
               "#num_parents": 1,
               "#serial": 9,
-              "#version": "ver",
               "#state:0x000bbb222": {
-                "#version": "ver",
-              }
+                "#version": "ver22",
+              },
+              "#version": "ver22_radix_p",
             },
             "#has_parent_state_node": false,
             "#num_parents": 1,
             "#serial": 5,
-            "#version": "ver",
             "#state:0x000bbb": {
-              "#version": "ver",
-            }
+              "#version": "ver2",
+            },
+            "#version": "ver2_radix_p",
           }
         }
       });
