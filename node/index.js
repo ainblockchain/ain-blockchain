@@ -37,6 +37,7 @@ const TransactionPool = require('../tx-pool');
 const StateManager = require('../db/state-manager');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
+const Consensus = require('../consensus');
 
 class BlockchainNode {
   constructor() {
@@ -489,36 +490,12 @@ class BlockchainNode {
   applyBlocksToDb(blockList, db) {
     const LOG_HEADER = 'applyBlocksToDb';
 
-    for (const block of blockList) {
-      if (block.number > 0) {
-        if (!db.executeTransactionList(block.last_votes, true, false, 0, block.timestamp)) {
-          logger.error(`[${LOG_HEADER}] Failed to execute last_votes of block: ` +
-              `${JSON.stringify(block, null, 2)}`);
-          return false;
-        }
-      }
-      if (!CommonUtil.isEmpty(block.evidence)) {
-        for (const evidenceList of Object.values(block.evidence)) {
-          for (const evidenceForOffense of evidenceList) {
-            if (!db.executeTransactionList(evidenceForOffense.votes, true, false, block.number, block.timestamp)) {
-              logger.error(`[${LOG_HEADER}] Failed to execute evidence (${block.number})`);
-              return false;
-            }
-          }
-        }
-      }
-      if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number, block.timestamp)) {
-        logger.error(`[${LOG_HEADER}] Failed to execute transactions of block: ` +
-            `${JSON.stringify(block, null, 2)}`);
+    for (let i = 0; i < blockList.length; i++) {
+      try {
+        Consensus.validateAndExecuteBlockOnDb(blockList[i], db, i > 0 ? blockList[i - 1] : null);
+      } catch (e) {
+        logger.error(`[${LOG_HEADER}] Failed to validate and execute block ${blockList[i].number}: ${e}`);
         return false;
-      }
-      db.removeOldReceipts();
-      if (!LIGHTWEIGHT) {
-        if (db.stateRoot.getProofHash() !== block.state_proof_hash) {
-          logger.error(`[${LOG_HEADER}] Failed to validate state proof of block: ` +
-              `${JSON.stringify(block, null, 2)}\n${db.stateRoot.getProofHash()}`);
-          return false;
-        }
       }
     }
     return true;
@@ -593,52 +570,17 @@ class BlockchainNode {
     return true;
   }
 
-  executeBlockOnDb(block, db) {
-    const LOG_HEADER = 'executeBlockOnDb';
-
-    if (block.number > 0) {
-      if (!db.executeTransactionList(block.last_votes, true, false, block.number, block.timestamp)) {
-        // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        CommonUtil.finishWithStackTrace(
-            logger, `[${LOG_HEADER}] Failed to execute last_votes (${block.number})`);
-        return false;
-      }
-    }
-    if (!CommonUtil.isEmpty(block.evidence)) {
-      for (const evidenceList of Object.values(block.evidence)) {
-        for (const evidenceForOffense of evidenceList) {
-          if (!db.executeTransactionList(evidenceForOffense.votes, true, false, block.number, block.timestamp)) {
-            CommonUtil.finishWithStackTrace(
-                logger, `[${LOG_HEADER}] Failed to execute evidence (${block.number})`);
-            return false;
-          }
-        }
-      }
-    }
-    if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number, block.timestamp)) {
-      // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+  executeBlockOnDbAndCleanUp(block, db, prevBlock) {
+    const LOG_HEADER = 'executeBlockOnDbAndCleanUp';
+    try {
+      Consensus.validateAndExecuteBlockOnDb(block, db, prevBlock);
+      this.tp.cleanUpForNewBlock(block);
+      return true;
+    } catch (e) {
       CommonUtil.finishWithStackTrace(
-            logger, `[${LOG_HEADER}] Failed to execute transactions (${block.number})`)
+          logger, `[${LOG_HEADER}] Failed to validate and execute block ${block.number}: ${e}`);
       return false;
     }
-    db.removeOldReceipts();
-    if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
-
-      // NOTE(platfowner): Write the current snapshot for debugging.
-      const snapshot = db.stateRoot.toJsObject();
-      FileUtil.writeSnapshot(this.snapshotDir, block.number, snapshot, true);
-
-      // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-      CommonUtil.finishWithStackTrace(
-          logger,
-          `[${LOG_HEADER}] Invalid state proof hash (${block.number}): ` +
-          `${db.stateRoot.getProofHash()}, ${block.state_proof_hash}`);
-      return false;
-    }
-    this.tp.cleanUpForNewBlock(block);
-    logger.info(`[${LOG_HEADER}] Successfully executed block ${block.number} on DB.`);
-
-    return true;
   }
 
   loadAndExecuteChainOnDb(latestSnapshotBlockNumber, deleteLastBlock, db) {
@@ -647,6 +589,7 @@ class BlockchainNode {
     let lastBlockWithoutProposal = null;
     const numBlockFiles = this.bc.getNumBlockFiles();
     const fromBlockNumber = SYNC_MODE === SyncModeOptions.FAST ? latestSnapshotBlockNumber + 1 : 0;
+    let prevBlock = null;
     let prevBlockNumber = latestSnapshotBlockNumber;
     let prevBlockHash = null;
     for (let number = fromBlockNumber; number < numBlockFiles; number++) {
@@ -668,11 +611,12 @@ class BlockchainNode {
         lastBlockWithoutProposal = block;
         this.bc.deleteBlock(lastBlockWithoutProposal);
       } else {
-        if (!this.executeBlockOnDb(block, db)) {
+        if (!this.executeBlockOnDbAndCleanUp(block, db, prevBlock)) {
           return -2;
         }
         this.bc.addBlockToChain(block);
       }
+      prevBlock = block;
       prevBlockNumber = block.number;
       prevBlockHash = block.hash;
     }
