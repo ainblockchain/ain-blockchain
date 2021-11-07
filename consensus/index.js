@@ -326,7 +326,7 @@ class Consensus {
     }
   }
 
-  getValidTransactions(longestNotarizedChain, blockNumber, blockTime, tempDb) {
+  executeAndGetValidTransactions(longestNotarizedChain, blockNumber, blockTime, tempDb) {
     const candidates = this.node.tp.getValidTransactions(longestNotarizedChain, tempDb.stateVersion);
     const transactions = [];
     const invalidTransactions = [];
@@ -341,6 +341,7 @@ class Consensus {
         resList.push(res);
       }
     }
+    tempDb.removeOldReceipts();
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
     this.node.tp.removeInvalidTxsFromPool(invalidTransactions);
@@ -419,9 +420,8 @@ class Consensus {
     const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
     const { offenses, evidence } = this.blockPool.getOffensesAndEvidence(
         validators, recordedInvalidBlockHashSet, blockTime, tempDb);
-    const { transactions, receipts, gasAmountTotal, gasCostTotal } = this.getValidTransactions(
+    const { transactions, receipts, gasAmountTotal, gasCostTotal } = this.executeAndGetValidTransactions(
         longestNotarizedChain, blockNumber, blockTime, tempDb);
-    tempDb.removeOldReceipts();
     const stateProofHash = LIGHTWEIGHT ? '' : tempDb.getProofHash('/');
     const proposalBlock = Block.create(
         lastBlock.hash, lastVotes, evidence, transactions, receipts, blockNumber, epoch,
