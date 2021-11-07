@@ -43,6 +43,7 @@ const ConsensusUtil = require('./consensus-util');
 const PathUtil = require('../common/path-util');
 const VersionUtil = require('../common/version-util');
 const DB = require('../db');
+const FileUtil = require('../common/file-util');
 
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
@@ -714,12 +715,18 @@ class Consensus {
     db.removeOldReceipts();
   }
 
-  static validateStateProofHash(expectedStateProofHash, db) {
+  static validateStateProofHash(expectedStateProofHash, number, db, snapshotDir) {
     if (LIGHTWEIGHT) {
       return;
     }
     const stateProofHash = db.getProofHash('/');
     if (stateProofHash !== expectedStateProofHash) {
+      if (snapshotDir) {
+        // NOTE(platfowner): Write the current snapshot for debugging.
+        const snapshot = FeatureFlags.enableRadixLevelSnapshots ? db.takeRadixSnapshot() :
+            db.takeStateSnapshot();
+        FileUtil.writeSnapshot(snapshotDir, number, snapshot, true);
+      }
       db.destroyDb();
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_STATE_PROOF_HASH,
@@ -729,7 +736,7 @@ class Consensus {
     }
   }
 
-  static validateAndExecuteBlockOnDb(block, db, prevBlock = null, proposalTx = null, blockPool = null) {
+  static validateAndExecuteBlockOnDb(block, db, prevBlock = null, snapshotDir = null, proposalTx = null, blockPool = null) {
     const { number, epoch, timestamp, transactions, receipts, gas_amount_total, gas_cost_total,
         proposer, validators, last_votes, evidence, last_hash, state_proof_hash } = block;
     const prevBlockTotalAtStake = prevBlock ? ConsensusUtil.getTotalAtStake(prevBlock.validators) : -1;
@@ -741,7 +748,7 @@ class Consensus {
         evidence, validators, prevBlockMajority, timestamp, db, proposalTx);
     Consensus.validateAndExecuteTransactions(
         transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db);
-    Consensus.validateStateProofHash(state_proof_hash, db);
+    Consensus.validateStateProofHash(state_proof_hash, number, db, snapshotDir);
   }
 
   validateProposalTx(proposalTx, number, blockTime, newDb) {
@@ -808,7 +815,7 @@ class Consensus {
 
     const { baseVersion, prevDb, isSnapDb } = this.getBaseVersionAndPrevDb(prevBlock, last_hash);
     const newDb = this.getNewDbForProposal(prevBlock, number, baseVersion, prevDb, isSnapDb);
-    Consensus.validateAndExecuteBlockOnDb(block, newDb, prevBlock, proposalTx, this.blockPool);
+    Consensus.validateAndExecuteBlockOnDb(block, newDb, prevBlock, null, proposalTx, this.blockPool);
     this.validateProposalTx(proposalTx, number, timestamp, newDb);
 
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
