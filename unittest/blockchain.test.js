@@ -81,6 +81,9 @@ describe('Blockchain', () => {
 
     beforeEach(() => {
       blocks = [];
+      const validators = {
+        [node1.account.address]: { stake: 10, proposal_right: true }
+      };
 
       for (let i = 0; i < 1000; i++) {
         // let i represent a fake block here
@@ -98,7 +101,7 @@ describe('Blockchain', () => {
         const receipts = txsToDummyReceipts(transactions);
         const block = Block.create(
             lastBlock.hash, [], {}, transactions, receipts, lastBlock.number + 1, i,
-            finalRoot.getProofHash(), node1.account.address, [], 0, 0);
+            finalRoot.getProofHash(), node1.account.address, validators, 0, 0);
         if (block.number === 500) {
           blockHash = block.hash;
         }
