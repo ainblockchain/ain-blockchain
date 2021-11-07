@@ -110,7 +110,7 @@ class DB {
 
   initDbStates(snapshot = null) {
     if (snapshot !== null) {
-      if (FeatureFlags.enableFullNodeSnapshots) {
+      if (FeatureFlags.enableRadixLevelSnapshots) {
         const newRoot = StateNode.fromSnapshotObject(snapshot);
         updateStateInfoForStateTree(newRoot);
         this.replaceStateRoot(newRoot);
@@ -170,7 +170,12 @@ class DB {
    * @param {StateNode} newRoot new root to replace with
    */
   replaceStateRoot(newRoot) {
+    const LOG_HEADER = 'replaceStateRoot';
     const newVersion = newRoot.getVersion();
+    if (this.stateManager.hasVersion(newVersion)) {
+      CommonUtil.finishWithStackTrace(
+          logger, `[${LOG_HEADER}] State version already exists: ${newVersion}`);
+    }
     this.stateManager.setRoot(newVersion, newRoot);
     this.stateVersion = newVersion;
     this.stateRoot = newRoot;
