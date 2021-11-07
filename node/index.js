@@ -10,7 +10,6 @@ const {
   ACCOUNT_INDEX,
   KEYSTORE_FILE_PATH,
   SYNC_MODE,
-  ON_MEMORY_CHAIN_LENGTH,
   SNAPSHOTS_ROOT_DIR,
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
   MAX_NUM_SNAPSHOTS,
@@ -26,12 +25,10 @@ const {
   LIGHTWEIGHT,
   TX_POOL_SIZE_LIMIT,
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
-  MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
   KEYS_ROOT_DIR,
 } = require('../common/constants');
 const FileUtil = require('../common/file-util');
 const CommonUtil = require('../common/common-util');
-const PathUtil = require('../common/path-util');
 const Blockchain = require('../blockchain');
 const TransactionPool = require('../tx-pool');
 const StateManager = require('../db/state-manager');
