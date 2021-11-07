@@ -550,18 +550,6 @@ class Consensus {
     }
   }
 
-  validateProposer(prevBlockLastVotesHash, epoch, validators, proposer) {
-    const seed = '' + prevBlockLastVotesHash + epoch;
-    const expectedProposer = Consensus.selectProposer(seed, validators);
-    if (expectedProposer !== proposer) {
-      throw new ConsensusError({
-        code: ConsensusErrorCode.INVALID_PROPOSER,
-        message: `Proposer is not the expected node (expected: ${expectedProposer} / actual: ${proposer})`,
-        level: 'error'
-      });
-    }
-  }
-
   getNewDbForProposal(prevBlock, number, baseVersion, prevDb, isSnapDb) {
     const newDb = this.node.createTempDb(
         baseVersion, `${StateVersions.POOL}:${prevBlock.number}:${number}`, prevBlock.number);
@@ -581,42 +569,59 @@ class Consensus {
     return newDb;
   }
 
-  validateLastVotesAndExecuteOnNewDb(lastVotes, lastHash, number, blockTime, newDb) {
-    if (!newDb.executeTransactionList(lastVotes, true, false, 0, blockTime)) {
-      newDb.destroyDb();
+  static validateProposer(prevBlockLastVotesHash, epoch, validators, proposer) {
+    if (prevBlockLastVotesHash === null) return;
+    const seed = '' + prevBlockLastVotesHash + epoch;
+    const expectedProposer = Consensus.selectProposer(seed, validators);
+    if (expectedProposer !== proposer) {
+      throw new ConsensusError({
+        code: ConsensusErrorCode.INVALID_PROPOSER,
+        message: `Proposer is not the expected node (expected: ${expectedProposer} / actual: ${proposer})`,
+        level: 'error'
+      });
+    }
+  }
+
+  static validateLastVotesAndExecuteOnNewDb(lastVotes, lastHash, number, blockTime, db, blockPool) {
+    if (number <= 0) return;
+    if (!db.executeTransactionList(lastVotes, true, false, 0, blockTime)) {
+      db.destroyDb();
       throw new ConsensusError({
         code: ConsensusErrorCode.EXECUTING_LAST_VOTES_FAILURE,
         message: `Failed to execute last votes`,
         level: 'error'
       });
     }
-    for (const vote of lastVotes) {
-      this.blockPool.addSeenVote(vote);
-    }
-    if (!this.blockPool.hashToBlockInfo[lastHash].notarized) {
-      newDb.destroyDb();
-      throw new ConsensusError({
-        code: ConsensusErrorCode.INVALID_LAST_VOTES_STAKES,
-        message: `Block's last_votes don't correctly notarize its previous block of number ` +
-            `${number - 1} with hash ${lastHash}:\n` +
-            `${JSON.stringify(this.blockPool.hashToBlockInfo[lastHash], null, 2)}`,
-        level: 'error'
-      });
+    if (blockPool) {
+      for (const vote of lastVotes) {
+        blockPool.addSeenVote(vote);
+      }
+      if (!blockPool.hashToBlockInfo[lastHash].notarized) {
+        db.destroyDb();
+        throw new ConsensusError({
+          code: ConsensusErrorCode.INVALID_LAST_VOTES_STAKES,
+          message: `Block's last_votes don't correctly notarize its previous block of number ` +
+              `${number - 1} with hash ${lastHash}:\n` +
+              `${JSON.stringify(blockPool.hashToBlockInfo[lastHash], null, 2)}`,
+          level: 'error'
+        });
+      }
     }
   }
 
   // Cross-check the offenses in proposalTx & the evidence in proposalBlock
-  validateOffensesAndEvidence(proposalBlock, proposalTx, validators, prevBlockMajority, blockTime, newDb) {
-    const offenses = ConsensusUtil.getOffensesFromProposalTx(proposalTx);
-    const evidence = proposalBlock.evidence;
-    if (CommonUtil.isEmpty(offenses) !== CommonUtil.isEmpty(evidence)) {
-      newDb.destroyDb();
-      throw new ConsensusError({
-        code: ConsensusErrorCode.OFFENSES_EVIDENCE_MISMATCH,
-        message: `Offenses and evidence don't match: ` +
-            `${JSON.stringify(offenses)} / ${JSON.stringify(evidence)}`,
-        level: 'error'
-      });
+  static validateOffensesAndEvidence(evidence, validators, prevBlockMajority, blockTime, db, proposalTx) {
+    const offenses = proposalTx ? ConsensusUtil.getOffensesFromProposalTx(proposalTx) : null;
+    if (proposalTx) {
+      if (CommonUtil.isEmpty(offenses) !== CommonUtil.isEmpty(evidence)) {
+        db.destroyDb();
+        throw new ConsensusError({
+          code: ConsensusErrorCode.OFFENSES_EVIDENCE_MISMATCH,
+          message: `Offenses and evidence don't match: ` +
+              `${JSON.stringify(offenses)} / ${JSON.stringify(evidence)}`,
+          level: 'error'
+        });
+      }
     }
     if (CommonUtil.isEmpty(evidence)) {
       return;
@@ -625,27 +630,27 @@ class Consensus {
       const tempOffenses = {};
       for (const evidenceForOffense of evidenceList) {
         if (!CommonUtil.isValidatorOffenseType(evidenceForOffense.offense_type)) {
-          newDb.destroyDb();
+          db.destroyDb();
           throw new ConsensusError({
             code: ConsensusErrorCode.INVALID_OFFENSE_TYPE,
-            message: ``,
+            message: `Invalid offense type: ${evidenceForOffense.offense_type}`,
             level: 'error'
           });
         }
         const tallied = evidenceForOffense.votes.reduce((acc, vote) => {
           return acc + _.get(validators, `${vote.address}.stake`, 0);
         }, 0);
-        if (tallied < prevBlockMajority) {
-          newDb.destroyDb();
+        if (prevBlockMajority !== -1 && tallied < prevBlockMajority) {
+          db.destroyDb();
           throw new ConsensusError({
             code: ConsensusErrorCode.INVALID_EVIDENCE_VOTES_STAKES,
             message: `Evidence votes don't meet the majority`,
             level: 'error'
           });
         }
-        const txsRes = newDb.executeTransactionList(evidenceForOffense.votes, true, false, 0, blockTime);
+        const txsRes = db.executeTransactionList(evidenceForOffense.votes, true, false, 0, blockTime);
         if (!txsRes) {
-          newDb.destroyDb();
+          db.destroyDb();
           throw new ConsensusError({
             code: ConsensusErrorCode.EXECUTING_EVIDENCE_VOTES_FAILURE,
             message: `Failed to execute evidence votes`,
@@ -657,21 +662,23 @@ class Consensus {
         }
         tempOffenses[evidenceForOffense.offense_type] += 1;
       }
-      if (!_.isEqual(offenses[offender], tempOffenses, { strict: true })) {
-        newDb.destroyDb();
-        throw new ConsensusError({
-          code: ConsensusErrorCode.INVALID_OFFENSE_COUNTS,
-          message: `Invalid offense counts`,
-          level: 'error'
-        });
+      if (proposalTx) {
+        if (!_.isEqual(offenses[offender], tempOffenses, { strict: true })) {
+          db.destroyDb();
+          throw new ConsensusError({
+            code: ConsensusErrorCode.INVALID_OFFENSE_COUNTS,
+            message: `Invalid offense counts`,
+            level: 'error'
+          });
+        }
       }
     }
   }
 
-  validateTransactions(transactions, receipts, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, newDb) {
-    const txsRes = newDb.executeTransactionList(transactions, false, true, number, blockTime);
+  static validateTransactions(transactions, receipts, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, db) {
+    const txsRes = db.executeTransactionList(transactions, number === 0, true, number, blockTime);
     if (!txsRes) {
-      newDb.destroyDb();
+      db.destroyDb();
       throw new ConsensusError({
         code: ConsensusErrorCode.EXECUTING_TX_FAILURE,
         message: `Failed to execute transactions`,
@@ -679,7 +686,7 @@ class Consensus {
       });
     }
     if (!_.isEqual(receipts, CommonUtil.txResultsToReceipts(txsRes))) {
-      newDb.destroyDb();
+      db.destroyDb();
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_RECEIPTS,
         message: `Invalid receipts`,
@@ -689,7 +696,7 @@ class Consensus {
     const { gasAmountTotal, gasCostTotal } =
         CommonUtil.getServiceGasCostTotalFromTxList(transactions, txsRes);
     if (gasAmountTotal !== expectedGasAmountTotal) {
-      newDb.destroyDb();
+      db.destroyDb();
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_GAS_AMOUNT_TOTAL,
         message: `Invalid gas_amount_total`,
@@ -697,14 +704,42 @@ class Consensus {
       });
     }
     if (gasCostTotal !== expectedGasCostTotal) {
-      newDb.destroyDb();
+      db.destroyDb();
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_GAS_COST_TOTAL,
         message: `Invalid gas_cost_total`,
         level: 'error'
       });
     }
-    newDb.removeOldReceipts();
+    db.removeOldReceipts();
+  }
+
+  static validateStateProofHash(expectedStateProofHash, db) {
+    if (LIGHTWEIGHT) {
+      return;
+    }
+    const stateProofHash = db.getProofHash('/');
+    if (stateProofHash !== expectedStateProofHash) {
+      db.destroyDb();
+      throw new ConsensusError({
+        code: ConsensusErrorCode.INVALID_STATE_PROOF_HASH,
+        message: `State proof hashes don't match: ${stateProofHash} / ${expectedStateProofHash}`,
+        level: 'error'
+      });
+    }
+  }
+
+  static validateAndExecuteBlockOnDb(block, db, prevBlock = null, proposalTx = null, blockPool = null) {
+    const { number, epoch, timestamp, transactions, receipts, gas_amount_total, gas_cost_total,
+        proposer, validators, last_votes, evidence, last_hash, state_proof_hash } = block;
+    const prevBlockTotalAtStake = prevBlock ? ConsensusUtil.getTotalAtStake(prevBlock.validators) : -1;
+    const prevBlockMajority = prevBlock ? prevBlockTotalAtStake * ConsensusConsts.MAJORITY : -1;
+    const prevBlockLastVotesHash = prevBlock ? prevBlock.last_votes_hash : null;
+    Consensus.validateProposer(prevBlockLastVotesHash, epoch, validators, proposer);
+    Consensus.validateLastVotesAndExecuteOnNewDb(last_votes, last_hash, number, timestamp, db, blockPool);
+    Consensus.validateOffensesAndEvidence(evidence, validators, prevBlockMajority, timestamp, db, proposalTx);
+    Consensus.validateTransactions(transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db);
+    Consensus.validateStateProofHash(state_proof_hash, db);
   }
 
   validateProposalTx(proposalTx, number, blockTime, newDb) {
@@ -744,21 +779,6 @@ class Consensus {
     newDb.blockNumberSnapshot += 1;
   }
 
-  validateStateProofHash(expectedStateProofHash, newDb) {
-    if (LIGHTWEIGHT) {
-      return;
-    }
-    const stateProofHash = newDb.getProofHash('/');
-    if (stateProofHash !== expectedStateProofHash) {
-      newDb.destroyDb();
-      throw new ConsensusError({
-        code: ConsensusErrorCode.INVALID_STATE_PROOF_HASH,
-        message: `State proof hashes don't match: ${stateProofHash} / ${expectedStateProofHash}`,
-        level: 'error'
-      });
-    }
-  }
-
   /**
    * Performs various checks on the proposalBlock and proposalTx. Throws ConsensusError if a check
    * fails. If the ConsensusError's code is one of the `ConsensusErrorCodesToVoteAgainst`,
@@ -776,25 +796,18 @@ class Consensus {
         level: 'error'
       });
     }
-    const { proposer, number, epoch, hash, last_hash, validators, last_votes, transactions,
-      receipts, gas_amount_total, gas_cost_total, state_proof_hash, timestamp } = block;
+    const { proposer, number, epoch, hash, last_hash, validators, last_votes, timestamp } = block;
     logger.info(`[${LOG_HEADER}] Checking block proposal: ${number} / ${epoch} / ${hash} / ${proposer}`);
     this.precheckProposal(block, proposalTx, proposer, hash, number, validators);
 
     const prevBlockInfo = this.getPrevBlockInfo(number, last_hash);
     const prevBlock = prevBlockInfo.block;
     this.validatePrevBlock(prevBlockInfo, number, epoch, last_votes);
-    this.validateProposer(prevBlock.last_votes_hash, epoch, validators, proposer);
 
     const { baseVersion, prevDb, isSnapDb } = this.getBaseVersionAndPrevDb(prevBlock, last_hash);
     const newDb = this.getNewDbForProposal(prevBlock, number, baseVersion, prevDb, isSnapDb);
-    const prevBlockTotalAtStake = ConsensusUtil.getTotalAtStake(prevBlock.validators);
-    const prevBlockMajority = prevBlockTotalAtStake * ConsensusConsts.MAJORITY;
-    this.validateLastVotesAndExecuteOnNewDb(last_votes, last_hash, number, timestamp, newDb);
-    this.validateOffensesAndEvidence(block, proposalTx, validators, prevBlockMajority, timestamp, newDb);
-    this.validateTransactions(transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, newDb);
+    Consensus.validateAndExecuteBlockOnDb(block, newDb, prevBlock, proposalTx, this.blockPool);
     this.validateProposalTx(proposalTx, number, timestamp, newDb);
-    this.validateStateProofHash(state_proof_hash, newDb);
 
     if (!this.blockPool.addSeenBlock(proposalBlock, proposalTx)) {
       newDb.destroyDb();
@@ -1119,18 +1132,21 @@ class Consensus {
       return null;
     }
 
+    let prevBlock = null;
     while (chain.length) {
       // apply last_votes and transactions
       const block = chain.shift();
       const blockNumber = block.number;
       logger.debug(`[${LOG_HEADER}] applying block ${JSON.stringify(block)}`);
-      const executeRes = this.node.applyBlocksToDb([block], snapDb);
-      if (executeRes !== true) {
-        logger.error(`[${LOG_HEADER}] Failed to execute block`);
+      try {
+        Consensus.validateAndExecuteBlockOnDb(block, snapDb, prevBlock);
+      } catch (e) {
+        logger.error(`[${LOG_HEADER}] Failed to validate and execute block ${block.number}: ${e}`);
         snapDb.destroyDb();
         return null;
       }
       snapDb.blockNumberSnapshot = blockNumber;
+      prevBlock = block;
     }
     return snapDb;
   }
