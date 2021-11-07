@@ -4653,7 +4653,6 @@ describe("State info", () => {
       _.set(verifResult, 'proofHash', 'erased');
       assert.deepEqual(verifResult, {
         "proofHash": "erased",
-        "isStateNode": true,
         "isVerified": true,
         "mismatchedPath": null,
         "mismatchedProofHash": null,
@@ -5019,7 +5018,7 @@ describe("State version handling", () => {
       expect(afterOtherChild212).to.equal(beforeOtherChild212);  // Not cloned
 
       // The state values of other roots are not affected.
-      assert.deepEqual(otherRoot.getChild('values').getChild('apps').getChild('test').toJsObject(), dbValues);
+      assert.deepEqual(otherRoot.getChild('values').getChild('apps').getChild('test').toStateSnapshot(), dbValues);
     });
   });
 

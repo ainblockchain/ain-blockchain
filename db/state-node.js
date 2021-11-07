@@ -1,11 +1,11 @@
 const logger = new (require('../logger'))('STATE_NODE');
 
+const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
-  FeatureFlags,
   LIGHTWEIGHT,
-  HASH_DELIMITER,
+  STATE_INFO_PREFIX,
   StateInfoProperties,
 } = require('../common/constants');
 const RadixTree = require('./radix-tree');
@@ -59,7 +59,7 @@ class StateNode {
         this.isLeaf, this.value, this.proofHash, this.treeHeight,
         this.treeSize, this.treeBytes);
     if (!this.getIsLeaf()) {
-      cloned.radixTree = this.radixTree.clone(version, cloned);
+      cloned.setRadixTree(this.radixTree.clone(version, cloned));
     }
     return cloned;
   }
@@ -72,41 +72,74 @@ class StateNode {
     return sizeof(this.value) + 160;
   }
 
-  static fromJsObject(obj, version) {
-    const node = new StateNode(version);
+  /**
+   * Constructs a sub-tree from the given snapshot object.
+   */
+  static fromRadixSnapshot(obj) {
+    const curNode = new StateNode();
+    if (CommonUtil.isDict(obj)) {
+      if (!CommonUtil.isEmpty(obj)) {
+        const radixTree = RadixTree.fromRadixSnapshot(obj);
+        curNode.setRadixTree(radixTree);
+        curNode.setIsLeaf(false);
+        curNode.setVersion(radixTree.getVersion());
+      }
+    } else {
+      curNode.setValue(obj);
+    }
+    return curNode;
+  }
+
+  /**
+   * Converts this sub-tree to a snapshot object.
+   */
+  toRadixSnapshot() {
+    if (this.getIsLeaf()) {
+      return this.getValue();
+    }
+    return this.radixTree.toRadixSnapshot();
+  }
+
+  /**
+   * Constructs a sub-tree from the given js object.
+   */
+  static fromStateSnapshot(obj, version) {
+    const curNode = new StateNode(version);
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
         for (const key in obj) {
+          if (_.startsWith(key, STATE_INFO_PREFIX)) {
+            // Skip state properties.
+            continue;
+          }
           const childObj = obj[key];
-          node.setChild(key, StateNode.fromJsObject(childObj, version));
+          curNode.setChild(key, StateNode.fromStateSnapshot(childObj, version));
         }
       }
     } else {
-      node.setValue(obj);
+      curNode.setValue(obj);
     }
-    return node;
+    return curNode;
   }
 
-  toJsObject(options) {
+  /**
+   * Converts this sub-tree to a js object.
+   */
+  toStateSnapshot(options) {
     const isShallow = options && options.isShallow;
     const includeVersion = options && options.includeVersion;
-    const includeProof = options && options.includeProof;
     const includeTreeInfo = options && options.includeTreeInfo;
+    const includeProof = options && options.includeProof;
     if (this.getIsLeaf()) {
       return this.getValue();
     }
     const obj = {};
     for (const label of this.getChildLabels()) {
       const childNode = this.getChild(label);
-      obj[label] = (isShallow && !childNode.getIsLeaf()) ?
-          { [`${StateInfoProperties.STATE_PROOF_HASH}`]: childNode.getProofHash() } :
-          childNode.toJsObject(options);
       if (childNode.getIsLeaf()) {
+        obj[label] = childNode.toStateSnapshot(options);
         if (includeVersion) {
           obj[`${StateInfoProperties.VERSION}:${label}`] = childNode.getVersion();
-        }
-        if (includeProof) {
-          obj[`${StateInfoProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
         }
         if (includeTreeInfo) {
           obj[`${StateInfoProperties.NUM_PARENTS}:${label}`] = childNode.numParents();
@@ -114,19 +147,26 @@ class StateNode {
           obj[`${StateInfoProperties.TREE_SIZE}:${label}`] = childNode.getTreeSize();
           obj[`${StateInfoProperties.TREE_BYTES}:${label}`] = childNode.getTreeBytes();
         }
+        if (includeProof) {
+          obj[`${StateInfoProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
+        }
+      } else {
+        obj[label] = isShallow ?
+            { [`${StateInfoProperties.STATE_PROOF_HASH}`]: childNode.getProofHash() } :
+            childNode.toStateSnapshot(options);
       }
     }
     if (includeVersion) {
       obj[`${StateInfoProperties.VERSION}`] = this.getVersion();
-    }
-    if (includeProof) {
-      obj[`${StateInfoProperties.STATE_PROOF_HASH}`] = this.getProofHash();
     }
     if (includeTreeInfo) {
       obj[`${StateInfoProperties.NUM_PARENTS}`] = this.numParents();
       obj[`${StateInfoProperties.TREE_HEIGHT}`] = this.getTreeHeight();
       obj[`${StateInfoProperties.TREE_SIZE}`] = this.getTreeSize();
       obj[`${StateInfoProperties.TREE_BYTES}`] = this.getTreeBytes();
+    }
+    if (includeProof) {
+      obj[`${StateInfoProperties.STATE_PROOF_HASH}`] = this.getProofHash();
     }
 
     return obj;
@@ -322,7 +362,13 @@ class StateNode {
   }
 
   numChildren() {
-    return this.radixTree.numChildStateNodes();
+    return this.radixTree.getNumChildStateNodes();
+  }
+
+  setRadixTree(radixTree) {
+    this.radixTree = radixTree;
+    // NOTE(platfowner): Need to set parent state node of the root radix node.
+    radixTree.root.setParentStateNode(this);
   }
 
   getProofHash() {
@@ -339,6 +385,7 @@ class StateNode {
 
   setVersion(version) {
     this.version = version;
+    this.radixTree.setVersion(version);
   }
 
   getTreeHeight() {
