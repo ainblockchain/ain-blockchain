@@ -5,6 +5,7 @@ const assert = chai.assert;
 
 const CommonUtil = require('../common/common-util');
 const RadixNode = require('../db/radix-node');
+const RadixTree = require('../db/radix-tree');
 const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 const {
   updateStateInfoForStateTree,
@@ -51,8 +52,8 @@ describe("state-node", () => {
       expect(node.isLeaf).to.equal(true);
       expect(node.value).to.equal(null);
       expect(node.parentSet.size).to.equal(0);
-      expect(node.radixTree.numChildStateNodes()).to.equal(0);
-      expect(node.radixTree.root.version).to.equal(null);
+      expect(node.radixTree.getNumChildStateNodes()).to.equal(0);
+      expect(node.radixTree.getVersion()).to.equal(null);
       expect(node.proofHash).to.equal(null);
       expect(node.treeHeight).to.equal(0);
       expect(node.treeSize).to.equal(0);
@@ -87,8 +88,8 @@ describe("state-node", () => {
       expect(node.isLeaf).to.equal(true);
       expect(node.value).to.equal(null);
       expect(node.parentSet.size).to.equal(0);
-      expect(node.radixTree.numChildStateNodes()).to.equal(0);
-      expect(node.radixTree.root.version).to.equal(null);
+      expect(node.radixTree.getNumChildStateNodes()).to.equal(0);
+      expect(node.radixTree.getVersion()).to.equal(null);
       expect(node.proofHash).to.equal(null);
       expect(node.treeHeight).to.equal(0);
       expect(node.treeSize).to.equal(0);
@@ -104,8 +105,8 @@ describe("state-node", () => {
       expect(node2.isLeaf).to.equal(true);
       expect(node2.value).to.equal(null);
       expect(node2.parentSet.size).to.equal(0);
-      expect(node2.radixTree.numChildStateNodes()).to.equal(0);
-      expect(node2.radixTree.root.version).to.equal('version1');
+      expect(node2.radixTree.getNumChildStateNodes()).to.equal(0);
+      expect(node2.radixTree.getVersion()).to.equal('version1');
       expect(node2.proofHash).to.equal(null);
       expect(node2.treeHeight).to.equal(0);
       expect(node2.treeSize).to.equal(0);
@@ -133,7 +134,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(node.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
-      assert.deepEqual(clone.toJsObject(GET_OPTIONS_INCLUDE_ALL), node.toJsObject(GET_OPTIONS_INCLUDE_ALL));
+      assert.deepEqual(clone.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), node.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL));
     });
 
     it("internal node", () => {
@@ -167,7 +168,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
-      assert.deepEqual(clone.toJsObject(GET_OPTIONS_INCLUDE_ALL), stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL));
+      assert.deepEqual(clone.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL));
     });
   });
 
@@ -218,15 +219,269 @@ describe("state-node", () => {
     });
   });
 
-  describe("fromJsObject / toJsObject", () => {
+  describe("fromRadixSnapshot / toRadixSnapshot", () => {
     it("leaf node", () => {
-      expect(StateNode.fromJsObject(true).toJsObject()).to.equal(true);
-      expect(StateNode.fromJsObject(false).toJsObject()).to.equal(false);
-      expect(StateNode.fromJsObject(10).toJsObject()).to.equal(10);
-      expect(StateNode.fromJsObject('str').toJsObject()).to.equal('str');
-      expect(StateNode.fromJsObject('').toJsObject()).to.equal('');
-      expect(StateNode.fromJsObject(null).toJsObject()).to.equal(null);
-      expect(StateNode.fromJsObject(undefined).toJsObject()).to.equal(undefined);
+      const ver1 = 'ver1';
+
+      const snapshot1 = StateNode.fromStateSnapshot('str', ver1).toRadixSnapshot();
+      expect(snapshot1).to.equal('str');
+      expect(StateNode.fromRadixSnapshot(snapshot1).toRadixSnapshot()).to.equal('str');
+
+      const snapshot2 = StateNode.fromStateSnapshot(100, ver1).toRadixSnapshot();
+      expect(snapshot2).to.equal(100);
+      expect(StateNode.fromRadixSnapshot(snapshot2).toRadixSnapshot()).to.equal(100);
+    })
+
+    it("internal node", () => {
+      const version = 'ver';
+      const stateObj = {
+        a: 'str_a',
+        b: 200,
+        c: {
+          ca: 'str_ca',
+          cb: 1200,
+        },
+        d: {
+          da: 'str_da',
+          db: 2200,
+        }
+      };
+      const stateTree = StateNode.fromStateSnapshot(stateObj, version);
+      // set versions of state nodes and radix nodes
+      stateTree.setVersion('ver_root');
+      stateTree.getChild('a').setVersion('ver_a');
+      stateTree.getChild('a').getParentRadixNodes()[0].setVersion('ver_a_radix_p');
+      stateTree.getChild('b').setVersion('ver_b');
+      stateTree.getChild('b').getParentRadixNodes()[0].setVersion('ver_b_radix_p');
+      stateTree.getChild('c').setVersion('ver_c');
+      stateTree.getChild('c').getParentRadixNodes()[0].setVersion('ver_c_radix_p');
+      stateTree.getChild('c').getChild('ca').setVersion('ver_ca');
+      stateTree.getChild('c').getChild('ca').getParentRadixNodes()[0].setVersion('ver_ca_radix_p');
+      stateTree.getChild('c').getChild('cb').setVersion('ver_cb');
+      stateTree.getChild('c').getChild('cb').getParentRadixNodes()[0].setVersion('ver_cb_radix_p');
+      stateTree.getChild('d').setVersion('ver_d');
+      stateTree.getChild('d').getParentRadixNodes()[0].setVersion('ver_d_radix_p');
+      stateTree.getChild('d').getChild('da').setVersion('ver_da');
+      stateTree.getChild('d').getChild('da').getParentRadixNodes()[0].setVersion('ver_da_radix_p');
+      stateTree.getChild('d').getChild('db').setVersion('ver_db');
+      stateTree.getChild('d').getChild('db').getParentRadixNodes()[0].setVersion('ver_db_radix_p');
+      updateStateInfoForStateTree(stateTree);
+
+      // toRadixSnapshot()
+      const snapshot = stateTree.toRadixSnapshot();
+      assert.deepEqual(snapshot, {
+        "#next_serial": 10,
+        "#radix:6": {
+          "#radix:1": {
+            "#serial": 2,
+            "#state:a": "str_a",
+            "#version": "ver_a_radix_p",
+            "#version:a": "ver_a",
+          },
+          "#radix:2": {
+            "#serial": 5,
+            "#state:b": 200,
+            "#version": "ver_b_radix_p",
+            "#version:b": "ver_b",
+          },
+          "#radix:3": {
+            "#serial": 7,
+            "#state:c": {
+              "#next_serial": 6,
+              "#radix:636": {
+                "#radix:1": {
+                  "#serial": 2,
+                  "#state:ca": "str_ca",
+                  "#version": "ver_ca_radix_p",
+                  "#version:ca": "ver_ca",
+                },
+                "#radix:2": {
+                  "#serial": 5,
+                  "#state:cb": 1200,
+                  "#version": "ver_cb_radix_p",
+                  "#version:cb": "ver_cb",
+                },
+                "#serial": 3,
+                "#version": "ver",
+              },
+              "#serial": 0,
+              "#version": "ver_c",
+            },
+            "#version": "ver_c_radix_p",
+          },
+          "#radix:4": {
+            "#serial": 9,
+            "#state:d": {
+              "#next_serial": 6,
+              "#radix:646": {
+                "#radix:1": {
+                  "#serial": 2,
+                  "#state:da": "str_da",
+                  "#version": "ver_da_radix_p",
+                  "#version:da": "ver_da",
+                },
+                "#radix:2": {
+                  "#serial": 5,
+                  "#state:db": 2200,
+                  "#version": "ver_db_radix_p",
+                  "#version:db": "ver_db",
+                },
+                "#serial": 3,
+                "#version": "ver",
+              },
+              "#serial": 0,
+              "#version": "ver_d",
+            },
+            "#version": "ver_d_radix_p",
+          },
+          "#serial": 3,
+          "#version": "ver",
+        },
+        "#serial": 0,
+        "#version": "ver_root",
+      });
+
+      // fromRadixSnapshot()
+      const stateTreeRebuilt = StateNode.fromRadixSnapshot(snapshot);
+      assert.deepEqual(stateTreeRebuilt.toRadixSnapshot(), {
+        "#next_serial": 10,
+        "#radix:6": {
+          "#radix:1": {
+            "#serial": 2,
+            "#state:a": "str_a",
+            "#version": "ver_a_radix_p",
+            "#version:a": "ver_a",
+          },
+          "#radix:2": {
+            "#serial": 5,
+            "#state:b": 200,
+            "#version": "ver_b_radix_p",
+            "#version:b": "ver_b",
+          },
+          "#radix:3": {
+            "#serial": 7,
+            "#state:c": {
+              "#next_serial": 6,
+              "#radix:636": {
+                "#radix:1": {
+                  "#serial": 2,
+                  "#state:ca": "str_ca",
+                  "#version": "ver_ca_radix_p",
+                  "#version:ca": "ver_ca",
+                },
+                "#radix:2": {
+                  "#serial": 5,
+                  "#state:cb": 1200,
+                  "#version": "ver_cb_radix_p",
+                  "#version:cb": "ver_cb",
+                },
+                "#serial": 3,
+                "#version": "ver",
+              },
+              "#serial": 0,
+              "#version": "ver_c",
+            },
+            "#version": "ver_c_radix_p",
+          },
+          "#radix:4": {
+            "#serial": 9,
+            "#state:d": {
+              "#next_serial": 6,
+              "#radix:646": {
+                "#radix:1": {
+                  "#serial": 2,
+                  "#state:da": "str_da",
+                  "#version": "ver_da_radix_p",
+                  "#version:da": "ver_da",
+                },
+                "#radix:2": {
+                  "#serial": 5,
+                  "#state:db": 2200,
+                  "#version": "ver_db_radix_p",
+                  "#version:db": "ver_db",
+                },
+                "#serial": 3,
+                "#version": "ver",
+              },
+              "#serial": 0,
+              "#version": "ver_d",
+            },
+            "#version": "ver_d_radix_p",
+          },
+          "#serial": 3,
+          "#version": "ver",
+        },
+        "#serial": 0,
+        "#version": "ver_root",
+      });
+      assert.deepEqual(stateTreeRebuilt.toRadixSnapshot(), snapshot);
+      assert.deepEqual(stateTreeRebuilt.getChildLabels(), [
+        "a",
+        "b",
+        "c",
+        "d",
+      ]);
+      expect(stateTreeRebuilt.numChildren()).to.equal(4);
+      assert.deepEqual(stateTreeRebuilt.radixTree.toJsObject(true, true, false, false, true, true), {
+        "6": {
+          "1": {
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 2,
+            "#state:a": {
+              "#version": "ver_a",
+            },
+            "#version": "ver_a_radix_p",
+          },
+          "2": {
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 5,
+            "#state:b": {
+              "#version": "ver_b",
+            },
+            "#version": "ver_b_radix_p",
+          },
+          "3": {
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 7,
+            "#state:c": {
+              "#version": "ver_c",
+            },
+            "#version": "ver_c_radix_p",
+          },
+          "4": {
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 9,
+            "#state:d": {
+              "#version": "ver_d",
+            },
+            "#version": "ver_d_radix_p",
+          },
+          "#has_parent_state_node": false,
+          "#num_parents": 1,
+          "#serial": 3,
+          "#version": "ver",
+        },
+        "#has_parent_state_node": true,
+        "#num_parents": 0,
+        "#serial": 0,
+        "#version": "ver_root",
+      });
+    })
+  })
+
+  describe("toJsObject", () => {
+    it("leaf node", () => {
+      expect(StateNode.fromStateSnapshot(true).toStateSnapshot()).to.equal(true);
+      expect(StateNode.fromStateSnapshot(false).toStateSnapshot()).to.equal(false);
+      expect(StateNode.fromStateSnapshot(10).toStateSnapshot()).to.equal(10);
+      expect(StateNode.fromStateSnapshot('str').toStateSnapshot()).to.equal('str');
+      expect(StateNode.fromStateSnapshot('').toStateSnapshot()).to.equal('');
+      expect(StateNode.fromStateSnapshot(null).toStateSnapshot()).to.equal(null);
+      expect(StateNode.fromStateSnapshot(undefined).toStateSnapshot()).to.equal(undefined);
     })
 
     it("internal node", () => {
@@ -257,7 +512,7 @@ describe("state-node", () => {
           empty_obj: {},
         }
       };
-      assert.deepEqual(StateNode.fromJsObject(stateObj).toJsObject(), {
+      assert.deepEqual(StateNode.fromStateSnapshot(stateObj).toStateSnapshot(), {
         bool: false,
         number: 10,
         str: 'str',
@@ -287,118 +542,195 @@ describe("state-node", () => {
     })
   })
 
-  describe("fromJsObject with version / toJsObject", () => {
+  describe("toJsObject with includeVersion / includeTreeInfo / includeProof", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
-      expect(StateNode.fromJsObject('str', ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal('str');
+      expect(StateNode.fromStateSnapshot('str', ver1).toStateSnapshot(GET_OPTIONS_INCLUDE_ALL)).to.equal('str');
+      expect(StateNode.fromStateSnapshot(100, ver1).toStateSnapshot(GET_OPTIONS_INCLUDE_ALL)).to.equal(100);
     })
 
     it("internal node", () => {
       const ver1 = 'ver1';
-
       const stateObj = {
-        str: 'str',
-        subobj1: {
-          str: 'str1',
+        a: 'str_a',
+        b: 200,
+        c: {
+          ca: 'str_ca',
+          cb: 1200,
         },
-        subobj2: {
-          str: 'str2',
+        d: {
+          da: 'str_da',
+          db: 2200,
         }
       };
+      const stateTree = StateNode.fromStateSnapshot(stateObj, ver1);
+      updateStateInfoForStateTree(stateTree);
 
       // includeVersion = true
-      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeVersion: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeVersion: true }), {
         "#version": "ver1",
-        "#version:str": "ver1",
-        "str": "str",
-        "subobj1": {
+        "#version:a": "ver1",
+        "#version:b": "ver1",
+        "a": "str_a",
+        "b": 200,
+        "c": {
           "#version": "ver1",
-          "#version:str": "ver1",
-          "str": "str1",
+          "#version:ca": "ver1",
+          "#version:cb": "ver1",
+          "ca": "str_ca",
+          "cb": 1200,
         },
-        "subobj2": {
+        "d": {
           "#version": "ver1",
-          "#version:str": "ver1",
-          "str": "str2",
+          "#version:da": "ver1",
+          "#version:db": "ver1",
+          "da": "str_da",
+          "db": 2200,
         }
       });
 
       // includeTreeInfo = true
-      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeTreeInfo: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeTreeInfo: true }), {
         "#num_parents": 0,
-        "#num_parents:str": 1,
-        "#tree_bytes": 0,
-        "#tree_bytes:str": 0,
-        "#tree_height": 0,
-        "#tree_height:str": 0,
-        "#tree_size": 0,
-        "#tree_size:str": 0,
-        "str": "str",
-        "subobj1": {
+        "#num_parents:a": 1,
+        "#num_parents:b": 1,
+        "#tree_bytes": 1522,
+        "#tree_bytes:a": 170,
+        "#tree_bytes:b": 168,
+        "#tree_height": 2,
+        "#tree_height:a": 0,
+        "#tree_height:b": 0,
+        "#tree_size": 9,
+        "#tree_size:a": 1,
+        "#tree_size:b": 1,
+        "a": "str_a",
+        "b": 200,
+        "c": {
           "#num_parents": 1,
-          "#num_parents:str": 1,
-          "#tree_bytes": 0,
-          "#tree_bytes:str": 0,
-          "#tree_height": 0,
-          "#tree_height:str": 0,
-          "#tree_size": 0,
-          "#tree_size:str": 0,
-          "str": "str1",
+          "#num_parents:ca": 1,
+          "#num_parents:cb": 1,
+          "#tree_bytes": 508,
+          "#tree_bytes:ca": 172,
+          "#tree_bytes:cb": 168,
+          "#tree_height": 1,
+          "#tree_height:ca": 0,
+          "#tree_height:cb": 0,
+          "#tree_size": 3,
+          "#tree_size:ca": 1,
+          "#tree_size:cb": 1,
+          "ca": "str_ca",
+          "cb": 1200,
         },
-        "subobj2": {
+        "d": {
           "#num_parents": 1,
-          "#num_parents:str": 1,
-          "#tree_bytes": 0,
-          "#tree_bytes:str": 0,
-          "#tree_height": 0,
-          "#tree_height:str": 0,
-          "#tree_size": 0,
-          "#tree_size:str": 0,
-          "str": "str2",
+          "#num_parents:da": 1,
+          "#num_parents:db": 1,
+          "#tree_bytes": 508,
+          "#tree_bytes:da": 172,
+          "#tree_bytes:db": 168,
+          "#tree_height": 1,
+          "#tree_height:da": 0,
+          "#tree_height:db": 0,
+          "#tree_size": 3,
+          "#tree_size:da": 1,
+          "#tree_size:db": 1,
+          "da": "str_da",
+          "db": 2200,
         }
       });
 
       // includeProof = true
-      assert.deepEqual(StateNode.fromJsObject(stateObj, ver1).toJsObject({ includeProof: true }), {
-        "#state_ph": null,
-        "#state_ph:str": null,
-        "str": "str",
-        "subobj1": {
-          "#state_ph": null,
-          "#state_ph:str": null,
-          "str": "str1",
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
+        "#state_ph": "0xfe4f999d2f9f44b2453ea833fe85ce2129da0417f57451f74e7649a4c32536e3",
+        "#state_ph:a": "0xc9040497a73c7fa9cbe01a045e446f5a47dec8e09f46fefd983bd591f637c296",
+        "#state_ph:b": "0xd18f7d1798901b66c318da94cc5eb8d954f7b53d7206fe54469b46e88505b524",
+        "a": "str_a",
+        "b": 200,
+        "c": {
+          "#state_ph": "0xacc963071682d6b4115f0051c8f6b97682e3a69e7a999a2506c780f3c3745799",
+          "#state_ph:ca": "0x1803ea1322e9d14397425d8ed561b57413674e61f24ea1bc6ff9999bf35c8ce0",
+          "#state_ph:cb": "0xa9fce7f26e612d7075711f56536bebf1367eab988f73ec32961c24117b7c4c6d",
+          "ca": "str_ca",
+          "cb": 1200,
         },
-        "subobj2": {
-          "#state_ph": null,
-          "#state_ph:str": null,
-          "str": "str2",
+        "d": {
+          "#state_ph": "0xa24b96cf34fb0720b5c677c75a233d67e67d1d1e8ebbf9789406c9ba422ddfba",
+          "#state_ph:da": "0xc3326d413c73a0c17d13dea87e8d0cd2d5c3e9561a269c6699e9c85ba349913f",
+          "#state_ph:db": "0x9ec9f212475947ed2c2398cb947da5be9a9c58887bdb8a0ccc856cb7b5ad53cf",
+          "da": "str_da",
+          "db": 2200,
         }
       });
     })
   })
 
-  describe("fromJsObject / toJsObject with isShallow", () => {
+  describe("toJsObject with isShallow", () => {
     it("leaf node", () => {
-      expect(StateNode.fromJsObject('str').toJsObject({ isShallow: true })).to.equal('str');
+      expect(StateNode.fromStateSnapshot('str').toStateSnapshot({ isShallow: true })).to.equal('str');
+      expect(StateNode.fromStateSnapshot(100).toStateSnapshot({ isShallow: true })).to.equal(100);
     })
 
     it("internal node", () => {
-      assert.deepEqual(StateNode.fromJsObject({ a: 1, b: 2, c: 3 }).toJsObject({ isShallow: true }),
-          {
-            a: 1,
-            b: 2,
-            c: 3,
-          },
-      );
-      assert.deepEqual(StateNode.fromJsObject({ a: { aa: 11 }, b: 2 }).toJsObject({ isShallow: true }),
-          {
-            a: {
-              "#state_ph": null
-            },
-            b: 2,
-          },
-      );
+      assert.deepEqual(StateNode.fromStateSnapshot({ a: 1, b: 2, c: 3 }).toStateSnapshot({ isShallow: true }), {
+        a: 1,
+        b: 2,
+        c: 3,
+      });
+      assert.deepEqual(StateNode.fromStateSnapshot({ a: { aa: 11 }, b: 2 }).toStateSnapshot({ isShallow: true }), {
+        a: {
+          "#state_ph": null
+        },
+        b: 2,
+      });
+    })
+  })
+
+  describe("fromJsObject", () => {
+    const ver1 = 'ver1';
+    const stateObj = {
+      a: 'str_a',
+      b: 200,
+      c: {
+        ca: 'str_ca',
+        cb: 1200,
+      },
+      d: {
+        da: 'str_da',
+        db: 2200,
+      }
+    };
+    const stateTree = StateNode.fromStateSnapshot(stateObj, ver1);
+    updateStateInfoForStateTree(stateTree);
+
+    it("without options", () => {
+      const stateObjWithoutOptions = stateTree.toStateSnapshot();
+      const stateTreeParsed = StateNode.fromStateSnapshot(stateObjWithoutOptions);
+
+      // child order
+      assert.deepEqual(stateTreeParsed.getChildLabels(), [
+        "a",
+        "b",
+        "c",
+        "d",
+      ]);
+      // compare the objects
+      assert.deepEqual(stateTreeParsed.toStateSnapshot(), stateObj);
+    })
+
+    it("with options", () => {
+      const stateObjWithOptions = stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL);
+      const stateTreeParsed = StateNode.fromStateSnapshot(stateObjWithOptions);
+
+      // child order
+      assert.deepEqual(stateTreeParsed.getChildLabels(), [
+        "a",
+        "b",
+        "c",
+        "d",
+      ]);
+      // compare the objects
+      assert.deepEqual(stateTreeParsed.toStateSnapshot(), stateObj);
     })
   })
 
@@ -904,6 +1236,15 @@ describe("state-node", () => {
     });
   });
 
+  describe("radix tree", () => {
+    it("setRadixTree", () => {
+      const newRadixTree = new RadixTree();
+      node.setRadixTree(newRadixTree);
+      assert.deepEqual(node.radixTree, newRadixTree);
+      assert.deepEqual(newRadixTree.root.getParentStateNode(), node);
+    });
+  });
+
   describe("proof hash", () => {
     it("getProofHash / setProofHash", () => {
       expect(node.getProofHash()).to.equal(null);
@@ -914,13 +1255,16 @@ describe("state-node", () => {
 
   describe("version", () => {
     it("getVersion / setVersion", () => {
-      const version1 = 'version1';
-      const version2 = 'version2';
+      const version1 = 'ver1';
+      const version2 = 'ver2';
       expect(node.getVersion()).to.equal(null);
+      expect(node.radixTree.getVersion()).to.equal(null);
       node.setVersion(version1);
       expect(node.getVersion()).to.equal(version1);
+      expect(node.radixTree.getVersion()).to.equal(version1);
       node.setVersion(version2);
       expect(node.getVersion()).to.equal(version2);
+      expect(node.radixTree.getVersion()).to.equal(version2);
     });
   });
 
@@ -1240,27 +1584,27 @@ describe("state-node", () => {
         "#radix_ph": "0xea2df03d09e72671391dc8af7e9bc5e5d3ac9ae6d64cb78df2c27e391f89388e",
         "00aaaa": {
           "#radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c",
-          "0x00aaaa": {
+          "#state:0x00aaaa": {
             "#state_ph": "proofHash1",
           }
         },
         "11bb": {
           "11": {
             "#radix_ph": "0x741ba4788b06907f8c99c60a6f483f885cc1b4fb27f9e1bed71dfd1d8a213214",
-            "0x11bb11": {
+            "#state:0x11bb11": {
               "#state_ph": "proofHash4",
             }
           },
           "#radix_ph": "0xbfbfc5f5c2e7b1d694fa822a0017c8d691dd99e003798cfcc068a26505dd6430",
           "00": {
             "#radix_ph": "0x3dfb52c0d974feb0559c9efafa996fb286717785e98871336e68ffb52d04bdf4",
-            "0x11bb00": {
+            "#state:0x11bb00": {
               "#state_ph": "proofHash3",
             }
           },
           "bb": {
             "#radix_ph": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184",
-            "0x11bbbb": {
+            "#state:0x11bbbb": {
               "#state_ph": "proofHash2",
             }
           }
@@ -1269,20 +1613,20 @@ describe("state-node", () => {
 
       assert.deepEqual(stateTree.getProofOfStateNode(label2, 'child_proof2'), {
         "#state_ph": "0xea2df03d09e72671391dc8af7e9bc5e5d3ac9ae6d64cb78df2c27e391f89388e",
-        "00aaaa": {
+        "#radix:00aaaa": {
           "#radix_ph": "0xd8895ab36f227519e479a4bf7cfcbf963deb8e69e8172f395af8db83172bf22c"
         },
-        "11bb": {
-          "11": {
+        "#radix:11bb": {
+          "#radix:11": {
             "#radix_ph": "0x741ba4788b06907f8c99c60a6f483f885cc1b4fb27f9e1bed71dfd1d8a213214"
           },
           "#radix_ph": "0xbfbfc5f5c2e7b1d694fa822a0017c8d691dd99e003798cfcc068a26505dd6430",
-          "00": {
+          "#radix:00": {
             "#radix_ph": "0x3dfb52c0d974feb0559c9efafa996fb286717785e98871336e68ffb52d04bdf4"
           },
-          "bb": {
+          "#radix:bb": {
             "#radix_ph": "0xbbc5610ad726c88350abbe6513ab8f7441cbe8ff09ece86642a827feb53ce184",
-            "#state_label:0x11bbbb": "child_proof2"
+            "#state:0x11bbbb": "child_proof2"
           }
         }
       });

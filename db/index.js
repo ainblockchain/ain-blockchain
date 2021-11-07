@@ -108,12 +108,19 @@ class DB {
     return this.restFunctionsUrlWhitelistCache.whitelist;
   }
 
-  initDbStates(snapshot) {
-    if (snapshot) {
-      this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.OWNERS_ROOT])));
-      this.writeDatabase([PredefinedDbPaths.RULES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.RULES_ROOT])));
-      this.writeDatabase([PredefinedDbPaths.VALUES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.VALUES_ROOT])));
-      this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.FUNCTIONS_ROOT])));
+  initDbStates(snapshot = null) {
+    if (snapshot !== null) {
+      if (FeatureFlags.enableRadixLevelSnapshots) {
+        const newRoot = StateNode.fromRadixSnapshot(snapshot);
+        updateStateInfoForStateTree(newRoot);
+        this.replaceStateRoot(newRoot);
+        // NOTE(platfowner): No need to finalize the version ('START'), it's already final.
+      } else {
+        this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.OWNERS_ROOT])));
+        this.writeDatabase([PredefinedDbPaths.RULES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.RULES_ROOT])));
+        this.writeDatabase([PredefinedDbPaths.VALUES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.VALUES_ROOT])));
+        this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.FUNCTIONS_ROOT])));
+      }
     } else {
       // Initialize DB owners.
       this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
@@ -155,6 +162,23 @@ class DB {
     this.stateRoot = stateRoot;
 
     return true;
+  }
+
+  /**
+   * Replaces the state root.
+   *
+   * @param {StateNode} newRoot new root to replace with
+   */
+  replaceStateRoot(newRoot) {
+    const LOG_HEADER = 'replaceStateRoot';
+    const newVersion = newRoot.getVersion();
+    if (this.stateManager.hasVersion(newVersion)) {
+      CommonUtil.finishWithStackTrace(
+          logger, `[${LOG_HEADER}] State version already exists: ${newVersion}`);
+    }
+    this.stateManager.setRoot(newVersion, newRoot);
+    this.stateVersion = newVersion;
+    this.stateRoot = newRoot;
   }
 
   /**
@@ -292,11 +316,18 @@ class DB {
     return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager);
   }
 
-  dumpDbStates(options) {
+  takeStateSnapshot() {
     if (this.stateRoot === null) {
       return null;
     }
-    return this.stateRoot.toJsObject(options);
+    return this.stateRoot.toStateSnapshot();
+  }
+ 
+  takeRadixSnapshot() {
+    if (this.stateRoot === null) {
+      return null;
+    }
+    return this.stateRoot.toRadixSnapshot();
   }
 
   // For testing purpose only.
@@ -409,7 +440,7 @@ class DB {
   }
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
-    const tree = StateNode.fromJsObject(stateObj, stateVersion);
+    const tree = StateNode.fromStateSnapshot(stateObj, stateVersion);
     if (!LIGHTWEIGHT) {
       updateStateInfoForStateTree(tree);
     }
@@ -443,7 +474,7 @@ class DB {
     if (stateNode === null) {
       return null;
     }
-    return stateNode.toJsObject(options);
+    return stateNode.toStateSnapshot(options);
   }
 
   readDatabase(refPath, rootLabel, options) {

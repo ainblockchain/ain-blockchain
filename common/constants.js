@@ -34,6 +34,8 @@ const FeatureFlags = {
   enableTrafficMonitoring: true,
   // Enables state info updates.
   enableStateInfoUpdates: true,
+  // Enables radix level snapshots.
+  enableRadixLevelSnapshots: true,
 };
 
 // ** Environment variables **
@@ -98,6 +100,7 @@ const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is gener
 const MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
 const KEYS_ROOT_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'keys');
 const HASH_DELIMITER = '#';
+const STATE_INFO_PREFIX = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
 const MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
@@ -416,10 +419,13 @@ const FunctionTypes = {
  * @enum {string}
  */
 const StateInfoProperties = {
+  HAS_PARENT_STATE_NODE: '#has_parent_state_node',
+  NEXT_SERIAL: '#next_serial',
   NUM_PARENTS: '#num_parents',
+  RADIX_LABEL_PREFIX: '#radix:',
   RADIX_PROOF_HASH: '#radix_ph',
   SERIAL: '#serial',
-  STATE_PROOF_LABEL_PREFIX: '#state_label:',
+  STATE_LABEL_PREFIX: '#state:',
   STATE_PROOF_HASH: '#state_ph',
   VERSION: '#version',
   TREE_HEIGHT: '#tree_height',
@@ -999,6 +1005,7 @@ module.exports = {
   LIGHTWEIGHT,
   SYNC_MODE,
   HASH_DELIMITER,
+  STATE_INFO_PREFIX,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
   MICRO_AIN,
