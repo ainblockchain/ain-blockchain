@@ -111,7 +111,7 @@ function inject_account() {
         printf "\n* >> Injecting an account for node $node_index ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
 
-        echo $MNEMONIC | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+        echo $MNEMONIC 0 | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     fi
 }
 
