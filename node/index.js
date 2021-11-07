@@ -269,15 +269,20 @@ class BlockchainNode {
 
   updateSnapshots(blockNumber) {
     if (blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
-      const snapshot = this.dumpFinalDbStates();
+      const snapshot = FeatureFlags.enableRadixLevelSnapshots ?
+          this.takeFinalRadixSnapshot() : this.takeFinalStateSnapshot();
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
           this.snapshotDir, blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
   }
 
-  dumpFinalDbStates(options) {
-    return this.stateManager.getFinalRoot().toJsObject(options);
+  takeFinalStateSnapshot(options) {
+    return this.stateManager.getFinalRoot().toStateSnapshot(options);
+  }
+
+  takeFinalRadixSnapshot() {
+    return this.stateManager.getFinalRoot().toRadixSnapshot();
   }
 
   getTransactionByHash(hash) {
@@ -478,7 +483,7 @@ class BlockchainNode {
 
     return result;
   }
-
+ 
   addNewBlock(block) {
     if (this.bc.addNewBlockToChain(block)) {
       this.tp.cleanUpForNewBlock(block);
@@ -573,7 +578,7 @@ class BlockchainNode {
   executeBlockOnDbAndCleanUp(block, db, prevBlock) {
     const LOG_HEADER = 'executeBlockOnDbAndCleanUp';
     try {
-      Consensus.validateAndExecuteBlockOnDb(block, db, prevBlock);
+      Consensus.validateAndExecuteBlockOnDb(block, db, prevBlock, this.snapshotDir);
       this.tp.cleanUpForNewBlock(block);
       return true;
     } catch (e) {

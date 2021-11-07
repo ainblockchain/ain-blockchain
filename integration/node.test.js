@@ -632,7 +632,6 @@ describe('Blockchain Node', () => {
         _.set(verifResult, 'proofHash', 'erased');
         assert.deepEqual(verifResult, {
           "proofHash": "erased",
-          "isStateNode": true,
           "isVerified": true,
           "mismatchedPath": null,
           "mismatchedProofHash": null,
@@ -928,7 +927,6 @@ describe('Blockchain Node', () => {
           _.set(verifResult, 'proofHash', 'erased');
           assert.deepEqual(verifResult, {
             "proofHash": "erased",
-            "isStateNode": true,
             "isVerified": true,
             "mismatchedPath": null,
             "mismatchedProofHash": null,
