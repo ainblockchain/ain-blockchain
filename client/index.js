@@ -480,20 +480,20 @@ app.get('/state_versions', (req, res) => {
     .end();
 });
 
-// TODO(platfowner): Support for subtree dumping (i.e. with ref path).
-app.get('/dump_final_db_states', (req, res) => {
+// TODO(platfowner): Support for subtree snapshots (i.e. with ref path).
+app.get('/get_state_level_snapshot', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
-  const result = node.dumpFinalDbStates(CommonUtil.toGetOptions(req.query));
+  const result = node.takeStateLevelSnapshot(CommonUtil.toGetOptions(req.query));
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({ code: 0, result })
     .end();
 });
 
-// TODO(platfowner): Support for subtree dumping (i.e. with ref path).
-app.get('/snapshot_final_db_states', (req, res) => {
+// TODO(platfowner): Support for subtree snapshots (i.e. with ref path).
+app.get('/get_radix_level_snapshot', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
-  const result = node.snapshotFinalDbStates();
+  const result = node.takeRadixLevelSnapshot();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({ code: 0, result })

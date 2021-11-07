@@ -268,19 +268,19 @@ class BlockchainNode {
 
   updateSnapshots(blockNumber) {
     if (blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
-      const snapshot = FeatureFlags.enableFullNodeSnapshots ? this.snapshotFinalDbStates() :
-          this.dumpFinalDbStates();
+      const snapshot = FeatureFlags.enableRadixLevelSnapshots ?
+          this.takeRadixLevelSnapshot() : this.takeStateLevelSnapshot();
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
           this.snapshotDir, blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
   }
 
-  dumpFinalDbStates(options) {
+  takeStateLevelSnapshot(options) {
     return this.stateManager.getFinalRoot().toJsObject(options);
   }
 
-  snapshotFinalDbStates() {
+  takeRadixLevelSnapshot() {
     return this.stateManager.getFinalRoot().toSnapshotObject();
   }
 
@@ -628,7 +628,7 @@ class BlockchainNode {
     if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
 
       // NOTE(platfowner): Write the current snapshot for debugging.
-      const snapshot = FeatureFlags.enableFullNodeSnapshots ? db.stateRoot.toSnapshotObject() :
+      const snapshot = FeatureFlags.enableRadixLevelSnapshots ? db.stateRoot.toSnapshotObject() :
           db.stateRoot.toJsObject();
       FileUtil.writeSnapshot(this.snapshotDir, block.number, snapshot, true);
 

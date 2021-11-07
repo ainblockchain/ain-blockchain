@@ -547,7 +547,7 @@ class RadixNode {
     return numAffectedNodes;
   }
 
-  static parseChildStateNode(obj) {
+  static getChildStateNodeFromSnapshotObject(obj) {
     const StateNode = require('./state-node');
     let childStateLabel = null;
     let childStateObj = null;
@@ -577,7 +577,7 @@ class RadixNode {
     const version = obj[StateInfoProperties.VERSION];
     const serial = obj[StateInfoProperties.SERIAL];
     const curNode = new RadixNode(version, serial);
-    const childStateNode = RadixNode.parseChildStateNode(obj);
+    const childStateNode = RadixNode.getChildStateNodeFromSnapshotObject(obj);
     if (childStateNode !== null) {
       curNode.setChildStateNode(childStateNode);
     }
