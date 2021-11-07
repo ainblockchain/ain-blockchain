@@ -5,6 +5,7 @@ const FileUtil = require('../../common/file-util');
 const Blockchain = require('../../blockchain');
 const StateManager = require('../../db/state-manager');
 const DB = require('../../db');
+const Consensus = require('../../consensus');
 
 async function verifyBlock(snapshotFile, blockFileList) {
   console.log(`\n<< [0]: ${snapshotFile} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n`);
@@ -25,6 +26,7 @@ async function verifyBlock(snapshotFile, blockFileList) {
   db.initDbStates(snapshot);
   console.log(`  Done.`);
 
+  let prevBlock = null;
   for (let i = 0; i < blockFileList.length; i++) {
     const blockFile = blockFileList[i];
     console.log(`\n<< [${i + 1}]: ${blockFile} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n`);
@@ -37,24 +39,11 @@ async function verifyBlock(snapshotFile, blockFileList) {
     }
     console.log(`  Done.`);
     console.log(`* Executing block on db...`);
-    if (block.number > 0) {
-      if (!db.executeTransactionList(block.last_votes, true, false, block.number, block.timestamp)) {
-        logger.error(`  Failed to execute last_votes (${block.number})`);
-        process.exit(0);
-      }
-    }
-    if (!CommonUtil.isEmpty(block.evidence)) {
-      for (const evidenceList of Object.values(block.evidence)) {
-        for (const evidenceForOffense of evidenceList) {
-          if (!db.executeTransactionList(evidenceForOffense.votes, true, false, block.number, block.timestamp)) {
-            logger.error(`  Failed to execute evidence (${block.number})`);
-            process.exit(0);
-          }
-        }
-      }
-    }
-    if (!db.executeTransactionList(block.transactions, block.number === 0, true, block.number, block.timestamp)) {
-      logger.error(`  Failed to execute transactions (${block.number})`)
+    try {
+      Consensus.validateAndExecuteBlockOnDb(block, snapDb, prevBlock);
+      prevBlock = block;
+    } catch (e) {
+      console.log(`Failed to validate and excute block ${block.number}: ${e}`);
       process.exit(0);
     }
     console.log(`  Done.`);
