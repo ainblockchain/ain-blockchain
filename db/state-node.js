@@ -75,11 +75,11 @@ class StateNode {
   /**
    * Constructs a sub-tree from the given snapshot object.
    */
-  static fromSnapshotObject(obj) {
+  static fromRadixSnapshot(obj) {
     const curNode = new StateNode();
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
-        const radixTree = RadixTree.fromSnapshotObject(obj);
+        const radixTree = RadixTree.fromRadixSnapshot(obj);
         curNode.setRadixTree(radixTree);
         curNode.setIsLeaf(false);
         curNode.setVersion(radixTree.getVersion());
@@ -93,11 +93,11 @@ class StateNode {
   /**
    * Converts this sub-tree to a snapshot object.
    */
-  toSnapshotObject() {
+  toRadixSnapshot() {
     if (this.getIsLeaf()) {
       return this.getValue();
     }
-    return this.radixTree.toSnapshotObject();
+    return this.radixTree.toRadixSnapshot();
   }
 
   /**

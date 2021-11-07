@@ -469,8 +469,8 @@ class RadixTree {
   /**
    * Constructs a radix tree from the given snapshot object.
    */
-  static fromSnapshotObject(obj) {
-    const root = RadixNode.fromSnapshotObject(obj);
+  static fromRadixSnapshot(obj) {
+    const root = RadixNode.fromRadixSnapshot(obj);
     const version = root.getVersion();
     const tree = new RadixTree(version);
     tree.setRoot(root);
@@ -484,8 +484,8 @@ class RadixTree {
   /**
    * Converts this radix tree to a snapshot object.
    */
-  toSnapshotObject() {
-    return this.root.toSnapshotObject(this.getNextSerial());
+  toRadixSnapshot() {
+    return this.root.toRadixSnapshot(this.getNextSerial());
   }
 
   /**

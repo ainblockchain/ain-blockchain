@@ -3290,7 +3290,7 @@ describe("radix-tree", () => {
       expect(stateNodeAnother1.numParentRadixNodes()).to.equal(1);  // decreased!!
     });
 
-    it("fromSnapshotObject / toSnapshotObject", () => {
+    it("fromRadixSnapshot / toRadixSnapshot", () => {
       const label1 = '0x000aaa';
       const label2 = '0x000bbb';
       const label21 = '0x000bbb111';
@@ -3323,8 +3323,8 @@ describe("radix-tree", () => {
       stateNode21.setLabel(label21);
       stateNode22.setLabel(label22);
 
-      // toSnapshotObject()
-      const snapshot = tree.toSnapshotObject();
+      // toRadixSnapshot()
+      const snapshot = tree.toRadixSnapshot();
       assert.deepEqual(snapshot, {
         "#next_serial": 10,
         "#radix:000": {
@@ -3359,9 +3359,9 @@ describe("radix-tree", () => {
         "#version": "ver",
       });
 
-      // fromSnapshotObject()
-      const treeRebuilt = RadixTree.fromSnapshotObject(snapshot);
-      assert.deepEqual(treeRebuilt.toSnapshotObject(), {
+      // fromRadixSnapshot()
+      const treeRebuilt = RadixTree.fromRadixSnapshot(snapshot);
+      assert.deepEqual(treeRebuilt.toRadixSnapshot(), {
         "#next_serial": 10,
         "#radix:000": {
           "#radix:aaa": {
@@ -3394,7 +3394,7 @@ describe("radix-tree", () => {
         "#serial": 0,
         "#version": "ver",
       });
-      assert.deepEqual(treeRebuilt.toSnapshotObject(), snapshot);
+      assert.deepEqual(treeRebuilt.toRadixSnapshot(), snapshot);
       assert.deepEqual(treeRebuilt.getChildStateLabels(), [
         "0x000aaa",
         "0x000bbb",

@@ -269,19 +269,19 @@ class BlockchainNode {
   updateSnapshots(blockNumber) {
     if (blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = FeatureFlags.enableRadixLevelSnapshots ?
-          this.takeRadixLevelSnapshot() : this.takeStateLevelSnapshot();
+          this.takeFinalRadixSnapshot() : this.takeFinalStateSnapshot();
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
           this.snapshotDir, blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
   }
 
-  takeStateLevelSnapshot(options) {
+  takeFinalStateSnapshot(options) {
     return this.stateManager.getFinalRoot().toJsObject(options);
   }
 
-  takeRadixLevelSnapshot() {
-    return this.stateManager.getFinalRoot().toSnapshotObject();
+  takeFinalRadixSnapshot() {
+    return this.stateManager.getFinalRoot().toRadixSnapshot();
   }
 
   getTransactionByHash(hash) {
@@ -628,8 +628,8 @@ class BlockchainNode {
     if (block.state_proof_hash !== db.stateRoot.getProofHash()) {
 
       // NOTE(platfowner): Write the current snapshot for debugging.
-      const snapshot = FeatureFlags.enableRadixLevelSnapshots ? db.stateRoot.toSnapshotObject() :
-          db.stateRoot.toJsObject();
+      const snapshot = FeatureFlags.enableRadixLevelSnapshots ? db.takeRadixSnapshot() :
+          db.takeStateSnapshot();
       FileUtil.writeSnapshot(this.snapshotDir, block.number, snapshot, true);
 
       // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
