@@ -124,7 +124,7 @@ class BlockchainNode {
       const mnemonic = await ainUtil.decryptWithPrivateKey(
         this.bootstrapAccount.private_key, encryptedMnemonic);
 
-      //TODO(doheun): make seedPhraseToPrivate function in ain-util.
+      //TODO(ehgmsdk20): make seedPhraseToPrivate function in ain-util.
       if (!bip39.validateMnemonic(mnemonic)) {
         throw new Error('[injectAccountFromHDWallet] Invalid mnemonic');
       }
