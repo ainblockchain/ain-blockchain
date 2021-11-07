@@ -37,15 +37,15 @@ const assert = chai.assert;
 describe("state-util", () => {
   describe("hasEnabledShardConfig", () => {
     it("when input without matched shard config returning false", () => {
-      expect(hasEnabledShardConfig(StateNode.fromJsObject(null))).to.equal(false);
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({}))).to.equal(false);
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot(null))).to.equal(false);
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({}))).to.equal(false);
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({
         subtree: {
           path: "some value"
         },
         str: "string value"
       }))).to.equal(false);
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({
         subtree: {
           path: "some value",
           ".shard": {
@@ -57,7 +57,7 @@ describe("state-util", () => {
     })
 
     it("when input with matched shard config returning false", () => {
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({
         subtree: {
           path: "some value",
         },
@@ -70,7 +70,7 @@ describe("state-util", () => {
     })
 
     it("when input with shard config returning true", () => {
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({
         subtree: {
           path: "some value",
         },
@@ -87,7 +87,7 @@ describe("state-util", () => {
     it("when non-writable path with shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: {
                 ".shard": {
@@ -98,7 +98,7 @@ describe("state-util", () => {
           })), {isValid: false, invalidPath: '/some/path'});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               other_path: true,
               ".shard": {
@@ -111,14 +111,14 @@ describe("state-util", () => {
     it("when writable path without shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: true
             }
           })), {isValid: true, invalidPath: ''});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               other_path: true
             }
@@ -128,7 +128,7 @@ describe("state-util", () => {
     it("when writable path with shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: {
                 ".shard": {
@@ -139,7 +139,7 @@ describe("state-util", () => {
           })), {isValid: true, invalidPath: ''});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               other_path: true,
               ".shard": {
@@ -152,7 +152,7 @@ describe("state-util", () => {
     it("when writable path through shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path', '.shard', 'sharding_enabled'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: {
                 ".shard": {
@@ -163,7 +163,7 @@ describe("state-util", () => {
           })), {isValid: true, invalidPath: ''});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path', '.shard', 'proof_hash_map'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: {
                 ".shard": {
@@ -1840,7 +1840,7 @@ describe("state-util", () => {
       const ver1 = 'ver1';
       const ver2 = 'ver2';
 
-      const stateNode = StateNode.fromJsObject(true, ver1);
+      const stateNode = StateNode.fromStateSnapshot(true, ver1);
 
       const numRenamed = renameStateTreeVersion(stateNode, 'other version', ver2);
       expect(numRenamed).to.equal(0);
@@ -1851,7 +1851,7 @@ describe("state-util", () => {
       const ver1 = 'ver1';
       const ver2 = 'ver2';
 
-      const stateNode = StateNode.fromJsObject(true, ver1);
+      const stateNode = StateNode.fromStateSnapshot(true, ver1);
 
       const numRenamed = renameStateTreeVersion(stateNode, ver1, ver2);
       expect(numRenamed).to.equal(1);
@@ -1880,7 +1880,7 @@ describe("state-util", () => {
       const stateTree = new StateNode(ver3);
       stateTree.setChild('label1', child1);
       stateTree.setChild('label2', child2);
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+      assert.deepEqual(stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), {
         "#num_parents": 0,
         "#state_ph": null,
         "#tree_bytes": 0,
@@ -1935,7 +1935,7 @@ describe("state-util", () => {
 
       const numNodes = renameStateTreeVersion(stateTree, ver2, ver3);
       expect(numNodes).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+      assert.deepEqual(stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), {
         "#num_parents": 0,
         "#state_ph": null,
         "#tree_bytes": 0,
@@ -2017,7 +2017,7 @@ describe("state-util", () => {
 
     it("leaf node", () => {
       // Delete a leaf node without version.
-      const stateNode1 = StateNode.fromJsObject(true);
+      const stateNode1 = StateNode.fromStateSnapshot(true);
       updateStateInfoForStateTree(stateNode1);
       expect(deleteStateTreeVersion(stateNode1)).to.equal(2);
       expect(stateNode1.getVersion()).to.equal(null);
@@ -2025,7 +2025,7 @@ describe("state-util", () => {
       expect(stateNode1.numChildren()).to.equal(0);
 
       // Delete a leaf node with a different version.
-      const stateNode2 = StateNode.fromJsObject(true, 'ver2');
+      const stateNode2 = StateNode.fromStateSnapshot(true, 'ver2');
       updateStateInfoForStateTree(stateNode2);
       expect(deleteStateTreeVersion(stateNode2)).to.equal(2);
       expect(stateNode2.getVersion()).to.equal(null);
@@ -2033,7 +2033,7 @@ describe("state-util", () => {
       expect(stateNode2.numChildren()).to.equal(0);
 
       // Delete a leaf node with the same version.
-      const stateNode3 = StateNode.fromJsObject(true, ver1);
+      const stateNode3 = StateNode.fromStateSnapshot(true, ver1);
       updateStateInfoForStateTree(stateNode3);
       expect(deleteStateTreeVersion(stateNode3)).to.equal(2);
       expect(stateNode3.getVersion()).to.equal(null);
@@ -2041,7 +2041,7 @@ describe("state-util", () => {
       expect(stateNode3.numChildren()).to.equal(0);
 
       // Delete a leaf node with the same version but with non-zero numParents() value.
-      const stateNode4 = StateNode.fromJsObject(true, ver1);
+      const stateNode4 = StateNode.fromStateSnapshot(true, ver1);
       parent.setChild(nodeLabel, stateNode4);
       updateStateInfoForStateTree(stateNode4);
       expect(deleteStateTreeVersion(stateNode4)).to.equal(0);
@@ -2070,7 +2070,7 @@ describe("state-util", () => {
 
       expect(deleteStateTreeVersion(stateTree)).to.equal(0);
       // State tree is not deleted.
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+      assert.deepEqual(stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), {
         "#num_parents": 1,
         "#num_parents:label1": 1,
         "#num_parents:label2": 1,
@@ -2142,7 +2142,7 @@ describe("state-util", () => {
     let child1111;
 
     beforeEach(() => {
-      stateTree = StateNode.fromJsObject(jsObject, null);
+      stateTree = StateNode.fromStateSnapshot(jsObject, null);
       child1 = stateTree.getChild(label1);
       child11 = child1.getChild(label11);
       child111 = child11.getChild(label111);
@@ -2150,7 +2150,7 @@ describe("state-util", () => {
     });
 
     it("updateStateInfoForAllRootPaths on empty node with a single root path", () => {
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "0x0001": {
           "#state_ph": null,
@@ -2170,7 +2170,7 @@ describe("state-util", () => {
         }
       });
       expect(updateStateInfoForAllRootPaths(child111, label1111)).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
           "#state_ph": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
@@ -2196,7 +2196,7 @@ describe("state-util", () => {
       const label3 = '0x003';
       stateTreeClone.setChild(label3, child3);
 
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "0x0001": {
           "#state_ph": null,
@@ -2215,7 +2215,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeClone.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "#state_ph:0x003": null,
         "0x0001": {
@@ -2233,7 +2233,7 @@ describe("state-util", () => {
       });
       assert.deepEqual(child1111.getParentNodes(), [child111, child111Clone]);
       expect(updateStateInfoForAllRootPaths(child111, label1111)).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
           "#state_ph": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
@@ -2244,7 +2244,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeClone.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "#state_ph:0x003": null,
         "0x0001": {
@@ -2273,7 +2273,7 @@ describe("state-util", () => {
       const label3 = '0x003';
       stateTreeClone.setChild(label3, child3);
 
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "0x0001": {
           "#state_ph": null,
@@ -2292,7 +2292,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeClone.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "#state_ph:0x003": null,
         "0x0001": {
@@ -2310,7 +2310,7 @@ describe("state-util", () => {
       });
       assert.deepEqual(child111.getParentNodes(), [child11, child11Clone]);
       expect(updateStateInfoForAllRootPaths(child111, label1111)).to.equal(7);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
           "#state_ph": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
@@ -2321,7 +2321,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeClone.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0x4982c00e8daae6d0ca0cb3b0cc6bcec88b97183a7f7f8decfcd013eb402b6f32",
         "#state_ph:0x003": null,
         "0x003": "value0003",
@@ -2329,7 +2329,7 @@ describe("state-util", () => {
     });
 
     it("updateStateInfoAllRootPaths on non-empty node", () => {
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "0x0001": {
           "#state_ph": null,
@@ -2349,7 +2349,7 @@ describe("state-util", () => {
         }
       });
       expect(updateStateInfoForAllRootPaths(child11, label111, false)).to.equal(3);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0xf8de149cbb6e6ec6eed202d0c1c2927f955bd693dde8725aff64ecd694302be2",
         "0x0001": {
           "#state_ph": "0xbeec2ad3bd5285e375bb66f49ccef377af065bb674a3d5c43937d0c66656a61b",
@@ -2403,7 +2403,7 @@ describe("state-util", () => {
     let child21;
 
     beforeEach(() => {
-      stateTree = StateNode.fromJsObject(jsObject, null);
+      stateTree = StateNode.fromStateSnapshot(jsObject, null);
       child1 = stateTree.getChild(label1);
       child11 = child1.getChild(label11);
       child111 = child11.getChild(label111);
@@ -2561,7 +2561,7 @@ describe("state-util", () => {
       });
 
       it("with conflicted labels between radix node and state node without prefix", () => {
-        const stateTree2 = StateNode.fromJsObject({
+        const stateTree2 = StateNode.fromStateSnapshot({
           "3": {
             "3-1": "value3-1"
           },

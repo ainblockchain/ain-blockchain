@@ -134,7 +134,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(node.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
-      assert.deepEqual(clone.toJsObject(GET_OPTIONS_INCLUDE_ALL), node.toJsObject(GET_OPTIONS_INCLUDE_ALL));
+      assert.deepEqual(clone.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), node.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL));
     });
 
     it("internal node", () => {
@@ -168,7 +168,7 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
-      assert.deepEqual(clone.toJsObject(GET_OPTIONS_INCLUDE_ALL), stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL));
+      assert.deepEqual(clone.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL));
     });
   });
 
@@ -223,11 +223,11 @@ describe("state-node", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
-      const snapshot1 = StateNode.fromJsObject('str', ver1).toRadixSnapshot();
+      const snapshot1 = StateNode.fromStateSnapshot('str', ver1).toRadixSnapshot();
       expect(snapshot1).to.equal('str');
       expect(StateNode.fromRadixSnapshot(snapshot1).toRadixSnapshot()).to.equal('str');
 
-      const snapshot2 = StateNode.fromJsObject(100, ver1).toRadixSnapshot();
+      const snapshot2 = StateNode.fromStateSnapshot(100, ver1).toRadixSnapshot();
       expect(snapshot2).to.equal(100);
       expect(StateNode.fromRadixSnapshot(snapshot2).toRadixSnapshot()).to.equal(100);
     })
@@ -246,7 +246,7 @@ describe("state-node", () => {
           db: 2200,
         }
       };
-      const stateTree = StateNode.fromJsObject(stateObj, version);
+      const stateTree = StateNode.fromStateSnapshot(stateObj, version);
       // set versions of state nodes and radix nodes
       stateTree.setVersion('ver_root');
       stateTree.getChild('a').setVersion('ver_a');
@@ -475,13 +475,13 @@ describe("state-node", () => {
 
   describe("toJsObject", () => {
     it("leaf node", () => {
-      expect(StateNode.fromJsObject(true).toJsObject()).to.equal(true);
-      expect(StateNode.fromJsObject(false).toJsObject()).to.equal(false);
-      expect(StateNode.fromJsObject(10).toJsObject()).to.equal(10);
-      expect(StateNode.fromJsObject('str').toJsObject()).to.equal('str');
-      expect(StateNode.fromJsObject('').toJsObject()).to.equal('');
-      expect(StateNode.fromJsObject(null).toJsObject()).to.equal(null);
-      expect(StateNode.fromJsObject(undefined).toJsObject()).to.equal(undefined);
+      expect(StateNode.fromStateSnapshot(true).toStateSnapshot()).to.equal(true);
+      expect(StateNode.fromStateSnapshot(false).toStateSnapshot()).to.equal(false);
+      expect(StateNode.fromStateSnapshot(10).toStateSnapshot()).to.equal(10);
+      expect(StateNode.fromStateSnapshot('str').toStateSnapshot()).to.equal('str');
+      expect(StateNode.fromStateSnapshot('').toStateSnapshot()).to.equal('');
+      expect(StateNode.fromStateSnapshot(null).toStateSnapshot()).to.equal(null);
+      expect(StateNode.fromStateSnapshot(undefined).toStateSnapshot()).to.equal(undefined);
     })
 
     it("internal node", () => {
@@ -512,7 +512,7 @@ describe("state-node", () => {
           empty_obj: {},
         }
       };
-      assert.deepEqual(StateNode.fromJsObject(stateObj).toJsObject(), {
+      assert.deepEqual(StateNode.fromStateSnapshot(stateObj).toStateSnapshot(), {
         bool: false,
         number: 10,
         str: 'str',
@@ -546,8 +546,8 @@ describe("state-node", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
-      expect(StateNode.fromJsObject('str', ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal('str');
-      expect(StateNode.fromJsObject(100, ver1).toJsObject(GET_OPTIONS_INCLUDE_ALL)).to.equal(100);
+      expect(StateNode.fromStateSnapshot('str', ver1).toStateSnapshot(GET_OPTIONS_INCLUDE_ALL)).to.equal('str');
+      expect(StateNode.fromStateSnapshot(100, ver1).toStateSnapshot(GET_OPTIONS_INCLUDE_ALL)).to.equal(100);
     })
 
     it("internal node", () => {
@@ -564,11 +564,11 @@ describe("state-node", () => {
           db: 2200,
         }
       };
-      const stateTree = StateNode.fromJsObject(stateObj, ver1);
+      const stateTree = StateNode.fromStateSnapshot(stateObj, ver1);
       updateStateInfoForStateTree(stateTree);
 
       // includeVersion = true
-      assert.deepEqual(stateTree.toJsObject({ includeVersion: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeVersion: true }), {
         "#version": "ver1",
         "#version:a": "ver1",
         "#version:b": "ver1",
@@ -591,7 +591,7 @@ describe("state-node", () => {
       });
 
       // includeTreeInfo = true
-      assert.deepEqual(stateTree.toJsObject({ includeTreeInfo: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeTreeInfo: true }), {
         "#num_parents": 0,
         "#num_parents:a": 1,
         "#num_parents:b": 1,
@@ -641,7 +641,7 @@ describe("state-node", () => {
       });
 
       // includeProof = true
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0xfe4f999d2f9f44b2453ea833fe85ce2129da0417f57451f74e7649a4c32536e3",
         "#state_ph:a": "0xc9040497a73c7fa9cbe01a045e446f5a47dec8e09f46fefd983bd591f637c296",
         "#state_ph:b": "0xd18f7d1798901b66c318da94cc5eb8d954f7b53d7206fe54469b46e88505b524",
@@ -667,17 +667,17 @@ describe("state-node", () => {
 
   describe("toJsObject with isShallow", () => {
     it("leaf node", () => {
-      expect(StateNode.fromJsObject('str').toJsObject({ isShallow: true })).to.equal('str');
-      expect(StateNode.fromJsObject(100).toJsObject({ isShallow: true })).to.equal(100);
+      expect(StateNode.fromStateSnapshot('str').toStateSnapshot({ isShallow: true })).to.equal('str');
+      expect(StateNode.fromStateSnapshot(100).toStateSnapshot({ isShallow: true })).to.equal(100);
     })
 
     it("internal node", () => {
-      assert.deepEqual(StateNode.fromJsObject({ a: 1, b: 2, c: 3 }).toJsObject({ isShallow: true }), {
+      assert.deepEqual(StateNode.fromStateSnapshot({ a: 1, b: 2, c: 3 }).toStateSnapshot({ isShallow: true }), {
         a: 1,
         b: 2,
         c: 3,
       });
-      assert.deepEqual(StateNode.fromJsObject({ a: { aa: 11 }, b: 2 }).toJsObject({ isShallow: true }), {
+      assert.deepEqual(StateNode.fromStateSnapshot({ a: { aa: 11 }, b: 2 }).toStateSnapshot({ isShallow: true }), {
         a: {
           "#state_ph": null
         },
@@ -700,12 +700,12 @@ describe("state-node", () => {
         db: 2200,
       }
     };
-    const stateTree = StateNode.fromJsObject(stateObj, ver1);
+    const stateTree = StateNode.fromStateSnapshot(stateObj, ver1);
     updateStateInfoForStateTree(stateTree);
 
     it("without options", () => {
-      const stateObjWithoutOptions = stateTree.toJsObject();
-      const stateTreeParsed = StateNode.fromJsObject(stateObjWithoutOptions);
+      const stateObjWithoutOptions = stateTree.toStateSnapshot();
+      const stateTreeParsed = StateNode.fromStateSnapshot(stateObjWithoutOptions);
 
       // child order
       assert.deepEqual(stateTreeParsed.getChildLabels(), [
@@ -715,12 +715,12 @@ describe("state-node", () => {
         "d",
       ]);
       // compare the objects
-      assert.deepEqual(stateTreeParsed.toJsObject(), stateObj);
+      assert.deepEqual(stateTreeParsed.toStateSnapshot(), stateObj);
     })
 
     it("with options", () => {
-      const stateObjWithOptions = stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL);
-      const stateTreeParsed = StateNode.fromJsObject(stateObjWithOptions);
+      const stateObjWithOptions = stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL);
+      const stateTreeParsed = StateNode.fromStateSnapshot(stateObjWithOptions);
 
       // child order
       assert.deepEqual(stateTreeParsed.getChildLabels(), [
@@ -730,7 +730,7 @@ describe("state-node", () => {
         "d",
       ]);
       // compare the objects
-      assert.deepEqual(stateTreeParsed.toJsObject(), stateObj);
+      assert.deepEqual(stateTreeParsed.toStateSnapshot(), stateObj);
     })
   })
 

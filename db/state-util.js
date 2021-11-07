@@ -27,7 +27,7 @@ function hasConfig(node, label) {
 }
 
 function getConfig(node, label) {
-  return hasConfig(node, label) ? node.getChild(label).toJsObject() : null;
+  return hasConfig(node, label) ? node.getChild(label).toStateSnapshot() : null;
 }
 
 function hasShardConfig(valueNode) {

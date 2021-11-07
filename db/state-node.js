@@ -103,7 +103,7 @@ class StateNode {
   /**
    * Constructs a sub-tree from the given js object.
    */
-  static fromJsObject(obj, version) {
+  static fromStateSnapshot(obj, version) {
     const curNode = new StateNode(version);
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
@@ -113,7 +113,7 @@ class StateNode {
             continue;
           }
           const childObj = obj[key];
-          curNode.setChild(key, StateNode.fromJsObject(childObj, version));
+          curNode.setChild(key, StateNode.fromStateSnapshot(childObj, version));
         }
       }
     } else {
@@ -125,7 +125,7 @@ class StateNode {
   /**
    * Converts this sub-tree to a js object.
    */
-  toJsObject(options) {
+  toStateSnapshot(options) {
     const isShallow = options && options.isShallow;
     const includeVersion = options && options.includeVersion;
     const includeTreeInfo = options && options.includeTreeInfo;
@@ -137,7 +137,7 @@ class StateNode {
     for (const label of this.getChildLabels()) {
       const childNode = this.getChild(label);
       if (childNode.getIsLeaf()) {
-        obj[label] = childNode.toJsObject(options);
+        obj[label] = childNode.toStateSnapshot(options);
         if (includeVersion) {
           obj[`${StateInfoProperties.VERSION}:${label}`] = childNode.getVersion();
         }
@@ -153,7 +153,7 @@ class StateNode {
       } else {
         obj[label] = isShallow ?
             { [`${StateInfoProperties.STATE_PROOF_HASH}`]: childNode.getProofHash() } :
-            childNode.toJsObject(options);
+            childNode.toStateSnapshot(options);
       }
     }
     if (includeVersion) {
