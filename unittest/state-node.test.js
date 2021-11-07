@@ -219,17 +219,17 @@ describe("state-node", () => {
     });
   });
 
-  describe("fromSnapshotObject / toSnapshotObject", () => {
+  describe("fromRadixSnapshot / toRadixSnapshot", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
-      const snapshot1 = StateNode.fromJsObject('str', ver1).toSnapshotObject();
+      const snapshot1 = StateNode.fromJsObject('str', ver1).toRadixSnapshot();
       expect(snapshot1).to.equal('str');
-      expect(StateNode.fromSnapshotObject(snapshot1).toSnapshotObject()).to.equal('str');
+      expect(StateNode.fromRadixSnapshot(snapshot1).toRadixSnapshot()).to.equal('str');
 
-      const snapshot2 = StateNode.fromJsObject(100, ver1).toSnapshotObject();
+      const snapshot2 = StateNode.fromJsObject(100, ver1).toRadixSnapshot();
       expect(snapshot2).to.equal(100);
-      expect(StateNode.fromSnapshotObject(snapshot2).toSnapshotObject()).to.equal(100);
+      expect(StateNode.fromRadixSnapshot(snapshot2).toRadixSnapshot()).to.equal(100);
     })
 
     it("internal node", () => {
@@ -267,8 +267,8 @@ describe("state-node", () => {
       stateTree.getChild('d').getChild('db').getParentRadixNodes()[0].setVersion('ver_db_radix_p');
       updateStateInfoForStateTree(stateTree);
 
-      // toSnapshotObject()
-      const snapshot = stateTree.toSnapshotObject();
+      // toRadixSnapshot()
+      const snapshot = stateTree.toRadixSnapshot();
       assert.deepEqual(snapshot, {
         "#next_serial": 10,
         "#radix:6": {
@@ -341,9 +341,9 @@ describe("state-node", () => {
         "#version": "ver_root",
       });
 
-      // fromSnapshotObject()
-      const stateTreeRebuilt = StateNode.fromSnapshotObject(snapshot);
-      assert.deepEqual(stateTreeRebuilt.toSnapshotObject(), {
+      // fromRadixSnapshot()
+      const stateTreeRebuilt = StateNode.fromRadixSnapshot(snapshot);
+      assert.deepEqual(stateTreeRebuilt.toRadixSnapshot(), {
         "#next_serial": 10,
         "#radix:6": {
           "#radix:1": {
@@ -414,7 +414,7 @@ describe("state-node", () => {
         "#serial": 0,
         "#version": "ver_root",
       });
-      assert.deepEqual(stateTreeRebuilt.toSnapshotObject(), snapshot);
+      assert.deepEqual(stateTreeRebuilt.toRadixSnapshot(), snapshot);
       assert.deepEqual(stateTreeRebuilt.getChildLabels(), [
         "a",
         "b",

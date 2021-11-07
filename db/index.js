@@ -111,7 +111,7 @@ class DB {
   initDbStates(snapshot = null) {
     if (snapshot !== null) {
       if (FeatureFlags.enableRadixLevelSnapshots) {
-        const newRoot = StateNode.fromSnapshotObject(snapshot);
+        const newRoot = StateNode.fromRadixSnapshot(snapshot);
         updateStateInfoForStateTree(newRoot);
         this.replaceStateRoot(newRoot);
         // NOTE(platfowner): No need to finalize the version ('START'), it's already final.
@@ -316,11 +316,18 @@ class DB {
     return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager);
   }
 
-  snapshotDbStates() {
+  takeStateSnapshot() {
     if (this.stateRoot === null) {
       return null;
     }
-    return this.stateRoot.toSnapshotObject();
+    return this.stateRoot.toJsObject();
+  }
+ 
+  takeRadixSnapshot() {
+    if (this.stateRoot === null) {
+      return null;
+    }
+    return this.stateRoot.toRadixSnapshot();
   }
 
   // For testing purpose only.
