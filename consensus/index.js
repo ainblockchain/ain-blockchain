@@ -582,7 +582,7 @@ class Consensus {
     }
   }
 
-  static validateLastVotesAndExecuteOnNewDb(lastVotes, lastHash, number, blockTime, db, blockPool) {
+  static validateAndExecuteLastVotes(lastVotes, lastHash, number, blockTime, db, blockPool) {
     if (number <= 0) return;
     if (!db.executeTransactionList(lastVotes, true, false, 0, blockTime)) {
       db.destroyDb();
@@ -610,7 +610,7 @@ class Consensus {
   }
 
   // Cross-check the offenses in proposalTx & the evidence in proposalBlock
-  static validateOffensesAndEvidence(evidence, validators, prevBlockMajority, blockTime, db, proposalTx) {
+  static validateAndExecuteOffensesAndEvidence(evidence, validators, prevBlockMajority, blockTime, db, proposalTx) {
     const offenses = proposalTx ? ConsensusUtil.getOffensesFromProposalTx(proposalTx) : null;
     if (proposalTx) {
       if (CommonUtil.isEmpty(offenses) !== CommonUtil.isEmpty(evidence)) {
@@ -675,7 +675,7 @@ class Consensus {
     }
   }
 
-  static validateTransactions(transactions, receipts, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, db) {
+  static validateAndExecuteTransactions(transactions, receipts, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, db) {
     const txsRes = db.executeTransactionList(transactions, number === 0, true, number, blockTime);
     if (!txsRes) {
       db.destroyDb();
@@ -736,9 +736,11 @@ class Consensus {
     const prevBlockMajority = prevBlock ? prevBlockTotalAtStake * ConsensusConsts.MAJORITY : -1;
     const prevBlockLastVotesHash = prevBlock ? prevBlock.last_votes_hash : null;
     Consensus.validateProposer(prevBlockLastVotesHash, epoch, validators, proposer);
-    Consensus.validateLastVotesAndExecuteOnNewDb(last_votes, last_hash, number, timestamp, db, blockPool);
-    Consensus.validateOffensesAndEvidence(evidence, validators, prevBlockMajority, timestamp, db, proposalTx);
-    Consensus.validateTransactions(transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db);
+    Consensus.validateAndExecuteLastVotes(last_votes, last_hash, number, timestamp, db, blockPool);
+    Consensus.validateAndExecuteOffensesAndEvidence(
+        evidence, validators, prevBlockMajority, timestamp, db, proposalTx);
+    Consensus.validateAndExecuteTransactions(
+        transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db);
     Consensus.validateStateProofHash(state_proof_hash, db);
   }
 
