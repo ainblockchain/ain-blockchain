@@ -91,6 +91,13 @@ class BlockchainNode {
     }
   }
 
+  setAccountAndInitShardSetting(account, LOG_HEADER) {
+    this.setAccount(account);
+    logger.info(`[${LOG_HEADER}] Injecting an account: ` +
+        `${this.account.address}`);
+    this.initShardSetting();
+  }
+
   async injectAccountFromKeystore(encryptedPassword) {
     const LOG_HEADER = 'injectAccountFromKeystore';
     if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
@@ -101,10 +108,7 @@ class BlockchainNode {
           this.bootstrapAccount.private_key, encryptedPassword);
       const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
-        this.setAccount(accountFromKeystore);
-        logger.info(`[${LOG_HEADER}] Injecting an account from a keystore file: ` +
-            `${this.account.address}`);
-        this.initShardSetting();
+        this.setAccountAndInitShardSetting(accountFromKeystore, LOG_HEADER)
         return true;
       }
       return false;
@@ -137,10 +141,7 @@ class BlockchainNode {
 
       const accountFromHDWallet = ainUtil.privateToAccount(wallet.privateKey);
       if (accountFromHDWallet !== null) {
-        this.setAccount(accountFromHDWallet);
-        logger.info(`[${LOG_HEADER}] Injecting an account using mnemonic: ` +
-            `${this.account.address}`);
-        this.initShardSetting();
+        this.setAccountAndInitShardSetting(accountFromHDWallet, LOG_HEADER)
         return true;
       }
       return false;
