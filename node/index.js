@@ -83,16 +83,16 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
           `${this.account.address}`);
       this.initShardSetting();
-    } else if (KEYSTORE_FILE_PATH !== null || ACCOUNT_INJECTION_OPTION === '--mnemonic') {
-      // Create a bootstrap account & wait for the password
+    } else if (ACCOUNT_INJECTION_OPTION !== null) {
+      // Create a bootstrap account & wait for the account injection
       this.bootstrapAccount = ainUtil.createAccount();
     } else {
-      throw Error(`[${LOG_HEADER}] Must specify either KEYSTORE_FILE_PATH or ACCOUNT_INDEX.`);
+      throw Error(`[${LOG_HEADER}] Must specify either ACCOUNT_INJECTION_OPTION or ACCOUNT_INDEX.`);
     }
   }
 
-  async injectAccount(encryptedPassword) {
-    const LOG_HEADER = 'injectAccount';
+  async injectAccountFromKeystore(encryptedPassword) {
+    const LOG_HEADER = 'injectAccountFromKeystore';
     if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
       return false;
     }
@@ -115,16 +115,16 @@ class BlockchainNode {
   }
 
   async injectAccountFromHDWallet(encryptedMnemonic, index = 0) {
-    const LOG_HEADER = 'injectAccount';
+    const LOG_HEADER = 'injectAccountFromHDWallet';
     try {
       if (index < 0) {
         throw new Error('[injectAccountFromHDWallet] index should be greater than 0');
       }
 
       const mnemonic = await ainUtil.decryptWithPrivateKey(
-        this.bootstrapAccount.private_key, encryptedMnemonic);
+          this.bootstrapAccount.private_key, encryptedMnemonic);
 
-      //TODO(ehgmsdk20): make seedPhraseToPrivate function in ain-util.
+      // TODO(ehgmsdk20): make seedPhraseToPrivate function in ain-util.
       if (!bip39.validateMnemonic(mnemonic)) {
         throw new Error('[injectAccountFromHDWallet] Invalid mnemonic');
       }
