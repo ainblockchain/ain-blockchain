@@ -320,7 +320,7 @@ class DB {
     if (this.stateRoot === null) {
       return null;
     }
-    return this.stateRoot.toJsObject();
+    return this.stateRoot.toStateSnapshot();
   }
  
   takeRadixSnapshot() {
@@ -440,7 +440,7 @@ class DB {
   }
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
-    const tree = StateNode.fromJsObject(stateObj, stateVersion);
+    const tree = StateNode.fromStateSnapshot(stateObj, stateVersion);
     if (!LIGHTWEIGHT) {
       updateStateInfoForStateTree(tree);
     }
@@ -474,7 +474,7 @@ class DB {
     if (stateNode === null) {
       return null;
     }
-    return stateNode.toJsObject(options);
+    return stateNode.toStateSnapshot(options);
   }
 
   readDatabase(refPath, rootLabel, options) {

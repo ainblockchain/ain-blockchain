@@ -97,7 +97,7 @@ describe("state-manager", () => {
         assert.deepEqual(
             manager.getVersionList(), [StateVersions.EMPTY, finalVersion, 'new version']);
         expect(manager.isFinalVersion(finalVersion)).to.equal(true);
-        assert.deepEqual(manager.getRoot('new version').toJsObject(), 'some value');
+        assert.deepEqual(manager.getRoot('new version').toStateSnapshot(), 'some value');
       });
     })
 
@@ -105,7 +105,7 @@ describe("state-manager", () => {
       it("cloneFinalVersion", () => {
         const finalRoot = manager.getFinalRoot();
         finalRoot.setValue('final value');
-        assert.deepEqual(manager.getFinalRoot().toJsObject(), 'final value');
+        assert.deepEqual(manager.getFinalRoot().toStateSnapshot(), 'final value');
         expect(manager.numVersions()).to.equal(2);
 
         const clonedRoot = manager.cloneFinalVersion('new version');
@@ -118,7 +118,7 @@ describe("state-manager", () => {
         assert.deepEqual(
             manager.getVersionList(), [StateVersions.EMPTY, finalVersion, 'new version']);
         expect(manager.isFinalVersion(finalVersion)).to.equal(true);
-        assert.deepEqual(clonedRoot.toJsObject(), 'final value');
+        assert.deepEqual(clonedRoot.toStateSnapshot(), 'final value');
       });
     });
 
@@ -143,7 +143,7 @@ describe("state-manager", () => {
             manager.getVersionList(),
             [StateVersions.EMPTY, finalVersion, 'new version', 'new new version']);
         expect(manager.isFinalVersion(finalVersion)).to.equal(true);
-        assert.deepEqual(clonedRoot.toJsObject(), 'some value');
+        assert.deepEqual(clonedRoot.toStateSnapshot(), 'some value');
       });
     });
 

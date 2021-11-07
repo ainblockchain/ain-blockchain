@@ -277,7 +277,7 @@ class BlockchainNode {
   }
 
   takeFinalStateSnapshot(options) {
-    return this.stateManager.getFinalRoot().toJsObject(options);
+    return this.stateManager.getFinalRoot().toStateSnapshot(options);
   }
 
   takeFinalRadixSnapshot() {
