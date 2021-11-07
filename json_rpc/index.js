@@ -389,7 +389,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_injectAccountFromKeystore: async function(args, done) {
-      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET);
       let result = false;
       if (await p2pServer.node.injectAccountFromKeystore(args.encryptedPassword)) {
         result = true;
@@ -399,7 +399,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     },
 
     ain_injectAccountFromHDWallet: async function(args, done) {
-      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET);
       let result = false;
       if (await p2pServer.node.injectAccountFromHDWallet(args.encryptedMnemonic, args.index)) {
         result = true;
