@@ -298,9 +298,21 @@ class RuleUtil {
     return !!ValidatorOffenseTypes[type];
   }
 
+  isValidUrl(url) {
+    try {
+      new URL(url);
+    } catch (e) {
+      return false;
+    }
+    return true;
+  }
+
   validateRestFunctionsUrlWhitelistData(userAddr, data, newData, getValue) {
     const PathUtil = require('../common/path-util');
     if (getValue(PathUtil.getDevelopersRestFunctionsUserWhitelistUserPath(userAddr)) !== true) {
+      return false;
+    }
+    if (newData !== null && !this.isValidUrl(newData)) {
       return false;
     }
     const maxUrlsPerDeveloper = getValue(PathUtil.getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath());

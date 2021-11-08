@@ -2,6 +2,7 @@ const logger = new (require('../logger'))('FUNCTIONS');
 
 const axios = require('axios');
 const _ = require('lodash');
+const matchUrl = require('match-url-wildcard');
 const {
   FeatureFlags,
   PredefinedDbPaths,
@@ -175,7 +176,7 @@ class Functions {
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
           if (ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
-              functionEntry.function_url in this.db.getRestFunctionsUrlWhitelist()) {
+            matchUrl(functionEntry.function_url, this.db.getRestFunctionsUrlWhitelist())) {
             if (FeatureFlags.enableRichFunctionLogging) {
               logger.info(
                   `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
