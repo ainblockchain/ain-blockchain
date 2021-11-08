@@ -23,8 +23,7 @@ const RuleUtil = require('./rule-util');
 const WRITE_RULE_ECMA_VERSION = 12;
 const WRITE_RULE_CODE_SNIPPET_PREFIX = '"use strict"; return ';
 const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
-  // alphabetical order
-  'addr',  // auth.addr
+  // 1) from parameters
   'auth',
   'currentTime',
   'data',
@@ -34,11 +33,17 @@ const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
   'getOwner',
   'getRule',
   'getValue',
-  'fid',  // auth.fid
-  'fids',  // auth.fids
   'lastBlockNumber',
   'newData',
   'util',
+  // 2) from parameters' properties
+  'addr',  // auth.addr
+  'fid',  // auth.fid
+  'fids',  // auth.fids
+  // 3) from language
+  'Number',
+  'String',
+  'Boolean',
 ];
 const RULE_UTIL_PROPERTY_NAMES = Object.getOwnPropertyNames(RuleUtil.prototype);
 
@@ -286,7 +291,7 @@ function isValidStateRule(stateRule) {
 /**
  * Checks the validity of the given rule configuration.
  */
-function isValidRuleConfig(parsedRulePath, ruleConfigObj) {
+function isValidRuleConfig(configPath, ruleConfigObj) {
   if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
@@ -301,7 +306,7 @@ function isValidRuleConfig(parsedRulePath, ruleConfigObj) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
   const writeRule = sanitized[RuleProperties.WRITE];
-  if (sanitized.hasOwnProperty(RuleProperties.WRITE) && !isValidWriteRule(parsedRulePath, writeRule)) {
+  if (sanitized.hasOwnProperty(RuleProperties.WRITE) && !isValidWriteRule(configPath, writeRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
   }
   const stateRule = sanitized[RuleProperties.STATE];
@@ -358,7 +363,7 @@ function isValidFunctionInfo(functionInfoObj) {
 /**
  * Checks the validity of the given function configuration.
  */
-function isValidFunctionConfig(functionConfigObj) {
+function isValidFunctionConfig(configPath, functionConfigObj) {
   if (!CommonUtil.isDict(functionConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
@@ -422,7 +427,7 @@ function isValidOwnerPermissions(ownerPermissionsObj) {
 /**
  * Checks the validity of the given owner configuration.
  */
-function isValidOwnerConfig(ownerConfigObj) {
+function isValidOwnerConfig(configPath, ownerConfigObj) {
   if (!CommonUtil.isDict(ownerConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
@@ -472,30 +477,30 @@ function isValidOwnerConfig(ownerConfigObj) {
  * @param {*} configLabel config label
  * @param {*} stateConfigValidator state config validator function
  */
-function isValidConfigTreeRecursive(stateTreeObj, path, configLabel, stateConfigValidator) {
+function isValidConfigTreeRecursive(treePath, stateTreeObj, subtreePath, configLabel, stateConfigValidator) {
   if (!CommonUtil.isDict(stateTreeObj) || CommonUtil.isEmpty(stateTreeObj)) {
-    return { isValid: false, invalidPath: CommonUtil.formatPath(path) };
+    return { isValid: false, invalidPath: CommonUtil.formatPath(subtreePath) };
   }
 
   for (const label in stateTreeObj) {
-    path.push(label);
+    subtreePath.push(label);
     const subtree = stateTreeObj[label];
     if (label === configLabel) {
-      const isValidConfig = stateConfigValidator(subtree);
+      const isValidConfig = stateConfigValidator([...treePath, ...subtreePath], subtree);
       if (!isValidConfig.isValid) {
         return {
           isValid: false,
-          invalidPath: CommonUtil.appendPath(CommonUtil.formatPath(path), isValidConfig.invalidPath)
+          invalidPath: CommonUtil.appendPath(CommonUtil.formatPath(subtreePath), isValidConfig.invalidPath)
         };
       }
     } else {
       const isValidSubtree =
-          isValidConfigTreeRecursive(subtree, path, configLabel, stateConfigValidator);
+          isValidConfigTreeRecursive(treePath, subtree, subtreePath, configLabel, stateConfigValidator);
       if (!isValidSubtree.isValid) {
         return isValidSubtree;
       }
     }
-    path.pop();
+    subtreePath.pop();
   }
 
   return { isValid: true, invalidPath: '' };
@@ -504,37 +509,37 @@ function isValidConfigTreeRecursive(stateTreeObj, path, configLabel, stateConfig
 /**
  * Checks the validity of the given rule tree.
  */
-function isValidRuleTree(ruleTreeObj, parsedRulePath = [] /* for test code */) {
+function isValidRuleTree(treePath, ruleTreeObj) {
   if (ruleTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig.bind(null, parsedRulePath));
+      treePath, ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig);
 }
 
 /**
  * Checks the validity of the given function tree.
  */
-function isValidFunctionTree(functionTreeObj) {
+function isValidFunctionTree(treePath, functionTreeObj) {
   if (functionTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      functionTreeObj, [], PredefinedDbPaths.DOT_FUNCTION, isValidFunctionConfig);
+      treePath, functionTreeObj, [], PredefinedDbPaths.DOT_FUNCTION, isValidFunctionConfig);
 }
 
 /**
  * Checks the validity of the given owner tree.
  */
-function isValidOwnerTree(ownerTreeObj) {
+function isValidOwnerTree(treePath, ownerTreeObj) {
   if (ownerTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      ownerTreeObj, [], PredefinedDbPaths.DOT_OWNER, isValidOwnerConfig);
+      treePath, ownerTreeObj, [], PredefinedDbPaths.DOT_OWNER, isValidOwnerConfig);
 }
 
 /**
