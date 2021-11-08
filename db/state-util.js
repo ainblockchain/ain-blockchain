@@ -197,6 +197,10 @@ function sanitizeRuleConfig(rule) {
   return sanitized;
 }
 
+function isValidWriteRule(writeRule) {
+  return writeRule === null || CommonUtil.isBool(writeRule) || CommonUtil.isString(writeRule);
+}
+
 function isValidStateRule(stateRule) {
   if (stateRule === null) {
     return true;
@@ -241,8 +245,7 @@ function isValidStateRule(stateRule) {
   }
   const writeRule = sanitized[RuleProperties.WRITE];
   const stateRule = sanitized[RuleProperties.STATE];
-  if (sanitized.hasOwnProperty(RuleProperties.WRITE) && writeRule !== null &&
-      !CommonUtil.isBool(writeRule) && !CommonUtil.isString(writeRule)) {
+  if (sanitized.hasOwnProperty(RuleProperties.WRITE) && !isValidWriteRule(writeRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
   }
   if (sanitized.hasOwnProperty(RuleProperties.STATE) && !isValidStateRule(stateRule)) {
@@ -892,6 +895,7 @@ module.exports = {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  isValidWriteRule,
   isValidStateRule,
   isValidRuleConfig,
   isValidRuleTree,
