@@ -211,6 +211,10 @@ class RuleUtil {
     return MIN_NUM_VALIDATORS;
   }
 
+  getConsensusWhitelistSize() {
+    this.length(this.values(getValue(PathUtil.getConsensusWhitelistPath())).filter((x) => x === true));
+  }
+
   getTokenBridgeConfig(networkName, chainId, tokenId, getValue) {
     const PathUtil = require('../common/path-util');
     return getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
