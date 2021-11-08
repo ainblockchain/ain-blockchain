@@ -841,7 +841,7 @@ class DB {
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(502, `Invalid path: ${isValidPath.invalidPath}`, 1);
     }
-    const isValidRule = isValidRuleTree(rule);
+    const isValidRule = isValidRuleTree(rule, parsedPath);
     if (!isValidRule.isValid) {
       return CommonUtil.returnTxResult(504, `Invalid rule tree: ${isValidRule.invalidPath}`, 1);
     }
