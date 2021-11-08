@@ -106,7 +106,7 @@ class BlockchainNode {
           this.bootstrapAccount.private_key, encryptedPassword);
       const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
-        this.setAccountAndInitShardSetting(accountFromKeystore, LOG_HEADER)
+        this.setAccountAndInitShardSetting(accountFromKeystore)
         return true;
       }
       return false;
