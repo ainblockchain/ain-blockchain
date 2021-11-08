@@ -2,7 +2,6 @@
 const logger = new (require('../logger'))('STATE_UTIL');
 
 const _ = require('lodash');
-const validUrl = require('valid-url');
 const CommonUtil = require('../common/common-util');
 const {
   FeatureFlags,
@@ -288,8 +287,7 @@ function isValidFunctionInfo(functionInfoObj) {
     return false;
   }
   const functionUrl = functionInfoObj[FunctionProperties.FUNCTION_URL];
-  if (functionUrl !== undefined &&
-      !validUrl.isUri(functionInfoObj[FunctionProperties.FUNCTION_URL])) {
+  if (functionUrl !== undefined && !CommonUtil.isValidUrl(functionUrl)) {
     return false;
   }
   return true;

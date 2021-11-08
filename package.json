@@ -65,6 +65,7 @@
     "jayson": "^3.1.1",
     "json-diff": "^0.5.4",
     "lodash": "^4.17.21",
+    "match-url-wildcard": "^0.0.4",
     "moment": "^2.24.0",
     "natural-orderby": "^2.0.3",
     "node-cron": "^2.0.3",
@@ -78,7 +79,6 @@
     "shuffle-seed": "^1.1.6",
     "util": "^0.11.1",
     "uuid": "^3.4.0",
-    "valid-url": "^1.0.9",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.4.2",
     "ws": "^7.4.6"
