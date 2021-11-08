@@ -668,6 +668,7 @@ describe("state-util", () => {
       expect(isValidWriteRule([], "lastBlockNumber")).to.equal(true);
       expect(isValidWriteRule([], "auth.fid === '_stake'")).to.equal(true);
       expect(isValidWriteRule([], "auth.addr === 'some addr'")).to.equal(true);
+      expect(isValidWriteRule([], "newData.proposer === auth.addr")).to.equal(true);
       expect(isValidWriteRule([], "getValue('some path')")).to.equal(true);
       expect(isValidWriteRule([], "Number('some string')")).to.equal(true);
       // with RuleUtil class properties

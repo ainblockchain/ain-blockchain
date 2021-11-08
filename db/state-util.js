@@ -36,11 +36,7 @@ const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
   'lastBlockNumber',
   'newData',
   'util',
-  // 2) from parameters' properties
-  'addr',  // auth.addr
-  'fid',  // auth.fid
-  'fids',  // auth.fids
-  // 3) from language
+  // 2) from language
   'Number',
   'String',
   'Boolean',
@@ -235,6 +231,19 @@ function getVariableLabels(parsedRulePath) {
   return parsedRulePath.filter((label) => _.startsWith(label, VARIABLE_LABEL_PREFIX));
 }
 
+/**
+ * Extract top-level identifier tokens (e.g. data, newData, not data.value nor newData.proposer)
+ * from the given token list.
+ */
+function getTopLevelIdTokens(tokenList) {
+  let withProceedingDot = false;
+  return tokenList.filter((token) => {
+    const isTopLevelIdToken = token.type === 'Identifier' && !withProceedingDot;
+    withProceedingDot = token.type === 'Punctuator' && token.value === '.';
+    return isTopLevelIdToken;
+  }).map((token) => token.value);
+}
+
 function isValidWriteRule(parsedRulePath, ruleString) {
   const LOG_HEADER = 'isValidWriteRule';
 
@@ -250,11 +259,12 @@ function isValidWriteRule(parsedRulePath, ruleString) {
     ]);
     const ruleCodeSnippet = makeWriteRuleCodeSnippet(ruleString);
     const tokenList = espree.tokenize(ruleCodeSnippet, { ecmaVersion: WRITE_RULE_ECMA_VERSION });
-    const idTokenList = tokenList.filter((token) => token.type === 'Identifier')
-        .map((token) => token.value);
-    for (const idToken of idTokenList) {
-      if (!idTokenWhitelistSet.has(idToken)) {
-        logger.info(`[${LOG_HEADER}] Rule includes a not-allowed identifier token: ${idToken}`);
+    const idTokens = getTopLevelIdTokens(tokenList);
+    for (const token of idTokens) {
+      if (!idTokenWhitelistSet.has(token)) {
+        logger.info(
+            `[${LOG_HEADER}] Rule includes a not-allowed identifier token (${token}) ` +
+            `in rule string: ${ruleString}`);
         return false;
       }
     }
