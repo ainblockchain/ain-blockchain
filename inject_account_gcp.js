@@ -94,7 +94,7 @@ async function injectAccount(endpointUrl, accountInjectionOption, input) {
         resolve(input);
       });
     })
-    if (!is_numeric(index)) {
+    if (!is_positive_numeric(index)) {
       console.log(`The index is set to the default value of 0.`);
       index = 0;
     }
@@ -114,7 +114,7 @@ async function injectAccount(endpointUrl, accountInjectionOption, input) {
 }
 
 async function processArguments() {
-  if (process.argv.length != 4) {
+  if (process.argv.length !== 4) {
     usage();
   }
   const endpointUrl = process.argv[2];
@@ -128,7 +128,7 @@ async function processArguments() {
   await injectAccount(endpointUrl, accountInjectionOption, input);
 }
 
-function is_numeric(str){
+function is_positive_numeric(str){
   return /^\d+$/.test(str);
 }
 
