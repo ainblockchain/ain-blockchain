@@ -227,6 +227,34 @@ describe("RuleUtil", () => {
     })
   })
 
+  describe("isValidUrl", () => {
+    it("when invalid input", () => {
+      expect(util.isValidUrl(true)).to.equal(false);
+      expect(util.isValidUrl(false)).to.equal(false);
+      expect(util.isValidUrl(0)).to.equal(false);
+      expect(util.isValidUrl(10)).to.equal(false);
+      expect(util.isValidUrl(null)).to.equal(false);
+      expect(util.isValidUrl(undefined)).to.equal(false);
+      expect(util.isValidUrl(Infinity)).to.equal(false);
+      expect(util.isValidUrl(NaN)).to.equal(false);
+      expect(util.isValidUrl('')).to.equal(false);
+      expect(util.isValidUrl('abc')).to.equal(false);
+      expect(util.isValidUrl('0')).to.equal(false);
+      expect(util.isValidUrl([10])).to.equal(false);
+      expect(util.isValidUrl({a: 'A'})).to.equal(false);
+      expect(util.isValidUrl('0x')).to.equal(false);
+      expect(util.isValidUrl('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8')).to.equal(false);
+      expect(util.isValidUrl('ainetwork.ai')).to.equal(false);
+    })
+
+    it("when valid input", () => {
+      expect(util.isValidUrl('http://ainetwork.ai')).to.equal(true);
+      expect(util.isValidUrl('https://ainetwork.ai')).to.equal(true);
+      expect(util.isValidUrl('https://*.ainetwork.ai')).to.equal(true);
+      expect(util.isValidUrl('https://ainetwork.ai/some/api')).to.equal(true);
+    })
+  })
+
   describe("keys", () => {
     it("when invalid input", () => {
       assert.deepEqual(util.keys(true), []);
