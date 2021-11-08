@@ -76,13 +76,7 @@ class BlockchainNode {
   initAccount() {
     const LOG_HEADER = 'initAccount';
     if (ACCOUNT_INDEX !== null) {
-      this.setAccount(GenesisAccounts.others[ACCOUNT_INDEX]);
-      if (!this.account) {
-        throw Error(`[${LOG_HEADER}] Failed to initialize with an account`);
-      }
-      logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
-          `${this.account.address}`);
-      this.initShardSetting();
+      this.setAccountAndInitShardSetting(GenesisAccounts.others[ACCOUNT_INDEX]);
     } else if (ACCOUNT_INJECTION_OPTION !== null) {
       // Create a bootstrap account & wait for the account injection
       this.bootstrapAccount = ainUtil.createAccount();
@@ -91,9 +85,13 @@ class BlockchainNode {
     }
   }
 
-  setAccountAndInitShardSetting(account, LOG_HEADER) {
+  setAccountAndInitShardSetting(account) {
+    const LOG_HEADER = 'setAccountAndInitShardSetting';
     this.setAccount(account);
-    logger.info(`[${LOG_HEADER}] Injecting an account: ` +
+    if (!this.account) {
+      throw Error(`[${LOG_HEADER}] Failed to initialize with an account`);
+    }
+    logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
         `${this.account.address}`);
     this.initShardSetting();
   }
@@ -118,11 +116,11 @@ class BlockchainNode {
     }
   }
 
-  async injectAccountFromHDWallet(encryptedMnemonic, index = 0) {
+  async injectAccountFromHDWallet(encryptedMnemonic, index) {
     const LOG_HEADER = 'injectAccountFromHDWallet';
     try {
       if (index < 0) {
-        throw new Error('[injectAccountFromHDWallet] index should be greater than 0');
+        throw new Error('Invalid index');
       }
 
       const mnemonic = await ainUtil.decryptWithPrivateKey(
@@ -130,7 +128,7 @@ class BlockchainNode {
 
       // TODO(ehgmsdk20): make seedPhraseToPrivate function in ain-util.
       if (!bip39.validateMnemonic(mnemonic)) {
-        throw new Error('[injectAccountFromHDWallet] Invalid mnemonic');
+        throw new Error('Invalid mnemonic');
       }
 
       const seed = bip39.mnemonicToSeedSync(mnemonic);
@@ -141,12 +139,12 @@ class BlockchainNode {
 
       const accountFromHDWallet = ainUtil.privateToAccount(wallet.privateKey);
       if (accountFromHDWallet !== null) {
-        this.setAccountAndInitShardSetting(accountFromHDWallet, LOG_HEADER)
+        this.setAccountAndInitShardSetting(accountFromHDWallet)
         return true;
       }
       return false;
     } catch (err) {
-      logger.error(`[${LOG_HEADER}] Failed to inject an account: ${err}`);
+      logger.error(`[${LOG_HEADER}] Failed to inject an account: ${err.stack}`);
       return false;
     }
   }
