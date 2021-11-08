@@ -232,7 +232,7 @@ function getVariableLabels(parsedRulePath) {
 }
 
 /**
- * Extract top-level identifier tokens (e.g. data, newData, not data.value nor newData.proposer)
+ * Extract top-level identifier tokens (e.g. auth, newData, not auth.addr nor newData.proposer)
  * from the given token list.
  */
 function getTopLevelIdTokens(tokenList) {
