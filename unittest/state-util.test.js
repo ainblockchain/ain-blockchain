@@ -8,6 +8,7 @@ const {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  isValidWriteRule,
   isValidStateRule,
   isValidRuleConfig,
   isValidRuleTree,
@@ -644,6 +645,45 @@ describe("state-util", () => {
     })
   })
 
+  describe("isValidWriteRule", () => {
+    it('when invalid input', () => {
+      expect(isValidWriteRule([], undefined)).to.equal(false);
+      expect(isValidWriteRule([], {})).to.equal(false);
+      expect(isValidWriteRule([], [])).to.equal(false);
+      expect(isValidWriteRule([], [1, 2, 3])).to.equal(false);
+      expect(isValidWriteRule([], 0)).to.equal(false);
+      expect(isValidWriteRule([], 1)).to.equal(false);
+      expect(isValidStateRule([], { "invalid_field": true })).to.equal(false);
+      expect(isValidWriteRule([], 'process.exit(0)')).to.equal(false);
+    })
+
+    it('when valid input', () => {
+      expect(isValidWriteRule([], null)).to.equal(true);
+      expect(isValidWriteRule([], true)).to.equal(true);
+      expect(isValidWriteRule([], false)).to.equal(true);
+      // with whitelisted id tokens
+      expect(isValidWriteRule([], "data")).to.equal(true);
+      expect(isValidWriteRule([], "newData")).to.equal(true);
+      expect(isValidWriteRule([], "currentTime")).to.equal(true);
+      expect(isValidWriteRule([], "lastBlockNumber")).to.equal(true);
+      expect(isValidWriteRule([], "auth.fid === '_stake'")).to.equal(true);
+      expect(isValidWriteRule([], "auth.addr === 'some addr'")).to.equal(true);
+      expect(isValidWriteRule([], "!getValue('some path')")).to.equal(true);
+      // with RuleUtil class properties
+      expect(isValidWriteRule([], "util.isBool('some expr')")).to.equal(true);
+      expect(isValidWriteRule([], "util.isServAcntName('some name')")).to.equal(true);
+      // with varilable labels
+      expect(isValidWriteRule(
+          ['$from', '$to', '$key'],
+          "!getValue('transfer/' + $from + '/' + $to + '/' + $key)")).to.equal(true);
+      // mixed
+      expect(isValidWriteRule(
+          ['$from', '$to', '$key'],
+          "(auth.addr === $from || auth.fid === '_stake') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && util.isServAcntName($from)"))
+          .to.equal(true);
+    })
+  })
+
   describe("isValidStateRule", () => {
     it('when invalid input', () => {
       expect(isValidStateRule(undefined)).to.equal(false);
@@ -694,49 +734,49 @@ describe("state-util", () => {
 
   describe("isValidRuleConfig", () => {
     it("when invalid input", () => {
-      assert.deepEqual(isValidRuleConfig(null), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig(undefined), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({}), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig([]), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], null), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], {}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], []), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], [1, 2, 3]), {isValid: false, invalidPath: '/'});
       assert.deepEqual(
-          isValidRuleConfig(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+          isValidRuleConfig([], ['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], {
         undef: undefined 
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         empty_obj: {}
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         array: []
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         array: [1, 2, 3]
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         'a': {
           '.': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         'a': {
           '$': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         'a': {
           '*b': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         'a': {
           'b*': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         "state": {
           "max_children": 123,
           "invalid_field": true
@@ -745,23 +785,23 @@ describe("state-util", () => {
     })
 
     it("when valid input", () => {
-      assert.deepEqual(isValidRuleConfig({ "write": true }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig({ "write": false }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig({ "write": "auth.addr === 'abcd'" }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], { "write": true }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig([], { "write": false }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig([], { "write": "auth.addr === 'abcd'" }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig(['$from', '$to', '$key'], {
         "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
       }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         "state": {
           "max_children": 1
         }
       }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         "state": {
           "gc_max_siblings": 1
         }
       }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         "write": "auth.addr === 'abcd'",
         "state": {
           "max_children": 1,

@@ -7,6 +7,7 @@ const CommonUtil = require('../common/common-util');
 const {
   FeatureFlags,
   HASH_DELIMITER,
+  VARIABLE_LABEL_PREFIX,
   PredefinedDbPaths,
   FunctionProperties,
   FunctionTypes,
@@ -19,6 +20,7 @@ const {
 } = require('../common/constants');
 const RuleUtil = require('./rule-util');
 
+const WRITE_RULE_ECMA_VERSION = 12;
 const WRITE_RULE_CODE_SNIPPET_PREFIX = '"use strict"; return ';
 const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
   // alphabetical order
@@ -33,6 +35,7 @@ const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
   'getRule',
   'getValue',
   'fid',  // auth.fid
+  'fids',  // auth.fids
   'lastBlockNumber',
   'newData',
   'util',
@@ -223,25 +226,35 @@ function makeWriteRuleCodeSnippet(ruleString) {
   return WRITE_RULE_CODE_SNIPPET_PREFIX + ruleString;
 }
 
-function isValidWriteRule(ruleString) {
+function getVariableLabels(parsedRulePath) {
+  return parsedRulePath.filter((label) => _.startsWith(label, VARIABLE_LABEL_PREFIX));
+}
+
+function isValidWriteRule(parsedRulePath, ruleString) {
+  const LOG_HEADER = 'isValidWriteRule';
+
   if (ruleString !== null && !CommonUtil.isBool(ruleString) && !CommonUtil.isString(ruleString)) {
     return false;
   }
   if (CommonUtil.isString(ruleString)) {
-    const idTokenWhitelistSet =
-        new Set([
-          ...WRITE_RULE_ID_TOKEN_WHITELIST_BASE,
-          ...RULE_UTIL_PROPERTY_NAMES]);
+    const variableLabelList = getVariableLabels(parsedRulePath);
+    const idTokenWhitelistSet = new Set([
+      ...WRITE_RULE_ID_TOKEN_WHITELIST_BASE,
+      ...RULE_UTIL_PROPERTY_NAMES,
+      ...variableLabelList,
+    ]);
     const ruleCodeSnippet = makeWriteRuleCodeSnippet(ruleString);
-    const tokenList = espree.tokenize(ruleCodeSnippet, { ecmaVersion: 12 });
-    const idTokenList = tokenList.filter((token) => token.type === 'Identifier');
-    const idTokenValueList = idTokenList.map((token) => token.value);
-    for (const idTokenValue of idTokenValueList) {
-      if (!idTokenWhitelistSet.has(idTokenValue)) {
-        // TODO(platfowner): Implement this part.
+    const tokenList = espree.tokenize(ruleCodeSnippet, { ecmaVersion: WRITE_RULE_ECMA_VERSION });
+    const idTokenList = tokenList.filter((token) => token.type === 'Identifier')
+        .map((token) => token.value);
+    for (const idToken of idTokenList) {
+      if (!idTokenWhitelistSet.has(idToken)) {
+        logger.info(`[${LOG_HEADER}] Rule includes a not-allowed identifier token: ${idToken}`);
+        return false;
       }
     }
   }
+
   return true;
 }
 
@@ -273,7 +286,7 @@ function isValidStateRule(stateRule) {
 /**
  * Checks the validity of the given rule configuration.
  */
- function isValidRuleConfig(ruleConfigObj) {
+function isValidRuleConfig(parsedRulePath, ruleConfigObj) {
   if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
@@ -288,7 +301,7 @@ function isValidStateRule(stateRule) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
   const writeRule = sanitized[RuleProperties.WRITE];
-  if (sanitized.hasOwnProperty(RuleProperties.WRITE) && !isValidWriteRule(writeRule)) {
+  if (sanitized.hasOwnProperty(RuleProperties.WRITE) && !isValidWriteRule(parsedRulePath, writeRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
   }
   const stateRule = sanitized[RuleProperties.STATE];
@@ -322,6 +335,8 @@ function sanitizeFunctionInfo(functionInfoObj) {
 }
 
 function isValidFunctionInfo(functionInfoObj) {
+  const LOG_HEADER = 'isValidFunctionInfo';
+
   if (CommonUtil.isEmpty(functionInfoObj)) {
     return false;
   }
@@ -330,7 +345,7 @@ function isValidFunctionInfo(functionInfoObj) {
       _.isEqual(JSON.parse(JSON.stringify(sanitized)), functionInfoObj, { strict: true });
   if (!isIdentical) {
     const diffLines = CommonUtil.getJsonDiff(sanitized, functionInfoObj);
-    logger.info(`Function info is in a non-standard format:\n${diffLines}\n`);
+    logger.info(`[${LOG_HEADER}] Function info is in a non-standard format:\n${diffLines}\n`);
     return false;
   }
   const functionUrl = functionInfoObj[FunctionProperties.FUNCTION_URL];
@@ -389,6 +404,8 @@ function sanitizeOwnerPermissions(ownerPermissionsObj) {
 }
 
 function isValidOwnerPermissions(ownerPermissionsObj) {
+  const LOG_HEADER = 'isValidOwnerPermissions';
+
   if (CommonUtil.isEmpty(ownerPermissionsObj)) {
     return false;
   }
@@ -397,7 +414,7 @@ function isValidOwnerPermissions(ownerPermissionsObj) {
       _.isEqual(JSON.parse(JSON.stringify(sanitized)), ownerPermissionsObj, { strict: true });
   if (!isIdentical) {
     const diffLines = CommonUtil.getJsonDiff(sanitized, ownerPermissionsObj);
-    logger.info(`Owner permission is in a non-standard format:\n${diffLines}\n`);
+    logger.info(`[${LOG_HEADER}] Owner permission is in a non-standard format:\n${diffLines}\n`);
   }
   return isIdentical;
 }
@@ -446,6 +463,15 @@ function isValidOwnerConfig(ownerConfigObj) {
   return { isValid: true, invalidPath: '' };
 }
 
+/**
+ * Checks the validity of the given state tree with the given config label and
+ * state config validator.
+ * 
+ * @param {*} stateTreeObj state tree to check the validity
+ * @param {*} path recursion path
+ * @param {*} configLabel config label
+ * @param {*} stateConfigValidator state config validator function
+ */
 function isValidConfigTreeRecursive(stateTreeObj, path, configLabel, stateConfigValidator) {
   if (!CommonUtil.isDict(stateTreeObj) || CommonUtil.isEmpty(stateTreeObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath(path) };
@@ -478,13 +504,13 @@ function isValidConfigTreeRecursive(stateTreeObj, path, configLabel, stateConfig
 /**
  * Checks the validity of the given rule tree.
  */
-function isValidRuleTree(ruleTreeObj) {
+function isValidRuleTree(ruleTreeObj, parsedRulePath = [] /* for test code */) {
   if (ruleTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig);
+      ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig.bind(null, parsedRulePath));
 }
 
 /**
