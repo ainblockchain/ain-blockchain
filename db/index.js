@@ -802,7 +802,7 @@ class DB {
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(402, `Invalid path: ${isValidPath.invalidPath}`, 1);
     }
-    const isValidFunction = isValidFunctionTree(func);
+    const isValidFunction = isValidFunctionTree(parsedPath, func);
     if (!isValidFunction.isValid) {
       return CommonUtil.returnTxResult(405, `Invalid function tree: ${isValidFunction.invalidPath}`, 1);
     }
@@ -841,7 +841,7 @@ class DB {
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(502, `Invalid path: ${isValidPath.invalidPath}`, 1);
     }
-    const isValidRule = isValidRuleTree(rule, parsedPath);
+    const isValidRule = isValidRuleTree(parsedPath, rule);
     if (!isValidRule.isValid) {
       return CommonUtil.returnTxResult(504, `Invalid rule tree: ${isValidRule.invalidPath}`, 1);
     }
@@ -871,7 +871,7 @@ class DB {
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(602, `Invalid path: ${isValidPath.invalidPath}`, 1);
     }
-    const isValidOwner = isValidOwnerTree(owner);
+    const isValidOwner = isValidOwnerTree(parsedPath, owner);
     if (!isValidOwner.isValid) {
       return CommonUtil.returnTxResult(604, `Invalid owner tree: ${isValidOwner.invalidPath}`, 1);
     }
