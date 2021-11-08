@@ -245,13 +245,41 @@ describe("RuleUtil", () => {
       expect(util.isValidUrl('0x')).to.equal(false);
       expect(util.isValidUrl('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8')).to.equal(false);
       expect(util.isValidUrl('ainetwork.ai')).to.equal(false);
+      expect(util.isValidUrl('https://*.ainetwork.ai')).to.equal(false);
     })
 
     it("when valid input", () => {
       expect(util.isValidUrl('http://ainetwork.ai')).to.equal(true);
       expect(util.isValidUrl('https://ainetwork.ai')).to.equal(true);
-      expect(util.isValidUrl('https://*.ainetwork.ai')).to.equal(true);
       expect(util.isValidUrl('https://ainetwork.ai/some/api')).to.equal(true);
+    })
+  })
+
+  describe("isValidUrlWhitelistItem", () => {
+    it("when invalid input", () => {
+      expect(util.isValidUrlWhitelistItem(true)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(false)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(0)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(10)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(null)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(undefined)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(Infinity)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(NaN)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem('')).to.equal(false);
+      expect(util.isValidUrlWhitelistItem('abc')).to.equal(false);
+      expect(util.isValidUrlWhitelistItem('0')).to.equal(false);
+      expect(util.isValidUrlWhitelistItem([10])).to.equal(false);
+      expect(util.isValidUrlWhitelistItem({a: 'A'})).to.equal(false);
+      expect(util.isValidUrlWhitelistItem('0x')).to.equal(false);
+      expect(util.isValidUrlWhitelistItem('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8')).to.equal(false);
+      expect(util.isValidUrlWhitelistItem('ainetwork.ai')).to.equal(false);
+    })
+
+    it("when valid input", () => {
+      expect(util.isValidUrlWhitelistItem('http://ainetwork.ai')).to.equal(true);
+      expect(util.isValidUrlWhitelistItem('https://ainetwork.ai')).to.equal(true);
+      expect(util.isValidUrlWhitelistItem('https://ainetwork.ai/some/api')).to.equal(true);
+      expect(util.isValidUrlWhitelistItem('https://*.ainetwork.ai')).to.equal(true);
     })
   })
 
