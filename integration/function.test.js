@@ -975,6 +975,34 @@ describe('Native Function', () => {
         });
       });
 
+      it('cannot add an invalid function url', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/1`,
+          value: '*.ainetwork.ai', // missing protocol
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
       it('cannot add more than the max number of function urls per developer', async () => {
         // Add 2 more & try to add 1 more
         const addRestFunctionUrl2 = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
