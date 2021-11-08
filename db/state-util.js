@@ -2,6 +2,7 @@
 const logger = new (require('../logger'))('STATE_UTIL');
 
 const _ = require('lodash');
+const espree = require('espree');
 const CommonUtil = require('../common/common-util');
 const {
   FeatureFlags,
@@ -16,6 +17,27 @@ const {
   StateInfoProperties,
   STATE_LABEL_LENGTH_LIMIT,
 } = require('../common/constants');
+const RuleUtil = require('./rule-util');
+
+const WRITE_RULE_CODE_SNIPPET_PREFIX = '"use strict"; return ';
+const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
+  // alphabetical order
+  'addr',  // auth.addr
+  'auth',
+  'currentTime',
+  'data',
+  'evalOwner',
+  'evalRule',
+  'getFunction',
+  'getOwner',
+  'getRule',
+  'getValue',
+  'fid',  // auth.fid
+  'lastBlockNumber',
+  'newData',
+  'util',
+];
+const RULE_UTIL_PROPERTY_NAMES = Object.getOwnPropertyNames(RuleUtil.prototype);
 
 function isEmptyNode(node) {
   return node.getIsLeaf() && node.getValue() === null;
@@ -197,8 +219,30 @@ function sanitizeRuleConfig(rule) {
   return sanitized;
 }
 
-function isValidWriteRule(writeRule) {
-  return writeRule === null || CommonUtil.isBool(writeRule) || CommonUtil.isString(writeRule);
+function makeWriteRuleCodeSnippet(ruleString) {
+  return WRITE_RULE_CODE_SNIPPET_PREFIX + ruleString;
+}
+
+function isValidWriteRule(ruleString) {
+  if (ruleString !== null && !CommonUtil.isBool(ruleString) && !CommonUtil.isString(ruleString)) {
+    return false;
+  }
+  if (CommonUtil.isString(ruleString)) {
+    const idTokenWhitelistSet =
+        new Set([
+          ...WRITE_RULE_ID_TOKEN_WHITELIST_BASE,
+          ...RULE_UTIL_PROPERTY_NAMES]);
+    const ruleCodeSnippet = makeWriteRuleCodeSnippet(ruleString);
+    const tokenList = espree.tokenize(ruleCodeSnippet, { ecmaVersion: 12 });
+    const idTokenList = tokenList.filter((token) => token.type === 'Identifier');
+    const idTokenValueList = idTokenList.map((token) => token.value);
+    for (const idTokenValue of idTokenValueList) {
+      if (!idTokenWhitelistSet.has(idTokenValue)) {
+        // TODO(platfowner): Implement this part.
+      }
+    }
+  }
+  return true;
 }
 
 function isValidStateRule(stateRule) {
@@ -244,10 +288,10 @@ function isValidStateRule(stateRule) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
   const writeRule = sanitized[RuleProperties.WRITE];
-  const stateRule = sanitized[RuleProperties.STATE];
   if (sanitized.hasOwnProperty(RuleProperties.WRITE) && !isValidWriteRule(writeRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
   }
+  const stateRule = sanitized[RuleProperties.STATE];
   if (sanitized.hasOwnProperty(RuleProperties.STATE) && !isValidStateRule(stateRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.STATE]) };
   }
@@ -439,7 +483,8 @@ function isValidRuleTree(ruleTreeObj) {
     return { isValid: true, invalidPath: '' };
   }
 
-  return isValidConfigTreeRecursive(ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig);
+  return isValidConfigTreeRecursive(
+      ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig);
 }
 
 /**
@@ -895,6 +940,7 @@ module.exports = {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  makeWriteRuleCodeSnippet,
   isValidWriteRule,
   isValidStateRule,
   isValidRuleConfig,

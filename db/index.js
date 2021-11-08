@@ -1,5 +1,6 @@
 const logger = new (require('../logger'))('DATABASE');
 
+const _ = require('lodash');
 const {
   FeatureFlags,
   AccountProperties,
@@ -15,6 +16,7 @@ const {
   StateVersions,
   buildOwnerPermissions,
   LIGHTWEIGHT,
+  VARIABLE_LABEL_PREFIX,
   STATE_TREE_HEIGHT_LIMIT,
   TREE_SIZE_BUDGET,
   SERVICE_TREE_SIZE_BUDGET,
@@ -40,6 +42,7 @@ const {
   isWritablePathWithSharding,
   isValidPathForStates,
   isValidJsObjectForStates,
+  makeWriteRuleCodeSnippet,
   isValidRuleTree,
   isValidFunctionTree,
   isValidOwnerTree,
@@ -54,7 +57,6 @@ const {
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
 const PathUtil = require('../common/path-util');
-const _ = require('lodash');
 
 class DB {
   constructor(stateRoot, stateVersion, bc, blockNumberSnapshot, stateManager) {
@@ -708,14 +710,14 @@ class DB {
   setValue(valuePath, value, auth, timestamp, transaction, blockNumber, blockTime, options) {
     const LOG_HEADER = 'setValue';
     const isGlobal = options && options.isGlobal;
-    const isValidObj = isValidJsObjectForStates(value);
-    if (!isValidObj.isValid) {
-      return CommonUtil.returnTxResult(101, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
-    }
     const parsedPath = CommonUtil.parsePath(valuePath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(102, `Invalid path: ${isValidPath.invalidPath}`, 1);
+    }
+    const isValidObj = isValidJsObjectForStates(value);
+    if (!isValidObj.isValid) {
+      return CommonUtil.returnTxResult(101, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -795,14 +797,14 @@ class DB {
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(401, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
     }
-    const isValidFunction = isValidFunctionTree(func);
-    if (!isValidFunction.isValid) {
-      return CommonUtil.returnTxResult(405, `Invalid function tree: ${isValidFunction.invalidPath}`, 1);
-    }
     const parsedPath = CommonUtil.parsePath(functionPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(402, `Invalid path: ${isValidPath.invalidPath}`, 1);
+    }
+    const isValidFunction = isValidFunctionTree(func);
+    if (!isValidFunction.isValid) {
+      return CommonUtil.returnTxResult(405, `Invalid function tree: ${isValidFunction.invalidPath}`, 1);
     }
     if (!auth || auth.addr !== this.ownerAddress) {
       const ownerOnlyFid = this.func.hasOwnerOnlyFunction(func);
@@ -834,14 +836,14 @@ class DB {
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(501, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
     }
-    const isValidRule = isValidRuleTree(rule);
-    if (!isValidRule.isValid) {
-      return CommonUtil.returnTxResult(504, `Invalid rule tree: ${isValidRule.invalidPath}`, 1);
-    }
     const parsedPath = CommonUtil.parsePath(rulePath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(502, `Invalid path: ${isValidPath.invalidPath}`, 1);
+    }
+    const isValidRule = isValidRuleTree(rule);
+    if (!isValidRule.isValid) {
+      return CommonUtil.returnTxResult(504, `Invalid rule tree: ${isValidRule.invalidPath}`, 1);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -864,14 +866,14 @@ class DB {
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(601, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
     }
-    const isValidOwner = isValidOwnerTree(owner);
-    if (!isValidOwner.isValid) {
-      return CommonUtil.returnTxResult(604, `Invalid owner tree: ${isValidOwner.invalidPath}`, 1);
-    }
     const parsedPath = CommonUtil.parsePath(ownerPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(602, `Invalid path: ${isValidPath.invalidPath}`, 1);
+    }
+    const isValidOwner = isValidOwnerTree(owner);
+    if (!isValidOwner.isValid) {
+      return CommonUtil.returnTxResult(604, `Invalid owner tree: ${isValidOwner.invalidPath}`, 1);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -1551,7 +1553,7 @@ class DB {
   static getVariableLabel(node) {
     if (!node.getIsLeaf()) {
       for (const label of node.getChildLabels()) {
-        if (label.startsWith('$')) {
+        if (label.startsWith(VARIABLE_LABEL_PREFIX)) {
           // It's assumed that there is at most one variable (i.e., with '$') child node.
           return label;
         }
@@ -1845,13 +1847,12 @@ class DB {
   }
 
   // TODO(minsulee2): Need to be investigated. Using new Function() is not recommended.
-  makeWriteRuleEvalFunction(ruleString, pathVars) {
+  static makeWriteRuleEvalFunction(ruleCodeSnippet, pathVars) {
     return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
         'getFunction', 'getOwner', 'evalRule', 'evalOwner', 'util', 'lastBlockNumber',
-        ...Object.keys(pathVars), '"use strict"; return ' + ruleString);
+        ...Object.keys(pathVars), ruleCodeSnippet);
   }
 
-  // TODO(platfowner): Extend function for auth.fid.
   evalWriteRuleConfig(writeRuleConfig, pathVars, data, newData, auth, timestamp) {
     if (!CommonUtil.isDict(writeRuleConfig)) {
       return false;
@@ -1862,7 +1863,8 @@ class DB {
     } else if (typeof writeRuleString !== 'string') {
       return false;
     }
-    const writeRuleEvalFunc = this.makeWriteRuleEvalFunction(writeRuleString, pathVars);
+    const writeRuleCodeSnippet = makeWriteRuleCodeSnippet(writeRuleString);
+    const writeRuleEvalFunc = DB.makeWriteRuleEvalFunction(writeRuleCodeSnippet, pathVars);
     return writeRuleEvalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
         this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
         this.evalRule.bind(this), this.evalOwner.bind(this),
