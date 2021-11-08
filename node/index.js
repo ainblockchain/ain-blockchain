@@ -4,10 +4,13 @@ const logger = new (require('../logger'))('NODE');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const path = require('path');
+const bip39 = require('bip39');
 const {
   FeatureFlags,
+  AIN_HD_DERIVATION_PATH,
   PORT,
   ACCOUNT_INDEX,
+  ACCOUNT_INJECTION_OPTION,
   KEYSTORE_FILE_PATH,
   SYNC_MODE,
   SNAPSHOTS_ROOT_DIR,
@@ -71,23 +74,28 @@ class BlockchainNode {
   initAccount() {
     const LOG_HEADER = 'initAccount';
     if (ACCOUNT_INDEX !== null) {
-      this.setAccount(GenesisAccounts.others[ACCOUNT_INDEX]);
-      if (!this.account) {
-        throw Error(`[${LOG_HEADER}] Failed to initialize with an account`);
-      }
-      logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
-          `${this.account.address}`);
-      this.initShardSetting();
-    } else if (KEYSTORE_FILE_PATH !== null) {
-      // Create a bootstrap account & wait for the password
+      this.setAccountAndInitShardSetting(GenesisAccounts.others[ACCOUNT_INDEX]);
+    } else if (ACCOUNT_INJECTION_OPTION !== null) {
+      // Create a bootstrap account & wait for the account injection
       this.bootstrapAccount = ainUtil.createAccount();
     } else {
-      throw Error(`[${LOG_HEADER}] Must specify either KEYSTORE_FILE_PATH or ACCOUNT_INDEX.`);
+      throw Error(`[${LOG_HEADER}] Must specify either ACCOUNT_INJECTION_OPTION or ACCOUNT_INDEX.`);
     }
   }
 
-  async injectAccount(encryptedPassword) {
-    const LOG_HEADER = 'injectAccount';
+  setAccountAndInitShardSetting(account) {
+    const LOG_HEADER = 'setAccountAndInitShardSetting';
+    this.setAccount(account);
+    if (!this.account) {
+      throw Error(`[${LOG_HEADER}] Failed to initialize with an account`);
+    }
+    logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
+        `${this.account.address}`);
+    this.initShardSetting();
+  }
+
+  async injectAccountFromKeystore(encryptedPassword) {
+    const LOG_HEADER = 'injectAccountFromKeystore';
     if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
       return false;
     }
@@ -96,10 +104,40 @@ class BlockchainNode {
           this.bootstrapAccount.private_key, encryptedPassword);
       const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
-        this.setAccount(accountFromKeystore);
-        logger.info(`[${LOG_HEADER}] Injecting an account from a keystore file: ` +
-            `${this.account.address}`);
-        this.initShardSetting();
+        this.setAccountAndInitShardSetting(accountFromKeystore)
+        return true;
+      }
+      return false;
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Failed to inject an account: ${err.stack}`);
+      return false;
+    }
+  }
+
+  async injectAccountFromHDWallet(encryptedMnemonic, index) {
+    const LOG_HEADER = 'injectAccountFromHDWallet';
+    try {
+      if (index < 0) {
+        throw new Error('Invalid index');
+      }
+
+      const mnemonic = await ainUtil.decryptWithPrivateKey(
+          this.bootstrapAccount.private_key, encryptedMnemonic);
+
+      // TODO(ehgmsdk20): make seedPhraseToPrivate function in ain-util.
+      if (!bip39.validateMnemonic(mnemonic)) {
+        throw new Error('Invalid mnemonic');
+      }
+
+      const seed = bip39.mnemonicToSeedSync(mnemonic);
+      const HDkey = require('hdkey');
+      const hdkey = HDkey.fromMasterSeed(seed);
+      const path = AIN_HD_DERIVATION_PATH + index;
+      const wallet = hdkey.derive(path);
+
+      const accountFromHDWallet = ainUtil.privateToAccount(wallet.privateKey);
+      if (accountFromHDWallet !== null) {
+        this.setAccountAndInitShardSetting(accountFromHDWallet)
         return true;
       }
       return false;

@@ -55,6 +55,7 @@ const LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT)
 const SYNC_MODE = process.env.SYNC_MODE || 'full';
 const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
     Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
+const ACCOUNT_INJECTION_OPTION = process.env.ACCOUNT_INJECTION_OPTION || null;
 const KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
 const DEFAULT_CORS_WHITELIST = ['https://ainetwork.ai', 'https://ainize.ai', 'https://afan.ai',
     /\.ainetwork\.ai$/, /\.ainize\.ai$/, /\.afan\.ai$/, 'http://localhost:3000'];
@@ -63,6 +64,7 @@ const DEFAULT_CORS_WHITELIST = ['https://ainetwork.ai', 'https://ainize.ai', 'ht
 const CORS_WHITELIST = CommonUtil.getCorsWhitelist(process.env.CORS_WHITELIST) || DEFAULT_CORS_WHITELIST;
 
 // ** Constants **
+const AIN_HD_DERIVATION_PATH = "m/44'/412'/0'/0/"; // default wallet address for AIN
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
@@ -972,6 +974,7 @@ const trafficStatsManager = new TrafficStatsManager(
 
 module.exports = {
   FeatureFlags,
+  AIN_HD_DERIVATION_PATH,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   DATA_PROTOCOL_VERSION,
@@ -998,6 +1001,7 @@ module.exports = {
   ENABLE_GAS_FEE_WORKAROUND,
   ENABLE_REST_FUNCTION_CALL,
   ACCOUNT_INDEX,
+  ACCOUNT_INJECTION_OPTION,
   KEYSTORE_FILE_PATH,
   CORS_WHITELIST,
   PORT,

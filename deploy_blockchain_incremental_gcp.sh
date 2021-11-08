@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$#" -lt 5 ]] || [[ "$#" -gt 7 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [fast|full] [canary|full] [--setup] [--keystore]\n"
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [fast|full] [canary|full] [--setup] [--keystore|--mnemonic]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 fast canary --setup\n"
     exit
 fi
@@ -48,7 +48,17 @@ function parse_options() {
     if [[ "$option" = '--setup' ]]; then
         SETUP_OPTION="$option"
     elif [[ "$option" = '--keystore' ]]; then
-        KEYSTORE_OPTION="$option"
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            echo "You cannot use both keystore and mnemonic"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ "$option" = '--mnemonic' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            echo "You cannot use both keystore and mnemonic"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
     else
         echo "Invalid option: $option"
         exit
@@ -56,7 +66,7 @@ function parse_options() {
 }
 
 # Parse options.
-KEYSTORE_OPTION=""
+ACCOUNT_INJECTION_OPTION=""
 
 if [[ "$#" -gt 5 ]]; then
     parse_options "$6"
@@ -65,7 +75,7 @@ if [[ "$#" -gt 5 ]]; then
     fi
 fi
 printf "SETUP_OPTION=$SETUP_OPTION\n"
-printf "KEYSTORE_OPTION=$KEYSTORE_OPTION\n"
+printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 
 
 # Get confirmation.
@@ -76,22 +86,23 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
+# Read node ip addresses
+IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
 
-if [[ "$KEYSTORE_OPTION" != "" ]]; then
+if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     # Get keystore password
     echo -n "Enter password: "
     read -s PASSWORD
     echo
     echo
 
-    # Read node ip addresses
-    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
-
     if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
         KEYSTORE_DIR="testnet_prod_keys/"
     else
         KEYSTORE_DIR="testnet_dev_staging_keys/"
     fi
+elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
+    IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
 FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh restart_tracker_gcp.sh"
@@ -166,17 +177,28 @@ function deploy_node() {
 
     # 2. Start node
     printf "\n\n[[[[ Starting node $node_index ]]]]\n\n"
-    START_CMD="gcloud compute ssh $node_target_addr --command '. start_node_incremental_gcp.sh $SEASON 0 $node_index $SYNC_MODE $KEYSTORE_OPTION' --project $PROJECT_ID --zone $node_zone"
+    START_CMD="gcloud compute ssh $node_target_addr --command '. start_node_incremental_gcp.sh $SEASON 0 $node_index $SYNC_MODE $ACCOUNT_INJECTION_OPTION' --project $PROJECT_ID --zone $node_zone"
     printf "START_CMD='$START_CMD'\n\n"
     eval $START_CMD
 
     # 3. Init account if necessary (if --keystore specified)
-    if [[ "$KEYSTORE_OPTION" != "" ]]; then
+    if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         printf "\n* >> Initializing account for node $node_index ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
 
-        echo $PASSWORD | node inject_account_gcp.js $node_ip_addr
+        echo $PASSWORD | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+    elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
+        local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
+        local MNEMONIC=${MNEMONIC_LIST[${node_index}]}
+        printf "\n* >> Injecting an account for node $node_index ********************\n\n"
+        printf "node_ip_addr='$node_ip_addr'\n"
+
+        {
+            echo $MNEMONIC
+            sleep 1
+            echo 0
+        } | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     fi
 
     #4. Wait until node is synced
