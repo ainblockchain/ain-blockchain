@@ -12,7 +12,7 @@ function parse_options() {
     if [[ "$option" = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
     elif [[ "$option" = '--rest-func' ]]; then
-        ENABLE_REST_FUNCTION_CALL="true"
+        REST_FUNC_OPTION="$option"
     elif [[ "$option" = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             echo "You cannot use both keystore and mnemonic"
@@ -34,7 +34,7 @@ function parse_options() {
 # Parse options.
 KEEP_CODE_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
-ENABLE_REST_FUNCTION_CALL="false"
+REST_FUNC_OPTION=""
 
 number=4
 while [ $number -le $# ]
@@ -45,9 +45,13 @@ done
 
 echo "KEEP_CODE_OPTION=$KEEP_CODE_OPTION"
 echo "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION"
-echo "ENABLE_REST_FUNCTION_CALL=$ENABLE_REST_FUNCTION_CALL"
+echo "REST_FUNC_OPTION=$REST_FUNC_OPTION"
 export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
-export ENABLE_REST_FUNCTION_CALL="$ENABLE_REST_FUNCTION_CALL"
+if [[ $REST_FUNC_OPTION ]]; then
+  export ENABLE_REST_FUNCTION_CALL=true
+else
+  export ENABLE_REST_FUNCTION_CALL=false
+fi
 
 echo 'Killing old jobs..'
 sudo killall node
