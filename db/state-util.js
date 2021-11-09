@@ -298,7 +298,12 @@ function isValidStateRule(stateRule) {
 
 /**
  * Checks the validity of the given rule configuration.
+ * 
+ * @param {Object} configPath path of the config
+ * @param {Object} ruleConfigObj rule config object
  */
+// NOTE(platfowner): Should have the same parameters as isValidFunctionConfig() and
+// isValidOwnerConfig().
 function isValidRuleConfig(configPath, ruleConfigObj) {
   if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
@@ -370,7 +375,12 @@ function isValidFunctionInfo(functionInfoObj) {
 
 /**
  * Checks the validity of the given function configuration.
+ * 
+ * @param {Object} configPath path of the config
+ * @param {Object} functionConfigObj function config object
  */
+// NOTE(platfowner): Should have the same parameters as isValidRuleConfig() and
+// isValidOwnerConfig().
 function isValidFunctionConfig(configPath, functionConfigObj) {
   if (!CommonUtil.isDict(functionConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
@@ -434,7 +444,12 @@ function isValidOwnerPermissions(ownerPermissionsObj) {
 
 /**
  * Checks the validity of the given owner configuration.
+ * 
+ * @param {Object} configPath path of the config
+ * @param {Object} ownerConfigObj owner config object
  */
+// NOTE(platfowner): Should have the same parameters as isValidFunctionConfig() and
+// isValidRuleConfig().
 function isValidOwnerConfig(configPath, ownerConfigObj) {
   if (!CommonUtil.isDict(ownerConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
@@ -582,6 +597,7 @@ function hasConfigLabelOnly(stateTreeObj, configLabel) {
 /**
  * Returns a new rule tree created by applying the rule change to
  * the current rule tree.
+ * 
  * @param {Object} curRuleTree current rule tree (to be modified by this rule)
  * @param {Object} ruleChange rule change
  */
@@ -622,6 +638,7 @@ function applyRuleChange(curRuleTree, ruleChange) {
 /**
  * Returns a new function tree created by applying the function change to
  * the current function tree.
+ * 
  * @param {Object} curFuncTree current function tree (to be modified by this function)
  * @param {Object} functionChange function change
  */
@@ -660,6 +677,7 @@ function applyFunctionChange(curFuncTree, functionChange) {
 /**
  * Returns a new owner tree created by applying the owner change to
  * the current owner tree.
+ * 
  * @param {Object} curOwnerTree current owner tree (to be modified by this function)
  * @param {Object} ownerChange owner change
  */
