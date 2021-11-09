@@ -480,6 +480,7 @@ function isValidOwnerConfig(configPath, ownerConfigObj) {
  * Checks the validity of the given state tree with the given config label and
  * state config validator.
  * 
+ * @param {*} treePath path of the state tree
  * @param {*} stateTreeObj state tree to check the validity
  * @param {*} path recursion path
  * @param {*} configLabel config label
