@@ -132,10 +132,10 @@ const TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
 const TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
 const DEFAULT_REQUEST_BODY_SIZE_LIMIT = '100mb';
 const DEFAULT_DEVELOPERS_URL_WHITELIST = [
-  'https://events.ainetwork.ai/trigger',
-  'https://events.ainize.ai/trigger',
-  'http://echo-bot.ainetwork.ai/trigger',
-  'http://localhost:3000/trigger'
+  'https://*.ainetwork.ai',
+  'https://*.ainize.ai',
+  'https://*.afan.ai',
+  'http://localhost:3000'
 ];
 
 // ** Enums **

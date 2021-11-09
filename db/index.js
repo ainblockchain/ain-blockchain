@@ -71,19 +71,19 @@ class DB {
     this.stateManager = stateManager;
     this.ownerAddress = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-    this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: {} };
+    this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: [] };
     this.updateRestFunctionsUrlWhitelistCache();
   }
 
   static formatRawRestFunctionsWhitelist(raw) {
-    if (CommonUtil.isEmpty(raw) || !CommonUtil.isDict(raw)) return {};
-    const whitelist = {};
+    if (CommonUtil.isEmpty(raw) || !CommonUtil.isDict(raw)) return [];
+    const whitelist = new Set();
     for (const val of Object.values(raw)) {
       for (const url of Object.values(val)) {
-        whitelist[url] = true;
+        whitelist.add(url);
       }
     }
-    return whitelist;
+    return [...whitelist];
   }
 
   /**
