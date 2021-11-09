@@ -64,7 +64,6 @@ const DEFAULT_CORS_WHITELIST = ['https://ainetwork.ai', 'https://ainize.ai', 'ht
 const CORS_WHITELIST = CommonUtil.getCorsWhitelist(process.env.CORS_WHITELIST) || DEFAULT_CORS_WHITELIST;
 
 // ** Constants **
-const AIN_HD_DERIVATION_PATH = "m/44'/412'/0'/0/"; // default wallet address for AIN
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 if (!semver.valid(CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
@@ -974,7 +973,6 @@ const trafficStatsManager = new TrafficStatsManager(
 
 module.exports = {
   FeatureFlags,
-  AIN_HD_DERIVATION_PATH,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   DATA_PROTOCOL_VERSION,
