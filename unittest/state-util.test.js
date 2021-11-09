@@ -653,7 +653,7 @@ describe("state-util", () => {
       expect(isValidWriteRule([], [1, 2, 3])).to.equal(false);
       expect(isValidWriteRule([], 0)).to.equal(false);
       expect(isValidWriteRule([], 1)).to.equal(false);
-      expect(isValidStateRule([], { "invalid_field": true })).to.equal(false);
+      expect(isValidStateRule([], { "invalid_top_level_token": true })).to.equal(false);
       expect(isValidWriteRule([], 'process.exit(0)')).to.equal(false);
     })
 

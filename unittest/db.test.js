@@ -1881,6 +1881,22 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleTreeBefore);
       })
 
+      it("when writing invalid write rule with not-allowed top-level tokens", () => {
+        const ruleTreeBefore = node.db.getRule("/apps/test/test_rule/some/path");
+        assert.deepEqual(node.db.setRule(
+            "/apps/test/test_rule/some/path",
+            {
+              ".rule": {
+                "write": "invalid_top_level_token"
+              }
+            }), {
+          "code": 504,
+          "error_message": "Invalid rule tree: /.rule/write",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleTreeBefore);
+      })
+
       it("when writing with invalid path", () => {
         assert.deepEqual(node.db.setRule("/apps/test/test_rule/some/path/.",
             {
