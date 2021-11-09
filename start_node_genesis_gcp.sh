@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$#" -lt 3 ]] || [[ "$#" -gt 5 ]]; then
-    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore] [--keep-code]"
+    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore|--mnemonic] [--keep-code]"
     echo "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore"
     exit
 fi
@@ -12,7 +12,17 @@ function parse_options() {
     if [[ "$option" = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
     elif [[ "$option" = '--keystore' ]]; then
-        KEYSTORE_OPTION="$option"
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            echo "You cannot use both keystore and mnemonic"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ "$option" = '--mnemonic' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            echo "You cannot use both keystore and mnemonic"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
     else
         echo "Invalid options: $option"
         exit
@@ -21,7 +31,7 @@ function parse_options() {
 
 # Parse options.
 KEEP_CODE_OPTION=""
-KEYSTORE_OPTION=""
+ACCOUNT_INJECTION_OPTION=""
 if [[ "$#" -gt 3 ]]; then
     parse_options "$4"
     if [[ "$#" = 5 ]]; then
@@ -29,7 +39,8 @@ if [[ "$#" -gt 3 ]]; then
     fi
 fi
 echo "KEEP_CODE_OPTION=$KEEP_CODE_OPTION"
-echo "KEYSTORE_OPTION=$KEYSTORE_OPTION"
+echo "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION"
+export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
 
 echo 'Killing old jobs..'
 sudo killall node
@@ -128,16 +139,16 @@ echo "TRACKER_WS_ADDR=$TRACKER_WS_ADDR"
 echo "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR"
 echo "KEYSTORE_DIR=$KEYSTORE_DIR"
 
-if [[ "$3" -lt 0 ]] || [[ "$3" -gt 4 ]]; then
+if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
     echo "Invalid account_index argument: $2"
     exit
 fi
 
-# NOTE(liayoo): Currently this script supports --keystore option only for the parent chain.
-if [[ "$KEYSTORE_OPTION" != '--keystore' ]] || [[ "$2" -gt 0 ]]; then
+# NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]] || [[ "$2" -gt 0 ]]; then
     export ACCOUNT_INDEX="$3"
     echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
-else
+elif [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     if [[ "$3" = 0 ]]; then
         KEYSTORE_FILENAME="keystore_node_0.json"
     elif [[ "$3" = 1 ]]; then
@@ -146,8 +157,12 @@ else
         KEYSTORE_FILENAME="keystore_node_2.json"
     elif [[ "$3" = 3 ]]; then
         KEYSTORE_FILENAME="keystore_node_3.json"
-    else
+    elif [[ "$3" = 4 ]]; then
         KEYSTORE_FILENAME="keystore_node_4.json"
+    elif [[ "$3" = 5 ]]; then
+        KEYSTORE_FILENAME="keystore_node_5.json"
+    elif [[ "$3" = 6 ]]; then
+        KEYSTORE_FILENAME="keystore_node_6.json"
     fi
     echo "KEYSTORE_FILENAME=$KEYSTORE_FILENAME"
     if [[ "$KEEP_CODE_OPTION" = "" ]]; then
@@ -166,7 +181,11 @@ export ENABLE_GAS_FEE_WORKAROUND=true
 export LIGHTWEIGHT=false
 export STAKE=100000
 export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
-MAX_OLD_SPACE_SIZE_MB=5500
+# NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
+export CORS_WHITELIST=*
+printf "CORS_WHITELIST=$CORS_WHITELIST\n"
+
+MAX_OLD_SPACE_SIZE_MB=11000
 
 printf "\nStarting up Blockchain Node server..\n\n"
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"

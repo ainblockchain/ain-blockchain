@@ -1,4 +1,5 @@
 const stringify = require('fast-json-stable-stringify');
+const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -50,8 +51,7 @@ class CommonUtil {
   /**
    * Gets address from hash and signature.
    */
-  static getAddressFromSignature(hash, signature) {
-    const logger = require('../logger')('CHAIN_UTIL');
+  static getAddressFromSignature(logger, hash, signature) {
     const LOG_HEADER = 'getAddressFromSignature';
     let address = '';
     try {
@@ -127,6 +127,10 @@ class CommonUtil {
 
   static isValidatorOffenseType(type) {
     return ruleUtil.isValidatorOffenseType(type);
+  }
+
+  static isValidUrl(url) {
+    return ruleUtil.isValidUrl(url);
   }
 
   static boolOrFalse(value) {
@@ -208,23 +212,23 @@ class CommonUtil {
 
   static toGetOptions(args) {
     const options = {};
-    if (args.is_shallow !== undefined) {
-      options.isShallow = CommonUtil.toBool(args.is_shallow);
-    }
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
     }
     if (args.is_final !== undefined) {
       options.isFinal = CommonUtil.toBool(args.is_final);
     }
+    if (args.is_shallow !== undefined) {
+      options.isShallow = CommonUtil.toBool(args.is_shallow);
+    }
+    if (args.include_version !== undefined) {
+      options.includeVersion = CommonUtil.toBool(args.include_version);
+    }
     if (args.include_tree_info !== undefined) {
       options.includeTreeInfo = CommonUtil.toBool(args.include_tree_info);
     }
     if (args.include_proof !== undefined) {
       options.includeProof = CommonUtil.toBool(args.include_proof);
-    }
-    if (args.include_version !== undefined) {
-      options.includeVersion = CommonUtil.toBool(args.include_version);
     }
     return options;
   }
@@ -650,6 +654,27 @@ class CommonUtil {
     return CommonUtil.returnTxResult(code, message);
   }
 
+  /**
+   * Logs an error message with stack trace.
+   *
+   * @param logger logger to log with
+   * @param message message to log
+   */
+  static logErrorWithStackTrace(logger, message) {
+    logger.error(message + `\n${new Error().stack}.`);
+  }
+
+  /**
+   * Finishes logging after stack trace logging.
+   *
+   * @param logger logger to log with
+   * @param message message to log
+   */
+  static finishWithStackTrace(logger, message) {
+    CommonUtil.logErrorWithStackTrace(logger, message);
+    logger.finish();
+  }
+
   static keyStackToMetricName(keyStack) {
     return _.join(keyStack, ':');
   }
@@ -727,6 +752,24 @@ class CommonUtil {
     const DB = require('../db');
     if (!CommonUtil.isArray(resList)) return [];
     return resList.map((res) => DB.trimExecutionResult(res));
+  }
+
+  static getCorsWhitelist(input) {
+    if (!input) {
+      return null;
+    }
+    const inputList = input.split(',').filter((str) => !!str);
+    if (inputList.includes('*')) {
+      return '*';
+    }
+    return [...new Set([...inputList])];
+  }
+
+  static getJsonDiff(base, target) {
+    if (!CommonUtil.isDict(base) || !CommonUtil.isDict(target)) {
+      return '';
+    }
+    return jsonDiff.diffString(base, target, { color: "" });
   }
 }
 

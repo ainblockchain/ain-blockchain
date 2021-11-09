@@ -1,6 +1,7 @@
+const logger = new (require('../logger'))('TRANSACTION');
+
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const logger = require('../logger')('TRANSACTION');
 const {
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
@@ -39,7 +40,7 @@ class Transaction {
       address = txBody.address;
       skipVerif = true;
     } else {
-      address = CommonUtil.getAddressFromSignature(hash.slice(2), signature);
+      address = CommonUtil.getAddressFromSignature(logger, hash.slice(2), signature);
     }
     const createdAt = Date.now();
     return new Transaction(txBody, signature, hash, address, skipVerif, createdAt);
@@ -239,10 +240,8 @@ class Transaction {
     const sanitized = Transaction.sanitizeTxBody(txBody);
     const isIdentical = _.isEqual(JSON.parse(JSON.stringify(sanitized)), txBody, { strict: true });
     if (!isIdentical) {
-      logger.info(
-          `Transaction body in a non-standard format ` +
-          `- input:\n${JSON.stringify(txBody, null, 2)}\n\n` +
-          `- sanitized:\n${JSON.stringify(sanitized, null, 2)}\n\n`);
+      const diffLines = CommonUtil.getJsonDiff(sanitized, txBody);
+      logger.info(`Transaction body is in a non-standard format:\n${diffLines}\n`);
       return false;
     }
     return true;

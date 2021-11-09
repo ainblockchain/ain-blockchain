@@ -1,5 +1,6 @@
-const logger = require('../logger')('RADIX_NODE');
+const logger = new (require('../logger'))('RADIX_NODE');
 
+const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
@@ -115,9 +116,8 @@ class RadixNode {
   setChildStateNode(childStateNode) {
     const LOG_HEADER = 'setChildStateNode';
     if (!childStateNode) {
-      logger.error(
-          `[${LOG_HEADER}] Setting invalid state node: ${childStateNode} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Setting invalid state node: ${childStateNode}`);
       // Does nothing.
       return;
     }
@@ -173,9 +173,8 @@ class RadixNode {
   addParent(parent) {
     const LOG_HEADER = 'addParent';
     if (this.hasParent(parent)) {
-      logger.error(
-          `[${LOG_HEADER}] Adding an existing parent of label: ${parent.getLabel()} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Adding an existing parent of label: ${parent.getLabel()}`);
       // Does nothing.
       return;
     }
@@ -189,9 +188,8 @@ class RadixNode {
   deleteParent(parent) {
     const LOG_HEADER = 'deleteParent';
     if (!this.parentSet.has(parent)) {
-      logger.error(
-          `[${LOG_HEADER}] Deleting a non-existing parent of label: ${parent.getLabel()} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Deleting a non-existing parent of label: ${parent.getLabel()}`);
       // Does nothing.
       return;
     }
@@ -217,25 +215,23 @@ class RadixNode {
   setChild(labelRadix, labelSuffix, node) {
     const LOG_HEADER = 'setChild';
     if (!CommonUtil.isString(labelRadix) || labelRadix.length !== 1) {
-      logger.error(
-          `[${LOG_HEADER}] Setting a child with invalid label radix ${labelRadix} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Setting a child with invalid label radix ${labelRadix}`);
       // Does nothing.
       return false;
     }
     if (!CommonUtil.isString(labelSuffix)) {
-      logger.error(
-          `[${LOG_HEADER}] Setting a child with invalid label suffix ${labelRadix} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Setting a child with invalid label suffix ${labelRadix}`);
       // Does nothing.
       return false;
     }
     if (this.hasChild(labelRadix)) {
       const child = this.getChild(labelRadix);
       if (child === node) {
-        logger.error(
-            `[${LOG_HEADER}] Setting an existing child with label ${labelRadix + labelSuffix} ` +
-            `at: ${new Error().stack}.`);
+        CommonUtil.logErrorWithStackTrace(
+            logger,
+            `[${LOG_HEADER}] Setting an existing child with label ${labelRadix + labelSuffix}`);
         // Does nothing.
         return false;
       }
@@ -257,16 +253,14 @@ class RadixNode {
   deleteChild(labelRadix) {
     const LOG_HEADER = 'deleteChild';
     if (!CommonUtil.isString(labelRadix) || labelRadix.length !== 1) {
-      logger.error(
-          `[${LOG_HEADER}] Deleting a child with invalid label radix ${labelRadix} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Deleting a child with invalid label radix ${labelRadix}`);
       // Does nothing.
       return false;
     }
     if (!this.hasChild(labelRadix)) {
-      logger.error(
-          `[${LOG_HEADER}] Deleting a non-existing child with label radix: ${labelRadix} ` +
-          `at: ${new Error().stack}.`);
+      CommonUtil.logErrorWithStackTrace(
+          logger, `[${LOG_HEADER}] Deleting a non-existing child with label radix: ${labelRadix}`);
       // Does nothing.
       return false;
     }
@@ -277,11 +271,16 @@ class RadixNode {
   }
 
   getChildLabelRadices() {
-    return [...this.radixChildMap.keys()];
+    // NOTE(platfowner): Sort child nodes by label radix for stability.
+    return [...this.radixChildMap.keys()]
+        .sort((a, b) => a.localeCompare(b));
   }
 
   getChildNodes() {
-    return [...this.radixChildMap.values()];
+    // NOTE(platfowner): Sort child nodes by label radix for stability.
+    return [...this.radixChildMap.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))  // compare keys (label radices)
+        .map((entry) => entry[1]);
   }
 
   numChildren() {
@@ -490,25 +489,29 @@ class RadixNode {
     return true;
   }
 
-  getProofOfRadixNode(childLabel = null, childProof = null, stateProof = null) {
-    const proof = { [StateInfoProperties.RADIX_PROOF_HASH]: this.getProofHash() };
+  getProofOfRadixNode(
+      childLabel = null, childRadixProof = null, childStateProof = null, isRootRadixNode = false) {
+    // NOTE(platfowner): Root radix node uses STATE_PROOF_HASH as the proof label.
+    const proofLabel = isRootRadixNode ?
+        StateInfoProperties.STATE_PROOF_HASH : StateInfoProperties.RADIX_PROOF_HASH;
+    const proof = { [proofLabel]: this.getProofHash() };
     if (this.hasChildStateNode()) {
       const childStateNode = this.getChildStateNode();
-      const childStateProof = {
-        [StateInfoProperties.STATE_PROOF_HASH]: stateProof !== null ?
-            stateProof : childStateNode.getProofHash()
-      };
+      const proofStateLabel = StateInfoProperties.STATE_LABEL_PREFIX + childStateNode.getLabel();
       Object.assign(proof, {
-        [childStateNode.getLabel()]: childStateProof,
+        [proofStateLabel]: childStateProof !== null ? childStateProof : {
+          [StateInfoProperties.STATE_PROOF_HASH]: childStateNode.getProofHash()
+        }
       });
     }
-    if (childLabel === null && stateProof !== null) {
+    if (childLabel === null && childStateProof !== null) {
       return proof;
     }
     this.getChildNodes().forEach((child) => {
       const label = child.getLabel();
+      const proofRadixLabel = StateInfoProperties.RADIX_LABEL_PREFIX + label;
       Object.assign(proof, {
-        [label]: label === childLabel ? childProof : {
+        [proofRadixLabel]: label === childLabel ? childRadixProof : {
           [StateInfoProperties.RADIX_PROOF_HASH]: child.getProofHash()
         }
       });
@@ -544,13 +547,89 @@ class RadixNode {
     return numAffectedNodes;
   }
 
+  static getChildStateNodeFromRadixSnapshot(obj) {
+    const StateNode = require('./state-node');
+    let childStateLabel = null;
+    let childStateObj = null;
+    for (const key in obj) {
+      if (_.startsWith(key, StateInfoProperties.STATE_LABEL_PREFIX)) {
+        childStateLabel = key.slice(StateInfoProperties.STATE_LABEL_PREFIX.length);
+        childStateObj = obj[key];
+      }
+    }
+    if (childStateLabel === null) {
+      return null;
+    }
+    const childStateNode = StateNode.fromRadixSnapshot(childStateObj);
+    childStateNode.setLabel(childStateLabel);
+    const version = obj[`${StateInfoProperties.VERSION}:${childStateLabel}`];
+    if (version) {
+      // leaf node case
+      childStateNode.setVersion(version);
+    }
+    return childStateNode;
+  }
+
   /**
-   * Converts the subtree to a js object.
+   * Constructs a sub-tree from the given snspshot object.
+   */
+  static fromRadixSnapshot(obj) {
+    const version = obj[StateInfoProperties.VERSION];
+    const serial = obj[StateInfoProperties.SERIAL];
+    const curNode = new RadixNode(version, serial);
+    const childStateNode = RadixNode.getChildStateNodeFromRadixSnapshot(obj);
+    if (childStateNode !== null) {
+      curNode.setChildStateNode(childStateNode);
+    }
+    for (const key in obj) {
+      if (_.startsWith(key, StateInfoProperties.RADIX_LABEL_PREFIX)) {
+        const childLabel = key.slice(StateInfoProperties.RADIX_LABEL_PREFIX.length);
+        const childObj = obj[key];
+        if (CommonUtil.isEmpty(childLabel)) {
+          return null;
+        }
+        const childNode = RadixNode.fromRadixSnapshot(childObj);
+        const childLabelRadix = childLabel.charAt(0);
+        const childLabelSuffix = childLabel.slice(1);
+        curNode.setChild(childLabelRadix, childLabelSuffix, childNode);
+      }
+    }
+    return curNode;
+  }
+
+  /**
+   * Converts this sub-tree to a snapshot object.
+   */
+  toRadixSnapshot(nextSerial = null) {
+    const obj = {};
+    if (nextSerial !== null) {
+      obj[StateInfoProperties.NEXT_SERIAL] = nextSerial;
+    }
+    obj[StateInfoProperties.VERSION] = this.getVersion();
+    obj[StateInfoProperties.SERIAL] = this.getSerial();
+    if (this.hasChildStateNode()) {
+      const childStateNode = this.getChildStateNode();
+      obj[StateInfoProperties.STATE_LABEL_PREFIX + childStateNode.getLabel()] =
+          childStateNode.toRadixSnapshot();
+      if (childStateNode.getIsLeaf()) {
+        obj[`${StateInfoProperties.VERSION}:${childStateNode.getLabel()}`] =
+            childStateNode.getVersion();
+      }
+    }
+    for (const child of this.getChildNodes()) {
+      obj[StateInfoProperties.RADIX_LABEL_PREFIX + child.getLabel()] =
+          child.toRadixSnapshot();
+    }
+    return obj;
+  }
+
+  /**
+   * Converts this sub-tree to a js object.
    * This is for testing / debugging purpose.
    */
   toJsObject(
       withVersion = false, withSerial = false, withProofHash = false, withTreeInfo = false,
-      withNumParents = false) {
+      withNumParents = false, withHasParentStateNode = false) {
     const obj = {};
     if (withVersion) {
       obj[StateInfoProperties.VERSION] = this.getVersion();
@@ -569,6 +648,9 @@ class RadixNode {
     if (withNumParents) {
       obj[StateInfoProperties.NUM_PARENTS] = this.numParents();
     }
+    if (withHasParentStateNode) {
+      obj[StateInfoProperties.HAS_PARENT_STATE_NODE] = this.hasParentStateNode();
+    }
     if (this.hasChildStateNode()) {
       const stateObj = {};
       const childStateNode = this.getChildStateNode();
@@ -578,11 +660,12 @@ class RadixNode {
       if (withProofHash) {
         stateObj[StateInfoProperties.STATE_PROOF_HASH] = childStateNode.getProofHash();
       }
-      obj[childStateNode.getLabel()] = stateObj;
+      obj[`${StateInfoProperties.STATE_LABEL_PREFIX}${childStateNode.getLabel()}`] = stateObj;
     }
     for (const child of this.getChildNodes()) {
       obj[child.getLabel()] = child.toJsObject(
-          withVersion, withSerial, withProofHash, withTreeInfo, withNumParents);
+          withVersion, withSerial, withProofHash, withTreeInfo, withNumParents,
+          withHasParentStateNode);
     }
     return obj;
   }

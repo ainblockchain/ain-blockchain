@@ -18,7 +18,7 @@ sleep 5
 
 while :
 do
-    nodeState=$(curl -m 20 -X GET -H "Content-Type: application/json" "http://localhost:9001/node_status" | jq -r '.result.state')
+    nodeState=$(curl -m 20 -X GET -H "Content-Type: application/json" "http://localhost:9001/node_status" | node_modules/node-jq/bin/jq -r '.result.state')
     printf "\nnodeState = ${nodeState}\n"
     if [[ "$nodeState" = "SERVING" ]]; then
         printf "\nShard node 0 is now serving!\n"

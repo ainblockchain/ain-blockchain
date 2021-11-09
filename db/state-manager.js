@@ -1,4 +1,5 @@
-const logger = require('../logger')('STATE_MANAGER');
+const logger = new (require('../logger'))('STATE_MANAGER');
+
 const StateNode = require('./state-node');
 const {
   renameStateTreeVersion,
@@ -12,7 +13,7 @@ const {
 class StateManager {
   constructor() {
     this.rootMap = new Map();
-    this._setRoot(StateVersions.EMPTY, new StateNode(StateVersions.EMPTY));
+    this.setRoot(StateVersions.EMPTY, new StateNode(StateVersions.EMPTY));
     this._setFinalVersion(null);
   }
 
@@ -69,7 +70,7 @@ class StateManager {
    * @param {string} version state version
    * @param {StateNode} root state root
    */
-  _setRoot(version, root) {
+  setRoot(version, root) {
     this.rootMap.set(version, root);
   }
 
@@ -132,7 +133,7 @@ class StateManager {
       return null;
     }
     const newRoot = root.clone(newVersion);
-    this._setRoot(newVersion, newRoot);
+    this.setRoot(newVersion, newRoot);
     return newRoot;
   }
 

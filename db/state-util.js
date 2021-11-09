@@ -1,8 +1,7 @@
 /* eslint guard-for-in: "off" */
-const logger = require('../logger')('STATE_UTIL');
+const logger = new (require('../logger'))('STATE_UTIL');
 
 const _ = require('lodash');
-const validUrl = require('valid-url');
 const CommonUtil = require('../common/common-util');
 const {
   FeatureFlags,
@@ -27,7 +26,7 @@ function hasConfig(node, label) {
 }
 
 function getConfig(node, label) {
-  return hasConfig(node, label) ? node.getChild(label).toJsObject() : null;
+  return hasConfig(node, label) ? node.getChild(label).toStateSnapshot() : null;
 }
 
 function hasShardConfig(valueNode) {
@@ -48,6 +47,10 @@ function getFunctionConfig(funcNode) {
 
 function hasRuleConfig(ruleNode) {
   return hasConfig(ruleNode, PredefinedDbPaths.DOT_RULE);
+}
+
+function hasRuleConfigWithProp(ruleNode, ruleProp) {
+  return hasRuleConfig(ruleNode) && ruleNode.getChild(PredefinedDbPaths.DOT_RULE).getChild(ruleProp) !== null;
 }
 
 function getRuleConfig(ruleNode) {
@@ -169,6 +172,56 @@ function isValidJsObjectForStates(obj) {
   return isValidJsObjectForStatesRecursive(obj, []);
 }
 
+function sanitizeRuleConfig(rule) {
+  if (!rule) {
+    return null;
+  }
+  const sanitized = {};
+  if (rule.hasOwnProperty(RuleProperties.WRITE)) {
+    CommonUtil.setJsObject(sanitized, [RuleProperties.WRITE], rule[RuleProperties.WRITE]);
+  }
+  if (rule.hasOwnProperty(RuleProperties.STATE)) {
+    if (rule[RuleProperties.STATE] === null) {
+      CommonUtil.setJsObject(sanitized, [RuleProperties.STATE], null);
+    } else {
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.MAX_CHILDREN],
+            rule[RuleProperties.STATE][RuleProperties.MAX_CHILDREN]);
+      }
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.GC_MAX_SIBLINGS)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.GC_MAX_SIBLINGS],
+            rule[RuleProperties.STATE][RuleProperties.GC_MAX_SIBLINGS]);
+      }
+    }
+  }
+  return sanitized;
+}
+
+function isValidStateRule(stateRule) {
+  if (stateRule === null) {
+    return true;
+  }
+  if (!CommonUtil.isDict(stateRule) || CommonUtil.isEmpty(stateRule)) {
+    return false;
+  }
+  let hasValidProperty = false;
+  if (stateRule.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+    if (!CommonUtil.isNumber(stateRule[RuleProperties.MAX_CHILDREN]) ||
+        stateRule[RuleProperties.MAX_CHILDREN] <= 0) {
+      return false;
+    }
+    hasValidProperty = true;
+  }
+  if (stateRule.hasOwnProperty(RuleProperties.GC_MAX_SIBLINGS)) {
+    if (!CommonUtil.isNumber(stateRule[RuleProperties.GC_MAX_SIBLINGS]) ||
+      stateRule[RuleProperties.GC_MAX_SIBLINGS] <= 0) {
+      return false;
+    }
+    hasValidProperty = true;
+  }
+  return hasValidProperty;
+}
+
 /**
  * Checks the validity of the given rule configuration.
  */
@@ -176,12 +229,24 @@ function isValidJsObjectForStates(obj) {
   if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
-  if (!ruleConfigObj.hasOwnProperty(RuleProperties.WRITE)) {
+  if (!ruleConfigObj.hasOwnProperty(RuleProperties.WRITE) &&
+      !ruleConfigObj.hasOwnProperty(RuleProperties.STATE)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
-  const writeProp = ruleConfigObj[RuleProperties.WRITE];
-  if (!CommonUtil.isBool(writeProp) && !CommonUtil.isString(writeProp)) {
+
+  const sanitized = sanitizeRuleConfig(ruleConfigObj);
+  const isIdentical = _.isEqual(JSON.parse(JSON.stringify(sanitized)), ruleConfigObj);
+  if (!isIdentical) {
+    return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
+  }
+  const writeRule = sanitized[RuleProperties.WRITE];
+  const stateRule = sanitized[RuleProperties.STATE];
+  if (sanitized.hasOwnProperty(RuleProperties.WRITE) && writeRule !== null &&
+      !CommonUtil.isBool(writeRule) && !CommonUtil.isString(writeRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
+  }
+  if (sanitized.hasOwnProperty(RuleProperties.STATE) && !isValidStateRule(stateRule)) {
+    return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.STATE]) };
   }
 
   return { isValid: true, invalidPath: '' };
@@ -202,10 +267,8 @@ function sanitizeFunctionInfo(functionInfoObj) {
     sanitized[FunctionProperties.FUNCTION_TYPE] = functionType;
     sanitized[FunctionProperties.FUNCTION_ID] =
         CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.FUNCTION_ID]);
-    sanitized[FunctionProperties.EVENT_LISTENER] =
-        CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.EVENT_LISTENER]);
-    sanitized[FunctionProperties.SERVICE_NAME] =
-        CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.SERVICE_NAME]);
+    sanitized[FunctionProperties.FUNCTION_URL] =
+        CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.FUNCTION_URL]);
   }
 
   return sanitized;
@@ -219,11 +282,12 @@ function isValidFunctionInfo(functionInfoObj) {
   const isIdentical =
       _.isEqual(JSON.parse(JSON.stringify(sanitized)), functionInfoObj, { strict: true });
   if (!isIdentical) {
+    const diffLines = CommonUtil.getJsonDiff(sanitized, functionInfoObj);
+    logger.info(`Function info is in a non-standard format:\n${diffLines}\n`);
     return false;
   }
-  const eventListener = functionInfoObj[FunctionProperties.EVENT_LISTENER];
-  if (eventListener !== undefined &&
-      !validUrl.isUri(functionInfoObj[FunctionProperties.EVENT_LISTENER])) {
+  const functionUrl = functionInfoObj[FunctionProperties.FUNCTION_URL];
+  if (functionUrl !== undefined && !CommonUtil.isValidUrl(functionUrl)) {
     return false;
   }
   return true;
@@ -284,6 +348,10 @@ function isValidOwnerPermissions(ownerPermissionsObj) {
   const sanitized = sanitizeOwnerPermissions(ownerPermissionsObj);
   const isIdentical =
       _.isEqual(JSON.parse(JSON.stringify(sanitized)), ownerPermissionsObj, { strict: true });
+  if (!isIdentical) {
+    const diffLines = CommonUtil.getJsonDiff(sanitized, ownerPermissionsObj);
+    logger.info(`Owner permission is in a non-standard format:\n${diffLines}\n`);
+  }
   return isIdentical;
 }
 
@@ -424,6 +492,46 @@ function hasConfigLabelOnly(stateTreeObj, configLabel) {
 }
 
 /**
+ * Returns a new rule tree created by applying the rule change to
+ * the current rule tree.
+ * @param {Object} curRuleTree current rule tree (to be modified by this rule)
+ * @param {Object} ruleChange rule change
+ */
+function applyRuleChange(curRuleTree, ruleChange) {
+  // NOTE(platfowner): Partial set is applied only when the current rule tree has
+  // .rule property and the rule change has .rule property as the only property.
+  if (!hasConfigLabel(curRuleTree, PredefinedDbPaths.DOT_RULE) ||
+      !hasConfigLabelOnly(ruleChange, PredefinedDbPaths.DOT_RULE)) {
+    return CommonUtil.isDict(ruleChange) ?
+        JSON.parse(JSON.stringify(ruleChange)) : ruleChange;
+  }
+  const ruleChangeMap = CommonUtil.getJsObject(ruleChange, [PredefinedDbPaths.DOT_RULE]);
+  if (!ruleChangeMap || Object.keys(ruleChangeMap).length === 0) {
+    return curRuleTree;
+  }
+  const newRuleConfig = {}
+  if (CommonUtil.isDict(curRuleTree) && curRuleTree[PredefinedDbPaths.DOT_RULE]) {
+    CommonUtil.setJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE], curRuleTree[PredefinedDbPaths.DOT_RULE]);
+  }
+  let newRuleMap = CommonUtil.getJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
+  if (!CommonUtil.isDict(newRuleMap)) {
+    // Add a place holder.
+    CommonUtil.setJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE], {});
+    newRuleMap = CommonUtil.getJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
+  }
+  for (const ruleKey in ruleChangeMap) {
+    const ruleInfo = ruleChangeMap[ruleKey];
+    if (ruleInfo === null) {
+      delete newRuleMap[ruleKey];
+    } else {
+      newRuleMap[ruleKey] = ruleInfo;
+    }
+  }
+
+  return newRuleConfig;
+}
+
+/**
  * Returns a new function tree created by applying the function change to
  * the current function tree.
  * @param {Object} curFuncTree current function tree (to be modified by this function)
@@ -537,15 +645,7 @@ function deleteStateTreeVersion(node) {
   }
 
   // 1. Delete children
-  if (FeatureFlags.enableRadixTreeLayers) {
-    numAffectedNodes += node.deleteRadixTreeVersion();
-  } else {
-    for (const label of node.getChildLabels()) {
-      const child = node.getChild(label);
-      node.deleteChild(label, false);  // shouldUpdateStateInfo = false
-      numAffectedNodes += deleteStateTreeVersion(child);
-    }
-  }
+  numAffectedNodes += node.deleteRadixTreeVersion();
   // 2. Reset node
   node.reset();
   numAffectedNodes++;
@@ -579,9 +679,9 @@ function updateStateInfoForAllRootPaths(curNode, updatedChildLabel = null) {
 
   const childNode = curNode.getChild(updatedChildLabel);
   if (childNode === null) {
-    logger.error(
-        `[${LOG_HEADER}] Updating state info with non-existing label: ${updatedChildLabel} ` +
-        `at: ${new Error().stack}.`);
+    CommonUtil.logErrorWithStackTrace(
+        logger, 
+        `[${LOG_HEADER}] Updating state info with non-existing label: ${updatedChildLabel}`);
     return 0;
   }
   return updateStateInfoForAllRootPathsRecursive(
@@ -619,52 +719,72 @@ function verifyStateInfoForStateTree(stateTree) {
 }
 
 /**
- * An internal version of getProofOfStatePath().
+ * An internal version of getStateProofFromStateRoot().
  * 
  * @param {Object} fullPath array of parsed full path labels
- * @param {Object} root root state
+ * @param {Object} curNode current state node
  * @param {Object} index index of fullPath
  */
-function getProofOfStatePathRecursive(fullPath, node, index) {
+function getStateProofRecursive(fullPath, curNode, index) {
   if (index > fullPath.length - 1) {
-    return node.getProofHash();
+    return curNode.getProofOfStateNode();
   }
   const childLabel = fullPath[index];
-  const child = node.getChild(childLabel);
+  const child = curNode.getChild(childLabel);
   if (child === null) {
     return null;
   }
-  const childProof = getProofOfStatePathRecursive(fullPath, child, index + 1);
+  const childProof = getStateProofRecursive(fullPath, child, index + 1);
   if (childProof === null) {
     return null;
   }
-  return node.getProofOfStateNode(childLabel, childProof);
+  return curNode.getProofOfStateNode(childLabel, childProof);
 }
 
 /**
  * Returns proof of a state path.
  * 
- * @param {Object} root root state
+ * @param {Object} root root state node
  * @param {Object} fullPath array of parsed full path labels
  */
-function getProofOfStatePath(root, fullPath) {
-  return getProofOfStatePathRecursive(fullPath, root, 0);
+function getStateProofFromStateRoot(root, fullPath) {
+  return getStateProofRecursive(fullPath, root, 0);
+}
+
+/**
+ * Returns proof hash of a state path.
+ * 
+ * @param {Object} root root state node
+ * @param {Object} fullPath array of parsed full path labels
+ */
+function getProofHashFromStateRoot(root, fullPath) {
+  let curNode = root;
+  for (let i = 0; i < fullPath.length; i++) {
+    const childLabel = fullPath[i];
+    const child = curNode.getChild(childLabel);
+    if (child === null) {
+      return null;
+    }
+    curNode = child;
+  }
+  return curNode.getProofHash();
 }
 
 /**
  * Returns proof hash of a radix node.
  * 
- * @param {Object} stateProofHash proof hash of child state node. null if not available.
+ * @param {Object} childStatePh proof hash of child state node. null if not available.
  * @param {Object} subProofList proof list of child radix nodes
  */
-function getProofHashOfRadixNode(stateProofHash, subProofList) {
-  let preimage = stateProofHash !== null ? stateProofHash : '';
+function getProofHashOfRadixNode(childStatePh, subProofList) {
+  let preimage = childStatePh !== null ? childStatePh : '';
   preimage += `${HASH_DELIMITER}`;
   if (subProofList.length === 0) {
     preimage += `${HASH_DELIMITER}`;
   } else {
     for (const subProof of subProofList) {
-      preimage += `${HASH_DELIMITER}${subProof.label}${HASH_DELIMITER}${subProof.proofHash}`;
+      const radixLabel = subProof.label.slice(StateInfoProperties.RADIX_LABEL_PREFIX.length);
+      preimage += `${HASH_DELIMITER}${radixLabel}${HASH_DELIMITER}${subProof.proofHash}`;
     }
   }
   return CommonUtil.hashString(preimage);
@@ -674,61 +794,71 @@ function getProofHashOfRadixNode(stateProofHash, subProofList) {
  * An internal version of verifyStateProof().
  * 
  * @param {Object} proof state proof
- * 
- * Returns { proofHash, isStateProof } when successful, otherwise null.
  */
-function verifyStateProofInternal(proof) {
-  let stateProofHash = null;
-  let radixProofHash = null;
+function verifyStateProofInternal(proof, curLabels) {
+  const curPath = CommonUtil.formatPath(curLabels);
+  let childStatePh = null;
+  let curProofHash = null;
+  let childIsVerified = true;
+  let childMismatchedPath = null;
+  let childMismatchedProofHash = null;
+  let childMismatchedProofHashComputed = null;
   const subProofList = [];
-  for (const [label, value] of Object.entries(proof)) {
-    let proofHash = null;
+  // NOTE(platfowner): Sort child nodes by label radix for stability.
+  const sortedProof = Object.entries(proof).sort((a, b) => a[0].localeCompare(b[0]));
+  for (const [label, value] of sortedProof) {
+    let childProofHash = null;
     if (CommonUtil.isDict(value)) {
-      const subProof = verifyStateProofInternal(value);
-      if (subProof === null) {
-        return null;
+      const subProof = verifyStateProofInternal(value, [...curLabels, label]);
+      if (childIsVerified === true && subProof.isVerified !== true) {
+        childIsVerified = false;
+        childMismatchedPath = subProof.mismatchedPath;
+        childMismatchedProofHash = subProof.mismatchedProofHash;
+        childMismatchedProofHashComputed = subProof.mismatchedProofHashComputed;
       }
-      if (subProof.isStateProof === true) {
-        stateProofHash = subProof.proofHash;
+      if (_.startsWith(label, StateInfoProperties.STATE_LABEL_PREFIX)) {
+        childStatePh = subProof.proofHash;
         continue;  // continue
       }
-      proofHash = subProof.proofHash;
+      childProofHash = subProof.proofHash;
     } else {
-      proofHash = value;
+      childProofHash = value;
     }
     if (label === StateInfoProperties.STATE_PROOF_HASH) {
-      // fast return
-      return {
-        proofHash: proofHash,
-        isStateProof: true,
-      };
+      curProofHash = childProofHash;
+    } else if (label === StateInfoProperties.RADIX_PROOF_HASH) {
+      curProofHash = childProofHash;
+    } else {
+      subProofList.push({
+        label,
+        proofHash: childProofHash,
+      });
     }
-    if (label === StateInfoProperties.RADIX_PROOF_HASH) {
-      radixProofHash = proofHash;
-      continue;  // continue
-    }
-    subProofList.push({
-      label,
-      proofHash,
-    });
   }
-  if (subProofList.length === 0 && stateProofHash === null) {
-    if (radixProofHash !== null) {
-      return {
-        proofHash: radixProofHash,
-        isStateProof: false,
-      };
-    }
-    return null;  // radix proof hash is missing!
-  }
-  const computedProofHash = getProofHashOfRadixNode(stateProofHash, subProofList);
-  if (computedProofHash === radixProofHash) {
+  if (subProofList.length === 0 && childStatePh === null) {
+    const isVerified = childIsVerified && curProofHash !== null;
+    const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
+    const mismatchedProofHash = childIsVerified ? (isVerified ? null : curProofHash) : childMismatchedProofHash;
+    const mismatchedProofHashComputed = childIsVerified ? null : childMismatchedProofHashComputed;
     return {
-      proofHash: radixProofHash,
-      isStateProof: false,
-    }
-  } else {
-    return null;  // proof hash mismatch!
+      proofHash: curProofHash,
+      isVerified,
+      mismatchedPath,
+      mismatchedProofHash,
+      mismatchedProofHashComputed,
+    };
+  }
+  const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
+  const isVerified = childIsVerified && computedProofHash === curProofHash;
+  const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
+  const mismatchedProofHash = childIsVerified ? (isVerified ? null : curProofHash) : childMismatchedProofHash;
+  const mismatchedProofHashComputed = childIsVerified ? (isVerified ? null : computedProofHash) : childMismatchedProofHashComputed;
+  return {
+    proofHash: curProofHash,
+    isVerified,
+    mismatchedPath,
+    mismatchedProofHash,
+    mismatchedProofHashComputed,
   }
 }
 
@@ -740,11 +870,7 @@ function verifyStateProofInternal(proof) {
  * Returns root proof hash if successful, otherwise null.
  */
 function verifyStateProof(proof) {
-  const verified = verifyStateProofInternal(proof);
-  if (verified === null || verified.isStateProof !== false) {
-    return null;
-  }
-  return verified.proofHash;
+  return verifyStateProofInternal(proof, []);
 }
 
 module.exports = {
@@ -754,6 +880,7 @@ module.exports = {
   hasFunctionConfig,
   getFunctionConfig,
   hasRuleConfig,
+  hasRuleConfigWithProp,
   getRuleConfig,
   hasOwnerConfig,
   getOwnerConfig,
@@ -765,12 +892,14 @@ module.exports = {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  isValidStateRule,
   isValidRuleConfig,
   isValidRuleTree,
   isValidFunctionConfig,
   isValidFunctionTree,
   isValidOwnerConfig,
   isValidOwnerTree,
+  applyRuleChange,
   applyFunctionChange,
   applyOwnerChange,
   renameStateTreeVersion,
@@ -778,6 +907,7 @@ module.exports = {
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
-  getProofOfStatePath,
+  getStateProofFromStateRoot,
+  getProofHashFromStateRoot,
   verifyStateProof,
 };

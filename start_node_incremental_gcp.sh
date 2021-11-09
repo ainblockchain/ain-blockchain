@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$#" -lt 4 ]] || [[ "$#" -gt 5 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full] [--keystore]\n"
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full] [--keystore|--mnemonic]\n"
     printf "Example: bash start_node_incremental_gcp.sh spring 0 0 fast --keystore\n"
     exit
 fi
@@ -98,8 +98,9 @@ fi
 
 export SYNC_MODE="$4"
 printf "SYNC_MODE=$SYNC_MODE\n"
-KEYSTORE_OPTION=$5
-printf "KEYSTORE_OPTION=$KEYSTORE_OPTION\n"
+ACCOUNT_INJECTION_OPTION=$5
+printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
+export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
 
 export DEBUG=false
 export CONSOLE_LOG=false
@@ -157,12 +158,13 @@ eval $RM_CMD
 # 7. Start a new node server
 printf "\n#### [Step 7] Start new node server ####\n\n"
 
-# NOTE(liayoo): Currently this script supports --keystore option only for the parent chain.
-if [[ "$KEYSTORE_OPTION" != '--keystore' ]] || [[ "$2" -gt 0 ]]; then
+# NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]] || [[ "$2" -gt 0 ]]; then
     export ACCOUNT_INDEX="$3"
     printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
     COMMAND_PREFIX=""
-else
+
+elif [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     if [[ "$3" = 0 ]]; then
         KEYSTORE_FILENAME="keystore_node_0.json"
     elif [[ "$3" = 1 ]]; then
@@ -181,7 +183,11 @@ else
     echo "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH"
 fi
 
-MAX_OLD_SPACE_SIZE_MB=5500
+MAX_OLD_SPACE_SIZE_MB=11000
+
+# NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
+export CORS_WHITELIST=*
+printf "CORS_WHITELIST=$CORS_WHITELIST\n"
 
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
 printf "START_CMD='$START_CMD'\n"

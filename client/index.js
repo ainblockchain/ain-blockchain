@@ -1,10 +1,12 @@
 'use strict';
 
+const logger = new (require('../logger'))('CLIENT');
+
 const express = require('express');
+const cors = require('cors');
 // NOTE(liayoo): To use async/await (ref: https://github.com/tedeh/jayson#promises)
 const jayson = require('jayson/promise');
 const _ = require('lodash');
-const logger = require('../logger')('CLIENT');
 const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
 const CommonUtil = require('../common/common-util');
@@ -14,13 +16,14 @@ const {
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   PORT,
-  BlockchainNodeStates,
-  WriteDbOperations,
   NETWORK_ID,
   CHAIN_ID,
+  REQUEST_BODY_SIZE_LIMIT,
+  CORS_WHITELIST,
+  BlockchainNodeStates,
+  WriteDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
-  REQUEST_BODY_SIZE_LIMIT,
 } = require('../common/constants');
 const { ConsensusStates } = require('../consensus/constants');
 
@@ -28,7 +31,12 @@ const MAX_BLOCKS = 20;
 
 const app = express();
 app.use(express.json({ limit: REQUEST_BODY_SIZE_LIMIT }));
-app.use(express.urlencoded({ limit: REQUEST_BODY_SIZE_LIMIT }));
+app.use(express.urlencoded({
+  extended: true,
+  limit: REQUEST_BODY_SIZE_LIMIT
+}));
+app.use(cors({ origin: CORS_WHITELIST }));
+
 
 const node = new BlockchainNode();
 // NOTE(platfowner): This is very useful when the server dies without any logs.
@@ -139,6 +147,18 @@ app.get('/get_owner', (req, res, next) => {
 app.get('/get_state_proof', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
   const result = node.db.getStateProof(req.query.ref);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: result !== null ? 0 : 1, result })
+    .end();
+});
+
+/**
+ * Returns the state proof hash at the given full database path.
+ */
+app.get('/get_proof_hash', (req, res, next) => {
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
+  const result = node.db.getProofHash(req.query.ref);
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({ code: result !== null ? 0 : 1, result })
@@ -460,10 +480,20 @@ app.get('/state_versions', (req, res) => {
     .end();
 });
 
-// TODO(platfowner): Support for subtree dumping (i.e. with ref path).
-app.get('/dump_final_db_states', (req, res) => {
+// TODO(platfowner): Support for subtree snapshots (i.e. with ref path).
+app.get('/get_final_state_snapshot', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
-  const result = node.dumpFinalDbStates(CommonUtil.toGetOptions(req.query));
+  const result = node.takeFinalStateSnapshot(CommonUtil.toGetOptions(req.query));
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: 0, result })
+    .end();
+});
+
+// TODO(platfowner): Support for subtree snapshots (i.e. with ref path).
+app.get('/get_final_radix_snapshot', (req, res) => {
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
+  const result = node.takeFinalRadixSnapshot();
   res.status(200)
     .set('Content-Type', 'application/json')
     .send({ code: 0, result })

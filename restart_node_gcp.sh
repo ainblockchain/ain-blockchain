@@ -106,6 +106,9 @@ export ENABLE_GAS_FEE_WORKAROUND=true
 export LIGHTWEIGHT=false
 export STAKE=100000
 export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
+# NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
+export CORS_WHITELIST=*
+printf "CORS_WHITELIST=$CORS_WHITELIST\n"
 
 # 2. Kill the existing node server 
 printf "\n#### [Step 2] Kill the existing node server ####\n\n"
@@ -118,7 +121,7 @@ sleep 10
 # 3. Restart the node server
 printf "\n#### [Step 3] Restart the node server ####\n\n"
 
-MAX_OLD_SPACE_SIZE_MB=5500
+MAX_OLD_SPACE_SIZE_MB=11000
 
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
 printf "START_CMD='$START_CMD'\n"
