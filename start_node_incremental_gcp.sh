@@ -102,7 +102,7 @@ printf "SYNC_MODE=$SYNC_MODE\n"
 function parse_options() {
     local option="$1"
     if [[ "$option" = '--rest-func' ]]; then
-        ENABLE_REST_FUNCTION_CALL="true"
+        REST_FUNC_OPTION="$option"
     elif [[ "$option" = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             echo "You cannot use both keystore and mnemonic"
@@ -122,7 +122,7 @@ function parse_options() {
 }
 
 ACCOUNT_INJECTION_OPTION=""
-ENABLE_REST_FUNCTION_CALL="false"
+REST_FUNC_OPTION=""
 
 if [[ "$#" -gt 4 ]]; then
     parse_options "$5"
@@ -132,9 +132,13 @@ if [[ "$#" -gt 4 ]]; then
 fi
 
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
-printf "ENABLE_REST_FUNCTION_CALL=$ENABLE_REST_FUNCTION_CALL\n"
+printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
-export ENABLE_REST_FUNCTION_CALL="$ENABLE_REST_FUNCTION_CALL"
+if [[ $REST_FUNC_OPTION ]]; then
+  export ENABLE_REST_FUNCTION_CALL=true
+else
+  export ENABLE_REST_FUNCTION_CALL=false
+fi
 
 export DEBUG=false
 export CONSOLE_LOG=false
