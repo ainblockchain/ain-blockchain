@@ -268,7 +268,7 @@ describe('Blockchain Node', () => {
       await cleanUp();
     });
 
-    describe('/get_value', () => {
+    describe('/get_value api', () => {
       it('get_value', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=/apps/test/test_value/some/path')
@@ -277,7 +277,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_function', () => {
+    describe('/get_function api', () => {
       it('get_function', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + '/get_function?ref=/apps/test/test_function/some/path')
@@ -297,7 +297,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_rule', () => {
+    describe('/get_rule api', () => {
       it('get_rule', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + '/get_rule?ref=/apps/test/test_rule/some/path')
@@ -313,7 +313,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_owner', () => {
+    describe('/get_owner api', () => {
       it('get_owner', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + '/get_owner?ref=/apps/test/test_owner/some/path')
@@ -336,7 +336,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/match_function', () => {
+    describe('/match_function api', () => {
       it('match_function', () => {
         const ref = "/apps/test/test_function/some/path";
         const body = parseOrLog(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
@@ -362,7 +362,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/match_rule', () => {
+    describe('/match_rule api', () => {
       it('match_rule (write)', () => {
         const ref = "/apps/test/test_rule/some/path";
         const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
@@ -396,7 +396,7 @@ describe('Blockchain Node', () => {
         }});
       })
 
-      it('match_rule (state)', () => {
+      it('match_rule api - state only', () => {
         const ref = "/apps/test/test_rule/state";
         const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
             .body.toString('utf-8'));
@@ -444,7 +444,7 @@ describe('Blockchain Node', () => {
         });
       })
 
-      it('match_rule (state & write)', () => {
+      it('match_rule api - state & write', () => {
         const ref = "/apps/test/test_rule/state/and/write";
         const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
             .body.toString('utf-8'));
@@ -486,7 +486,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/match_owner', () => {
+    describe('/match_owner api', () => {
       it('match_owner', () => {
         const ref = "/apps/test/test_owner/some/path";
         const body = parseOrLog(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
@@ -512,7 +512,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/eval_rule', () => {
+    describe('/eval_rule api', () => {
       it('eval_rule returning true', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
@@ -534,7 +534,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/eval_owner', () => {
+    describe('/eval_owner api', () => {
       it('eval_owner', () => {
         const ref = "/apps/test/test_owner/some/path";
         const address = "abcd";
@@ -549,7 +549,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get', () => {
+    describe('/get api', () => {
       it('get', () => {
         const request = {
           op_list: [
@@ -622,7 +622,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_state_proof', () => {
+    describe('/get_state_proof api', () => {
       it('get_state_proof', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/values/token/symbol')
             .body.toString('utf-8'));
@@ -640,7 +640,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('/get_proof_hash', () => {
+    describe('/get_proof_hash api', () => {
       it('get_proof_hash', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_proof_hash?ref=/values/token/symbol')
             .body.toString('utf-8'));
@@ -649,7 +649,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('/get_state_info', () => {
+    describe('/get_state_info api', () => {
       it('get_state_info', () => {
         const infoBody = parseOrLog(syncRequest(
             'GET', server1 + `/get_state_info?ref=/values/apps/test/test_state_info/some/path`)
@@ -671,7 +671,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('/get_state_usage', () => {
+    describe('/get_state_usage api', () => {
       it('get_state_usage', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + `/get_state_usage?app_name=test`)
@@ -684,7 +684,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('ain_get', () => {
+    describe('ain_get api', () => {
       it('returns the correct value', () => {
         const expected = 100;
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
@@ -699,7 +699,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('ain_matchFunction', () => {
+    describe('ain_matchFunction api', () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_function/some/path";
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -727,7 +727,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_matchRule', () => {
+    describe('ain_matchRule api', () => {
       it('returns correct value (write)', () => {
         const ref = "/apps/test/test_rule/some/path";
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -851,7 +851,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_matchOwner', () => {
+    describe('ain_matchOwner api', () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_owner/some/path";
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -879,7 +879,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_evalRule', () => {
+    describe('ain_evalRule api', () => {
       it('returns true', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
@@ -903,7 +903,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_evalOwner', () => {
+    describe('ain_evalOwner api', () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_owner/some/path";
         const address = "abcd";
@@ -916,7 +916,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_getStateProof', () => {
+    describe('ain_getStateProof api', () => {
       it('returns correct value', () => {
         const ref = '/values/token/symbol';
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -936,7 +936,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_getProofHash', () => {
+    describe('ain_getProofHash api', () => {
       it('returns correct value', () => {
         const ref = '/values/token/symbol';
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -947,7 +947,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_getStateInfo', () => {
+    describe('ain_getStateInfo api', () => {
       it('returns correct value', () => {
         const ref = '/values/apps/test/test_state_info/some/path';
         const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -969,7 +969,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_getStateUsage', () => {
+    describe('ain_getStateUsage api', () => {
       it('returns correct value', () => {
         const request = { app_name: 'test', protoVer: CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateUsage', request)
@@ -984,7 +984,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_getProtocolVersion', () => {
+    describe('ain_getProtocolVersion api', () => {
       it('returns the correct version', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getProtocolVersion', {})
@@ -994,7 +994,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('ain_checkProtocolVersion', () => {
+    describe('ain_checkProtocolVersion api', () => {
       it('checks protocol versions correctly', () => {
         return new Promise((resolve, reject) => {
           const client = jayson.client.http(server1 + '/json-rpc');
@@ -1021,7 +1021,7 @@ describe('Blockchain Node', () => {
       });
     })
 
-    describe('ain_getAddress', () => {
+    describe('ain_getAddress api', () => {
       it('returns the correct node address', () => {
         const expAddr = GenesisAccounts.others[1].address;
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
@@ -1042,7 +1042,7 @@ describe('Blockchain Node', () => {
       await cleanUp();
     });
 
-    describe('/set_value', async () => {
+    describe('/set_value api', async () => {
       it('set_value', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
@@ -1179,7 +1179,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/inc_value', () => {
+    describe('/inc_value api', () => {
       it('inc_value', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
@@ -1245,7 +1245,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/dec_value', () => {
+    describe('/dec_value api', () => {
       it('dec_value', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
@@ -1311,7 +1311,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/set_function', () => {
+    describe('/set_function api', () => {
       it('set_function', async () => {
         // Check the original function.
         const resultBefore = parseOrLog(syncRequest(
@@ -1417,7 +1417,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/set_rule', () => {
+    describe('/set_rule api', () => {
       it('set_rule', async () => {
         // Check the original rule.
         const resultBefore = parseOrLog(syncRequest(
@@ -1433,7 +1433,7 @@ describe('Blockchain Node', () => {
           ref: "/apps/test/test_rule/some/path",
           value: {
             ".rule": {
-              "write": "some other rule config"
+              "write": "auth.addr === 'xyz'"
             }
           }
         };
@@ -1452,7 +1452,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, {
           ".rule": {
-            "write": "some other rule config"
+            "write": "auth.addr === 'xyz'"
           }
         });
       })
@@ -1468,7 +1468,7 @@ describe('Blockchain Node', () => {
           ref: "/apps/some/wrong/path",
           value: {
             ".rule": {
-              "write": "some other rule config"
+              "write": "auth.addr === 'xyz'"
             }
           }
         };
@@ -1505,7 +1505,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/set_owner', () => {
+    describe('/set_owner api', () => {
       it('set_owner', async () => {
         // Check the original owner.
         const resultBefore = parseOrLog(syncRequest(
@@ -1621,7 +1621,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/set', () => {
+    describe('/set api', () => {
       it('set with successful operations', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
@@ -1664,7 +1664,7 @@ describe('Blockchain Node', () => {
               ref: "/apps/test/test_rule/other100/path",
               value: {
                 ".rule": {
-                  "write": "some other100 rule config"
+                  "write": "auth.addr === 'xyz100'"
                 }
               }
             },
@@ -1725,7 +1725,7 @@ describe('Blockchain Node', () => {
             },
             "state": {
               "app": {
-                "test": 4394
+                "test": 4388
               },
               "service": 0
             }
@@ -1855,7 +1855,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/batch', () => {
+    describe('/batch api', () => {
       it('batch with successful transactions', async () => {
         const address = parseOrLog(syncRequest(
             'GET', server1 + '/get_address').body.toString('utf-8')).result;
@@ -1923,7 +1923,7 @@ describe('Blockchain Node', () => {
                 ref: "/apps/test/test_rule/other200/path",
                 value: {
                   ".rule": {
-                    "write": "some other200 rule config"
+                    "write": "auth.addr = 'xyz200'"
                   }
                 }
               },
@@ -1987,7 +1987,7 @@ describe('Blockchain Node', () => {
                     ref: "/apps/test/test_rule/other201/path",
                     value: {
                       ".rule": {
-                        "write": "some other201 rule config"
+                        "write": "auth.addr === 'xyz201'"
                       }
                     }
                   },
@@ -2133,7 +2133,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 734
+                    "test": 724
                   },
                   "service": 0
                 }
@@ -2203,7 +2203,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 4394
+                    "test": 4388
                   },
                   "service": 0
                 }
@@ -2301,7 +2301,7 @@ describe('Blockchain Node', () => {
                 ref: "/apps/test/test_rule/other202/path",
                 value: {
                   ".rule": {
-                    "write": "some other202 rule config"
+                    "write": "auth.addr === 'xyz202'"
                   }
                 }
               },
@@ -2365,7 +2365,7 @@ describe('Blockchain Node', () => {
                     ref: "/apps/test/test_rule/other203/path",
                     value: {
                       ".rule": {
-                        "write": "some other203 rule config"
+                        "write": "auth.addr === 'xyz203'"
                       }
                     }
                   },
@@ -2532,7 +2532,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 734
+                    "test": 728
                   },
                   "service": 0
                 }
@@ -2602,7 +2602,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 4394
+                    "test": 4388
                   },
                   "service": 0
                 }
@@ -2625,7 +2625,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_sendSignedTransaction', () => {
+    describe('ain_sendSignedTransaction api', () => {
       const account = {
         address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
         private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
@@ -2892,7 +2892,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_sendSignedTransactionBatch', () => {
+    describe('ain_sendSignedTransactionBatch api', () => {
       const account = {
         address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
         private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",

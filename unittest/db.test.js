@@ -1901,7 +1901,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setRule("/apps/test/test_rule/some/path/.",
             {
               ".rule": {
-                "write": "some rule config"
+                "write": "auth.addr === 'xyz'"
               }
             }), {
           "code": 502,
