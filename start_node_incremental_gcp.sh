@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$#" -lt 4 ]] || [[ "$#" -gt 6 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full] [--keystore|--mnemonic] [--restfunc]\n"
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full] [--keystore|--mnemonic] [--rest-func]\n"
     printf "Example: bash start_node_incremental_gcp.sh spring 0 0 fast --keystore\n"
     exit
 fi
@@ -101,7 +101,7 @@ printf "SYNC_MODE=$SYNC_MODE\n"
 
 function parse_options() {
     local option="$1"
-    if [[ "$option" = '--restfunc' ]]; then
+    if [[ "$option" = '--rest-func' ]]; then
         ENABLE_REST_FUNCTION_CALL="true"
     elif [[ "$option" = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$#" -lt 3 ]] || [[ "$#" -gt 6 ]]; then
-    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore|--mnemonic] [--keep-code] [--restfunc]"
+    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore|--mnemonic] [--keep-code] [--rest-func]"
     echo "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore"
     exit
 fi
@@ -11,7 +11,7 @@ function parse_options() {
     local option="$1"
     if [[ "$option" = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
-    elif [[ "$option" = '--restfunc' ]]; then
+    elif [[ "$option" = '--rest-func' ]]; then
         ENABLE_REST_FUNCTION_CALL="true"
     elif [[ "$option" = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
