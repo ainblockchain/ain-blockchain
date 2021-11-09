@@ -41,7 +41,6 @@ const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
   'String',
   'Boolean',
 ];
-const RULE_UTIL_PROPERTY_NAMES = Object.getOwnPropertyNames(RuleUtil.prototype);
 
 function isEmptyNode(node) {
   return node.getIsLeaf() && node.getValue() === null;
@@ -254,7 +253,6 @@ function isValidWriteRule(parsedRulePath, ruleString) {
     const variableLabelList = getVariableLabels(parsedRulePath);
     const idTokenWhitelistSet = new Set([
       ...WRITE_RULE_ID_TOKEN_WHITELIST_BASE,
-      ...RULE_UTIL_PROPERTY_NAMES,
       ...variableLabelList,
     ]);
     const ruleCodeSnippet = makeWriteRuleCodeSnippet(ruleString);
