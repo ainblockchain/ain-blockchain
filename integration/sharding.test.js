@@ -488,23 +488,26 @@ describe('Sharding', async () => {
   });
 
   describe('API Tests', () => {
+    before(async () => {
+      const server1Addr = parseOrLog(syncRequest(
+          'GET', server1 + '/get_address').body.toString('utf-8')).result;
+      const server2Addr = parseOrLog(syncRequest(
+          'GET', server2 + '/get_address').body.toString('utf-8')).result;
+      const server3Addr = parseOrLog(syncRequest(
+          'GET', server3 + '/get_address').body.toString('utf-8')).result;
+      const server4Addr = parseOrLog(syncRequest(
+          'GET', server4 + '/get_address').body.toString('utf-8')).result;
+      await setUpApp('test', shardServerList, { admin: {
+        [account.address]: true,
+        [server1Addr]: true,
+        [server2Addr]: true,
+        [server3Addr]: true,
+        [server4Addr]: true
+      } });
+    })
+
     describe('Get API', () => {
       before(async () => {
-        const server1Addr = parseOrLog(syncRequest(
-            'GET', server1 + '/get_address').body.toString('utf-8')).result;
-        const server2Addr = parseOrLog(syncRequest(
-            'GET', server2 + '/get_address').body.toString('utf-8')).result;
-        const server3Addr = parseOrLog(syncRequest(
-            'GET', server3 + '/get_address').body.toString('utf-8')).result;
-        const server4Addr = parseOrLog(syncRequest(
-            'GET', server4 + '/get_address').body.toString('utf-8')).result;
-        await setUpApp('test', shardServerList, { admin: {
-          [account.address]: true,
-          [server1Addr]: true,
-          [server2Addr]: true,
-          [server3Addr]: true,
-          [server4Addr]: true
-        } });
         await setUp();
       })
 
@@ -512,7 +515,7 @@ describe('Sharding', async () => {
         await cleanUp();
       })
 
-      describe('/get_value', () => {
+      describe('/get_value api', () => {
         it('/get_value with is_global = false', () => {
           const body = parseOrLog(
               syncRequest('GET', server1 + '/get_value?ref=/apps/test/test_value/some/path')
@@ -538,7 +541,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/get_function', () => {
+      describe('/get_function api', () => {
         it('/get_function with is_global = false', () => {
           const body = parseOrLog(
               syncRequest('GET', server1 + '/get_function?ref=/apps/test/test_function/some/path')
@@ -572,7 +575,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/get_rule', () => {
+      describe('/get_rule api', () => {
         it('/get_rule with is_global = false', () => {
           const body = parseOrLog(
               syncRequest('GET', server1 + '/get_rule?ref=/apps/test/test_rule/some/path')
@@ -598,7 +601,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/get_owner', () => {
+      describe('/get_owner api', () => {
         it('/get_owner with is_global = false', () => {
           const body = parseOrLog(
               syncRequest('GET', server1 + '/get_owner?ref=/apps/test/test_owner/some/path')
@@ -638,7 +641,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/match_function', () => {
+      describe('/match_function api', () => {
         it('/match_function with is_global = false', () => {
           const ref = "/apps/test/test_function/some/path";
           const body = parseOrLog(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
@@ -689,7 +692,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/match_rule', () => {
+      describe('/match_rule api', () => {
         it('/match_rule with is_global = false', () => {
           const ref = "/apps/test/test_rule/some/path";
           const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
@@ -758,7 +761,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/match_owner', () => {
+      describe('/match_owner api', () => {
         it('/match_owner with is_global = false', () => {
           const ref = "/apps/test/test_owner/some/path";
           const body = parseOrLog(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
@@ -809,7 +812,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/eval_rule', () => {
+      describe('/eval_rule api', () => {
         it('/eval_rule with is_global = false', () => {
           const ref = "/apps/test/test_rule/some/path";
           const value = "value";
@@ -832,7 +835,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/eval_owner', () => {
+      describe('/eval_owner api', () => {
         it('/eval_owner with is_global = false', () => {
           const ref = "/apps/test/test_owner/some/path";
           const address = "abcd";
@@ -862,7 +865,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/get', () => {
+      describe('/get api', () => {
         it('/get with is_global = false', () => {
           const request = {
             op_list: [
@@ -1012,7 +1015,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('ain_get', () => {
+      describe('ain_get api', () => {
         it('ain_get with is_global = false', () => {
           const expected = 100;
           const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
@@ -1055,7 +1058,7 @@ describe('Sharding', async () => {
         });
       })
 
-      describe('ain_matchFunction', () => {
+      describe('ain_matchFunction api', () => {
         it('ain_matchFunction with is_global = false', () => {
           const ref = "/apps/test/test_function/some/path";
           const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -1109,7 +1112,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('ain_matchRule', () => {
+      describe('ain_matchRule api', () => {
         it('ain_matchRule with is_global = false', () => {
           const ref = "/apps/test/test_rule/some/path";
           const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -1181,7 +1184,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('ain_matchOwner', () => {
+      describe('ain_matchOwner api', () => {
         it('ain_matchOwner with is_global = false', () => {
           const ref = "/apps/test/test_owner/some/path";
           const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
@@ -1235,7 +1238,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('ain_evalRule', () => {
+      describe('ain_evalRule api', () => {
         it('ain_evalRule with is_global = false', () => {
           const ref = "/apps/test/test_rule/some/path";
           const value = "value";
@@ -1260,7 +1263,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('ain_evalOwner', () => {
+      describe('ain_evalOwner api', () => {
         it('ain_evalOwner with is_global = false', () => {
           const ref = "/apps/test/test_owner/some/path";
           const address = "abcd";
@@ -1295,7 +1298,7 @@ describe('Sharding', async () => {
         await cleanUp();
       })
 
-      describe('/set_value', () => {
+      describe('/set_value api', () => {
         it('/set_value with is_global = false', () => {
           // Check the original value.
           const resultBefore = parseOrLog(syncRequest(
@@ -1329,7 +1332,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/inc_value', () => {
+      describe('/inc_value api', () => {
         it('/inc_value with is_global = false', () => {
           const request = {ref: '/apps/test/test_value/some/path', value: 10, nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
@@ -1349,7 +1352,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/dec_value', () => {
+      describe('/dec_value api', () => {
         it('/dec_value with is_global = false', () => {
           const request = {ref: '/apps/test/test_value/some/path', value: 10, nonce: -1};
           const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
@@ -1369,7 +1372,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/set_function', () => {
+      describe('/set_function api', () => {
         it('/set_function with is_global = false', () => {
           const request = {
             ref: "/apps/test/test_function/other/path",
@@ -1412,13 +1415,13 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/set_rule', () => {
+      describe('/set_rule api', () => {
         it('/set_rule with is_global = false', () => {
           const request = {
             ref: "/apps/test/test_rule/other/path",
             value: {
               ".rule": {
-                "write": "some other rule config"
+                "write": "auth.addr === 'xyz'"
               }
             },
             nonce: -1
@@ -1434,7 +1437,7 @@ describe('Sharding', async () => {
             ref: "apps/afan/apps/test/test_rule/other/path",
             value: {
               ".rule": {
-                "write": "some other rule config"
+                "write": "auth.addr === 'xyz'"
               }
             },
             is_global: true,
@@ -1447,7 +1450,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/set_owner', () => {
+      describe('/set_owner api', () => {
         it('/set_owner with is_global = false', () => {
           const request = {
             ref: "/apps/test/test_owner/other/path",
@@ -1496,7 +1499,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('/set', () => {
+      describe('/set api', () => {
         it('/set with is_global = false', () => {
           const request = {
             op_list: [
@@ -1533,7 +1536,7 @@ describe('Sharding', async () => {
                 ref: "/apps/test/test_rule/other3/path",
                 value: {
                   ".rule": {
-                    "write": "some other3 rule config"
+                    "write": "auth.addr === 'xyz3'"
                   }
                 }
               },
@@ -1595,7 +1598,7 @@ describe('Sharding', async () => {
               },
               "state": {
                 "app": {
-                  "test": 4194
+                  "test": 4188
                 },
                 "service": 0
               }
@@ -1645,7 +1648,7 @@ describe('Sharding', async () => {
                 ref: "/apps/test/test_rule/other4/path",
                 value: {
                   ".rule": {
-                    "write": "some other4 rule config"
+                    "write": "auth.addr === 'xyz4'"
                   }
                 },
                 is_global: true,
@@ -1717,7 +1720,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('ain_sendSignedTransaction', () => {
+      describe('ain_sendSignedTransaction api', () => {
         it('ain_sendSignedTransaction with is_global = false', () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {
@@ -1862,7 +1865,7 @@ describe('Sharding', async () => {
         })
       })
 
-      describe('ain_sendSignedTransactionBatch', () => {
+      describe('ain_sendSignedTransactionBatch api', () => {
         it('ain_sendSignedTransactionBatch with is_global = false', () => {
           const client = jayson.client.http(server1 + '/json-rpc');
           const txBody = {

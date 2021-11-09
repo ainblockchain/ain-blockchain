@@ -1,0 +1,1 @@
+(auth.addr === $from || auth.fid === '_stake') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && util.isServAcntName($from)
