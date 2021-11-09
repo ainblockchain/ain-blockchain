@@ -4,10 +4,8 @@ const logger = new (require('../logger'))('NODE');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const path = require('path');
-const bip39 = require('bip39');
 const {
   FeatureFlags,
-  AIN_HD_DERIVATION_PATH,
   PORT,
   ACCOUNT_INDEX,
   ACCOUNT_INJECTION_OPTION,
@@ -117,25 +115,9 @@ class BlockchainNode {
   async injectAccountFromHDWallet(encryptedMnemonic, index) {
     const LOG_HEADER = 'injectAccountFromHDWallet';
     try {
-      if (index < 0) {
-        throw new Error('Invalid index');
-      }
-
       const mnemonic = await ainUtil.decryptWithPrivateKey(
           this.bootstrapAccount.private_key, encryptedMnemonic);
-
-      // TODO(ehgmsdk20): make seedPhraseToPrivate function in ain-util.
-      if (!bip39.validateMnemonic(mnemonic)) {
-        throw new Error('Invalid mnemonic');
-      }
-
-      const seed = bip39.mnemonicToSeedSync(mnemonic);
-      const HDkey = require('hdkey');
-      const hdkey = HDkey.fromMasterSeed(seed);
-      const path = AIN_HD_DERIVATION_PATH + index;
-      const wallet = hdkey.derive(path);
-
-      const accountFromHDWallet = ainUtil.privateToAccount(wallet.privateKey);
+      const accountFromHDWallet = ainUtil.mnemonicToAccount(mnemonic, index);
       if (accountFromHDWallet !== null) {
         this.setAccountAndInitShardSetting(accountFromHDWallet)
         return true;
