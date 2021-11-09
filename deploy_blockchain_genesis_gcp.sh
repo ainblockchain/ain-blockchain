@@ -225,10 +225,10 @@ printf "\n\n##########################\n# Starting parent node 4 #\n############
 gcloud compute ssh $NODE_4_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 4 $ACCOUNT_INJECTION_OPTION" --project $PROJECT_ID --zone $NODE_4_ZONE
 inject_account "4"
 printf "\n\n##########################\n# Starting parent node 5 #\n##########################\n\n"
-gcloud compute ssh $NODE_5_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 5 $ACCOUNT_INJECTION_OPTION" --project $PROJECT_ID --zone $NODE_5_ZONE
+gcloud compute ssh $NODE_5_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 5 $ACCOUNT_INJECTION_OPTION --restfunc" --project $PROJECT_ID --zone $NODE_5_ZONE
 inject_account "5"
 printf "\n\n##########################\n# Starting parent node 6 #\n##########################\n\n"
-gcloud compute ssh $NODE_6_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 6 $ACCOUNT_INJECTION_OPTION" --project $PROJECT_ID --zone $NODE_6_ZONE
+gcloud compute ssh $NODE_6_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 6 $ACCOUNT_INJECTION_OPTION --restfunc" --project $PROJECT_ID --zone $NODE_6_ZONE
 inject_account "6"
 
 

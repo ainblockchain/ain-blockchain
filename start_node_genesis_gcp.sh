@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ "$#" -lt 3 ]] || [[ "$#" -gt 5 ]]; then
-    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore|--mnemonic] [--keep-code]"
+if [[ "$#" -lt 3 ]] || [[ "$#" -gt 6 ]]; then
+    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore|--mnemonic] [--keep-code] [--restfunc]"
     echo "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore"
     exit
 fi
@@ -11,6 +11,8 @@ function parse_options() {
     local option="$1"
     if [[ "$option" = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
+    elif [[ "$option" = '--restfunc' ]]; then
+        ENABLE_REST_FUNCTION_CALL="true"
     elif [[ "$option" = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             echo "You cannot use both keystore and mnemonic"
@@ -32,15 +34,20 @@ function parse_options() {
 # Parse options.
 KEEP_CODE_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
-if [[ "$#" -gt 3 ]]; then
-    parse_options "$4"
-    if [[ "$#" = 5 ]]; then
-        parse_options "$5"
-    fi
-fi
+ENABLE_REST_FUNCTION_CALL="false"
+
+number=4
+while [ $number -le $# ]
+do
+  parse_options "${!number}"
+  ((number++))
+done
+
 echo "KEEP_CODE_OPTION=$KEEP_CODE_OPTION"
 echo "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION"
+echo "ENABLE_REST_FUNCTION_CALL=$ENABLE_REST_FUNCTION_CALL"
 export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
+export ENABLE_REST_FUNCTION_CALL="$ENABLE_REST_FUNCTION_CALL"
 
 echo 'Killing old jobs..'
 sudo killall node

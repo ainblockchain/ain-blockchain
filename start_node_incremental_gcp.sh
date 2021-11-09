@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ "$#" -lt 4 ]] || [[ "$#" -gt 5 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full] [--keystore|--mnemonic]\n"
+if [[ "$#" -lt 4 ]] || [[ "$#" -gt 6 ]]; then
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full] [--keystore|--mnemonic] [--restfunc]\n"
     printf "Example: bash start_node_incremental_gcp.sh spring 0 0 fast --keystore\n"
     exit
 fi
@@ -86,7 +86,7 @@ printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
 printf "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR\n"
 printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 
-if [[ "$3" -lt 0 ]] || [[ "$3" -gt 4 ]]; then
+if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
     printf "Invalid <Node Index> argument: $3\n"
     exit
 fi
@@ -98,9 +98,43 @@ fi
 
 export SYNC_MODE="$4"
 printf "SYNC_MODE=$SYNC_MODE\n"
-ACCOUNT_INJECTION_OPTION=$5
+
+function parse_options() {
+    local option="$1"
+    if [[ "$option" = '--restfunc' ]]; then
+        ENABLE_REST_FUNCTION_CALL="true"
+    elif [[ "$option" = '--keystore' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            echo "You cannot use both keystore and mnemonic"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ "$option" = '--mnemonic' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            echo "You cannot use both keystore and mnemonic"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
+    else
+        echo "Invalid option: $option"
+        exit
+    fi
+}
+
+ACCOUNT_INJECTION_OPTION=""
+ENABLE_REST_FUNCTION_CALL="false"
+
+if [[ "$#" -gt 4 ]]; then
+    parse_options "$5"
+    if [[ "$#" = 6 ]]; then
+        parse_options "$6"
+    fi
+fi
+
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
+printf "ENABLE_REST_FUNCTION_CALL=$ENABLE_REST_FUNCTION_CALL\n"
 export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
+export ENABLE_REST_FUNCTION_CALL="$ENABLE_REST_FUNCTION_CALL"
 
 export DEBUG=false
 export CONSOLE_LOG=false

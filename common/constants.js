@@ -47,7 +47,7 @@ const ENABLE_TX_SIG_VERIF_WORKAROUND =
 const ENABLE_GAS_FEE_WORKAROUND =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
 const ENABLE_REST_FUNCTION_CALL =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_REST_FUNCTION_CALL, true);
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_REST_FUNCTION_CALL);
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
