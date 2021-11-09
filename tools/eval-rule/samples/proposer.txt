@@ -1,0 +1,1 @@
+newData.proposer === auth.addr

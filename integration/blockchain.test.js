@@ -97,7 +97,7 @@ RANDOM_OPERATION = [
   ['dec_value', {ref: '/apps/test/balance/user1', value: 10000}],
   ['dec_value', {ref: '/apps/test/balance/user1', value: 10000}],
   ['dec_value', {ref: '/apps/test/balance/user2', value: 100002}],
-  ['set_rule', {ref: '/apps/test/test_rule/', value: { ".rule": { "write": "some rule config" }}}],
+  ['set_rule', {ref: '/apps/test/test_rule/', value: { ".rule": { "write": "auth.addr === 'xyz'" }}}],
   ['set_function', {ref: '/apps/test/test_function/', value: {
     ".function": {
       "fid": {
