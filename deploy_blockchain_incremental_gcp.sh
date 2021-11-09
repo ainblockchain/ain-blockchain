@@ -178,6 +178,9 @@ function deploy_node() {
     # 2. Start node
     printf "\n\n[[[[ Starting node $node_index ]]]]\n\n"
     START_CMD="gcloud compute ssh $node_target_addr --command '. start_node_incremental_gcp.sh $SEASON 0 $node_index $SYNC_MODE $ACCOUNT_INJECTION_OPTION' --project $PROJECT_ID --zone $node_zone"
+    if [[ $node_index -gt 4 ]]; then
+        START_CMD="gcloud compute ssh $node_target_addr --command '. start_node_incremental_gcp.sh $SEASON 0 $node_index $SYNC_MODE $ACCOUNT_INJECTION_OPTION --restfunc' --project $PROJECT_ID --zone $node_zone"
+    fi
     printf "START_CMD='$START_CMD'\n\n"
     eval $START_CMD
 
