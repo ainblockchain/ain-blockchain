@@ -345,12 +345,12 @@ describe("Functions", () => {
       })
 
       it('REST function newly whitelisted', () => {
-        node.db.writeDatabase(CommonUtil.parsePath(refFullPathFunctionUrlWhitelist), 'http://localhost:3000');
+        node.db.writeDatabase(CommonUtil.parsePath(refFullPathFunctionUrlWhitelist), 'http://localhost:5000');
         node.db.setFunction(refPathRestNewlyWhitelisted, {
           ".function": {
             "newly_whitelisted": {
               "function_type": "REST",
-              "function_url": "http://localhost:3000",
+              "function_url": "http://localhost:5000",
               "function_id": "newly_whitelisted"
             }
           }
