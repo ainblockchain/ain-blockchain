@@ -17,8 +17,7 @@ function buildSetFunctionTxBody(appName, timestamp) {
         '.function': {
           'he-trigger': {
             function_type: 'REST',
-            event_listener: workerTriggerUrl,
-            service_name: healthCareServiceName,
+            function_url: workerTriggerUrl,
             function_id: 'he-trigger',
           },
         },

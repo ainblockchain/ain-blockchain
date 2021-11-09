@@ -1,4 +1,6 @@
 /* eslint no-mixed-operators: "off" */
+const logger = new (require('../logger'))('P2P_SERVER');
+
 const Websocket = require('ws');
 const ip = require('ip');
 const extIp = require('ext-ip')();
@@ -9,16 +11,18 @@ const v8 = require('v8');
 const _ = require('lodash');
 const semver = require('semver');
 const ainUtil = require('@ainblockchain/ain-util');
-const logger = require('../logger')('P2P_SERVER');
 const Consensus = require('../consensus');
 const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
 const {
-  FeatureFlags,
   CURRENT_PROTOCOL_VERSION,
   DATA_PROTOCOL_VERSION,
   P2P_PORT,
   HOSTING_ENV,
+  LIGHTWEIGHT,
+  NETWORK_ID,
+  MAX_SHARD_REPORT,
+  FeatureFlags,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
@@ -33,8 +37,6 @@ const {
   FunctionTypes,
   NativeFunctionIds,
   TrafficEventTypes,
-  LIGHTWEIGHT,
-  NETWORK_ID,
   GenesisParams,
   trafficStatsManager,
 } = require('../common/constants');
@@ -305,8 +307,8 @@ class P2pServer {
           return res.data;
         })
         .catch((err) => {
-          logger.error(`Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
-          process.exit(0);
+          CommonUtil.finishWithStackTrace(
+              logger, `Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
         });
       } else {
         if (internal) {
@@ -709,18 +711,33 @@ class P2pServer {
     const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
     const proofHashRulesLight = `auth.addr === '${shardReporter}'`;
-    const proofHashRules = `auth.addr === '${shardReporter}' && ` +
-        '((newData === null && ' +
-        `Number($block_number) < (getValue('${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
-            `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0)) || ` +
-        '(newData !== null && ($block_number === "0" || ' +
-        `$block_number === String((getValue('${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
-            `${ShardingProperties.PROOF_HASH_MAP}/latest') || 0) + 1))))`;
+    const latestBlockNumber = `(getValue('${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
+        `${ShardingProperties.LATEST_BLOCK_NUMBER}') || 0)`;
+    const reportedProofHash = `getValue('${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
+        `${ShardingProperties.PROOF_HASH_MAP}/' + $block_number + '/${ShardingProperties.PROOF_HASH}')`;
+    const proofHashRules = `auth.addr === '${shardReporter}' && newData !== null && ` +
+        `($block_number === String(${latestBlockNumber} + 1) || newData === ${reportedProofHash})`;
+
     const latestBlockNumberRules = `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`;
     return {
       operation: {
         type: WriteDbOperations.SET,
         op_list: [
+          {
+            type: WriteDbOperations.SET_RULE,
+            ref: CommonUtil.appendPath(
+                shardingPath,
+                PredefinedDbPaths.DOT_SHARD,
+                ShardingProperties.PROOF_HASH_MAP,
+                '$block_number'),
+            value: {
+              [PredefinedDbPaths.DOT_RULE]: {
+                [RuleProperties.STATE]: {
+                  [RuleProperties.GC_MAX_SIBLINGS]: MAX_SHARD_REPORT
+                }
+              }
+            }
+          },
           {
             type: WriteDbOperations.SET_RULE,
             ref: CommonUtil.appendPath(
@@ -740,8 +757,7 @@ class P2pServer {
             ref: CommonUtil.appendPath(
                 shardingPath,
                 PredefinedDbPaths.DOT_SHARD,
-                ShardingProperties.PROOF_HASH_MAP,
-                ShardingProperties.LATEST),
+                ShardingProperties.LATEST_BLOCK_NUMBER),
             value: {
               [PredefinedDbPaths.DOT_RULE]: {
                 [RuleProperties.WRITE]: latestBlockNumberRules
@@ -771,9 +787,7 @@ class P2pServer {
             value: {
               [PredefinedDbPaths.DOT_SHARD]: {
                 [ShardingProperties.SHARDING_ENABLED]: true,
-                [ShardingProperties.PROOF_HASH_MAP]: {
-                  [ShardingProperties.LATEST]: -1,
-                }
+                [ShardingProperties.LATEST_BLOCK_NUMBER]: -1
               }
             }
           },

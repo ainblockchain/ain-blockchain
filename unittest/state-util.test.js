@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const {
   hasEnabledShardConfig,
   isWritablePathWithSharding,
@@ -7,12 +8,14 @@ const {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  isValidStateRule,
   isValidRuleConfig,
   isValidRuleTree,
   isValidFunctionConfig,
   isValidFunctionTree,
   isValidOwnerConfig,
   isValidOwnerTree,
+  applyRuleChange,
   applyFunctionChange,
   applyOwnerChange,
   renameStateTreeVersion,
@@ -20,7 +23,8 @@ const {
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
-  getProofOfStatePath,
+  getStateProofFromStateRoot,
+  getProofHashFromStateRoot,
   verifyStateProof,
 } = require('../db/state-util');
 const { STATE_LABEL_LENGTH_LIMIT } = require('../common/constants');
@@ -33,16 +37,15 @@ const assert = chai.assert;
 describe("state-util", () => {
   describe("hasEnabledShardConfig", () => {
     it("when input without matched shard config returning false", () => {
-      expect(hasEnabledShardConfig(StateNode.fromJsObject(null))).to.equal(false);
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({}))).to.equal(false);
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot(null))).to.equal(false);
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({}))).to.equal(false);
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({
         subtree: {
           path: "some value"
         },
         str: "string value"
-      }
-      ))).to.equal(false);
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({
+      }))).to.equal(false);
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({
         subtree: {
           path: "some value",
           ".shard": {
@@ -50,12 +53,11 @@ describe("state-util", () => {
           }
         },
         str: "string value"
-      }
-      ))).to.equal(false);
+      }))).to.equal(false);
     })
 
     it("when input with matched shard config returning false", () => {
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({
         subtree: {
           path: "some value",
         },
@@ -68,7 +70,7 @@ describe("state-util", () => {
     })
 
     it("when input with shard config returning true", () => {
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({
         subtree: {
           path: "some value",
         },
@@ -85,7 +87,7 @@ describe("state-util", () => {
     it("when non-writable path with shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: {
                 ".shard": {
@@ -96,7 +98,7 @@ describe("state-util", () => {
           })), {isValid: false, invalidPath: '/some/path'});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               other_path: true,
               ".shard": {
@@ -109,14 +111,14 @@ describe("state-util", () => {
     it("when writable path without shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: true
             }
           })), {isValid: true, invalidPath: ''});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               other_path: true
             }
@@ -126,7 +128,7 @@ describe("state-util", () => {
     it("when writable path with shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: {
                 ".shard": {
@@ -137,7 +139,7 @@ describe("state-util", () => {
           })), {isValid: true, invalidPath: ''});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               other_path: true,
               ".shard": {
@@ -150,7 +152,7 @@ describe("state-util", () => {
     it("when writable path through shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path', '.shard', 'sharding_enabled'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: {
                 ".shard": {
@@ -161,7 +163,7 @@ describe("state-util", () => {
           })), {isValid: true, invalidPath: ''});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path', '.shard', 'proof_hash_map'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: {
                 ".shard": {
@@ -642,6 +644,54 @@ describe("state-util", () => {
     })
   })
 
+  describe("isValidStateRule", () => {
+    it('when invalid input', () => {
+      expect(isValidStateRule(undefined)).to.equal(false);
+      expect(isValidStateRule({})).to.equal(false);
+      expect(isValidStateRule([])).to.equal(false);
+      expect(isValidStateRule([1, 2, 3])).to.equal(false);
+      expect(isValidStateRule(0)).to.equal(false);
+      expect(isValidStateRule(true)).to.equal(false);
+      expect(isValidStateRule(false)).to.equal(false);
+      expect(isValidStateRule({ "invalid_field": true })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": '123'
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": -1
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": 0
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": ''
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": -1
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": 0
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": 10,
+        "gc_max_siblings": -1
+      })).to.equal(false);
+    })
+
+    it('when valid input', () => {
+      expect(isValidStateRule({
+        "max_children": 10
+      })).to.equal(true);
+      expect(isValidStateRule({
+        "gc_max_siblings": 1
+      })).to.equal(true);
+      expect(isValidStateRule({
+        "max_children": 10,
+        "gc_max_siblings": 2
+      })).to.equal(true);
+    })
+  })
+
   describe("isValidRuleConfig", () => {
     it("when invalid input", () => {
       assert.deepEqual(isValidRuleConfig(null), {isValid: false, invalidPath: '/'});
@@ -686,6 +736,12 @@ describe("state-util", () => {
           'b*': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        "state": {
+          "max_children": 123,
+          "invalid_field": true
+        }
+      }), {isValid: false, invalidPath: '/'});
     })
 
     it("when valid input", () => {
@@ -694,6 +750,23 @@ describe("state-util", () => {
       assert.deepEqual(isValidRuleConfig({ "write": "auth.addr === 'abcd'" }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig({
         "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({
+        "state": {
+          "max_children": 1
+        }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({
+        "state": {
+          "gc_max_siblings": 1
+        }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig({
+        "write": "auth.addr === 'abcd'",
+        "state": {
+          "max_children": 1,
+          "gc_max_siblings": 1
+        }
       }), {isValid: true, invalidPath: ''});
     })
   })
@@ -732,7 +805,7 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/some_key'});
     })
 
-    it("when invalid input with invalid owner config", () => {
+    it("when invalid input with invalid rule config", () => {
       assert.deepEqual(isValidRuleTree({
         some_path: {
           '.rule': {
@@ -743,17 +816,10 @@ describe("state-util", () => {
       assert.deepEqual(isValidRuleTree({
         some_path: {
           '.rule': {
-            'write': null 
-          }
-        }
-      }), {isValid: false, invalidPath: '/some_path/.rule/write'});
-      assert.deepEqual(isValidRuleTree({
-        some_path: {
-          '.rule': {
             'write': undefined
           }
         }
-      }), {isValid: false, invalidPath: '/some_path/.rule/write'});
+      }), {isValid: false, invalidPath: '/some_path/.rule'});
     })
 
     it("when valid input", () => {
@@ -872,40 +938,28 @@ describe("state-util", () => {
         "0x11111": {
           // Missing function_type
           "function_id": "0x11111",
-          "event_listener": "https://events.ainetwork.ai/trigger",
-          "service_name": "https://ainetwork.ai",
+          "function_url": "https://events.ainetwork.ai/trigger",
         }
       }), {isValid: false, invalidPath: '/0x11111'});
       assert.deepEqual(isValidFunctionConfig({
         "0x11111": {
           "function_type": "REST",
           // Missing function_id
-          "event_listener": "https://events.ainetwork.ai/trigger",
-          "service_name": "https://ainetwork.ai",
+          "function_url": "https://events.ainetwork.ai/trigger",
         }
       }), {isValid: false, invalidPath: '/0x11111'});
       assert.deepEqual(isValidFunctionConfig({
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
-          // Missing event_listener
-          "service_name": "https://ainetwork.ai",
+          // Missing function_url
         }
       }), {isValid: false, invalidPath: '/0x11111'});
       assert.deepEqual(isValidFunctionConfig({
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
-          "event_listener": "https://events.ainetwork.ai/trigger",
-          // Missing service_name
-        }
-      }), {isValid: false, invalidPath: '/0x11111'});
-      assert.deepEqual(isValidFunctionConfig({
-        "0x11111": {
-          "function_type": "REST",
-          "function_id": "0x11111",
-          "event_listener": "https://events.ainetwork.ai/trigger",
-          "service_name": "https://ainetwork.ai",
+          "function_url": "https://events.ainetwork.ai/trigger",
           "unknown_property": "some value"  // Unknown property
         }
       }), {isValid: false, invalidPath: '/0x11111'});
@@ -913,16 +967,14 @@ describe("state-util", () => {
         "0x11111": {
           "function_type": "REST",
           "function_id": "some other fid",  // Wrong function_id
-          "event_listener": "https://events.ainetwork.ai/trigger",
-          "service_name": "https://ainetwork.ai",
+          "function_url": "https://events.ainetwork.ai/trigger",
         }
       }), {isValid: false, invalidPath: '/0x11111/function_id'});
       assert.deepEqual(isValidFunctionConfig({
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
-          "event_listener": "some non-url value",  // Invalid url
-          "service_name": "https://ainetwork.ai",
+          "function_url": "some non-url value",  // Invalid url
         }
       }), {isValid: false, invalidPath: '/0x11111'});
     })
@@ -936,8 +988,7 @@ describe("state-util", () => {
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
-          "event_listener": "https://events.ainetwork.ai/trigger",
-          "service_name": "https://ainetwork.ai",
+          "function_url": "https://events.ainetwork.ai/trigger",
         },
         "fid_to_delete": null  // To be deleted
       }), {isValid: true, invalidPath: ''});
@@ -1008,8 +1059,7 @@ describe("state-util", () => {
           "0x11111": {
             "function_type": "REST",
             "function_id": "0x11111",
-            "event_listener": "https://events.ainetwork.ai/trigger",
-            "service_name": "https://ainetwork.ai",
+            "function_url": "https://events.ainetwork.ai/trigger",
           }
         }
       }), {isValid: true, invalidPath: ''});
@@ -1023,8 +1073,7 @@ describe("state-util", () => {
             "0x11111": {
               "function_type": "REST",
               "function_id": "0x11111",
-              "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
+              "function_url": "https://events.ainetwork.ai/trigger",
             }
           }
         },
@@ -1037,8 +1086,7 @@ describe("state-util", () => {
             "0x11111": {
               "function_type": "REST",
               "function_id": "0x11111",
-              "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
+              "function_url": "https://events.ainetwork.ai/trigger",
             }
           }
         }
@@ -1332,6 +1380,101 @@ describe("state-util", () => {
     })
   })
 
+  describe("applyRuleChange()", () => {
+    const curRule = {
+      ".rule": {
+        "write": "auth.addr === 'abcd'",
+        "state": {
+          "max_children": 10,
+          "ordering": "FIFO"
+        }
+      },
+      "deeper": {
+        ".rule": {  // deeper rule
+          "write": true,
+          "state": {
+            "max_children": 10,
+            "ordering": "FIFO"
+          }
+        }
+      }
+    };
+
+    it("add / delete / modify non-existing rule", () => {
+      assert.deepEqual(applyRuleChange(null, curRule), curRule); // the same as the given rule change.
+    });
+
+    it("delete / modify existing rule", () => {
+      assert.deepEqual(applyRuleChange(curRule, {
+        ".rule": {
+          "write": null,  // delete
+          "state": {  // modify
+            "max_children": 100,
+            "ordering": "FIFO"
+          }
+        }
+      }), {
+        ".rule": {
+          // write: deleted
+          "state": {  // modified
+            "max_children": 100,
+            "ordering": "FIFO"
+          }
+        }
+        // deeper rule deleted
+      });
+
+      assert.deepEqual(applyRuleChange({
+        ".rule": {
+          "write": true
+        }
+      }, {
+        ".rule": {
+          "state": { // add
+            "max_children": 10,
+            "ordering": "FIFO"
+          }
+        }
+      }), {
+        ".rule": {
+          "write": true,
+          "state": { // added
+            "max_children": 10,
+            "ordering": "FIFO"
+          }
+        }
+      });
+    });
+
+    it("replace existing rule with deeper rule", () => {
+      assert.deepEqual(applyRuleChange(curRule, {
+        ".rule": {
+          "write": "auth.addr === 'efgh'", // modify
+          "state": null // delete
+        },
+        "deeper": {
+          ".rule": { // deeper function
+            "write": false
+          }
+        }
+      }), {
+        ".rule": {
+          "write": "auth.addr === 'efgh'", // modified
+          "state": null // deleted
+        },
+        "deeper": {
+          ".rule": { // replaced
+            "write": false
+          }
+        }
+      });
+    });
+
+    it("with null rule change", () => {
+      assert.deepEqual(applyRuleChange(curRule, null), null);
+    });
+  })
+
   describe("applyFunctionChange()", () => {
     const curFunction = {
       ".function": {
@@ -1401,7 +1544,6 @@ describe("state-util", () => {
           "0x222": {  // modify
             "function_type": "REST",
             "function_id": "0x222",
-            "service_name": "https://ainetwork.ai",
           },
           "0x444": {  // add
             "function_type": "REST",
@@ -1413,7 +1555,6 @@ describe("state-util", () => {
           "0x222": {  // modified
             "function_type": "REST",
             "function_id": "0x222",
-            "service_name": "https://ainetwork.ai",
           },
           "0x333": {  // untouched
             "function_type": "REST",
@@ -1441,7 +1582,6 @@ describe("state-util", () => {
           "0x222": {  // modify
             "function_type": "REST",
             "function_id": "0x222",
-            "service_name": "https://ainetwork.ai",
           },
           "0x444": {  // add
             "function_type": "REST",
@@ -1461,7 +1601,6 @@ describe("state-util", () => {
           "0x222": {
             "function_type": "REST",
             "function_id": "0x222",
-            "service_name": "https://ainetwork.ai",
           },
           "0x444": {
             "function_type": "REST",
@@ -1701,7 +1840,7 @@ describe("state-util", () => {
       const ver1 = 'ver1';
       const ver2 = 'ver2';
 
-      const stateNode = StateNode.fromJsObject(true, ver1);
+      const stateNode = StateNode.fromStateSnapshot(true, ver1);
 
       const numRenamed = renameStateTreeVersion(stateNode, 'other version', ver2);
       expect(numRenamed).to.equal(0);
@@ -1712,7 +1851,7 @@ describe("state-util", () => {
       const ver1 = 'ver1';
       const ver2 = 'ver2';
 
-      const stateNode = StateNode.fromJsObject(true, ver1);
+      const stateNode = StateNode.fromStateSnapshot(true, ver1);
 
       const numRenamed = renameStateTreeVersion(stateNode, ver1, ver2);
       expect(numRenamed).to.equal(1);
@@ -1741,7 +1880,7 @@ describe("state-util", () => {
       const stateTree = new StateNode(ver3);
       stateTree.setChild('label1', child1);
       stateTree.setChild('label2', child2);
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+      assert.deepEqual(stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), {
         "#num_parents": 0,
         "#state_ph": null,
         "#tree_bytes": 0,
@@ -1796,7 +1935,7 @@ describe("state-util", () => {
 
       const numNodes = renameStateTreeVersion(stateTree, ver2, ver3);
       expect(numNodes).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+      assert.deepEqual(stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), {
         "#num_parents": 0,
         "#state_ph": null,
         "#tree_bytes": 0,
@@ -1878,7 +2017,7 @@ describe("state-util", () => {
 
     it("leaf node", () => {
       // Delete a leaf node without version.
-      const stateNode1 = StateNode.fromJsObject(true);
+      const stateNode1 = StateNode.fromStateSnapshot(true);
       updateStateInfoForStateTree(stateNode1);
       expect(deleteStateTreeVersion(stateNode1)).to.equal(2);
       expect(stateNode1.getVersion()).to.equal(null);
@@ -1886,7 +2025,7 @@ describe("state-util", () => {
       expect(stateNode1.numChildren()).to.equal(0);
 
       // Delete a leaf node with a different version.
-      const stateNode2 = StateNode.fromJsObject(true, 'ver2');
+      const stateNode2 = StateNode.fromStateSnapshot(true, 'ver2');
       updateStateInfoForStateTree(stateNode2);
       expect(deleteStateTreeVersion(stateNode2)).to.equal(2);
       expect(stateNode2.getVersion()).to.equal(null);
@@ -1894,7 +2033,7 @@ describe("state-util", () => {
       expect(stateNode2.numChildren()).to.equal(0);
 
       // Delete a leaf node with the same version.
-      const stateNode3 = StateNode.fromJsObject(true, ver1);
+      const stateNode3 = StateNode.fromStateSnapshot(true, ver1);
       updateStateInfoForStateTree(stateNode3);
       expect(deleteStateTreeVersion(stateNode3)).to.equal(2);
       expect(stateNode3.getVersion()).to.equal(null);
@@ -1902,7 +2041,7 @@ describe("state-util", () => {
       expect(stateNode3.numChildren()).to.equal(0);
 
       // Delete a leaf node with the same version but with non-zero numParents() value.
-      const stateNode4 = StateNode.fromJsObject(true, ver1);
+      const stateNode4 = StateNode.fromStateSnapshot(true, ver1);
       parent.setChild(nodeLabel, stateNode4);
       updateStateInfoForStateTree(stateNode4);
       expect(deleteStateTreeVersion(stateNode4)).to.equal(0);
@@ -1931,7 +2070,7 @@ describe("state-util", () => {
 
       expect(deleteStateTreeVersion(stateTree)).to.equal(0);
       // State tree is not deleted.
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+      assert.deepEqual(stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), {
         "#num_parents": 1,
         "#num_parents:label1": 1,
         "#num_parents:label2": 1,
@@ -2003,7 +2142,7 @@ describe("state-util", () => {
     let child1111;
 
     beforeEach(() => {
-      stateTree = StateNode.fromJsObject(jsObject, null);
+      stateTree = StateNode.fromStateSnapshot(jsObject, null);
       child1 = stateTree.getChild(label1);
       child11 = child1.getChild(label11);
       child111 = child11.getChild(label111);
@@ -2011,7 +2150,7 @@ describe("state-util", () => {
     });
 
     it("updateStateInfoForAllRootPaths on empty node with a single root path", () => {
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "0x0001": {
           "#state_ph": null,
@@ -2031,7 +2170,7 @@ describe("state-util", () => {
         }
       });
       expect(updateStateInfoForAllRootPaths(child111, label1111)).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
           "#state_ph": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
@@ -2057,7 +2196,7 @@ describe("state-util", () => {
       const label3 = '0x003';
       stateTreeClone.setChild(label3, child3);
 
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "0x0001": {
           "#state_ph": null,
@@ -2076,7 +2215,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeClone.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "#state_ph:0x003": null,
         "0x0001": {
@@ -2094,7 +2233,7 @@ describe("state-util", () => {
       });
       assert.deepEqual(child1111.getParentNodes(), [child111, child111Clone]);
       expect(updateStateInfoForAllRootPaths(child111, label1111)).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
           "#state_ph": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
@@ -2105,7 +2244,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeClone.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "#state_ph:0x003": null,
         "0x0001": {
@@ -2134,7 +2273,7 @@ describe("state-util", () => {
       const label3 = '0x003';
       stateTreeClone.setChild(label3, child3);
 
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "0x0001": {
           "#state_ph": null,
@@ -2153,7 +2292,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeClone.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "#state_ph:0x003": null,
         "0x0001": {
@@ -2171,7 +2310,7 @@ describe("state-util", () => {
       });
       assert.deepEqual(child111.getParentNodes(), [child11, child11Clone]);
       expect(updateStateInfoForAllRootPaths(child111, label1111)).to.equal(7);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
           "#state_ph": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
@@ -2182,7 +2321,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeClone.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0x4982c00e8daae6d0ca0cb3b0cc6bcec88b97183a7f7f8decfcd013eb402b6f32",
         "#state_ph:0x003": null,
         "0x003": "value0003",
@@ -2190,7 +2329,7 @@ describe("state-util", () => {
     });
 
     it("updateStateInfoAllRootPaths on non-empty node", () => {
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "0x0001": {
           "#state_ph": null,
@@ -2210,7 +2349,7 @@ describe("state-util", () => {
         }
       });
       expect(updateStateInfoForAllRootPaths(child11, label111, false)).to.equal(3);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0xf8de149cbb6e6ec6eed202d0c1c2927f955bd693dde8725aff64ecd694302be2",
         "0x0001": {
           "#state_ph": "0xbeec2ad3bd5285e375bb66f49ccef377af065bb674a3d5c43937d0c66656a61b",
@@ -2264,7 +2403,7 @@ describe("state-util", () => {
     let child21;
 
     beforeEach(() => {
-      stateTree = StateNode.fromJsObject(jsObject, null);
+      stateTree = StateNode.fromStateSnapshot(jsObject, null);
       child1 = stateTree.getChild(label1);
       child11 = child1.getChild(label11);
       child111 = child11.getChild(label111);
@@ -2395,39 +2534,173 @@ describe("state-util", () => {
       expect(verifyStateInfoForStateTree(stateTree)).to.equal(false);
     });
 
-    it("getProofOfStatePath", () => {
-      updateStateInfoForStateTree(stateTree);
-      assert.deepEqual(getProofOfStatePath(stateTree, [label1, label11]), {
-        "#radix_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-        "000": {
-          "1": {
-            "#radix_ph": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
-            "0x0001": {
-              "#state_ph": {
-                "#radix_ph": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116",
-                "0011": {
+    describe("getStateProofFromStateRoot", () => {
+      it("general case", () => {
+        updateStateInfoForStateTree(stateTree);
+        assert.deepEqual(getStateProofFromStateRoot(stateTree, [label1, label11]), {
+          "#state_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+          "#radix:000": {
+            "#radix:1": {
+              "#radix_ph": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
+              "#state:0x0001": {
+                "#radix:0011": {
                   "#radix_ph": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
-                  "0x0011": {
-                    "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb",
+                  "#state:0x0011": {
+                    "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb"
                   }
+                },
+                "#state_ph": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116"
+              }
+            },
+            "#radix:2": {
+              "#radix_ph": "0x201d6a312774b74827e1ae95e37b98558ee25170d1e40f6def42c22ed161dab5"
+            },
+            "#radix_ph": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60"
+          }
+        });
+      });
+
+      it("with conflicted labels between radix node and state node without prefix", () => {
+        const stateTree2 = StateNode.fromStateSnapshot({
+          "3": {
+            "3-1": "value3-1"
+          },
+          "30": {
+            "30-1": "value30-1"
+          },
+          "31": {
+            "31-1": "value31-1"
+          },
+        });
+        updateStateInfoForStateTree(stateTree2);
+        assert.deepEqual(getStateProofFromStateRoot(stateTree2, ['31', '31-1']), {
+          "#state_ph": "0x8c2734c83cbcdc673190a8d164892c1489f908b3f80d6068257753a39de16181",
+          "#radix:33": {
+            "#radix:3": {
+              "#radix:0": {
+                "#radix_ph": "0xda7fde2ca07a62397245f255309752fb69ef011c03e48be00e16e9b89edb992e"
+              },
+              "#radix:1": {
+                "#radix_ph": "0xc2171aa7a68514ee8d10163f01936e6b057f0dd9d1c09965987455c423cc0083",
+                "#state:31": {
+                  "#radix:33312d31": {
+                    "#radix_ph": "0xcbb7f3f7590245dcd747fea8d019b093a366dc055722488bfa6e88b4e85ba5f5",
+                    "#state:31-1": {
+                      "#state_ph": "0xb5db965c4f86627bf107f798f5946ce1eb24cb5a86c16a78e34e3b224262e1d5"
+                    }
+                  },
+                  "#state_ph": "0x444d17cf54ec9db68a38c29f8d3fd9fc4ca33162bbe118980eb84264f1e5cb50"
+                }
+              },
+              "#radix_ph": "0x19502261f0280695c3ad696c08068ffbed1f76c075e7a985351e1fd3359e7cc3"
+            },
+            "#radix_ph": "0xa79f73e0527ebdeb2df5c7501723d99a23b3afb9c0cf1d15d6e04d0c842ff8d4",
+            "#state:3": {
+              "#state_ph": "0x4d8ff5217be0d6876e37d4509e05929aeb8ecc65d06a7a3b0a863d9694b51a3a"
+            }
+          }
+        });
+        const proof = getStateProofFromStateRoot(stateTree2, ['31', '31-1']);
+        assert.deepEqual(verifyStateProof(proof), {
+          "proofHash": "0x8c2734c83cbcdc673190a8d164892c1489f908b3f80d6068257753a39de16181",
+          "isVerified": true,
+          "mismatchedPath": null,
+          "mismatchedProofHash": null,
+          "mismatchedProofHashComputed": null,
+        });
+      });
+    });
+
+    it("getProofHashFromStateRoot", () => {
+      updateStateInfoForStateTree(stateTree);
+      expect(getProofHashFromStateRoot(stateTree, [label1, label11])).to.equal(
+        "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb"
+      );
+    });
+
+    describe("verifyStateProof", () => {
+      const proof = {
+        "#state_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+        "#radix:000": {
+          "#radix:1": {
+            "#radix_ph": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
+            "#state:0x0001": {
+              "#state_ph": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116",
+              "#radix:0011": {
+                "#radix_ph": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
+                "#state:0x0011": {
+                  "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb"
                 }
               }
             }
           },
-          "2": {
-            "#radix_ph": "0x201d6a312774b74827e1ae95e37b98558ee25170d1e40f6def42c22ed161dab5",
+          "#radix:2": {
+            "#radix_ph": "0x201d6a312774b74827e1ae95e37b98558ee25170d1e40f6def42c22ed161dab5"
           },
-          "#radix_ph": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60",
+          "#radix_ph": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60"
         }
-      });
-    });
+      };
 
-    it("verifyStateProof", () => {
-      updateStateInfoForStateTree(stateTree);
-      const stateProof = getProofOfStatePath(stateTree, [label1, label11]);
-      expect(verifyStateProof(stateProof)).to.not.equal(null);
-      stateProof['000']['1']['#radix_ph'] = 'some other value';
-      expect(verifyStateProof(stateProof)).to.equal(null);
+      it("verified", () => {
+        assert.deepEqual(verifyStateProof(proof), {
+          "proofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+          "isVerified": true,
+          "mismatchedPath": null,
+          "mismatchedProofHash": null,
+          "mismatchedProofHashComputed": null,
+        });
+      });
+
+      it("not verified with radix proof hash manipulated", () => {
+        const proofManipulated1 = JSON.parse(JSON.stringify(proof));
+        _.set(proofManipulated1, '#radix:000.#radix:1.#radix_ph', 'some other value');
+        assert.deepEqual(verifyStateProof(proofManipulated1), {
+          "proofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1",
+          "mismatchedProofHash": "some other value",
+          "mismatchedProofHashComputed": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
+        });
+      });
+
+
+      it("not verified with internal state proof hash manipulated", () => {
+        const proofManipulated2 = JSON.parse(JSON.stringify(proof));
+        _.set(proofManipulated2, '#radix:000.#radix:1.#state:0x0001.#state_ph', 'some other value');
+        assert.deepEqual(verifyStateProof(proofManipulated2), {
+          "proofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001",
+          "mismatchedProofHash": "some other value",
+          "mismatchedProofHashComputed": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116",
+        });
+      });
+
+      it("not verified with terminal state proof hash manipulated", () => {
+        const proofManipulated3 = JSON.parse(JSON.stringify(proof));
+        _.set(proofManipulated3, '#radix:000.#radix:1.#state:0x0001.#radix:0011.#state:0x0011.#state_ph', 'some other value');
+        assert.deepEqual(verifyStateProof(proofManipulated3), {
+          "proofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001/#radix:0011",
+          "mismatchedProofHash": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
+          "mismatchedProofHashComputed": "0x7798ecb6063003183a0370ec083260912b756f52054fa3d0ca8e5a88db4a40a8",
+        });
+      });
+
+      it("not verified with label changed: '2' -> '3'", () => {
+        const proofManipulated4 = JSON.parse(JSON.stringify(proof));
+        const temp = _.get(proofManipulated4, '#radix:000.#radix:2');
+        _.unset(proofManipulated4, '#radix:000.#radix:2');
+        _.set(proofManipulated4, '#radix:000.#radix:3', temp);
+        assert.deepEqual(verifyStateProof(proofManipulated4), {
+          "proofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000",
+          "mismatchedProofHash": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60",
+          "mismatchedProofHashComputed": "0x0c479cea57cfd0b5d2f6b0e91f30d802002deda19a26cc44581b56b1be882b6c",
+        });
+      });
     });
   });
 })

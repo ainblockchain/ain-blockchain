@@ -1,4 +1,6 @@
 /* eslint no-unused-vars: "off" */
+const logger = new (require('../logger'))('TRACKER_SERVER');
+
 const WebSocketServer = require('ws').Server;
 const geoip = require('geoip-lite');
 const express = require('express');
@@ -16,7 +18,6 @@ const {
   CURRENT_PROTOCOL_VERSION
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
-const logger = require('../logger')('TRACKER_SERVER');
 
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 const P2P_PORT = process.env.P2P_PORT || 5000;

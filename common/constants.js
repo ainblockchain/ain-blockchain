@@ -28,16 +28,14 @@ const FeatureFlags = {
   enableStateTreeTransfer: false,
   // Enables receipts recording to the state.
   enableReceiptsRecording: true,  // Some test cases assume this value true.
-  // Enables receipt path's prefix layers.
-  enableReceiptPathPrefixLayers: false,  // Some test cases assume this value false.
-  // Enables radix layers.
-  enableRadixTreeLayers: true,  // Some test cases assume this value true.
   // Enables ntp-sync for global time syncing.
   enableNtpSync: true,
   // Enables traffic monitoring.
   enableTrafficMonitoring: true,
   // Enables state info updates.
   enableStateInfoUpdates: true,
+  // Enables radix level snapshots.
+  enableRadixLevelSnapshots: true,
 };
 
 // ** Environment variables **
@@ -48,6 +46,8 @@ const ENABLE_TX_SIG_VERIF_WORKAROUND =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
 const ENABLE_GAS_FEE_WORKAROUND =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
+const ENABLE_REST_FUNCTION_CALL =
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_REST_FUNCTION_CALL, true);
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
@@ -55,9 +55,15 @@ const LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT)
 const SYNC_MODE = process.env.SYNC_MODE || 'full';
 const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
     Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
+const ACCOUNT_INJECTION_OPTION = process.env.ACCOUNT_INJECTION_OPTION || null;
 const KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
 const ENABLE_TRACKER_REPORT =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_TRACKER_REPORT, true);
+const DEFAULT_CORS_WHITELIST = ['https://ainetwork.ai', 'https://ainize.ai', 'https://afan.ai',
+    /\.ainetwork\.ai$/, /\.ainize\.ai$/, /\.afan\.ai$/, 'http://localhost:3000'];
+// NOTE(liayoo): CORS_WHITELIST env var is a comma-separated list of cors-allowed domains.
+// Note that if it includes '*', it will be set to allow all domains.
+const CORS_WHITELIST = CommonUtil.getCorsWhitelist(process.env.CORS_WHITELIST) || DEFAULT_CORS_WHITELIST;
 
 // ** Constants **
 const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
@@ -91,11 +97,13 @@ const CHAIN_SEGMENT_LENGTH = 20;
 const ON_MEMORY_CHAIN_LENGTH = 10;
 const SNAPSHOTS_ROOT_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'snapshots');
 const SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
+const DEBUG_SNAPSHOT_FILE_PREFIX = 'debug_'; // Prefix for debug snapshot files.
 // NOTE(platfowner): Should have a value bigger than ON_MEMORY_CHAIN_LENGTH.
 const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
 const MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
 const KEYS_ROOT_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'keys');
 const HASH_DELIMITER = '#';
+const STATE_INFO_PREFIX = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
 const MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
@@ -124,6 +132,12 @@ const STATE_GAS_COEFFICIENT = 1;
 const TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
 const TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
 const DEFAULT_REQUEST_BODY_SIZE_LIMIT = '100mb';
+const DEFAULT_DEVELOPERS_URL_WHITELIST = [
+  'https://*.ainetwork.ai',
+  'https://*.ainize.ai',
+  'https://*.afan.ai',
+  'http://localhost:3000'
+];
 
 // ** Enums **
 /**
@@ -159,6 +173,7 @@ const BlockchainNodeStates = {
   STARTING: 'STARTING',
   SYNCING: 'SYNCING',
   SERVING: 'SERVING',
+  STOPPED: 'STOPPED',
 };
 
 /**
@@ -206,6 +221,13 @@ const PredefinedDbPaths = {
   CONSENSUS_VALIDATORS: 'validators',
   CONSENSUS_VOTE: 'vote',
   CONSENSUS_WHITELIST: 'whitelist',
+  // Developers
+  DEVELOPERS: 'developers',
+  DEVELOPERS_REST_FUNCTIONS: 'rest_functions',
+  DEVELOPERS_REST_FUNCTIONS_PARAMS: 'params',
+  DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER: 'max_urls_per_developer',
+  DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST: 'user_whitelist',
+  DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST: 'url_whitelist',
   // Receipts
   RECEIPTS: 'receipts',
   RECEIPTS_ADDRESS: 'address',
@@ -365,6 +387,10 @@ const OwnerProperties = {
  */
 const RuleProperties = {
   WRITE: 'write',
+  STATE: 'state',
+  MAX_CHILDREN: 'max_children',
+  GC_MAX_SIBLINGS: 'gc_max_siblings',
+  // TODO(liayoo): Add more properties (max_height, max_size, max_bytes)
 };
 
 /**
@@ -373,10 +399,9 @@ const RuleProperties = {
  * @enum {string}
  */
 const FunctionProperties = {
-  EVENT_LISTENER: 'event_listener',
   FUNCTION_ID: 'function_id',
   FUNCTION_TYPE: 'function_type',
-  SERVICE_NAME: 'service_name',
+  FUNCTION_URL: 'function_url',
 };
 
 /**
@@ -395,9 +420,13 @@ const FunctionTypes = {
  * @enum {string}
  */
 const StateInfoProperties = {
+  HAS_PARENT_STATE_NODE: '#has_parent_state_node',
+  NEXT_SERIAL: '#next_serial',
   NUM_PARENTS: '#num_parents',
+  RADIX_LABEL_PREFIX: '#radix:',
   RADIX_PROOF_HASH: '#radix_ph',
   SERIAL: '#serial',
+  STATE_LABEL_PREFIX: '#state:',
   STATE_PROOF_HASH: '#state_ph',
   VERSION: '#version',
   TREE_HEIGHT: '#tree_height',
@@ -445,7 +474,6 @@ function isNativeFunctionId(fid) {
  * @enum {string}
  */
 const ShardingProperties = {
-  LATEST: 'latest',
   LATEST_BLOCK_NUMBER: 'latest_block_number',
   PARENT_CHAIN_POC: 'parent_chain_poc',
   PROOF_HASH: 'proof_hash',
@@ -821,6 +849,7 @@ function getGenesisValues() {
       values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
   CommonUtil.setJsObject(
       values, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
+  CommonUtil.setJsObject(values, [PredefinedDbPaths.DEVELOPERS], getDevelopersValue());
   return values;
 }
 
@@ -835,6 +864,7 @@ function getGenesisRules() {
     CommonUtil.setJsObject(
         rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
   }
+  CommonUtil.setJsObject(rules, [PredefinedDbPaths.DEVELOPERS], getDevelopersRule());
   return rules;
 }
 
@@ -848,7 +878,31 @@ function getGenesisOwners() {
   }
   CommonUtil.setJsObject(
       owners, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST], getWhitelistOwner());
+  CommonUtil.setJsObject(owners, [PredefinedDbPaths.DEVELOPERS], getDevelopersOwner());
   return owners;
+}
+
+function getDevelopersValue() {
+  const ownerAddress = CommonUtil.getJsObject(
+      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+  const maxFunctionUrlsPerDeveloper = GenesisParams.resource.MAX_FUNCTION_URLS_PER_DEVELOPER;
+  const defaultFunctionUrlWhitelist = {};
+  DEFAULT_DEVELOPERS_URL_WHITELIST.forEach((url, index) => {
+    defaultFunctionUrlWhitelist[index] = url;
+  })
+  return {
+    [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS]: {
+      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_PARAMS]: {
+        [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER]: maxFunctionUrlsPerDeveloper
+      },
+      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST]: {
+        [ownerAddress]: true
+      },
+      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST]: {
+        [ownerAddress]: defaultFunctionUrlWhitelist
+      }
+    }
+  };
 }
 
 function getShardingRule() {
@@ -857,6 +911,27 @@ function getShardingRule() {
   return {
     [PredefinedDbPaths.DOT_RULE]: {
       [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
+    }
+  };
+}
+
+function getDevelopersRule() {
+  const ownerAddress =
+      CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+  return {
+    [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS]: {
+      [PredefinedDbPaths.DOT_RULE]: {
+        [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`
+      },
+      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST]: {
+        '$user_addr': {
+          '$key': {
+            [PredefinedDbPaths.DOT_RULE]: {
+              [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}' || (auth.addr === $user_addr && util.validateRestFunctionsUrlWhitelistData(auth.addr, data, newData, getValue) === true)`
+            }
+          }
+        }
+      }
     }
   };
 }
@@ -889,6 +964,20 @@ function getWhitelistOwner() {
       [OwnerProperties.OWNERS]: {
         [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
         [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+      }
+    }
+  };
+}
+
+function getDevelopersOwner() {
+  const ownerAddress =
+      CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+  return {
+    [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS]: {
+      [PredefinedDbPaths.DOT_OWNER]: {
+        [OwnerProperties.OWNERS]: {
+          [ownerAddress]: buildOwnerPermissions(true, true, true, true)
+        }
       }
     }
   };
@@ -930,6 +1019,7 @@ module.exports = {
   ON_MEMORY_CHAIN_LENGTH,
   SNAPSHOTS_ROOT_DIR,
   SNAPSHOTS_N2S_DIR_NAME,
+  DEBUG_SNAPSHOT_FILE_PREFIX,
   SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
   MAX_NUM_SNAPSHOTS,
   MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
@@ -939,14 +1029,18 @@ module.exports = {
   ENABLE_DEV_SET_CLIENT_API,
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
+  ENABLE_REST_FUNCTION_CALL,
   ACCOUNT_INDEX,
+  ACCOUNT_INJECTION_OPTION,
   KEYSTORE_FILE_PATH,
   ENABLE_TRACKER_REPORT,
+  CORS_WHITELIST,
   PORT,
   P2P_PORT,
   LIGHTWEIGHT,
   SYNC_MODE,
   HASH_DELIMITER,
+  STATE_INFO_PREFIX,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,
   MICRO_AIN,

@@ -390,8 +390,7 @@ describe('Native Function', () => {
                 ".function": {
                   "0x11111": {
                     "function_type": "REST",
-                    "event_listener": "https://events.ainetwork.ai/trigger",
-                    "service_name": "https://ainetwork.ai",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "0x11111"
                   }
                 }
@@ -854,6 +853,290 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result
           // Should be not null.
           expect(ownerConfig).to.not.equal(null);
+        });
+      });
+    });
+
+    describe('REST functions whitelist', () => {
+      it('cannot add a function url if not a whitelisted developer', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/0`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('cannot whitelist a developer if not an admin', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/user_whitelist/${serviceUser}`,
+          value: true,
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/rest_functions/user_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('can whitelist a developer as an admin', async () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/developers/rest_functions/user_whitelist/${serviceUser}`,
+            value: true
+          },
+          timestamp: 1628255843548,
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from('a2b5848760d81afe205884284716f90356ad82be5ab77b8130980bdb0b7ba2ba', 'hex'));
+        const res = await client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: CURRENT_PROTOCOL_VERSION
+        });
+        if (!(await waitUntilTxFinalized([server2], _.get(res, 'result.result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(res.result.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 248
+            }
+          },
+          "gas_cost_total": 0,
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 249
+        });
+      });
+
+      it('can add a function url', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/0`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 448
+            }
+          },
+          "gas_cost_total": 0,
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 449
+        });
+      });
+
+      it('cannot add an invalid function url', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/1`,
+          value: '*.ainetwork.ai', // missing protocol
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('cannot add more than the max number of function urls per developer', async () => {
+        // Add 2 more & try to add 1 more
+        const addRestFunctionUrl2 = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/1`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(addRestFunctionUrl2, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        expect(addRestFunctionUrl2.result.result.code).to.be.equal(0);
+        const addRestFunctionUrl3 = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/2`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(addRestFunctionUrl3, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        expect(addRestFunctionUrl3.result.result.code).to.be.equal(0);
+        const userRestFunctionUrls = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/developers/rest_functions/url_whitelist/${serviceUser}`).body.toString('utf-8'));
+        assert.deepEqual(userRestFunctionUrls, {
+          "code": 0,
+          "result": {
+            "0": "http://localhost:3000",
+            "1": "http://localhost:3000",
+            "2": "http://localhost:3000"
+          }
+        });
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/3`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/3",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('can replace a function url', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/0`,
+          value: 'http://localhost:8080',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('can remove a function url', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/0`,
+          value: null,
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it(`cannot remove other's function urls`, async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/0xAAAf6f50A0304F12119D218b94bea8082642515B/0`,
+          value: null,
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0xAAAf6f50A0304F12119D218b94bea8082642515B/0",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
         });
       });
     });

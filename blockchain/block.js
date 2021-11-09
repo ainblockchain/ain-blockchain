@@ -1,8 +1,9 @@
+const logger = new (require('../logger'))('BLOCK');
+
 const stringify = require('fast-json-stable-stringify');
 const sizeof = require('object-sizeof');
 const moment = require('moment');
 const _ = require('lodash');
-const logger = require('../logger')('BLOCK');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('../db/state-node');
@@ -231,7 +232,7 @@ class Block {
     });
 
     // Transaction
-    const firstTxBody = {
+    const txBody = {
       nonce: -1,
       timestamp,
       gas_price: 1,
@@ -240,7 +241,12 @@ class Block {
         op_list: opList,
       }
     };
-    return Transaction.fromTxBody(firstTxBody, privateKey);
+    const tx = Transaction.fromTxBody(txBody, privateKey);
+    if (!tx) {
+      CommonUtil.finishWithStackTrace(
+          logger, `Failed to build DB setup tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
+    }
+    return tx;
   }
 
   static buildAccountsSetupTx(timestamp, privateKey, ownerAddress) {
@@ -261,7 +267,7 @@ class Block {
     }
 
     // Transaction
-    const secondTxBody = {
+    const txBody = {
       nonce: -1,
       timestamp,
       gas_price: 1,
@@ -270,11 +276,16 @@ class Block {
         op_list: transferOps
       }
     };
-    return Transaction.fromTxBody(secondTxBody, privateKey);
+    const tx = Transaction.fromTxBody(txBody, privateKey);
+    if (!tx) {
+      CommonUtil.finishWithStackTrace(
+          logger, `Failed to build account setup tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
+    }
+    return tx;
   }
 
   static buildConsensusAppTx(timestamp, privateKey, ownerAddress) {
-    const thirdTxBody = {
+    const txBody = {
       nonce: -1,
       timestamp,
       gas_price: 1,
@@ -293,7 +304,12 @@ class Block {
         }
       }
     }
-    return Transaction.fromTxBody(thirdTxBody, privateKey);
+    const tx = Transaction.fromTxBody(txBody, privateKey);
+    if (!tx) {
+      CommonUtil.finishWithStackTrace(
+          logger, `Failed to build consensus app tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
+    }
+    return tx;
   }
 
   static buildGenesisStakingTxs(timestamp) {
@@ -314,7 +330,12 @@ class Block {
           value: info[PredefinedDbPaths.CONSENSUS_STAKE]
         }
       };
-      txs.push(Transaction.fromTxBody(txBody, privateKey));
+      const tx = Transaction.fromTxBody(txBody, privateKey);
+      if (!tx) {
+        CommonUtil.finishWithStackTrace(
+            logger, `Failed to build genesis staking txs with tx body: ${JSON.stringify(txBody, null, 2)}`);
+      }
+      txs.push(tx);
     });
     return txs;
   }
@@ -350,7 +371,7 @@ class Block {
     }
     const { gasAmountTotal, gasCostTotal } = CommonUtil.getServiceGasCostTotalFromTxList(genesisTxs, resList);
     return {
-      stateProofHash: tempGenesisDb.getStateProof('/'),
+      stateProofHash: tempGenesisDb.getProofHash('/'),
       gasAmountTotal,
       gasCostTotal,
       receipts: CommonUtil.txResultsToReceipts(resList),

@@ -249,6 +249,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         if (block && block.transactions.length > index && index >= 0) {
           result = {
             transaction: block.transactions[index],
+            is_executed: true,
             is_finalized: true
           };
         }
@@ -265,6 +266,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
         if (block && block.transactions.length > index && index >= 0) {
           result = {
             transaction: block.transactions[index],
+            is_executed: true,
             is_finalized: true
           };
         }
@@ -360,6 +362,12 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({result}));
     },
 
+    ain_getProofHash: function(args, done) {
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
+      const result = p2pServer.node.db.getProofHash(args.ref);
+      done(null, addProtocolVersion({result}));
+    },
+
     ain_getStateInfo: function(args, done) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
       const result = p2pServer.node.db.getStateInfo(args.ref);
@@ -380,10 +388,20 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       }));
     },
 
-    ain_injectAccount: async function(args, done) {
-      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
+    ain_injectAccountFromKeystore: async function(args, done) {
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET);
       let result = false;
-      if (await p2pServer.node.injectAccount(args.encryptedPassword)) {
+      if (await p2pServer.node.injectAccountFromKeystore(args.encryptedPassword)) {
+        result = true;
+        p2pServer.client.run();
+      }
+      return addProtocolVersion({ result });
+    },
+
+    ain_injectAccountFromHDWallet: async function(args, done) {
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET);
+      let result = false;
+      if (await p2pServer.node.injectAccountFromHDWallet(args.encryptedMnemonic, args.index)) {
         result = true;
         p2pServer.client.run();
       }

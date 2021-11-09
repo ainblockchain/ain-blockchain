@@ -208,9 +208,7 @@ describe('HE Sharding', async () => {
           code: 0,
           result: {
             sharding_enabled: true,
-            proof_hash_map: {
-              latest: -1
-            }
+            latest_block_number: -1
           },
         });
       });
@@ -338,8 +336,7 @@ describe('HE Sharding', async () => {
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         let blockNumber = 0;
-        const sortedReports = _.without(
-            Object.keys(body.result), 'latest').sort((a, b) => Number(a) - Number(b));
+        const sortedReports = Object.keys(body.result).sort((a, b) => Number(a) - Number(b));
         for (const key of sortedReports) {
           expect(blockNumber).to.equal(Number(key));
           blockNumber++;
@@ -353,9 +350,10 @@ describe('HE Sharding', async () => {
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        const latest = body.result.latest;
-        const sortedReports = _.without(
-            Object.keys(body.result), 'latest').sort((a, b) => Number(a) - Number(b));
+        const latest = parseOrLog(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/latest_block_number`)
+            .body.toString('utf-8')).result;
+        const sortedReports = Object.keys(body.result).sort((a, b) => Number(a) - Number(b));
         const highest = sortedReports[sortedReports.length - 1];
         expect(latest).to.equal(Number(highest));
       });
@@ -363,9 +361,9 @@ describe('HE Sharding', async () => {
 
     describe('Shard reporter node restart', () => {
       it('can resume reporting after missing some reports', async () => {
-        const reportsBefore = parseOrLog(syncRequest(
-            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
-          .body.toString('utf-8'));
+        const latestBefore = parseOrLog(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/latest_block_number`)
+          .body.toString('utf-8')).result;
         console.log(`        --> Shutting down server[0]...`);
         server1_proc.kill();
         await waitForNewBlocks(server2, sharding.reporting_period);
@@ -377,14 +375,16 @@ describe('HE Sharding', async () => {
         const reportsAfter = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
+        const latestAfter = parseOrLog(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/latest_block_number`)
+          .body.toString('utf-8')).result;
         let blockNumber = 0;
-        const sortedReports = _.without(
-            Object.keys(reportsAfter.result), 'latest').sort((a, b) => Number(a) - Number(b));
+        const sortedReports = Object.keys(reportsAfter.result).sort((a, b) => Number(a) - Number(b));
         for (const key of sortedReports) {
           expect(blockNumber).to.equal(Number(key));
           blockNumber++;
         }
-        expect(reportsAfter.result.latest).to.be.greaterThan(reportsBefore.result.latest);
+        expect(latestAfter).to.be.greaterThan(latestBefore);
       });
     });
   });

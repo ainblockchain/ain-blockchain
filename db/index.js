@@ -1,4 +1,5 @@
-const logger = require('../logger')('DATABASE');
+const logger = new (require('../logger'))('DATABASE');
+
 const {
   FeatureFlags,
   AccountProperties,
@@ -32,7 +33,7 @@ const StateNode = require('./state-node');
 const {
   hasFunctionConfig,
   getFunctionConfig,
-  hasRuleConfig,
+  hasRuleConfigWithProp,
   getRuleConfig,
   hasOwnerConfig,
   getOwnerConfig,
@@ -42,11 +43,13 @@ const {
   isValidRuleTree,
   isValidFunctionTree,
   isValidOwnerTree,
+  applyRuleChange,
   applyFunctionChange,
   applyOwnerChange,
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
-  getProofOfStatePath,
+  getStateProofFromStateRoot,
+  getProofHashFromStateRoot,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -68,14 +71,56 @@ class DB {
     this.stateManager = stateManager;
     this.ownerAddress = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: [] };
+    this.updateRestFunctionsUrlWhitelistCache();
   }
 
-  initDbStates(snapshot) {
-    if (snapshot) {
-      this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.OWNERS_ROOT])));
-      this.writeDatabase([PredefinedDbPaths.RULES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.RULES_ROOT])));
-      this.writeDatabase([PredefinedDbPaths.VALUES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.VALUES_ROOT])));
-      this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.FUNCTIONS_ROOT])));
+  static formatRawRestFunctionsWhitelist(raw) {
+    if (CommonUtil.isEmpty(raw) || !CommonUtil.isDict(raw)) return [];
+    const whitelist = new Set();
+    for (const val of Object.values(raw)) {
+      for (const url of Object.values(val)) {
+        whitelist.add(url);
+      }
+    }
+    return [...whitelist];
+  }
+
+  /**
+   * Compares the state proof hash of the current restFunctionsUrlWhitelistCache and the state proof
+   * hash at the path /developers/rest_functions/url_whitelist, and if outdated, update the cache of
+   * the latest hash and the mapping of whitelisted REST function urls.
+   */
+  updateRestFunctionsUrlWhitelistCache() {
+    const currentHash = this.restFunctionsUrlWhitelistCache.hash;
+    const restFunctionsUrlWhitelistPath = PathUtil.getDevelopersRestFunctionsUrlWhitelistPath();
+    const updatedHash = this.getProofHash(
+        CommonUtil.appendPath(PredefinedDbPaths.VALUES_ROOT, restFunctionsUrlWhitelistPath));
+    if (!currentHash || currentHash !== updatedHash) {
+      const rawWhitelist = this.getValue(restFunctionsUrlWhitelistPath);
+      const whitelist = DB.formatRawRestFunctionsWhitelist(rawWhitelist);
+      this.restFunctionsUrlWhitelistCache = { hash: updatedHash, whitelist };
+    }
+  }
+
+  getRestFunctionsUrlWhitelist() {
+    this.updateRestFunctionsUrlWhitelistCache();
+    return this.restFunctionsUrlWhitelistCache.whitelist;
+  }
+
+  initDbStates(snapshot = null) {
+    if (snapshot !== null) {
+      if (FeatureFlags.enableRadixLevelSnapshots) {
+        const newRoot = StateNode.fromRadixSnapshot(snapshot);
+        updateStateInfoForStateTree(newRoot);
+        this.replaceStateRoot(newRoot);
+        // NOTE(platfowner): No need to finalize the version ('START'), it's already final.
+      } else {
+        this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.OWNERS_ROOT])));
+        this.writeDatabase([PredefinedDbPaths.RULES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.RULES_ROOT])));
+        this.writeDatabase([PredefinedDbPaths.VALUES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.VALUES_ROOT])));
+        this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.FUNCTIONS_ROOT])));
+      }
     } else {
       // Initialize DB owners.
       this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
@@ -102,7 +147,7 @@ class DB {
    */
   setStateVersion(stateVersion, stateRoot) {
     const LOG_HEADER = 'setStateVersion';
-    if (!this.stateVersion === stateVersion) {
+    if (this.stateVersion === stateVersion) {
       logger.error(`[${LOG_HEADER}] State version already set with version: ${stateVersion}`);
       return false;
     }
@@ -117,6 +162,23 @@ class DB {
     this.stateRoot = stateRoot;
 
     return true;
+  }
+
+  /**
+   * Replaces the state root.
+   *
+   * @param {StateNode} newRoot new root to replace with
+   */
+  replaceStateRoot(newRoot) {
+    const LOG_HEADER = 'replaceStateRoot';
+    const newVersion = newRoot.getVersion();
+    if (this.stateManager.hasVersion(newVersion)) {
+      CommonUtil.finishWithStackTrace(
+          logger, `[${LOG_HEADER}] State version already exists: ${newVersion}`);
+    }
+    this.stateManager.setRoot(newVersion, newRoot);
+    this.stateVersion = newVersion;
+    this.stateRoot = newRoot;
   }
 
   /**
@@ -254,11 +316,18 @@ class DB {
     return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager);
   }
 
-  dumpDbStates(options) {
+  takeStateSnapshot() {
     if (this.stateRoot === null) {
       return null;
     }
-    return this.stateRoot.toJsObject(options);
+    return this.stateRoot.toStateSnapshot();
+  }
+ 
+  takeRadixSnapshot() {
+    if (this.stateRoot === null) {
+      return null;
+    }
+    return this.stateRoot.toRadixSnapshot();
   }
 
   // For testing purpose only.
@@ -371,7 +440,7 @@ class DB {
   }
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
-    const tree = StateNode.fromJsObject(stateObj, stateVersion);
+    const tree = StateNode.fromStateSnapshot(stateObj, stateVersion);
     if (!LIGHTWEIGHT) {
       updateStateInfoForStateTree(tree);
     }
@@ -395,7 +464,7 @@ class DB {
     const isGlobal = options && options.isGlobal;
     if (!stateRoot) return null;
     const parsedPath = CommonUtil.parsePath(refPath);
-    const localPath = isGlobal ?  DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
+    const localPath = isGlobal ? DB.toLocalPath(parsedPath, shardingPath) : parsedPath;
     if (localPath === null) {
       // No matched local path.
       return null;
@@ -405,7 +474,7 @@ class DB {
     if (stateNode === null) {
       return null;
     }
-    return stateNode.toJsObject(options);
+    return stateNode.toStateSnapshot(options);
   }
 
   readDatabase(refPath, rootLabel, options) {
@@ -431,13 +500,21 @@ class DB {
   }
 
   /**
-   * Returns a proof of a state node.
+   * Returns proof of a state node.
    * @param {string} statePath full database path to the state node
    */
-  // TODO(platfowner): Consider supporting global path for getStateProof().
   getStateProof(statePath) {
     const parsedPath = CommonUtil.parsePath(statePath);
-    return getProofOfStatePath(this.stateRoot, parsedPath);
+    return getStateProofFromStateRoot(this.stateRoot, parsedPath);
+  }
+
+  /**
+   * Returns proof hash of a state node.
+   * @param {string} statePath full database path to the state node
+   */
+  getProofHash(statePath) {
+    const parsedPath = CommonUtil.parsePath(statePath);
+    return getProofHashFromStateRoot(this.stateRoot, parsedPath);
   }
 
   static getValueFromStateRoot(stateRoot, statePath, isShallow = false) {
@@ -484,8 +561,11 @@ class DB {
       // No matched local path.
       return null;
     }
-    return this.convertRuleMatch(
-        this.matchRuleForParsedPath(localPath), isGlobal);
+    const matched = this.matchRuleForParsedPath(localPath);
+    return {
+      write: this.convertRuleMatch(matched.write, isGlobal),
+      state: this.convertRuleMatch(matched.state, isGlobal)
+    };
   }
 
   matchOwner(rulePath, options) {
@@ -508,7 +588,8 @@ class DB {
       // No matched local path.
       return null;
     }
-    return this.getPermissionForValue(localPath, value, auth, timestamp);
+    const permissions = this.getPermissionForValue(localPath, value, auth, timestamp);
+    return permissions.writePermission && permissions.statePermission;
   }
 
   evalOwner(refPath, permission, auth, options) {
@@ -624,7 +705,8 @@ class DB {
   // TODO(platfowner): Define error code explicitly.
   // TODO(platfowner): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
   //                   and setOwner() as well.
-  setValue(valuePath, value, auth, timestamp, transaction, blockTime, options) {
+  setValue(valuePath, value, auth, timestamp, transaction, blockNumber, blockTime, options) {
+    const LOG_HEADER = 'setValue';
     const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
@@ -640,8 +722,12 @@ class DB {
       // There is nothing to do.
       return CommonUtil.returnTxResult(0, null, 1);
     }
-    if (!this.getPermissionForValue(localPath, value, auth, timestamp)) {
+    const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, timestamp);
+    if (!ruleEvalRes.writePermission) {
       return CommonUtil.returnTxResult(103, `No write permission on: ${valuePath}`, 1);
+    }
+    if (!ruleEvalRes.statePermission) {
+      return CommonUtil.returnTxResult(106, `No state permission on: ${valuePath}`, 1);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);
@@ -664,17 +750,22 @@ class DB {
         blockTime = this.lastBlockTimestamp();
       }
       const { func_results } =
-          this.func.triggerFunctions(localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockTime);
+          this.func.triggerFunctions(localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime);
       funcResults = func_results;
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
         return CommonUtil.returnTxResult(105, `Triggered function call failed`, 1, funcResults);
       }
     }
+    if (value !== null) {
+      // NOTE(liayoo): Only apply the state garbage collection rules when it's not a deletion.
+      const applyStateGcRuleRes = this.applyStateGarbageCollectionRule(ruleEvalRes.matched.state, localPath);
+      logger.debug(`[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
+    }
 
     return CommonUtil.returnTxResult(0, null, 1, funcResults);
   }
 
-  incValue(valuePath, delta, auth, timestamp, transaction, blockTime, options) {
+  incValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
     const isGlobal = options && options.isGlobal;
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -682,10 +773,11 @@ class DB {
       return CommonUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`, 1);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) + delta;
-    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, blockTime, options);
+    return this.setValue(
+        valuePath, valueAfter, auth, timestamp, transaction, blockNumber, blockTime, options);
   }
 
-  decValue(valuePath, delta, auth, timestamp, transaction, blockTime, options) {
+  decValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
     const isGlobal = options && options.isGlobal;
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
@@ -693,7 +785,8 @@ class DB {
       return CommonUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`, 1);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) - delta;
-    return this.setValue(valuePath, valueAfter, auth, timestamp, transaction, blockTime, options);
+    return this.setValue(
+        valuePath, valueAfter, auth, timestamp, transaction, blockNumber, blockTime, options);
   }
 
   setFunction(functionPath, func, auth, options) {
@@ -758,9 +851,10 @@ class DB {
     if (!this.getPermissionForRule(localPath, auth)) {
       return CommonUtil.returnTxResult(503, `No write_rule permission on: ${rulePath}`, 1);
     }
+    const curRule = this.getRule(rulePath, { isShallow: false, isGlobal });
+    const newRule = applyRuleChange(curRule, rule);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
-    const ruleCopy = CommonUtil.isDict(rule) ? JSON.parse(JSON.stringify(rule)) : rule;
-    this.writeDatabase(fullPath, ruleCopy);
+    this.writeDatabase(fullPath, newRule);
     return CommonUtil.returnTxResult(0, null, 1);
   }
 
@@ -834,18 +928,24 @@ class DB {
     return globalPath;
   }
 
-  executeSingleSetOperation(op, auth, timestamp, tx, blockTime) {
+  executeSingleSetOperation(op, auth, timestamp, tx, blockNumber, blockTime) {
     let result;
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        result = this.setValue(op.ref, op.value, auth, timestamp, tx, blockTime, CommonUtil.toSetOptions(op));
+        result = this.setValue(
+            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime,
+            CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.INC_VALUE:
-        result = this.incValue(op.ref, op.value, auth, timestamp, tx, blockTime, CommonUtil.toSetOptions(op));
+        result = this.incValue(
+            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime,
+            CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.DEC_VALUE:
-        result = this.decValue(op.ref, op.value, auth, timestamp, tx, blockTime, CommonUtil.toSetOptions(op));
+        result = this.decValue(
+            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime,
+            CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_FUNCTION:
         result = this.setFunction(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
@@ -862,11 +962,12 @@ class DB {
     return result;
   }
 
-  executeMultiSetOperation(opList, auth, timestamp, tx, blockTime) {
+  executeMultiSetOperation(opList, auth, timestamp, tx, blockNumber, blockTime) {
     const resultList = {};
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
-      const result = this.executeSingleSetOperation(op, auth, timestamp, tx, blockTime);
+      const result =
+          this.executeSingleSetOperation(op, auth, timestamp, tx, blockNumber, blockTime);
       resultList[i] = result;
       if (CommonUtil.isFailedTx(result)) {
         break;
@@ -876,12 +977,13 @@ class DB {
   }
 
   static updateGasAmountTotal(tx, gasAmountTotal, executionResult) {
-    gasAmountTotal.bandwidth = CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, executionResult);
+    gasAmountTotal.bandwidth =
+        CommonUtil.getTotalBandwidthGasAmount(tx.tx_body.operation, executionResult);
     executionResult.gas_amount_total = gasAmountTotal;
     tx.setExtraField('gas', gasAmountTotal);
   }
 
-  executeOperation(op, auth, timestamp, tx, blockTime) {
+  executeOperation(op, auth, timestamp, tx, blockNumber, blockTime) {
     const gasAmountTotal = {
       bandwidth: { service: 0 },
       state: { service: 0 }
@@ -898,9 +1000,12 @@ class DB {
     const allStateUsageBefore = this.getAllStateUsages();
     const stateUsagePerAppBefore = this.getStateUsagePerApp(op);
     if (op.type === WriteDbOperations.SET) {
-      Object.assign(result, this.executeMultiSetOperation(op.op_list, auth, timestamp, tx, blockTime));
+      Object.assign(
+          result,
+          this.executeMultiSetOperation(op.op_list, auth, timestamp, tx, blockNumber, blockTime));
     } else {
-      Object.assign(result, this.executeSingleSetOperation(op, auth, timestamp, tx, blockTime));
+      Object.assign(
+          result, this.executeSingleSetOperation(op, auth, timestamp, tx, blockNumber, blockTime));
     }
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
     DB.updateGasAmountTotal(tx, gasAmountTotal, result);
@@ -913,8 +1018,10 @@ class DB {
       //                   done in isValidTxBody() when transactions are created.
       const allStateUsageAfter = this.getAllStateUsages();
       DB.updateStateGasAmount(
-          tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore, stateUsagePerAppAfter);
-      const stateGasBudgetCheck = this.checkStateGasBudgets(op, allStateUsageAfter.apps, allStateUsageAfter.service, result);
+          tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore,
+          stateUsagePerAppAfter);
+      const stateGasBudgetCheck = this.checkStateGasBudgets(
+          op, allStateUsageAfter.apps, allStateUsageAfter.service, result);
       if (stateGasBudgetCheck !== true) {
         return stateGasBudgetCheck;
       }
@@ -925,7 +1032,9 @@ class DB {
     return result;
   }
 
-  static updateStateGasAmount(tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore, stateUsagePerAppAfter) {
+  static updateStateGasAmount(
+      tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore,
+      stateUsagePerAppAfter) {
     const LOG_HEADER = 'updateStateGasAmounts';
     const serviceTreeBytesDelta =
         _.get(allStateUsageAfter, `service.${StateInfoProperties.TREE_BYTES}`, 0) -
@@ -1086,7 +1195,8 @@ class DB {
         (CommonUtil.isFailedTx(executionResult) ? 0 : serviceStateGasAmount);
     if (gasAmountChargedByTransfer <= 0 || gasPrice === 0) { // No fees to collect
       executionResult.gas_amount_charged = gasAmountChargedByTransfer;
-      executionResult.gas_cost_total = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer);
+      executionResult.gas_cost_total =
+          CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer);
       return;
     }
     const billing = tx.tx_body.billing;
@@ -1110,11 +1220,14 @@ class DB {
       gasAmountChargedByTransfer = Math.min(balance, serviceBandwidthGasAmount);
     }
     executionResult.gas_amount_charged = gasAmountChargedByTransfer;
-    executionResult.gas_cost_total = CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged);
+    executionResult.gas_cost_total =
+        CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged);
     if (executionResult.gas_cost_total <= 0) return;
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(blockNumber, billedTo, tx.hash);
     const gasFeeCollectRes = this.setValue(
-        gasFeeCollectPath, { amount: executionResult.gas_cost_total }, auth, timestamp, tx, null);
+        gasFeeCollectPath,
+        { amount: executionResult.gas_cost_total },
+        auth, timestamp, tx, blockNumber, null);
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) { // Should not happend
       Object.assign(executionResult, {
         code: 18,
@@ -1132,7 +1245,8 @@ class DB {
     ]);
     if (executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST]) {
       trimmed[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST] = {};
-      for (const [key, val] of Object.entries(executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST])) {
+      for (const [key, val] of Object.entries(
+          executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST])) {
         trimmed[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST][key] = _.pick(val, [
           PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
           PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
@@ -1154,7 +1268,20 @@ class DB {
     }
     // NOTE(liayoo): necessary balance & permission checks have been done in precheckTransaction()
     //               and collectFee().
-    this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...CommonUtil.parsePath(receiptPath)], receipt);
+    const parsedPath = CommonUtil.parsePath(receiptPath);
+    this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...parsedPath], receipt);
+  }
+
+  removeOldReceipts() {
+    const LOG_HEADER = 'removeOldReceipts';
+    const receiptsPath = [PredefinedDbPaths.RECEIPTS, 'a']; // dummy value to garbage-collect at /receipts/$tx_hash.
+    const matchedStateRule = this.matchRulePath(receiptsPath, RuleProperties.STATE);
+    const closestRule = {
+      path: matchedStateRule.matchedRulePath.slice(0, matchedStateRule.closestConfigDepth),
+      config: getRuleConfig(matchedStateRule.closestConfigNode)
+    };
+    const applyStateGcRuleRes = this.applyStateGarbageCollectionRule({ closestRule }, receiptsPath);
+    logger.debug(`[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
   }
 
   isBillingUser(billingAppName, billingId, userAddr) {
@@ -1239,7 +1366,7 @@ class DB {
     return true;
   }
 
-  precheckTransaction(tx, blockNumber) {
+  precheckTransaction(tx, skipFees, blockNumber) {
     const LOG_HEADER = 'precheckTransaction';
     // NOTE(platfowner): A transaction needs to be converted to an executable form
     //                   before being executed.
@@ -1260,20 +1387,22 @@ class DB {
     if (checkNonceTimestampResult !== true) {
       return checkNonceTimestampResult;
     }
-    const checkBillingResult = this.precheckTxBillingParams(op, addr, billing, blockNumber);
-    if (checkBillingResult !== true) {
-      return checkBillingResult;
-    }
-    const checkBalanceResult = this.precheckBalanceAndStakes(op, addr, billing, blockNumber);
-    if (checkBalanceResult !== true) {
-      return checkBalanceResult;
+    if (!skipFees) {
+      const checkBillingResult = this.precheckTxBillingParams(op, addr, billing, blockNumber);
+      if (checkBillingResult !== true) {
+        return checkBillingResult;
+      }
+      const checkBalanceResult = this.precheckBalanceAndStakes(op, addr, billing, blockNumber);
+      if (checkBalanceResult !== true) {
+        return checkBalanceResult;
+      }
     }
     return true;
   }
 
   executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
     const LOG_HEADER = 'executeTransaction';
-    const precheckResult = this.precheckTransaction(tx, blockNumber);
+    const precheckResult = this.precheckTransaction(tx, skipFees, blockNumber);
     if (precheckResult !== true) {
       logger.debug(`[${LOG_HEADER}] Pre-check failed`);
       return precheckResult;
@@ -1290,7 +1419,8 @@ class DB {
     // NOTE(platfowner): It's not allowed for users to send transactions with auth.fid.
     const auth = { addr: tx.address };
     const timestamp = txBody.timestamp;
-    const executionResult = this.executeOperation(txBody.operation, auth, timestamp, tx, blockTime);
+    const executionResult =
+        this.executeOperation(txBody.operation, auth, timestamp, tx, blockNumber, blockTime);
     if (CommonUtil.isFailedTx(executionResult)) {
       if (restoreIfFails) {
         this.restoreDb();
@@ -1307,12 +1437,14 @@ class DB {
     return executionResult;
   }
 
-  executeTransactionList(txList, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
+  executeTransactionList(
+      txList, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
       const executableTx = Transaction.toExecutable(tx);
-      const res = this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime);
+      const res =
+        this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime);
       if (CommonUtil.isFailedTx(res)) {
         logger.debug(`[${LOG_HEADER}] tx failed: ${JSON.stringify(executableTx, null, 2)}` +
             `\nresult: ${JSON.stringify(res)}`);
@@ -1359,29 +1491,39 @@ class DB {
   // TODO(platfowner): Eval subtree rules.
   getPermissionForValue(parsedValuePath, newValue, auth, timestamp) {
     const LOG_HEADER = 'getPermissionForValue';
+    // Evaluate write rules and return matched configs
     const matched = this.matchRuleForParsedPath(parsedValuePath);
+    const matchedWriteRules = matched.write;
+    const matchedStateRules = matched.state;
     const value = this.getValue(CommonUtil.formatPath(parsedValuePath));
     const data =
-        this.addPathToValue(value, matched.matchedValuePath, matched.closestRule.path.length);
+        this.addPathToValue(value, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
     const newData =
-        this.addPathToValue(newValue, matched.matchedValuePath, matched.closestRule.path.length);
-    let evalRuleRes = false;
+        this.addPathToValue(newValue, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
+    let evalWriteRuleRes = false;
+    let evalStateRuleRes = false;
     try {
-      evalRuleRes = !!this.evalRuleConfig(
-        matched.closestRule.config, matched.pathVars, data, newData, auth, timestamp);
-      if (!evalRuleRes) {
-        logger.debug(`[${LOG_HEADER}] evalRuleRes ${evalRuleRes}, ` +
-          `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
-          `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
-          `timestamp: ${timestamp}\n`);
+      evalWriteRuleRes = !!this.evalWriteRuleConfig(
+        matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
+      if (!evalWriteRuleRes) {
+        logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${evalWriteRuleRes}, ` +
+            `matched: ${JSON.stringify(matchedWriteRules, null, 2)}, data: ${JSON.stringify(data)}, ` +
+            `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
+            `timestamp: ${timestamp}\n`);
+      }
+      evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
+      if (!evalStateRuleRes) {
+        logger.debug(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
+            `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
+            `newValue: ${JSON.stringify(newValue)}\n`);
       }
     } catch (err) {
-      logger.debug(`[${LOG_HEADER}] Failed to eval rule.\n` +
+      logger.error(`[${LOG_HEADER}] Failed to eval rule.\n` +
           `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
           `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
           `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
     }
-    return evalRuleRes;
+    return { writePermission: evalWriteRuleRes, statePermission: evalStateRuleRes, matched };
   }
 
   getPermissionForRule(parsedRulePath, auth) {
@@ -1554,7 +1696,7 @@ class DB {
   }
 
   // Does a DFS search to find most specific nodes matched in the rule tree.
-  matchRulePathRecursive(parsedValuePath, depth, curRuleNode) {
+  matchRulePathRecursive(parsedValuePath, depth, curRuleNode, ruleProp) {
     // Maximum depth reached.
     if (depth === parsedValuePath.length) {
       return {
@@ -1562,18 +1704,18 @@ class DB {
         matchedRulePath: [],
         pathVars: {},
         matchedRuleNode: curRuleNode,
-        closestConfigNode: hasRuleConfig(curRuleNode) ? curRuleNode : null,
-        closestConfigDepth: hasRuleConfig(curRuleNode) ? depth : 0,
+        closestConfigNode: hasRuleConfigWithProp(curRuleNode, ruleProp) ? curRuleNode : null,
+        closestConfigDepth: hasRuleConfigWithProp(curRuleNode, ruleProp) ? depth : 0,
       };
     }
     if (curRuleNode) {
       // 1) Try to match with non-variable child node.
       const nextRuleNode = curRuleNode.getChild(parsedValuePath[depth]);
       if (nextRuleNode !== null) {
-        const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
+        const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode, ruleProp);
         matched.matchedValuePath.unshift(parsedValuePath[depth]);
         matched.matchedRulePath.unshift(parsedValuePath[depth]);
-        if (!matched.closestConfigNode && hasRuleConfig(curRuleNode)) {
+        if (!matched.closestConfigNode && hasRuleConfigWithProp(curRuleNode, ruleProp)) {
           matched.closestConfigNode = curRuleNode;
           matched.closestConfigDepth = depth;
         }
@@ -1584,7 +1726,7 @@ class DB {
       const varLabel = DB.getVariableLabel(curRuleNode);
       if (varLabel !== null) {
         const nextRuleNode = curRuleNode.getChild(varLabel);
-        const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode);
+        const matched = this.matchRulePathRecursive(parsedValuePath, depth + 1, nextRuleNode, ruleProp);
         matched.matchedValuePath.unshift(parsedValuePath[depth]);
         matched.matchedRulePath.unshift(varLabel);
         if (matched.pathVars[varLabel] !== undefined) {
@@ -1593,7 +1735,7 @@ class DB {
         } else {
           matched.pathVars[varLabel] = parsedValuePath[depth];
         }
-        if (!matched.closestConfigNode && hasRuleConfig(curRuleNode)) {
+        if (!matched.closestConfigNode && hasRuleConfigWithProp(curRuleNode, ruleProp)) {
           matched.closestConfigNode = curRuleNode;
           matched.closestConfigDepth = depth;
         }
@@ -1606,19 +1748,19 @@ class DB {
       matchedRulePath: [],
       pathVars: {},
       matchedRuleNode: curRuleNode,
-      closestConfigNode: hasRuleConfig(curRuleNode) ? curRuleNode : null,
-      closestConfigDepth: hasRuleConfig(curRuleNode) ? depth : 0,
+      closestConfigNode: hasRuleConfigWithProp(curRuleNode, ruleProp) ? curRuleNode : null,
+      closestConfigDepth: hasRuleConfigWithProp(curRuleNode, ruleProp) ? depth : 0,
     };
   }
 
-  matchRulePath(parsedValuePath) {
+  matchRulePath(parsedValuePath, ruleProp) {
     return this.matchRulePathRecursive(
-        parsedValuePath, 0, this.stateRoot.getChild(PredefinedDbPaths.RULES_ROOT));
+        parsedValuePath, 0, this.stateRoot.getChild(PredefinedDbPaths.RULES_ROOT), ruleProp);
   }
 
-  getSubtreeRulesRecursive(depth, curRuleNode) {
+  getSubtreeRulesRecursive(depth, curRuleNode, ruleProp) {
     const rules = [];
-    if (depth !== 0 && hasRuleConfig(curRuleNode)) {
+    if (depth !== 0 && hasRuleConfigWithProp(curRuleNode, ruleProp)) {
       rules.push({
         path: [],
         config: getRuleConfig(curRuleNode),
@@ -1630,7 +1772,7 @@ class DB {
       for (const label of curRuleNode.getChildLabels()) {
         const nextRuleNode = curRuleNode.getChild(label);
         if (label !== varLabel) {
-          const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode);
+          const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode, ruleProp);
           subtreeRules.forEach((entry) => {
             entry.path.unshift(label);
             rules.push(entry);
@@ -1640,7 +1782,7 @@ class DB {
       // 2) Traverse variable child node if available.
       if (varLabel !== null) {
         const nextRuleNode = curRuleNode.getChild(varLabel);
-        const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode);
+        const subtreeRules = this.getSubtreeRulesRecursive(depth + 1, nextRuleNode, ruleProp);
         subtreeRules.forEach((entry) => {
           entry.path.unshift(varLabel);
           rules.push(entry);
@@ -1650,23 +1792,36 @@ class DB {
     return rules;
   }
 
-  getSubtreeRules(ruleNode) {
-    return this.getSubtreeRulesRecursive(0, ruleNode);
+  getSubtreeRules(ruleNode, ruleProp) {
+    return this.getSubtreeRulesRecursive(0, ruleNode, ruleProp);
   }
 
   matchRuleForParsedPath(parsedValuePath) {
-    const matched = this.matchRulePath(parsedValuePath);
-    const subtreeRules = this.getSubtreeRules(matched.matchedRuleNode);
+    const matchedWriteRule = this.matchRulePath(parsedValuePath, RuleProperties.WRITE);
+    const matchedStateRule = this.matchRulePath(parsedValuePath, RuleProperties.STATE);
+    // Only write rules matched for the subtree
+    const subtreeRules = this.getSubtreeRules(matchedWriteRule.matchedRuleNode, RuleProperties.WRITE);
     return {
-      matchedValuePath: matched.matchedValuePath,
-      matchedRulePath: matched.matchedRulePath,
-      pathVars: matched.pathVars,
-      closestRule: {
-        path: matched.matchedRulePath.slice(0, matched.closestConfigDepth),
-        config: getRuleConfig(matched.closestConfigNode),
+      write: {
+        matchedValuePath: matchedWriteRule.matchedValuePath,
+        matchedRulePath: matchedWriteRule.matchedRulePath,
+        pathVars: matchedWriteRule.pathVars,
+        closestRule: {
+          path: matchedWriteRule.matchedRulePath.slice(0, matchedWriteRule.closestConfigDepth),
+          config: getRuleConfig(matchedWriteRule.closestConfigNode)
+        },
+        subtreeRules
       },
-      subtreeRules,
-    }
+      state: {
+        matchedValuePath: matchedStateRule.matchedValuePath,
+        matchedRulePath: matchedStateRule.matchedRulePath,
+        pathVars: matchedStateRule.pathVars,
+        closestRule: {
+          path: matchedStateRule.matchedRulePath.slice(0, matchedStateRule.closestConfigDepth),
+          config: getRuleConfig(matchedStateRule.closestConfigNode)
+        }
+      }
+    };
   }
 
   convertRuleMatch(matched, isGlobal) {
@@ -1674,42 +1829,95 @@ class DB {
         this.toGlobalPath(matched.matchedRulePath) : matched.matchedRulePath;
     const valuePath = isGlobal ?
         this.toGlobalPath(matched.matchedValuePath) : matched.matchedValuePath;
-    const subtreeRules = matched.subtreeRules.map((entry) =>
-      this.convertPathAndConfig(entry, false));
-    return {
+    const converted = {
       matched_path: {
         target_path: CommonUtil.formatPath(rulePath),
         ref_path: CommonUtil.formatPath(valuePath),
         path_vars: matched.pathVars,
       },
       matched_config: this.convertPathAndConfig(matched.closestRule, isGlobal),
-      subtree_configs: subtreeRules,
-    };
+    }
+    if (matched.subtreeRules) {
+      converted.subtree_configs = matched.subtreeRules.map((entry) =>
+          this.convertPathAndConfig(entry, false));
+    }
+    return converted;
   }
 
   // TODO(minsulee2): Need to be investigated. Using new Function() is not recommended.
-  makeEvalFunction(ruleString, pathVars) {
+  makeWriteRuleEvalFunction(ruleString, pathVars) {
     return new Function('auth', 'data', 'newData', 'currentTime', 'getValue', 'getRule',
         'getFunction', 'getOwner', 'evalRule', 'evalOwner', 'util', 'lastBlockNumber',
         ...Object.keys(pathVars), '"use strict"; return ' + ruleString);
   }
 
   // TODO(platfowner): Extend function for auth.fid.
-  evalRuleConfig(ruleConfig, pathVars, data, newData, auth, timestamp) {
-    if (!CommonUtil.isDict(ruleConfig)) {
+  evalWriteRuleConfig(writeRuleConfig, pathVars, data, newData, auth, timestamp) {
+    if (!CommonUtil.isDict(writeRuleConfig)) {
       return false;
     }
-    const ruleString = ruleConfig[RuleProperties.WRITE];
-    if (typeof ruleString === 'boolean') {
-      return ruleString;
-    } else if (typeof ruleString !== 'string') {
+    const writeRuleString = writeRuleConfig[RuleProperties.WRITE];
+    if (typeof writeRuleString === 'boolean') {
+      return writeRuleString;
+    } else if (typeof writeRuleString !== 'string') {
       return false;
     }
-    const evalFunc = this.makeEvalFunction(ruleString, pathVars);
-    return evalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
+    const writeRuleEvalFunc = this.makeWriteRuleEvalFunction(writeRuleString, pathVars);
+    return writeRuleEvalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
         this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
         this.evalRule.bind(this), this.evalOwner.bind(this),
         new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
+  }
+
+  evalStateRuleConfig(stateRuleConfig, newValue) {
+    if (!CommonUtil.isDict(stateRuleConfig)) {
+      return true;
+    }
+    if (!CommonUtil.isDict(newValue)) {
+      return true;
+    }
+    const stateRuleObj = stateRuleConfig[RuleProperties.STATE];
+    if (CommonUtil.isEmpty(stateRuleObj)) {
+      return true;
+    }
+    if (!stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+      return true;
+    }
+    const maxChildren = stateRuleObj[RuleProperties.MAX_CHILDREN];
+    return Object.keys(newValue).length <= maxChildren;
+  }
+
+  applyStateGarbageCollectionRule(matchedRules, parsedValuePath) {
+    const stateRuleConfig = matchedRules.closestRule.config;
+    if (!CommonUtil.isDict(stateRuleConfig)) {
+      return 0;
+    }
+    const stateRuleObj = stateRuleConfig[RuleProperties.STATE];
+    if (CommonUtil.isEmpty(stateRuleObj) || !stateRuleObj[RuleProperties.GC_MAX_SIBLINGS]) {
+      return 0;
+    }
+    const gcMaxSiblings = stateRuleObj[RuleProperties.GC_MAX_SIBLINGS];
+    // Check the number of children of the parent
+    const parentPathLen = matchedRules.closestRule.path.length - 1;
+    if (parentPathLen < 0) {
+      return 0;
+    }
+    const parentPath = [PredefinedDbPaths.VALUES_ROOT, ...parsedValuePath.slice(0, parentPathLen)];
+    const stateNodeForReading = this.getRefForReading(parentPath);
+    if (stateNodeForReading === null) {
+      return 0;
+    }
+    if (stateNodeForReading.numChildren() <= gcMaxSiblings) {
+      return 0;
+    }
+    let numDeleted = 0;
+    const childLabelList = stateNodeForReading.getChildLabels();
+    const numChildren = childLabelList.length;
+    while (numChildren - numDeleted > gcMaxSiblings) {
+      const childLabel = childLabelList[numDeleted++];
+      this.writeDatabase([...parentPath, childLabel], null);
+    }
+    return numDeleted;
   }
 
   lastBlockNumber() {
