@@ -601,9 +601,9 @@ function hasConfigLabelOnly(stateTreeObj, configLabel) {
  * @param {Object} curRuleTree current rule tree (to be modified by this rule)
  * @param {Object} ruleChange rule change
  */
+// NOTE(platfowner): Partial set is applied only when the current rule tree has
+// .rule property and the rule change has .rule property as the only property.
 function applyRuleChange(curRuleTree, ruleChange) {
-  // NOTE(platfowner): Partial set is applied only when the current rule tree has
-  // .rule property and the rule change has .rule property as the only property.
   if (!hasConfigLabel(curRuleTree, PredefinedDbPaths.DOT_RULE) ||
       !hasConfigLabelOnly(ruleChange, PredefinedDbPaths.DOT_RULE)) {
     return CommonUtil.isDict(ruleChange) ?
@@ -642,9 +642,9 @@ function applyRuleChange(curRuleTree, ruleChange) {
  * @param {Object} curFuncTree current function tree (to be modified by this function)
  * @param {Object} functionChange function change
  */
+// NOTE(platfowner): Partial set is applied only when the current function tree has
+// .function property and the function change has .function property as the only property.
 function applyFunctionChange(curFuncTree, functionChange) {
-  // NOTE(platfowner): Partial set is applied only when the current function tree has
-  // .function property and the function change has .function property as the only property.
   if (!hasConfigLabel(curFuncTree, PredefinedDbPaths.DOT_FUNCTION) ||
       !hasConfigLabelOnly(functionChange, PredefinedDbPaths.DOT_FUNCTION)) {
     return CommonUtil.isDict(functionChange) ?
@@ -681,9 +681,9 @@ function applyFunctionChange(curFuncTree, functionChange) {
  * @param {Object} curOwnerTree current owner tree (to be modified by this function)
  * @param {Object} ownerChange owner change
  */
+// NOTE(platfowner): Partial set is applied only when the current owner tree has
+// .owner property and the owner change has .owner property as the only property.
 function applyOwnerChange(curOwnerTree, ownerChange) {
-  // NOTE(platfowner): Partial set is applied only when the current owner tree has
-  // .owner property and the owner change has .owner property as the only property.
   if (!hasConfigLabel(curOwnerTree, PredefinedDbPaths.DOT_OWNER) ||
       !hasConfigLabelOnly(ownerChange, PredefinedDbPaths.DOT_OWNER)) {
     return CommonUtil.isDict(ownerChange) ?

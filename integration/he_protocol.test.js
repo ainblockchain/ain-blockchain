@@ -246,7 +246,7 @@ describe('HE Protocol', () => {
           ref: `${appScenario1TaskPath}`,
           value: {
             ".rule": {
-              "write": "some rule config"
+              "write": "auth.addr === 'xyz'"
             }
           },
           gas_price: 1,
@@ -285,7 +285,7 @@ describe('HE Protocol', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(ruleAfter, {
           ".rule": {
-            "write": "some rule config"
+            "write": "auth.addr === 'xyz'"
           }
         });
       });
