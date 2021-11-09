@@ -303,7 +303,7 @@ function isValidStateRule(stateRule) {
  * @param {Object} ruleConfigObj rule config object
  */
 // NOTE(platfowner): Should have the same parameters as isValidFunctionConfig() and
-// isValidOwnerConfig().
+// isValidOwnerConfig() to be used with isValidConfigTreeRecursive().
 function isValidRuleConfig(configPath, ruleConfigObj) {
   if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
@@ -380,7 +380,7 @@ function isValidFunctionInfo(functionInfoObj) {
  * @param {Object} functionConfigObj function config object
  */
 // NOTE(platfowner): Should have the same parameters as isValidRuleConfig() and
-// isValidOwnerConfig().
+// isValidOwnerConfig() to be used with isValidConfigTreeRecursive().
 function isValidFunctionConfig(configPath, functionConfigObj) {
   if (!CommonUtil.isDict(functionConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
@@ -449,7 +449,7 @@ function isValidOwnerPermissions(ownerPermissionsObj) {
  * @param {Object} ownerConfigObj owner config object
  */
 // NOTE(platfowner): Should have the same parameters as isValidFunctionConfig() and
-// isValidRuleConfig().
+// isValidRuleConfig() to be used with isValidConfigTreeRecursive().
 function isValidOwnerConfig(configPath, ownerConfigObj) {
   if (!CommonUtil.isDict(ownerConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
