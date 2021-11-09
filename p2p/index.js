@@ -1,7 +1,6 @@
 /* eslint no-mixed-operators: "off" */
 const _ = require('lodash');
 const P2pServer = require('./server');
-const P2pRouter = require('./router');
 const Websocket = require('ws');
 const jayson = require('jayson');
 const logger = require('../logger')('P2P_CLIENT');
@@ -186,6 +185,19 @@ class P2pClient {
     return stats;
   }
 
+  assignRandomPeers() {
+    const candidates = Object.values(this.outbound)
+      .filter(peer =>
+        peer.isAlive === true &&
+        peer.peerInfo.networkStatus.connectionStatus.incomingPeers.length <
+            peer.peerInfo.networkStatus.connectionStatus.maxInbound)
+      .sort((a, b) =>
+        a.peerInfo.networkStatus.connectionStatus.incomingPeers -
+            b.peerInfo.networkStatus.connectionStatus.incomingPeers)
+      .map(peer => peer.peerInfo.networkStatus.p2p.url);
+    return candidates;
+  }
+
   getRouteStatus() {
     return {
       availableForConnect: this.maxInbound > Object.keys(this.server.inbound).length,
@@ -193,9 +205,7 @@ class P2pClient {
       routeList: Object.values(this.outbound).map(peer => {
         return peer.peerInfo.networkStatus.jsonRpc.url;
       }),
-      newPeerInfoList: Object.values(this.outbound).map(peer => {
-        return peer.peerInfo.networkStatus.p2p.url;
-      })
+      newPeerInfoList: this.assignRandomPeers()
     }
   }
 
@@ -590,35 +600,6 @@ class P2pClient {
     });
   }
 
-  getMaxNumberOfNewPeers() {
-    const numOfCandidates = this.targetOutBound - Object.keys(this.outbound).length;
-    if (numOfCandidates > 0) {
-      return numOfCandidates;
-    } else {
-      return 0;
-    }
-  }
-
-  assignRandomPeers() {
-    const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
-    if (maxNumberOfNewPeers) {
-      const candidates = Object.values(this.server.inbound)
-        .filter(peer =>
-          peer.peerInfo.address !== this.server.getNodeAddress() &&
-          peer.peerInfo.isAlive === true &&
-          !peer.peerInfo.networkStatus.connectionStatus.incomingPeers.includes(nodeInfo.address) &&
-          peer.peerInfo.networkStatus.connectionStatus.incomingPeers.length <
-              peer.peerInfo.networkStatus.connectionStatus.maxInbound)
-        .sort((a, b) =>
-          a.peerInfo.networkStatus.connectionStatus.incomingPeers -
-              b.peerInfo.networkStatus.connectionStatus.incomingPeers)
-        .slice(0, maxNumberOfNewPeers);
-      return candidates;
-    } else {
-      return [];
-    }
-  }
-
   async connectToRouter(router) {
     const jsonRpcClient = jayson.client.http(router);
     const routeInfo = await this.queryOnNode(jsonRpcClient);
@@ -680,8 +661,18 @@ class P2pClient {
     return null;
   }
 
+  getMaxNumberOfNewPeers() {
+    const numOfCandidates = this.targetOutBound - Object.keys(this.outbound).length;
+    if (numOfCandidates > 0) {
+      return numOfCandidates;
+    } else {
+      return 0;
+    }
+  }
+
   connectToPeers(newPeerInfoList) {
-    newPeerInfoList.forEach(url => {
+    const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
+    newPeerInfoList.slice(0, maxNumberOfNewPeers).forEach(url => {
       const address = this.getAddressFromP2pUrl(url);
       console.log(address);
       if (address) {
