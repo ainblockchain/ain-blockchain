@@ -658,6 +658,7 @@ const TrafficEventTypes = {
 
 const IpAddressRegex = /^(http(s)?:\/\/)((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
 const localhostRegex = /^(http(s)?:\/\/)localhost(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
+const JSON_RPC_ENDPOINT = '/json-rpc';
 
 const INITIAL_P2P_ROUTER = (() => {
   const hostingEnv = GenesisParams.blockchain.HOSTING_ENV;
@@ -668,17 +669,17 @@ const INITIAL_P2P_ROUTER = (() => {
     case 'local':
       const matchedLocalEnv = lowerEnv.match(localhostRegex);
       if (matchedLocalEnv) {
-        url = matchedLocalEnv.input;
+        url = matchedLocalEnv.input + JSON_RPC_ENDPOINT;
       } else {
-        url = `http://localhost:8081`;
+        url = `http://localhost:8081${JSON_RPC_ENDPOINT}`;
       }
       break;
     case 'gcp':
       const matchedGcpEnv = lowerEnv.match(IpAddressRegex);
       if (matchedGcpEnv) {
-        url = matchedGcpEnv.input;
+        url = matchedGcpEnv.input + JSON_RPC_ENDPOINT;
       } else {
-        url = 'https://testnet-api.ainetwork.ai';
+        url = `https://testnet-api.ainetwork.ai${JSON_RPC_ENDPOINT}`;
       }
       break;
     default:

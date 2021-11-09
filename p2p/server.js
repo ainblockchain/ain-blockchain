@@ -427,7 +427,7 @@ class P2pServer {
               };
               const body = {
                 address: this.getNodeAddress(),
-                networkStatus: this.client.getNetworkStatus(),
+                peerInfo: this.client.getStatus(),
                 timestamp: Date.now(),
               };
               const signature = signMessage(body, this.getNodePrivateKey());
@@ -443,7 +443,8 @@ class P2pServer {
               }
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
-                this.client.connectToPeer(peerInfo.networkStatus);
+                const url = peerInfo.networkStatus.p2p.url;
+                this.client.connectToPeer(url);
               }
             }
             break;
