@@ -57,8 +57,8 @@ const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPT
     Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
 const ACCOUNT_INJECTION_OPTION = process.env.ACCOUNT_INJECTION_OPTION || null;
 const KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
-const ENABLE_TRACKER_REPORT =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_TRACKER_REPORT, true);
+const ENABLE_STATUS_REPORT_TO_TRACKER =
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_STATUS_REPORT_TO_TRACKER, true);
 const DEFAULT_CORS_WHITELIST = ['https://ainetwork.ai', 'https://ainize.ai', 'https://afan.ai',
     /\.ainetwork\.ai$/, /\.ainize\.ai$/, /\.afan\.ai$/, 'http://localhost:3000'];
 // NOTE(liayoo): CORS_WHITELIST env var is a comma-separated list of cors-allowed domains.
@@ -684,38 +684,6 @@ const TrafficEventTypes = {
   CLIENT_API_SET: 'client_api_set',
 };
 
-const IpAddressRegex = /^(http(s)?:\/\/)((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
-const localhostRegex = /^(http(s)?:\/\/)localhost(:(0|[1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5]))?$/;
-const JSON_RPC_ENDPOINT = '/json-rpc';
-
-const INITIAL_P2P_ROUTER = (() => {
-  const hostingEnv = GenesisParams.blockchain.HOSTING_ENV;
-  const p2pRouterEnv = process.env.P2P_ROUTER_URL || '';
-  const lowerEnv = p2pRouterEnv.toLowerCase();
-  let url;
-  switch (hostingEnv) {
-    case 'local':
-      const matchedLocalEnv = lowerEnv.match(localhostRegex);
-      if (matchedLocalEnv) {
-        url = matchedLocalEnv.input + JSON_RPC_ENDPOINT;
-      } else {
-        url = `http://localhost:8081${JSON_RPC_ENDPOINT}`;
-      }
-      break;
-    case 'gcp':
-      const matchedGcpEnv = lowerEnv.match(IpAddressRegex);
-      if (matchedGcpEnv) {
-        url = matchedGcpEnv.input + JSON_RPC_ENDPOINT;
-      } else {
-        url = `https://testnet-api.ainetwork.ai${JSON_RPC_ENDPOINT}`;
-      }
-      break;
-    default:
-      throw Error(`Wrong hosting environment(${hostingEnv}) is set. Please try again.`);
-  }
-  return url;
-})();
-
 /**
  * Overwriting environment variables.
  * These parameters are defined in genesis_params.json, but if specified as environment variables,
@@ -771,6 +739,35 @@ function initializeNetworkEnvironments() {
 }
 
 const networkEnv = initializeNetworkEnvironments();
+
+const JSON_RPC_ENDPOINT = '/json-rpc';
+const DEFAULT_LOCAL_P2P_ROUTER_URL = `http://localhost:8081${JSON_RPC_ENDPOINT}`;
+const DEFAULT_GCP_P2P_ROUTER_URL = `https://testnet-api.ainetwork.ai${JSON_RPC_ENDPOINT}`;
+
+const INITIAL_P2P_ROUTER = (() => {
+  const p2pRouterUrl = process.env.P2P_ROUTER_URL || '';
+  const lowerEnv = p2pRouterUrl.toLowerCase();
+  if (!CommonUtil.isValidUrl(lowerEnv) && lowerEnv !== '') {
+    throw Error(`The P2P_ROUTER_URL(${lowerEnv}) is not correctly set.`);
+  }
+
+  console.log(lowerEnv);
+  if (lowerEnv !== '') {
+    return lowerEnv + JSON_RPC_ENDPOINT;
+  } else {
+    const hostingEnv = GenesisParams.blockchain.HOSTING_ENV;
+    switch (hostingEnv) {
+      case 'local':
+        return DEFAULT_LOCAL_P2P_ROUTER_URL;
+      case 'comcom':
+        throw Error(`The P2P_ROUTER_URL(${P2P_ROUTER_URL}) is compulsory for HOSTING_ENV comcom.`);
+      case 'gcp':
+        return DEFAULT_GCP_P2P_ROUTER_URL;
+      default:
+        throw Error(`Wrong hosting environment(${hostingEnv}) is set. Please try again.`);
+    }
+  }
+})();
 
 /**
  * Port number helper.
@@ -1033,7 +1030,7 @@ module.exports = {
   ACCOUNT_INDEX,
   ACCOUNT_INJECTION_OPTION,
   KEYSTORE_FILE_PATH,
-  ENABLE_TRACKER_REPORT,
+  ENABLE_STATUS_REPORT_TO_TRACKER,
   CORS_WHITELIST,
   PORT,
   P2P_PORT,

@@ -23,7 +23,7 @@ const {
   trafficStatsManager,
   INITIAL_P2P_ROUTER,
   ACCOUNT_INDEX,
-  ENABLE_TRACKER_REPORT,
+  ENABLE_STATUS_REPORT_TO_TRACKER,
   CURRENT_PROTOCOL_VERSION
 } = require('../common/constants');
 const {
@@ -68,8 +68,7 @@ class P2pClient {
   async run() {
     if (CommonUtil.isEmpty(this.server.node.account)) return;
     await this.server.listen();
-    // this.router.listen();
-    if (ENABLE_TRACKER_REPORT) this.connectToTracker();
+    if (ENABLE_STATUS_REPORT_TO_TRACKER) this.connectToTracker();
     if (Number(ACCOUNT_INDEX) === 0 && this.server.node.state === BlockchainNodeStates.STARTING) {
       this.startBlockchainNode(0);
       return;
