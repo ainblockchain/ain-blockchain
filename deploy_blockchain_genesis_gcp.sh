@@ -77,9 +77,6 @@ then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
-# Read node ip addresses
-IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
-
 if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     # Get keystore password
     echo -n "Enter password: "
@@ -87,12 +84,18 @@ if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     echo
     echo
 
+    # Read node ip addresses
+    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
+
     if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
         KEYSTORE_DIR="testnet_prod_keys/"
     else
         KEYSTORE_DIR="testnet_dev_staging_keys/"
     fi
 elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
+    # Read node ip addresses
+    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
+
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
