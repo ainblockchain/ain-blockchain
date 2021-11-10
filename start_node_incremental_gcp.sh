@@ -101,11 +101,7 @@ printf "SYNC_MODE=$SYNC_MODE\n"
 
 function parse_options() {
     local option="$1"
-    if [[ "$option" = '--rest-func' ]]; then
-        REST_FUNC_OPTION="$option"
-    elif [[ "$option" = '--json-rpc' ]]; then
-        JSON_RPC_OPTION="$option"
-    elif [[ "$option" = '--keystore' ]]; then
+    if [[ "$option" = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             printf "You cannot use both keystore and mnemonic\n"
             exit
@@ -117,6 +113,10 @@ function parse_options() {
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ "$option" = '--rest-func' ]]; then
+        REST_FUNC_OPTION="$option"
+    elif [[ "$option" = '--json-rpc' ]]; then
+        JSON_RPC_OPTION="$option"
     else
         printf "Invalid option: $option\n"
         exit
@@ -124,6 +124,7 @@ function parse_options() {
 }
 
 ACCOUNT_INJECTION_OPTION=""
+JSON_RPC_OPTION=""
 REST_FUNC_OPTION=""
 
 number=5

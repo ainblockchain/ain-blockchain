@@ -66,6 +66,7 @@ function parse_options() {
 }
 
 # Parse options.
+SETUP_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
 
 if [[ "$#" -gt 5 ]]; then

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$#" -lt 3 ]] || [[ "$#" -gt 7 ]]; then
-    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore|--mnemonic] [--keep-code] [--json-rpc] [--rest-func]\n"
+    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keep-code] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore\n"
     exit
 fi
@@ -11,10 +11,6 @@ function parse_options() {
     local option="$1"
     if [[ "$option" = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
-    elif [[ "$option" = '--json-rpc' ]]; then
-        JSON_RPC_OPTION="$option"
-    elif [[ "$option" = '--rest-func' ]]; then
-        REST_FUNC_OPTION="$option"
     elif [[ "$option" = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             printf "You cannot use both keystore and mnemonic\n"
@@ -27,6 +23,10 @@ function parse_options() {
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ "$option" = '--json-rpc' ]]; then
+        JSON_RPC_OPTION="$option"
+    elif [[ "$option" = '--rest-func' ]]; then
+        REST_FUNC_OPTION="$option"
     else
         printf "Invalid options: $option\n"
         exit
@@ -36,6 +36,7 @@ function parse_options() {
 # Parse options.
 KEEP_CODE_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
+JSON_RPC_OPTION=""
 REST_FUNC_OPTION=""
 
 number=4
@@ -61,10 +62,12 @@ else
   export ENABLE_REST_FUNCTION_CALL=false
 fi
 
+printf '\n'
 printf 'Killing old jobs..\n'
 sudo killall node
 
 if [[ "$KEEP_CODE_OPTION" = "" ]]; then
+    printf '\n'
     printf 'Setting up working directory..\n'
     cd
     sudo rm -rf /home/ain_blockchain_data
@@ -76,14 +79,17 @@ if [[ "$KEEP_CODE_OPTION" = "" ]]; then
     mv * ../ain-blockchain
     cd ../ain-blockchain
 
+    printf '\n'
     printf 'Installing node modules..\n'
     npm install
 else
+    printf '\n'
     printf 'Using old directory..\n'
     OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
     printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
     sudo chmod -R 777 $OLD_DIR_PATH
     sudo chmod -R 777 /home/ain_blockchain_data
+    mv * $OLD_DIR_PATH
     cd $OLD_DIR_PATH
 fi
 
