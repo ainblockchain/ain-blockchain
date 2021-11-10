@@ -105,7 +105,7 @@ class P2pClient {
       address: this.server.getNodeAddress(),
       updatedAt: Date.now(),
       lastBlockNumber: blockStatus.number,
-      networkStatus: this.getNetworkStatus(),
+      networkStatus: this.server.getNetworkStatus(),
       blockStatus: blockStatus,
       txStatus: this.server.getTxStatus(),
       consensusStatus: this.server.getConsensusStatus(),
@@ -118,55 +118,6 @@ class P2pClient {
       runtimeInfo: this.server.getRuntimeInfo(),
       protocolInfo: this.server.getProtocolInfo(),
       blockchainConfig: this.server.getBlockchainConfig(),
-    };
-  }
-
-  // FIXME(minsulee2): No need to dynamically assign all the values.
-  getNetworkStatus() {
-    const intIp = this.server.getInternalIp();
-    const extIp = this.server.getExternalIp();
-    const intP2pUrl = new URL(`ws://${intIp}:${P2P_PORT}`);
-    const extP2pUrl = new URL(`ws://${extIp}:${P2P_PORT}`);
-    // NOTE(liayoo): The 'comcom', 'local' HOSTING_ENV settings assume that multiple blockchain
-    // nodes are on the same machine.
-    const p2pUrl = HOSTING_ENV === 'comcom' || HOSTING_ENV === 'local' ?
-        intP2pUrl.toString() : extP2pUrl.toString();
-    const clientApiUrl = HOSTING_ENV === 'comcom' || HOSTING_ENV === 'local' ?
-        (() => {
-          intP2pUrl.protocol = 'http:';
-          intP2pUrl.port = PORT;
-          return intP2pUrl.toString();
-        })() :
-        (() => {
-          extP2pUrl.protocol = 'http:';
-          extP2pUrl.port = PORT;
-          return extP2pUrl.toString();
-        })();
-    const jsonRpcUrl = HOSTING_ENV === 'comcom' || HOSTING_ENV === 'local' ?
-        (() => {
-          intP2pUrl.pathname = 'json-rpc';
-          return intP2pUrl.toString();
-        })() :
-        (() => {
-          extP2pUrl.pathname = 'json-rpc';
-          return extP2pUrl.toString();
-        })();
-
-    return {
-      ip: extIp,
-      p2p: {
-        url: p2pUrl,
-        port: P2P_PORT,
-      },
-      clientApi: {
-        url: clientApiUrl,
-        port: PORT,
-      },
-      jsonRpc: {
-        url: jsonRpcUrl,
-        port: PORT,
-      },
-      connectionStatus: this.getConnectionStatus()
     };
   }
 
@@ -200,7 +151,7 @@ class P2pClient {
   getRouteStatus() {
     return {
       availableForConnect: this.maxInbound > Object.keys(this.server.inbound).length,
-      networkStatus: this.getNetworkStatus(),
+      networkStatus: this.server.getNetworkStatus(),
       routeList: Object.values(this.outbound).map(peer => {
         return peer.peerInfo.networkStatus.jsonRpc.url;
       }),
@@ -627,8 +578,7 @@ class P2pClient {
           this.router = { [router]: { queryToConnect: false, queriedAt: null } };
         }
       });
-      console.log(routeInfo)
-      const networkStatus = this.getNetworkStatus();
+      const networkStatus = this.server.getNetworkStatus();
       const myUrl = networkStatus.p2p.url;
       const newPeerInfoListWithoutMyUrl = routeInfo.newPeerInfoList.filter(url => {
         return url !== myUrl;
