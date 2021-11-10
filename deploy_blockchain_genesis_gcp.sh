@@ -209,27 +209,22 @@ fi
 # ssh into each instance, install packages and start up the server
 printf "\n\n###########################\n# Starting parent tracker #\n###########################\n\n"
 gcloud compute ssh $TRACKER_TARGET_ADDR --command ". start_tracker_genesis_gcp.sh" --project $PROJECT_ID --zone $TRACKER_ZONE
-printf "\n\n##########################\n# Starting parent node 0 #\n##########################\n\n"
-gcloud compute ssh $NODE_0_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 0 $ACCOUNT_INJECTION_OPTION" --project $PROJECT_ID --zone $NODE_0_ZONE
-inject_account "0"
-printf "\n\n##########################\n# Starting parent node 1 #\n##########################\n\n"
-gcloud compute ssh $NODE_1_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 1 $ACCOUNT_INJECTION_OPTION" --project $PROJECT_ID --zone $NODE_1_ZONE
-inject_account "1"
-printf "\n\n##########################\n# Starting parent node 2 #\n##########################\n\n"
-gcloud compute ssh $NODE_2_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 2 $ACCOUNT_INJECTION_OPTION" --project $PROJECT_ID --zone $NODE_2_ZONE
-inject_account "2"
-printf "\n\n##########################\n# Starting parent node 3 #\n##########################\n\n"
-gcloud compute ssh $NODE_3_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 3 $ACCOUNT_INJECTION_OPTION" --project $PROJECT_ID --zone $NODE_3_ZONE
-inject_account "3"
-printf "\n\n##########################\n# Starting parent node 4 #\n##########################\n\n"
-gcloud compute ssh $NODE_4_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 4 $ACCOUNT_INJECTION_OPTION" --project $PROJECT_ID --zone $NODE_4_ZONE
-inject_account "4"
-printf "\n\n##########################\n# Starting parent node 5 #\n##########################\n\n"
-gcloud compute ssh $NODE_5_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 5 $ACCOUNT_INJECTION_OPTION" --project $PROJECT_ID --zone $NODE_5_ZONE
-inject_account "5"
-printf "\n\n##########################\n# Starting parent node 6 #\n##########################\n\n"
-gcloud compute ssh $NODE_6_TARGET_ADDR --command "$START_NODE_COMMAND_BASE 0 6 $ACCOUNT_INJECTION_OPTION" --project $PROJECT_ID --zone $NODE_6_ZONE
-inject_account "6"
+NUM_NODES=7
+index=0
+while [ $index -lt $NUM_NODES ]
+do
+    printf "\n\n##########################\n# Starting parent node $index #\n##########################\n\n"
+    if [[ $index -gt 4 ]]; then
+        REST_FUNC_OPTION="--rest-func"
+    else
+        REST_FUNC_OPTION=""
+    fi
+    NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
+    NODE_ZONE=NODE_${index}_ZONE
+    gcloud compute ssh ${!NODE_TARGET_ADDR} --command "$START_NODE_COMMAND_BASE 0 $index $ACCOUNT_INJECTION_OPTION $REST_FUNC_OPTION" --project $PROJECT_ID --zone ${!NODE_ZONE}
+    inject_account "$index"
+    ((index++))
+done
 
 
 if [[ "$NUM_SHARDS" -gt 0 ]]; then

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ "$#" -lt 4 ]] || [[ "$#" -gt 5 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full] [--keystore|--mnemonic]\n"
+if [[ "$#" -lt 4 ]] || [[ "$#" -gt 6 ]]; then
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full] [--keystore|--mnemonic] [--rest-func]\n"
     printf "Example: bash start_node_incremental_gcp.sh spring 0 0 fast --keystore\n"
     exit
 fi
@@ -86,7 +86,7 @@ printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
 printf "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR\n"
 printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 
-if [[ "$3" -lt 0 ]] || [[ "$3" -gt 4 ]]; then
+if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
     printf "Invalid <Node Index> argument: $3\n"
     exit
 fi
@@ -98,9 +98,47 @@ fi
 
 export SYNC_MODE="$4"
 printf "SYNC_MODE=$SYNC_MODE\n"
-ACCOUNT_INJECTION_OPTION=$5
+
+function parse_options() {
+    local option="$1"
+    if [[ "$option" = '--rest-func' ]]; then
+        REST_FUNC_OPTION="$option"
+    elif [[ "$option" = '--keystore' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            echo "You cannot use both keystore and mnemonic"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ "$option" = '--mnemonic' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            echo "You cannot use both keystore and mnemonic"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
+    else
+        echo "Invalid option: $option"
+        exit
+    fi
+}
+
+ACCOUNT_INJECTION_OPTION=""
+REST_FUNC_OPTION=""
+
+number=5
+while [ $number -le $# ]
+do
+  parse_options "${!number}"
+  ((number++))
+done
+
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
+printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
+if [[ $REST_FUNC_OPTION ]]; then
+  export ENABLE_REST_FUNCTION_CALL=true
+else
+  export ENABLE_REST_FUNCTION_CALL=false
+fi
 
 export DEBUG=false
 export CONSOLE_LOG=false
