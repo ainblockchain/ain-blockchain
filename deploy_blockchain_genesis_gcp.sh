@@ -247,7 +247,10 @@ printf "START_NODE_CMD_BASE=$START_NODE_CMD_BASE\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
 printf "\n\n###########################\n# Starting parent tracker #\n###########################\n\n"
-gcloud compute ssh $TRACKER_TARGET_ADDR --command "$START_TRACKER_CMD_BASE $KEEP_CODE_OPTION" --project $PROJECT_ID --zone $TRACKER_ZONE
+START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
+printf "START_TRACKER_CMD='$START_TRACKER_CMD'\n"
+eval $START_TRACKER_CMD
+
 NUM_NODES=7
 index=0
 while [ $index -lt $NUM_NODES ]
@@ -262,7 +265,9 @@ do
     fi
     NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
     NODE_ZONE=NODE_${index}_ZONE
-    gcloud compute ssh ${!NODE_TARGET_ADDR} --command "$START_NODE_CMD_BASE $SEASON 0 $index $KEEP_CODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION" --project $PROJECT_ID --zone ${!NODE_ZONE}
+    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $index $KEEP_CODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+    printf "START_NODE_CMD='$START_NODE_CMD'\n"
+    eval $START_NODE_CMD
     inject_account "$index"
     ((index++))
 done
@@ -310,12 +315,20 @@ if [[ $NUM_SHARDS -gt 0 ]]; then
 
             # ssh into each instance, install packages and start up the server
             printf "\n\n###########################\n# Starting shard_$i tracker #\n###########################\n\n"
-            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "$START_TRACKER_CMD_BASE $KEEP_CODE_OPTION" --project $PROJECT_ID --zone $TRACKER_ZONE
+            START_TRACKER_CMD="gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command '$START_TRACKER_CMD_BASE $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $TRACKER_ZONE"
+            printf "START_TRACKER_CMD='$START_TRACKER_CMD'\n"
+            eval $START_TRACKER_CMD
             printf "\n\n##########################\n# Starting shard_$i node 0 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION" --project $PROJECT_ID --zone $NODE_0_ZONE
+            START_NODE_CMD="gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $NODE_0_ZONE"
+            printf "START_NODE_CMD='$START_NODE_CMD'\n"
+            eval $START_NODE_CMD
             printf "\n\n##########################\n# Starting shard_$i node 1 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION" --project $PROJECT_ID --zone $NODE_1_ZONE
+            START_NODE_CMD="gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $NODE_1_ZONE"
+            printf "START_NODE_CMD='$START_NODE_CMD'\n"
+            eval $START_NODE_CMD
             printf "\n\n##########################\n# Starting shard_$i node 2 #\n##########################\n\n"
-            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION" --project $PROJECT_ID --zone $NODE_2_ZONE
+            START_NODE_CMD="gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command '$START_NODE_CMD_BASE $SEASON $SEASON $i 0 $KEEP_CODE_OPTION' --project $PROJECT_ID --zone $NODE_2_ZONE"
+            printf "START_NODE_CMD='$START_NODE_CMD'\n"
+            eval $START_NODE_CMD
         done
 fi
