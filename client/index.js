@@ -13,6 +13,7 @@ const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
 const {
   ENABLE_DEV_CLIENT_SET_API,
+  ENABLE_JSON_RPC_API,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   PORT,
@@ -70,11 +71,13 @@ function createAndExecuteTransaction(txBody) {
   return p2pServer.executeAndBroadcastTransaction(tx);
 }
 
-app.post(
-  '/json-rpc',
-  VersionUtil.validateVersion.bind({ minProtocolVersion, maxProtocolVersion }),
-  jayson.server(jsonRpcMethods).middleware()
-);
+if (ENABLE_JSON_RPC_API) {
+  app.post(
+    '/json-rpc',
+    VersionUtil.validateVersion.bind({ minProtocolVersion, maxProtocolVersion }),
+    jayson.server(jsonRpcMethods).middleware()
+  );
+}
 
 app.get('/', (req, res, next) => {
   res.status(200)
