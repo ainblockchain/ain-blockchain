@@ -1,27 +1,29 @@
 #!/bin/bash
 
-if [[ "$#" -gt 1 ]]; then
+if [[ $# -gt 1 ]]; then
     printf "Usage: bash start_tracker_genesis_gcp.sh [--keep-code]\n"
     exit
 fi
 
 KEEP_CODE_OPTION=""
-if [[ "$#" = 1 ]]; then
-    if [[ "$1" = '--keep-code' ]]; then
-        KEEP_CODE_OPTION=true
+
+if [[ $# = 1 ]]; then
+    if [[ $1 = '--keep-code' ]]; then
+        KEEP_CODE_OPTION=$1
     else
         printf "Invalid option: $1\n"
         exit
     fi
 fi
 
+printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
 printf '\n'
 printf 'Killing jobs..\n'
 killall node
 
 
-if [[ "$KEEP_CODE_OPTION" = "" ]]; then
+if [[ $KEEP_CODE_OPTION = "" ]]; then
     printf '\n'
     printf 'Setting up working directory..\n'
     cd
@@ -43,12 +45,11 @@ else
     OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
     printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
     sudo chmod -R 777 $OLD_DIR_PATH
-    cd $OLD_DIR_PATH
 fi
 
 
 export CONSOLE_LOG=false 
 
-printf 'Starting up Blockchain Tracker server..\n'
+printf "\nStarting up Blockchain Tracker server..\n\n"
 nohup node --async-stack-traces tracker-server/index.js >/dev/null 2>error_logs.txt &
-printf "Blockchain Tracker server is now up!\n"
+printf "\nBlockchain Tracker server is now up!\n\n"
