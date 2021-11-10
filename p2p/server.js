@@ -17,6 +17,7 @@ const VersionUtil = require('../common/version-util');
 const {
   CURRENT_PROTOCOL_VERSION,
   DATA_PROTOCOL_VERSION,
+  PORT,
   P2P_PORT,
   HOSTING_ENV,
   LIGHTWEIGHT,
@@ -111,6 +112,7 @@ class P2pServer {
     });
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     await this.setUpIpAddresses();
+    this.urls = this.initUrls();
   }
 
   getNodeAddress() {
@@ -327,6 +329,64 @@ class P2pServer {
     const ipAddrExternal = await this.getIpAddress(false);
     this.node.setIpAddresses(ipAddrInternal, ipAddrExternal);
     return true;
+  }
+
+  setUpUrl(ip) {
+    const p2pUrl = new URL(`ws://${ip}:${P2P_PORT}`);
+    const stringP2pUrl = p2pUrl.toString();
+    p2pUrl.protocol = 'http:';
+    p2pUrl.port = PORT;
+    const clientApiUrl = p2pUrl.toString();
+    p2pUrl.pathname = 'json-rpc';
+    const jsonRpcUrl = p2pUrl.toString();
+    return {
+      p2pUrl: stringP2pUrl,
+      clientApiUrl: clientApiUrl,
+      jsonRpcUrl: jsonRpcUrl
+    };
+  }
+
+  initUrls() {
+    // NOTE(liayoo, minsulee2): As discussed offline, only the 'local' HOSTING_ENV setting assumes
+    // that multiple blockchain nodes are on the same machine.
+    const intIp = this.getInternalIp();
+    const extIp = this.getExternalIp();
+    let urls;
+    switch (HOSTING_ENV) {
+      case 'local':
+        urls = this.setUpUrl(intIp);
+        break;
+      case 'comcom':
+      case 'gcp':
+        urls = this.setUpUrl(extIp);
+        break;
+    }
+
+    return {
+      ip: {
+        internal: intIp,
+        external: extIp
+      },
+      p2p: {
+        url: urls.p2pUrl,
+        port: P2P_PORT,
+      },
+      clientApi: {
+        url: urls.clientApiUrl,
+        port: PORT,
+      },
+      jsonRpc: {
+        url: urls.jsonRpcUrl,
+        port: PORT,
+      }
+    };
+  }
+
+  getNetworkStatus() {
+    const networkStatus = {};
+    Object.assign(networkStatus, this.urls);
+    Object.assign(networkStatus, { connectionStatus: this.client.getConnectionStatus() });
+    return networkStatus;
   }
 
   disconnectFromPeers() {

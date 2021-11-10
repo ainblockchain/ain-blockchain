@@ -751,7 +751,6 @@ const INITIAL_P2P_ROUTER = (() => {
     throw Error(`The P2P_ROUTER_URL(${lowerEnv}) is not correctly set.`);
   }
 
-  console.log(lowerEnv);
   if (lowerEnv !== '') {
     return lowerEnv + JSON_RPC_ENDPOINT;
   } else {
