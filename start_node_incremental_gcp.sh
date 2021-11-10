@@ -124,12 +124,12 @@ function parse_options() {
 ACCOUNT_INJECTION_OPTION=""
 REST_FUNC_OPTION=""
 
-if [[ "$#" -gt 4 ]]; then
-    parse_options "$5"
-    if [[ "$#" = 6 ]]; then
-        parse_options "$6"
-    fi
-fi
+number=5
+while [ $number -le $# ]
+do
+  parse_options "${!number}"
+  ((number++))
+done
 
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
