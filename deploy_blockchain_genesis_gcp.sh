@@ -1,9 +1,9 @@
 #!/bin/bash
 
 if [[ "$#" -lt 3 ]] || [[ "$#" -gt 5 ]]; then
-    echo "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic]"
-    echo "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --setup"
-    echo "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --keystore"
+    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic]\n"
+    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --setup\n"
+    printf "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --keystore\n"
     exit
 fi
 
@@ -15,17 +15,17 @@ if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$
         PROJECT_ID="testnet-$1-ground"
     fi
 else
-    echo "Invalid project/season argument: $1"
+    printf "Invalid project/season argument: $1\n"
     exit
 fi
-echo "SEASON=$SEASON"
-echo "PROJECT_ID=$PROJECT_ID"
+printf "SEASON=$SEASON\n"
+printf "PROJECT_ID=$PROJECT_ID\n"
 
 GCP_USER="$2"
-echo "GCP_USER=$GCP_USER"
+printf "GCP_USER=$GCP_USER\n"
 
 NUM_SHARDS=$3
-echo "NUM_SHARDS=$NUM_SHARDS"
+printf "NUM_SHARDS=$NUM_SHARDS\n"
 
 
 function parse_options() {
@@ -34,18 +34,18 @@ function parse_options() {
         SETUP_OPTION="$option"
     elif [[ "$option" = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            echo "You cannot use both keystore and mnemonic"
+            printf "You cannot use both keystore and mnemonic\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
     elif [[ "$option" = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            echo "You cannot use both keystore and mnemonic"
+            printf "You cannot use both keystore and mnemonic\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
     else
-        echo "Invalid options: $option"
+        printf "Invalid options: $option\n"
         exit
     fi
 }
@@ -68,10 +68,9 @@ START_NODE_COMMAND_BASE=". start_node_genesis_gcp.sh $SEASON"
 
 
 # Get confirmation.
-echo
+printf "\n"
 read -p "Do you want to proceed? >> (y/N) " -n 1 -r
-echo
-echo
+printf "\n\n"
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
@@ -156,7 +155,7 @@ gcloud compute ssh $NODE_6_TARGET_ADDR --command "sudo killall node" --project $
 if [[ "$NUM_SHARDS" -gt 0 ]]; then
     for i in $(seq $NUM_SHARDS)
         do
-            echo "shard #$i"
+            printf "shard #$i\n"
 
             SHARD_TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
             SHARD_NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan"
@@ -218,13 +217,15 @@ while [ $index -lt $NUM_NODES ]
 do
     printf "\n\n##########################\n# Starting parent node $index #\n##########################\n\n"
     if [[ $index -gt 4 ]]; then
+        JSON_RPC_OPTION="--json-rpc"
         REST_FUNC_OPTION="--rest-func"
     else
+        JSON_RPC_OPTION=""
         REST_FUNC_OPTION=""
     fi
     NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
     NODE_ZONE=NODE_${index}_ZONE
-    gcloud compute ssh ${!NODE_TARGET_ADDR} --command "$START_NODE_COMMAND_BASE 0 $index $ACCOUNT_INJECTION_OPTION $REST_FUNC_OPTION" --project $PROJECT_ID --zone ${!NODE_ZONE}
+    gcloud compute ssh ${!NODE_TARGET_ADDR} --command "$START_NODE_COMMAND_BASE 0 $index $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION" --project $PROJECT_ID --zone ${!NODE_ZONE}
     inject_account "$index"
     ((index++))
 done
@@ -234,7 +235,7 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
     printf "\nDeploying shard blockchains..."
     for i in $(seq $NUM_SHARDS)
         do
-            echo "shard #$i"
+            printf "shard #$i\n"
 
             # generate genesis config files in ./blockchain/shard_$i
             if [[ $SETUP_OPTION = "--setup" ]]; then

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ "$#" -lt 3 ]] || [[ "$#" -gt 6 ]]; then
-    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore|--mnemonic] [--keep-code] [--rest-func]"
-    echo "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore"
+if [[ "$#" -lt 3 ]] || [[ "$#" -gt 7 ]]; then
+    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore|--mnemonic] [--keep-code] [--json-rpc] [--rest-func]\n"
+    printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore\n"
     exit
 fi
 
@@ -11,22 +11,24 @@ function parse_options() {
     local option="$1"
     if [[ "$option" = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
+    elif [[ "$option" = '--json-rpc' ]]; then
+        JSON_RPC_OPTION="$option"
     elif [[ "$option" = '--rest-func' ]]; then
         REST_FUNC_OPTION="$option"
     elif [[ "$option" = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            echo "You cannot use both keystore and mnemonic"
+            printf "You cannot use both keystore and mnemonic\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
     elif [[ "$option" = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            echo "You cannot use both keystore and mnemonic"
+            printf "You cannot use both keystore and mnemonic\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
     else
-        echo "Invalid options: $option"
+        printf "Invalid options: $option\n"
         exit
     fi
 }
@@ -43,21 +45,27 @@ do
   ((number++))
 done
 
-echo "KEEP_CODE_OPTION=$KEEP_CODE_OPTION"
-echo "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION"
-echo "REST_FUNC_OPTION=$REST_FUNC_OPTION"
+printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
+printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
+if [[ $JSON_RPC_OPTION ]]; then
+  export ENABLE_JSON_RPC_API=true
+else
+  export ENABLE_JSON_RPC_API=false
+fi
+printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 if [[ $REST_FUNC_OPTION ]]; then
   export ENABLE_REST_FUNCTION_CALL=true
 else
   export ENABLE_REST_FUNCTION_CALL=false
 fi
 
-echo 'Killing old jobs..'
+printf 'Killing old jobs..\n'
 sudo killall node
 
 if [[ "$KEEP_CODE_OPTION" = "" ]]; then
-    echo 'Setting up working directory..'
+    printf 'Setting up working directory..\n'
     cd
     sudo rm -rf /home/ain_blockchain_data
     sudo mkdir /home/ain_blockchain_data
@@ -68,10 +76,10 @@ if [[ "$KEEP_CODE_OPTION" = "" ]]; then
     mv * ../ain-blockchain
     cd ../ain-blockchain
 
-    echo 'Installing node modules..'
+    printf 'Installing node modules..\n'
     npm install
 else
-    echo 'Using old directory..'
+    printf 'Using old directory..\n'
     OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
     printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
     sudo chmod -R 777 $OLD_DIR_PATH
@@ -138,27 +146,27 @@ elif [[ "$1" = 'dev' ]]; then
   elif [[ "$2" = 20 ]]; then
     export TRACKER_WS_ADDR=ws://35.201.248.92:5000  # dev-shard-20-tracker-ip
   else
-    echo "Invalid shard ID argument: $2"
+    printf "Invalid shard ID argument: $2\n"
     exit
   fi
 else
-    echo "Invalid season argument: $1"
+    printf "Invalid season argument: $1\n"
     exit
 fi
 
-echo "TRACKER_WS_ADDR=$TRACKER_WS_ADDR"
-echo "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR"
-echo "KEYSTORE_DIR=$KEYSTORE_DIR"
+printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
+printf "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR\n"
+printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 
 if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
-    echo "Invalid account_index argument: $2"
+    printf "Invalid account_index argument: $2\n"
     exit
 fi
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
 if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]] || [[ "$2" -gt 0 ]]; then
     export ACCOUNT_INDEX="$3"
-    echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
+    printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
 elif [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     if [[ "$3" = 0 ]]; then
         KEYSTORE_FILENAME="keystore_node_0.json"
@@ -175,13 +183,13 @@ elif [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     elif [[ "$3" = 6 ]]; then
         KEYSTORE_FILENAME="keystore_node_6.json"
     fi
-    echo "KEYSTORE_FILENAME=$KEYSTORE_FILENAME"
+    printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
     if [[ "$KEEP_CODE_OPTION" = "" ]]; then
         sudo mkdir -p ../ain_blockchain_data/keys/8080
         sudo mv ./$KEYSTORE_DIR/$KEYSTORE_FILENAME ../ain_blockchain_data/keys/8080/
     fi
     export KEYSTORE_FILE_PATH=/home/ain_blockchain_data/keys/8080/$KEYSTORE_FILENAME
-    echo "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH"
+    printf "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH\n"
 fi
 
 export DEBUG=false

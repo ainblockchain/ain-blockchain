@@ -49,18 +49,18 @@ function parse_options() {
         SETUP_OPTION="$option"
     elif [[ "$option" = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            echo "You cannot use both keystore and mnemonic"
+            printf "You cannot use both keystore and mnemonic\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
     elif [[ "$option" = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            echo "You cannot use both keystore and mnemonic"
+            printf "You cannot use both keystore and mnemonic\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
     else
-        echo "Invalid option: $option"
+        printf "Invalid option: $option\n"
         exit
     fi
 }
@@ -178,11 +178,13 @@ function deploy_node() {
     # 2. Start node
     printf "\n\n[[[[ Starting node $node_index ]]]]\n\n"
     if [[ $node_index -gt 4 ]]; then
+        JSON_RPC_OPTION="--json-rpc"
         REST_FUNC_OPTION="--rest-func"
     else
+        JSON_RPC_OPTION=""
         REST_FUNC_OPTION=""
     fi
-    START_CMD="gcloud compute ssh $node_target_addr --command '. start_node_incremental_gcp.sh $SEASON 0 $node_index $SYNC_MODE $ACCOUNT_INJECTION_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone $node_zone"
+    START_CMD="gcloud compute ssh $node_target_addr --command '. start_node_incremental_gcp.sh $SEASON 0 $node_index $SYNC_MODE $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone $node_zone"
     printf "START_CMD='$START_CMD'\n\n"
     eval $START_CMD
 
