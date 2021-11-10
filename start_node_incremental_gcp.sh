@@ -1,7 +1,7 @@
 #!/bin/bash
 
-if [[ $# -lt 4 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [fast|full] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
+if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_incremental_gcp.sh spring 0 0 fast --keystore\n"
     exit
 fi
@@ -91,17 +91,11 @@ if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
     exit
 fi
 
-if [[ "$4" != 'fast' ]] && [[ "$4" != 'full' ]]; then
-    printf "Invalid <Sync Mode> argument: $2\n"
-    exit
-fi
-
-export SYNC_MODE="$4"
-printf "SYNC_MODE=$SYNC_MODE\n"
-
 function parse_options() {
     local option="$1"
-    if [[ $option = '--keystore' ]]; then
+    if [[ $option = '--full-sync' ]]; then
+        FULL_SYNC_OPTION="$option"
+    elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             printf "You cannot use both keystore and mnemonic\n"
             exit
@@ -123,21 +117,28 @@ function parse_options() {
     fi
 }
 
+FULL_SYNC_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
 JSON_RPC_OPTION=""
 REST_FUNC_OPTION=""
 
-number=5
+number=4
 while [ $number -le $# ]
 do
   parse_options "${!number}"
   ((number++))
 done
 
+printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
+if [[ $FULL_SYNC_OPTION = "" ]]; then
+  export SYNC_MODE=fast
+else
+  export SYNC_MODE=full
+fi
 export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
 if [[ $JSON_RPC_OPTION ]]; then
   export ENABLE_JSON_RPC_API=true
@@ -207,12 +208,11 @@ eval $RM_CMD
 printf "\n#### [Step 7] Start new node server ####\n\n"
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
-if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]] || [[ "$2" -gt 0 ]]; then
+if [[ $ACCOUNT_INJECTION_OPTION = "" ]] || [[ "$2" -gt 0 ]]; then
     export ACCOUNT_INDEX="$3"
     printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
     COMMAND_PREFIX=""
-
-elif [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
+elif [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
     if [[ "$3" = 0 ]]; then
         KEYSTORE_FILENAME="keystore_node_0.json"
     elif [[ "$3" = 1 ]]; then

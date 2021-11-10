@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ $# -lt 5 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [fast|full] [canary|full] [--setup] [--keystore|--mnemonic]\n"
-    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 fast canary --setup\n"
+if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic]\n"
+    printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 --setup --canary --full-sync\n"
     exit
 fi
 
@@ -26,26 +26,14 @@ printf "GCP_USER=$GCP_USER\n"
 NUM_SHARDS=$3
 printf "NUM_SHARDS=$NUM_SHARDS\n"
 
-if [[ "$4" = 'fast' ]] || [[ "$4" = 'full' ]]; then
-    SYNC_MODE="$4"
-else
-    printf "Invalid <Sync Mode> argument: $4\n"
-    exit
-fi
-printf "SYNC_MODE=$SYNC_MODE\n"
-
-if [[ "$5" = 'canary' ]] || [[ "$5" = 'full' ]]; then
-    RUN_MODE="$5"
-else
-    printf "Invalid <Run Mode> argument: $5\n"
-    exit
-fi
-printf "RUN_MODE=$RUN_MODE\n"
-
 function parse_options() {
     local option="$1"
     if [[ $option = '--setup' ]]; then
         SETUP_OPTION="$option"
+    elif [[ $option = '--canary' ]]; then
+        RUN_MODE_OPTION="$option"
+    elif [[ $option = '--full-sync' ]]; then
+        FULL_SYNC_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             printf "You cannot use both keystore and mnemonic\n"
@@ -66,15 +54,19 @@ function parse_options() {
 
 # Parse options.
 SETUP_OPTION=""
+RUN_MODE_OPTION=""
+FULL_SYNC_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
 
-number=6
+number=4
 while [ $number -le $# ]
 do
   parse_options "${!number}"
   ((number++))
 done
 printf "SETUP_OPTION=$SETUP_OPTION\n"
+printf "RUN_MODE_OPTION=$RUN_MODE_OPTION\n"
+printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 
 # Get confirmation.
@@ -85,9 +77,6 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
-# Read node ip addresses
-IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
-
 if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     # Get keystore password
     echo -n "Enter password: "
@@ -95,17 +84,23 @@ if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     echo
     echo
 
+    # Read node ip addresses
+    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
+
     if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
         KEYSTORE_DIR="testnet_prod_keys/"
     else
         KEYSTORE_DIR="testnet_dev_staging_keys/"
     fi
 elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
+    # Read node ip addresses
+    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
+
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
-FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh restart_tracker_gcp.sh"
-FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ genesis-configs/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh restart_node_gcp.sh wait_until_node_sync_gcp.sh $KEYSTORE_DIR"
+FILES_FOR_TRACKER="blockchain/ client/ common/ consensus/ db/ genesis-configs/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
+FILES_FOR_NODE="blockchain/ client/ common/ consensus/ db/ genesis-configs/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ $KEYSTORE_DIR package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
 NUM_PARENT_NODES=7
 NUM_SHARD_NODES=3
@@ -183,7 +178,7 @@ function deploy_node() {
         JSON_RPC_OPTION=""
         REST_FUNC_OPTION=""
     fi
-    START_CMD="gcloud compute ssh $node_target_addr --command '. start_node_incremental_gcp.sh $SEASON 0 $node_index $SYNC_MODE $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone $node_zone"
+    START_CMD="gcloud compute ssh $node_target_addr --command '. start_node_incremental_gcp.sh $SEASON 0 $node_index $FULL_SYNC_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone $node_zone"
     printf "START_CMD='$START_CMD'\n\n"
     eval $START_CMD
 
@@ -208,10 +203,10 @@ function deploy_node() {
     fi
 
     #4. Wait until node is synced
-    printf "\n\n[[[[ Waiting until node is synced $node_index ]]]]\n\n"
-    WAIT_CMD="gcloud compute ssh $node_target_addr --command 'cd \$(find /home/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync_gcp.sh' --project $PROJECT_ID --zone $node_zone"
-    printf "WAIT_CMD='$WAIT_CMD'\n\n"
-    eval $WAIT_CMD
+#    printf "\n\n[[[[ Waiting until node is synced $node_index ]]]]\n\n"
+#    WAIT_CMD="gcloud compute ssh $node_target_addr --command 'cd \$(find /home/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync_gcp.sh' --project $PROJECT_ID --zone $node_zone"
+#    printf "WAIT_CMD='$WAIT_CMD'\n\n"
+#    eval $WAIT_CMD
 }
 
 printf "###############################################################################\n"
@@ -229,7 +224,7 @@ NODE_TARGET_ADDR_LIST=(
     "${GCP_USER}@${SEASON}-node-6-oregon" \
 )
 
-if [[ $RUN_MODE = "canary" ]]; then
+if [[ $RUN_MODE_OPTION = "--canary" ]]; then
     deploy_node "0"
 else
     deploy_tracker "$NUM_PARENT_NODES"
@@ -252,7 +247,7 @@ if [[ "$NUM_SHARDS" -gt 0 ]]; then
                 "${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon" \
                 "${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore")
 
-            if [[ $RUN_MODE = "canary" ]]; then
+            if [[ $RUN_MODE_OPTION = "--canary" ]]; then
                 deploy_node "0"
             else
                 deploy_tracker "$NUM_SHARD_NODES"
