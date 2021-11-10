@@ -142,7 +142,7 @@ fi
 
 export DEBUG=false
 export CONSOLE_LOG=false
-export ENABLE_DEV_SET_CLIENT_API=false
+export ENABLE_DEV_CLIENT_SET_API=false
 export ENABLE_TX_SIG_VERIF_WORKAROUND=false
 export ENABLE_GAS_FEE_WORKAROUND=true
 export LIGHTWEIGHT=false
