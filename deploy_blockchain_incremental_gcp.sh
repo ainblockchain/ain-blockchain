@@ -42,7 +42,6 @@ else
 fi
 printf "RUN_MODE=$RUN_MODE\n"
 
-
 function parse_options() {
     local option="$1"
     if [[ $option = '--setup' ]]; then
@@ -77,7 +76,6 @@ do
 done
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
-
 
 # Get confirmation.
 printf "\n"
