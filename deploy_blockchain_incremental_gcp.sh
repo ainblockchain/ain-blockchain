@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ "$#" -lt 5 ]] || [[ "$#" -gt 7 ]]; then
+if [[ $# -lt 5 ]] || [[ $# -gt 7 ]]; then
     printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [fast|full] [canary|full] [--setup] [--keystore|--mnemonic]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 fast canary --setup\n"
     exit
@@ -45,15 +45,15 @@ printf "RUN_MODE=$RUN_MODE\n"
 
 function parse_options() {
     local option="$1"
-    if [[ "$option" = '--setup' ]]; then
+    if [[ $option = '--setup' ]]; then
         SETUP_OPTION="$option"
-    elif [[ "$option" = '--keystore' ]]; then
+    elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             printf "You cannot use both keystore and mnemonic\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
-    elif [[ "$option" = '--mnemonic' ]]; then
+    elif [[ $option = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             printf "You cannot use both keystore and mnemonic\n"
             exit
@@ -69,12 +69,12 @@ function parse_options() {
 SETUP_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
 
-if [[ "$#" -gt 5 ]]; then
-    parse_options "$6"
-    if [[ "$#" = 7 ]]; then
-        parse_options "$7"
-    fi
-fi
+number=6
+while [ $number -le $# ]
+do
+  parse_options "${!number}"
+  ((number++))
+done
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 

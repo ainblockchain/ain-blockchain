@@ -1,31 +1,30 @@
 #!/bin/bash
 
-if [[ "$#" -lt 3 ]] || [[ "$#" -gt 7 ]]; then
+if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
     printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keep-code] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore\n"
     exit
 fi
 
-
 function parse_options() {
     local option="$1"
-    if [[ "$option" = '--keep-code' ]]; then
+    if [[ $option = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
-    elif [[ "$option" = '--keystore' ]]; then
+    elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             printf "You cannot use both keystore and mnemonic\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
-    elif [[ "$option" = '--mnemonic' ]]; then
+    elif [[ $option = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             printf "You cannot use both keystore and mnemonic\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
-    elif [[ "$option" = '--json-rpc' ]]; then
+    elif [[ $option = '--json-rpc' ]]; then
         JSON_RPC_OPTION="$option"
-    elif [[ "$option" = '--rest-func' ]]; then
+    elif [[ $option = '--rest-func' ]]; then
         REST_FUNC_OPTION="$option"
     else
         printf "Invalid options: $option\n"
@@ -48,14 +47,15 @@ done
 
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
-export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
+printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
+
+export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
 if [[ $JSON_RPC_OPTION ]]; then
   export ENABLE_JSON_RPC_API=true
 else
   export ENABLE_JSON_RPC_API=false
 fi
-printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 if [[ $REST_FUNC_OPTION ]]; then
   export ENABLE_REST_FUNCTION_CALL=true
 else
@@ -89,8 +89,6 @@ else
     printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
     sudo chmod -R 777 $OLD_DIR_PATH
     sudo chmod -R 777 /home/ain_blockchain_data
-    mv * $OLD_DIR_PATH
-    cd $OLD_DIR_PATH
 fi
 
 
@@ -160,6 +158,7 @@ else
     exit
 fi
 
+printf "\n"
 printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
 printf "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR\n"
 printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
