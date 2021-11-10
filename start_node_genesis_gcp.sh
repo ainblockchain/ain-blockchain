@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keep-code] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
+    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore\n"
     exit
 fi
@@ -10,6 +10,8 @@ function parse_options() {
     local option="$1"
     if [[ $option = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--full-sync' ]]; then
+        FULL_SYNC_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             printf "You cannot use both keystore and mnemonic\n"
@@ -34,6 +36,7 @@ function parse_options() {
 
 # Parse options.
 KEEP_CODE_OPTION=""
+FULL_SYNC_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
 JSON_RPC_OPTION=""
 REST_FUNC_OPTION=""
@@ -46,10 +49,16 @@ do
 done
 
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
+if [[ $FULL_SYNC_OPTION = "" ]]; then
+  export SYNC_MODE=fast
+else
+  export SYNC_MODE=full
+fi
 export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
 if [[ $JSON_RPC_OPTION ]]; then
   export ENABLE_JSON_RPC_API=true
@@ -66,7 +75,7 @@ printf '\n'
 printf 'Killing old jobs..\n'
 sudo killall node
 
-if [[ "$KEEP_CODE_OPTION" = "" ]]; then
+if [[ $KEEP_CODE_OPTION = "" ]]; then
     printf '\n'
     printf 'Setting up working directory..\n'
     cd
@@ -169,7 +178,7 @@ if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
 fi
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
-if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]] || [[ "$2" -gt 0 ]]; then
+if [[ $ACCOUNT_INJECTION_OPTION = "" ]] || [[ "$2" -gt 0 ]]; then
     export ACCOUNT_INDEX="$3"
     printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
 elif [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
