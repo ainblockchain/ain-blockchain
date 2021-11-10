@@ -12,7 +12,7 @@ const P2pClient = require('../p2p');
 const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
 const {
-  ENABLE_DEV_SET_CLIENT_API,
+  ENABLE_DEV_CLIENT_SET_API,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   PORT,
@@ -262,7 +262,7 @@ app.post('/get', (req, res, next) => {
     .end();
 });
 
-if (ENABLE_DEV_SET_CLIENT_API) {
+if (ENABLE_DEV_CLIENT_SET_API) {
   app.post('/set_value', (req, res, next) => {
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET);
     const result = createAndExecuteTransaction(createSingleSetTxBody(

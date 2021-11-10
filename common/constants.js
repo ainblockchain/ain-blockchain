@@ -41,7 +41,8 @@ const FeatureFlags = {
 // ** Environment variables **
 const DEBUG = CommonUtil.convertEnvVarInputToBool(process.env.DEBUG);
 const CONSOLE_LOG = CommonUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
-const ENABLE_DEV_SET_CLIENT_API = CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_SET_CLIENT_API);
+const ENABLE_DEV_CLIENT_SET_API =
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_SET_API);
 const ENABLE_TX_SIG_VERIF_WORKAROUND =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
 const ENABLE_GAS_FEE_WORKAROUND =
@@ -995,7 +996,7 @@ module.exports = {
   KEYS_ROOT_DIR,
   DEBUG,
   CONSOLE_LOG,
-  ENABLE_DEV_SET_CLIENT_API,
+  ENABLE_DEV_CLIENT_SET_API,
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
   ENABLE_REST_FUNCTION_CALL,
