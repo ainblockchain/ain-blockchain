@@ -47,7 +47,7 @@ const TRAFFIC_STATS_PERIOD_SECS_LIST = {
   '3h': 10800,  // 3 hours
 };
 
-const JSON_RPC_GET_ROUTE_STATUS = 'route_getRouteStatus';
+const JSON_RPC_GET_ROUTE_STATUS = 'p2p_getRouteStatus';
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
@@ -126,7 +126,6 @@ class P2pClient {
   assignRandomPeers() {
     const candidates = Object.values(this.outbound)
       .filter(peer =>
-        peer.isAlive === true &&
         peer.peerInfo.networkStatus.connectionStatus.incomingPeers.length <
             peer.peerInfo.networkStatus.connectionStatus.maxInbound)
       .sort((a, b) =>
@@ -401,8 +400,7 @@ class P2pClient {
             logger.info(`[${LOG_HEADER}] A new websocket(${address}) is established.`);
             this.outbound[address] = {
               socket,
-              peerInfo: _.get(parsedMessage, 'data.body.peerInfo'),
-              isAlive: true
+              peerInfo: _.get(parsedMessage, 'data.body.peerInfo')
             };
             Object.assign(this.outbound[address], { version: dataProtoVer });
             this.updatePeerInfoToTracker();
@@ -507,7 +505,6 @@ class P2pClient {
 
     socket.on('pong', () => {
       const address = getAddressFromSocket(this.outbound, socket);
-      this.outbound[address].isAlive = true;
       logger.info(`The peer(${address}) is alive.`);
     });
 
@@ -551,7 +548,8 @@ class P2pClient {
   async connectToRouter(routerUrl) {
     const jsonRpcClient = jayson.client.http(routerUrl);
     const routeInfo = await this.queryOnNode(jsonRpcClient);
-    this.router = { [routerUrl]: { queryToConnect: true, queriedAt: Date.now() } };
+    // TODO(minsulee2): Needs to add router table updates logic(interval).
+    this.router[routerUrl] = { queryToConnect: true, queriedAt: Date.now() };
 
     const myAddress = this.server.getNodeAddress();
     const connectionStatus = routeInfo.networkStatus.connectionStatus;
@@ -651,7 +649,7 @@ class P2pClient {
   updateStatusToPeer(socket, address) {
     const payload = encapsulateMessage(MessageTypes.PEER_INFO_UPDATE, this.getStatus());
     if (!payload) {
-      logger.error('The address cannot be sent because of msg encapsulation failure.');
+      logger.error('The message cannot be sent because of msg encapsulation failure.');
       return;
     }
     socket.send(JSON.stringify(payload));
