@@ -2,7 +2,7 @@
 
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
     printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
-    printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore\n"
+    printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
     exit
 fi
 
@@ -226,4 +226,4 @@ printf "START_CMD='$START_CMD'\n"
 eval $START_CMD
 
 
-printf "\nBlockchain Node server is now up!\n\n"
+printf "\nBlockchain Node server [$1 $2 $3] is now up!\n\n"

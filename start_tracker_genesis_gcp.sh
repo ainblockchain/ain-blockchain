@@ -2,6 +2,7 @@
 
 if [[ $# -gt 1 ]]; then
     printf "Usage: bash start_tracker_genesis_gcp.sh [--keep-code]\n"
+    printf "Example: bash start_tracker_genesis_gcp.sh --keep-code\n"
     exit
 fi
 
@@ -25,7 +26,7 @@ killall node
 
 if [[ $KEEP_CODE_OPTION = "" ]]; then
     printf '\n'
-    printf 'Setting up working directory..\n'
+    printf 'Creating new working directory..\n'
     cd
     sudo rm -rf /home/ain_blockchain_data
     sudo mkdir /home/ain_blockchain_data
