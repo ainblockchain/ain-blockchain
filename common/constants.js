@@ -42,7 +42,7 @@ const FeatureFlags = {
 const DEBUG = CommonUtil.convertEnvVarInputToBool(process.env.DEBUG);
 const CONSOLE_LOG = CommonUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
 const ENABLE_DEV_CLIENT_SET_API =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_SET_API, true);
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_SET_API);
 const ENABLE_JSON_RPC_API =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_JSON_RPC_API, true);
 const ENABLE_TX_SIG_VERIF_WORKAROUND =
@@ -55,7 +55,7 @@ const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
 const LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
-const SYNC_MODE = process.env.SYNC_MODE || 'fast';
+const SYNC_MODE = process.env.SYNC_MODE || 'full';
 const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
     Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
 const ACCOUNT_INJECTION_OPTION = process.env.ACCOUNT_INJECTION_OPTION || null;
