@@ -61,7 +61,7 @@ fi
 printf "\n#### [Step 4] Kill old tracker server ####\n\n"
 
 KILL_CMD="sudo killall node"
-printf "KILL_CMD='$KILL_CMD'\n\n"
+printf "KILL_CMD=$KILL_CMD\n\n"
 eval $KILL_CMD
 sleep 10
 
@@ -71,7 +71,7 @@ if [[ $KEEP_CODE_OPTION = "" ]]; then
     printf '\n'
     printf 'Removing old working directory..\n'
     RM_CMD="sudo rm -rf $OLD_DIR_PATH"
-    printf "RM_CMD='$RM_CMD'\n"
+    printf "RM_CMD=$RM_CMD\n"
     eval $RM_CMD
 else
     printf '\n'
@@ -84,7 +84,8 @@ printf "\n#### [Step 6] Start new tracker server ####\n\n"
 export CONSOLE_LOG=false 
 
 START_CMD="nohup node --async-stack-traces tracker-server/index.js >/dev/null 2>error_logs.txt &"
-printf "START_CMD='$START_CMD'\n"
+printf "START_CMD=$START_CMD\n"
+printf "START_CMD=$START_CMD\n" >> start_commands.txt
 eval $START_CMD
 
 # 7. Wait until the new tracker server catches up

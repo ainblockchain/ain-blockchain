@@ -222,7 +222,8 @@ MAX_OLD_SPACE_SIZE_MB=11000
 
 printf "\nStarting up Blockchain Node server..\n\n"
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
-printf "START_CMD='$START_CMD'\n"
+printf "START_CMD=$START_CMD\n"
+printf "START_CMD=$START_CMD\n" >> start_commands.txt
 eval $START_CMD
 
 
