@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
-    printf "Example: bash start_node_incremental_gcp.sh spring 0 0 fast --keystore\n"
+if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
+    printf "Example: bash start_node_incremental_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
     exit
 fi
 
@@ -93,7 +93,9 @@ fi
 
 function parse_options() {
     local option="$1"
-    if [[ $option = '--full-sync' ]]; then
+    if [[ $option = '--keep-code' ]]; then
+        KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--full-sync' ]]; then
         FULL_SYNC_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
@@ -117,6 +119,8 @@ function parse_options() {
     fi
 }
 
+# Parse options.
+KEEP_CODE_OPTION=""
 FULL_SYNC_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
 JSON_RPC_OPTION=""
@@ -129,6 +133,7 @@ do
   ((number++))
 done
 
+printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
@@ -160,52 +165,64 @@ export LIGHTWEIGHT=false
 export STAKE=100000
 export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
 
+# 2. Get currently used directory & new directory
+printf "\n#### [Step 2] Get currently used directory & new directory ####\n\n"
+
+OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
+printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
+
 date=$(date '+%Y-%m-%dT%H-%M')
 printf "date=$date\n"
 NEW_DIR_PATH="../ain-blockchain-$date"
 printf "NEW_DIR_PATH=$NEW_DIR_PATH\n"
 
-# 2. Get currently used directory
-printf "\n#### [Step 2] Get currently used directory ####\n\n"
+# 3. Set up working directory & install modules
+printf "\n#### [Step 3] Set up working directory & install modules ####\n\n"
+if [[ $KEEP_CODE_OPTION = "" ]]; then
+    printf '\n'
+    printf 'Creating new working directory..\n'
+    MKDIR_CMD="sudo mkdir $NEW_DIR_PATH"
+    printf "MKDIR_CMD=$MKDIR_CMD\n"
+    eval $MKDIR_CMD
 
-OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
-printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
+    sudo chmod -R 777 $NEW_DIR_PATH
+    mv * $NEW_DIR_PATH
+    sudo mkdir -p $BLOCKCHAIN_DATA_DIR
+    sudo chmod -R 777 $BLOCKCHAIN_DATA_DIR
 
-# 3. Create a new directory
-printf "\n#### [Step 3] Create a new directory ####\n\n"
+    printf '\n'
+    printf 'Installing modules..\n'
+    cd $NEW_DIR_PATH
+    npm install
+else
+    printf '\n'
+    printf 'Using old working directory..\n'
+    sudo chmod -R 777 $OLD_DIR_PATH
+fi
 
-MKDIR_CMD="sudo mkdir $NEW_DIR_PATH"
-printf "MKDIR_CMD=$MKDIR_CMD\n"
-eval $MKDIR_CMD
-
-sudo chmod -R 777 $NEW_DIR_PATH
-mv * $NEW_DIR_PATH
-sudo mkdir -p $BLOCKCHAIN_DATA_DIR
-sudo chmod -R 777 $BLOCKCHAIN_DATA_DIR
-
-# 4. Install dependencies
-printf "\n#### [Step 4] Install dependencies ####\n\n"
-
-cd $NEW_DIR_PATH
-npm install
-
-# 5. Kill old node server 
-printf "\n#### [Step 5] Kill old node server ####\n\n"
+# 4. Kill old node server 
+printf "\n#### [Step 4] Kill old node server ####\n\n"
 
 KILL_CMD="sudo killall node"
 printf "KILL_CMD='$KILL_CMD'\n\n"
 eval $KILL_CMD
 sleep 10
 
-# 6. Remove old directory keeping the chain data
-printf "\n#### [Step 6] Remove old directory keeping the chain data ####\n\n"
+# 5. Remove old working directory keeping the chain data
+printf "\n#### [Step 5] Remove old working directory keeping the chain data if necessary ####\n\n"
+if [[ $KEEP_CODE_OPTION = "" ]]; then
+    printf '\n'
+    printf 'Removing old working directory..\n'
+    RM_CMD="sudo rm -rf $OLD_DIR_PATH"
+    printf "RM_CMD='$RM_CMD'\n"
+    eval $RM_CMD
+else
+    printf '\n'
+    printf 'Keeping old working directory..\n'
+fi
 
-RM_CMD="sudo rm -rf $OLD_DIR_PATH"
-printf "RM_CMD='$RM_CMD'\n"
-eval $RM_CMD
-
-# 7. Start a new node server
-printf "\n#### [Step 7] Start new node server ####\n\n"
+# 6. Start a new node server
+printf "\n#### [Step 6] Start new node server ####\n\n"
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
 if [[ $ACCOUNT_INJECTION_OPTION = "" ]] || [[ "$2" -gt 0 ]]; then
@@ -241,4 +258,6 @@ START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_S
 printf "START_CMD='$START_CMD'\n"
 eval $START_CMD
 
-printf "\n* << Node server successfully deployed! ***************************************\n\n"
+# NOTE(platfowner): deploy_blockchain_incremental_gcp.sh waits until the new server gets healthy.
+
+printf "\n* << Node server [$1 $2 $3] successfully deployed! ***************************************\n\n"
