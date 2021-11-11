@@ -365,8 +365,6 @@ const AccountProperties = {
   OWNER: 'owner',
   PRIVATE_KEY: 'private_key',
   PUBLIC_KEY: 'public_key',
-  SHARES: 'shares',
-  TIMESTAMP: 'timestamp',
 };
 
 /**
@@ -1070,6 +1068,7 @@ module.exports = {
   buildOwnerPermissions,
   buildRulePermission,
   ...GenesisParams.blockchain,
+  ...GenesisParams.genesis,
   ...GenesisParams.consensus,
   ...GenesisParams.resource,
   ...networkEnv,

@@ -6,6 +6,8 @@ const {
   CHAINS_DIR,
   GenesisToken,
   GenesisAccounts,
+  GENESIS_ACCOUNT_SHARES,
+  NUM_GENESIS_ACCOUNTS,
   GenesisSharding,
   GENESIS_WHITELIST,
   GenesisFunctions,
@@ -61,7 +63,7 @@ describe("DB initialization", () => {
   describe("Balances", () => {
     it("loading balances properly on initialization", () => {
       const expected =
-          GenesisToken.total_supply - GenesisAccounts.others.length * GenesisAccounts.shares;
+          GenesisToken.total_supply - NUM_GENESIS_ACCOUNTS * GENESIS_ACCOUNT_SHARES;
       const dbPath = `/accounts/${GenesisAccounts.owner.address}/balance`;
       expect(node.db.getValue(dbPath)).to.equal(expected);
     })
@@ -2905,7 +2907,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11305114 > 10000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11315234 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
         assert.deepEqual(res.gas_cost_total, 5.59512);
       });
