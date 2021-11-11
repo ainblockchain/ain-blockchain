@@ -11,13 +11,13 @@ const DB = require('../db');
 const {
   PredefinedDbPaths,
   GenesisAccounts,
+  NUM_GENESIS_ACCOUNTS,
   GENESIS_VALIDATORS,
   GenesisValues,
   GenesisFunctions,
   GenesisRules,
   GenesisOwners,
   AccountProperties,
-  StateInfoProperties,
   StateVersions,
 } = require('../common/constants');
 const PathUtil = require('../common/path-util');
@@ -254,7 +254,7 @@ class Block {
     const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
     if (otherAccounts && CommonUtil.isArray(otherAccounts) && otherAccounts.length > 0 &&
         GenesisAccounts[AccountProperties.SHARES] > 0) {
-      for (let i = 0; i < otherAccounts.length; i++) {
+      for (let i = 0; i < Math.min(NUM_GENESIS_ACCOUNTS, otherAccounts.length); i++) {
         const accountAddress = otherAccounts[i][AccountProperties.ADDRESS];
         // Transfer operation
         const op = {
