@@ -1829,7 +1829,7 @@ describe("DB operations", () => {
       it("when overwriting existing rule config with simple path", () => {
         const ruleConfig = {
           ".rule": {
-            "write": "other rule config"
+            "write": "auth.addr === 'xyz'"
           }
         };
         expect(node.db.setRule("/apps/test/test_rule/some/path", ruleConfig).code).to.equal(0);
@@ -1839,7 +1839,7 @@ describe("DB operations", () => {
       it("when writing with variable path", () => {
         const ruleConfig = {
           ".rule": {
-            "write": "other rule config"
+            "write": "auth.addr = 'xyz'"
           }
         };
         expect(node.db.setRule("/apps/test/test_rule/some/$variable/path", ruleConfig).code)
@@ -1881,11 +1881,27 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleTreeBefore);
       })
 
+      it("when writing invalid write rule with not-allowed top-level tokens", () => {
+        const ruleTreeBefore = node.db.getRule("/apps/test/test_rule/some/path");
+        assert.deepEqual(node.db.setRule(
+            "/apps/test/test_rule/some/path",
+            {
+              ".rule": {
+                "write": "invalid_top_level_token"
+              }
+            }), {
+          "code": 504,
+          "error_message": "Invalid rule tree: /.rule/write",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleTreeBefore);
+      })
+
       it("when writing with invalid path", () => {
         assert.deepEqual(node.db.setRule("/apps/test/test_rule/some/path/.",
             {
               ".rule": {
-                "write": "some rule config"
+                "write": "auth.addr === 'xyz'"
               }
             }), {
           "code": 502,
@@ -2306,7 +2322,7 @@ describe("DB operations", () => {
             ref: "/apps/test/test_rule/some/path",
             value: {
               ".rule": {
-                "write": "other rule config"
+                "write": "auth.addr = 'xyz'"
               }
             }
           },
@@ -2391,7 +2407,7 @@ describe("DB operations", () => {
         });
         assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
           ".rule": {
-            "write": "other rule config"
+            "write": "auth.addr = 'xyz'"
           }
         });
         assert.deepEqual(
@@ -2889,7 +2905,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11305214 > 10000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11305114 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
         assert.deepEqual(res.gas_cost_total, 5.59512);
       });
@@ -3049,7 +3065,7 @@ describe("DB operations", () => {
           "node_2a": {
             "node_3a": {
               ".rule": {
-                "write": "some rule a"
+                "write": "auth.addr === 'abc'"
               }
             }
           }
@@ -3058,7 +3074,7 @@ describe("DB operations", () => {
           "node_2b": {
             "node_3b": {
               ".rule": {
-                "write": "some rule b"
+                "write": "auth.addr === 'def'"
               }
             }
           }
@@ -3150,7 +3166,7 @@ describe("DB operations", () => {
     it("when setRule() with non-empty rule", () => {
       expect(node.db.setRule("/apps/test/empty_rules/node_0/node_1a/node_2a/node_3a", {
         ".rule": {
-          "write": "some other rule"
+          "write": "auth.addr === 'xyz'"
         }
       }).code).to.equal(0)
       assert.deepEqual(node.db.getRule("/apps/test/empty_rules/node_0"), {
@@ -3158,7 +3174,7 @@ describe("DB operations", () => {
           "node_2a": {
             "node_3a": {
               ".rule": {
-                "write": "some other rule"
+                "write": "auth.addr === 'xyz'"
               }
             }
           }
@@ -3167,7 +3183,7 @@ describe("DB operations", () => {
           "node_2b": {
             "node_3b": {
               ".rule": {
-                "write": "some rule b"
+                "write": "auth.addr === 'def'"
               }
             }
           }
@@ -3183,7 +3199,7 @@ describe("DB operations", () => {
           "node_2b": {
             "node_3b": {
               ".rule": {
-                "write": "some rule b"
+                "write": "auth.addr === 'def'"
               }
             }
           }
@@ -3792,7 +3808,7 @@ describe("DB sharding config", () => {
             },
             "deeper": {
               ".rule": {
-                "write": "some deeper rule config"
+                "write": "auth.addr === 'def'"
               }
             }
           }
@@ -4209,13 +4225,13 @@ describe("DB sharding config", () => {
       },
       "deeper": {
         ".rule": {
-          "write": "some deeper rule config"
+          "write": "auth.addr === 'def'"
         }
       }
     };
     const newRule = {
       ".rule": {
-        "write": "another rule"
+        "write": "auth.addr === 'xyz'"
       }
     };
     const newValue = "that";
@@ -4272,7 +4288,7 @@ describe("DB sharding config", () => {
           "subtree_configs": [
             {
               "config": {
-                "write": "some deeper rule config"
+                "write": "auth.addr === 'def'"
               },
               "path": "/deeper",
             }
@@ -4309,7 +4325,7 @@ describe("DB sharding config", () => {
           "subtree_configs": [
             {
               "config": {
-                "write": "some deeper rule config"
+                "write": "auth.addr === 'def'"
               },
               "path": "/deeper",
             }

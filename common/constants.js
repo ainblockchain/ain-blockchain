@@ -41,13 +41,16 @@ const FeatureFlags = {
 // ** Environment variables **
 const DEBUG = CommonUtil.convertEnvVarInputToBool(process.env.DEBUG);
 const CONSOLE_LOG = CommonUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
-const ENABLE_DEV_SET_CLIENT_API = CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_SET_CLIENT_API);
+const ENABLE_DEV_CLIENT_SET_API =
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_SET_API);
+const ENABLE_JSON_RPC_API =
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_JSON_RPC_API, true);
 const ENABLE_TX_SIG_VERIF_WORKAROUND =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
 const ENABLE_GAS_FEE_WORKAROUND =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
 const ENABLE_REST_FUNCTION_CALL =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_REST_FUNCTION_CALL, true);
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_REST_FUNCTION_CALL);
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
@@ -103,6 +106,7 @@ const SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is gener
 const MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
 const KEYS_ROOT_DIR = path.resolve(BLOCKCHAIN_DATA_DIR, 'keys');
 const HASH_DELIMITER = '#';
+const VARIABLE_LABEL_PREFIX = '$';
 const STATE_INFO_PREFIX = '#';
 const TX_NONCE_ERROR_CODE = 900;
 const TX_TIMESTAMP_ERROR_CODE = 901;
@@ -1020,7 +1024,8 @@ module.exports = {
   KEYS_ROOT_DIR,
   DEBUG,
   CONSOLE_LOG,
-  ENABLE_DEV_SET_CLIENT_API,
+  ENABLE_DEV_CLIENT_SET_API,
+  ENABLE_JSON_RPC_API,
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
   ENABLE_REST_FUNCTION_CALL,
@@ -1034,6 +1039,7 @@ module.exports = {
   LIGHTWEIGHT,
   SYNC_MODE,
   HASH_DELIMITER,
+  VARIABLE_LABEL_PREFIX,
   STATE_INFO_PREFIX,
   TX_NONCE_ERROR_CODE,
   TX_TIMESTAMP_ERROR_CODE,

@@ -1,52 +1,83 @@
 #!/bin/bash
 
-if [[ "$#" -lt 3 ]] || [[ "$#" -gt 5 ]]; then
-    echo "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keystore|--mnemonic] [--keep-code]"
-    echo "Example: bash start_node_genesis_gcp.sh spring 0 0 --keystore"
+if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
+    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
+    printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
     exit
 fi
 
-
 function parse_options() {
     local option="$1"
-    if [[ "$option" = '--keep-code' ]]; then
+    if [[ $option = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
-    elif [[ "$option" = '--keystore' ]]; then
+    elif [[ $option = '--full-sync' ]]; then
+        FULL_SYNC_OPTION="$option"
+    elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            echo "You cannot use both keystore and mnemonic"
+            printf "You cannot use both keystore and mnemonic\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
-    elif [[ "$option" = '--mnemonic' ]]; then
+    elif [[ $option = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            echo "You cannot use both keystore and mnemonic"
+            printf "You cannot use both keystore and mnemonic\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ $option = '--json-rpc' ]]; then
+        JSON_RPC_OPTION="$option"
+    elif [[ $option = '--rest-func' ]]; then
+        REST_FUNC_OPTION="$option"
     else
-        echo "Invalid options: $option"
+        printf "Invalid options: $option\n"
         exit
     fi
 }
 
 # Parse options.
 KEEP_CODE_OPTION=""
+FULL_SYNC_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
-if [[ "$#" -gt 3 ]]; then
-    parse_options "$4"
-    if [[ "$#" = 5 ]]; then
-        parse_options "$5"
-    fi
-fi
-echo "KEEP_CODE_OPTION=$KEEP_CODE_OPTION"
-echo "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION"
-export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
+JSON_RPC_OPTION=""
+REST_FUNC_OPTION=""
 
-echo 'Killing old jobs..'
+ARG_INDEX=4
+while [ $ARG_INDEX -le $# ]
+do
+  parse_options "${!ARG_INDEX}"
+  ((ARG_INDEX++))
+done
+
+printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
+printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
+printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
+printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
+
+if [[ $FULL_SYNC_OPTION = "" ]]; then
+  export SYNC_MODE=fast
+else
+  export SYNC_MODE=full
+fi
+export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
+if [[ $JSON_RPC_OPTION ]]; then
+  export ENABLE_JSON_RPC_API=true
+else
+  export ENABLE_JSON_RPC_API=false
+fi
+if [[ $REST_FUNC_OPTION ]]; then
+  export ENABLE_REST_FUNCTION_CALL=true
+else
+  export ENABLE_REST_FUNCTION_CALL=false
+fi
+
+printf '\n'
+printf 'Killing old jobs..\n'
 sudo killall node
 
-if [[ "$KEEP_CODE_OPTION" = "" ]]; then
-    echo 'Setting up working directory..'
+if [[ $KEEP_CODE_OPTION = "" ]]; then
+    printf '\n'
+    printf 'Setting up working directory..\n'
     cd
     sudo rm -rf /home/ain_blockchain_data
     sudo mkdir /home/ain_blockchain_data
@@ -57,15 +88,16 @@ if [[ "$KEEP_CODE_OPTION" = "" ]]; then
     mv * ../ain-blockchain
     cd ../ain-blockchain
 
-    echo 'Installing node modules..'
+    printf '\n'
+    printf 'Installing node modules..\n'
     npm install
 else
-    echo 'Using old directory..'
+    printf '\n'
+    printf 'Using old directory..\n'
     OLD_DIR_PATH=$(find ../ain-blockchain* -maxdepth 0 -type d)
     printf "OLD_DIR_PATH=$OLD_DIR_PATH\n"
     sudo chmod -R 777 $OLD_DIR_PATH
     sudo chmod -R 777 /home/ain_blockchain_data
-    cd $OLD_DIR_PATH
 fi
 
 
@@ -127,27 +159,28 @@ elif [[ "$1" = 'dev' ]]; then
   elif [[ "$2" = 20 ]]; then
     export TRACKER_WS_ADDR=ws://35.201.248.92:5000  # dev-shard-20-tracker-ip
   else
-    echo "Invalid shard ID argument: $2"
+    printf "Invalid shard ID argument: $2\n"
     exit
   fi
 else
-    echo "Invalid season argument: $1"
+    printf "Invalid season argument: $1\n"
     exit
 fi
 
-echo "TRACKER_WS_ADDR=$TRACKER_WS_ADDR"
-echo "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR"
-echo "KEYSTORE_DIR=$KEYSTORE_DIR"
+printf "\n"
+printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
+printf "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR\n"
+printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 
 if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
-    echo "Invalid account_index argument: $2"
+    printf "Invalid account_index argument: $2\n"
     exit
 fi
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
-if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]] || [[ "$2" -gt 0 ]]; then
+if [[ $ACCOUNT_INJECTION_OPTION = "" ]] || [[ "$2" -gt 0 ]]; then
     export ACCOUNT_INDEX="$3"
-    echo "ACCOUNT_INDEX=$ACCOUNT_INDEX"
+    printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
 elif [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     if [[ "$3" = 0 ]]; then
         KEYSTORE_FILENAME="keystore_node_0.json"
@@ -164,18 +197,18 @@ elif [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     elif [[ "$3" = 6 ]]; then
         KEYSTORE_FILENAME="keystore_node_6.json"
     fi
-    echo "KEYSTORE_FILENAME=$KEYSTORE_FILENAME"
+    printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
     if [[ "$KEEP_CODE_OPTION" = "" ]]; then
         sudo mkdir -p ../ain_blockchain_data/keys/8080
         sudo mv ./$KEYSTORE_DIR/$KEYSTORE_FILENAME ../ain_blockchain_data/keys/8080/
     fi
     export KEYSTORE_FILE_PATH=/home/ain_blockchain_data/keys/8080/$KEYSTORE_FILENAME
-    echo "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH"
+    printf "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH\n"
 fi
 
 export DEBUG=false
 export CONSOLE_LOG=false 
-export ENABLE_DEV_SET_CLIENT_API=false 
+export ENABLE_DEV_CLIENT_SET_API=false 
 export ENABLE_TX_SIG_VERIF_WORKAROUND=false
 export ENABLE_GAS_FEE_WORKAROUND=true
 export LIGHTWEIGHT=false
@@ -189,8 +222,9 @@ MAX_OLD_SPACE_SIZE_MB=11000
 
 printf "\nStarting up Blockchain Node server..\n\n"
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
-printf "START_CMD='$START_CMD'\n"
+printf "START_CMD=$START_CMD\n"
+printf "START_CMD=$START_CMD\n" >> start_commands.txt
 eval $START_CMD
 
 
-printf "\nBlockchain Node server is now up!\n\n"
+printf "\nBlockchain Node server [$1 $2 $3] is now up!\n\n"
