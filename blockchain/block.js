@@ -254,7 +254,12 @@ class Block {
     const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
     if (otherAccounts && CommonUtil.isArray(otherAccounts) && otherAccounts.length > 0 &&
         GenesisAccounts[AccountProperties.SHARES] > 0) {
-      for (let i = 0; i < Math.min(NUM_GENESIS_ACCOUNTS, otherAccounts.length); i++) {
+      if (!CommonUtil.isNumber(NUM_GENESIS_ACCOUNTS) || NUM_GENESIS_ACCOUNTS <= 0 ||
+          NUM_GENESIS_ACCOUNTS > otherAccounts.length) {
+        CommonUtil.finishWithStackTrace(
+            logger, `Invalid NUM_GENESIS_ACCOUNTS value: ${NUM_GENESIS_ACCOUNTS}`);
+      }
+      for (let i = 0; i < NUM_GENESIS_ACCOUNTS; i++) {
         const accountAddress = otherAccounts[i][AccountProperties.ADDRESS];
         // Transfer operation
         const op = {
