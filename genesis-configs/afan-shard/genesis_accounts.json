@@ -4,8 +4,6 @@
     "private_key": "6204d4e083dd09c7b084e5923c5d664d2e1f3ce8440f90a773638f30c61d9c40",
     "public_key": "e466afe2938a4a804de86b3abd81403a982d33a7341649afccdb83e8f79c51a27516cdae3baddf3bce12992679ed2d793e65285dad38325a4d8c11ac83f378c1"
   },
-  "timestamp": 1571819318272,
-  "shares": 1000000,
   "others": [
     {
       "address": "0x00Ba0Cb2B1157882963024E0CF837E773d11535d",

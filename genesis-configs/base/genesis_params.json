@@ -7,7 +7,11 @@
     "HOSTING_ENV": "local",
     "TRACKER_WS_ADDR": "ws://localhost:5000",
     "MAX_SHARD_REPORT": 100,
-    "REST_FUNCTION_CALL_TIMEOUT_MS": 10000,
+    "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
+  },
+  "genesis": {
+    "GENESIS_TIMESTAMP": 1571819318272,
+    "GENESIS_ACCOUNT_SHARES": 1000000,
     "NUM_GENESIS_ACCOUNTS": 20
   },
   "consensus": {
