@@ -138,7 +138,7 @@
     "whitelist": {
       "$user_addr": {
         ".rule": {
-          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.length(util.values(getValue('/consensus/whitelist')).filter(x => x === true)) > util.getMinNumValidators()))"
+          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusWhitelistSize() > util.getMinNumValidators()))"
         }
       }
     }
