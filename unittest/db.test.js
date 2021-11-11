@@ -6,6 +6,7 @@ const {
   CHAINS_DIR,
   GenesisToken,
   GenesisAccounts,
+  GENESIS_ACCOUNT_SHARES,
   NUM_GENESIS_ACCOUNTS,
   GenesisSharding,
   GENESIS_WHITELIST,
@@ -62,7 +63,7 @@ describe("DB initialization", () => {
   describe("Balances", () => {
     it("loading balances properly on initialization", () => {
       const expected =
-          GenesisToken.total_supply - NUM_GENESIS_ACCOUNTS * GenesisAccounts.shares;
+          GenesisToken.total_supply - NUM_GENESIS_ACCOUNTS * GENESIS_ACCOUNT_SHARES;
       const dbPath = `/accounts/${GenesisAccounts.owner.address}/balance`;
       expect(node.db.getValue(dbPath)).to.equal(expected);
     })
