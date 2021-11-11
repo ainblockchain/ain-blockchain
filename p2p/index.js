@@ -123,14 +123,18 @@ class P2pClient {
     return stats;
   }
 
-  assignRandomPeers() {
+  getRouterUrlList() {
+    console.log(Object.keys(this.router))
+    return Object.values(this.outbound).map(peer => {
+      return peer.peerInfo.networkStatus.jsonRpc.url;
+    });
+  }
+
+  getPeerUrlList() {
     const candidates = Object.values(this.outbound)
       .filter(peer =>
         peer.peerInfo.networkStatus.connectionStatus.incomingPeers.length <
             peer.peerInfo.networkStatus.connectionStatus.maxInbound)
-      .sort((a, b) =>
-        a.peerInfo.networkStatus.connectionStatus.incomingPeers.length -
-            b.peerInfo.networkStatus.connectionStatus.incomingPeers.length)
       .map(peer => peer.peerInfo.networkStatus.p2p.url);
     return candidates;
   }
@@ -139,10 +143,8 @@ class P2pClient {
     return {
       availableForConnect: MAX_NUM_INBOUND_CONNECTION > Object.keys(this.server.inbound).length,
       networkStatus: this.server.getNetworkStatus(),
-      routeList: Object.values(this.outbound).map(peer => {
-        return peer.peerInfo.networkStatus.jsonRpc.url;
-      }),
-      newPeerInfoList: this.assignRandomPeers()
+      routeList: this.getRouterUrlList(),
+      newPeerInfoList: this.getPeerUrlList()
     }
   }
 
