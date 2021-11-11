@@ -481,7 +481,6 @@ class P2pServer {
                 return;
               }
               logger.info(`A new websocket(${address}) is established.`);
-              peerInfo.isAlive = true;
               this.inbound[address] = {
                 socket,
                 peerInfo,
@@ -618,9 +617,7 @@ class P2pServer {
             const addressFromSocket = getAddressFromSocket(this.inbound, socket);
             // Keep updating both inbound and outbound.
             this.inbound[addressFromSocket].peerInfo = updatePeerInfo;
-            this.inbound[addressFromSocket].peerInfo.isAlive = true;
             this.client.outbound[addressFromSocket].networkStatus = updatePeerInfo.networkStatus;
-            this.client.outbound[addressFromSocket].isAlive = true;
             break;
           default:
             logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
