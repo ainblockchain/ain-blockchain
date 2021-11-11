@@ -41,11 +41,11 @@ ACCOUNT_INJECTION_OPTION=""
 JSON_RPC_OPTION=""
 REST_FUNC_OPTION=""
 
-number=4
-while [ $number -le $# ]
+ARG_INDEX=4
+while [ $ARG_INDEX -le $# ]
 do
-  parse_options "${!number}"
-  ((number++))
+  parse_options "${!ARG_INDEX}"
+  ((ARG_INDEX++))
 done
 
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
