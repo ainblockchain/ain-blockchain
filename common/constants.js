@@ -42,7 +42,7 @@ const FeatureFlags = {
 const DEBUG = CommonUtil.convertEnvVarInputToBool(process.env.DEBUG);
 const CONSOLE_LOG = CommonUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
 const ENABLE_DEV_CLIENT_SET_API =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_SET_CLIENT_API);
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_SET_API, true);
 const ENABLE_JSON_RPC_API =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_JSON_RPC_API, true);
 const ENABLE_TX_SIG_VERIF_WORKAROUND =
