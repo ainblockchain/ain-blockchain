@@ -34,7 +34,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     // TODO(minsulee2): Add p2p json rpc API methods here.
   };
   if (ENABLE_JSON_RPC_API) {
-    Object.assign(methods, {
+    methods = Object.assign(methods, {
       ain_getProtocolVersion: function(args, done) {
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
         done(null, addProtocolVersion({result: CURRENT_PROTOCOL_VERSION}));
