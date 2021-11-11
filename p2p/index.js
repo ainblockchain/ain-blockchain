@@ -2,7 +2,6 @@
 const _ = require('lodash');
 const P2pServer = require('./server');
 const Websocket = require('ws');
-const jayson = require('jayson');
 const logger = new (require('../logger'))('P2P_CLIENT');
 const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
@@ -34,6 +33,9 @@ const {
   encapsulateMessage,
   isValidNetworkId
 } = require('./util');
+const {
+  sendGetRequest
+} = require('../common/network-util');
 
 const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
@@ -203,10 +205,10 @@ class P2pClient {
   }
 
   setIntervalForRouterConnection() {
-    this.intervalRouterConnection = setInterval(() => {
+    this.intervalRouterConnection = setInterval(async () => {
       if (this.updateP2pState()) {
         const nextRouter = this.assignRandomRouter();
-        this.connectToRouter(nextRouter);
+        await this.connectToRouter(nextRouter);
       }
     }, ROUTER_CONNECTION_INVERVAL_MS);
   }
@@ -532,23 +534,9 @@ class P2pClient {
       });
   }
 
-  async queryOnNode(jsonRpcClient) {
-    return new Promise((resolve, reject) => {
-      jsonRpcClient.request(JSON_RPC_GET_ROUTE_STATUS, { protoVer: CURRENT_PROTOCOL_VERSION },
-          (err, response) => {
-        if (err) {
-          reject(err);
-        }
-        else {
-          resolve(response.result.result);
-        }
-      });
-    });
-  }
-
   async connectToRouter(routerUrl) {
-    const jsonRpcClient = jayson.client.http(routerUrl);
-    const routeInfo = await this.queryOnNode(jsonRpcClient);
+    const resp = await sendGetRequest(routerUrl, JSON_RPC_GET_ROUTE_STATUS, { });
+    const routeInfo = _.get(resp, 'data.result.result');
     // TODO(minsulee2): Needs to add router table updates logic(interval).
     this.router[routerUrl] = { queryToConnect: true, queriedAt: Date.now() };
     routeInfo.routeList.forEach(url => {
