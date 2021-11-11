@@ -727,13 +727,14 @@ function initializeNetworkEnvironments() {
   } else {
     return {
       P2P_MESSAGE_TIMEOUT_MS: 600000,
-      // NOTE(minsulee2): This will be updated, after network extension experiment done.
-      // NOTE(liayoo): The following env vars are temporary as well.
+      // NOTE(minsulee2, liayoo platfowner): As we discussed, the initial values for the OUTBOUND
+      //and INBOUND are fixed as 3 and 6.
       TARGET_NUM_OUTBOUND_CONNECTION: process.env.TARGET_NUM_OUTBOUND_CONNECTION ?
-          Number(process.env.TARGET_NUM_OUTBOUND_CONNECTION) : GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
+          Number(process.env.TARGET_NUM_OUTBOUND_CONNECTION) : 3,
       MAX_NUM_INBOUND_CONNECTION: process.env.MAX_NUM_INBOUND_CONNECTION ?
-          Number(process.env.MAX_NUM_INBOUND_CONNECTION) : GenesisParams.consensus.MAX_NUM_VALIDATORS - 1,
-      REQUEST_BODY_SIZE_LIMIT: GenesisParams.network.REQUEST_BODY_SIZE_LIMIT || DEFAULT_REQUEST_BODY_SIZE_LIMIT,
+          Number(process.env.MAX_NUM_INBOUND_CONNECTION) : 6,
+      REQUEST_BODY_SIZE_LIMIT:
+          GenesisParams.network.REQUEST_BODY_SIZE_LIMIT || DEFAULT_REQUEST_BODY_SIZE_LIMIT,
     }
   }
 }
@@ -741,8 +742,6 @@ function initializeNetworkEnvironments() {
 const networkEnv = initializeNetworkEnvironments();
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
-const DEFAULT_LOCAL_P2P_ROUTER_URL = `http://localhost:8081${JSON_RPC_ENDPOINT}`;
-const DEFAULT_GCP_P2P_ROUTER_URL = `https://testnet-api.ainetwork.ai${JSON_RPC_ENDPOINT}`;
 
 const INITIAL_P2P_ROUTER = (() => {
   const p2pRouterUrl = process.env.P2P_ROUTER_URL || '';
@@ -757,11 +756,10 @@ const INITIAL_P2P_ROUTER = (() => {
     const hostingEnv = GenesisParams.blockchain.HOSTING_ENV;
     switch (hostingEnv) {
       case 'local':
-        return DEFAULT_LOCAL_P2P_ROUTER_URL;
+      case 'gcp':
+        return GenesisParams.blockchain.P2P_ROUTER_URL;
       case 'comcom':
         throw Error(`The P2P_ROUTER_URL(${P2P_ROUTER_URL}) is compulsory for HOSTING_ENV comcom.`);
-      case 'gcp':
-        return DEFAULT_GCP_P2P_ROUTER_URL;
       default:
         throw Error(`Wrong hosting environment(${hostingEnv}) is set. Please try again.`);
     }

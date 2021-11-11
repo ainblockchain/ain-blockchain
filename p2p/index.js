@@ -140,7 +140,7 @@ class P2pClient {
 
   getRouteStatus() {
     return {
-      availableForConnect: MAX_NUM_INBOUND_CONNECTION > Object.keys(this.server.inbound).length,
+      numAvailableConnections: MAX_NUM_INBOUND_CONNECTION > Object.keys(this.server.inbound).length,
       networkStatus: this.server.getNetworkStatus(),
       routeList: this.getRouterUrlList(),
       newPeerInfoList: this.getPeerUrlList()
@@ -564,7 +564,7 @@ class P2pClient {
       return url !== myUrl;
     });
     const connectionStatus = routeInfo.networkStatus.connectionStatus;
-    if (routeInfo.availableForConnect && !connectionStatus.outgoingPeers.includes(myAddress)) {
+    if (routeInfo.numAvailableConnections && !connectionStatus.outgoingPeers.includes(myAddress)) {
       // NOTE(minsulee2): Add a router up on the list if it is not connected.
       newPeerInfoListWithoutMyUrl.push(routeInfo.networkStatus.p2p.url);
     }
