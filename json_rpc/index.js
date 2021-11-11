@@ -31,7 +31,7 @@ const PathUtil = require('../common/path-util');
 module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxProtocolVersion) {
   // Default API methods
   let methods = {
-    // TODO(minsulee): Add p2p json rpc API methods here.
+    // TODO(minsulee2): Add p2p json rpc API methods here.
   };
   if (ENABLE_JSON_RPC_API) {
     Object.assign(methods, {
