@@ -15,6 +15,7 @@ const Consensus = require('../consensus');
 const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
 const {
+  MAX_NUM_INBOUND_CONNECTION,
   CURRENT_PROTOCOL_VERSION,
   DATA_PROTOCOL_VERSION,
   PORT,
@@ -68,7 +69,7 @@ const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(minsulee2): Sign messages to tracker or peer.
 class P2pServer {
-  constructor (p2pClient, node, minProtocolVersion, maxProtocolVersion, maxInbound) {
+  constructor (p2pClient, node, minProtocolVersion, maxProtocolVersion) {
     this.wsServer = null;
     this.client = p2pClient;
     this.node = node;
@@ -78,7 +79,6 @@ class P2pServer {
     this.dataProtocolVersion = DATA_PROTOCOL_VERSION;
     this.majorDataProtocolVersion = VersionUtil.toMajorVersion(DATA_PROTOCOL_VERSION);
     this.inbound = {};
-    this.maxInbound = maxInbound;
   }
 
   async listen() {
@@ -106,7 +106,7 @@ class P2pServer {
       }
     });
     // Set the number of maximum clients.
-    this.wsServer.setMaxListeners(this.maxInbound);
+    this.wsServer.setMaxListeners(MAX_NUM_INBOUND_CONNECTION);
     this.wsServer.on('connection', (socket) => {
       this.setServerSidePeerEventHandlers(socket);
     });

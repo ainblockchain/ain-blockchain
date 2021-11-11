@@ -51,9 +51,8 @@ const JSON_RPC_GET_ROUTE_STATUS = 'route_getRouteStatus';
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
-    this.initConnections();
     this.server = new P2pServer(
-        this, node, minProtocolVersion, maxProtocolVersion, this.maxInbound);
+        this, node, minProtocolVersion, maxProtocolVersion);
     this.router = {};
     this.trackerWebSocket = null;
     this.outbound = {};
@@ -74,21 +73,13 @@ class P2pClient {
     this.setIntervalForRouterConnection();
   }
 
-  // FIXME(minsulee2): this should be removed?
-  initConnections() {
-    this.targetOutBound = process.env.MAX_OUTBOUND ?
-        Number(process.env.MAX_OUTBOUND) : TARGET_NUM_OUTBOUND_CONNECTION;
-    this.maxInbound = process.env.MAX_INBOUND ?
-        Number(process.env.MAX_INBOUND) : MAX_NUM_INBOUND_CONNECTION;
-  }
-
   getConnectionStatus() {
     const incomingPeers = Object.keys(this.server.inbound);
     const outgoingPeers = Object.keys(this.outbound);
     return {
       p2pState: this.p2pState,
-      maxInbound: this.maxInbound,
-      targetOutBound: this.targetOutBound,
+      maxInbound: MAX_NUM_INBOUND_CONNECTION,
+      targetOutBound: TARGET_NUM_OUTBOUND_CONNECTION,
       numInbound: incomingPeers.length,
       numOutbound: outgoingPeers.length,
       incomingPeers: incomingPeers,
@@ -147,7 +138,7 @@ class P2pClient {
 
   getRouteStatus() {
     return {
-      availableForConnect: this.maxInbound > Object.keys(this.server.inbound).length,
+      availableForConnect: MAX_NUM_INBOUND_CONNECTION > Object.keys(this.server.inbound).length,
       networkStatus: this.server.getNetworkStatus(),
       routeList: Object.values(this.outbound).map(peer => {
         return peer.peerInfo.networkStatus.jsonRpc.url;
@@ -202,11 +193,10 @@ class P2pClient {
   }
 
   assignRandomRouter() {
-    const shuffledList = _.shuffle(Object.entries(this.router));
+    const shuffledList = _.shuffle(Object.keys(this.router));
     if (shuffledList.length > 0) {
-      const peer = shuffledList[0];
-      const router = peer[0];
-      return router;
+      const routerUrl = shuffledList[0];
+      return routerUrl;
     } else {
       return INITIAL_P2P_ROUTER;
     }
@@ -618,7 +608,7 @@ class P2pClient {
   }
 
   getMaxNumberOfNewPeers() {
-    const numOfCandidates = this.targetOutBound - Object.keys(this.outbound).length;
+    const numOfCandidates = TARGET_NUM_OUTBOUND_CONNECTION - Object.keys(this.outbound).length;
     if (numOfCandidates > 0) {
       return numOfCandidates;
     } else {
