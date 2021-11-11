@@ -8,9 +8,6 @@ const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
 const {
-  HOSTING_ENV,
-  PORT,
-  P2P_PORT,
   TRACKER_WS_ADDR,
   MessageTypes,
   TrackerMessageTypes,
@@ -40,7 +37,7 @@ const {
 
 const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
-const ROUTER_CONNECTION_INVERVAL_MS = 15 * 1000;  // 1 minute
+const ROUTER_CONNECTION_INVERVAL_MS = 60 * 1000;  // 1 minute
 const HEARTBEAT_INTERVAL_MS = 10 * 1000;  // 15 seconds
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
@@ -142,8 +139,8 @@ class P2pClient {
         peer.peerInfo.networkStatus.connectionStatus.incomingPeers.length <
             peer.peerInfo.networkStatus.connectionStatus.maxInbound)
       .sort((a, b) =>
-        a.peerInfo.networkStatus.connectionStatus.incomingPeers -
-            b.peerInfo.networkStatus.connectionStatus.incomingPeers)
+        a.peerInfo.networkStatus.connectionStatus.incomingPeers.length -
+            b.peerInfo.networkStatus.connectionStatus.incomingPeers.length)
       .map(peer => peer.peerInfo.networkStatus.p2p.url);
     return candidates;
   }
@@ -341,7 +338,7 @@ class P2pClient {
     const payload = encapsulateMessage(MessageTypes.ADDRESS_REQUEST,
         { body: body, signature: signature });
     if (!payload) {
-      logger.error('The address cannot be sent because of msg encapsulation failure.');
+      logger.error('The peerInfo Message cannot be sent because of msg encapsulation failure.');
       return;
     }
     socket.send(JSON.stringify(payload));
@@ -529,6 +526,8 @@ class P2pClient {
       removeSocketConnectionIfExists(this.outbound, address);
       logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
+
+    // TODO(minsulee2): needs to update socket.on('error').
   }
 
   // TODO(minsulee2): Not just wait for address, but ack. if ack fails, this connection disconnects.
@@ -559,10 +558,10 @@ class P2pClient {
     });
   }
 
-  async connectToRouter(router) {
-    const jsonRpcClient = jayson.client.http(router);
+  async connectToRouter(routerUrl) {
+    const jsonRpcClient = jayson.client.http(routerUrl);
     const routeInfo = await this.queryOnNode(jsonRpcClient);
-    this.router = { [router]: { queryToConnect: true, queriedAt: Date.now() } };
+    this.router = { [routerUrl]: { queryToConnect: true, queriedAt: Date.now() } };
 
     const myAddress = this.server.getNodeAddress();
     const connectionStatus = routeInfo.networkStatus.connectionStatus;
@@ -575,7 +574,7 @@ class P2pClient {
     } else {
       routeInfo.routeList.forEach(url => {
         if (!this.router[url]) {
-          this.router = { [router]: { queryToConnect: false, queriedAt: null } };
+          this.router[url] = { queryToConnect: false, queriedAt: null };
         }
       });
       const networkStatus = this.server.getNetworkStatus();
@@ -611,7 +610,6 @@ class P2pClient {
   getAddressFromP2pUrl(url) {
     for (const address in this.outbound) {
       const peerInfo = this.outbound[address];
-      console.log(url, peerInfo.networkStatus.p2p.url);
       if (url === peerInfo.networkStatus.p2p.url) {
         return address;
       }
@@ -632,7 +630,6 @@ class P2pClient {
     const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
     newPeerInfoList.slice(0, maxNumberOfNewPeers).forEach(url => {
       const address = this.getAddressFromP2pUrl(url);
-      console.log(address);
       if (address) {
         logger.debug(`Node ${address} is already a managed peer.`);
       } else {
@@ -661,7 +658,7 @@ class P2pClient {
     logger.info('Disconnect from connected peers.');
   }
 
-  updatePeerInfoToPeer(socket, address) {
+  updateStatusToPeer(socket, address) {
     const payload = encapsulateMessage(MessageTypes.PEER_INFO_UPDATE, this.getStatus());
     if (!payload) {
       logger.error('The address cannot be sent because of msg encapsulation failure.');
@@ -684,7 +681,7 @@ class P2pClient {
               `The readyState is(${socket.readyState})`);
         } else {
           socket.ping();
-          this.updatePeerInfoToPeer(socket, node.peerInfo.address);
+          this.updateStatusToPeer(socket, node.peerInfo.address);
         }
       });
     }, HEARTBEAT_INTERVAL_MS);
