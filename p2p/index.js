@@ -124,7 +124,6 @@ class P2pClient {
   }
 
   getRouterUrlList() {
-    console.log(Object.keys(this.router))
     return Object.values(this.outbound).map(peer => {
       return peer.peerInfo.networkStatus.jsonRpc.url;
     });
@@ -552,30 +551,27 @@ class P2pClient {
     const routeInfo = await this.queryOnNode(jsonRpcClient);
     // TODO(minsulee2): Needs to add router table updates logic(interval).
     this.router[routerUrl] = { queryToConnect: true, queriedAt: Date.now() };
+    routeInfo.routeList.forEach(url => {
+      if (!this.router[url]) {
+        this.router[url] = { queryToConnect: false, queriedAt: null };
+      }
+    });
 
     const myAddress = this.server.getNodeAddress();
+    const networkStatus = this.server.getNetworkStatus();
+    const myUrl = networkStatus.p2p.url;
+    const newPeerInfoListWithoutMyUrl = routeInfo.newPeerInfoList.filter(url => {
+      return url !== myUrl;
+    });
     const connectionStatus = routeInfo.networkStatus.connectionStatus;
     if (routeInfo.availableForConnect && !connectionStatus.outgoingPeers.includes(myAddress)) {
-      const url = routeInfo.networkStatus.p2p.url;
-      await this.connectToPeer(url);
-      if (this.server.node.state === BlockchainNodeStates.STARTING) {
-        await this.startBlockchainNode(1);
-      }
-    } else {
-      routeInfo.routeList.forEach(url => {
-        if (!this.router[url]) {
-          this.router[url] = { queryToConnect: false, queriedAt: null };
-        }
-      });
-      const networkStatus = this.server.getNetworkStatus();
-      const myUrl = networkStatus.p2p.url;
-      const newPeerInfoListWithoutMyUrl = routeInfo.newPeerInfoList.filter(url => {
-        return url !== myUrl;
-      });
-      this.connectToPeers(newPeerInfoListWithoutMyUrl);
-      if (this.server.node.state === BlockchainNodeStates.STARTING) {
-        await this.startBlockchainNode(1);
-      }
+      // NOTE(minsulee2): Add a router up on the list if it is not connected.
+      newPeerInfoListWithoutMyUrl.push(routeInfo.networkStatus.p2p.url);
+    }
+    this.connectWithPeerList(_.shuffle(newPeerInfoListWithoutMyUrl));
+
+    if (this.server.node.state === BlockchainNodeStates.STARTING) {
+      await this.startBlockchainNode(1);
     }
   }
 
@@ -616,7 +612,7 @@ class P2pClient {
     }
   }
 
-  connectToPeers(newPeerInfoList) {
+  connectWithPeerList(newPeerInfoList) {
     const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
     newPeerInfoList.slice(0, maxNumberOfNewPeers).forEach(url => {
       const address = this.getAddressFromP2pUrl(url);
