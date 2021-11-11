@@ -69,11 +69,11 @@ FULL_SYNC_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
 RESET_RESTART_OPTION=""
 
-number=4
-while [ $number -le $# ]
+ARG_INDEX=4
+while [ $ARG_INDEX -le $# ]
 do
-  parse_options "${!number}"
-  ((number++))
+  parse_options "${!ARG_INDEX}"
+  ((ARG_INDEX++))
 done
 
 printf "SETUP_OPTION=$SETUP_OPTION\n"
