@@ -9,17 +9,17 @@ const CommonUtil = require('../common/common-util');
 const {
   TRACKER_WS_ADDR,
   MessageTypes,
+  TARGET_NUM_OUTBOUND_CONNECTION,
+  MAX_NUM_INBOUND_CONNECTION,
+  NETWORK_ID,
+  INITIAL_P2P_PEER_CANDIDATE_URL,
+  ACCOUNT_INDEX,
+  ENABLE_STATUS_REPORT_TO_TRACKER,
   TrackerMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
   TrafficEventTypes,
-  TARGET_NUM_OUTBOUND_CONNECTION,
-  MAX_NUM_INBOUND_CONNECTION,
-  NETWORK_ID,
   trafficStatsManager,
-  INITIAL_P2P_PEER_CANDIDATE_URL,
-  ACCOUNT_INDEX,
-  ENABLE_STATUS_REPORT_TO_TRACKER
 } = require('../common/constants');
 const {
   getAddressFromSocket,
@@ -205,7 +205,7 @@ class P2pClient {
     }
   }
 
-  assignRandompeerCandidates() {
+  assignRandomPeerCandidate() {
     const shuffledList = _.shuffle(Object.keys(this.peerCandidates));
     if (shuffledList.length > 0) {
       return shuffledList[0];
@@ -217,8 +217,8 @@ class P2pClient {
   setIntervalForPeerCandidatesConnection() {
     this.intervalPeerCandidatesConnection = setInterval(async () => {
       if (this.updateP2pState() && !this.isConnectingToPeerCandidates) {
-        const nextPeerCandidates = this.assignRandompeerCandidates();
-        await this.connectWithPeerCandidateUrl(nextPeerCandidates);
+        const nextPeerCandidate = this.assignRandomPeerCandidate();
+        await this.connectWithPeerCandidateUrl(nextPeerCandidate);
       }
     }, PEER_CANDIDATES_CONNECTION_INTERVAL_MS);
   }
@@ -571,7 +571,7 @@ class P2pClient {
     });
     const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
     const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.p2p.url');
-    if (isAvailableForConnection && !Object.keys(this.outbound).includes(peerCandidateP2pUrl)) {
+    if (isAvailableForConnection && !this.outbound[peerCandidateP2pUrl]) {
       // NOTE(minsulee2): Add a peer candidate up on the list if it is not connected.
       newPeerUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
     }
