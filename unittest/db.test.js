@@ -1841,7 +1841,7 @@ describe("DB operations", () => {
       it("when writing with variable path", () => {
         const ruleConfig = {
           ".rule": {
-            "write": "auth.addr = 'xyz'"
+            "write": "auth.addr === 'xyz'"
           }
         };
         expect(node.db.setRule("/apps/test/test_rule/some/$variable/path", ruleConfig).code)
@@ -2324,7 +2324,7 @@ describe("DB operations", () => {
             ref: "/apps/test/test_rule/some/path",
             value: {
               ".rule": {
-                "write": "auth.addr = 'xyz'"
+                "write": "auth.addr === 'xyz'"
               }
             }
           },
@@ -2409,7 +2409,7 @@ describe("DB operations", () => {
         });
         assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
           ".rule": {
-            "write": "auth.addr = 'xyz'"
+            "write": "auth.addr === 'xyz'"
           }
         });
         assert.deepEqual(
