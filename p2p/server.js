@@ -11,6 +11,7 @@ const v8 = require('v8');
 const _ = require('lodash');
 const semver = require('semver');
 const ainUtil = require('@ainblockchain/ain-util');
+const sizeof = require('object-sizeof');
 const Consensus = require('../consensus');
 const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
@@ -22,6 +23,7 @@ const {
   LIGHTWEIGHT,
   NETWORK_ID,
   MAX_SHARD_REPORT,
+  TX_BYTES_LIMIT,
   FeatureFlags,
   MessageTypes,
   BlockchainNodeStates,
@@ -44,6 +46,7 @@ const {
 const CommonUtil = require('../common/common-util');
 const {
   sendGetRequest,
+  signAndSendTx,
   sendTxAndWaitForFinalization,
 } = require('../common/network-util');
 const {
@@ -64,6 +67,10 @@ const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/
 const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/ip';
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
+const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
+const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
+const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
+const txSizeThreshold = TX_BYTES_LIMIT * 0.9;
 
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(minsulee2): Sign messages to tracker or peer.
@@ -79,6 +86,8 @@ class P2pServer {
     this.majorDataProtocolVersion = VersionUtil.toMajorVersion(DATA_PROTOCOL_VERSION);
     this.inbound = {};
     this.maxInbound = maxInbound;
+    this.isReportingShardProofHash = false;
+    this.lastReportedBlockNumberSent = -1;
   }
 
   async listen() {
@@ -153,8 +162,7 @@ class P2pServer {
       {},
       this.consensus.getStatus(),
       {
-        longestNotarizedChainTipsSize: this.consensus.blockPool ?
-            this.consensus.blockPool.longestNotarizedChainTips.length : 0
+        longestNotarizedChainTipsSize: this.node.bp.longestNotarizedChainTips.length
       }
     );
   }
@@ -463,7 +471,9 @@ class P2pServer {
             } else {
               logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
               Object.values(this.client.outbound).forEach((node) => {
-                this.client.requestChainSegment(node.socket, this.node.bc.lastBlock());
+                setTimeout(() => {
+                  this.client.requestChainSegment(node.socket, this.node.bc.lastBlockNumber());
+                }, 3000 + Math.random() * 7000);
               });
             }
             break;
@@ -664,6 +674,81 @@ class P2pServer {
     const shardInitTxBody = P2pServer.buildShardingSetupTxBody();
     await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTxBody, ownerPrivateKey);
     logger.info(`[${LOG_HEADER}] shard set up success`);
+  }
+
+  async reportShardProofHashes() {
+    if (!this.node.isShardReporter) {
+      return;
+    }
+    const lastFinalizedBlock = this.node.bc.lastBlock();
+    const lastFinalizedBlockNumber = lastFinalizedBlock ? lastFinalizedBlock.number : -1;
+    if (lastFinalizedBlockNumber < this.lastReportedBlockNumberSent + reportingPeriod) {
+      // Too early.
+      return;
+    }
+    const lastReportedBlockNumberConfirmed = await P2pServer.getLastReportedBlockNumber();
+    if (lastReportedBlockNumberConfirmed === null) {
+      // Try next time.
+      return;
+    }
+    if (this.isReportingShardProofHash) {
+      return;
+    }
+    this.isReportingShardProofHash = true;
+    try {
+      let blockNumberToReport = lastReportedBlockNumberConfirmed + 1;
+      const opList = [];
+      while (blockNumberToReport <= lastFinalizedBlockNumber) {
+        if (sizeof(opList) >= txSizeThreshold) {
+          break;
+        }
+        const block = blockNumberToReport === lastFinalizedBlockNumber ?
+            lastFinalizedBlock : this.node.bc.getBlockByNumber(blockNumberToReport);
+        if (!block) {
+          logger.error(`Failed to fetch block of number ${blockNumberToReport} while reporting`);
+          break;
+        }
+        opList.push({
+          type: WriteDbOperations.SET_VALUE,
+          ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
+              `${ShardingProperties.PROOF_HASH_MAP}/${blockNumberToReport}/` +
+              `${ShardingProperties.PROOF_HASH}`,
+          value: block.state_proof_hash
+        });
+        this.lastReportedBlockNumberSent = blockNumberToReport;
+        blockNumberToReport++;
+      }
+      logger.debug(`Reporting op_list: ${JSON.stringify(opList, null, 2)}`);
+      if (opList.length > 0) {
+        const tx = {
+          operation: {
+            type: WriteDbOperations.SET,
+            op_list: opList,
+          },
+          timestamp: Date.now(),
+          nonce: -1,
+          gas_price: 0,  // NOTE(platfowner): A temporary solution.
+        };
+        // TODO(liayoo): save the blockNumber - txHash mapping at /sharding/reports of
+        // the child state.
+        await signAndSendTx(parentChainEndpoint, tx, this.node.account.private_key);
+      }
+    } catch (err) {
+      logger.error(`Failed to report state proof hashes: ${err} ${err.stack}`);
+    }
+    this.isReportingShardProofHash = false;
+  }
+
+  static async getLastReportedBlockNumber() {
+    const resp = await sendGetRequest(
+        parentChainEndpoint,
+        'ain_get',
+        {
+          type: ReadDbOperations.GET_VALUE,
+          ref: `${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/${ShardingProperties.LATEST_BLOCK_NUMBER}`
+        }
+    );
+    return _.get(resp, 'data.result.result', null);
   }
 
   static async getShardingAppConfig(parentChainEndpoint, appName) {
