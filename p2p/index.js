@@ -249,13 +249,11 @@ class P2pClient {
 
     if (numLivePeers === 0) {
       logger.info(`[${LOG_HEADER}] Starting blockchain node without peers..`);
-      const lastBlockWithoutProposal = this.server.node.init(true);
-      if (lastBlockWithoutProposal < -1) {
+      if (!this.server.node.init(true)) {
         this.server.node.state = BlockchainNodeStates.STOPPED;
         logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
         return;
       }
-      logger.info(`[${LOG_HEADER}] lastBlockWithoutProposal=${lastBlockWithoutProposal}`);
       logger.info(`[${LOG_HEADER}] Trying to initializing shard..`);
       if (await this.server.tryInitializeShard()) {
         logger.info(`[${LOG_HEADER}] Shard initialization done!`);
@@ -265,12 +263,12 @@ class P2pClient {
       this.server.node.state = BlockchainNodeStates.SERVING;
       logger.info(`[${LOG_HEADER}] Now blockchain node in SERVING state!`);
       logger.info(`[${LOG_HEADER}] Initializing consensus process..`);
-      this.server.consensus.init(lastBlockWithoutProposal);
+      this.server.consensus.init();
       logger.info(`[${LOG_HEADER}] Consensus process initialized!`);
     } else {
       // Consensus will be initialized after syncing with peers
       logger.info(`[${LOG_HEADER}] Starting blockchain node with ${numLivePeers} peers..`);
-      if (this.server.node.init(false) < -1) {
+      if (!this.server.node.init(false)) {
         this.server.node.state = BlockchainNodeStates.STOPPED;
         logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
         return;
@@ -447,73 +445,7 @@ class P2pClient {
           const catchUpInfo = _.get(parsedMessage, 'data.catchUpInfo');
           logger.debug(`[${LOG_HEADER}] Receiving a chain segment: ` +
               `${JSON.stringify(chainSegment, null, 2)}`);
-          // Check catchup info is behind or equal to me
-          if (number <= this.server.node.bc.lastBlockNumber()) {
-            if (this.server.consensus.state === ConsensusStates.STARTING) {
-              if ((!chainSegment && !catchUpInfo) ||
-                  number === this.server.node.bc.lastBlockNumber()) {
-                // Regard this situation as if you're synced.
-                // TODO(liayoo): Ask the tracker server for another peer.
-                // TODO(minsulee2): Need to more discussion about this.
-                logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
-                this.server.node.state = BlockchainNodeStates.SERVING;
-                this.server.consensus.init();
-                if (this.server.consensus.isRunning()) {
-                  this.server.consensus.catchUp(catchUpInfo);
-                }
-              }
-            }
-            return;
-          }
-          // Check if chain segment is valid and can be merged ontop of your local blockchain
-          if (this.server.node.mergeChainSegment(chainSegment)) {
-            if (number === this.server.node.bc.lastBlockNumber()) {
-              // All caught up with the peer
-              if (this.server.node.state !== BlockchainNodeStates.SERVING) {
-                // Regard this situation as if you're synced.
-                // TODO(liayoo): Ask the tracker server for another peer.
-                logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
-                this.server.node.state = BlockchainNodeStates.SERVING;
-              }
-              if (this.server.consensus.state === ConsensusStates.STARTING) {
-                this.server.consensus.init();
-              }
-            } else {
-              // There's more blocks to receive
-              logger.info(`[${LOG_HEADER}] Wait, there's more...`);
-            }
-            if (this.server.consensus.isRunning()) {
-              // FIXME: add new last block to blockPool and updateLongestNotarizedChains?
-              this.server.consensus.blockPool.addSeenBlock(this.server.node.bc.lastBlock());
-              this.server.consensus.catchUp(catchUpInfo);
-            }
-            // Continuously request the blockchain segments until
-            // your local blockchain matches the height of the consensus blockchain.
-            if (number > this.server.node.bc.lastBlockNumber()) {
-              setTimeout(() => {
-                this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
-              }, 1000);
-            }
-          } else {
-            logger.info(`[${LOG_HEADER}] Failed to merge incoming chain segment.`);
-            // FIXME: Could be that I'm on a wrong chain.
-            if (number <= this.server.node.bc.lastBlockNumber()) {
-              logger.info(`[${LOG_HEADER}] I am ahead ` +
-                  `(${number} > ${this.server.node.bc.lastBlockNumber()}).`);
-              if (this.server.consensus.state === ConsensusStates.STARTING) {
-                this.server.consensus.init();
-                if (this.server.consensus.isRunning()) {
-                  this.server.consensus.catchUp(catchUpInfo);
-                }
-              }
-            } else {
-              logger.info(`[${LOG_HEADER}] I am behind ` +
-                  `(${number} < ${this.server.node.bc.lastBlockNumber()}).`);
-              setTimeout(() => {
-                this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
-              }, 1000);
-            }
-          }
+          this.handleChainSegment(number, chainSegment, catchUpInfo, socket);
           break;
         default:
           logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
@@ -532,6 +464,45 @@ class P2pClient {
       removeSocketConnectionIfExists(this.outbound, address);
       logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
+  }
+
+  tryInitProcesses(number, chainSegment, catchUpInfo) {
+    const LOG_HEADER = 'tryInitProcesses';
+    const lastBlockNumber = this.server.node.bc.lastBlockNumber();
+    if (lastBlockNumber < number && (chainSegment || catchUpInfo)) {
+      // Cannot init processes yet
+      return false;
+    }
+    if (this.server.node.state !== BlockchainNodeStates.SERVING) {
+      logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
+      this.server.node.state = BlockchainNodeStates.SERVING;
+    }
+    if (this.server.consensus.state === ConsensusStates.STARTING) {
+      this.server.consensus.init();
+    }
+    return true;
+  }
+
+  handleChainSegment(number, chainSegment, catchUpInfo, socket) {
+    const LOG_HEADER = 'handleChainSegment';
+    if (this.tryInitProcesses(number, chainSegment, catchUpInfo)) { // Already caught up
+      return;
+    }
+    if (this.server.node.mergeChainSegment(chainSegment) >= 0) { // Merge success
+      this.tryInitProcesses(number, chainSegment, catchUpInfo);
+    } else {
+      logger.info(`[${LOG_HEADER}] Failed to merge incoming chain segment.`);
+    }
+    if (this.server.consensus.isRunning()) {
+      this.server.consensus.catchUp(catchUpInfo);
+    }
+    if (this.server.node.state !== BlockchainNodeStates.SERVING && this.server.node.bc.lastBlockNumber() <= number) {
+      // Continuously request the blockchain segments until
+      // your local blockchain matches the height of the consensus blockchain.
+      setTimeout(() => {
+        this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
+      }, 3000 + Math.random() * 7000);
+    }
   }
 
   // TODO(minsulee2): Not just wait for address, but ack. if ack fails, this connection disconnects.
@@ -561,7 +532,7 @@ class P2pClient {
       // TODO(minsulee2): Send an encrypted form of address(pubkey can be recoverable from address),
       // ip address, and signature.
       this.sendPeerInfo(socket);
-      // TODO(minsulee2): Check ack from the corresponding server, then proceed reqeustChainSegment.
+      // TODO(minsulee2): Check ack from the corresponding server, then proceed requestChainSegment.
       await this.waitForAddress(socket);
       this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
       if (this.server.consensus.stakeTx) {
