@@ -77,7 +77,7 @@ function addBlock(node, txs, votes, validators) {
   finalDb.removeOldReceipts();
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   const receipts = txsToDummyReceipts(txs);
-  node.addNewBlock(Block.create(
+  node.bc.addBlockToChain(Block.create(
       lastBlock.hash, votes, {}, txs, receipts, lastBlock.number + 1, lastBlock.epoch + 1, '',
       node.account.address, validators, 0, 0));
 }
