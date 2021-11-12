@@ -4,7 +4,7 @@ const semver = require('semver');
 const sizeof = require('object-sizeof');
 const _ = require('lodash');
 const {
-  ENABLE_JSON_RPC_APP_SET_API,
+  ENABLE_JSON_RPC_TX_API,
   CURRENT_PROTOCOL_VERSION,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
@@ -29,8 +29,8 @@ const PathUtil = require('../common/path-util');
  *                  servicing JSON-RPC requests.
  */
 module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxProtocolVersion) {
-  // GET methods
-  const getMethods = {
+  // Non-transaction methods
+  const nonTxMethods = {
     ain_getProtocolVersion: function(args, done) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
       done(null, addProtocolVersion({result: CURRENT_PROTOCOL_VERSION}));
@@ -303,6 +303,26 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       }));
     },
 
+    ain_injectAccountFromKeystore: async function(args, done) {
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET);
+      let result = false;
+      if (await p2pServer.node.injectAccountFromKeystore(args.encryptedPassword)) {
+        result = true;
+        p2pServer.client.run();
+      }
+      return addProtocolVersion({ result });
+    },
+
+    ain_injectAccountFromHDWallet: async function(args, done) {
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET);
+      let result = false;
+      if (await p2pServer.node.injectAccountFromHDWallet(args.encryptedMnemonic, args.index)) {
+        result = true;
+        p2pServer.client.run();
+      }
+      return addProtocolVersion({ result });
+    },
+
     ain_getAddress: function(args, done) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
       done(null, addProtocolVersion({
@@ -381,36 +401,13 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
       const result = p2pServer.consensus.getRawStatus();
       done(null, addProtocolVersion({ result }));
-    }
-  };
-
-  // System SET methods
-  const systemSetMethods = {
-    ain_injectAccountFromKeystore: async function(args, done) {
-      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET);
-      let result = false;
-      if (await p2pServer.node.injectAccountFromKeystore(args.encryptedPassword)) {
-        result = true;
-        p2pServer.client.run();
-      }
-      return addProtocolVersion({ result });
-    },
-
-    ain_injectAccountFromHDWallet: async function(args, done) {
-      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET);
-      let result = false;
-      if (await p2pServer.node.injectAccountFromHDWallet(args.encryptedMnemonic, args.index)) {
-        result = true;
-        p2pServer.client.run();
-      }
-      return addProtocolVersion({ result });
     },
 
     // TODO(minsulee2): Add p2p json rpc API methods here.
   };
 
-  // Application SET methods
-  const appSetMethods = {
+  // Transaction methods
+  const txMethods = {
     ain_sendSignedTransaction: function(args, done) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET);
       if (sizeof(args) > TX_BYTES_LIMIT) {
@@ -499,9 +496,9 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     }
   };
 
-  let methods = Object.assign({}, getMethods, systemSetMethods);
-  if (ENABLE_JSON_RPC_APP_SET_API) {
-    methods = Object.assign(methods, appSetMethods);
+  let methods = nonTxMethods;
+  if (ENABLE_JSON_RPC_TX_API) {
+    methods = Object.assign(methods, txMethods);
   }
 
   return methods;
