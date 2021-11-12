@@ -28,6 +28,7 @@ const {
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
   KEYS_ROOT_DIR,
 } = require('../common/constants');
+const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
 const CommonUtil = require('../common/common-util');
 const Blockchain = require('../blockchain');
