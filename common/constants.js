@@ -747,7 +747,7 @@ const networkEnv = initializeNetworkEnvironments();
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
 
-const INITIAL_P2P_ROUTER = (() => {
+const INITIAL_P2P_ROUTER_URL = (() => {
   const p2pRouterUrl = process.env.P2P_ROUTER_URL || '';
   const lowerEnv = p2pRouterUrl.toLowerCase();
   if (!CommonUtil.isValidUrl(lowerEnv) && lowerEnv !== '') {
@@ -1062,7 +1062,7 @@ module.exports = {
   TrackerMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
-  INITIAL_P2P_ROUTER,
+  INITIAL_P2P_ROUTER_URL,
   PredefinedDbPaths,
   TokenProperties,
   TokenBridgeProperties,
