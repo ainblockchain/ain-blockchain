@@ -17,7 +17,7 @@ const {
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
   trafficStatsManager,
-  INITIAL_P2P_ROUTER_URL,
+  INITIAL_P2P_PEER_CANDIDATE_URL,
   ACCOUNT_INDEX,
   ENABLE_STATUS_REPORT_TO_TRACKER
 } = require('../common/constants');
@@ -38,7 +38,7 @@ const {
 
 const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
-const ROUTER_CONNECTION_INTERVAL_MS = 60 * 1000;  // 1 minute
+const PEER_CANDIDATES_CONNECTION_INTERVAL_MS = 60 * 1000;  // 1 minute
 const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
@@ -52,8 +52,8 @@ class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.server = new P2pServer(
         this, node, minProtocolVersion, maxProtocolVersion);
-    this.router = {};
-    this.isConnectingToRouter = false;
+    this.peerCandidates = {};
+    this.isConnectingToPeerCandidates = false;
     this.trackerWebSocket = null;
     this.outbound = {};
     this.p2pState = P2pNetworkStates.STARTING;
@@ -69,8 +69,8 @@ class P2pClient {
       this.startBlockchainNode(0);
       return;
     }
-    await this.connectWithRouterUrl(INITIAL_P2P_ROUTER_URL);
-    this.setIntervalForRouterConnection();
+    await this.connectWithPeerCandidateUrl(INITIAL_P2P_PEER_CANDIDATE_URL);
+    this.setIntervalForPeerCandidatesConnection();
   }
 
   getConnectionStatus() {
@@ -126,7 +126,7 @@ class P2pClient {
   /**
    * Returns json rpc urls.
    */
-  getRouterUrlList() {
+  getPeerCandidateUrlList() {
     return Object.values(this.outbound).map(peer => {
       const jsonRpcUrl = _.get(peer, 'peerInfo.networkStatus.jsonRpc.url');
       if (jsonRpcUrl) {
@@ -147,12 +147,12 @@ class P2pClient {
     return candidates;
   }
 
-  getRouteInfo() {
+  getPeerCandidateInfo() {
     return {
       isAvailableForConnection:
           MAX_NUM_INBOUND_CONNECTION > Object.keys(this.server.inbound).length,
       networkStatus: this.server.getNetworkStatus(),
-      routeUrlList: this.getRouterUrlList(),
+      peerCandidateUrlList: this.getPeerCandidateUrlList(),
       newPeerUrlList: this.getPeerUrlList()
     }
   }
@@ -205,26 +205,26 @@ class P2pClient {
     }
   }
 
-  assignRandomRouter() {
-    const shuffledList = _.shuffle(Object.keys(this.router));
+  assignRandompeerCandidates() {
+    const shuffledList = _.shuffle(Object.keys(this.peerCandidates));
     if (shuffledList.length > 0) {
       return shuffledList[0];
     } else {
-      return INITIAL_P2P_ROUTER_URL;
+      return INITIAL_P2P_PEER_CANDIDATE_URL;
     }
   }
 
-  setIntervalForRouterConnection() {
-    this.intervalRouterConnection = setInterval(async () => {
-      if (this.updateP2pState() && !this.isConnectingToRouter) {
-        const nextRouter = this.assignRandomRouter();
-        await this.connectWithRouterUrl(nextRouter);
+  setIntervalForPeerCandidatesConnection() {
+    this.intervalPeerCandidatesConnection = setInterval(async () => {
+      if (this.updateP2pState() && !this.isConnectingToPeerCandidates) {
+        const nextPeerCandidates = this.assignRandompeerCandidates();
+        await this.connectWithPeerCandidateUrl(nextPeerCandidates);
       }
-    }, ROUTER_CONNECTION_INTERVAL_MS);
+    }, PEER_CANDIDATES_CONNECTION_INTERVAL_MS);
   }
 
-  clearIntervalForRouterConnection() {
-    clearInterval(this.intervalRouterConnection);
+  clearIntervalForPeerCandidateConnection() {
+    clearInterval(this.intervalPeerCandidatesConnection);
   }
 
   async setTrackerEventHandlers() {
@@ -544,39 +544,39 @@ class P2pClient {
       });
   }
 
-  async connectWithRouterUrl(routerUrl) {
-    this.isConnectingToRouter = true;
-    const resp = await sendGetRequest(routerUrl, 'p2p_getRouteInfo', { });
-    const routeInfo = _.get(resp, 'data.result.result');
-    if (!routeInfo) {
-      logger.error(`Something went wrong with the router(${routerUrl}).`);
-      this.isConnectingToRouter = false;
+  async connectWithPeerCandidateUrl(peerCandidateUrl) {
+    this.isConnectingToPeerCandidates = true;
+    const resp = await sendGetRequest(peerCandidateUrl, 'p2p_getPeerCandidateInfo', { });
+    const peerCandidateInfo = _.get(resp, 'data.result.result');
+    if (!peerCandidateInfo) {
+      logger.error(`Something went wrong with the peer candidate(${peerCandidateUrl}).`);
+      this.isConnectingToPeerCandidates = false;
       return;
     }
 
-    // TODO(minsulee2): Needs to add router table updates logic(interval).
-    this.router[routerUrl] = { queryToConnect: true, queriedAt: Date.now() };
-    const routeUrlList = _.get(routeInfo, 'routeUrlList', []);
-    routeUrlList.forEach(url => {
-      if (!this.router[url] && CommonUtil.isValidUrl(url)) {
-        this.router[url] = { queryToConnect: false, queriedAt: null };
+    // TODO(minsulee2): Needs to add peerCandidate table updates logic(interval).
+    this.peerCandidates[peerCandidateUrl] = { queryToConnect: true, queriedAt: Date.now() };
+    const peerCandidateUrlList = _.get(peerCandidateInfo, 'peerCandidateUrlList', []);
+    peerCandidateUrlList.forEach(url => {
+      if (!this.peerCandidates[url] && CommonUtil.isValidUrl(url)) {
+        this.peerCandidates[url] = { queryToConnect: false, queriedAt: null };
       }
     });
 
     const networkStatus = this.server.getNetworkStatus();
     const myUrl = _.get(networkStatus, 'p2p.url', '');
-    const newPeerUrlList = _.get(routeInfo, 'newPeerUrlList', []);
+    const newPeerUrlList = _.get(peerCandidateInfo, 'newPeerUrlList', []);
     const newPeerUrlListWithoutMyUrl = newPeerUrlList.filter(url => {
       return url !== myUrl;
     });
-    const isAvailableForConnection = _.get(routeInfo, 'isAvailableForConnection');
-    const routerP2pUrl = _.get(routeInfo, 'networkStatus.p2p.url');
-    if (isAvailableForConnection && !Object.keys(this.outbound).includes(routerP2pUrl)) {
-      // NOTE(minsulee2): Add a router up on the list if it is not connected.
-      newPeerUrlListWithoutMyUrl.push(routerP2pUrl);
+    const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
+    const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.p2p.url');
+    if (isAvailableForConnection && !Object.keys(this.outbound).includes(peerCandidateP2pUrl)) {
+      // NOTE(minsulee2): Add a peer candidate up on the list if it is not connected.
+      newPeerUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
     }
     this.connectWithPeerList(_.shuffle(newPeerUrlListWithoutMyUrl));
-    this.isConnectingToRouter = false;
+    this.isConnectingToPeerCandidates = false;
 
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
       await this.startBlockchainNode(1);
