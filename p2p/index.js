@@ -12,6 +12,7 @@ const {
   PORT,
   P2P_PORT,
   TRACKER_WS_ADDR,
+  EPOCH_MS,
   MessageTypes,
   TrackerMessageTypes,
   BlockchainNodeStates,
@@ -565,7 +566,7 @@ class P2pClient {
         if (this.server.consensus.isRunning()) {
           this.server.reportShardProofHashes();
         }
-      }, 60 * 1000);
+      }, EPOCH_MS);
     }
   }
 
