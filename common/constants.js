@@ -692,7 +692,7 @@ const TrafficEventTypes = {
  * the env vars take precedence.
  * (priority: base params < genesis_params.json in GENESIS_CONFIGS_DIR < env var)
  */
-const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'P2P_ROUTER_URL', 'HOSTING_ENV'];
+const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'P2P_PEER_CANDIDATE_URL', 'HOSTING_ENV'];
 const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'MAX_NUM_VALIDATORS', 'EPOCH_MS'];
 
 function overwriteGenesisParams(overwritingParams, type) {
@@ -745,26 +745,17 @@ const networkEnv = initializeNetworkEnvironments();
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
 
-const INITIAL_P2P_ROUTER_URL = (() => {
-  const p2pRouterUrl = process.env.P2P_ROUTER_URL || '';
-  const lowerEnv = p2pRouterUrl.toLowerCase();
+const INITIAL_P2P_PEER_CANDIDATE_URL = (() => {
+  const p2pPeerCandidateUrl = process.env.P2P_PEER_CANDIDATE_URL || '';
+  const lowerEnv = p2pPeerCandidateUrl.toLowerCase();
   if (!CommonUtil.isValidUrl(lowerEnv) && lowerEnv !== '') {
-    throw Error(`The P2P_ROUTER_URL(${lowerEnv}) is not correctly set.`);
+    throw Error(`The P2P_PEER_CANDIDATE_URL(${lowerEnv}) is not correctly set.`);
   }
 
   if (lowerEnv !== '') {
     return lowerEnv + JSON_RPC_ENDPOINT;
   } else {
-    const hostingEnv = GenesisParams.blockchain.HOSTING_ENV;
-    switch (hostingEnv) {
-      case 'local':
-      case 'gcp':
-        return GenesisParams.blockchain.P2P_ROUTER_URL;
-      case 'comcom':
-        throw Error(`The P2P_ROUTER_URL(${P2P_ROUTER_URL}) is compulsory for HOSTING_ENV comcom.`);
-      default:
-        throw Error(`Wrong hosting environment(${hostingEnv}) is set. Please try again.`);
-    }
+    return GenesisParams.blockchain.P2P_PEER_CANDIDATE_URL;
   }
 })();
 
@@ -1060,7 +1051,7 @@ module.exports = {
   TrackerMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
-  INITIAL_P2P_ROUTER_URL,
+  INITIAL_P2P_PEER_CANDIDATE_URL,
   PredefinedDbPaths,
   TokenProperties,
   TokenBridgeProperties,

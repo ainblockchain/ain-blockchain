@@ -403,9 +403,9 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({ result }));
     },
 
-    p2p_getRouteInfo: function (args, done) {
+    p2p_getPeerCandidateInfo: function (args, done) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
-      const result = p2pServer.client.getRouteInfo();
+      const result = p2pServer.client.getPeerCandidateInfo();
       done (null, addProtocolVersion({ result }));
     }
   };
