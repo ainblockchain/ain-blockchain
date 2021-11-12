@@ -60,7 +60,7 @@ class ConsensusUtil {
   }
 
   static getStakeFromVoteTx(tx) {
-    return _get(tx, 'tx_body.operation.value.stake');
+    return _get(tx, 'tx_body.operation.value.stake', 0);
   }
 
   static getOffenseTypeFromVoteTx(tx) {

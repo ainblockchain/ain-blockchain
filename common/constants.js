@@ -598,6 +598,7 @@ const StateVersions = {
   NODE: 'NODE',
   POOL: 'POOL',
   SEGMENT: 'SEGMENT',
+  LOAD: 'LOAD',
   SNAP: 'SNAP',
   START: 'START',
   TX_POOL: 'TX_POOL',
