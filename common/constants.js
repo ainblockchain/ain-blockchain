@@ -694,7 +694,7 @@ const TrafficEventTypes = {
  * the env vars take precedence.
  * (priority: base params < genesis_params.json in GENESIS_CONFIGS_DIR < env var)
  */
-const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'HOSTING_ENV'];
+const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'P2P_ROUTER_URL', 'HOSTING_ENV'];
 const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'MAX_NUM_VALIDATORS', 'EPOCH_MS'];
 
 function overwriteGenesisParams(overwritingParams, type) {

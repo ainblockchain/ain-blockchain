@@ -31,9 +31,9 @@ const PathUtil = require('../common/path-util');
 module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxProtocolVersion) {
   // Default API methods
   let methods = {
-    p2p_getRouteStatus: function (args, done) {
+    p2p_getRouteInfo: function (args, done) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
-      const result = p2pServer.client.getRouteStatus();
+      const result = p2pServer.client.getRouteInfo();
       done (null, addProtocolVersion({ result }));
     }
   };
