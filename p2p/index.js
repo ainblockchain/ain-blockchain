@@ -588,6 +588,21 @@ class P2pClient {
     });
   }
 
+  setIntervalForShardProofHashReports() {
+    if (!this.shardReportInterval) {
+      this.shardReportInterval = setInterval(() => {
+        if (this.server.consensus.isRunning()) {
+          this.server.reportShardProofHashes();
+        }
+      }, 60 * 1000);
+    }
+  }
+
+  clearIntervalForShardProofHashReports() {
+    clearInterval(this.shardReportInterval);
+    this.shardReportInterval = null;
+  }
+
   stop() {
     this.server.stop();
     // NOTE(minsulee2): The trackerWebsocket should be checked initialized in order not to get error
@@ -595,6 +610,7 @@ class P2pClient {
     this.clearIntervalForTrackerConnection();
     this.clearIntervalForTrackerUpdate();
     this.clearIntervalForPeerConnection();
+    this.clearIntervalForShardProofHashReports();
     if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from tracker server.');
     this.stopHeartbeat();
