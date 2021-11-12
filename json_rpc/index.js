@@ -4,7 +4,7 @@ const semver = require('semver');
 const sizeof = require('object-sizeof');
 const _ = require('lodash');
 const {
-  ENABLE_JSON_RPC_API,
+  ENABLE_JSON_RPC_APP_SET_API,
   CURRENT_PROTOCOL_VERSION,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
@@ -500,7 +500,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
   };
 
   let methods = Object.assign({}, getMethods, systemSetMethods);
-  if (ENABLE_JSON_RPC_API) {
+  if (ENABLE_JSON_RPC_APP_SET_API) {
     methods = Object.assign(methods, appSetMethods);
   }
 

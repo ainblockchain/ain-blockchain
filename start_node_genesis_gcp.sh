@@ -61,9 +61,9 @@ else
 fi
 export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
 if [[ $JSON_RPC_OPTION ]]; then
-  export ENABLE_JSON_RPC_API=true
+  export ENABLE_JSON_RPC_APP_SET_API=true
 else
-  export ENABLE_JSON_RPC_API=false
+  export ENABLE_JSON_RPC_APP_SET_API=false
 fi
 if [[ $REST_FUNC_OPTION ]]; then
   export ENABLE_REST_FUNCTION_CALL=true
