@@ -331,7 +331,7 @@ class P2pServer {
     return true;
   }
 
-  setUpUrl(ip) {
+  buildUrls(ip) {
     const p2pUrl = new URL(`ws://${ip}:${P2P_PORT}`);
     const stringP2pUrl = p2pUrl.toString();
     p2pUrl.protocol = 'http:';
@@ -354,11 +354,11 @@ class P2pServer {
     let urls;
     switch (HOSTING_ENV) {
       case 'local':
-        urls = this.setUpUrl(intIp);
+        urls = this.buildUrls(intIp);
         break;
       case 'comcom':
       case 'gcp':
-        urls = this.setUpUrl(extIp);
+        urls = this.buildUrls(extIp);
         break;
     }
 
