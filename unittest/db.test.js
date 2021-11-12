@@ -6,6 +6,8 @@ const {
   CHAINS_DIR,
   GenesisToken,
   GenesisAccounts,
+  GENESIS_ACCOUNT_SHARES,
+  NUM_GENESIS_ACCOUNTS,
   GenesisSharding,
   GENESIS_WHITELIST,
   GenesisFunctions,
@@ -61,7 +63,7 @@ describe("DB initialization", () => {
   describe("Balances", () => {
     it("loading balances properly on initialization", () => {
       const expected =
-          GenesisToken.total_supply - GenesisAccounts.others.length * GenesisAccounts.shares;
+          GenesisToken.total_supply - NUM_GENESIS_ACCOUNTS * GENESIS_ACCOUNT_SHARES;
       const dbPath = `/accounts/${GenesisAccounts.owner.address}/balance`;
       expect(node.db.getValue(dbPath)).to.equal(expected);
     })
@@ -1839,7 +1841,7 @@ describe("DB operations", () => {
       it("when writing with variable path", () => {
         const ruleConfig = {
           ".rule": {
-            "write": "auth.addr = 'xyz'"
+            "write": "auth.addr === 'xyz'"
           }
         };
         expect(node.db.setRule("/apps/test/test_rule/some/$variable/path", ruleConfig).code)
@@ -2322,7 +2324,7 @@ describe("DB operations", () => {
             ref: "/apps/test/test_rule/some/path",
             value: {
               ".rule": {
-                "write": "auth.addr = 'xyz'"
+                "write": "auth.addr === 'xyz'"
               }
             }
           },
@@ -2407,7 +2409,7 @@ describe("DB operations", () => {
         });
         assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
           ".rule": {
-            "write": "auth.addr = 'xyz'"
+            "write": "auth.addr === 'xyz'"
           }
         });
         assert.deepEqual(

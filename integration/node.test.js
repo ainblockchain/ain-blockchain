@@ -1923,7 +1923,7 @@ describe('Blockchain Node', () => {
                 ref: "/apps/test/test_rule/other200/path",
                 value: {
                   ".rule": {
-                    "write": "auth.addr = 'xyz200'"
+                    "write": "auth.addr === 'xyz200'"
                   }
                 }
               },
@@ -2133,7 +2133,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 724
+                    "test": 728
                   },
                   "service": 0
                 }

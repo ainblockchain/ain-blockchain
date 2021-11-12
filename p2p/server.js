@@ -33,6 +33,7 @@ const {
   GenesisSharding,
   GenesisAccounts,
   AccountProperties,
+  GENESIS_TIMESTAMP,
   RuleProperties,
   ShardingProperties,
   FunctionProperties,
@@ -162,8 +163,7 @@ class P2pServer {
 
   getBlockStatus() {
     const timestamp = this.node.bc.lastBlockTimestamp();
-    const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
-    const elapsedTimeMs = (timestamp === genesisTime) ? 0 : Date.now() - timestamp;
+    const elapsedTimeMs = (timestamp === GENESIS_TIMESTAMP) ? 0 : Date.now() - timestamp;
     return {
       number: this.node.bc.lastBlockNumber(),
       epoch: this.node.bc.lastBlockEpoch(),

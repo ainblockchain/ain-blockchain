@@ -11,13 +11,15 @@ const DB = require('../db');
 const {
   PredefinedDbPaths,
   GenesisAccounts,
+  GENESIS_TIMESTAMP,
+  GENESIS_ACCOUNT_SHARES,
+  NUM_GENESIS_ACCOUNTS,
   GENESIS_VALIDATORS,
   GenesisValues,
   GenesisFunctions,
   GenesisRules,
   GenesisOwners,
   AccountProperties,
-  StateInfoProperties,
   StateVersions,
 } = require('../common/constants');
 const PathUtil = require('../common/path-util');
@@ -252,18 +254,28 @@ class Block {
   static buildAccountsSetupTx(timestamp, privateKey, ownerAddress) {
     const transferOps = [];
     const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
-    if (otherAccounts && CommonUtil.isArray(otherAccounts) && otherAccounts.length > 0 &&
-        GenesisAccounts[AccountProperties.SHARES] > 0) {
-      for (let i = 0; i < otherAccounts.length; i++) {
-        const accountAddress = otherAccounts[i][AccountProperties.ADDRESS];
-        // Transfer operation
-        const op = {
-          type: 'SET_VALUE',
-          ref: PathUtil.getTransferValuePath(ownerAddress, accountAddress, i),
-          value: GenesisAccounts[AccountProperties.SHARES],
-        };
-        transferOps.push(op);
-      }
+    if (!otherAccounts || !CommonUtil.isArray(otherAccounts) || otherAccounts.length === 0) {
+      CommonUtil.finishWithStackTrace(
+          logger, `Invalid genesis accounts: ${JSON.stringify(otherAccounts, null, 2)}`);
+    }
+    if (!CommonUtil.isNumber(GENESIS_ACCOUNT_SHARES) || GENESIS_ACCOUNT_SHARES <= 0) {
+      CommonUtil.finishWithStackTrace(
+          logger, `Invalid genesis account shares: ${GENESIS_ACCOUNT_SHARES}`);
+    }
+    if (!CommonUtil.isNumber(NUM_GENESIS_ACCOUNTS) || NUM_GENESIS_ACCOUNTS <= 0 ||
+        NUM_GENESIS_ACCOUNTS > otherAccounts.length) {
+      CommonUtil.finishWithStackTrace(
+          logger, `Invalid NUM_GENESIS_ACCOUNTS value: ${NUM_GENESIS_ACCOUNTS}`);
+    }
+    for (let i = 0; i < NUM_GENESIS_ACCOUNTS; i++) {
+      const accountAddress = otherAccounts[i][AccountProperties.ADDRESS];
+      // Transfer operation
+      const op = {
+        type: 'SET_VALUE',
+        ref: PathUtil.getTransferValuePath(ownerAddress, accountAddress, i),
+        value: GENESIS_ACCOUNT_SHARES,
+      };
+      transferOps.push(op);
     }
 
     // Transaction
@@ -383,7 +395,7 @@ class Block {
     // genesis block broadcasting feature is implemented.
     const ownerAddress = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-    const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
+    const genesisTime = GENESIS_TIMESTAMP;
     const lastHash = '';
     const lastVotes = [];
     const evidence = {};

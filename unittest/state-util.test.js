@@ -655,6 +655,10 @@ describe("state-util", () => {
       expect(isValidWriteRule([], 1)).to.equal(false);
       expect(isValidStateRule([], { "invalid_top_level_token": true })).to.equal(false);
       expect(isValidWriteRule([], 'process.exit(0)')).to.equal(false);
+      // assignment
+      expect(isValidWriteRule([], "newData = 'some code'")).to.equal(false);
+      // assignment & invoke
+      expect(isValidWriteRule([], "newData = 'some code'; newData();")).to.equal(false);
     })
 
     it('when valid input', () => {
@@ -666,6 +670,7 @@ describe("state-util", () => {
       expect(isValidWriteRule([], "newData")).to.equal(true);
       expect(isValidWriteRule([], "currentTime")).to.equal(true);
       expect(isValidWriteRule([], "lastBlockNumber")).to.equal(true);
+      expect(isValidWriteRule([], "auth.fid == '_stake'")).to.equal(true);
       expect(isValidWriteRule([], "auth.fid === '_stake'")).to.equal(true);
       expect(isValidWriteRule([], "auth.addr === 'some addr'")).to.equal(true);
       expect(isValidWriteRule([], "newData.proposer === auth.addr")).to.equal(true);
