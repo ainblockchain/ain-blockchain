@@ -755,6 +755,7 @@ const INITIAL_P2P_PEER_CANDIDATE_URL = (() => {
   if (lowerEnv !== '') {
     return lowerEnv + JSON_RPC_ENDPOINT;
   } else {
+    // TODO(minsulee2): P2P_PEER_CANDIDATE_URL should be reorganized into network in genesis params.
     return GenesisParams.blockchain.P2P_PEER_CANDIDATE_URL;
   }
 })();
