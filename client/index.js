@@ -616,11 +616,19 @@ app.get('/get_chain_id', (req, res) => {
     .end();
 });
 
-app.get('/blockchain_config', (req, res) => {
+app.get('/get_config', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result: p2pServer.getBlockchainConfig() })
+    .send({ code: 0, result: p2pClient.getConfig() })
+    .end();
+});
+
+app.get('/get_env', (req, res) => {
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: 0, result: p2pClient.getEnv() })
     .end();
 });
 
