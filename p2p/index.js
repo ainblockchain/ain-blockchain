@@ -17,10 +17,9 @@ const {
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
   trafficStatsManager,
-  INITIAL_P2P_ROUTER,
+  INITIAL_P2P_ROUTER_URL,
   ACCOUNT_INDEX,
-  ENABLE_STATUS_REPORT_TO_TRACKER,
-  CURRENT_PROTOCOL_VERSION
+  ENABLE_STATUS_REPORT_TO_TRACKER
 } = require('../common/constants');
 const {
   getAddressFromSocket,
@@ -49,8 +48,6 @@ const TRAFFIC_STATS_PERIOD_SECS_LIST = {
   '3h': 10800,  // 3 hours
 };
 
-const JSON_RPC_GET_ROUTE_STATUS = 'p2p_getRouteStatus';
-
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.server = new P2pServer(
@@ -71,7 +68,7 @@ class P2pClient {
       this.startBlockchainNode(0);
       return;
     }
-    await this.connectToRouter(INITIAL_P2P_ROUTER);
+    await this.connectToRouter(INITIAL_P2P_ROUTER_URL);
     this.setIntervalForRouterConnection();
   }
 
@@ -127,7 +124,10 @@ class P2pClient {
 
   getRouterUrlList() {
     return Object.values(this.outbound).map(peer => {
-      return peer.peerInfo.networkStatus.jsonRpc.url;
+      const jsonRpcUrl = _.get(peer, 'peerInfo.networkStatus.jsonRpc.url');
+      if (jsonRpcUrl) {
+        return jsonRpcUrl;
+      }
     });
   }
 
@@ -199,7 +199,7 @@ class P2pClient {
     if (shuffledList.length > 0) {
       return shuffledList[0];
     } else {
-      return INITIAL_P2P_ROUTER;
+      return INITIAL_P2P_ROUTER_URL;
     }
   }
 
@@ -329,7 +329,7 @@ class P2pClient {
     const payload = encapsulateMessage(MessageTypes.ADDRESS_REQUEST,
         { body: body, signature: signature });
     if (!payload) {
-      logger.error('The peerInfo Message cannot be sent because of msg encapsulation failure.');
+      logger.error('The peerInfo message cannot be sent because of msg encapsulation failure.');
       return;
     }
     socket.send(JSON.stringify(payload));
@@ -534,7 +534,7 @@ class P2pClient {
   }
 
   async connectToRouter(routerUrl) {
-    const resp = await sendGetRequest(routerUrl, JSON_RPC_GET_ROUTE_STATUS, { });
+    const resp = await sendGetRequest(routerUrl, 'p2p_getRouteStatus', { });
     const routeInfo = _.get(resp, 'data.result.result');
     if (!routeInfo) {
       logger.error(`Something went wrong with the router(${routerUrl}).`);
@@ -545,7 +545,7 @@ class P2pClient {
     this.router[routerUrl] = { queryToConnect: true, queriedAt: Date.now() };
     const routeList = _.get(routeInfo, 'routeList', []);
     routeList.forEach(url => {
-      if (!this.router[url]) {
+      if (!this.router[url] && CommonUtil.isValidUrl(url)) {
         this.router[url] = { queryToConnect: false, queriedAt: null };
       }
     });
