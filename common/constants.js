@@ -43,8 +43,8 @@ const DEBUG = CommonUtil.convertEnvVarInputToBool(process.env.DEBUG);
 const CONSOLE_LOG = CommonUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
 const ENABLE_DEV_CLIENT_SET_API =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_SET_API);
-const ENABLE_JSON_RPC_API =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_JSON_RPC_API, true);
+const ENABLE_JSON_RPC_TX_API =
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_JSON_RPC_TX_API, true);
 const ENABLE_TX_SIG_VERIF_WORKAROUND =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
 const ENABLE_GAS_FEE_WORKAROUND =
@@ -365,8 +365,6 @@ const AccountProperties = {
   OWNER: 'owner',
   PRIVATE_KEY: 'private_key',
   PUBLIC_KEY: 'public_key',
-  SHARES: 'shares',
-  TIMESTAMP: 'timestamp',
 };
 
 /**
@@ -1025,7 +1023,7 @@ module.exports = {
   DEBUG,
   CONSOLE_LOG,
   ENABLE_DEV_CLIENT_SET_API,
-  ENABLE_JSON_RPC_API,
+  ENABLE_JSON_RPC_TX_API,
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
   ENABLE_REST_FUNCTION_CALL,
@@ -1098,6 +1096,7 @@ module.exports = {
   buildOwnerPermissions,
   buildRulePermission,
   ...GenesisParams.blockchain,
+  ...GenesisParams.genesis,
   ...GenesisParams.consensus,
   ...GenesisParams.resource,
   ...networkEnv,

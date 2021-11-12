@@ -13,8 +13,7 @@ const {
   PROTOCOL_VERSION_MAP,
   DATA_PROTOCOL_VERSION,
   CHAINS_DIR,
-  GenesisAccounts,
-  AccountProperties,
+  GENESIS_TIMESTAMP,
   HOSTING_ENV,
   P2pNetworkStates
 } = require('../common/constants');
@@ -122,7 +121,7 @@ describe("P2P", () => {
         const actual = p2pServer.getBlockStatus();
         delete actual.elapsedTimeMs;
         assert.deepEqual(actual, {
-          number: 0, epoch: 0, timestamp: GenesisAccounts[AccountProperties.TIMESTAMP]
+          number: 0, epoch: 0, timestamp: GENESIS_TIMESTAMP
         });
       });
     });
