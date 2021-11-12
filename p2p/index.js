@@ -38,7 +38,7 @@ const {
 
 const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
-const ROUTER_CONNECTION_INVERVAL_MS = 60 * 1000;  // 1 minute
+const ROUTER_CONNECTION_INTERVAL_MS = 60 * 1000;  // 1 minute
 const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
@@ -53,6 +53,7 @@ class P2pClient {
     this.server = new P2pServer(
         this, node, minProtocolVersion, maxProtocolVersion);
     this.router = {};
+    this.isConnectingToRouter = false;
     this.trackerWebSocket = null;
     this.outbound = {};
     this.p2pState = P2pNetworkStates.STARTING;
@@ -215,11 +216,11 @@ class P2pClient {
 
   setIntervalForRouterConnection() {
     this.intervalRouterConnection = setInterval(async () => {
-      if (this.updateP2pState()) {
+      if (this.updateP2pState() && !this.isConnectingToRouter) {
         const nextRouter = this.assignRandomRouter();
         await this.connectWithRouterUrl(nextRouter);
       }
-    }, ROUTER_CONNECTION_INVERVAL_MS);
+    }, ROUTER_CONNECTION_INTERVAL_MS);
   }
 
   clearIntervalForRouterConnection() {
@@ -544,10 +545,12 @@ class P2pClient {
   }
 
   async connectWithRouterUrl(routerUrl) {
+    this.isConnectingToRouter = true;
     const resp = await sendGetRequest(routerUrl, 'p2p_getRouteInfo', { });
     const routeInfo = _.get(resp, 'data.result.result');
     if (!routeInfo) {
       logger.error(`Something went wrong with the router(${routerUrl}).`);
+      this.isConnectingToRouter = false;
       return;
     }
 
@@ -560,7 +563,6 @@ class P2pClient {
       }
     });
 
-    const myAddress = this.server.getNodeAddress();
     const networkStatus = this.server.getNetworkStatus();
     const myUrl = _.get(networkStatus, 'p2p.url', '');
     const newPeerUrlList = _.get(routeInfo, 'newPeerUrlList', []);
@@ -574,6 +576,7 @@ class P2pClient {
       newPeerUrlListWithoutMyUrl.push(routerP2pUrl);
     }
     this.connectWithPeerList(_.shuffle(newPeerUrlListWithoutMyUrl));
+    this.isConnectingToRouter = false;
 
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
       await this.startBlockchainNode(1);
@@ -622,9 +625,9 @@ class P2pClient {
     newPeerUrlList.slice(0, maxNumberOfNewPeers).forEach(url => {
       const address = this.getAddrFromOutboundMapping(url);
       if (address) {
-        logger.debug(`Node ${address} is already a managed peer.`);
+        logger.debug(`Node ${address}(${url}) is already a managed peer.`);
       } else {
-        logger.info(`Connecting to peer ${address}`);
+        logger.info(`Connecting to peer ${address}(${url})`);
         this.connectToPeer(url);
       }
     });
