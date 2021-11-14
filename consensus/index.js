@@ -856,11 +856,18 @@ class Consensus {
           this.node.stateManager.getFinalVersion(),
           `${StateVersions.SNAP}:${lastBlock.number}`, lastBlock.number);
     } else {
-      tempDb = this.getSnapDb(block);
+      const snapDb = this.getSnapDb(block);
+      if (!snapDb) {
+        logger.debug(
+            `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(executableTx)}`);
+        return false;
+      }
+      tempDb = this.node.createTempDb(
+          snapDb.stateVersion, `${StateVersions.SNAP}:${block.number - 1}`, block.number - 1);
     }
     if (!tempDb) {
       logger.debug(
-          `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(executableTx)}`);
+          `[${LOG_HEADER}] Failed to create a temp state snapshot for vote ${JSON.stringify(executableTx)}`);
       return false;
     }
     const voteTxRes = tempDb.executeTransaction(executableTx, true, false, 0, block.timestamp);
@@ -1055,39 +1062,20 @@ class Consensus {
       return null;
     }
 
-    // Create a DB for executing the block on.
-    let baseVersion = StateVersions.EMPTY;
-    if (this.node.bp.hashToDb.has(blockHash)) {
-      baseVersion = this.node.bp.hashToDb.get(blockHash).stateVersion;
-    } else if (blockHash === lastFinalizedHash) {
-      baseVersion = this.node.stateManager.getFinalVersion();
-    }
-    const blockNumberSnapshot = chain.length ? chain[0].number : latestBlock.number;
-    const snapDb = this.node.createTempDb(
-        baseVersion, `${StateVersions.SNAP}:${currBlock.number}`, blockNumberSnapshot);
-    if (!snapDb) {
-      logger.error(`Failed to create a temp database with state version: ${baseVersion}.`);
-      return null;
-    }
-
     let proposalTx = null;
     for (let i = 0; i < chain.length; i++) {
       // apply last_votes and transactions
       const block = chain[i];
-      const blockNumber = block.number;
       proposalTx = i < chain.length - 1 ? ConsensusUtil.filterProposalFromVotes(chain[i + 1].last_votes) : null;
       logger.debug(`[${LOG_HEADER}] applying block ${JSON.stringify(block)}`);
       try {
-        Consensus.validateAndExecuteBlockOnDb(block, snapDb, this.node, proposalTx);
+        Consensus.validateAndExecuteBlockOnDb(block, this.node, StateVersions.SNAP, proposalTx);
       } catch (e) {
         logger.error(`[${LOG_HEADER}] Failed to validate and execute block ${block.number}: ${e}`);
-        snapDb.destroyDb();
         return null;
       }
-      snapDb.blockNumberSnapshot = blockNumber;
-      prevBlock = block;
     }
-    return snapDb;
+    return this.node.bp.hashToDb.get(latestBlock.hash);
   }
 
   getValidatorsVotedFor(blockHash) {
