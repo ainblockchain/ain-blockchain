@@ -434,7 +434,7 @@ class BlockPool {
     let prevBlock;
     if (lastFinalizedBlock && lastBlockNumber === lastFinalizedBlock.number) {
       prevBlock = lastFinalizedBlock;
-    } else if (lastFinalizedBlock && lastBlockNumber > lastFinalizedBlock.number) {
+    } else if (_get(this.hashToBlockInfo[lastHash], 'block')) {
       prevBlock = _get(this.hashToBlockInfo[lastHash], 'block');
     } else {
       prevBlock = this.node.bc.getBlockByHash(lastHash);
