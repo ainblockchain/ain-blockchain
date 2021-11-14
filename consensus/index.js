@@ -452,8 +452,8 @@ class Consensus {
 
   static getPrevBlockInfo(number, lastHash, lastFinalizedBlock, bp) {
     if (number == 0) return { block: null };
-    const prevBlockInfo = number === lastFinalizedBlock.number + 1 ? { block: lastFinalizedBlock } :
-        bp.hashToBlockInfo[lastHash];
+    const prevBlockInfo = lastFinalizedBlock && number === lastFinalizedBlock.number + 1 ?
+        { block: lastFinalizedBlock } : bp.hashToBlockInfo[lastHash];
     if (!prevBlockInfo || !prevBlockInfo.block) {
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_PREV_BLOCK,
