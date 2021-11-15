@@ -221,22 +221,25 @@ class P2pClient {
     }
   }
 
+  /**
+   * Returns randomly picked connectable peers.
+   */
   assignRandomPeerCandidate() {
-    const candidateUrls = Object.entries(this.peerCandidates);
-    const noQueriedCandidateUrls = candidateUrls.filter(([, value]) => {
+    const peerCandidatesEntries = Object.entries(this.peerCandidates);
+    const notQueriedCandidateEntries = peerCandidatesEntries.filter(([, value]) => {
       return value.queriedAt === null;
     });
 
-    if (noQueriedCandidateUrls.length > 0) {
-      shuffled = _.shuffle(noQueriedCandidateUrls);
+    if (notQueriedCandidateEntries.length > 0) {
+      shuffled = _.shuffle(notQueriedCandidateEntries);
       return shuffled[0][0];
     }
 
-    if (candidateUrls.length > 0) {
-      const shuffled = _.shuffle(candidateUrls);
-      return shuffled[0][0];
-    } else {
+    if (peerCandidatesEntries.length === 0) {
       return P2P_PEER_CANDIDATE_URL;
+    } else {
+      const shuffled = _.shuffle(peerCandidatesEntries);
+      return shuffled[0][0];
     }
   }
 
