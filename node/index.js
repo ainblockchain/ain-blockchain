@@ -204,7 +204,7 @@ class BlockchainNode {
     // 4. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
     if (!wasBlockDirEmpty || isGenesisStart) {
-      if (!this.loadAndExecuteChainOnDb(latestSnapshotBlockNumber, isGenesisStart)) {
+      if (!this.loadAndExecuteChainOnDb(latestSnapshotBlockNumber, startingDb.stateVersion, isGenesisStart)) {
         return false;
       }
     }
@@ -500,11 +500,11 @@ class BlockchainNode {
     return result;
   }
 
-  loadAndExecuteChainOnDb(latestSnapshotBlockNumber, isGenesisStart) {
+  loadAndExecuteChainOnDb(latestSnapshotBlockNumber, latestSnapshotStateVersion, isGenesisStart) {
     const LOG_HEADER = 'loadAndExecuteChainOnDb';
 
     const numBlockFiles = this.bc.getNumBlockFiles();
-    const fromBlockNumber = SYNC_MODE === SyncModeOptions.FAST ? latestSnapshotBlockNumber + 1 : 0;
+    const fromBlockNumber = SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
     let nextBlock = null;
     let proposalTx = null;
     for (let number = fromBlockNumber; number < numBlockFiles; number++) {
@@ -523,12 +523,21 @@ class BlockchainNode {
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
       try {
-        Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.LOAD, proposalTx, true);
-        if (number === 0) {
-          this.bc.addBlockToChainAndWriteToDisk(block, false);
-          this.cloneAndFinalizeVersion(this.bp.hashToDb.get(block.hash).stateVersion, 0);
-        } else if (number % 10 === 0) {
-          this.tryFinalizeChain(isGenesisStart);
+        if (latestSnapshotBlockNumber === number && SYNC_MODE === SyncModeOptions.FAST) {
+          // TODO(liayoo): Deal with the case where block corresponding to the latestSnapshot doesn't exist.
+          if (!this.bp.addSeenBlock(block, proposalTx)) {
+            return false;
+          }
+          const latestDb = this.createTempDb(latestSnapshotStateVersion, `${StateVersions.LOAD}:${number}`, number);
+          this.bp.addToHashToDbMap(block.hash, latestDb);
+        } else {
+          Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.LOAD, proposalTx, true);
+          if (number === 0) {
+            this.bc.addBlockToChainAndWriteToDisk(block, false);
+            this.cloneAndFinalizeVersion(this.bp.hashToDb.get(block.hash).stateVersion, 0);
+          } else if (number % 10 === 0) {
+            this.tryFinalizeChain(isGenesisStart);
+          }
         }
       } catch (e) {
         CommonUtil.finishWithStackTrace(
