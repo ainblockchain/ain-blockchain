@@ -276,7 +276,7 @@ class Consensus {
         Object.values(this.server.client.outbound).forEach((peer) => {
           setTimeout(() => {
             this.server.client.requestChainSegment(peer.socket, this.node.bc.lastBlockNumber());
-          }, 3000 + Math.random() * 7000);
+          }, EPOCH_MS);
         });
         return;
       }
