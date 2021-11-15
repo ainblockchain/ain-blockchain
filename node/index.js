@@ -297,11 +297,13 @@ class BlockchainNode {
     const block = this.bc.getBlockByNumber(blockNumber);
     const stateSnapshot = stateRoot.toStateSnapshot();
     const radixSnapshot = stateRoot.toRadixSnapshot();
+    const rootProofHash = stateRoot.getProofHash();
     return {
       block_number: blockNumber,
       block,
       state_snapshot: stateSnapshot,
       radix_snapshot: radixSnapshot,
+      root_proof_hash: rootProofHash,
     }
   }
 
