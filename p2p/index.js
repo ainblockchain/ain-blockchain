@@ -217,8 +217,10 @@ class P2pClient {
   setIntervalForPeerCandidatesConnection() {
     this.intervalPeerCandidatesConnection = setInterval(async () => {
       if (this.updateP2pState() && !this.isConnectingToPeerCandidates) {
+        this.isConnectingToPeerCandidates = true;
         const nextPeerCandidate = this.assignRandomPeerCandidate();
         await this.connectWithPeerCandidateUrl(nextPeerCandidate);
+        this.isConnectingToPeerCandidates = false;
       }
     }, PEER_CANDIDATES_CONNECTION_INTERVAL_MS);
   }
@@ -545,12 +547,10 @@ class P2pClient {
   }
 
   async connectWithPeerCandidateUrl(peerCandidateUrl) {
-    this.isConnectingToPeerCandidates = true;
     const resp = await sendGetRequest(peerCandidateUrl, 'p2p_getPeerCandidateInfo', { });
     const peerCandidateInfo = _.get(resp, 'data.result.result');
     if (!peerCandidateInfo) {
       logger.error(`Something went wrong with the peer candidate(${peerCandidateUrl}).`);
-      this.isConnectingToPeerCandidates = false;
       return;
     }
 
@@ -576,7 +576,6 @@ class P2pClient {
       newPeerUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
     }
     this.connectWithPeerList(_.shuffle(newPeerUrlListWithoutMyUrl));
-    this.isConnectingToPeerCandidates = false;
 
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
       await this.startBlockchainNode(1);
