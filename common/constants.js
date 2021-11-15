@@ -135,7 +135,6 @@ const FREE_TREE_SIZE_BUDGET = FREE_STATE_BUDGET * MAX_STATE_TREE_SIZE_PER_BYTE;
 const STATE_GAS_COEFFICIENT = 1;
 const TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
 const TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
-const DEFAULT_REQUEST_BODY_SIZE_LIMIT = '100mb';
 const DEFAULT_DEVELOPERS_URL_WHITELIST = [
   'https://*.ainetwork.ai',
   'https://*.ainize.ai',
@@ -694,11 +693,18 @@ const TrafficEventTypes = {
  */
 const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'P2P_PEER_CANDIDATE_URL', 'HOSTING_ENV'];
 const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'MAX_NUM_VALIDATORS', 'EPOCH_MS'];
+const OVERWRITING_NETWORK_PARAMS =
+    ['TARGET_NUM_OUTBOUND_CONNECTION', 'MAX_NUM_INBOUND_CONNECTION', 'REQUEST_BODY_SIZE_LIMIT'];
 
 function overwriteGenesisParams(overwritingParams, type) {
   for (const key of overwritingParams) {
-    if (process.env[key]) {
-      GenesisParams[type][key] = process.env[key];
+    const env = process.env[key];
+    if (env) {
+      if (CommonUtil.isNumeric(env)) {
+        GenesisParams[type][key] = Number(env);
+      } else {
+        GenesisParams[type][key] = env;
+      }
     }
   }
 
@@ -720,28 +726,9 @@ function overwriteGenesisParams(overwritingParams, type) {
 
 overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
 overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
-
-// NOTE(minsulee2): If NETWORK_OPTIMIZATION env is set, it tightly limits the outbound connections.
-// The minimum network connections are set based on the MAX_NUM_VALIDATORS otherwise.
-function initializeNetworkEnvironments() {
-  if (process.env.NETWORK_OPTIMIZATION) {
-    return GenesisParams.network;
-  } else {
-    return {
-      P2P_MESSAGE_TIMEOUT_MS: 600000,
-      // NOTE(minsulee2, liayoo platfowner): As we discussed, the initial values for the OUTBOUND
-      //and INBOUND are fixed as 3 and 6.
-      TARGET_NUM_OUTBOUND_CONNECTION: process.env.TARGET_NUM_OUTBOUND_CONNECTION ?
-          Number(process.env.TARGET_NUM_OUTBOUND_CONNECTION) : 3,
-      MAX_NUM_INBOUND_CONNECTION: process.env.MAX_NUM_INBOUND_CONNECTION ?
-          Number(process.env.MAX_NUM_INBOUND_CONNECTION) : 6,
-      REQUEST_BODY_SIZE_LIMIT:
-          GenesisParams.network.REQUEST_BODY_SIZE_LIMIT || DEFAULT_REQUEST_BODY_SIZE_LIMIT,
-    }
-  }
-}
-
-const networkEnv = initializeNetworkEnvironments();
+// NOTE(minsulee2, liayoo, platfowner): As we discussed, the initial values for the OUTBOUND
+// and INBOUND are fixed as 3 and 6.
+overwriteGenesisParams(OVERWRITING_NETWORK_PARAMS, 'network');
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
 
@@ -1091,7 +1078,7 @@ module.exports = {
   ...GenesisParams.genesis,
   ...GenesisParams.consensus,
   ...GenesisParams.resource,
-  ...networkEnv,
+  ...GenesisParams.network,
   GenesisParams,
   trafficStatsManager,
 };
