@@ -18,7 +18,6 @@ class Blockchain {
     // Finalized chain
     this.chain = [];
     this.blockchainPath = path.resolve(CHAINS_DIR, basePath);
-    this.initSnapshotBlockNumber = -1;
     this.genesisBlockHash = Block.genesis().hash; // TODO(liayoo): update with the genesis_block.json
 
     // Mapping of a block number to the finalized block's info
@@ -28,8 +27,10 @@ class Blockchain {
   /**
    * Initializes the blockchain and returns whether there are block files to load.
    */
-  initBlockchain(isFirstNode, latestSnapshotBlockNumber) {
-    this.initSnapshotBlockNumber = latestSnapshotBlockNumber;
+  initBlockchain(isFirstNode, snapshot) {
+    if (snapshot) {
+      this.addBlockToChain(snapshot.block);
+    }
     const wasBlockDirEmpty = FileUtil.createBlockchainDir(this.blockchainPath);
     let isGenesisStart = false;
     if (wasBlockDirEmpty) {
@@ -121,13 +122,10 @@ class Blockchain {
 
   lastBlockNumber() {
     const lastBlock = this.lastBlock();
-    if (!lastBlock) {
-      if (this.initSnapshotBlockNumber) {
-        return this.initSnapshotBlockNumber;
-      }
-      return -1;
+    if (lastBlock) {
+      return lastBlock.number;
     }
-    return lastBlock.number;
+    return -1;
   }
 
   lastBlockEpoch() {

@@ -34,8 +34,6 @@ const FeatureFlags = {
   enableTrafficMonitoring: true,
   // Enables state info updates.
   enableStateInfoUpdates: true,
-  // Enables radix level snapshots.
-  enableRadixLevelSnapshots: true,
 };
 
 // ** Environment variables **

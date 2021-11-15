@@ -111,18 +111,10 @@ class DB {
   }
 
   initDbStates(snapshot = null) {
-    if (snapshot !== null) {
-      if (FeatureFlags.enableRadixLevelSnapshots) {
-        const newRoot = StateNode.fromRadixSnapshot(snapshot);
-        updateStateInfoForStateTree(newRoot);
-        this.replaceStateRoot(newRoot);
-        // NOTE(platfowner): No need to finalize the version ('START'), it's already final.
-      } else {
-        this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.OWNERS_ROOT])));
-        this.writeDatabase([PredefinedDbPaths.RULES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.RULES_ROOT])));
-        this.writeDatabase([PredefinedDbPaths.VALUES_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.VALUES_ROOT])));
-        this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT], JSON.parse(JSON.stringify(snapshot[PredefinedDbPaths.FUNCTIONS_ROOT])));
-      }
+    if (snapshot) {
+      const newRoot = StateNode.fromRadixSnapshot(snapshot.radix_snapshot);
+      updateStateInfoForStateTree(newRoot);
+      this.replaceStateRoot(newRoot);
     } else {
       // Initialize DB owners.
       this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
@@ -181,6 +173,9 @@ class DB {
     this.stateManager.setRoot(newVersion, newRoot);
     this.stateVersion = newVersion;
     this.stateRoot = newRoot;
+    if (!this.stateManager.finalizeVersion(newVersion)) {
+      logger.error(`[${LOG_HEADER}] Failed to finalize version: ${newVersion}`);
+    }
   }
 
   /**
