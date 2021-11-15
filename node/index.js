@@ -160,8 +160,8 @@ class BlockchainNode {
     return `http://${ipAddr}:${PORT}`;
   }
 
-  init(isFirstNode) {
-    const LOG_HEADER = 'BlockchainNode.init';
+  initNode(isFirstNode) {
+    const LOG_HEADER = 'initNode';
 
     let latestSnapshot = null;
     let latestSnapshotPath = null;
@@ -199,7 +199,7 @@ class BlockchainNode {
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
     const { wasBlockDirEmpty, isGenesisStart } =
-        this.bc.init(isFirstNode, latestSnapshotBlockNumber);
+        this.bc.initBlockchain(isFirstNode, latestSnapshotBlockNumber);
 
     // 4. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
