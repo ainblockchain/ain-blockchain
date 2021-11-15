@@ -91,6 +91,20 @@ class P2pClient {
     };
   }
 
+  getTrafficStats() {
+    const stats = {};
+    for (const [periodName, periodSecs] of Object.entries(TRAFFIC_STATS_PERIOD_SECS_LIST)) {
+      stats[periodName] = trafficStatsManager.getEventRates(periodSecs)
+    }
+    return stats;
+  }
+
+  getClientStatus() {
+    return {
+      trafficStats: this.getTrafficStats(),
+    };
+  }
+
   getStatus() {
     const blockStatus = this.server.getBlockStatus();
     return {
@@ -111,20 +125,6 @@ class P2pClient {
       protocolInfo: this.server.getProtocolInfo(),
       blockchainConfig: this.server.getBlockchainConfig(),
     };
-  }
-
-  getClientStatus() {
-    return {
-      trafficStats: this.getTrafficStats(),
-    };
-  }
-
-  getTrafficStats() {
-    const stats = {};
-    for (const [periodName, periodSecs] of Object.entries(TRAFFIC_STATS_PERIOD_SECS_LIST)) {
-      stats[periodName] = trafficStatsManager.getEventRates(periodSecs)
-    }
-    return stats;
   }
 
   /**
