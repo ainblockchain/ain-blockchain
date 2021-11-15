@@ -33,7 +33,7 @@ class BlockPool {
   }
 
   getLongestNotarizedChainHeight() {
-    return this.longestNotarizedChainTips.length ?
+    return this.longestNotarizedChainTips.length > 0 ?
         this.hashToBlockInfo[this.longestNotarizedChainTips[0]].block.number : this.node.bc.lastBlockNumber();
   }
 
@@ -152,7 +152,7 @@ class BlockPool {
     }
     const lastFinalized = { block: this.node.bc.lastBlock(), notarized: true };
     const chain = this.dfsFinalizable(lastFinalized, []);
-    if (!chain.length && this.node.bc.lastBlockNumber() < 0 && this.hashToBlockInfo[genesisBlockHash]) {
+    if (chain.length === 0 && this.node.bc.lastBlockNumber() < 0 && this.hashToBlockInfo[genesisBlockHash]) {
       // When node first started (fetching from peers or loading from disk)
       return chainWithGenesisBlock;
     }
