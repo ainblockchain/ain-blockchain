@@ -194,9 +194,12 @@ describe("P2P", () => {
       });
     });
 
-    describe("getBlockchainConfig", () => {
-      it("Gets blockchain config", () => {
-        assert.deepEqual(p2pServer.getBlockchainConfig(), GenesisParams);
+    describe("getConfig", () => {
+      it("Gets config", () => {
+        assert.deepEqual(p2pClient.getConfig(), {
+          blockchainConfig: GenesisParams,
+          env: process.env,
+        });
       });
     });
 
@@ -397,7 +400,7 @@ describe("P2P", () => {
           diskStatus: p2pServer.getDiskUsage(),
           runtimeInfo: p2pServer.getRuntimeInfo(),
           protocolInfo: p2pServer.getProtocolInfo(),
-          blockchainConfig: p2pServer.getBlockchainConfig(),
+          config: p2pClient.getConfig(),
         }));
       });
     });

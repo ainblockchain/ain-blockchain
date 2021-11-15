@@ -19,6 +19,7 @@ const {
   BlockchainNodeStates,
   P2pNetworkStates,
   TrafficEventTypes,
+  GenesisParams,
   trafficStatsManager,
 } = require('../common/constants');
 const {
@@ -125,7 +126,14 @@ class P2pClient {
       diskStatus: this.server.getDiskUsage(),
       runtimeInfo: this.server.getRuntimeInfo(),
       protocolInfo: this.server.getProtocolInfo(),
-      blockchainConfig: this.server.getBlockchainConfig(),
+      config: this.getConfig(),
+    };
+  }
+
+  getConfig() {
+    return {
+      blockchainConfig: GenesisParams,
+      env: process.env,
     };
   }
 
