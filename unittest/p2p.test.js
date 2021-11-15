@@ -380,29 +380,5 @@ describe("P2P", () => {
         assert.deepEqual(p2pClient.getClientStatus(), expected);
       });
     });
-
-    describe("getStatus", () => {
-      it("shows initial client status", () => {
-        const blockStatus = p2pServer.getBlockStatus();
-        assert.deepEqual(Object.keys(p2pClient.getStatus()), Object.keys({
-          address: p2pServer.getNodeAddress(),
-          updatedAt: Date.now(),
-          lastBlockNumber: blockStatus.number,
-          networkStatus: p2pServer.getNetworkStatus(),
-          blockStatus: blockStatus,
-          txStatus: p2pServer.getTxStatus(),
-          consensusStatus: p2pServer.getConsensusStatus(),
-          nodeStatus: p2pServer.getNodeStatus(),
-          clientStatus: p2pClient.getClientStatus(),
-          shardingStatus: p2pServer.getShardingStatus(),
-          cpuStatus: p2pServer.getCpuUsage(),
-          memoryStatus: p2pServer.getMemoryUsage(),
-          diskStatus: p2pServer.getDiskUsage(),
-          runtimeInfo: p2pServer.getRuntimeInfo(),
-          protocolInfo: p2pServer.getProtocolInfo(),
-          config: p2pClient.getConfig(),
-        }));
-      });
-    });
   });
 });
