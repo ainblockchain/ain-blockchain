@@ -297,7 +297,7 @@ class Consensus {
       }
       this.server.client.broadcastConsensusMessage(msg);
       this.tryVoteForValidBlock(proposalBlock);
-    } else {
+    } else if (msg.type === ConsensusMessageTypes.VOTE) {
       if (this.node.tp.transactionTracker[msg.value.hash]) {
         logger.debug(`[${LOG_HEADER}] Already have the vote in my tx tracker`);
         return;
