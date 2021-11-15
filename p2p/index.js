@@ -65,9 +65,13 @@ class P2pClient {
     if (CommonUtil.isEmpty(this.server.node.account)) return;
     await this.server.listen();
     if (ENABLE_STATUS_REPORT_TO_TRACKER) this.connectToTracker();
-    if (Number(ACCOUNT_INDEX) === 0 && this.server.node.state === BlockchainNodeStates.STARTING) {
-      this.startBlockchainNode(0);
-      return;
+    if (this.server.node.state === BlockchainNodeStates.STARTING) {
+      if (Number(ACCOUNT_INDEX) === 0) {
+        await this.startBlockchainNode(0);
+        return;
+      } else {
+        await this.startBlockchainNode(1);
+      }
     }
     this.connectWithPeerCandidateUrl(P2P_PEER_CANDIDATE_URL);
     this.setIntervalForPeerCandidatesConnection();
@@ -583,10 +587,6 @@ class P2pClient {
       newPeerUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
     }
     this.connectWithPeerUrlList(_.shuffle(newPeerUrlListWithoutMyUrl));
-
-    if (this.server.node.state === BlockchainNodeStates.STARTING) {
-      await this.startBlockchainNode(1);
-    }
   }
 
   connectToPeer(url) {
