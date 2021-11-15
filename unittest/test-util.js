@@ -24,7 +24,7 @@ function setNodeForTesting(
     node, accountIndex = 0, skipTestingConfig = false, skipShardingConfig = true) {
   node.setAccountForTesting(accountIndex);
 
-  node.init(true);
+  node.initNode(true);
 
   if (!skipTestingConfig) {
     const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');

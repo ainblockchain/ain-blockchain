@@ -28,7 +28,7 @@ class Blockchain {
   /**
    * Initializes the blockchain and returns whether there are block files to load.
    */
-  init(isFirstNode, latestSnapshotBlockNumber) {
+  initBlockchain(isFirstNode, latestSnapshotBlockNumber) {
     this.initSnapshotBlockNumber = latestSnapshotBlockNumber;
     const wasBlockDirEmpty = FileUtil.createBlockchainDir(this.blockchainPath);
     let isGenesisStart = false;
