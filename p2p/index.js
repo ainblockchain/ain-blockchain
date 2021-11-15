@@ -112,12 +112,8 @@ class P2pClient {
   getConfig() {
     return {
       blockchainConfig: GenesisParams,
-      env: this.getEnv(),
+      env: process.env,
     };
-  }
-
-  getEnv() {
-    return process.env;
   }
 
   getNetworkStatus() {

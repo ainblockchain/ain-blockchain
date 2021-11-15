@@ -624,14 +624,6 @@ app.get('/get_config', (req, res) => {
     .end();
 });
 
-app.get('/get_env', (req, res) => {
-  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({ code: 0, result: p2pClient.getEnv() })
-    .end();
-});
-
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server
 const server = app.listen(PORT, () => {
