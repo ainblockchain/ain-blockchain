@@ -42,6 +42,7 @@ const {
   TrafficEventTypes,
   GenesisParams,
   trafficStatsManager,
+  EPOCH_MS,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const {
@@ -473,7 +474,7 @@ class P2pServer {
               Object.values(this.client.outbound).forEach((node) => {
                 setTimeout(() => {
                   this.client.requestChainSegment(node.socket, this.node.bc.lastBlockNumber());
-                }, 3000 + Math.random() * 7000);
+                }, EPOCH_MS);
               });
             }
             break;

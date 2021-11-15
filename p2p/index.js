@@ -502,7 +502,7 @@ class P2pClient {
       // your local blockchain matches the height of the consensus blockchain.
       setTimeout(() => {
         this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
-      }, 3000 + Math.random() * 7000);
+      }, EPOCH_MS);
     }
   }
 
