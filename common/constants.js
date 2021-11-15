@@ -700,7 +700,7 @@ function overwriteGenesisParams(overwritingParams, type) {
   for (const key of overwritingParams) {
     const env = process.env[key];
     if (env) {
-      if (CommonUtil.isNumeric(env)) {
+      if (CommonUtil.isIntegerString(env)) {
         GenesisParams[type][key] = Number(env);
       } else {
         GenesisParams[type][key] = env;
