@@ -199,7 +199,7 @@ class BlockchainNode {
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
     const { wasBlockDirEmpty, isGenesisStart } =
-        this.bc.initBlockchain(isFirstNode, latestSnapshotBlockNumber);
+        this.bc.initBlockchain(isFirstNode, latestSnapshot);
 
     // 4. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
@@ -285,20 +285,24 @@ class BlockchainNode {
 
   updateSnapshots(blockNumber) {
     if (blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
-      const snapshot = FeatureFlags.enableRadixLevelSnapshots ?
-          this.takeFinalRadixSnapshot() : this.takeFinalStateSnapshot();
+      const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
-          this.snapshotDir, blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
+          this.snapshotDir,
+          blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
   }
 
-  takeFinalStateSnapshot(options) {
-    return this.stateManager.getFinalRoot().toStateSnapshot(options);
-  }
-
-  takeFinalRadixSnapshot() {
-    return this.stateManager.getFinalRoot().toRadixSnapshot();
+  buildBlockchainSnapshot(blockNumber, stateRoot) {
+    const block = this.bc.getBlockByNumber(blockNumber);
+    const stateSnapshot = stateRoot.toStateSnapshot();
+    const radixSnapshot = stateRoot.toRadixSnapshot();
+    return {
+      block_number: blockNumber,
+      block,
+      state_snapshot: stateSnapshot,
+      radix_snapshot: radixSnapshot,
+    }
   }
 
   getTransactionByHash(hash) {
