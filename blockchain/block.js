@@ -107,6 +107,7 @@ class Block {
   }
 
   static parse(blockInfo) {
+    // TODO(liayoo): add sanitization logic.
     if (!Block.hasRequiredFields(blockInfo)) return null;
     if (blockInfo instanceof Block) return blockInfo;
     return new Block(blockInfo.last_hash, blockInfo.last_votes, blockInfo.evidence,
@@ -168,6 +169,7 @@ class Block {
     return true;
   }
 
+  // TODO(liayoo): Remove the following functions
   static buildDbSetupTx(timestamp, privateKey) {
     const opList = [];
 
