@@ -535,7 +535,7 @@ class BlockchainNode {
           if (number === 0) {
             this.bc.addBlockToChainAndWriteToDisk(block, false);
             this.cloneAndFinalizeVersion(this.bp.hashToDb.get(block.hash).stateVersion, 0);
-          } else if (number % 10 === 0) {
+          } else {
             this.tryFinalizeChain(isGenesisStart);
           }
         }
@@ -545,7 +545,6 @@ class BlockchainNode {
         return false;
       }
     }
-    this.tryFinalizeChain(isGenesisStart);
     return true;
   }
 
@@ -580,12 +579,12 @@ class BlockchainNode {
           ConsensusUtil.filterProposalFromVotes(validBlocks[i + 1].last_votes) : null;
       try {
         Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.SEGMENT, proposalTx, true);
+        this.tryFinalizeChain();
       } catch (e) {
         logger.info(`[${LOG_HEADER}] Failed to add new block (${block.hash}) to chain: ${e.stack}`);
         return -1; // Merge failed and I'm behind
       }
     }
-    this.tryFinalizeChain();
     return 0; // Successfully merged
   }
 
