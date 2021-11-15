@@ -41,8 +41,7 @@ const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
 const PEER_CANDIDATES_CONNECTION_INTERVAL_MS = 60 * 1000;  // 1 minute
 const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
-const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000; // 1 second
-const WAIT_FOR_ADDRESS_TIMEOUT = 10 * 1000; // 10 seconds
+const WAIT_FOR_ADDRESS_TIMEOUT_MS = 5 * 1000; // 5 seconds
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
   '5m': 300,  // 5 minutes
   '10m': 600,  // 10 minutes
@@ -59,7 +58,7 @@ class P2pClient {
     this.trackerWebSocket = null;
     this.outbound = {};
     this.p2pState = P2pNetworkStates.STARTING;
-    this.numPeerConnectionsInProgress = 0;
+    this.peerConnectionsInProgress = {};
     logger.info(`Now p2p network in STARTING state!`);
     this.startHeartbeat();
   }
@@ -447,6 +446,7 @@ class P2pClient {
               peerInfo: _.get(parsedMessage, 'data.body.peerInfo')
             };
             Object.assign(this.outbound[address], { version: dataProtoVer });
+            this.removePeerConnection(socket.url);
             this.updatePeerInfoToTracker();
           }
           break;
@@ -562,24 +562,22 @@ class P2pClient {
   }
 
   // TODO(minsulee2): Not just wait for address, but ack. if ack fails, this connection disconnects.
-  waitForAddress = (socket, timeout) => {
-    if (timeout > WAIT_FOR_ADDRESS_TIMEOUT) {
-      logger.error('address confirmation hasn\'t sent back. Close the socket connection');
-      closeSocketSafe(this.outbound, socket);
-      this.numPeerConnectionsInProgress -= 1;
-      return;
-    }
-    CommonUtil.sleep(WAIT_FOR_ADDRESS_TIMEOUT_MS)
-      .then(() => {
-        const address = getAddressFromSocket(this.outbound, socket);
+  setTimerForPeerAddressResponse = (socket) => {
+    setTimeout(() => {
+      const address = getAddressFromSocket(this.outbound, socket);
         if (address) {
           logger.info(`with (${address}).`);
-          this.numPeerConnectionsInProgress -= 1;
+          this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
+          if (this.server.consensus.stakeTx) {
+            this.broadcastTransaction(this.server.consensus.stakeTx);
+            this.server.consensus.stakeTx = null;
+          }
         } else {
-          logger.debug(`Waiting for address of the socket(${JSON.stringify(socket, null, 2)})`);
-          this.waitForAddress(socket, timeout + WAIT_FOR_ADDRESS_TIMEOUT_MS);
+          logger.error('address confirmation hasn\'t sent back. Close the socket connection');
+          this.removePeerConnection(socket.url);
+          closeSocketSafe(this.outbound, socket);
         }
-      });
+    }, WAIT_FOR_ADDRESS_TIMEOUT_MS);
   }
 
   /**
@@ -618,6 +616,14 @@ class P2pClient {
     this.connectWithPeerUrlList(_.shuffle(newPeerUrlListWithoutMyUrl));
   }
 
+  addPeerConnection(url) {
+    this.peerConnectionsInProgress[url] = true;
+  }
+
+  removePeerConnection(url) {
+    delete this.peerConnectionsInProgress[url];
+  }
+
   connectToPeer(url) {
     const socket = new Websocket(url);
     socket.on('open', async () => {
@@ -627,12 +633,8 @@ class P2pClient {
       // ip address, and signature.
       this.sendPeerInfo(socket);
       // TODO(minsulee2): Check ack from the corresponding server, then proceed reqeustChainSegment.
-      await this.waitForAddress(socket, 0);
-      this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
-      if (this.server.consensus.stakeTx) {
-        this.broadcastTransaction(this.server.consensus.stakeTx);
-        this.server.consensus.stakeTx = null;
-      }
+      this.addPeerConnection(url);
+      this.setTimerForPeerAddressResponse(socket);
     });
   }
 
@@ -647,7 +649,8 @@ class P2pClient {
   }
 
   getMaxNumberOfNewPeers() {
-    const totalConnections = Object.keys(this.outbound).length + this.numPeerConnectionsInProgress;
+    const totalConnections =
+        Object.keys(this.outbound).length + Object.keys(this.peerConnectionsInProgress).length;
     return Math.max(0, TARGET_NUM_OUTBOUND_CONNECTION - totalConnections);
   }
 
@@ -659,7 +662,6 @@ class P2pClient {
         logger.debug(`Node ${address}(${url}) is already a managed peer.`);
       } else {
         logger.info(`Connecting to peer ${address}(${url})`);
-        this.numPeerConnectionsInProgress += 1;
         this.connectToPeer(url);
       }
     });
