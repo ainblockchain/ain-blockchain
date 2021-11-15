@@ -172,10 +172,10 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] Initializing node in 'fast' mode..`);
       const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
       latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
-      latestSnapshotBlockNumber = latestSnapshotInfo.latestSnapshotBlockNumber;
       if (latestSnapshotPath) {
         try {
           latestSnapshot = FileUtil.readCompressedJson(latestSnapshotPath);
+          latestSnapshotBlockNumber = latestSnapshot.block_number;
         } catch (err) {
           CommonUtil.finishWithStackTrace(
               logger, 
