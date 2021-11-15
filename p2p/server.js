@@ -678,9 +678,6 @@ class P2pServer {
   }
 
   async reportShardProofHashes() {
-    if (!this.node.isShardReporter) {
-      return;
-    }
     const lastFinalizedBlock = this.node.bc.lastBlock();
     const lastFinalizedBlockNumber = lastFinalizedBlock ? lastFinalizedBlock.number : -1;
     if (lastFinalizedBlockNumber < this.lastReportedBlockNumberSent + reportingPeriod) {
