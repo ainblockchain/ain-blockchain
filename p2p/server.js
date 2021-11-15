@@ -38,7 +38,6 @@ const {
   FunctionTypes,
   NativeFunctionIds,
   TrafficEventTypes,
-  GenesisParams,
   trafficStatsManager,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
@@ -168,10 +167,6 @@ class P2pServer {
       timestamp,
       elapsedTimeMs,
     };
-  }
-
-  getBlockchainConfig() {
-    return GenesisParams;
   }
 
   getNodeStatus() {
