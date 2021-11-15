@@ -548,6 +548,13 @@ class BlockchainNode {
     return true;
   }
 
+  /**
+   * Merge chainSegment into my blockchain.
+   * @param {Array} chainSegment An array of blocks (a segment of the blockchain)
+   * @returns {Number} 0 if merged successfully;
+   *                   1 if chainSegment wasn't merged but I have a longer chain;
+   *                  -1 if merge failed.
+   */
   mergeChainSegment(chainSegment) {
     const LOG_HEADER = 'mergeChainSegment';
 
