@@ -214,10 +214,19 @@ class P2pClient {
   }
 
   assignRandomPeerCandidate() {
-    const candidateUrls = Object.keys(this.peerCandidates);
+    const candidateUrls = Object.entries(this.peerCandidates);
+    const noQueriedCandidateUrls = candidateUrls.filter(([, value]) => {
+      return value.queriedAt === null;
+    });
+
+    if (noQueriedCandidateUrls.length > 0) {
+      shuffled = _.shuffle(noQueriedCandidateUrls);
+      return shuffled[0][0];
+    }
+
     if (candidateUrls.length > 0) {
       const shuffled = _.shuffle(candidateUrls);
-      return shuffled[0];
+      return shuffled[0][0];
     } else {
       return P2P_PEER_CANDIDATE_URL;
     }
@@ -574,10 +583,10 @@ class P2pClient {
       return;
     }
 
-    // TODO(minsulee2): Needs to add peerCandidate table updates logic(interval).
     this.peerCandidates[peerCandidateUrl] = { queriedAt: Date.now() };
     const peerCandidateUrlList = _.get(peerCandidateInfo, 'peerCandidateUrlList', []);
     peerCandidateUrlList.forEach(url => {
+      // FIXME(minsulee2): CommonUtil.isValidUrl is not working for internal ip addresses.
       if (!this.peerCandidates[url] && CommonUtil.isValidUrl(url)) {
         this.peerCandidates[url] = { queriedAt: null };
       }
