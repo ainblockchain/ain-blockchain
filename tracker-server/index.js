@@ -163,7 +163,7 @@ server.on('connection', (ws) => {
 
 function setPeerNodes(ws, nodeInfo) {
   wsList[ws.uuid] = nodeInfo.address;
-  nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip.external);
+  nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
   peerNodes[nodeInfo.address] = nodeInfo;
   logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
   logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
@@ -188,7 +188,7 @@ function printNodesInfo() {
 }
 
 function getNodeSummary(nodeInfo) {
-  const ip = _.get(nodeInfo, 'networkStatus.ip.external', '');
+  const ip = _.get(nodeInfo, 'networkStatus.ip', '');
   const diskAvailableMb = Math.floor(_.get(nodeInfo, 'diskStatus.available') / 1000 / 1000);
   const memoryFreeMb =
       Math.round(_.get(nodeInfo, 'memoryStatus.heapStats.total_available_size') / 1000 / 1000);
