@@ -363,10 +363,7 @@ class P2pServer {
     }
 
     return {
-      ip: {
-        internal: intIp,
-        external: extIp
-      },
+      ip: extIp,
       p2p: {
         url: urls.p2pUrl,
         port: P2P_PORT,

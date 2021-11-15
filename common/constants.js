@@ -730,23 +730,6 @@ overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 // and INBOUND are fixed as 3 and 6.
 overwriteGenesisParams(OVERWRITING_NETWORK_PARAMS, 'network');
 
-const JSON_RPC_ENDPOINT = '/json-rpc';
-
-const INITIAL_P2P_PEER_CANDIDATE_URL = (() => {
-  const p2pPeerCandidateUrl = process.env.P2P_PEER_CANDIDATE_URL || '';
-  const lowerEnv = p2pPeerCandidateUrl.toLowerCase();
-  if (!CommonUtil.isValidUrl(lowerEnv) && lowerEnv !== '') {
-    throw Error(`The P2P_PEER_CANDIDATE_URL(${lowerEnv}) is not correctly set.`);
-  }
-
-  if (lowerEnv !== '') {
-    return lowerEnv + JSON_RPC_ENDPOINT;
-  } else {
-    // TODO(minsulee2): P2P_PEER_CANDIDATE_URL should be reorganized into network in genesis params.
-    return GenesisParams.blockchain.P2P_PEER_CANDIDATE_URL;
-  }
-})();
-
 /**
  * Port number helper.
  * @param {number} defaultValue
@@ -1039,7 +1022,6 @@ module.exports = {
   TrackerMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
-  INITIAL_P2P_PEER_CANDIDATE_URL,
   PredefinedDbPaths,
   TokenProperties,
   TokenBridgeProperties,

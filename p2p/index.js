@@ -12,7 +12,7 @@ const {
   TARGET_NUM_OUTBOUND_CONNECTION,
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
-  INITIAL_P2P_PEER_CANDIDATE_URL,
+  P2P_PEER_CANDIDATE_URL,
   ACCOUNT_INDEX,
   ENABLE_STATUS_REPORT_TO_TRACKER,
   TrackerMessageTypes,
@@ -69,7 +69,7 @@ class P2pClient {
       this.startBlockchainNode(0);
       return;
     }
-    await this.connectWithPeerCandidateUrl(INITIAL_P2P_PEER_CANDIDATE_URL);
+    this.connectWithPeerCandidateUrl(P2P_PEER_CANDIDATE_URL);
     this.setIntervalForPeerCandidatesConnection();
   }
 
@@ -135,8 +135,11 @@ class P2pClient {
     });
   }
 
+  /**
+   * Returns P2p endpoint urls.
+   */
   getPeerUrlList() {
-    const candidates = Object.values(this.outbound)
+    return Object.values(this.outbound)
       .filter(peer => {
         const incomingPeers =
             _.get(peer, 'peerInfo.networkStatus.connectionStatus.incomingPeers', []);
@@ -144,7 +147,6 @@ class P2pClient {
         return incomingPeers.length < maxInbound;
       })
       .map(peer => peer.peerInfo.networkStatus.p2p.url);
-    return candidates;
   }
 
   getPeerCandidateInfo() {
@@ -206,11 +208,12 @@ class P2pClient {
   }
 
   assignRandomPeerCandidate() {
-    const shuffledList = _.shuffle(Object.keys(this.peerCandidates));
-    if (shuffledList.length > 0) {
-      return shuffledList[0];
+    const candidateUrls = Object.keys(this.peerCandidates);
+    if (candidateUrls.length > 0) {
+      const shuffled = _.shuffle(candidateUrls);
+      return shuffled[0];
     } else {
-      return INITIAL_P2P_PEER_CANDIDATE_URL;
+      return P2P_PEER_CANDIDATE_URL;
     }
   }
 
@@ -546,6 +549,10 @@ class P2pClient {
       });
   }
 
+  /**
+   * Tries to connect multiple peer candidates via the given peer candidate url.
+   * @param {string} peerCandidateUrl should be something like http(s)://xxx.xxx.xxx.xxx/json-rpc
+   */
   async connectWithPeerCandidateUrl(peerCandidateUrl) {
     const resp = await sendGetRequest(peerCandidateUrl, 'p2p_getPeerCandidateInfo', { });
     const peerCandidateInfo = _.get(resp, 'data.result.result');
@@ -555,11 +562,11 @@ class P2pClient {
     }
 
     // TODO(minsulee2): Needs to add peerCandidate table updates logic(interval).
-    this.peerCandidates[peerCandidateUrl] = { queryToConnect: true, queriedAt: Date.now() };
+    this.peerCandidates[peerCandidateUrl] = { queriedAt: Date.now() };
     const peerCandidateUrlList = _.get(peerCandidateInfo, 'peerCandidateUrlList', []);
     peerCandidateUrlList.forEach(url => {
       if (!this.peerCandidates[url] && CommonUtil.isValidUrl(url)) {
-        this.peerCandidates[url] = { queryToConnect: false, queriedAt: null };
+        this.peerCandidates[url] = { queriedAt: null };
       }
     });
 
@@ -575,7 +582,7 @@ class P2pClient {
       // NOTE(minsulee2): Add a peer candidate up on the list if it is not connected.
       newPeerUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
     }
-    this.connectWithPeerList(_.shuffle(newPeerUrlListWithoutMyUrl));
+    this.connectWithPeerUrlList(_.shuffle(newPeerUrlListWithoutMyUrl));
 
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
       await this.startBlockchainNode(1);
@@ -611,15 +618,10 @@ class P2pClient {
   }
 
   getMaxNumberOfNewPeers() {
-    const numOfCandidates = TARGET_NUM_OUTBOUND_CONNECTION - Object.keys(this.outbound).length;
-    if (numOfCandidates > 0) {
-      return numOfCandidates;
-    } else {
-      return 0;
-    }
+    return Math.max(0, TARGET_NUM_OUTBOUND_CONNECTION - Object.keys(this.outbound).length);
   }
 
-  connectWithPeerList(newPeerUrlList) {
+  connectWithPeerUrlList(newPeerUrlList) {
     const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
     newPeerUrlList.slice(0, maxNumberOfNewPeers).forEach(url => {
       const address = this.getAddrFromOutboundMapping(url);
