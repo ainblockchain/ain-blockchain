@@ -561,7 +561,7 @@ class P2pClient {
   }
 
   setIntervalForShardProofHashReports() {
-    if (!this.shardReportInterval) {
+    if (!this.shardReportInterval && this.server.node.isShardReporter) {
       this.shardReportInterval = setInterval(() => {
         if (this.server.consensus.isRunning()) {
           this.server.reportShardProofHashes();
