@@ -20,6 +20,7 @@ const {
   TARGET_NUM_OUTBOUND_CONNECTION,
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
+  GenesisParams,
   trafficStatsManager,
 } = require('../common/constants');
 const {
@@ -104,7 +105,14 @@ class P2pClient {
       diskStatus: this.server.getDiskUsage(),
       runtimeInfo: this.server.getRuntimeInfo(),
       protocolInfo: this.server.getProtocolInfo(),
-      blockchainConfig: this.server.getBlockchainConfig(),
+      config: this.getConfig(),
+    };
+  }
+
+  getConfig() {
+    return {
+      blockchainConfig: GenesisParams,
+      env: process.env,
     };
   }
 
