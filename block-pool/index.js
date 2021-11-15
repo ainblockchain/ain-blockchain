@@ -432,7 +432,7 @@ class BlockPool {
     const lastHash = currentBlockInfo.block.last_hash;
     const lastFinalizedBlock = this.node.bc.lastBlock();
     let prevBlock;
-    if (lastFinalizedBlock && lastBlockNumber === lastFinalizedBlock.number) {
+    if (lastFinalizedBlock && lastFinalizedBlock.number === lastBlockNumber) {
       prevBlock = lastFinalizedBlock;
     } else if (_get(this.hashToBlockInfo[lastHash], 'block')) {
       prevBlock = _get(this.hashToBlockInfo[lastHash], 'block');
