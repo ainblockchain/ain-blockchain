@@ -195,7 +195,7 @@ class BlockchainNode {
     const startingDb = DB.create(
         StateVersions.EMPTY, StateVersions.START, this.bc, true, latestSnapshotBlockNumber,
         this.stateManager);
-    startingDb.initDbStates(latestSnapshot);
+    startingDb.initDb(latestSnapshot);
 
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(`[${LOG_HEADER}] Initializing blockchain..`);

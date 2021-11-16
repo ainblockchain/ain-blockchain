@@ -111,20 +111,9 @@ class DB {
     return this.restFunctionsUrlWhitelistCache.whitelist;
   }
 
-  initDbStates(snapshot = null) {
-    const LOG_HEADER = 'initDbStates';
+  initDb(snapshot = null) {
     if (snapshot) {
-      const newRoot =
-          StateNode.fromRadixSnapshot(snapshot[BlockchainSnapshotProperties.RADIX_SNAPSHOT]);
-      updateStateInfoForStateTree(newRoot);
-      const rootProofHash = snapshot[BlockchainSnapshotProperties.ROOT_PROOF_HASH];
-      // Checks the state proof hash
-      if (newRoot.getProofHash() !== rootProofHash) {
-        CommonUtil.finishWithStackTrace(
-            logger,
-            `[${LOG_HEADER}] Root proof hash mismatch: ${newRoot.getProofHash()} / ${rootProofHash}`);
-      }
-      this.replaceStateRoot(newRoot);
+      this.resetDbWithSnapshot(snapshot);
     } else {
       // Initialize DB owners.
       this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT], {
@@ -140,6 +129,39 @@ class DB {
           [RuleProperties.WRITE]: true
         }
       });
+    }
+  }
+
+  /**
+   * Resets the database with the given snapshot.
+   *
+   * @param {StateNode} snapshot snapshot to reset with
+   */
+  resetDbWithSnapshot(snapshot) {
+    const LOG_HEADER = 'resetDbWithSnapshot';
+    const newRoot =
+        StateNode.fromRadixSnapshot(snapshot[BlockchainSnapshotProperties.RADIX_SNAPSHOT]);
+    updateStateInfoForStateTree(newRoot);
+    const rootProofHash = snapshot[BlockchainSnapshotProperties.ROOT_PROOF_HASH];
+    // Checks the state proof hash
+    if (newRoot.getProofHash() !== rootProofHash) {
+      CommonUtil.finishWithStackTrace(
+          logger,
+          `[${LOG_HEADER}] Root proof hash mismatch: ${newRoot.getProofHash()} / ${rootProofHash}`);
+    }
+    const newVersion = newRoot.getVersion();
+    if (this.stateManager.hasVersion(newVersion)) {
+      CommonUtil.finishWithStackTrace(
+          logger, `[${LOG_HEADER}] State version already exists: ${newVersion}`);
+    }
+    this.stateManager.setRoot(newVersion, newRoot);
+    if (!this.setStateVersion(newVersion, newRoot)) {
+      CommonUtil.finishWithStackTrace(
+          logger, `[${LOG_HEADER}] Failed to set version: ${newVersion}`);
+    }
+    if (!this.stateManager.finalizeVersion(newVersion)) {
+      CommonUtil.finishWithStackTrace(
+          logger, `[${LOG_HEADER}] Failed to finalize version: ${newVersion}`);
     }
   }
 
@@ -160,32 +182,14 @@ class DB {
           `[${LOG_HEADER}] State version equals to backup state version: ${stateVersion}`);
       return false;
     }
-    this.deleteStateVersion();
+    if (!this.stateManager.isFinalVersion(this.stateVersion)) {
+      this.deleteStateVersion();
+    }
 
     this.stateVersion = stateVersion;
     this.stateRoot = stateRoot;
 
     return true;
-  }
-
-  /**
-   * Replaces the state root.
-   *
-   * @param {StateNode} newRoot new root to replace with
-   */
-  replaceStateRoot(newRoot) {
-    const LOG_HEADER = 'replaceStateRoot';
-    const newVersion = newRoot.getVersion();
-    if (this.stateManager.hasVersion(newVersion)) {
-      CommonUtil.finishWithStackTrace(
-          logger, `[${LOG_HEADER}] State version already exists: ${newVersion}`);
-    }
-    this.stateManager.setRoot(newVersion, newRoot);
-    this.stateVersion = newVersion;
-    this.stateRoot = newRoot;
-    if (!this.stateManager.finalizeVersion(newVersion)) {
-      logger.error(`[${LOG_HEADER}] Failed to finalize version: ${newVersion}`);
-    }
   }
 
   /**
