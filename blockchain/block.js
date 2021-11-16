@@ -338,7 +338,7 @@ class Block {
   static executeGenesisTxsAndGetData(genesisTxs, genesisTime) {
     const tempGenesisDb = new DB(
         new StateNode(StateVersions.EMPTY), StateVersions.EMPTY, null, -1, null);
-    tempGenesisDb.initDbStates();
+    tempGenesisDb.initDb();
     const resList = [];
     for (const tx of genesisTxs) {
       const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx), true, false, 0, genesisTime);

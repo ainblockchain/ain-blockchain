@@ -692,8 +692,7 @@ class Consensus {
     if (stateProofHash !== expectedStateProofHash) {
       if (takeSnapshot) {
         // NOTE(platfowner): Write the current snapshot for debugging.
-        const snapshot = FeatureFlags.enableRadixLevelSnapshots ? db.takeRadixSnapshot() :
-            db.takeStateSnapshot();
+        const snapshot = node.buildBlockchainSnapshot(number, db.stateRoot);
         FileUtil.writeSnapshot(node.snapshotDir, number, snapshot, true);
       }
       throw new ConsensusError({
