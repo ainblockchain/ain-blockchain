@@ -111,9 +111,16 @@ class DB {
   }
 
   initDbStates(snapshot = null) {
+    const LOG_HEADER = 'initDbStates';
     if (snapshot) {
       const newRoot = StateNode.fromRadixSnapshot(snapshot.radix_snapshot);
       updateStateInfoForStateTree(newRoot);
+      // Checks the state proof hash
+      if (newRoot.getProofHash() !== snapshot.root_proof_hash) {
+        CommonUtil.finishWithStackTrace(
+            logger,
+            `[${LOG_HEADER}] Root proof hash mismatch: ${newRoot.getProofHash()} / ${snapshot.root_proof_hash}`);
+      }
       this.replaceStateRoot(newRoot);
     } else {
       // Initialize DB owners.
