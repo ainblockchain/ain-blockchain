@@ -5,6 +5,7 @@ const fs = require('fs');
 const { Block } = require('./block');
 const FileUtil = require('../common/file-util');
 const {
+  BlockchainSnapshotProperties,
   CHAINS_DIR,
   CHAIN_SEGMENT_LENGTH,
   ON_MEMORY_CHAIN_LENGTH,
@@ -29,7 +30,7 @@ class Blockchain {
    */
   initBlockchain(isFirstNode, snapshot) {
     if (snapshot) {
-      this.addBlockToChain(snapshot.block);
+      this.addBlockToChain(snapshot[BlockchainSnapshotProperties.BLOCK]);
     }
     const wasBlockDirEmpty = FileUtil.createBlockchainDir(this.blockchainPath);
     let isGenesisStart = false;

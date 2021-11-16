@@ -435,6 +435,19 @@ const StateInfoProperties = {
 };
 
 /**
+ * Properties of blockchain snapshot.
+ *
+ * @enum {string}
+ */
+const BlockchainSnapshotProperties = {
+  BLOCK: 'block',
+  BLOCK_NUMBER: 'block_number',
+  RADIX_SNAPSHOT: 'radix_snapshot',
+  ROOT_PROOF_HASH: 'root_proof_hash',
+  STATE_SNAPSHOT: 'state_snapshot',
+};
+
+/**
  * IDs of native functions.
  *
  * @enum {string}
@@ -1042,6 +1055,7 @@ module.exports = {
   FunctionTypes,
   FunctionResultCode,
   StateInfoProperties,
+  BlockchainSnapshotProperties,
   NativeFunctionIds,
   isNativeFunctionId,
   ShardingProperties,
