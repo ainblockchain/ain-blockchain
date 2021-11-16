@@ -107,6 +107,7 @@ class Block {
   }
 
   static parse(blockInfo) {
+    // TODO(liayoo): add sanitization logic.
     if (!Block.hasRequiredFields(blockInfo)) return null;
     if (blockInfo instanceof Block) return blockInfo;
     return new Block(blockInfo.last_hash, blockInfo.last_votes, blockInfo.evidence,
@@ -168,40 +169,7 @@ class Block {
     return true;
   }
 
-  static validateProposedBlock(block) {
-    const LOG_HEADER = 'validateProposedBlock';
-
-    if (!Block.validateHashes(block)) return false;
-    const nonceTracker = {};
-    let tx;
-    for (let i = 0; i < block.transactions.length; i++) {
-      tx = block.transactions[i];
-      if (tx.tx_body.nonce < 0) {
-        continue;
-      }
-      if (!(tx.address in nonceTracker)) {
-        nonceTracker[tx.address] = tx.tx_body.nonce;
-        continue;
-      }
-      if (tx.tx_body.nonce != nonceTracker[tx.address] + 1) {
-        logger.error(`[${LOG_HEADER}] Invalid noncing for ${tx.address} ` +
-            `Expected ${nonceTracker[tx.address] + 1} ` +
-            `Received ${tx.tx_body.nonce}`);
-        return false;
-      }
-      nonceTracker[tx.address] = tx.tx_body.nonce;
-    }
-    if (!Block.validateValidators(block.validators)) {
-      logger.error(
-          `[${LOG_HEADER}] Invalid validators format: ${JSON.stringify(block.validators)} ` +
-          `(${block.number} / ${block.epoch})`);
-      return false;
-    }
-
-    logger.info(`[${LOG_HEADER}] Validated block: ${block.number} / ${block.epoch}`);
-    return true;
-  }
-
+  // TODO(liayoo): Remove the following functions
   static buildDbSetupTx(timestamp, privateKey) {
     const opList = [];
 
