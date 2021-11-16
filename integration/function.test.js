@@ -29,28 +29,28 @@ const ENV_VARIABLES = [
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, DEBUG: false, CONSOLE_LOG: false,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, DEBUG: false, CONSOLE_LOG: false,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },

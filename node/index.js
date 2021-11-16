@@ -28,6 +28,7 @@ const {
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
   KEYS_ROOT_DIR,
 } = require('../common/constants');
+const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
 const CommonUtil = require('../common/common-util');
 const Blockchain = require('../blockchain');
@@ -36,6 +37,8 @@ const StateManager = require('../db/state-manager');
 const DB = require('../db');
 const Transaction = require('../tx-pool/transaction');
 const Consensus = require('../consensus');
+const BlockPool = require('../block-pool');
+const ConsensusUtil = require('../consensus/consensus-util');
 
 class BlockchainNode {
   constructor() {
@@ -53,12 +56,12 @@ class BlockchainNode {
 
     this.bc = new Blockchain(String(PORT));
     this.tp = new TransactionPool(this);
+    this.bp = new BlockPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
         this.stateManager);
-
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
     this.initAccount();
@@ -157,8 +160,8 @@ class BlockchainNode {
     return `http://${ipAddr}:${PORT}`;
   }
 
-  init(isFirstNode) {
-    const LOG_HEADER = 'BlockchainNode.init';
+  initNode(isFirstNode) {
+    const LOG_HEADER = 'initNode';
 
     let latestSnapshot = null;
     let latestSnapshotPath = null;
@@ -178,7 +181,7 @@ class BlockchainNode {
               logger, 
               `[${LOG_HEADER}] Failed to read latest snapshot file (${latestSnapshotPath}) ` +
               `with error: ${err.stack}`);
-          return -2;
+          return false;
         }
       }
       logger.info(`[${LOG_HEADER}] Fast mode DB snapshot loading done!`);
@@ -196,19 +199,15 @@ class BlockchainNode {
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
     const { wasBlockDirEmpty, isGenesisStart } =
-        this.bc.init(isFirstNode, latestSnapshotBlockNumber);
+        this.bc.initBlockchain(isFirstNode, latestSnapshotBlockNumber);
 
     // 4. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
-    let lastBlockWithoutProposal = null;
     if (!wasBlockDirEmpty || isGenesisStart) {
-      lastBlockWithoutProposal =
-          this.loadAndExecuteChainOnDb(latestSnapshotBlockNumber, !wasBlockDirEmpty, startingDb);
-      if (lastBlockWithoutProposal < -1) {
-        return lastBlockWithoutProposal;
+      if (!this.loadAndExecuteChainOnDb(latestSnapshotBlockNumber, startingDb.stateVersion, isGenesisStart)) {
+        return false;
       }
     }
-    this.cloneAndFinalizeVersion(StateVersions.START, this.bc.lastBlockNumber());
 
     // 5. Execute transactions from the pool.
     logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
@@ -220,7 +219,7 @@ class BlockchainNode {
     this.state = BlockchainNodeStates.SYNCING;
     logger.info(`[${LOG_HEADER}] Now node in SYNCING state!`);
 
-    return lastBlockWithoutProposal;
+    return true;
   }
 
   createTempDb(baseVersion, versionPrefix, blockNumberSnapshot) {
@@ -500,29 +499,62 @@ class BlockchainNode {
 
     return result;
   }
- 
-  addNewBlock(block) {
-    if (this.bc.addNewBlockToChain(block)) {
-      this.tp.cleanUpForNewBlock(block);
-      return true;
-    }
-    return false;
-  }
 
-  applyBlocksToDb(blockList, db) {
-    const LOG_HEADER = 'applyBlocksToDb';
+  loadAndExecuteChainOnDb(latestSnapshotBlockNumber, latestSnapshotStateVersion, isGenesisStart) {
+    const LOG_HEADER = 'loadAndExecuteChainOnDb';
 
-    for (let i = 0; i < blockList.length; i++) {
+    const numBlockFiles = this.bc.getNumBlockFiles();
+    const fromBlockNumber = SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
+    let nextBlock = null;
+    let proposalTx = null;
+    for (let number = fromBlockNumber; number < numBlockFiles; number++) {
+      const block = nextBlock ? nextBlock : this.bc.loadBlock(number);
+      nextBlock = this.bc.loadBlock(number + 1);
+      if (nextBlock) {
+        proposalTx = ConsensusUtil.filterProposalFromVotes(nextBlock.last_votes);
+      } else {
+        proposalTx = null;
+      }
+      if (!block) {
+        // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
+        CommonUtil.finishWithStackTrace(
+            logger, `[${LOG_HEADER}] Failed to load block ${number}.`);
+        return false;
+      }
+      logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
       try {
-        Consensus.validateAndExecuteBlockOnDb(blockList[i], db, i > 0 ? blockList[i - 1] : null);
+        if (latestSnapshotBlockNumber === number && SYNC_MODE === SyncModeOptions.FAST) {
+          // TODO(liayoo): Deal with the case where block corresponding to the latestSnapshot doesn't exist.
+          if (!this.bp.addSeenBlock(block, proposalTx)) {
+            return false;
+          }
+          const latestDb = this.createTempDb(latestSnapshotStateVersion, `${StateVersions.LOAD}:${number}`, number);
+          this.bp.addToHashToDbMap(block.hash, latestDb);
+        } else {
+          Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.LOAD, proposalTx, true);
+          if (number === 0) {
+            this.bc.addBlockToChainAndWriteToDisk(block, false);
+            this.cloneAndFinalizeVersion(this.bp.hashToDb.get(block.hash).stateVersion, 0);
+          } else {
+            this.tryFinalizeChain(isGenesisStart);
+          }
+        }
       } catch (e) {
-        logger.error(`[${LOG_HEADER}] Failed to validate and execute block ${blockList[i].number}: ${e}`);
+        CommonUtil.finishWithStackTrace(
+            logger, `[${LOG_HEADER}] Failed to validate and execute block ${block.number}: ${e.stack}`);
         return false;
       }
     }
     return true;
   }
 
+  /**
+   * Merge chainSegment into my blockchain.
+   * @param {Array} chainSegment An array of blocks (a segment of the blockchain)
+   * @returns {Number} 0 if merged successfully;
+   *                   1 if chainSegment wasn't merged but I have a longer chain;
+   *                  -1 if merge failed.
+   */
   mergeChainSegment(chainSegment) {
     const LOG_HEADER = 'mergeChainSegment';
 
@@ -530,120 +562,82 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] Empty chain segment`);
       if (this.state !== BlockchainNodeStates.SERVING) {
         // Regard this situation as if you're synced.
-        // TODO(liayoo): Ask the tracker server for another peer.
         logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
         this.state = BlockchainNodeStates.SERVING;
         logger.info(`[${LOG_HEADER}] Now node in SERVING state.`);
       }
-      return false;
+      return 1; // Merge failed but I'm ahead
     }
     if (chainSegment[chainSegment.length - 1].number < this.bc.lastBlockNumber()) {
       logger.info(
           `[${LOG_HEADER}] Received chain is of lower block number than current last block number`);
-      return false;
+      return 1; // Merge failed but I'm ahead
     }
-    if (chainSegment[chainSegment.length - 1].number === this.bc.lastBlockNumber()) {
-      logger.info(`[${LOG_HEADER}] Received chain is at the same block number`);
-      if (this.state !== BlockchainNodeStates.SERVING) {
-        // Regard this situation as if you're synced.
-        // TODO(liayoo): Ask the tracker server for another peer.
-        logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
-        this.state = BlockchainNodeStates.SERVING;
-        logger.info(`[${LOG_HEADER}] Now node in SERVING state!`);
+    const validBlocks = this.bc.getValidBlocksInChainSegment(chainSegment, this.bp.getLongestNotarizedChainHeight());
+    if (!validBlocks.length) {
+      return -1; // Merge failed and I'm behind
+    }
+    for (let i = 0; i < validBlocks.length; i++) {
+      const block = validBlocks[i];
+      if (this.bp.hasSeenBlock(block.hash)) {
+        continue;
       }
-      return false;
+      const proposalTx = i < validBlocks.length - 1 ?
+          ConsensusUtil.filterProposalFromVotes(validBlocks[i + 1].last_votes) : null;
+      try {
+        Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.SEGMENT, proposalTx, true);
+        this.tryFinalizeChain();
+      } catch (e) {
+        logger.info(`[${LOG_HEADER}] Failed to add new block (${block.hash}) to chain: ${e.stack}`);
+        return -1; // Merge failed and I'm behind
+      }
     }
+    return 0; // Successfully merged
+  }
 
-    const baseVersion = this.stateManager.getFinalVersion();
-    const tempDb = this.createTempDb(
-        baseVersion, `${StateVersions.SEGMENT}:${this.bc.lastBlockNumber()}`,
-        this.bc.lastBlockNumber());
-    if (!tempDb) {
-      logger.error(`[${LOG_HEADER}] Failed to create a temp database with state version: ${baseVersion}.`);
-      return null;
+  tryFinalizeChain(isGenesisStart = false) {
+    const LOG_HEADER = 'tryFinalizeChain';
+    const finalizableChain = this.bp.getFinalizableChain(isGenesisStart);
+    if (!finalizableChain || !finalizableChain.length) {
+      logger.debug(`[${LOG_HEADER}] No notarized chain with 3 consecutive epochs yet`);
+      return;
     }
-    const validBlocks = this.bc.getValidBlocksInChainSegment(chainSegment);
-    if (validBlocks.length > 0) {
-      if (!this.applyBlocksToDb(validBlocks, tempDb)) {
-        logger.error(`[${LOG_HEADER}] Failed to apply valid blocks to database: ` +
-            `${JSON.stringify(validBlocks, null, 2)}`);
-        tempDb.destroyDb();
-        return false;
+    const recordedInvalidBlocks = new Set();
+    let numBlocks = finalizableChain.length;
+    if (finalizableChain.length > 1 || finalizableChain[0].number !== 0) {
+      numBlocks -= 1; // Cannot finalize the last block yet.
+    }
+    let lastFinalizedBlock = null
+    for (let i = 0; i < numBlocks; i++) {
+      const blockToFinalize = finalizableChain[i];
+      if (blockToFinalize.number <= this.bc.lastBlockNumber()) {
+        continue;
       }
-      for (const block of validBlocks) {
-        if (!this.bc.addNewBlockToChain(block)) {
-          logger.error(`[${LOG_HEADER}] Failed to add new block to chain: ` +
-              `${JSON.stringify(block, null, 2)}`);
-          tempDb.destroyDb();
-          return false;
+      if (this.bc.addBlockToChainAndWriteToDisk(blockToFinalize, true)) {
+        lastFinalizedBlock = blockToFinalize;
+        logger.debug(`[${LOG_HEADER}] Finalized a block of number ${blockToFinalize.number} and ` +
+            `hash ${blockToFinalize.hash}`);
+        this.tp.cleanUpForNewBlock(blockToFinalize);
+        if (!CommonUtil.isEmpty(blockToFinalize.evidence)) {
+          Object.values(blockToFinalize.evidence).forEach((evidenceList) => {
+            evidenceList.forEach((val) => {
+              if (val.offense_type === ValidatorOffenseTypes.INVALID_PROPOSAL) {
+                recordedInvalidBlocks.add(val.block.hash);
+              }
+            });
+          });
         }
-      }
-      const lastBlockNumber = this.bc.lastBlockNumber();
-      this.cloneAndFinalizeVersion(tempDb.stateVersion, lastBlockNumber);
-      for (const block of validBlocks) {
-        this.tp.cleanUpForNewBlock(block);
-      }
-    } else {
-      logger.info(`[${LOG_HEADER}] No blocks to apply.`);
-      return true;
-    }
-    tempDb.destroyDb();
-
-    return true;
-  }
-
-  executeBlockOnDbAndCleanUp(block, db, prevBlock) {
-    const LOG_HEADER = 'executeBlockOnDbAndCleanUp';
-    try {
-      Consensus.validateAndExecuteBlockOnDb(block, db, prevBlock, this.snapshotDir);
-      this.tp.cleanUpForNewBlock(block);
-      return true;
-    } catch (e) {
-      CommonUtil.finishWithStackTrace(
-          logger, `[${LOG_HEADER}] Failed to validate and execute block ${block.number}: ${e}`);
-      return false;
-    }
-  }
-
-  loadAndExecuteChainOnDb(latestSnapshotBlockNumber, deleteLastBlock, db) {
-    const LOG_HEADER = 'loadAndExecuteChainOnDb';
-
-    let lastBlockWithoutProposal = null;
-    const numBlockFiles = this.bc.getNumBlockFiles();
-    const fromBlockNumber = SYNC_MODE === SyncModeOptions.FAST ? latestSnapshotBlockNumber + 1 : 0;
-    let prevBlock = null;
-    let prevBlockNumber = latestSnapshotBlockNumber;
-    let prevBlockHash = null;
-    for (let number = fromBlockNumber; number < numBlockFiles; number++) {
-      const block = this.bc.loadBlock(number);
-      if (!block) {
-        // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        CommonUtil.finishWithStackTrace(
-            logger, `[${LOG_HEADER}] Failed to load block ${number}.`);
-      }
-      logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
-      if (!Blockchain.validateBlock(block, prevBlockNumber, prevBlockHash)) {
-        // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
-        CommonUtil.finishWithStackTrace(
-            logger, `[${LOG_HEADER}] Failed to validate block ${number}.`);
-      }
-      // NOTE(liayoo): we don't have the votes for the last block, so remove it and try to
-      //               receive from peers.
-      if (deleteLastBlock && number > 0 && number === numBlockFiles - 1) {
-        lastBlockWithoutProposal = block;
-        this.bc.deleteBlock(lastBlockWithoutProposal);
       } else {
-        if (!this.executeBlockOnDbAndCleanUp(block, db, prevBlock)) {
-          return -2;
-        }
-        this.bc.addBlockToChain(block);
+        logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
+            `${JSON.stringify(blockToFinalize, null, 2)}`);
+        return;
       }
-      prevBlock = block;
-      prevBlockNumber = block.number;
-      prevBlockHash = block.hash;
     }
-
-    return lastBlockWithoutProposal;
+    if (lastFinalizedBlock) {
+      const versionToFinalize = this.bp.hashToDb.get(lastFinalizedBlock.hash).stateVersion;
+      this.cloneAndFinalizeVersion(versionToFinalize, lastFinalizedBlock.number);
+      this.bp.cleanUpAfterFinalization(this.bc.lastBlock(), recordedInvalidBlocks);
+    }
   }
 }
 

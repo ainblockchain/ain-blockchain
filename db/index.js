@@ -1427,6 +1427,7 @@ class DB {
       if (restoreIfFails) {
         this.restoreDb();
       } else {
+        this.deleteBackupStateVersion();
         return executionResult;
       }
     }
