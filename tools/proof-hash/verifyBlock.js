@@ -23,7 +23,7 @@ async function verifyBlock(snapshotFile, blockFileList) {
   const stateManager = new StateManager();
   const db = DB.create(
       StateVersions.EMPTY, 'verifyBlock', bc, false, bc.lastBlockNumber(), stateManager);
-  db.initDbStates(snapshot);
+  db.initDb(snapshot);
   console.log(`  Done.`);
 
   let prevBlock = null;
