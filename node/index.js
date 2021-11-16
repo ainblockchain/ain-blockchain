@@ -16,6 +16,7 @@ const {
   MAX_NUM_SNAPSHOTS,
   BlockchainNodeStates,
   PredefinedDbPaths,
+  BlockchainSnapshotProperties,
   ShardingProperties,
   ShardingProtocols,
   GenesisAccounts,
@@ -172,10 +173,10 @@ class BlockchainNode {
       logger.info(`[${LOG_HEADER}] Initializing node in 'fast' mode..`);
       const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
       latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
-      latestSnapshotBlockNumber = latestSnapshotInfo.latestSnapshotBlockNumber;
       if (latestSnapshotPath) {
         try {
           latestSnapshot = FileUtil.readCompressedJson(latestSnapshotPath);
+          latestSnapshotBlockNumber = latestSnapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
         } catch (err) {
           CommonUtil.finishWithStackTrace(
               logger, 
@@ -194,12 +195,12 @@ class BlockchainNode {
     const startingDb = DB.create(
         StateVersions.EMPTY, StateVersions.START, this.bc, true, latestSnapshotBlockNumber,
         this.stateManager);
-    startingDb.initDbStates(latestSnapshot);
+    startingDb.initDb(latestSnapshot);
 
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
     const { wasBlockDirEmpty, isGenesisStart } =
-        this.bc.initBlockchain(isFirstNode, latestSnapshotBlockNumber);
+        this.bc.initBlockchain(isFirstNode, latestSnapshot);
 
     // 4. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
@@ -285,20 +286,26 @@ class BlockchainNode {
 
   updateSnapshots(blockNumber) {
     if (blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
-      const snapshot = FeatureFlags.enableRadixLevelSnapshots ?
-          this.takeFinalRadixSnapshot() : this.takeFinalStateSnapshot();
+      const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
-          this.snapshotDir, blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
+          this.snapshotDir,
+          blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
   }
 
-  takeFinalStateSnapshot(options) {
-    return this.stateManager.getFinalRoot().toStateSnapshot(options);
-  }
-
-  takeFinalRadixSnapshot() {
-    return this.stateManager.getFinalRoot().toRadixSnapshot();
+  buildBlockchainSnapshot(blockNumber, stateRoot) {
+    const block = this.bc.getBlockByNumber(blockNumber);
+    const stateSnapshot = stateRoot.toStateSnapshot();
+    const radixSnapshot = stateRoot.toRadixSnapshot();
+    const rootProofHash = stateRoot.getProofHash();
+    return {
+      [BlockchainSnapshotProperties.BLOCK_NUMBER]: blockNumber,
+      [BlockchainSnapshotProperties.BLOCK]: block,
+      [BlockchainSnapshotProperties.STATE_SNAPSHOT]: stateSnapshot,
+      [BlockchainSnapshotProperties.RADIX_SNAPSHOT]: radixSnapshot,
+      [BlockchainSnapshotProperties.ROOT_PROOF_HASH]: rootProofHash,
+    }
   }
 
   getTransactionByHash(hash) {
