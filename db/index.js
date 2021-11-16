@@ -10,6 +10,7 @@ const {
   OwnerProperties,
   RuleProperties,
   StateInfoProperties,
+  BlockchainSnapshotProperties,
   ShardingProperties,
   GenesisAccounts,
   GenesisSharding,
@@ -113,13 +114,15 @@ class DB {
   initDbStates(snapshot = null) {
     const LOG_HEADER = 'initDbStates';
     if (snapshot) {
-      const newRoot = StateNode.fromRadixSnapshot(snapshot.radix_snapshot);
+      const newRoot =
+          StateNode.fromRadixSnapshot(snapshot[BlockchainSnapshotProperties.RADIX_SNAPSHOT]);
       updateStateInfoForStateTree(newRoot);
+      const rootProofHash = snapshot[BlockchainSnapshotProperties.ROOT_PROOF_HASH];
       // Checks the state proof hash
-      if (newRoot.getProofHash() !== snapshot.root_proof_hash) {
+      if (newRoot.getProofHash() !== rootProofHash) {
         CommonUtil.finishWithStackTrace(
             logger,
-            `[${LOG_HEADER}] Root proof hash mismatch: ${newRoot.getProofHash()} / ${snapshot.root_proof_hash}`);
+            `[${LOG_HEADER}] Root proof hash mismatch: ${newRoot.getProofHash()} / ${rootProofHash}`);
       }
       this.replaceStateRoot(newRoot);
     } else {

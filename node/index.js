@@ -16,6 +16,7 @@ const {
   MAX_NUM_SNAPSHOTS,
   BlockchainNodeStates,
   PredefinedDbPaths,
+  BlockchainSnapshotProperties,
   ShardingProperties,
   ShardingProtocols,
   GenesisAccounts,
@@ -175,7 +176,7 @@ class BlockchainNode {
       if (latestSnapshotPath) {
         try {
           latestSnapshot = FileUtil.readCompressedJson(latestSnapshotPath);
-          latestSnapshotBlockNumber = latestSnapshot.block_number;
+          latestSnapshotBlockNumber = latestSnapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
         } catch (err) {
           CommonUtil.finishWithStackTrace(
               logger, 
@@ -299,11 +300,11 @@ class BlockchainNode {
     const radixSnapshot = stateRoot.toRadixSnapshot();
     const rootProofHash = stateRoot.getProofHash();
     return {
-      block_number: blockNumber,
-      block,
-      state_snapshot: stateSnapshot,
-      radix_snapshot: radixSnapshot,
-      root_proof_hash: rootProofHash,
+      [BlockchainSnapshotProperties.BLOCK_NUMBER]: blockNumber,
+      [BlockchainSnapshotProperties.BLOCK]: block,
+      [BlockchainSnapshotProperties.STATE_SNAPSHOT]: stateSnapshot,
+      [BlockchainSnapshotProperties.RADIX_SNAPSHOT]: radixSnapshot,
+      [BlockchainSnapshotProperties.ROOT_PROOF_HASH]: rootProofHash,
     }
   }
 
