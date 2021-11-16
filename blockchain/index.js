@@ -5,6 +5,7 @@ const fs = require('fs');
 const { Block } = require('./block');
 const FileUtil = require('../common/file-util');
 const {
+  BlockchainSnapshotProperties,
   CHAINS_DIR,
   CHAIN_SEGMENT_LENGTH,
   ON_MEMORY_CHAIN_LENGTH,
@@ -18,7 +19,7 @@ class Blockchain {
     // Finalized chain
     this.chain = [];
     this.blockchainPath = path.resolve(CHAINS_DIR, basePath);
-    this.initSnapshotBlockNumber = -1;
+    this.genesisBlockHash = Block.genesis().hash; // TODO(liayoo): update with the genesis_block.json
 
     // Mapping of a block number to the finalized block's info
     this.numberToBlockInfo = {};
@@ -27,8 +28,10 @@ class Blockchain {
   /**
    * Initializes the blockchain and returns whether there are block files to load.
    */
-  init(isFirstNode, latestSnapshotBlockNumber) {
-    this.initSnapshotBlockNumber = latestSnapshotBlockNumber;
+  initBlockchain(isFirstNode, snapshot) {
+    if (snapshot) {
+      this.addBlockToChain(snapshot[BlockchainSnapshotProperties.BLOCK]);
+    }
     const wasBlockDirEmpty = FileUtil.createBlockchainDir(this.blockchainPath);
     let isGenesisStart = false;
     if (wasBlockDirEmpty) {
@@ -38,7 +41,7 @@ class Blockchain {
         logger.info('## Starting FIRST-NODE blockchain with a GENESIS block... ##');
         logger.info('############################################################');
         logger.info('\n');
-        this.writeBlock(Block.genesis());
+        this.writeBlock(Block.genesis()); // TODO(liayoo): remove once genesis_block.json is ready
         isGenesisStart = true;
       } else {
         logger.info('\n');
@@ -120,13 +123,10 @@ class Blockchain {
 
   lastBlockNumber() {
     const lastBlock = this.lastBlock();
-    if (!lastBlock) {
-      if (this.initSnapshotBlockNumber) {
-        return this.initSnapshotBlockNumber;
-      }
-      return -1;
+    if (lastBlock) {
+      return lastBlock.number;
     }
-    return lastBlock.number;
+    return -1;
   }
 
   lastBlockEpoch() {
@@ -166,23 +166,25 @@ class Blockchain {
     }
   }
 
-  addNewBlockToChain(newBlock) {
-    const LOG_HEADER = 'addNewBlockToChain';
+  addBlockToChainAndWriteToDisk(block, writeToDisk) {
+    const LOG_HEADER = 'addBlockToChainAndWriteToDisk';
 
-    if (!newBlock) {
-      logger.error(`[${LOG_HEADER}] Block is null.`);
+    if (!(block instanceof Block)) {
+      block = Block.parse(block);
+    }
+    if (!block) {
+      logger.error(`[${LOG_HEADER}] Ill-formed block: ${JSON.stringify(block)}`);
       return false;
     }
-    if (newBlock.number !== this.lastBlockNumber() + 1) {
-      logger.error(`[${LOG_HEADER}] Invalid blockchain number: ${newBlock.number}`);
+    if (block.number !== this.lastBlockNumber() + 1) {
+      logger.error(`[${LOG_HEADER}] Invalid block number: ${block.number}`);
       return false;
     }
-    if (!(newBlock instanceof Block)) {
-      newBlock = Block.parse(newBlock);
+    this.addBlockToChain(block);
+    this.updateNumberToBlockInfo(block);
+    if (writeToDisk) {
+      this.writeBlock(block);
     }
-    this.addBlockToChain(newBlock);
-    this.updateNumberToBlockInfo(newBlock);
-    this.writeBlock(newBlock);
     return true;
   }
 
@@ -202,30 +204,13 @@ class Blockchain {
       logger.error(`Invalid block hashes of block: ${block.number}`);
       return false;
     }
+    if (!Block.validateValidators(block.validators)) {
+      logger.error(
+          `[${LOG_HEADER}] Invalid validators format: ${JSON.stringify(block.validators)} ` +
+          `(${block.number} / ${block.epoch})`);
+      return false;
+    }
     logger.info(`[${LOG_HEADER}] Successfully validated block: ${block.number} / ${block.epoch}`);
-    return true;
-  }
-
-
-  static validateChainSegment(chainSegment) {
-    let prevBlockNumber;
-    let prevBlockHash;
-    if (chainSegment.length > 0) {
-      const block = chainSegment[0];
-      if (!Blockchain.validateBlock(block)) {
-        return false;
-      }
-      prevBlockNumber = block.number;
-      prevBlockHash = block.hash;
-    }
-    for (let i = 1; i < chainSegment.length; i++) {
-      const block = chainSegment[i];
-      if (!Blockchain.validateBlock(block, prevBlockNumber, prevBlockHash)) {
-        return false;
-      }
-      prevBlockNumber = block.number;
-      prevBlockHash = block.hash;
-    }
     return true;
   }
 
@@ -240,7 +225,6 @@ class Blockchain {
   }
 
   getValidBlocksInChainSegment(chainSegment) {
-    logger.info(`Last block number before merge: ${this.lastBlockNumber()}`);
     const firstBlock = Block.parse(chainSegment[0]);
     const lastBlock = this.lastBlock();
     const lastBlockHash = this.lastBlockNumber() >= 0 && lastBlock ? lastBlock.hash : null;
@@ -250,6 +234,7 @@ class Blockchain {
     const validBlocks = [];
     if (lastBlockHash) {
       // Case 1: Not a cold start.
+      // TODO(liayoo): Try to overwrite with the new chainSegment if the new chain is longer & valid
       if (overlappingBlock && overlappingBlock.hash !== lastBlockHash) {
         logger.info(`The last block's hash ${lastBlock.hash.substring(0, 5)} ` +
             `does not match with the first block's hash ${firstBlock.hash.substring(0, 5)}`);
@@ -262,10 +247,6 @@ class Blockchain {
             `and last hash ${firstBlock.last_hash.substring(0, 5)} is not a genesis block`);
         return validBlocks;
       }
-    }
-    if (!Blockchain.validateChainSegment(chainSegment)) {
-      logger.error(`Invalid chain segment`);
-      return validBlocks;
     }
     for (const block of chainSegment) {
       if (block.number <= this.lastBlockNumber()) {

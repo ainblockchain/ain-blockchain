@@ -243,7 +243,7 @@ class FileUtil {
     if (!fs.existsSync(path)) {
       return 0;
     }
-    return fs.readdirSync(path).length;
+    return fs.readdirSync(path).filter((file) => file.endsWith(JSON_GZIP_FILE_EXTENSION)).length;
   }
 
   static getNumBlockFiles(chainPath) {

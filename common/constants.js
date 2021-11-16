@@ -34,8 +34,6 @@ const FeatureFlags = {
   enableTrafficMonitoring: true,
   // Enables state info updates.
   enableStateInfoUpdates: true,
-  // Enables radix level snapshots.
-  enableRadixLevelSnapshots: true,
 };
 
 // ** Environment variables **
@@ -436,6 +434,19 @@ const StateInfoProperties = {
 };
 
 /**
+ * Properties of blockchain snapshot.
+ *
+ * @enum {string}
+ */
+const BlockchainSnapshotProperties = {
+  BLOCK: 'block',
+  BLOCK_NUMBER: 'block_number',
+  RADIX_SNAPSHOT: 'radix_snapshot',
+  ROOT_PROOF_HASH: 'root_proof_hash',
+  STATE_SNAPSHOT: 'state_snapshot',
+};
+
+/**
  * IDs of native functions.
  *
  * @enum {string}
@@ -597,6 +608,7 @@ const StateVersions = {
   NODE: 'NODE',
   POOL: 'POOL',
   SEGMENT: 'SEGMENT',
+  LOAD: 'LOAD',
   SNAP: 'SNAP',
   START: 'START',
   TX_POOL: 'TX_POOL',
@@ -1032,6 +1044,7 @@ module.exports = {
   FunctionTypes,
   FunctionResultCode,
   StateInfoProperties,
+  BlockchainSnapshotProperties,
   NativeFunctionIds,
   isNativeFunctionId,
   ShardingProperties,
