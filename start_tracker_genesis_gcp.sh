@@ -3,8 +3,10 @@
 if [[ $# -gt 1 ]]; then
     printf "Usage: bash start_tracker_genesis_gcp.sh [--keep-code]\n"
     printf "Example: bash start_tracker_genesis_gcp.sh --keep-code\n"
+    printf "\n"
     exit
 fi
+printf "\n[[[[[ start_tracker_genesis_gcp.sh ]]]]]\n\n"
 
 KEEP_CODE_OPTION=""
 
@@ -39,7 +41,7 @@ if [[ $KEEP_CODE_OPTION = "" ]]; then
 
     printf '\n'
     printf 'Installing node modules..\n'
-    npm install
+    yarn install
 else
     printf '\n'
     printf 'Using old directory..\n'

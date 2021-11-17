@@ -1,5 +1,7 @@
 #!/bin/bash
 
+printf "\n[[[[[ start_servers_afan_local.sh ]]]]]\n\n"
+
 # PARENT CHAIN
 CONSOLE_LOG=true BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data node ./tracker-server/index.js &
 sleep 5

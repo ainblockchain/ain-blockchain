@@ -1,5 +1,7 @@
 #!/bin/bash
 
+printf "\n[[[[[ wait_until_node_sync_gcp.sh ]]]]]\n\n"
+
 printf "\n#### Wait until the new node server catches up ####\n\n"
 
 SECONDS=0
