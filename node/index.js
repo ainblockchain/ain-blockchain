@@ -17,6 +17,8 @@ const {
   TransactionStates,
   StateVersions,
   SyncModeOptions,
+  EventTypes,
+  ENABLE_EVENT_HANDLER,
 } = require('../common/constants');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
@@ -621,6 +623,11 @@ class BlockchainNode {
               }
             });
           });
+        }
+        if (BlockchainConfigs.ENABLE_EVENT_HANDLER) {
+          this.node.eh.emit(new Event(EventTypes.BLOCK_FINALIZED, {
+            block_number: blockToFinalize.number,
+          }));
         }
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
