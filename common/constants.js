@@ -49,6 +49,8 @@ const ENABLE_GAS_FEE_WORKAROUND =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
 const ENABLE_REST_FUNCTION_CALL =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_REST_FUNCTION_CALL);
+const ENABLE_EXPRESS_RATE_LIMIT =
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_EXPRESS_RATE_LIMIT, true);
 const ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 const PORT = process.env.PORT || getPortNumber(8080, 8080);
 const P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
@@ -1013,6 +1015,7 @@ module.exports = {
   ENABLE_TX_SIG_VERIF_WORKAROUND,
   ENABLE_GAS_FEE_WORKAROUND,
   ENABLE_REST_FUNCTION_CALL,
+  ENABLE_EXPRESS_RATE_LIMIT,
   ACCOUNT_INDEX,
   ACCOUNT_INJECTION_OPTION,
   KEYSTORE_FILE_PATH,
