@@ -623,8 +623,8 @@ class BlockchainNode {
             });
           });
         }
-        if (BlockchainConfigs.ENABLE_EVENT_HANDLER) {
-          this.node.eh.emit(new Event(EventTypes.BLOCK_FINALIZED, {
+        if (this.eh.isRunning()) {
+          this.eh.emit(new Event(EventTypes.BLOCK_FINALIZED, {
             block_number: blockToFinalize.number,
           }));
         }
