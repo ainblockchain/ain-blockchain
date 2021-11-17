@@ -708,6 +708,17 @@ const TrafficEventTypes = {
   CLIENT_API_SET: 'client_api_set',
 };
 
+const EventTypes = {
+  BLOCK_FINALIZED: 'BLOCK_FINALIZED',
+  VALUE_CHANGED: 'VALUE_CHANGED',
+};
+
+const EventHandlerMessageTypes = {
+  FILTER_REGISTRATION: 'FILTER_REGISTRATION',
+  FILTER_UNREGISTRATION: 'FILTER_UNREGISTRATION',
+  EVENT_EMIT: 'EVENT_EMIT',
+};
+
 /**
  * Overwriting environment variables.
  * These parameters are defined in blockchain_params.json, but if specified as environment variables,
@@ -850,6 +861,8 @@ module.exports = {
   GasFeeConstants,
   SyncModeOptions,
   TrafficEventTypes,
+  EventTypes,
+  EventHandlerMessageTypes,
   isServiceType,
   isServiceAccountServiceType,
   isAppDependentServiceType,
