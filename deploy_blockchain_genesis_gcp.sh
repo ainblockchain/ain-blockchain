@@ -3,8 +3,10 @@
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
     printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic] [--restart|--reset]\n"
     printf "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --setup --keystore\n"
+    printf "\n"
     exit
 fi
+printf "\n[[[[[ deploy_blockchain_genesis_gcp.sh ]]]]]\n\n"
 
 if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]]; then
     SEASON="$1"
@@ -23,6 +25,11 @@ printf "PROJECT_ID=$PROJECT_ID\n"
 GCP_USER="$2"
 printf "GCP_USER=$GCP_USER\n"
 
+number_re='^[0-9]+$'
+if ! [[ $3 =~ $number_re ]] ; then
+    printf "Invalid <# of Shards> argument: $3\n"
+    exit
+fi
 NUM_SHARDS=$3
 printf "NUM_SHARDS=$NUM_SHARDS\n"
 
@@ -88,10 +95,9 @@ fi
 
 if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     # Get keystore password
-    echo -n "Enter password: "
+    printf "Enter password: "
     read -s PASSWORD
-    echo
-    echo
+    printf "\n\n"
 
     # Read node ip addresses
     IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt

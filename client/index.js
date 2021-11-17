@@ -7,12 +7,14 @@ const cors = require('cors');
 // NOTE(liayoo): To use async/await (ref: https://github.com/tedeh/jayson#promises)
 const jayson = require('jayson/promise');
 const _ = require('lodash');
+const rateLimit = require("express-rate-limit");
 const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
 const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
 const {
   ENABLE_DEV_CLIENT_SET_API,
+  ENABLE_EXPRESS_RATE_LIMIT,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   PORT,
@@ -36,6 +38,13 @@ app.use(express.urlencoded({
   limit: REQUEST_BODY_SIZE_LIMIT
 }));
 app.use(cors({ origin: CORS_WHITELIST }));
+if (ENABLE_EXPRESS_RATE_LIMIT) {
+  const limiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 60 // limit each IP to 60 requests per windowMs
+  });
+  app.use(limiter);
+}
 
 
 const node = new BlockchainNode();
