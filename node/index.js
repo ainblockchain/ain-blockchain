@@ -18,7 +18,6 @@ const {
   StateVersions,
   SyncModeOptions,
   EventTypes,
-  ENABLE_EVENT_HANDLER,
 } = require('../common/constants');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
