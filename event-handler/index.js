@@ -27,7 +27,7 @@ class EventHandler {
   }
 
   emit(event) {
-    if (!this.running) {
+    if (!this.isRunning()) {
       return;
     }
     switch (event.type) {
