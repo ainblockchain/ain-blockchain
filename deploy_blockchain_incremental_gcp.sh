@@ -19,8 +19,15 @@ else
 fi
 printf "SEASON=$SEASON\n"
 printf "PROJECT_ID=$PROJECT_ID\n"
+
 printf "GCP_USER=$GCP_USER\n"
 GCP_USER="$2"
+
+number_re='^[0-9]+$'
+if ! [[ $3 =~ $number_re ]] ; then
+    printf "Invalid <# of Shards> argument: $3\n"
+    exit
+fi
 printf "NUM_SHARDS=$NUM_SHARDS\n"
 NUM_SHARDS=$3
 
@@ -90,7 +97,7 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
-if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
+if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
     # Get keystore password
     echo -n "Enter password: "
     read -s PASSWORD
@@ -100,12 +107,12 @@ if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     # Read node ip addresses
     IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
 
-    if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
+    if [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
         KEYSTORE_DIR="testnet_prod_keys/"
     else
         KEYSTORE_DIR="testnet_dev_staging_keys/"
     fi
-elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
+elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
     # Read node ip addresses
     IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
 
@@ -214,13 +221,13 @@ function deploy_node() {
     eval $START_NODE_CMD
 
     # 4. Init account if necessary (if --keystore specified)
-    if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
+    if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         printf "\n* >> Initializing account for node $node_index ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
 
         echo $PASSWORD | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
-    elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
+    elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
         local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         local MNEMONIC=${MNEMONIC_LIST[${node_index}]}
         printf "\n* >> Injecting an account for node $node_index ********************\n\n"
@@ -285,7 +292,7 @@ else
         done
 fi
 
-if [[ "$NUM_SHARDS" -gt 0 ]]; then
+if [[ $NUM_SHARDS -gt 0 ]]; then
     for i in $(seq $NUM_SHARDS)
         do
             printf "###############################################################################\n"

@@ -23,6 +23,11 @@ printf "PROJECT_ID=$PROJECT_ID\n"
 GCP_USER="$2"
 printf "GCP_USER=$GCP_USER\n"
 
+number_re='^[0-9]+$'
+if ! [[ $3 =~ $number_re ]] ; then
+    printf "Invalid <# of Shards> argument: $3\n"
+    exit
+fi
 NUM_SHARDS=$3
 printf "NUM_SHARDS=$NUM_SHARDS\n"
 
