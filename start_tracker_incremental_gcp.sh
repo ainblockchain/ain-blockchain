@@ -3,8 +3,10 @@
 if [[ "$#" -lt 1 ]] || [[ "$#" -gt 2 ]]; then
     printf "Usage: bash start_tracker_incremental_gcp.sh <Number of Nodes> [--keep-code]\n"
     printf "Example: bash start_tracker_incremental_gcp.sh 5 --keep-code\n"
+    printf "\n"
     exit
 fi
+printf "\n[[[[[ start_tracker_incremental_gcp.sh ]]]]]\n\n"
 
 # 1. Configure env vars
 printf "\n#### [Step 1] Configure env vars ####\n\n"
@@ -48,9 +50,9 @@ if [[ $KEEP_CODE_OPTION = "" ]]; then
     mv * $NEW_DIR_PATH
 
     printf '\n'
-    printf 'Installing modules..\n'
+    printf 'Installing node modules..\n'
     cd $NEW_DIR_PATH
-    npm install
+    yarn install
 else
     printf '\n'
     printf 'Using old working directory..\n'

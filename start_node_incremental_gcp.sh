@@ -3,8 +3,10 @@
 if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
     printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_incremental_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
+    printf "\n"
     exit
 fi
+printf "\n[[[[[ start_node_incremental_gcp.sh ]]]]]\n\n"
 
 function parse_options() {
     local option="$1"
@@ -213,9 +215,9 @@ if [[ $KEEP_CODE_OPTION = "" ]]; then
     sudo chmod -R 777 $BLOCKCHAIN_DATA_DIR
 
     printf '\n'
-    printf 'Installing modules..\n'
+    printf 'Installing node modules..\n'
     cd $NEW_DIR_PATH
-    npm install
+    yarn install
 else
     printf '\n'
     printf 'Using old working directory..\n'

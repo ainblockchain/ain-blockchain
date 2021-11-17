@@ -3,8 +3,10 @@
 if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
     printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic] [--restart|--reset]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 --setup --canary --full-sync --keystore\n"
+    printf "\n"
     exit
 fi
+printf "\n[[[[[ deploy_blockchain_incremental_gcp.sh ]]]]]\n\n"
 
 if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]]; then
     SEASON="$1"
@@ -99,10 +101,9 @@ fi
 
 if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
     # Get keystore password
-    echo -n "Enter password: "
+    printf "Enter password: "
     read -s PASSWORD
-    echo
-    echo
+    printf "\n\n"
 
     # Read node ip addresses
     IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
@@ -146,7 +147,7 @@ function deploy_tracker() {
 
     if [[ $RESET_RESTART_OPTION = "" ]]; then
         # 1. Copy files for tracker
-        printf "\n\n[[[[ Copying files for tracker ]]]]\n\n"
+        printf "\n\n[[[ Copying files for tracker ]]]\n\n"
         SCP_CMD="gcloud compute scp --recurse $FILES_FOR_TRACKER ${TRACKER_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $TRACKER_ZONE"
         printf "SCP_CMD=$SCP_CMD\n\n"
         eval $SCP_CMD
@@ -155,14 +156,14 @@ function deploy_tracker() {
     # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
     if [[ $SETUP_OPTION = "--setup" ]]; then
         # 2. Set up tracker
-        printf "\n\n[[[[ Setting up tracker ]]]]\n\n"
+        printf "\n\n[[[ Setting up tracker ]]]\n\n"
         SETUP_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $TRACKER_ZONE"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
         eval $SETUP_CMD
     fi
 
     # 3. Start tracker
-    printf "\n\n[[[[ Starting tracker ]]]]\n\n"
+    printf "\n\n[[[ Starting tracker ]]]\n\n"
 
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
@@ -184,7 +185,7 @@ function deploy_node() {
 
     if [[ $RESET_RESTART_OPTION = "" ]]; then
         # 1. Copy files for node
-        printf "\n\n[[[[ Copying files for node $node_index ]]]]\n\n"
+        printf "\n\n[[[ Copying files for node $node_index ]]]\n\n"
         SCP_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${node_target_addr}:~/ --project $PROJECT_ID --zone $node_zone"
         printf "SCP_CMD=$SCP_CMD\n\n"
         eval $SCP_CMD
@@ -193,14 +194,14 @@ function deploy_node() {
     # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
     if [[ $SETUP_OPTION = "--setup" ]]; then
         # 2. Set up node
-        printf "\n\n[[[[ Setting up node $node_index ]]]]\n\n"
+        printf "\n\n[[[ Setting up node $node_index ]]]\n\n"
         SETUP_CMD="gcloud compute ssh $node_target_addr --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $node_zone"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
         eval $SETUP_CMD
     fi
 
     # 3. Start node
-    printf "\n\n[[[[ Starting node $node_index ]]]]\n\n"
+    printf "\n\n[[[ Starting node $node_index ]]]\n\n"
     if [[ $node_index -gt 4 ]]; then
         JSON_RPC_OPTION="--json-rpc"
         REST_FUNC_OPTION="--rest-func"
@@ -241,7 +242,7 @@ function deploy_node() {
     fi
 
     #5. Wait until node is synced
-    printf "\n\n[[[[ Waiting until node is synced $node_index ]]]]\n\n"
+    printf "\n\n[[[ Waiting until node is synced $node_index ]]]\n\n"
     WAIT_CMD="gcloud compute ssh $node_target_addr --command 'cd \$(find /home/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync_gcp.sh' --project $PROJECT_ID --zone $node_zone"
     printf "WAIT_CMD=$WAIT_CMD\n\n"
     eval $WAIT_CMD

@@ -1,10 +1,12 @@
 #!/bin/bash
 
 if [[ "$#" -lt 2 ]]; then
-    echo "Usage: bash deploy_monitoring_gcp.sh [dev|staging|spring|summer] <GCP Username>  [--setup]"
-    echo "Example: bash deploy_monitoring_gcp.sh dev seo"
+    printf "Usage: bash deploy_monitoring_gcp.sh [dev|staging|spring|summer] <GCP Username>  [--setup]\n"
+    printf "Example: bash deploy_monitoring_gcp.sh dev seo\n"
+    printf "\n"
     exit
 fi
+printf "\n[[[[[ deploy_monitoring_gcp.sh ]]]]]\n\n"
 
 if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]]; then
     SEASON="$1"
@@ -14,23 +16,22 @@ if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$
         PROJECT_ID="testnet-$1-ground"
     fi
 else
-    echo "Invalid project/season argument: $1"
+    printf "Invalid project/season argument: $1\n"
     exit
 fi
-echo "SEASON=$SEASON"
-echo "PROJECT_ID=$PROJECT_ID"
+printf "SEASON=$SEASON\n"
+printf "PROJECT_ID=$PROJECT_ID\n"
 
 GCP_USER="$2"
-echo "GCP_USER=$GCP_USER"
+printf "GCP_USER=$GCP_USER\n"
 
 OPTIONS="$3"
-echo "OPTIONS=$OPTIONS"
+printf "OPTIONS=$OPTIONS\n"
 
 # Get confirmation.
-echo
+printf "\n"
 read -p "Do you want to proceed? >> (y/N) " -n 1 -r
-echo
-echo
+printf "\n\n"
 if [[ ! $REPLY =~ ^[Yy]$ ]]
 then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell

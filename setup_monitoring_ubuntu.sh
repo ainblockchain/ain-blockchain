@@ -1,45 +1,54 @@
 #!/bin/bash
 
-echo 'Installing NodeJS..'
+printf "\n[[[[[ setup_monitoring_ubuntu.sh ]]]]]\n\n"
+
+printf 'Installing NodeJS..\n'
 sudo apt update
 curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 sudo apt install -y nodejs
 
-echo 'node -v'
+printf 'node -v\n'
 node -v
 
-echo 'npm --version'
+printf 'npm --version\n'
 npm --version
 
 
-echo 'Installing make..'
+printf 'Installing yarn..\n'
+sudo npm install -g yarn
+
+printf 'yarn --version\n'
+yarn --version
+
+
+printf 'Installing make..\n'
 sudo apt update
 sudo apt-get install -y build-essential
 
-echo 'make --version'
+printf 'make --version\n'
 make --version
 
 
-echo 'Installing vim..'
+printf 'Installing vim..\n'
 sudo apt update
 sudo apt install -y vim
 
-echo 'vim --version'
+printf 'vim --version\n'
 vim --version
 
 
-echo 'Installing apt-transport-https..'
+printf 'Installing apt-transport-https..\n'
 sudo apt-get install -y apt-transport-https
 
 
-echo 'Installing wget..'
+printf 'Installing wget..\n'
 sudo apt-get install -y software-properties-common wget
 
-echo 'wget --version'
+printf 'wget --version\n'
 wget --version
 
 
-echo 'Installing Grafana..'
+printf 'Installing Grafana..\n'
 wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
 
 echo "deb https://packages.grafana.com/oss/deb stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
