@@ -22,6 +22,10 @@ class EventHandler {
     logger.info(`Event handler started!`);
   }
 
+  isRunning() {
+    return this.running;
+  }
+
   emit(event) {
     if (!this.running) {
       return;
