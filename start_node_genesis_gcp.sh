@@ -3,8 +3,10 @@
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
     printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
+    printf "\n"
     exit
 fi
+printf "\n[[[[[ start_node_genesis_gcp.sh ]]]]]\n\n"
 
 function parse_options() {
     local option="$1"
@@ -35,6 +37,23 @@ function parse_options() {
 }
 
 # Parse options.
+SEASON="$1"
+number_re='^[0-9]+$'
+if ! [[ $2 =~ $number_re ]] ; then
+    printf "Invalid <Shard Index> argument: $2\n"
+    exit
+fi
+SHARD_INDEX="$2"
+if ! [[ $3 =~ $number_re ]] ; then
+    printf "Invalid <Node Index> argument: $3\n"
+    exit
+fi
+if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
+    printf "Invalid <Node Index> argument: $3\n"
+    exit
+fi
+NODE_INDEX="$3"
+
 KEEP_CODE_OPTION=""
 FULL_SYNC_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
@@ -48,12 +67,22 @@ do
   ((ARG_INDEX++))
 done
 
+printf "SEASON=$SEASON\n"
+printf "SHARD_INDEX=$SHARD_INDEX\n"
+printf "NODE_INDEX=$NODE_INDEX\n"
+
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
+if [[ $SEASON = "staging" ]]; then
+  # for performance test pipeline
+  export ENABLE_EXPRESS_RATE_LIMIT=false
+else
+  export ENABLE_EXPRESS_RATE_LIMIT=true
+fi
 if [[ $FULL_SYNC_OPTION = "" ]]; then
   export SYNC_MODE=fast
 else
@@ -90,7 +119,7 @@ if [[ $KEEP_CODE_OPTION = "" ]]; then
 
     printf '\n'
     printf 'Installing node modules..\n'
-    npm install
+    yarn install
 else
     printf '\n'
     printf 'Using old directory..\n'
@@ -103,67 +132,67 @@ fi
 
 export GENESIS_CONFIGS_DIR=genesis-configs/testnet
 KEYSTORE_DIR=testnet_dev_staging_keys
-if [[ "$1" = 'spring' ]]; then
+if [[ $SEASON = 'spring' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
     KEYSTORE_DIR=testnet_prod_keys
-elif [[ "$1" = 'summer' ]]; then
+elif [[ $SEASON = 'summer' ]]; then
     export TRACKER_WS_ADDR=ws://35.194.172.106:5000
     KEYSTORE_DIR=testnet_prod_keys
-elif [[ "$1" = 'staging' ]]; then
+elif [[ $SEASON = 'staging' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.150.73:5000
-elif [[ "$1" = 'dev' ]]; then
-  if [[ "$2" -gt 0 ]]; then
+elif [[ $SEASON = 'dev' ]]; then
+  if [[ $SHARD_INDEX -gt 0 ]]; then
     export GENESIS_CONFIGS_DIR=genesis-configs/sim-shard
   fi
 
-  if [[ "$2" = 0 ]]; then
+  if [[ $SHARD_INDEX = 0 ]]; then
     export TRACKER_WS_ADDR=ws://34.80.184.73:5000  # dev-tracker-ip
-  elif [[ "$2" = 1 ]]; then
+  elif [[ $SHARD_INDEX = 1 ]]; then
     export TRACKER_WS_ADDR=ws://35.187.153.22:5000  # dev-shard-1-tracker-ip
-  elif [[ "$2" = 2 ]]; then
+  elif [[ $SHARD_INDEX = 2 ]]; then
     export TRACKER_WS_ADDR=ws://34.80.203.104:5000  # dev-shard-2-tracker-ip
-  elif [[ "$2" = 3 ]]; then
+  elif [[ $SHARD_INDEX = 3 ]]; then
     export TRACKER_WS_ADDR=ws://35.189.174.17:5000  # dev-shard-3-tracker-ip
-  elif [[ "$2" = 4 ]]; then
+  elif [[ $SHARD_INDEX = 4 ]]; then
     export TRACKER_WS_ADDR=ws://35.221.164.158:5000  # dev-shard-4-tracker-ip
-  elif [[ "$2" = 5 ]]; then
+  elif [[ $SHARD_INDEX = 5 ]]; then
     export TRACKER_WS_ADDR=ws://35.234.46.65:5000  # dev-shard-5-tracker-ip
-  elif [[ "$2" = 6 ]]; then
+  elif [[ $SHARD_INDEX = 6 ]]; then
     export TRACKER_WS_ADDR=ws://35.221.210.171:5000  # dev-shard-6-tracker-ip
-  elif [[ "$2" = 7 ]]; then
+  elif [[ $SHARD_INDEX = 7 ]]; then
     export TRACKER_WS_ADDR=ws://34.80.222.121:5000  # dev-shard-7-tracker-ip
-  elif [[ "$2" = 8 ]]; then
+  elif [[ $SHARD_INDEX = 8 ]]; then
     export TRACKER_WS_ADDR=ws://35.221.200.95:5000  # dev-shard-8-tracker-ip
-  elif [[ "$2" = 9 ]]; then
+  elif [[ $SHARD_INDEX = 9 ]]; then
     export TRACKER_WS_ADDR=ws://34.80.216.199:5000  # dev-shard-9-tracker-ip
-  elif [[ "$2" = 10 ]]; then
+  elif [[ $SHARD_INDEX = 10 ]]; then
     export TRACKER_WS_ADDR=ws://34.80.161.85:5000  # dev-shard-10-tracker-ip
-  elif [[ "$2" = 11 ]]; then
+  elif [[ $SHARD_INDEX = 11 ]]; then
     export TRACKER_WS_ADDR=ws://35.194.239.169:5000  # dev-shard-11-tracker-ip
-  elif [[ "$2" = 12 ]]; then
+  elif [[ $SHARD_INDEX = 12 ]]; then
     export TRACKER_WS_ADDR=ws://35.185.156.22:5000  # dev-shard-12-tracker-ip
-  elif [[ "$2" = 13 ]]; then
+  elif [[ $SHARD_INDEX = 13 ]]; then
     export TRACKER_WS_ADDR=ws://35.229.247.143:5000  # dev-shard-13-tracker-ip
-  elif [[ "$2" = 14 ]]; then
+  elif [[ $SHARD_INDEX = 14 ]]; then
     export TRACKER_WS_ADDR=ws://35.229.226.47:5000  # dev-shard-14-tracker-ip
-  elif [[ "$2" = 15 ]]; then
+  elif [[ $SHARD_INDEX = 15 ]]; then
     export TRACKER_WS_ADDR=ws://35.234.61.23:5000  # dev-shard-15-tracker-ip
-  elif [[ "$2" = 16 ]]; then
+  elif [[ $SHARD_INDEX = 16 ]]; then
     export TRACKER_WS_ADDR=ws://34.80.66.41:5000  # dev-shard-16-tracker-ip
-  elif [[ "$2" = 17 ]]; then
+  elif [[ $SHARD_INDEX = 17 ]]; then
     export TRACKER_WS_ADDR=ws://35.229.143.18:5000  # dev-shard-17-tracker-ip
-  elif [[ "$2" = 18 ]]; then
+  elif [[ $SHARD_INDEX = 18 ]]; then
     export TRACKER_WS_ADDR=ws://35.234.58.137:5000  # dev-shard-18-tracker-ip
-  elif [[ "$2" = 19 ]]; then
+  elif [[ $SHARD_INDEX = 19 ]]; then
     export TRACKER_WS_ADDR=ws://34.80.249.104:5000  # dev-shard-19-tracker-ip
-  elif [[ "$2" = 20 ]]; then
+  elif [[ $SHARD_INDEX = 20 ]]; then
     export TRACKER_WS_ADDR=ws://35.201.248.92:5000  # dev-shard-20-tracker-ip
   else
-    printf "Invalid shard ID argument: $2\n"
+    printf "Invalid shard ID argument: $SHARD_INDEX\n"
     exit
   fi
 else
-    printf "Invalid season argument: $1\n"
+    printf "Invalid season argument: $SEASON\n"
     exit
 fi
 
@@ -172,33 +201,28 @@ printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
 printf "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR\n"
 printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 
-if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
-    printf "Invalid account_index argument: $2\n"
-    exit
-fi
-
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
-if [[ $ACCOUNT_INJECTION_OPTION = "" ]] || [[ "$2" -gt 0 ]]; then
-    export ACCOUNT_INDEX="$3"
+if [[ $ACCOUNT_INJECTION_OPTION = "" ]] || [[ "$SHARD_INDEX" -gt 0 ]]; then
+    export ACCOUNT_INDEX="$NODE_INDEX"
     printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
-elif [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
-    if [[ "$3" = 0 ]]; then
+elif [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
+    if [[ $NODE_INDEX = 0 ]]; then
         KEYSTORE_FILENAME="keystore_node_0.json"
-    elif [[ "$3" = 1 ]]; then
+    elif [[ $NODE_INDEX = 1 ]]; then
         KEYSTORE_FILENAME="keystore_node_1.json"
-    elif [[ "$3" = 2 ]]; then
+    elif [[ $NODE_INDEX = 2 ]]; then
         KEYSTORE_FILENAME="keystore_node_2.json"
-    elif [[ "$3" = 3 ]]; then
+    elif [[ $NODE_INDEX = 3 ]]; then
         KEYSTORE_FILENAME="keystore_node_3.json"
-    elif [[ "$3" = 4 ]]; then
+    elif [[ $NODE_INDEX = 4 ]]; then
         KEYSTORE_FILENAME="keystore_node_4.json"
-    elif [[ "$3" = 5 ]]; then
+    elif [[ $NODE_INDEX = 5 ]]; then
         KEYSTORE_FILENAME="keystore_node_5.json"
-    elif [[ "$3" = 6 ]]; then
+    elif [[ $NODE_INDEX = 6 ]]; then
         KEYSTORE_FILENAME="keystore_node_6.json"
     fi
     printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
-    if [[ "$KEEP_CODE_OPTION" = "" ]]; then
+    if [[ $KEEP_CODE_OPTION = "" ]]; then
         sudo mkdir -p ../ain_blockchain_data/keys/8080
         sudo mv ./$KEYSTORE_DIR/$KEYSTORE_FILENAME ../ain_blockchain_data/keys/8080/
     fi
@@ -227,4 +251,4 @@ printf "START_CMD=$START_CMD\n" >> start_commands.txt
 eval $START_CMD
 
 
-printf "\nBlockchain Node server [$1 $2 $3] is now up!\n\n"
+printf "\nBlockchain Node server [$SEASON $SHARD_INDEX $NODE_INDEX] is now up!\n\n"

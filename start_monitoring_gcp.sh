@@ -1,16 +1,18 @@
 #!/bin/bash
 
-echo 'Starting up Prometheus..'
+printf "\n[[[[[ start_monitoring_gcp.sh ]]]]]\n\n"
+
+printf 'Starting up Prometheus..\n'
 cd prometheus
 
 nohup ./prometheus --config.file=prometheus.yml >logs.txt 2>&1 &
-echo "Prometheus is now up!"
+printf "Prometheus is now up!\n"
 
 cd ..
 
 
-echo 'Starting up Grafana..'
+printf 'Starting up Grafana..\n'
 sudo systemctl daemon-reload
 sudo systemctl start grafana-server
 sudo systemctl status grafana-server
-echo "Grafana is now up!"
+printf "Grafana is now up!\n"
