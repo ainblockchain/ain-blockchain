@@ -384,10 +384,10 @@ class P2pServer {
   }
 
   getNetworkStatus() {
-    const networkStatus = {};
-    Object.assign(networkStatus, this.urls);
-    Object.assign(networkStatus, { connectionStatus: this.client.getConnectionStatus() });
-    return networkStatus;
+    return {
+      urls: this.urls,
+      connectionStatus: this.client.getConnectionStatus()
+    };
   }
 
   disconnectFromPeers() {
@@ -506,7 +506,7 @@ class P2pServer {
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
                 // TODO(minsulee2): if the url is invalid, then should it disconnect??
-                const p2pUrl = _.get(peerInfo, 'networkStatus.p2p.url');
+                const p2pUrl = _.get(peerInfo, 'networkStatus.urls.p2p.url');
                 this.client.connectToPeer(p2pUrl);
               }
             }

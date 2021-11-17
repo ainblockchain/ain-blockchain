@@ -1,8 +1,8 @@
 /* eslint no-mixed-operators: "off" */
+const logger = new (require('../logger'))('P2P_CLIENT');
 const _ = require('lodash');
 const P2pServer = require('./server');
 const Websocket = require('ws');
-const logger = new (require('../logger'))('P2P_CLIENT');
 const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
@@ -42,7 +42,7 @@ const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
 const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
 const PEER_CANDIDATES_CONNECTION_INTERVAL_MS = 60 * 1000;  // 1 minute
 const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
-const WAIT_FOR_ADDRESS_TIMEOUT_MS = 5 * 1000; // 5 seconds
+const WAIT_FOR_ADDRESS_TIMEOUT_MS = 10 * 1000; // 10 seconds
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
   '5m': 300,  // 5 minutes
   '10m': 600,  // 10 minutes
@@ -142,7 +142,7 @@ class P2pClient {
    */
   getPeerCandidateUrlList() {
     return Object.values(this.outbound).map(peer => {
-      const jsonRpcUrl = _.get(peer, 'peerInfo.networkStatus.jsonRpc.url');
+      const jsonRpcUrl = _.get(peer, 'peerInfo.networkStatus.urls.jsonRpc.url');
       if (jsonRpcUrl) {
         return jsonRpcUrl;
       }
@@ -160,7 +160,7 @@ class P2pClient {
         const maxInbound = _.get(peer, 'peerInfo.networkStatus.connectionStatus.maxInbound', 0);
         return incomingPeers.length < maxInbound;
       })
-      .map(peer => peer.peerInfo.networkStatus.p2p.url);
+      .map(peer => peer.peerInfo.networkStatus.urls.p2p.url);
   }
 
   getPeerCandidateInfo() {
@@ -222,24 +222,26 @@ class P2pClient {
   }
 
   /**
-   * Returns randomly picked connectable peers.
+   * Returns randomly picked connectable peers. Refer to details below:
+   * 1) Pick one if it is never queried.
+   * 2) Choose one in all peerCandidates if there no exists never queried peerCandidates.
+   * 3) Use P2P_PEER_CANDIDATE_URL if there are no peerCandidates at all.
    */
   assignRandomPeerCandidate() {
     const peerCandidatesEntries = Object.entries(this.peerCandidates);
-    const notQueriedCandidateEntries = peerCandidatesEntries.filter(([, value]) => {
-      return value.queriedAt === null;
-    });
-
-    if (notQueriedCandidateEntries.length > 0) {
-      shuffled = _.shuffle(notQueriedCandidateEntries);
-      return shuffled[0][0];
-    }
-
     if (peerCandidatesEntries.length === 0) {
       return P2P_PEER_CANDIDATE_URL;
     } else {
-      const shuffled = _.shuffle(peerCandidatesEntries);
-      return shuffled[0][0];
+      const notQueriedCandidateEntries = peerCandidatesEntries.filter(([, value]) => {
+        return value.queriedAt === null;
+      });
+      if (notQueriedCandidateEntries.length > 0) {
+        shuffled = _.shuffle(notQueriedCandidateEntries);
+        return shuffled[0][0];
+      } else {
+        const shuffled = _.shuffle(peerCandidatesEntries);
+        return shuffled[0][0];
+      }
     }
   }
 
@@ -545,7 +547,7 @@ class P2pClient {
             this.server.consensus.stakeTx = null;
           }
         } else {
-          logger.error('address confirmation hasn\'t sent back. Close the socket connection');
+          logger.error('Address confirmation hasn\'t sent back. Close the socket connection');
           this.removePeerConnection(socket.url);
           closeSocketSafe(this.outbound, socket);
         }
@@ -574,17 +576,19 @@ class P2pClient {
     });
 
     const networkStatus = this.server.getNetworkStatus();
-    const myUrl = _.get(networkStatus, 'p2p.url', '');
+    const myUrl = _.get(networkStatus, 'urls.p2p.url', '');
     const newPeerUrlList = _.get(peerCandidateInfo, 'newPeerUrlList', []);
+    console.log(newPeerUrlList)
     const newPeerUrlListWithoutMyUrl = newPeerUrlList.filter(url => {
       return url !== myUrl;
     });
     const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
-    const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.p2p.url');
+    const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.urls.p2p.url');
     if (isAvailableForConnection && !this.outbound[peerCandidateP2pUrl]) {
       // NOTE(minsulee2): Add a peer candidate up on the list if it is not connected.
       newPeerUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
     }
+    console.log(newPeerUrlListWithoutMyUrl)
     this.connectWithPeerUrlList(_.shuffle(newPeerUrlListWithoutMyUrl));
   }
 
@@ -613,7 +617,7 @@ class P2pClient {
   getAddrFromOutboundMapping(url) {
     for (const address in this.outbound) {
       const peerInfo = this.outbound[address];
-      if (url === peerInfo.networkStatus.p2p.url) {
+      if (url === peerInfo.networkStatus.urls.p2p.url) {
         return address;
       }
     }
