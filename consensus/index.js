@@ -15,6 +15,8 @@ const {
   WriteDbOperations,
   PredefinedDbPaths,
   StateVersions,
+  EventTypes,
+  ENABLE_EVENT_HANDLER,
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
@@ -28,6 +30,7 @@ const ConsensusUtil = require('./consensus-util');
 const PathUtil = require('../common/path-util');
 const VersionUtil = require('../common/version-util');
 const FileUtil = require('../common/file-util');
+const Event = require('../event-handler/event');
 
 
 class ConsensusError extends Error {
