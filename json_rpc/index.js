@@ -20,10 +20,13 @@ const PathUtil = require('../common/path-util');
  *
  * @param {Node} node Instance of the Node class.
  * @param {P2pServer} p2pServer Instance of the the P2pServer class.
+ * @param {EventHandlerServer} eventHandlerServer Instance of the EventHandlerServer class.
+ * @param {string} minProtocolVersion Minimum compatible protocol version.
+ * @param {string} maxProtocolVersion Maximum compatible protocol version.
  * @return {dict} A closure of functions compatible with the jayson library for
  *                  servicing JSON-RPC requests.
  */
-module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxProtocolVersion) {
+module.exports = function getMethods(node, p2pServer, eventHandlerServer, minProtocolVersion, maxProtocolVersion) {
   // Non-transaction methods
   const nonTxMethods = {
     ain_getProtocolVersion: function(args, done) {
@@ -402,7 +405,15 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
       const result = p2pServer.client.getPeerCandidateInfo();
       done(null, addProtocolVersion({ result }));
-    }
+    },
+
+    net_getEventHandlerServerNetworkInfo: async function(args) {
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
+      const result = await eventHandlerServer.getNetworkInfo();
+      return addProtocolVersion({ result });
+    },
+
+    // TODO(minsulee2): Add p2p json rpc API methods here.
   };
 
   // Transaction methods
