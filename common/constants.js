@@ -56,6 +56,7 @@ BlockchainConfigs.ENABLE_EVENT_HANDLER =
 BlockchainConfigs.ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 BlockchainConfigs.PORT = process.env.PORT || getPortNumber(8080, 8080);
 BlockchainConfigs.P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
+BlockchainConfigs.EVENT_HANDLER_PORT = process.env.EVENT_HANDLER_PORT || getPortNumber(6000, 6000);
 BlockchainConfigs.LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
 BlockchainConfigs.SYNC_MODE = process.env.SYNC_MODE || 'full';
 BlockchainConfigs.MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
