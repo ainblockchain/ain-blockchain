@@ -17,14 +17,10 @@ class EventHandlerServer {
   }
 
   async getNetworkInfo() {
-    const intIp = await getIpAddress(true);
-    const extIp = await getIpAddress(false);
-    const intUrl = new URL(`ws://${intIp}:${EVENT_HANDLER_PORT}`);
-    const extUrl = new URL(`ws://${extIp}:${EVENT_HANDLER_PORT}`);
-    const eventHandlerUrl = HOSTING_ENV === 'comcom' || HOSTING_ENV === 'local' ?
-        intUrl.toString() : extUrl.toString();
+    const ipAddr = await getIpAddress(HOSTING_ENV === 'comcom' || HOSTING_ENV === 'local');
+    const eventHandlerUrl = new URL(`ws://${ipAddr}:${EVENT_HANDLER_PORT}`);
     return {
-      url: eventHandlerUrl,
+      url: eventHandlerUrl.toString(),
       port: EVENT_HANDLER_PORT,
     }
   }
