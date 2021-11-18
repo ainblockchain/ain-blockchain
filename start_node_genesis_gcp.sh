@@ -147,10 +147,10 @@ elif [[ $SEASON = 'dev' ]]; then
   if [[ $SHARD_INDEX -gt 0 ]]; then
     export GENESIS_CONFIGS_DIR=genesis-configs/sim-shard
   fi
-    export P2P_PEER_CANDIDATE_URL="http://35.194.235.180:8080/json-rpc"
 
   if [[ $SHARD_INDEX = 0 ]]; then
     export TRACKER_WS_ADDR=ws://34.80.184.73:5000  # dev-tracker-ip
+    export P2P_PEER_CANDIDATE_URL="http://35.194.235.180:8080/json-rpc"
   elif [[ $SHARD_INDEX = 1 ]]; then
     export TRACKER_WS_ADDR=ws://35.187.153.22:5000  # dev-shard-1-tracker-ip
   elif [[ $SHARD_INDEX = 2 ]]; then
