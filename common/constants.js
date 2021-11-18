@@ -223,6 +223,7 @@ const PredefinedDbPaths = {
   CONSENSUS_TOTAL_AT_STAKE: 'total_at_stake',
   CONSENSUS_VALIDATORS: 'validators',
   CONSENSUS_VOTE: 'vote',
+  CONSENSUS_VOTE_NONCE: 'vote_nonce',
   CONSENSUS_WHITELIST: 'whitelist',
   // Developers
   DEVELOPERS: 'developers',

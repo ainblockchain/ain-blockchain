@@ -30,7 +30,7 @@ const {
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true,
+    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true, ENABLE_EXPRESS_RATE_LIMIT: false,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
@@ -41,7 +41,7 @@ const ENV_VARIABLES = [
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/he-shard',
     PORT: 9091, P2P_PORT: 6001,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, ENABLE_EXPRESS_RATE_LIMIT: false,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
@@ -49,7 +49,7 @@ const ENV_VARIABLES = [
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/he-shard',
     PORT: 9092, P2P_PORT: 6002,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, ENABLE_EXPRESS_RATE_LIMIT: false,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
@@ -57,7 +57,7 @@ const ENV_VARIABLES = [
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/he-shard',
     PORT: 9093, P2P_PORT: 6003,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, ENABLE_EXPRESS_RATE_LIMIT: false,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
@@ -65,7 +65,7 @@ const ENV_VARIABLES = [
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/he-shard',
     PORT: 9094, P2P_PORT: 6004,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3,
+    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, ENABLE_EXPRESS_RATE_LIMIT: false,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
     ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
