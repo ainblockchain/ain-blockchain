@@ -19,7 +19,7 @@ describe('EventHandler Test', () => {
 
   describe('EventHandler', () => {
     it('isRunning', () => {
-      expect(eventHandler.isRunning()).to.be.true;
+      expect(eventHandler.isRunning).to.be.true;
     });
 
     it('createAndRegisterFilter', () => {
