@@ -7,7 +7,7 @@ const Filter = require('./filter');
 class EventHandler {
   constructor() {
     this.server = null;
-    this.running = false;
+    this.isRunning = false;
     this.filters = {};
     this.eventTypeToFilters = {};
     for (const eventType of Object.keys(EventTypes)) {
@@ -18,16 +18,12 @@ class EventHandler {
   run() {
     this.server = new EventHandlerServer(this);
     this.server.startListen();
-    this.running = true;
+    this.isRunning = true;
     logger.info(`Event handler started!`);
   }
 
-  isRunning() {
-    return this.running;
-  }
-
   emit(event) {
-    if (!this.isRunning()) {
+    if (!this.isRunning) {
       return;
     }
     switch (event.type) {
