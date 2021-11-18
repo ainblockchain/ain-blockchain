@@ -30,6 +30,7 @@ const Transaction = require('../tx-pool/transaction');
 const Consensus = require('../consensus');
 const BlockPool = require('../block-pool');
 const ConsensusUtil = require('../consensus/consensus-util');
+const BlockchainEvent = require('../event-handler/blockchain-event');
 
 class BlockchainNode {
   constructor(account = null, eventHandler = null) {
@@ -624,7 +625,7 @@ class BlockchainNode {
           });
         }
         if (this.eh.isRunning) {
-          this.eh.emit(new Event(EventTypes.BLOCK_FINALIZED, {
+          this.eh.emit(new BlockchainEvent(EventTypes.BLOCK_FINALIZED, {
             block_number: blockToFinalize.number,
           }));
         }
