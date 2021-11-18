@@ -37,10 +37,13 @@ describe('EventHandler Test', () => {
 
     before(() => {
       eventHandlerServer = eventHandler.server;
-      eventHandlerServer.startListen();
     })
 
-    describe('getNetworkInfo', async () => {
+    after(() => {
+      eventHandlerServer.close();
+    })
+
+    it('getNetworkInfo', async () => {
       const intIp = await getIpAddress(true);
       const intUrl = new URL(`ws://${intIp}:${EVENT_HANDLER_PORT}`);
       const networkInfo = await eventHandlerServer.getNetworkInfo();
