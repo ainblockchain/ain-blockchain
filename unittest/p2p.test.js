@@ -130,10 +130,10 @@ describe("P2P", () => {
 
     describe("getNetworkStatus", () => {
       it("shows initial values of connection status", () => {
-        const expected = {};
-        Object.assign(expected, p2pServer.initUrls());
-        Object.assign(expected, { connectionStatus: p2pClient.getConnectionStatus() });
-
+        const expected = {
+          urls: p2pServer.initUrls(),
+          connectionStatus: p2pClient.getConnectionStatus()
+        };
         assert.deepEqual(p2pServer.getNetworkStatus(), expected);
       });
     });
