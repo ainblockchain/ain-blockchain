@@ -54,6 +54,34 @@ describe("RuleUtil", () => {
     })
   })
 
+  describe("isIntegerString", () => {
+    it("when invalid input", () => {
+      expect(util.isIntegerString(true)).to.equal(false);
+      expect(util.isIntegerString(false)).to.equal(false);
+      expect(util.isIntegerString(null)).to.equal(false);
+      expect(util.isIntegerString(undefined)).to.equal(false);
+      expect(util.isIntegerString(Infinity)).to.equal(false);
+      expect(util.isIntegerString(NaN)).to.equal(false);
+      expect(util.isIntegerString('')).to.equal(false);
+      expect(util.isIntegerString('abc')).to.equal(false);
+      expect(util.isIntegerString({})).to.equal(false);
+      expect(util.isIntegerString({a: 'A'})).to.equal(false);
+      expect(util.isIntegerString([])).to.equal(false);
+      expect(util.isIntegerString([10])).to.equal(false);
+      expect(util.isIntegerString(0)).to.equal(false);
+      expect(util.isIntegerString(10)).to.equal(false);
+      expect(util.isIntegerString(-1)).to.equal(false);
+      expect(util.isIntegerString(15.5)).to.equal(false);
+      expect(util.isIntegerString('15.5')).to.equal(false);
+    });
+
+    it("when valid input", () => {
+      expect(util.isIntegerString('0')).to.equal(true);
+      expect(util.isIntegerString('10')).to.equal(true);
+      expect(util.isIntegerString('-1')).to.equal(true);
+    })
+  });
+
   describe("isInteger", () => {
     it("when invalid input", () => {
       expect(util.isInteger(true)).to.equal(false);

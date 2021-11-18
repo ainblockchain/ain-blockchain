@@ -14,7 +14,7 @@ const {
   DATA_PROTOCOL_VERSION,
   CHAINS_DIR,
   GENESIS_TIMESTAMP,
-  HOSTING_ENV,
+  GenesisParams,
   P2pNetworkStates
 } = require('../common/constants');
 const { setNodeForTesting } = require('./test-util');
@@ -52,15 +52,89 @@ describe("P2P", () => {
       it("gets ip address", async () => {
         const actual = await p2pServer.getIpAddress();
         const ipAddressRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        // FIXME(minsulee2): We cannot use CommonUtil.isValidUrl for internal ip.
         expect(ipAddressRegex.test(actual)).to.be.true;
       });
     });
 
     describe("setUpIpAddresses", () => {
-      it("sets ip address", async () => {
+      it("sets ip address", () => {
         const ipAddressRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        // FIXME(minsulee2): We cannot use CommonUtil.isValidUrl for internal ip.
         expect(ipAddressRegex.test(p2pServer.node.ipAddrInternal)).to.be.true;
         expect(ipAddressRegex.test(p2pServer.node.ipAddrExternal)).to.be.true;
+      });
+    });
+
+    describe("getInternalIp", () => {
+      it("gets internal IP address", () => {
+        expect(p2pServer.getInternalIp()).to.equal(p2pServer.node.ipAddrInternal);
+      });
+    });
+
+    describe("getExternalIp", () => {
+      it("gets external IP address", () => {
+        expect(p2pServer.getExternalIp()).to.equal(p2pServer.node.ipAddrExternal);
+      });
+    });
+
+    describe("buildUrls", () => {
+      it("builds both internal and external ip addresses", () => {
+        const intIp = p2pServer.getInternalIp();
+        const actualP2pUrl = new URL(`ws://${intIp}:${P2P_PORT}`);
+        const stringP2pUrl = actualP2pUrl.toString();
+        actualP2pUrl.protocol = 'http:';
+        actualP2pUrl.port = PORT;
+        const actualClientApiUrl = actualP2pUrl.toString();
+        actualP2pUrl.pathname = 'json-rpc';
+        const actualJsonRpcUrl = actualP2pUrl.toString();
+        const actual = {
+          p2pUrl: stringP2pUrl,
+          clientApiUrl: actualClientApiUrl,
+          jsonRpcUrl: actualJsonRpcUrl
+        }
+        const {
+          p2pUrl,
+          clientApiUrl,
+          jsonRpcUrl
+        } = p2pServer.buildUrls(intIp);
+        expect(p2pUrl).to.equal(actual.p2pUrl);
+        expect(clientApiUrl).to.equal(actual.clientApiUrl);
+        expect(jsonRpcUrl).to.equal(actual.jsonRpcUrl);
+      });
+    });
+
+    describe("initUrls", () => {
+      it("initializes (test)internal urls", () => {
+        const intIp = p2pServer.getInternalIp();
+        const extIp = p2pServer.getExternalIp();
+        const urls = p2pServer.buildUrls(intIp);
+        const expected = {
+          ip: extIp,
+          p2p: {
+            url: urls.p2pUrl,
+            port: P2P_PORT,
+          },
+          clientApi: {
+            url: urls.clientApiUrl,
+            port: PORT,
+          },
+          jsonRpc: {
+            url: urls.jsonRpcUrl,
+            port: PORT,
+          }
+        }
+        assert.deepEqual(expected, p2pServer.initUrls());
+      });
+    });
+
+    describe("getNetworkStatus", () => {
+      it("shows initial values of connection status", () => {
+        const expected = {
+          urls: p2pServer.initUrls(),
+          connectionStatus: p2pClient.getConnectionStatus()
+        };
+        assert.deepEqual(p2pServer.getNetworkStatus(), expected);
       });
     });
 
@@ -73,12 +147,6 @@ describe("P2P", () => {
     describe("getNodePrivateKey", () => {
       it("gets node private key address", () => {
         expect(p2pServer.getNodePrivateKey()).to.equal(p2pServer.node.account.private_key);
-      });
-    });
-
-    describe("getExternalIp", () => {
-      it("gets external IP address", () => {
-        expect(p2pServer.getExternalIp()).to.equal(p2pServer.node.ipAddrExternal);
       });
     });
 
@@ -122,6 +190,15 @@ describe("P2P", () => {
         delete actual.elapsedTimeMs;
         assert.deepEqual(actual, {
           number: 0, epoch: 0, timestamp: GENESIS_TIMESTAMP
+        });
+      });
+    });
+
+    describe("getConfig", () => {
+      it("Gets config", () => {
+        assert.deepEqual(p2pClient.getConfig(), {
+          blockchainConfig: GenesisParams,
+          env: process.env,
         });
       });
     });
@@ -276,22 +353,12 @@ describe("P2P", () => {
   });
 
   describe("Client Status", () => {
-    describe("initConnections", () => {
-      it("sets targetOutBound", () => {
-        expect(p2pClient.targetOutBound).to.equal(TARGET_NUM_OUTBOUND_CONNECTION);
-      });
-
-      it("sets maxInbound", () => {
-        expect(p2pClient.maxInbound).to.equal(MAX_NUM_INBOUND_CONNECTION);
-      });
-    });
-
     describe("getConnectionStatus", () => {
       it("shows initial values of connection status", () => {
         assert.deepEqual(p2pClient.getConnectionStatus(), {
           p2pState: P2pNetworkStates.STARTING,
-          targetOutBound: TARGET_NUM_OUTBOUND_CONNECTION,
           maxInbound: MAX_NUM_INBOUND_CONNECTION,
+          targetOutBound: TARGET_NUM_OUTBOUND_CONNECTION,
           numInbound: 0,
           numOutbound: 0,
           incomingPeers: [],
@@ -300,37 +367,17 @@ describe("P2P", () => {
       });
     });
 
-    describe("getNetworkStatus", () => {
-      it("shows initial values of connection status", () => {
-        const intIp = p2pClient.server.getInternalIp();
-        const extIp = p2pClient.server.getExternalIp();
-        const intUrl = new URL(`ws://${intIp}:${P2P_PORT}`);
-        const extUrl = new URL(`ws://${extIp}:${P2P_PORT}`);
-        // NOTE(liayoo): The 'comcom', 'local' HOSTING_ENV settings assume that multiple blockchain
-        // nodes are on the same machine.
-        const p2pUrl = HOSTING_ENV === 'comcom' || HOSTING_ENV === 'local' ?
-            intUrl.toString() : extUrl.toString();
-        extUrl.protocol = 'http:';
-        extUrl.port = PORT;
-        const clientApiUrl = extUrl.toString();
-        extUrl.pathname = 'json-rpc';
-        const jsonRpcUrl = extUrl.toString();
-        assert.deepEqual(p2pClient.getNetworkStatus(), {
-          ip: extIp,
-          p2p: {
-            url: p2pUrl,
-            port: P2P_PORT,
-          },
-          clientApi: {
-            url: clientApiUrl,
-            port: PORT,
-          },
-          jsonRpc: {
-            url: jsonRpcUrl,
-            port: PORT,
-          },
-          connectionStatus: p2pClient.getConnectionStatus()
-        });
+    describe("getTrafficStats", () => {
+      it("gets traffic stats", () => {
+        const expected = { '5m': {}, '10m': {}, '1h': {}, '3h': {} };
+        assert.deepEqual(p2pClient.getTrafficStats(), expected);
+      });
+    });
+
+    describe("getClientStatus", () => {
+      it("gets client status", () => {
+        const expected = { trafficStats: p2pClient.getTrafficStats() };
+        assert.deepEqual(p2pClient.getClientStatus(), expected);
       });
     });
   });

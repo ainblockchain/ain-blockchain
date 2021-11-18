@@ -265,7 +265,7 @@ describe('HE Sharding', async () => {
       await waitUntilNetworkIsReady(shardServerList);
       await setUpApp(appName, shardServerList, { admin: { [shardOwnerAddr]: true } });
     });
-    
+
     describe('DB values', () => {
       it('token', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/token')
