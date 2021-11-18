@@ -46,7 +46,7 @@ class EventHandler {
         break;
       }
       if (eventFilterBlockNumber === eventBlockNumber) {
-        this.server.propagateEventByEventFilterId(eventFilterId, blockchainEvent);
+        this.server.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
       }
     }
   }
