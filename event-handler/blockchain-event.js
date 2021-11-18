@@ -1,4 +1,4 @@
-class Event {
+class BlockchainEvent {
   constructor(type, payload) {
     this.type = type;
     this.payload = payload || {};
@@ -12,4 +12,4 @@ class Event {
   }
 }
 
-module.exports = Event;
+module.exports = BlockchainEvent;

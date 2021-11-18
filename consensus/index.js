@@ -30,7 +30,7 @@ const ConsensusUtil = require('./consensus-util');
 const PathUtil = require('../common/path-util');
 const VersionUtil = require('../common/version-util');
 const FileUtil = require('../common/file-util');
-const Event = require('../event-handler/event');
+const BlockchainEvent = require('../event-handler/blockchain-event');
 
 
 class ConsensusError extends Error {
