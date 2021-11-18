@@ -3,6 +3,7 @@ const _ = require('lodash');
 const EventHandlerServer = require('./server');
 const { EventTypes } = require('../common/constants');
 const EventFilter = require('./event-filter');
+const BlockchainEvent = require('./blockchain-event');
 
 class EventHandler {
   constructor() {
@@ -22,31 +23,36 @@ class EventHandler {
     logger.info(`Event handler started!`);
   }
 
-  emit(event) {
+  emitBlockFinalized(blockNumber) {
     if (!this.isRunning) {
       return;
     }
-    switch (event.type) {
-      case EventTypes.BLOCK_FINALIZED:
-        for (const eventFilterId of this.eventTypeToEventFilters[EventTypes.BLOCK_FINALIZED]) {
-          const eventFilter = this.eventFilters[eventFilterId];
-          const eventFilterBlockNumber = _.get(eventFilter, 'config.block_number', -1);
-          if (eventFilterBlockNumber === -1) {
-            break;
-          }
-          const eventBlockNumber = _.get(event, 'payload.block_number', -1);
-          if (eventBlockNumber === -1) {
-            break;
-          }
-          if (eventFilterBlockNumber === eventBlockNumber) {
-            this.server.propagateEventByEventFilterId(eventFilterId, event);
-          }
-        }
-        break;
-      case EventTypes.VALUE_CHANGED:
-        // TODO(cshcomcom): Implement
-        break;
+    if (!blockNumber) {
+      return;
     }
+
+    const blockchainEvent = new BlockchainEvent(EventTypes.BLOCK_FINALIZED, {
+      block_number: blockNumber,
+    });
+
+    for (const eventFilterId of this.eventTypeToEventFilters[EventTypes.BLOCK_FINALIZED]) {
+      const eventFilter = this.eventFilters[eventFilterId];
+      const eventFilterBlockNumber = _.get(eventFilter, 'config.block_number', -1);
+      if (eventFilterBlockNumber === -1) {
+        break;
+      }
+      const eventBlockNumber = _.get(blockchainEvent, 'payload.block_number', -1);
+      if (eventBlockNumber === -1) {
+        break;
+      }
+      if (eventFilterBlockNumber === eventBlockNumber) {
+        this.server.propagateEventByEventFilterId(eventFilterId, blockchainEvent);
+      }
+    }
+  }
+
+  emitValueChanged() {
+    // TODO(cshcomcom): Implement
   }
 
   createAndRegisterEventFilter(eventFilterId, eventType, config) {
