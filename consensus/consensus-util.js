@@ -67,6 +67,10 @@ class ConsensusUtil {
     return _get(tx, 'tx_body.operation.value.offense_type');
   }
 
+  static getTimestampFromVoteTx(tx) {
+    return _get(tx, 'tx_body.operation.value.timestamp');
+  }
+
   static isAgainstVoteTx(tx) {
     return _get(tx, 'tx_body.operation.value.is_against') === true;
   }
