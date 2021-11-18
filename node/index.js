@@ -624,11 +624,7 @@ class BlockchainNode {
             });
           });
         }
-        if (this.eh.isRunning) {
-          this.eh.emit(new BlockchainEvent(EventTypes.BLOCK_FINALIZED, {
-            block_number: blockToFinalize.number,
-          }));
-        }
+        this.eh.emitBlockFinalized(blockToFinalize.number);
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
             `${JSON.stringify(blockToFinalize, null, 2)}`);
