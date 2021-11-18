@@ -13,7 +13,7 @@ class EventHandlerServer {
     this.eventHandler = eventHandler;
     this.wsServer = null;
     this.clients = {};
-    this.filterIdToClientId = {};
+    this.eventFilterIdToClientId = {};
   }
 
   async getNetworkInfo() {
@@ -65,8 +65,8 @@ class EventHandlerServer {
         throw Error(`Can't find data from message (${JSON.stringify(message)})`);
       }
       switch (messageType) {
-        case EventHandlerMessageTypes.FILTER_REGISTRATION:
-          const filterId = data.id;
+        case EventHandlerMessageTypes.EVENT_FILTER_REGISTRATION:
+          const eventFilterId = data.id;
           const eventType = data.type;
           if (!eventType) {
             throw Error(`Can't find eventType from message.data (${JSON.stringify(message)})`);
@@ -76,11 +76,12 @@ class EventHandlerServer {
             throw Error(`Can't find config from message.data (${JSON.stringify(message)})`);
           }
 
-          const filter = this.eventHandler.createAndRegisterFilter(filterId, eventType, config);
-          client.addFilter(filter);
-          this.filterIdToClientId[filter.id] = client.id;
+          const eventFilter =
+              this.eventHandler.createAndRegisterEventFilter(eventFilterId, eventType, config);
+          client.addEventFilter(eventFilter);
+          this.eventFilterIdToClientId[eventFilter.id] = client.id;
           break;
-        case EventHandlerMessageTypes.FILTER_UNREGISTRATION:
+        case EventHandlerMessageTypes.EVENT_FILTER_UNREGISTRATION:
           // TODO(cshcomcom): Implement
           break;
         default:
@@ -104,11 +105,11 @@ class EventHandlerServer {
         JSON.stringify(event.toObject())));
   }
 
-  propagateEventByFilterId(filterId, event) {
-    const clientId = this.filterIdToClientId[filterId];
+  propagateEventByEventFilterId(eventFilterId, event) {
+    const clientId = this.eventFilterIdToClientId[eventFilterId];
     const client = this.clients[clientId];
     if (!client) {
-      logger.error(`Can't find client by filter id (filterId: filterId)`);
+      logger.error(`Can't find client by event filter id (eventFilterId: ${eventFilterId})`);
       return;
     }
     this.propagateEvent(client, event);
