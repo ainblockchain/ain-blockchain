@@ -16,8 +16,10 @@ const Consensus = require('../consensus');
 const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
 const {
+  MAX_NUM_INBOUND_CONNECTION,
   CURRENT_PROTOCOL_VERSION,
   DATA_PROTOCOL_VERSION,
+  PORT,
   P2P_PORT,
   HOSTING_ENV,
   LIGHTWEIGHT,
@@ -75,7 +77,7 @@ const txSizeThreshold = TX_BYTES_LIMIT * 0.9;
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(minsulee2): Sign messages to tracker or peer.
 class P2pServer {
-  constructor (p2pClient, node, minProtocolVersion, maxProtocolVersion, maxInbound) {
+  constructor (p2pClient, node, minProtocolVersion, maxProtocolVersion) {
     this.wsServer = null;
     this.client = p2pClient;
     this.node = node;
@@ -85,7 +87,6 @@ class P2pServer {
     this.dataProtocolVersion = DATA_PROTOCOL_VERSION;
     this.majorDataProtocolVersion = VersionUtil.toMajorVersion(DATA_PROTOCOL_VERSION);
     this.inbound = {};
-    this.maxInbound = maxInbound;
     this.isReportingShardProofHash = false;
     this.lastReportedBlockNumberSent = -1;
   }
@@ -115,12 +116,13 @@ class P2pServer {
       }
     });
     // Set the number of maximum clients.
-    this.wsServer.setMaxListeners(this.maxInbound);
+    this.wsServer.setMaxListeners(MAX_NUM_INBOUND_CONNECTION);
     this.wsServer.on('connection', (socket) => {
       this.setServerSidePeerEventHandlers(socket);
     });
     logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
     await this.setUpIpAddresses();
+    this.urls = this.initUrls();
   }
 
   getNodeAddress() {
@@ -333,6 +335,61 @@ class P2pServer {
     return true;
   }
 
+  buildUrls(ip) {
+    const p2pUrl = new URL(`ws://${ip}:${P2P_PORT}`);
+    const stringP2pUrl = p2pUrl.toString();
+    p2pUrl.protocol = 'http:';
+    p2pUrl.port = PORT;
+    const clientApiUrl = p2pUrl.toString();
+    p2pUrl.pathname = 'json-rpc';
+    const jsonRpcUrl = p2pUrl.toString();
+    return {
+      p2pUrl: stringP2pUrl,
+      clientApiUrl: clientApiUrl,
+      jsonRpcUrl: jsonRpcUrl
+    };
+  }
+
+  initUrls() {
+    // NOTE(liayoo, minsulee2): As discussed offline, only the 'local' HOSTING_ENV setting assumes
+    // that multiple blockchain nodes are on the same machine.
+    const intIp = this.getInternalIp();
+    const extIp = this.getExternalIp();
+    let urls;
+    switch (HOSTING_ENV) {
+      case 'local':
+        urls = this.buildUrls(intIp);
+        break;
+      case 'comcom':
+      case 'gcp':
+        urls = this.buildUrls(extIp);
+        break;
+    }
+
+    return {
+      ip: extIp,
+      p2p: {
+        url: urls.p2pUrl,
+        port: P2P_PORT,
+      },
+      clientApi: {
+        url: urls.clientApiUrl,
+        port: PORT,
+      },
+      jsonRpc: {
+        url: urls.jsonRpcUrl,
+        port: PORT,
+      }
+    };
+  }
+
+  getNetworkStatus() {
+    return {
+      urls: this.urls,
+      connectionStatus: this.client.getConnectionStatus()
+    };
+  }
+
   disconnectFromPeers() {
     Object.values(this.inbound).forEach(node => {
       node.socket.close();
@@ -426,12 +483,13 @@ class P2pServer {
               }
               logger.info(`A new websocket(${address}) is established.`);
               this.inbound[address] = {
-                socket: socket,
+                socket,
+                peerInfo,
                 version: dataProtoVer
               };
-              this.client.updatePeerInfoToTracker();
               const body = {
                 address: this.getNodeAddress(),
+                peerInfo: this.client.getStatus(),
                 timestamp: Date.now(),
               };
               const signature = signMessage(body, this.getNodePrivateKey());
@@ -447,7 +505,9 @@ class P2pServer {
               }
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
-                this.client.connectToPeer(peerInfo);
+                // TODO(minsulee2): if the url is invalid, then should it disconnect??
+                const p2pUrl = _.get(peerInfo, 'networkStatus.urls.p2p.url');
+                this.client.connectToPeer(p2pUrl);
               }
             }
             break;
@@ -555,6 +615,13 @@ class P2pServer {
                   null
               );
             }
+            break;
+          case MessageTypes.PEER_INFO_UPDATE:
+            const updatePeerInfo = parsedMessage.data;
+            const addressFromSocket = getAddressFromSocket(this.inbound, socket);
+            // Keep updating both inbound and outbound.
+            this.inbound[addressFromSocket].peerInfo = updatePeerInfo;
+            this.client.outbound[addressFromSocket].networkStatus = updatePeerInfo.networkStatus;
             break;
           default:
             logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +

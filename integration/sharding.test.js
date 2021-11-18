@@ -44,12 +44,12 @@ const ENV_VARIABLES = [
   },
   {
     // For shard chain tracker
-    PORT: 9090, P2P_PORT: 6000,
+    PORT: 9000, P2P_PORT: 6000,
     CONSOLE_LOG: false
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9091, P2P_PORT: 6001,
+    PORT: 9001, P2P_PORT: 6001,
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
@@ -57,7 +57,7 @@ const ENV_VARIABLES = [
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9092, P2P_PORT: 6002,
+    PORT: 9002, P2P_PORT: 6002,
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
@@ -65,7 +65,7 @@ const ENV_VARIABLES = [
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9093, P2P_PORT: 6003,
+    PORT: 9003, P2P_PORT: 6003,
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
@@ -73,7 +73,7 @@ const ENV_VARIABLES = [
   },
   {
     GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9094, P2P_PORT: 6004,
+    PORT: 9004, P2P_PORT: 6004,
     MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
@@ -83,10 +83,10 @@ const ENV_VARIABLES = [
 
 const parentServer = 'http://localhost:8081';
 const parentServerList = [ parentServer ];
-const server1 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
-const server2 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
-const server3 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[4].ACCOUNT_INDEX))
-const server4 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[5].ACCOUNT_INDEX))
+const server1 = 'http://localhost:' + String(9001 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
+const server2 = 'http://localhost:' + String(9001 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
+const server3 = 'http://localhost:' + String(9001 + Number(ENV_VARIABLES[4].ACCOUNT_INDEX))
+const server4 = 'http://localhost:' + String(9001 + Number(ENV_VARIABLES[5].ACCOUNT_INDEX))
 const shardServerList = [ server1, server2, server3, server4 ];
 const account = ainUtil.createAccount();
 

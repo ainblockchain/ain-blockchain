@@ -403,7 +403,11 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
       done(null, addProtocolVersion({ result }));
     },
 
-    // TODO(minsulee2): Add p2p json rpc API methods here.
+    p2p_getPeerCandidateInfo: function (args, done) {
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
+      const result = p2pServer.client.getPeerCandidateInfo();
+      done (null, addProtocolVersion({ result }));
+    }
   };
 
   // Transaction methods

@@ -6,6 +6,7 @@
     "CHAIN_ID": 0,
     "HOSTING_ENV": "local",
     "TRACKER_WS_ADDR": "ws://localhost:6000",
+    "P2P_PEER_CANDIDATE_URL": "http://localhost:9091/json-rpc",
     "MAX_SHARD_REPORT": 100,
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
   },
@@ -25,8 +26,8 @@
   },
   "network": {
     "P2P_MESSAGE_TIMEOUT_MS": 600000,
-    "TARGET_NUM_OUTBOUND_CONNECTION": 2,
-    "MAX_NUM_INBOUND_CONNECTION": 3,
+    "TARGET_NUM_OUTBOUND_CONNECTION": 3,
+    "MAX_NUM_INBOUND_CONNECTION": 6,
     "REQUEST_BODY_SIZE_LIMIT": "100mb"
   },
   "resource": {
