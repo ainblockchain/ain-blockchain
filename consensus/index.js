@@ -824,6 +824,7 @@ class Consensus {
     }
     const blockHash = ConsensusUtil.getBlockHashFromConsensusTx(voteTx);
     const isAgainst = ConsensusUtil.isAgainstVoteTx(voteTx);
+    const voteTimestamp = ConsensusUtil.getTimestampFromVoteTx(voteTx);
     const blockInfo = this.node.bp.hashToBlockInfo[blockHash] ||
         this.node.bp.hashToInvalidBlockInfo[blockHash];
     let block;
@@ -836,6 +837,10 @@ class Consensus {
       logger.debug(`[${LOG_HEADER}] Cannot verify the vote without the block it's voting for: ` +
           `${blockHash} / ${JSON.stringify(blockInfo, null, 2)}`);
       // FIXME: ask for the block from peers
+      return false;
+    }
+    if (voteTimestamp < block.timestamp) {
+      logger.debug(`[${LOG_HEADER}] Invalid timestamp in vote: ${JSON.stringify(voteTx)}`);
       return false;
     }
     const executableTx = Transaction.toExecutable(voteTx);
@@ -921,6 +926,7 @@ class Consensus {
     if (!validatorInfo) {
       return;
     }
+    const timestamp = Date.now();
     const operation = {
       type: WriteDbOperations.SET_VALUE,
       ref: PathUtil.getConsensusVotePath(proposalBlock.number, proposalBlock.hash, myAddr),
@@ -928,9 +934,10 @@ class Consensus {
         [PredefinedDbPaths.CONSENSUS_BLOCK_HASH]: proposalBlock.hash,
         [PredefinedDbPaths.CONSENSUS_STAKE]: validatorInfo.stake,
         [PredefinedDbPaths.CONSENSUS_IS_AGAINST]: false,
+        [PredefinedDbPaths.CONSENSUS_VOTE_NONCE]: timestamp,
       }
     };
-    const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
+    const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1, timestamp });
     const consensusMsg = this.encapsulateConsensusMessage(
         Transaction.toJsObject(voteTx), ConsensusMessageTypes.VOTE);
     this.handleConsensusMessage(consensusMsg);
@@ -952,6 +959,7 @@ class Consensus {
     if (!validatorInfo) {
       return;
     }
+    const timestamp = Date.now();
     const operation = {
       type: WriteDbOperations.SET_VALUE,
       ref: PathUtil.getConsensusVotePath(proposalBlock.number, proposalBlock.hash, myAddr),
@@ -960,9 +968,10 @@ class Consensus {
         [PredefinedDbPaths.CONSENSUS_STAKE]: validatorInfo.stake,
         [PredefinedDbPaths.CONSENSUS_IS_AGAINST]: true,
         [PredefinedDbPaths.CONSENSUS_OFFENSE_TYPE]: ValidatorOffenseTypes.INVALID_PROPOSAL,
+        [PredefinedDbPaths.CONSENSUS_VOTE_NONCE]: timestamp,
       }
     };
-    const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
+    const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1, timestamp });
     const consensusMsg = this.encapsulateConsensusMessage(
         Transaction.toJsObject(voteTx), ConsensusMessageTypes.VOTE);
     this.handleConsensusMessage(consensusMsg);

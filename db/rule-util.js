@@ -292,7 +292,8 @@ class RuleUtil {
   }
 
   validateConsensusVoteData(newData, userAddr, blockHash, lastBlockNumber, getValue) {
-    if (!this.isDict(newData) || !this.isBool(newData.is_against) || !this.isNumber(newData.stake) || newData.block_hash !== blockHash) {
+    if (!this.isDict(newData) || !this.isBool(newData.is_against) || !this.isNumber(newData.stake)
+        || newData.block_hash !== blockHash) {
       return false;
     }
     if (newData.is_against && !this.isValidatorOffenseType(newData.offense_type)) {
