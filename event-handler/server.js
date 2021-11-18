@@ -88,7 +88,7 @@ class EventHandlerServer {
       }
     } catch (err) {
       logger.error(`Error while process message (${JSON.stringify(message, null, 2)})`);
-      // TODO: Error handling with client
+      // TODO(cshcomcom): Error handling with client
     }
   }
 
