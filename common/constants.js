@@ -221,10 +221,10 @@ const PredefinedDbPaths = {
   CONSENSUS_REWARDS_UNCLAIMED: 'unclaimed',
   CONSENSUS_REWARDS_CUMULATIVE: 'cumulative',
   CONSENSUS_STAKE: 'stake',
-  CONSENSUS_TIMESTAMP: 'timestamp',
   CONSENSUS_TOTAL_AT_STAKE: 'total_at_stake',
   CONSENSUS_VALIDATORS: 'validators',
   CONSENSUS_VOTE: 'vote',
+  CONSENSUS_VOTE_NONCE: 'vote_nonce',
   CONSENSUS_WHITELIST: 'whitelist',
   // Developers
   DEVELOPERS: 'developers',

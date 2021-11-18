@@ -934,7 +934,7 @@ class Consensus {
         [PredefinedDbPaths.CONSENSUS_BLOCK_HASH]: proposalBlock.hash,
         [PredefinedDbPaths.CONSENSUS_STAKE]: validatorInfo.stake,
         [PredefinedDbPaths.CONSENSUS_IS_AGAINST]: false,
-        [PredefinedDbPaths.CONSENSUS_TIMESTAMP]: timestamp,
+        [PredefinedDbPaths.CONSENSUS_VOTE_NONCE]: timestamp,
       }
     };
     const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1, timestamp });
@@ -968,7 +968,7 @@ class Consensus {
         [PredefinedDbPaths.CONSENSUS_STAKE]: validatorInfo.stake,
         [PredefinedDbPaths.CONSENSUS_IS_AGAINST]: true,
         [PredefinedDbPaths.CONSENSUS_OFFENSE_TYPE]: ValidatorOffenseTypes.INVALID_PROPOSAL,
-        [PredefinedDbPaths.CONSENSUS_TIMESTAMP]: timestamp,
+        [PredefinedDbPaths.CONSENSUS_VOTE_NONCE]: timestamp,
       }
     };
     const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1, timestamp });

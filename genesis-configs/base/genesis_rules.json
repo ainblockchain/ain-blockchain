@@ -121,7 +121,7 @@
           "vote": {
             "$user_addr": {
               ".rule": {
-                "write": "auth.addr === $user_addr && data === null && util.validateConsensusVoteData(newData, auth.addr, $block_hash, lastBlockNumber, currentTime, getValue) === true"
+                "write": "auth.addr === $user_addr && data === null && util.validateConsensusVoteData(newData, auth.addr, $block_hash, lastBlockNumber, getValue) === true"
               }
             }
           }
