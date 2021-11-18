@@ -1,4 +1,4 @@
-class Filter {
+class EventFilter {
   constructor(id, type, config) {
     this.id = id;
     this.type = type;
@@ -6,4 +6,4 @@ class Filter {
   }
 }
 
-module.exports = Filter;
+module.exports = EventFilter;

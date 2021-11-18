@@ -4,15 +4,15 @@ class EventHandlerClient {
   constructor(id, webSocket) {
     this.id = id;
     this.webSocket = webSocket;
-    this.filters = {};
+    this.eventFilters = {};
   }
 
-  addFilter(filter) {
-    if (!filter.id) {
-      logger.error(`Can't find id from filter (${JSON.stringify(filter, null, 2)})`);
+  addEventFilter(eventFilter) {
+    if (!eventFilter.id) {
+      logger.error(`Can't find id from event filter (${JSON.stringify(eventFilter, null, 2)})`);
       return;
     }
-    this.filters[filter.id] = filter;
+    this.eventFilters[eventFilter.id] = eventFilter;
   }
 }
 
