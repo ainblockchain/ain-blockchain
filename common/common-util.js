@@ -77,6 +77,10 @@ class CommonUtil {
     return ruleUtil.isNumber(value);
   }
 
+  static isIntegerString(value) {
+    return ruleUtil.isIntegerString(value);
+}
+
   static isInteger(value) {
     return ruleUtil.isInteger(value);
   }

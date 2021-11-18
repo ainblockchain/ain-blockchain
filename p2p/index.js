@@ -1,6 +1,5 @@
 /* eslint no-mixed-operators: "off" */
 const logger = new (require('../logger'))('P2P_CLIENT');
-
 const _ = require('lodash');
 const P2pServer = require('./server');
 const Websocket = require('ws');
@@ -8,19 +7,19 @@ const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
 const {
-  HOSTING_ENV,
-  PORT,
-  P2P_PORT,
   TRACKER_WS_ADDR,
   EPOCH_MS,
   MessageTypes,
+  TARGET_NUM_OUTBOUND_CONNECTION,
+  MAX_NUM_INBOUND_CONNECTION,
+  NETWORK_ID,
+  P2P_PEER_CANDIDATE_URL,
+  ACCOUNT_INDEX,
+  ENABLE_STATUS_REPORT_TO_TRACKER,
   TrackerMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
   TrafficEventTypes,
-  TARGET_NUM_OUTBOUND_CONNECTION,
-  MAX_NUM_INBOUND_CONNECTION,
-  NETWORK_ID,
   GenesisParams,
   trafficStatsManager,
 } = require('../common/constants');
@@ -35,12 +34,15 @@ const {
   encapsulateMessage,
   isValidNetworkId
 } = require('./util');
+const {
+  sendGetRequest
+} = require('../common/network-util');
 
 const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
-const TRACKER_UPDATE_INTERVAL_MS = 5 * 1000;  // 5 seconds
-const PEER_CONNECTION_INVERVAL_MS = 60 * 1000;  // 1 minute
-const HEARTBEAT_INTERVAL_MS = 60 * 1000;  // 1 minute
-const WAIT_FOR_ADDRESS_TIMEOUT_MS = 1000;
+const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
+const PEER_CANDIDATES_CONNECTION_INTERVAL_MS = 60 * 1000;  // 1 minute
+const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
+const WAIT_FOR_ADDRESS_TIMEOUT_MS = 10 * 1000; // 10 seconds
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
   '5m': 300,  // 5 minutes
   '10m': 600,  // 10 minutes
@@ -48,15 +50,16 @@ const TRAFFIC_STATS_PERIOD_SECS_LIST = {
   '3h': 10800,  // 3 hours
 };
 
-
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
-    this.initConnections();
     this.server = new P2pServer(
-        this, node, minProtocolVersion, maxProtocolVersion, this.maxInbound);
+        this, node, minProtocolVersion, maxProtocolVersion);
+    this.peerCandidates = {};
+    this.isConnectingToPeerCandidates = false;
     this.trackerWebSocket = null;
     this.outbound = {};
     this.p2pState = P2pNetworkStates.STARTING;
+    this.peerConnectionsInProgress = {};
     logger.info(`Now p2p network in STARTING state!`);
     this.startHeartbeat();
   }
@@ -64,14 +67,17 @@ class P2pClient {
   async run() {
     if (CommonUtil.isEmpty(this.server.node.account)) return;
     await this.server.listen();
-    this.connectToTracker();
-  }
-
-  initConnections() {
-    this.targetOutBound = process.env.MAX_OUTBOUND ?
-        Number(process.env.MAX_OUTBOUND) : TARGET_NUM_OUTBOUND_CONNECTION;
-    this.maxInbound = process.env.MAX_INBOUND ?
-        Number(process.env.MAX_INBOUND) : MAX_NUM_INBOUND_CONNECTION;
+    if (ENABLE_STATUS_REPORT_TO_TRACKER) this.connectToTracker();
+    if (this.server.node.state === BlockchainNodeStates.STARTING) {
+      if (Number(ACCOUNT_INDEX) === 0) {
+        await this.startBlockchainNode(0);
+        return;
+      } else {
+        await this.startBlockchainNode(1);
+      }
+    }
+    this.connectWithPeerCandidateUrl(P2P_PEER_CANDIDATE_URL);
+    this.setIntervalForPeerCandidatesConnection();
   }
 
   getConnectionStatus() {
@@ -79,12 +85,26 @@ class P2pClient {
     const outgoingPeers = Object.keys(this.outbound);
     return {
       p2pState: this.p2pState,
-      maxInbound: this.maxInbound,
-      targetOutBound: this.targetOutBound,
+      maxInbound: MAX_NUM_INBOUND_CONNECTION,
+      targetOutBound: TARGET_NUM_OUTBOUND_CONNECTION,
       numInbound: incomingPeers.length,
       numOutbound: outgoingPeers.length,
       incomingPeers: incomingPeers,
       outgoingPeers: outgoingPeers,
+    };
+  }
+
+  getTrafficStats() {
+    const stats = {};
+    for (const [periodName, periodSecs] of Object.entries(TRAFFIC_STATS_PERIOD_SECS_LIST)) {
+      stats[periodName] = trafficStatsManager.getEventRates(periodSecs)
+    }
+    return stats;
+  }
+
+  getClientStatus() {
+    return {
+      trafficStats: this.getTrafficStats(),
     };
   }
 
@@ -94,7 +114,7 @@ class P2pClient {
       address: this.server.getNodeAddress(),
       updatedAt: Date.now(),
       lastBlockNumber: blockStatus.number,
-      networkStatus: this.getNetworkStatus(),
+      networkStatus: this.server.getNetworkStatus(),
       blockStatus: blockStatus,
       txStatus: this.server.getTxStatus(),
       consensusStatus: this.server.getConsensusStatus(),
@@ -117,60 +137,40 @@ class P2pClient {
     };
   }
 
-  getNetworkStatus() {
-    const intIp = this.server.getInternalIp();
-    const extIp = this.server.getExternalIp();
-    const intUrl = new URL(`ws://${intIp}:${P2P_PORT}`);
-    const extUrl = new URL(`ws://${extIp}:${P2P_PORT}`);
-    // NOTE(liayoo): The 'comcom', 'local' HOSTING_ENV settings assume that multiple blockchain
-    // nodes are on the same machine.
-    const p2pUrl = HOSTING_ENV === 'comcom' || HOSTING_ENV === 'local' ?
-        intUrl.toString() : extUrl.toString();
-    extUrl.protocol = 'http:';
-    extUrl.port = PORT;
-    const clientApiUrl = extUrl.toString();
-    extUrl.pathname = 'json-rpc';
-    const jsonRpcUrl = extUrl.toString();
-    return {
-      ip: extIp,
-      p2p: {
-        url: p2pUrl,
-        port: P2P_PORT,
-      },
-      clientApi: {
-        url: clientApiUrl,
-        port: PORT,
-      },
-      jsonRpc: {
-        url: jsonRpcUrl,
-        port: PORT,
-      },
-      connectionStatus: this.getConnectionStatus()
-    };
+  /**
+   * Returns json rpc urls.
+   */
+  getPeerCandidateUrlList() {
+    return Object.values(this.outbound).map(peer => {
+      const jsonRpcUrl = _.get(peer, 'peerInfo.networkStatus.urls.jsonRpc.url');
+      if (jsonRpcUrl) {
+        return jsonRpcUrl;
+      }
+    });
   }
 
-  getClientStatus() {
-    return {
-      trafficStats: this.getTrafficStats(),
-    };
+  /**
+   * Returns P2p endpoint urls.
+   */
+  getPeerUrlList() {
+    return Object.values(this.outbound)
+      .filter(peer => {
+        const incomingPeers =
+            _.get(peer, 'peerInfo.networkStatus.connectionStatus.incomingPeers', []);
+        const maxInbound = _.get(peer, 'peerInfo.networkStatus.connectionStatus.maxInbound', 0);
+        return incomingPeers.length < maxInbound;
+      })
+      .map(peer => peer.peerInfo.networkStatus.urls.p2p.url);
   }
 
-  getTrafficStats() {
-    const stats = {};
-    for (const [periodName, periodSecs] of Object.entries(TRAFFIC_STATS_PERIOD_SECS_LIST)) {
-      stats[periodName] = trafficStatsManager.getEventRates(periodSecs)
+  getPeerCandidateInfo() {
+    return {
+      isAvailableForConnection:
+          MAX_NUM_INBOUND_CONNECTION > Object.keys(this.server.inbound).length,
+      networkStatus: this.server.getNetworkStatus(),
+      peerCandidateUrlList: this.getPeerCandidateUrlList(),
+      newPeerUrlList: this.getPeerUrlList()
     }
-    return stats;
-  }
-
-  sendRequestForNewPeers() {
-    const message = {
-      type: TrackerMessageTypes.NEW_PEERS_REQUEST,
-      data: this.getStatus()
-    };
-    logger.debug(`\n >> Connect to [TRACKER] ${TRACKER_WS_ADDR}: ` +
-        `${JSON.stringify(message, null, 2)}`);
-    this.trackerWebSocket.send(JSON.stringify(message));
   }
 
   updatePeerInfoToTracker() {
@@ -208,44 +208,59 @@ class P2pClient {
     this.intervalTrackerUpdate = null;
   }
 
+  /**
+   * Returns either true or false and also set p2pState.
+   */
   updateP2pState() {
     if (Object.keys(this.outbound).length < TARGET_NUM_OUTBOUND_CONNECTION) {
       this.p2pState = P2pNetworkStates.EXPANDING;
-      this.sendRequestForNewPeers();
+      return true;
     } else {
       this.p2pState = P2pNetworkStates.STEADY;
+      return false;
     }
   }
 
-  setIntervalForPeerConnection() {
-    this.updateP2pState();
-    this.intervalPeerConnection = setInterval(() => {
-      this.updateP2pState();
-    }, PEER_CONNECTION_INVERVAL_MS);
+  /**
+   * Returns randomly picked connectable peers. Refer to details below:
+   * 1) Pick one if it is never queried.
+   * 2) Choose one in all peerCandidates if there no exists never queried peerCandidates.
+   * 3) Use P2P_PEER_CANDIDATE_URL if there are no peerCandidates at all.
+   */
+  assignRandomPeerCandidate() {
+    const peerCandidatesEntries = Object.entries(this.peerCandidates);
+    if (peerCandidatesEntries.length === 0) {
+      return P2P_PEER_CANDIDATE_URL;
+    } else {
+      const notQueriedCandidateEntries = peerCandidatesEntries.filter(([, value]) => {
+        return value.queriedAt === null;
+      });
+      if (notQueriedCandidateEntries.length > 0) {
+        shuffled = _.shuffle(notQueriedCandidateEntries);
+        return shuffled[0][0];
+      } else {
+        const shuffled = _.shuffle(peerCandidatesEntries);
+        return shuffled[0][0];
+      }
+    }
   }
 
-  clearIntervalForPeerConnection() {
-    clearInterval(this.intervalPeerConnection);
+  setIntervalForPeerCandidatesConnection() {
+    this.intervalPeerCandidatesConnection = setInterval(async () => {
+      if (this.updateP2pState() && !this.isConnectingToPeerCandidates) {
+        this.isConnectingToPeerCandidates = true;
+        const nextPeerCandidate = this.assignRandomPeerCandidate();
+        await this.connectWithPeerCandidateUrl(nextPeerCandidate);
+        this.isConnectingToPeerCandidates = false;
+      }
+    }, PEER_CANDIDATES_CONNECTION_INTERVAL_MS);
+  }
+
+  clearIntervalForPeerCandidateConnection() {
+    clearInterval(this.intervalPeerCandidatesConnection);
   }
 
   async setTrackerEventHandlers() {
-    this.trackerWebSocket.on('message', async (message) => {
-      const parsedMessage = JSON.parse(message);
-      logger.info(`\n<< Message from [TRACKER]: ${JSON.stringify(parsedMessage, null, 2)}`);
-      switch(_.get(parsedMessage, 'type')) {
-        case TrackerMessageTypes.NEW_PEERS_RESPONSE:
-          const data = parsedMessage.data;
-          this.connectToPeers(data.newManagedPeerInfoList);
-          if (this.server.node.state === BlockchainNodeStates.STARTING) {
-            await this.startBlockchainNode(data.numLivePeers);
-          }
-          break;
-        default:
-          logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
-              'specified. Ignore the message.');
-          break;
-      }
-    });
     this.trackerWebSocket.on('close', (code) => {
       logger.info(`\nDisconnected from [TRACKER] ${TRACKER_WS_ADDR} with code: ${code}`);
       this.clearIntervalForTrackerUpdate();
@@ -293,7 +308,6 @@ class P2pClient {
       logger.info(`Connected to tracker (${TRACKER_WS_ADDR})`);
       this.clearIntervalForTrackerConnection();
       this.setTrackerEventHandlers();
-      this.setIntervalForPeerConnection();
       this.setIntervalForTrackerUpdate();
     });
     this.trackerWebSocket.on('error', (error) => {
@@ -357,7 +371,7 @@ class P2pClient {
     const payload = encapsulateMessage(MessageTypes.ADDRESS_REQUEST,
         { body: body, signature: signature });
     if (!payload) {
-      logger.error('The address cannot be sent because of msg encapsulation failure.');
+      logger.error('The peerInfo message cannot be sent because of msg encapsulation failure.');
       return;
     }
     socket.send(JSON.stringify(payload));
@@ -428,7 +442,12 @@ class P2pClient {
               return;
             }
             logger.info(`[${LOG_HEADER}] A new websocket(${address}) is established.`);
+            this.outbound[address] = {
+              socket,
+              peerInfo: _.get(parsedMessage, 'data.body.peerInfo')
+            };
             Object.assign(this.outbound[address], { version: dataProtoVer });
+            this.removePeerConnection(socket.url);
             this.updatePeerInfoToTracker();
           }
           break;
@@ -473,6 +492,8 @@ class P2pClient {
       removeSocketConnectionIfExists(this.outbound, address);
       logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
+
+    // TODO(minsulee2): needs to update socket.on('error').
   }
 
   tryInitProcesses(number, chainSegment, catchUpInfo) {
@@ -515,49 +536,107 @@ class P2pClient {
   }
 
   // TODO(minsulee2): Not just wait for address, but ack. if ack fails, this connection disconnects.
-  waitForAddress = (socket) => {
-    CommonUtil.sleep(WAIT_FOR_ADDRESS_TIMEOUT_MS)
-      .then(() => {
-        const address = getAddressFromSocket(this.outbound, socket);
+  setTimerForPeerAddressResponse = (socket) => {
+    setTimeout(() => {
+      const address = getAddressFromSocket(this.outbound, socket);
         if (address) {
           logger.info(`with (${address}).`);
+          this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
+          if (this.server.consensus.stakeTx) {
+            this.broadcastTransaction(this.server.consensus.stakeTx);
+            this.server.consensus.stakeTx = null;
+          }
         } else {
-          logger.debug(`Waiting for address of the socket(${JSON.stringify(socket, null, 2)})`);
-          this.waitForAddress(socket);
+          logger.error('Address confirmation hasn\'t sent back. Close the socket connection');
+          this.removePeerConnection(socket.url);
+          closeSocketSafe(this.outbound, socket);
         }
-      });
+    }, WAIT_FOR_ADDRESS_TIMEOUT_MS);
   }
 
-  connectToPeer(peerInfo) {
-    const url = peerInfo.networkStatus.p2p.url;
+  /**
+   * Tries to connect multiple peer candidates via the given peer candidate url.
+   * @param {string} peerCandidateUrl should be something like http(s)://xxx.xxx.xxx.xxx/json-rpc
+   */
+  async connectWithPeerCandidateUrl(peerCandidateUrl) {
+    const resp = await sendGetRequest(peerCandidateUrl, 'p2p_getPeerCandidateInfo', { });
+    const peerCandidateInfo = _.get(resp, 'data.result.result');
+    if (!peerCandidateInfo) {
+      logger.error(`Something went wrong with the peer candidate(${peerCandidateUrl}).`);
+      return;
+    }
+
+    this.peerCandidates[peerCandidateUrl] = { queriedAt: Date.now() };
+    const peerCandidateUrlList = _.get(peerCandidateInfo, 'peerCandidateUrlList', []);
+    peerCandidateUrlList.forEach(url => {
+      // FIXME(minsulee2): CommonUtil.isValidUrl is not working for internal ip addresses.
+      if (!this.peerCandidates[url] && CommonUtil.isValidUrl(url)) {
+        this.peerCandidates[url] = { queriedAt: null };
+      }
+    });
+
+    const networkStatus = this.server.getNetworkStatus();
+    const myUrl = _.get(networkStatus, 'urls.p2p.url', '');
+    const newPeerUrlList = _.get(peerCandidateInfo, 'newPeerUrlList', []);
+    const newPeerUrlListWithoutMyUrl = newPeerUrlList.filter(url => {
+      return url !== myUrl;
+    });
+    const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
+    const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.urls.p2p.url');
+    if (isAvailableForConnection && !this.outbound[peerCandidateP2pUrl]) {
+      // NOTE(minsulee2): Add a peer candidate up on the list if it is not connected.
+      newPeerUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
+    }
+    this.connectWithPeerUrlList(_.shuffle(newPeerUrlListWithoutMyUrl));
+  }
+
+  addPeerConnection(url) {
+    this.peerConnectionsInProgress[url] = true;
+  }
+
+  removePeerConnection(url) {
+    delete this.peerConnectionsInProgress[url];
+  }
+
+  connectToPeer(url) {
     const socket = new Websocket(url);
     socket.on('open', async () => {
-      this.outbound[peerInfo.address] = {
-        socket,
-        peerInfo
-      };
-      logger.info(`Connected to peer(${url}),`);
+      logger.info(`Connected to peer (${url}),`);
       this.setClientSidePeerEventHandlers(socket);
       // TODO(minsulee2): Send an encrypted form of address(pubkey can be recoverable from address),
       // ip address, and signature.
       this.sendPeerInfo(socket);
-      // TODO(minsulee2): Check ack from the corresponding server, then proceed requestChainSegment.
-      await this.waitForAddress(socket);
-      this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
-      if (this.server.consensus.stakeTx) {
-        this.broadcastTransaction(this.server.consensus.stakeTx);
-        this.server.consensus.stakeTx = null;
-      }
+      // TODO(minsulee2): Check ack from the corresponding server, then proceed reqeustChainSegment.
+      this.addPeerConnection(url);
+      this.setTimerForPeerAddressResponse(socket);
     });
   }
 
-  connectToPeers(newPeerInfoList) {
-    newPeerInfoList.forEach((peerInfo) => {
-      if (peerInfo.address in this.outbound) {
-        logger.info(`Node ${peerInfo.address} is already a managed peer. Something went wrong.`);
+  getAddrFromOutboundMapping(url) {
+    for (const address in this.outbound) {
+      const peerInfo = this.outbound[address];
+      if (url === peerInfo.networkStatus.urls.p2p.url) {
+        return address;
+      }
+    }
+    return null;
+  }
+
+  getMaxNumberOfNewPeers() {
+    const totalConnections =
+        Object.keys(this.outbound).length + Object.keys(this.peerConnectionsInProgress).length;
+    return Math.max(0, TARGET_NUM_OUTBOUND_CONNECTION - totalConnections);
+  }
+
+  connectWithPeerUrlList(newPeerUrlList) {
+    const maxNumberOfNewPeers = this.getMaxNumberOfNewPeers();
+    newPeerUrlList.slice(0, maxNumberOfNewPeers).forEach(url => {
+      const address = this.getAddrFromOutboundMapping(url);
+      if (address) {
+        logger.debug(`Node ${address}(${url}) is already a managed peer.`);
       } else {
-        logger.info(`Connecting to peer ${JSON.stringify(peerInfo, null, 2)}`);
-        this.connectToPeer(peerInfo);
+        logger.info(`Connecting to peer ${address}(${url})`);
+        this.connectToPeer(url);
       }
     });
   }
@@ -589,13 +668,23 @@ class P2pClient {
     // in case trackerWebsocket is not properly setup.
     this.clearIntervalForTrackerConnection();
     this.clearIntervalForTrackerUpdate();
-    this.clearIntervalForPeerConnection();
+    this.clearIntervalForPeerCandidateConnection();
     this.clearIntervalForShardProofHashReports();
     if (this.trackerWebSocket) this.trackerWebSocket.close();
     logger.info('Disconnect from tracker server.');
     this.stopHeartbeat();
     this.disconnectFromPeers();
     logger.info('Disconnect from connected peers.');
+  }
+
+  updateStatusToPeer(socket, address) {
+    const payload = encapsulateMessage(MessageTypes.PEER_INFO_UPDATE, this.getStatus());
+    if (!payload) {
+      logger.error('The message cannot be sent because of msg encapsulation failure.');
+      return;
+    }
+    socket.send(JSON.stringify(payload));
+    logger.debug(`\n >> Update to ${address}: ${JSON.stringify(payload, null, 2)}`);
   }
 
   startHeartbeat() {
@@ -611,6 +700,7 @@ class P2pClient {
               `The readyState is(${socket.readyState})`);
         } else {
           socket.ping();
+          this.updateStatusToPeer(socket, node.peerInfo.address);
         }
       });
     }, HEARTBEAT_INTERVAL_MS);
