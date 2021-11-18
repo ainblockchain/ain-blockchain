@@ -578,7 +578,6 @@ class P2pClient {
     const networkStatus = this.server.getNetworkStatus();
     const myUrl = _.get(networkStatus, 'urls.p2p.url', '');
     const newPeerUrlList = _.get(peerCandidateInfo, 'newPeerUrlList', []);
-    console.log(newPeerUrlList)
     const newPeerUrlListWithoutMyUrl = newPeerUrlList.filter(url => {
       return url !== myUrl;
     });
@@ -588,7 +587,6 @@ class P2pClient {
       // NOTE(minsulee2): Add a peer candidate up on the list if it is not connected.
       newPeerUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
     }
-    console.log(newPeerUrlListWithoutMyUrl)
     this.connectWithPeerUrlList(_.shuffle(newPeerUrlListWithoutMyUrl));
   }
 
