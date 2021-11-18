@@ -45,7 +45,9 @@ class EventHandlerServer {
     webSocket.on('message', (message) => {
       this.handleMessage(client, message);
     });
-
+    webSocket.on('close', (message) => {
+      // TODO(cshcomcom): Delete unused variables
+    });
     // TODO(cshcomcom): ping-pong & close broken connections
   }
 
@@ -96,19 +98,19 @@ class EventHandlerServer {
     };
   }
 
-  propagateEvent(client, event) {
+  transmitEvent(client, event) {
     client.webSocket.send(this.makeMessage(EventHandlerMessageTypes.EVENT_EMIT,
         JSON.stringify(event.toObject())));
   }
 
-  propagateEventByEventFilterId(eventFilterId, event) {
+  transmitEventByEventFilterId(eventFilterId, event) {
     const clientId = this.eventFilterIdToClientId[eventFilterId];
     const client = this.clients[clientId];
     if (!client) {
       logger.error(`Can't find client by event filter id (eventFilterId: ${eventFilterId})`);
       return;
     }
-    this.propagateEvent(client, event);
+    this.transmitEvent(client, event);
   }
 
   close() {
