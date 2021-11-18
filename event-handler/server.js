@@ -112,6 +112,13 @@ class EventHandlerServer {
     }
     this.propagateEvent(client, event);
   }
+
+  close() {
+    this.wsServer.close(() => {
+      logger.info(`Closed event handler server's socket`);
+      // TODO(sanghee): Clear all data
+    });
+  }
 }
 
 module.exports = EventHandlerServer;
