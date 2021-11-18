@@ -4,7 +4,7 @@ const { expect, assert } = chai;
 const { getIpAddress } = require('../common/network-util');
 const { EVENT_HANDLER_PORT, EventTypes } = require('../common/constants');
 
-// TODO(sanghee): Add integration test
+// TODO(cshcomcom): Add integration test
 describe('EventHandler Test', () => {
   let eventHandler;
 
@@ -14,7 +14,7 @@ describe('EventHandler Test', () => {
   });
 
   after(() => {
-    // TODO(sanghee): stop & cleanup logic
+    // TODO(cshcomcom): stop & cleanup logic
   });
 
   describe('EventHandler', () => {

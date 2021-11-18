@@ -48,7 +48,7 @@ class EventHandler {
         }
         break;
       case EventTypes.VALUE_CHANGED:
-        // TODO(sanghee): Implement
+        // TODO(cshcomcom): Implement
         break;
     }
   }

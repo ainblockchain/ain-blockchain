@@ -43,14 +43,14 @@ class EventHandlerServer {
     }
     const client = new EventHandlerClient(clientId, webSocket);
     this.clients[clientId] = client;
-    // TODO(sanghee): Handle MAX connections
+    // TODO(cshcomcom): Handle MAX connections
 
     logger.info(`New connection (${clientId})`);
     webSocket.on('message', (message) => {
       this.handleMessage(client, message);
     });
 
-    // TODO(sanghee): ping-pong & close broken connections
+    // TODO(cshcomcom): ping-pong & close broken connections
   }
 
   handleMessage(client, message) {
@@ -80,7 +80,7 @@ class EventHandlerServer {
           this.filterIdToClientId[filter.id] = client.id;
           break;
         case EventHandlerMessageTypes.FILTER_UNREGISTRATION:
-          // TODO(sanghee): Implement
+          // TODO(cshcomcom): Implement
           break;
         default:
           throw Error(`Invalid message type (${messageType})`);
@@ -116,7 +116,7 @@ class EventHandlerServer {
   close() {
     this.wsServer.close(() => {
       logger.info(`Closed event handler server's socket`);
-      // TODO(sanghee): Clear all data
+      // TODO(cshcomcom): Clear all data
     });
   }
 }
