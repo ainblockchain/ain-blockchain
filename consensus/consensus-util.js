@@ -68,7 +68,7 @@ class ConsensusUtil {
   }
 
   static getTimestampFromVoteTx(tx) {
-    return _get(tx, 'tx_body.operation.value.timestamp');
+    return _get(tx, 'tx_body.timestamp');
   }
 
   static isAgainstVoteTx(tx) {
