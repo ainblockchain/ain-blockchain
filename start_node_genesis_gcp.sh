@@ -146,8 +146,8 @@ elif [[ $SEASON = 'staging' ]]; then
 elif [[ $SEASON = 'dev' ]]; then
   if [[ $SHARD_INDEX -gt 0 ]]; then
     export GENESIS_CONFIGS_DIR=genesis-configs/sim-shard
-    export P2P_PEER_CANDIDATE_URL="http://35.194.235.180:8080/json-rpc"
   fi
+    export P2P_PEER_CANDIDATE_URL="http://35.194.235.180:8080/json-rpc"
 
   if [[ $SHARD_INDEX = 0 ]]; then
     export TRACKER_WS_ADDR=ws://34.80.184.73:5000  # dev-tracker-ip
@@ -245,8 +245,6 @@ export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
 # NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
 export CORS_WHITELIST=*
 printf "CORS_WHITELIST=$CORS_WHITELIST\n"
-# FIXME(minsulee2, platfowner): Uncomment again when the load-balancer is updated.
-# export P2P_PEER_CANDIDATE_URL="https://$SEASON-api.ainetwork.ai/json-rpc"
 
 MAX_OLD_SPACE_SIZE_MB=11000
 
