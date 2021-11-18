@@ -25,7 +25,7 @@ class EventHandlerServer {
     }
   }
 
-  startListen() {
+  startListening() {
     this.wsServer = new ws.Server({
       port: EVENT_HANDLER_PORT,
     });

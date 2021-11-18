@@ -18,7 +18,7 @@ class EventHandler {
 
   run() {
     this.server = new EventHandlerServer(this);
-    this.server.startListen();
+    this.server.startListening();
     this.isRunning = true;
     logger.info(`Event handler started!`);
   }
