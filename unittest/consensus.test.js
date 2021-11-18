@@ -39,14 +39,16 @@ describe("Consensus", () => {
     );
     addBlock(node1, [tx], [], {});
     const lastBlock = node1.bc.lastBlock();
+    const timestamp = lastBlock.timestamp + 1;
     const voteTx = getTransaction(node2, {
         operation: { 
           type: 'SET_VALUE', 
           ref: `/consensus/number/1/${lastBlock.hash}/vote/${node2.account.address}`,
-          value: { block_hash: lastBlock.hash, stake: 100000, is_against: false }
+          value: { block_hash: lastBlock.hash, stake: 100000, is_against: false, timestamp }
         },
         nonce: -1,
-        gas_price: 1
+        gas_price: 1,
+        timestamp
       }
     );
     expect(node1.db.executeTransaction(voteTx).code).to.equal(103);
@@ -66,14 +68,16 @@ describe("Consensus", () => {
     );
     addBlock(node1, [stakeTx], [], {});
     const lastBlock = node1.bc.lastBlock();
+    const timestamp = lastBlock.timestamp + 1;
     const voteTx = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE', 
           ref: `/consensus/number/${lastBlock.number}/${lastBlock.hash}/vote/${addr}`,
-          value: { block_hash: lastBlock.hash, stake: 100000, is_against: false }
+          value: { block_hash: lastBlock.hash, stake: 100000, is_against: false, timestamp }
         },
         nonce: -1,
-        gas_price: 1
+        gas_price: 1,
+        timestamp
       }
     );
     expect(node1.db.executeTransaction(voteTx).code).to.equal(0);
@@ -93,7 +97,7 @@ describe("Consensus", () => {
     );
     addBlock(node1, [stakeTx], [], {});
     const lastBlock = node1.bc.lastBlock();
-    const voteTx = getTransaction(node2, {
+    const proposeTx = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE', 
           ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
@@ -107,7 +111,7 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(voteTx).code).to.equal(103);
+    expect(node1.db.executeTransaction(proposeTx).code).to.equal(103);
   });
 
   it('Whitelisted validators must stake within MIN_STAKE_PER_VALIDATOR & MAX_STAKE_PER_VALIDATOR to have the producing rights', () => {
@@ -134,7 +138,7 @@ describe("Consensus", () => {
     );
     addBlock(node1, [stakeLessThanMin], [], {});
     lastBlock = node1.bc.lastBlock();
-    const voteWithStakeLessThanMin = getTransaction(node2, {
+    const proposeWithStakeLessThanMin = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE',
           ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
@@ -148,7 +152,7 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(voteWithStakeLessThanMin).code).to.equal(103); // Fails
+    expect(node1.db.executeTransaction(proposeWithStakeLessThanMin).code).to.equal(103); // Fails
 
     // Staking MIN_STAKE_PER_VALIDATOR
     const stakeEqualMin = getTransaction(node2, {
@@ -163,7 +167,7 @@ describe("Consensus", () => {
     );
     addBlock(node1, [stakeEqualMin], [], {});
     lastBlock = node1.bc.lastBlock();
-    const voteWithStakeEqualMin = getTransaction(node2, {
+    const proposeWithStakeEqualMin = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE', 
           ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
@@ -177,7 +181,7 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(voteWithStakeEqualMin).code).to.equal(0); // Succeeds
+    expect(node1.db.executeTransaction(proposeWithStakeEqualMin).code).to.equal(0); // Succeeds
 
     // Staking more than MAX_STAKE_PER_VALIDATOR
     const stakeMoreThanMax = getTransaction(node2, {
@@ -192,7 +196,7 @@ describe("Consensus", () => {
     );
     addBlock(node1, [stakeMoreThanMax], [], {});
     lastBlock = node1.bc.lastBlock();
-    const voteWithStakeMoreThanMax = getTransaction(node2, {
+    const proposeWithStakeMoreThanMax = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE', 
           ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
@@ -206,6 +210,6 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(voteWithStakeMoreThanMax).code).to.equal(103); // Fails
+    expect(node1.db.executeTransaction(proposeWithStakeMoreThanMax).code).to.equal(103); // Fails
   });
 });
