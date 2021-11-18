@@ -6,7 +6,7 @@
     "CHAIN_ID": 0,
     "HOSTING_ENV": "local",
     "TRACKER_WS_ADDR": "ws://localhost:6000",
-    "P2P_PEER_CANDIDATE_URL": "http://localhost:8081/json-rpc",
+    "P2P_PEER_CANDIDATE_URL": "http://localhost:9001/json-rpc",
     "MAX_SHARD_REPORT": 100,
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
   },
