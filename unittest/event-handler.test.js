@@ -33,8 +33,10 @@ describe('EventHandler Test', () => {
   });
 
   describe('EventHandlerServer', () => {
-    const eventHandlerServer = eventHandler.server;
+    let eventHandlerServer;
+
     before(() => {
+      eventHandlerServer = eventHandler.server;
       eventHandlerServer.startListen();
     })
 
