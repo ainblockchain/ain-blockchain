@@ -66,6 +66,7 @@ class EventHandlerServer {
       }
       switch (messageType) {
         case EventHandlerMessageTypes.FILTER_REGISTRATION:
+          const filterId = data.id;
           const eventType = data.type;
           if (!eventType) {
             throw Error(`Can't find eventType from message.data (${JSON.stringify(message)})`);
@@ -75,7 +76,7 @@ class EventHandlerServer {
             throw Error(`Can't find config from message.data (${JSON.stringify(message)})`);
           }
 
-          const filter = this.eventHandler.createAndRegisterFilter(eventType, config);
+          const filter = this.eventHandler.createAndRegisterFilter(filterId, eventType, config);
           client.addFilter(filter);
           this.filterIdToClientId[filter.id] = client.id;
           break;

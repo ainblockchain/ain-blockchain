@@ -53,12 +53,11 @@ class EventHandler {
     }
   }
 
-  createAndRegisterFilter(eventType, config) {
+  createAndRegisterFilter(filterId, eventType, config) {
     if (!Object.keys(EventTypes).includes(eventType)) {
       throw Error(`Invalid event type (${eventType})`);
     }
-    const filterId = Date.now();
-    if (this.filters[filterId]) { // TODO: Retry logic
+    if (this.filters[filterId]) {
       throw Error(`Filter ID ${filterId} is already in use`);
     }
     const filter = new Filter(filterId, eventType, config);
