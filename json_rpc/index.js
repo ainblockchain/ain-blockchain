@@ -407,12 +407,6 @@ module.exports = function getMethods(node, p2pServer, eventHandlerServer, minPro
       done(null, addProtocolVersion({ result }));
     },
 
-    net_getEventHandlerServerNetworkInfo: async function(args) {
-      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
-      const result = await eventHandlerServer.getNetworkInfo();
-      return addProtocolVersion({ result });
-    },
-
     // TODO(minsulee2): Add p2p json rpc API methods here.
   };
 
@@ -506,9 +500,20 @@ module.exports = function getMethods(node, p2pServer, eventHandlerServer, minPro
     }
   };
 
+  const eventHandlerMethods = {
+    net_getEventHandlerServerNetworkInfo: async function(args) {
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
+      const result = await eventHandlerServer.getNetworkInfo();
+      return addProtocolVersion({ result });
+    },
+  };
+
   let methods = nonTxMethods;
   if (BlockchainConfigs.ENABLE_JSON_RPC_TX_API) {
     methods = Object.assign(methods, txMethods);
+  }
+  if (ENABLE_EVENT_HANDLER) {
+    methods = Object.assign(methods, eventHandlerMethods);
   }
 
   return methods;
