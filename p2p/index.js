@@ -565,6 +565,8 @@ class P2pClient {
       logger.error(`Invalid peer candidate info from peer candidate url (${peerCandidateUrl}).`);
       return;
     }
+    // NOTE(platfowner): As peerCandidateUrl can be a domain name url with multiple nodes,
+    // use the json rpc url in response instead.
     const peerCandidateJsonRpcUrl = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
     if (!peerCandidateJsonRpcUrl) {
       logger.error(`Invalid peer candidate json rpc url from peer candidate url (${peerCandidateUrl}).`);
