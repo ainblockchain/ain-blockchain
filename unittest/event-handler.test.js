@@ -23,11 +23,11 @@ describe('EventHandler Test', () => {
     });
 
     it('createAndRegisterFilter', () => {
-      const numberOfFiltersBefore = Object.keys(eventHandler.filters).length;
-      eventHandler.createAndRegisterFilter(EventTypes.BLOCK_FINALIZED, {
+      const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
+      eventHandler.createAndRegisterEventFilter(Date.now(), EventTypes.BLOCK_FINALIZED, {
         block_number: 100,
       });
-      const numberOfFiltersAfter = Object.keys(eventHandler.filters).length;
+      const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
       expect(numberOfFiltersBefore + 1).to.equal(numberOfFiltersAfter);
     });
   });
