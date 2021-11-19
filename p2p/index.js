@@ -7,6 +7,7 @@ const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
 const {
+  DevFlags,
   TRACKER_WS_ADDR,
   EPOCH_MS,
   MessageTypes,
@@ -132,8 +133,9 @@ class P2pClient {
 
   getConfig() {
     return {
-      blockchainConfig: GenesisParams,
       env: process.env,
+      blockchainParams: GenesisParams,
+      devFlags: DevFlags,
     };
   }
 

@@ -5,7 +5,6 @@ const _ = require('lodash');
 const espree = require('espree');
 const CommonUtil = require('../common/common-util');
 const {
-  FeatureFlags,
   HASH_DELIMITER,
   VARIABLE_LABEL_PREFIX,
   PredefinedDbPaths,
@@ -787,9 +786,6 @@ function updateStateInfoForAllRootPathsRecursive(
   if (updatedChildEmpty) {
     curNode.deleteChild(updatedChildLabel, true);  // shouldUpdateStateInfo = true
   } else {
-    if (!FeatureFlags.enableStateInfoUpdates) {
-      return 0;
-    }
     curNode.updateStateInfo(updatedChildLabel, true);  // shouldRebuildRadixInfo = true
   }
   const curLabel = curNode.getLabel();
@@ -817,9 +813,6 @@ function updateStateInfoForAllRootPaths(curNode, updatedChildLabel = null) {
 }
 
 function updateStateInfoForStateTree(stateTree) {
-  if (!FeatureFlags.enableStateInfoUpdates) {
-    return 0;
-  }
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
     for (const node of stateTree.getChildNodes()) {
