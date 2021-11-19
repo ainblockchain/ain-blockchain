@@ -562,11 +562,18 @@ class P2pClient {
     const resp = await sendGetRequest(peerCandidateUrl, 'p2p_getPeerCandidateInfo', { });
     const peerCandidateInfo = _.get(resp, 'data.result.result');
     if (!peerCandidateInfo) {
-      logger.error(`Something went wrong with the peer candidate(${peerCandidateUrl}).`);
+      logger.error(`Invalid peer candidate info from peer candidate url (${peerCandidateUrl}).`);
+      return;
+    }
+    // NOTE(platfowner): As peerCandidateUrl can be a domain name url with multiple nodes,
+    // use the json rpc url in response instead.
+    const peerCandidateJsonRpcUrl = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
+    if (!peerCandidateJsonRpcUrl) {
+      logger.error(`Invalid peer candidate json rpc url from peer candidate url (${peerCandidateUrl}).`);
       return;
     }
 
-    this.peerCandidates[peerCandidateUrl] = { queriedAt: Date.now() };
+    this.peerCandidates[peerCandidateJsonRpcUrl] = { queriedAt: Date.now() };
     const peerCandidateUrlList = _.get(peerCandidateInfo, 'peerCandidateUrlList', []);
     peerCandidateUrlList.forEach(url => {
       // FIXME(minsulee2): CommonUtil.isValidUrl is not working for internal ip addresses.
