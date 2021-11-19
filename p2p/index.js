@@ -613,7 +613,7 @@ class P2pClient {
       // TODO(minsulee2): Send an encrypted form of address(pubkey can be recoverable from address),
       // ip address, and signature.
       this.sendPeerInfo(socket);
-      // TODO(minsulee2): Check ack from the corresponding server, then proceed reqeustChainSegment.
+      // TODO(minsulee2): Check ack from the corresponding server, then proceed requestChainSegment.
       this.addPeerConnection(url);
       this.setTimerForPeerAddressResponse(socket);
     });
