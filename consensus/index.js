@@ -122,7 +122,7 @@ class Consensus {
 
   startEpochTransition() {
     const LOG_HEADER = 'startEpochTransition';
-    const genesisBlock = Block.genesis();
+    const genesisBlock = this.node.bc.genesisBlock;
     this.startingTime = genesisBlock.timestamp;
     this.epoch = Math.ceil((Date.now() - this.startingTime) / EPOCH_MS);
     logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.epoch}`);
