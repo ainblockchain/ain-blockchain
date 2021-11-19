@@ -21,7 +21,7 @@ const {
   MAX_STAKE_PER_VALIDATOR,
   EPOCH_MS,
   CONSENSUS_PROTOCOL_VERSION,
-  FeatureFlags,
+  DevFlags,
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
@@ -142,7 +142,7 @@ class Consensus {
       this.isInEpochTransition = true;
       this.node.tryFinalizeChain();
       let currentTime = Date.now();
-      if (FeatureFlags.enableNtpSync && this.epoch % 100 === 0) {
+      if (DevFlags.enableNtpSync && this.epoch % 100 === 0) {
         // adjust time
         try {
           const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
