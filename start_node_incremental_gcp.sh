@@ -77,10 +77,10 @@ printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
-# 1. Configure env vars (GENESIS_CONFIGS_DIR, TRACKER_WS_ADDR, ...)
+# 1. Configure env vars (BLOCKCHAIN_CONFIGS_DIR, TRACKER_WS_ADDR, ...)
 printf "\n#### [Step 1] Configure env vars ####\n\n"
 
-export GENESIS_CONFIGS_DIR=genesis-configs/testnet
+export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet
 KEYSTORE_DIR=testnet_dev_staging_keys
 if [[ $SEASON = 'spring' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
@@ -142,11 +142,11 @@ elif [[ $SEASON = 'dev' ]]; then
         exit
     fi
     if [[ $SHARD_INDEX -gt 0 ]]; then
-        # Create a genesis_params.json
-        export GENESIS_CONFIGS_DIR="genesis-configs/shard_$SHARD_INDEX"
-        mkdir -p "./$GENESIS_CONFIGS_DIR"
-        node > "./$GENESIS_CONFIGS_DIR/genesis_params.json" <<EOF
-        const data = require('./genesis-configs/testnet/genesis_params.json');
+        # Create a blockchain_params.json
+        export BLOCKCHAIN_CONFIGS_DIR="blockchain-configs/shard_$SHARD_INDEX"
+        mkdir -p "./$BLOCKCHAIN_CONFIGS_DIR"
+        node > "./$BLOCKCHAIN_CONFIGS_DIR/blockchain_params.json" <<EOF
+        const data = require('./blockchain-configs/testnet/blockchain_params.json');
         data.blockchain.TRACKER_WS_ADDR = '$TRACKER_WS_ADDR';
         data.consensus.MIN_NUM_VALIDATORS = 3;
         console.log(JSON.stringify(data, null, 2));
@@ -162,7 +162,7 @@ if [[ $NODE_INDEX = 0 ]]; then
 fi
 
 printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
-printf "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR\n"
+printf "BLOCKCHAIN_CONFIGS_DIR=$BLOCKCHAIN_CONFIGS_DIR\n"
 printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 printf "P2P_PEER_CANDIDATE_URL=$P2P_PEER_CANDIDATE_URL\n"
 

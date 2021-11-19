@@ -1,18 +1,36 @@
 {
+  "token": {
+    "name": "AI Network",
+    "symbol": "AIN",
+    "total_supply": 700000000,
+    "bridge": {
+      "ETH": {
+        "3": {
+          "0xB16c0C80a81f73204d454426fC413CAe455525A7": {
+            "token_pool": "0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
+            "min_checkout_per_request": 1000,
+            "max_checkout_per_request": 10000,
+            "max_checkout_per_day": 1000000,
+            "token_exchange_rate": 1,
+            "token_exchange_scheme": "FIXED"
+          }
+        }
+      }
+    }
+  },
   "blockchain": {
     "TRANSACTION_POOL_TIMEOUT_MS": 3600000,
     "TRANSACTION_TRACKER_TIMEOUT_MS": 86400000,
     "NETWORK_ID": 0,
     "CHAIN_ID": 0,
     "HOSTING_ENV": "local",
-    "TRACKER_WS_ADDR": "ws://localhost:6000",
-    "P2P_PEER_CANDIDATE_URL": "http://localhost:9091/json-rpc",
+    "TRACKER_WS_ADDR": "ws://localhost:5000",
+    "P2P_PEER_CANDIDATE_URL": "http://localhost:8081/json-rpc",
     "MAX_SHARD_REPORT": 100,
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
   },
   "genesis": {
     "GENESIS_TIMESTAMP": 1571819318272,
-    "GENESIS_ACCOUNT_SHARES": 1000000,
     "NUM_GENESIS_ACCOUNTS": 10
   },
   "consensus": {
@@ -42,5 +60,11 @@
     "MIN_STAKING_FOR_APP_TX": 0,
     "MIN_BALANCE_FOR_SERVICE_TX": 0,
     "MAX_FUNCTION_URLS_PER_DEVELOPER": 3
+  },
+  "sharding": {
+    "sharding_protocol": "NONE",
+    "sharding_path": "/",
+    "parent_chain_poc": "",
+    "reporting_period": 0
   }
 }

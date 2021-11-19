@@ -1,25 +1,43 @@
 {
+  "token": {
+    "name": "ShardCoinB0",
+    "symbol": "SHARDCOB0",
+    "total_supply": 100000000000,
+    "bridge": {
+      "AIN": {
+        "0": {
+          "0": {
+            "token_pool": "0xB0B0d133E6a82A982396Fa7E4B4F9eC85d1DFBF4",
+            "min_checkout_per_request": 1000,
+            "max_checkout_per_request": 10000,
+            "max_checkout_per_day": 1000000,
+            "token_exchange_rate": 10,
+            "token_exchange_scheme": "FIXED"
+          }
+        }
+      }
+    }
+  },
   "blockchain": {
     "TRANSACTION_POOL_TIMEOUT_MS": 3600000,
     "TRANSACTION_TRACKER_TIMEOUT_MS": 86400000,
     "NETWORK_ID": 0,
     "CHAIN_ID": 0,
-    "HOSTING_ENV": "gcp",
-    "TRACKER_WS_ADDR": "ws://34.80.184.73:5000",
-    "P2P_PEER_CANDIDATE_URL": "https://testnet-api.ainetwork.ai/json-rpc",
+    "HOSTING_ENV": "local",
+    "TRACKER_WS_ADDR": "ws://localhost:6010",
+    "P2P_PEER_CANDIDATE_URL": "http://localhost:9091/json-rpc",
     "MAX_SHARD_REPORT": 100,
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
   },
   "genesis": {
-    "GENESIS_TIMESTAMP": 1571819318272,
-    "GENESIS_ACCOUNT_SHARES": 1000000,
+    "GENESIS_TIMESTAMP": 1603090467225,
     "NUM_GENESIS_ACCOUNTS": 10
   },
   "consensus": {
     "MIN_STAKE_PER_VALIDATOR": 100000,
     "MAX_STAKE_PER_VALIDATOR": 100000,
-    "MIN_NUM_VALIDATORS": 5,
-    "MAX_NUM_VALIDATORS": 15,
+    "MIN_NUM_VALIDATORS": 3,
+    "MAX_NUM_VALIDATORS": 9,
     "EPOCH_MS": 3000,
     "GENESIS_WHITELIST": {},
     "GENESIS_VALIDATORS": {}
@@ -42,5 +60,11 @@
     "MIN_STAKING_FOR_APP_TX": 0,
     "MIN_BALANCE_FOR_SERVICE_TX": 0,
     "MAX_FUNCTION_URLS_PER_DEVELOPER": 3
+  },
+  "sharding": {
+    "sharding_protocol": "POA",
+    "sharding_path": "/apps/shard_1",
+    "parent_chain_poc": "http://127.0.0.1:8081",
+    "reporting_period": 5
   }
 }
