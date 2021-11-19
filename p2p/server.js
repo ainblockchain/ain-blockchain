@@ -426,7 +426,9 @@ class P2pServer {
    * @param {string} url is peerInfo.networkStatus.urls.p2p.url
    */
   checkIpAddressFromPeerInfo(socketIpAddress, url) {
-    const ipv4Address = socketIpAddress.substr(7);
+    // NOTE(minsulee2): Remove ::ffff: to make ipv4 ip address.
+    let ipv4Address =
+        socketIpAddress.substr(0, 7) === '::ffff:' ? socketIpAddress.substr(7) : socketIpAddress;
     return url.includes(ipv4Address);
   }
 

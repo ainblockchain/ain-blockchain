@@ -214,10 +214,8 @@ class P2pClient {
   updateP2pState() {
     if (Object.keys(this.outbound).length < TARGET_NUM_OUTBOUND_CONNECTION) {
       this.p2pState = P2pNetworkStates.EXPANDING;
-      return true;
     } else {
       this.p2pState = P2pNetworkStates.STEADY;
-      return false;
     }
   }
 
@@ -247,7 +245,8 @@ class P2pClient {
 
   setIntervalForPeerCandidatesConnection() {
     this.intervalPeerCandidatesConnection = setInterval(async () => {
-      if (this.updateP2pState() && !this.isConnectingToPeerCandidates) {
+      this.updateP2pState();
+      if (this.p2pState === P2pNetworkStates.EXPANDING && !this.isConnectingToPeerCandidates) {
         this.isConnectingToPeerCandidates = true;
         const nextPeerCandidate = this.assignRandomPeerCandidate();
         await this.connectWithPeerCandidateUrl(nextPeerCandidate);
@@ -529,7 +528,8 @@ class P2pClient {
     if (this.server.consensus.isRunning()) {
       this.server.consensus.catchUp(catchUpInfo);
     }
-    if (this.server.node.state !== BlockchainNodeStates.SERVING && this.server.node.bc.lastBlockNumber() <= number) {
+    if (this.server.node.state !== BlockchainNodeStates.SERVING &&
+        this.server.node.bc.lastBlockNumber() <= number) {
       // Continuously request the blockchain segments until
       // your local blockchain matches the height of the consensus blockchain.
       setTimeout(() => {
