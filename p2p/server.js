@@ -26,7 +26,7 @@ const {
   NETWORK_ID,
   MAX_SHARD_REPORT,
   TX_BYTES_LIMIT,
-  FeatureFlags,
+  DevFlags,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
@@ -400,7 +400,7 @@ class P2pServer {
     const messageMajorVersion = VersionUtil.toMajorVersion(messageVersion);
     const isLower = semver.lt(messageMajorVersion, this.majorDataProtocolVersion);
     if (isLower) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+      if (DevFlags.enableRichP2pCommunicationLogging) {
         logger.error(`The given ${msgType} message has unsupported DATA_PROTOCOL_VERSION: ` +
             `theirs(${messageVersion}) < ours(${this.majorDataProtocolVersion})`);
       }
@@ -408,7 +408,7 @@ class P2pServer {
     }
     const isGreater = semver.gt(messageMajorVersion, this.majorDataProtocolVersion);
     if (isGreater) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+      if (DevFlags.enableRichP2pCommunicationLogging) {
         logger.error('I may be running of the old DATA_PROTOCOL_VERSION ' +
             `theirs(${messageVersion}) > ours(${this.majorDataProtocolVersion}). ` +
             'Please check the new release via visiting the URL below:\n' +
