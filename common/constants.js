@@ -12,7 +12,9 @@ const GENESIS_BLOCK_DIR =
     path.resolve(__dirname, '..', process.env.BLOCKCHAIN_CONFIGS_DIR || DEFAULT_BLOCKCHAIN_CONFIGS_DIR);
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
 const GenesisToken = BlockchainParams.token;
+// TODO(liayoo): Deprecate GenesisAccounts
 const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
+const GenesisSharding = BlockchainParams.sharding;
 
 // ** Feature flags **
 // NOTE(platfowner): If there is a corresponding env variable (e.g. force... flags),
@@ -726,15 +728,15 @@ function overwriteBlockchainParams(overwritingParams, type) {
   }
 
   if (type === 'consensus') {
-    const whitelist = {};
-    const validators = {};
-    for (let i = 0; i < BlockchainParams.consensus.MIN_NUM_VALIDATORS; i++) {
-      const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
-      CommonUtil.setJsObject(whitelist, [addr], true);
-      CommonUtil.setJsObject(validators, [addr], {
-          [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainParams.consensus.MIN_STAKE_PER_VALIDATOR,
-          [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
-        });
+    const whitelist = BlockchainParams.consensus.GENESIS_WHITELIST;
+    const validators = BlockchainParams.consensus.GENESIS_VALIDATORS;
+    // NOTE(liayoo): Modify genesis whitelist & validators iff MIN_NUM_VALIDATORS < current number of GENESIS_VALIDATORS.
+    // This is mainly to support local testing & integration/unit tests with smaller number of validators.
+    const addresses = Object.keys(validators);
+    for (let i = BlockchainParams.consensus.MIN_NUM_VALIDATORS; i < addresses.length; i++) {
+      const addr = addresses[i];
+      delete whitelist[addr];
+      delete validators[addr];
     }
     BlockchainParams.consensus.GENESIS_WHITELIST = whitelist;
     BlockchainParams.consensus.GENESIS_VALIDATORS = validators;
@@ -777,20 +779,6 @@ function getBlockchainConfig(filename) {
   }
   return config;
 }
-
-function getGenesisSharding() {
-  const config = BlockchainParams.sharding;
-  if (config[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.POA) {
-    const ownerAddress = CommonUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-    const reporterAddress =
-        GenesisAccounts[AccountProperties.OTHERS][0][AccountProperties.ADDRESS];
-    CommonUtil.setJsObject(config, [ShardingProperties.SHARD_OWNER], ownerAddress);
-    CommonUtil.setJsObject(config, [ShardingProperties.SHARD_REPORTER], reporterAddress);
-  }
-  return config;
-}
-const GenesisSharding = getGenesisSharding();
 
 function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule) {
   return {

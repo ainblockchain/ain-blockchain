@@ -149,7 +149,6 @@ elif [[ $SEASON = 'dev' ]]; then
         node > "./$BLOCKCHAIN_CONFIGS_DIR/blockchain_params.json" <<EOF
         const data = require('./$BLOCKCHAIN_CONFIGS_DIR/blockchain_params.json');
         data.blockchain.TRACKER_WS_ADDR = '$TRACKER_WS_ADDR';
-        data.consensus.MIN_NUM_VALIDATORS = 3;
         console.log(JSON.stringify(data, null, 2));
 EOF
     fi

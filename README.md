@@ -97,9 +97,9 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=0 P2P_PEER_CANDIDATE_URL='' DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
-MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=1 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
-MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=2 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+ACCOUNT_INDEX=0 P2P_PEER_CANDIDATE_URL='' DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+ACCOUNT_INDEX=1 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
+ACCOUNT_INDEX=2 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
 Before starting node jobs, remove existing blockchain files and logs if necessary:

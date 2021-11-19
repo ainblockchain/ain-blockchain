@@ -26,7 +26,7 @@ describe('Blockchain', () => {
   });
 
   it('starts with genesis block', () => {
-    assert.deepEqual(node1.bc.chain[0], Block.genesis());
+    assert.deepEqual(node1.bc.chain[0], node1.bc.genesisBlock);
   });
 
   it('adds new block', () => {
