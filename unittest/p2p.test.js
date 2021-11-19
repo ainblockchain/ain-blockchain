@@ -197,8 +197,18 @@ describe("P2P", () => {
     describe("getConfig", () => {
       it("Gets config", () => {
         assert.deepEqual(p2pClient.getConfig(), {
-          blockchainConfig: GenesisParams,
           env: process.env,
+          blockchainParams: GenesisParams,
+          devFlags: {
+            "enableNtpSync": true,
+            "enableReceiptsRecording": true,
+            "enableRichFunctionLogging": false,
+            "enableRichP2pCommunicationLogging": false,
+            "enableRichTransactionLogging": false,
+            "enableRichTxSelectionLogging": false,
+            "enableStateTreeTransfer": false,
+            "enableTrafficMonitoring": true,
+          }
         });
       });
     });
