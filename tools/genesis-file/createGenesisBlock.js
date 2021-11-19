@@ -15,7 +15,7 @@ const {
   ShardingProtocols,
   GenesisSharding,
   StateVersions,
-  getGenesisConfig,
+  getBlockchainConfig,
   buildOwnerPermissions,
 } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
@@ -76,9 +76,9 @@ function getWhitelistOwner(genesisAccounts) {
   };
 }
 
-function getDevelopersValue(genesisParams, genesisAccounts) {
+function getDevelopersValue(blockchainParams, genesisAccounts) {
   const ownerAddress = genesisAccounts.owner.address;
-  const maxFunctionUrlsPerDeveloper = genesisParams.resource.MAX_FUNCTION_URLS_PER_DEVELOPER;
+  const maxFunctionUrlsPerDeveloper = blockchainParams.resource.MAX_FUNCTION_URLS_PER_DEVELOPER;
   const defaultFunctionUrlWhitelist = {};
   DEFAULT_DEVELOPERS_URL_WHITELIST.forEach((url, index) => {
     defaultFunctionUrlWhitelist[index] = url;
@@ -130,30 +130,30 @@ function getDevelopersOwner(genesisAccounts) {
   };
 }
 
-function getWhitelist(genesisParams, genesisAccounts) {
+function getWhitelist(blockchainParams, genesisAccounts) {
   const whitelist = {};
-  for (let i = 0; i < genesisParams.consensus.MIN_NUM_VALIDATORS; i++) {
+  for (let i = 0; i < blockchainParams.consensus.MIN_NUM_VALIDATORS; i++) {
     const addr = genesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
     CommonUtil.setJsObject(whitelist, [addr], true);
   }
   return whitelist;
 }
 
-function getValidators(genesisParams, genesisAccounts) {
+function getValidators(blockchainParams, genesisAccounts) {
   const validators = {};
-  for (let i = 0; i < genesisParams.consensus.MIN_NUM_VALIDATORS; i++) {
+  for (let i = 0; i < blockchainParams.consensus.MIN_NUM_VALIDATORS; i++) {
     const addr = genesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
     CommonUtil.setJsObject(validators, [addr], {
-      [PredefinedDbPaths.CONSENSUS_STAKE]: genesisParams.consensus.MIN_STAKE_PER_VALIDATOR,
+      [PredefinedDbPaths.CONSENSUS_STAKE]: blockchainParams.consensus.MIN_STAKE_PER_VALIDATOR,
       [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
     });
   }
   return validators;
 }
 
-function getGenesisValues(genesisParams, genesisAccounts) {
+function getGenesisValues(blockchainParams, genesisAccounts) {
   const values = {};
-  const genesisToken = genesisParams.token;
+  const genesisToken = blockchainParams.token;
   const ownerAddress = genesisAccounts.owner.address;
   CommonUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], genesisToken);
   CommonUtil.setJsObject(
@@ -169,18 +169,18 @@ function getGenesisValues(genesisParams, genesisAccounts) {
   CommonUtil.setJsObject(
     values,
     [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST],
-    getWhitelist(genesisParams, genesisAccounts)
+    getWhitelist(blockchainParams, genesisAccounts)
   );
   CommonUtil.setJsObject(
     values,
     [PredefinedDbPaths.DEVELOPERS],
-    getDevelopersValue(genesisParams, genesisAccounts)
+    getDevelopersValue(blockchainParams, genesisAccounts)
   );
   return values;
 }
 
 function getGenesisRules(genesisAccounts) {
-  const rules = getGenesisConfig('genesis_rules.json');
+  const rules = getBlockchainConfig('genesis_rules.json');
   if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     CommonUtil.setJsObject(
       rules,
@@ -197,7 +197,7 @@ function getGenesisRules(genesisAccounts) {
 }
 
 function getGenesisOwners(genesisAccounts) {
-  const owners = getGenesisConfig('genesis_owners.json');
+  const owners = getBlockchainConfig('genesis_owners.json');
   CommonUtil.setJsObject(
     owners,
     [],
@@ -227,14 +227,14 @@ function getGenesisOwners(genesisAccounts) {
  * Genesis transactions.
  */
 
-function buildDbSetupTx(genesisTime, genesisParams, genesisAccounts, genesisFunctions) {
+function buildDbSetupTx(genesisTime, blockchainParams, genesisAccounts, genesisFunctions) {
   const opList = [];
 
   // Values operation
   opList.push({
     type: 'SET_VALUE',
     ref: '/',
-    value: getGenesisValues(genesisParams, genesisAccounts),
+    value: getGenesisValues(blockchainParams, genesisAccounts),
   });
 
   // Functions operation
@@ -276,14 +276,14 @@ function buildDbSetupTx(genesisTime, genesisParams, genesisAccounts, genesisFunc
   return tx;
 }
 
-function buildAccountsSetupTx(genesisTime, genesisParams, genesisAccounts) {
+function buildAccountsSetupTx(genesisTime, blockchainParams, genesisAccounts) {
   const transferOps = [];
   const otherAccounts = genesisAccounts.others;
   if (!otherAccounts || !CommonUtil.isArray(otherAccounts) || otherAccounts.length === 0) {
     console.error(`Invalid genesis accounts: ${JSON.stringify(otherAccounts, null, 2)}`);
     process.exit(0);
   }
-  const numGenesisAccounts = genesisParams.genesis.NUM_GENESIS_ACCOUNTS;
+  const numGenesisAccounts = blockchainParams.genesis.NUM_GENESIS_ACCOUNTS;
   if (!CommonUtil.isNumber(numGenesisAccounts) || numGenesisAccounts <= 0 ||
       numGenesisAccounts > otherAccounts.length) {
     console.error(`Invalid NUM_GENESIS_ACCOUNTS value: ${numGenesisAccounts}`);
@@ -380,9 +380,9 @@ function buildGenesisStakingTxs(genesisTime, genesisAccounts, genesisValidators)
   return txs;
 }
 
-function getGenesisBlockTxs(genesisTime, genesisParams, genesisAccounts, genesisFunctions, genesisValidators) {
-  const firstTx = buildDbSetupTx(genesisTime, genesisParams, genesisAccounts, genesisFunctions);
-  const secondTx = buildAccountsSetupTx(genesisTime, genesisParams, genesisAccounts);
+function getGenesisBlockTxs(genesisTime, blockchainParams, genesisAccounts, genesisFunctions, genesisValidators) {
+  const firstTx = buildDbSetupTx(genesisTime, blockchainParams, genesisAccounts, genesisFunctions);
+  const secondTx = buildAccountsSetupTx(genesisTime, blockchainParams, genesisAccounts);
   const thirdTx = buildConsensusAppTx(genesisTime, genesisAccounts);
   const stakingTxs = buildGenesisStakingTxs(genesisTime, genesisAccounts, genesisValidators);
   return [firstTx, secondTx, thirdTx, ...stakingTxs];
@@ -411,13 +411,13 @@ function executeGenesisTxsAndGetData(genesisTxs, genesisTime) {
   };
 }
 
-function createGenesisBlock(genesisParams, genesisAccounts, genesisFunctions) {
-  const genesisTime = genesisParams.genesis.GENESIS_TIMESTAMP;
+function createGenesisBlock(blockchainParams, genesisAccounts, genesisFunctions) {
+  const genesisTime = blockchainParams.genesis.GENESIS_TIMESTAMP;
   const lastHash = '';
   const lastVotes = [];
   const evidence = {};
-  const validators = getValidators(genesisParams, genesisAccounts);
-  const transactions = getGenesisBlockTxs(genesisTime, genesisParams, genesisAccounts, genesisFunctions, validators);
+  const validators = getValidators(blockchainParams, genesisAccounts);
+  const transactions = getGenesisBlockTxs(genesisTime, blockchainParams, genesisAccounts, genesisFunctions, validators);
   const number = 0;
   const epoch = 0;
   const proposer = genesisAccounts.owner.address;
@@ -444,20 +444,20 @@ function processArguments() {
   }
 
   // Read genesis files
-  const genesisParams = getGenesisConfig('genesis_params.json');
-  const genesisAccounts = getGenesisConfig('genesis_accounts.json');
-  const genesisFunctions = getGenesisConfig('genesis_functions.json');
-  const genesisBlock = createGenesisBlock(genesisParams, genesisAccounts, genesisFunctions);
+  const blockchainParams = getBlockchainConfig('blockchain_params.json');
+  const genesisAccounts = getBlockchainConfig('genesis_accounts.json');
+  const genesisFunctions = getBlockchainConfig('genesis_functions.json');
+  const genesisBlock = createGenesisBlock(blockchainParams, genesisAccounts, genesisFunctions);
   writeCompressedBlock(GENESIS_BLOCK_DIR, genesisBlock);
 }
 
 function usage() {
   console.log('\nUsage:\n  node createGenesisBlock.js\n');
   console.log('Optional environment variables:');
-  console.log('  GENESIS_CONFIGS_DIR     The path to the directory containing genesis config files.');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR     The path to the directory containing blockchain config files.');
   console.log('  MIN_NUM_VALIDATORS      The minimum number of validators.');
   console.log('\nExample:');
-  console.log('  GENESIS_CONFIGS_DIR=genesis-configs/base node createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/base node createGenesisBlock.js');
   process.exit(0);
 }
 

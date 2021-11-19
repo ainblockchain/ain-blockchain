@@ -1,12 +1,31 @@
 {
+  "token": {
+    "name": "AI Network",
+    "symbol": "AIN",
+    "total_supply": 700000000,
+    "bridge": {
+      "ETH": {
+        "1": {
+          "0x3A810ff7211b40c4fA76205a14efe161615d0385": {
+            "token_pool": "0x744Cb74A78Ac6dae46ebdaCa43e38ED60F965B8D",
+            "min_checkout_per_request": 1000,
+            "max_checkout_per_request": 10000,
+            "max_checkout_per_day": 1000000,
+            "token_exchange_rate": 1,
+            "token_exchange_scheme": "FIXED"
+          }
+        }
+      }
+    }
+  },
   "blockchain": {
     "TRANSACTION_POOL_TIMEOUT_MS": 3600000,
     "TRANSACTION_TRACKER_TIMEOUT_MS": 86400000,
     "NETWORK_ID": 0,
     "CHAIN_ID": 0,
-    "HOSTING_ENV": "local",
-    "TRACKER_WS_ADDR": "ws://localhost:5000",
-    "P2P_PEER_CANDIDATE_URL": "http://localhost:8081/json-rpc",
+    "HOSTING_ENV": "gcp",
+    "TRACKER_WS_ADDR": "ws://34.80.184.73:5000",
+    "P2P_PEER_CANDIDATE_URL": "https://testnet-api.ainetwork.ai/json-rpc",
     "MAX_SHARD_REPORT": 100,
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
   },
@@ -18,8 +37,8 @@
   "consensus": {
     "MIN_STAKE_PER_VALIDATOR": 100000,
     "MAX_STAKE_PER_VALIDATOR": 100000,
-    "MIN_NUM_VALIDATORS": 3,
-    "MAX_NUM_VALIDATORS": 9,
+    "MIN_NUM_VALIDATORS": 5,
+    "MAX_NUM_VALIDATORS": 15,
     "EPOCH_MS": 3000,
     "GENESIS_WHITELIST": {},
     "GENESIS_VALIDATORS": {}
@@ -42,5 +61,11 @@
     "MIN_STAKING_FOR_APP_TX": 0,
     "MIN_BALANCE_FOR_SERVICE_TX": 0,
     "MAX_FUNCTION_URLS_PER_DEVELOPER": 3
+  },
+  "sharding": {
+    "sharding_protocol": "NONE",
+    "sharding_path": "/",
+    "parent_chain_poc": "",
+    "reporting_period": 0
   }
 }

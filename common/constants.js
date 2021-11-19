@@ -5,13 +5,13 @@ const CommonUtil = require('./common-util');
 const TrafficStatsManager = require('../traffic/traffic-stats-manager');
 
 // ** Genesis configs **
-const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/base';
-const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
-    process.env.GENESIS_CONFIGS_DIR : null;
+const DEFAULT_BLOCKCHAIN_CONFIGS_DIR = 'blockchain-configs/base';
+const CUSTOM_BLOCKCHAIN_CONFIGS_DIR = process.env.BLOCKCHAIN_CONFIGS_DIR ?
+    process.env.BLOCKCHAIN_CONFIGS_DIR : null;
 const GENESIS_BLOCK_DIR =
-    path.resolve(__dirname, '..', process.env.GENESIS_CONFIGS_DIR || DEFAULT_GENESIS_CONFIGS_DIR);
-const GenesisParams = getBlockchainConfig('genesis_params.json');
-const GenesisToken = GenesisParams.token;
+    path.resolve(__dirname, '..', process.env.BLOCKCHAIN_CONFIGS_DIR || DEFAULT_BLOCKCHAIN_CONFIGS_DIR);
+const BlockchainParams = getBlockchainConfig('blockchain_params.json');
+const GenesisToken = BlockchainParams.token;
 const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
 
 // ** Feature flags **
@@ -120,9 +120,9 @@ const FREE_BANDWIDTH_BUDGET_RATIO = 0.05;
 const SERVICE_STATE_BUDGET_RATIO = 0.5;
 const APPS_STATE_BUDGET_RATIO = 0.45;
 const FREE_STATE_BUDGET_RATIO = 0.05;
-const bandwidthBudgetPerBlock = GenesisParams.resource.BANDWIDTH_BUDGET_PER_BLOCK;
+const bandwidthBudgetPerBlock = BlockchainParams.resource.BANDWIDTH_BUDGET_PER_BLOCK;
 const stateTreeBytesLimit = process.env.STATE_TREE_BYTES_LIMIT ?
-    process.env.STATE_TREE_BYTES_LIMIT : GenesisParams.resource.STATE_TREE_BYTES_LIMIT; // = Total state budget
+    process.env.STATE_TREE_BYTES_LIMIT : BlockchainParams.resource.STATE_TREE_BYTES_LIMIT; // = Total state budget
 const SERVICE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * SERVICE_BANDWIDTH_BUDGET_RATIO;
 const APPS_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * APPS_BANDWIDTH_BUDGET_RATIO;
 const FREE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * FREE_BANDWIDTH_BUDGET_RATIO;
@@ -704,23 +704,23 @@ const TrafficEventTypes = {
 
 /**
  * Overwriting environment variables.
- * These parameters are defined in genesis_params.json, but if specified as environment variables,
+ * These parameters are defined in blockchain_params.json, but if specified as environment variables,
  * the env vars take precedence.
- * (priority: base params < genesis_params.json in GENESIS_CONFIGS_DIR < env var)
+ * (priority: base params < blockchain_params.json in BLOCKCHAIN_CONFIGS_DIR < env var)
  */
 const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'P2P_PEER_CANDIDATE_URL', 'HOSTING_ENV'];
 const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'MAX_NUM_VALIDATORS', 'EPOCH_MS'];
 const OVERWRITING_NETWORK_PARAMS =
     ['TARGET_NUM_OUTBOUND_CONNECTION', 'MAX_NUM_INBOUND_CONNECTION', 'REQUEST_BODY_SIZE_LIMIT'];
 
-function overwriteGenesisParams(overwritingParams, type) {
+function overwriteBlockchainParams(overwritingParams, type) {
   for (const key of overwritingParams) {
     const env = process.env[key];
     if (env !== undefined) {
       if (CommonUtil.isIntegerString(env)) {
-        GenesisParams[type][key] = Number(env);
+        BlockchainParams[type][key] = Number(env);
       } else {
-        GenesisParams[type][key] = env;
+        BlockchainParams[type][key] = env;
       }
     }
   }
@@ -728,24 +728,24 @@ function overwriteGenesisParams(overwritingParams, type) {
   if (type === 'consensus') {
     const whitelist = {};
     const validators = {};
-    for (let i = 0; i < GenesisParams.consensus.MIN_NUM_VALIDATORS; i++) {
+    for (let i = 0; i < BlockchainParams.consensus.MIN_NUM_VALIDATORS; i++) {
       const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
       CommonUtil.setJsObject(whitelist, [addr], true);
       CommonUtil.setJsObject(validators, [addr], {
-          [PredefinedDbPaths.CONSENSUS_STAKE]: GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR,
+          [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainParams.consensus.MIN_STAKE_PER_VALIDATOR,
           [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
         });
     }
-    GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
-    GenesisParams.consensus.GENESIS_VALIDATORS = validators;
+    BlockchainParams.consensus.GENESIS_WHITELIST = whitelist;
+    BlockchainParams.consensus.GENESIS_VALIDATORS = validators;
   }
 }
 
-overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
-overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
+overwriteBlockchainParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
+overwriteBlockchainParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 // NOTE(minsulee2, liayoo, platfowner): As we discussed, the initial values for the OUTBOUND
 // and INBOUND are fixed as 3 and 6.
-overwriteGenesisParams(OVERWRITING_NETWORK_PARAMS, 'network');
+overwriteBlockchainParams(OVERWRITING_NETWORK_PARAMS, 'network');
 
 /**
  * Port number helper.
@@ -753,7 +753,7 @@ overwriteGenesisParams(OVERWRITING_NETWORK_PARAMS, 'network');
  * @param {number} baseValue
  */
 function getPortNumber(defaultValue, baseValue) {
-  if (GenesisParams.blockchain.HOSTING_ENV === 'local') {
+  if (BlockchainParams.blockchain.HOSTING_ENV === 'local') {
     return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) + 1 : 0);
   }
   return defaultValue;
@@ -761,14 +761,14 @@ function getPortNumber(defaultValue, baseValue) {
 
 function getBlockchainConfig(filename) {
   let config = null;
-  if (CUSTOM_GENESIS_CONFIGS_DIR) {
-    const configPath = path.resolve(__dirname, '..', CUSTOM_GENESIS_CONFIGS_DIR, filename);
+  if (CUSTOM_BLOCKCHAIN_CONFIGS_DIR) {
+    const configPath = path.resolve(__dirname, '..', CUSTOM_BLOCKCHAIN_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     }
   }
   if (!config) {
-    const configPath = path.resolve(__dirname, '..', DEFAULT_GENESIS_CONFIGS_DIR, filename);
+    const configPath = path.resolve(__dirname, '..', DEFAULT_BLOCKCHAIN_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     } else {
@@ -779,7 +779,7 @@ function getBlockchainConfig(filename) {
 }
 
 function getGenesisSharding() {
-  const config = GenesisParams.sharding;
+  const config = BlockchainParams.sharding;
   if (config[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.POA) {
     const ownerAddress = CommonUtil.getJsObject(
         GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
@@ -908,11 +908,11 @@ module.exports = {
   isAppDependentServiceType,
   buildOwnerPermissions,
   buildRulePermission,
-  ...GenesisParams.blockchain,
-  ...GenesisParams.genesis,
-  ...GenesisParams.consensus,
-  ...GenesisParams.resource,
-  ...GenesisParams.network,
-  GenesisParams,
+  ...BlockchainParams.blockchain,
+  ...BlockchainParams.genesis,
+  ...BlockchainParams.consensus,
+  ...BlockchainParams.resource,
+  ...BlockchainParams.network,
+  BlockchainParams,
   trafficStatsManager,
 };

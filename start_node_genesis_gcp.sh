@@ -130,7 +130,7 @@ else
 fi
 
 
-export GENESIS_CONFIGS_DIR=genesis-configs/testnet
+export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet
 KEYSTORE_DIR=testnet_dev_staging_keys
 if [[ $SEASON = 'spring' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
@@ -192,7 +192,7 @@ elif [[ $SEASON = 'dev' ]]; then
     exit
   fi
   if [[ $SHARD_INDEX -gt 0 ]]; then
-    export GENESIS_CONFIGS_DIR=genesis-configs/sim-shard
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard
   fi
 else
     printf "Invalid season argument: $SEASON\n"
@@ -205,7 +205,7 @@ fi
 
 printf "\n"
 printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
-printf "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR\n"
+printf "BLOCKCHAIN_CONFIGS_DIR=$BLOCKCHAIN_CONFIGS_DIR\n"
 printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 printf "P2P_PEER_CANDIDATE_URL=$P2P_PEER_CANDIDATE_URL\n"
 
