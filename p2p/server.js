@@ -2,9 +2,6 @@
 const logger = new (require('../logger'))('P2P_SERVER');
 
 const Websocket = require('ws');
-const ip = require('ip');
-const extIp = require('ext-ip')();
-const axios = require('axios');
 const disk = require('diskusage');
 const os = require('os');
 const v8 = require('v8');
@@ -37,6 +34,7 @@ const {
   sendGetRequest,
   signAndSendTx,
   sendTxAndWaitForFinalization,
+  getIpAddress,
 } = require('../common/network-util');
 const {
   getAddressFromSocket,
@@ -277,36 +275,9 @@ class P2pServer {
     }
   }
 
-  getIpAddress(internal = false) {
-    return Promise.resolve()
-    .then(() => {
-      if (BlockchainConfigs.HOSTING_ENV === 'gcp') {
-        return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
-          headers: {'Metadata-Flavor': 'Google'},
-          timeout: 3000
-        })
-        .then((res) => {
-          return res.data;
-        })
-        .catch((err) => {
-          CommonUtil.finishWithStackTrace(
-              logger, `Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
-        });
-      } else {
-        if (internal) {
-          return ip.address();
-        } else {
-          return extIp.get();
-        }
-      }
-    }).then((ipAddr) => {
-      return ipAddr;
-    });
-  }
-
   async setUpIpAddresses() {
-    const ipAddrInternal = await this.getIpAddress(true);
-    const ipAddrExternal = await this.getIpAddress(false);
+    const ipAddrInternal = await getIpAddress(true);
+    const ipAddrExternal = await getIpAddress(false);
     this.node.setIpAddresses(ipAddrInternal, ipAddrExternal);
     return true;
   }
