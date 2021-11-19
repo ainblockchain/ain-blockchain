@@ -142,8 +142,8 @@ class BlockchainNode {
   }
 
   // For testing purpose only.
-  setAccountForTesting(accountIndex) {
-    this.account = GenesisAccounts.others[accountIndex];
+  setAccountForTesting(account) {
+    this.account = account;
   }
 
   setIpAddresses(ipAddrInternal, ipAddrExternal) {

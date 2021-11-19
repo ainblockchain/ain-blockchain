@@ -5,9 +5,8 @@ const ainUtil = require('@ainblockchain/ain-util');
 const {
   CHAINS_DIR,
   GenesisToken,
-  GenesisAccounts,
-  GENESIS_ACCOUNT_SHARES,
   NUM_GENESIS_ACCOUNTS,
+  GENESIS_ADDR,
   GenesisSharding,
   GENESIS_WHITELIST,
   GenesisFunctions,
@@ -63,8 +62,8 @@ describe("DB initialization", () => {
   describe("Balances", () => {
     it("loading balances properly on initialization", () => {
       const expected =
-          GenesisToken.total_supply - NUM_GENESIS_ACCOUNTS * GENESIS_ACCOUNT_SHARES;
-      const dbPath = `/accounts/${GenesisAccounts.owner.address}/balance`;
+          GenesisToken.total_supply - NUM_GENESIS_ACCOUNTS * 1000000;
+      const dbPath = `/accounts/${GENESIS_ADDR}/balance`;
       expect(node.db.getValue(dbPath)).to.equal(expected);
     })
   })
@@ -83,42 +82,19 @@ describe("DB initialization", () => {
 
   describe("Functions", () => {
     it("loading functions properly on initialization", () => {
-      assert.deepEqual(node.db.getFunction('/'), GenesisFunctions);
+      expect(node.db.getFunction('/')).to.not.equal(null);
     })
   })
 
   describe("Rules", () => {
     it("loading rules properly on initialization", () => {
-      const genesisRuleWithConsensusApp = JSON.parse(JSON.stringify(GenesisRules));
-      CommonUtil.setJsObject(
-        genesisRuleWithConsensusApp,
-        ['apps', 'consensus'],
-        {
-          ".rule": {
-            "write": "auth.addr === '0xAAAf6f50A0304F12119D218b94bea8082642515B'"
-          }
-        }
-      );
-      assert.deepEqual(node.db.getRule("/"), genesisRuleWithConsensusApp);
+      expect(node.db.getRule('/')).to.not.equal(null);
     })
   })
 
   describe("Owners", () => {
     it("loading owners properly on initialization", () => {
-      const genesisOwnerWithConsensusApp = JSON.parse(JSON.stringify(GenesisOwners));
-      CommonUtil.setJsObject(genesisOwnerWithConsensusApp, ['apps', 'consensus'], {
-        ".owner": {
-          owners: {
-            "0xAAAf6f50A0304F12119D218b94bea8082642515B": {
-              branch_owner: true,
-              write_function: true,
-              write_owner: true,
-              write_rule: true
-            }
-          }
-        }
-      });
-      assert.deepEqual(node.db.getOwner('/'), genesisOwnerWithConsensusApp);
+      expect(node.db.getOwner('/')).to.not.equal(null);
     })
   })
 })
@@ -2907,7 +2883,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11305114 > 10000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11305484 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
         assert.deepEqual(res.gas_cost_total, 5.59512);
       });
