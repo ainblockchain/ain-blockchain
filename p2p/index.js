@@ -14,7 +14,6 @@ const {
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
   P2P_PEER_CANDIDATE_URL,
-  ACCOUNT_INDEX,
   ENABLE_STATUS_REPORT_TO_TRACKER,
   TrackerMessageTypes,
   BlockchainNodeStates,
@@ -69,7 +68,7 @@ class P2pClient {
     await this.server.listen();
     if (ENABLE_STATUS_REPORT_TO_TRACKER) this.connectToTracker();
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
-      if (Number(ACCOUNT_INDEX) === 0) {
+      if (!P2P_PEER_CANDIDATE_URL || P2P_PEER_CANDIDATE_URL === '') {
         await this.startBlockchainNode(0);
         return;
       } else {
@@ -559,6 +558,9 @@ class P2pClient {
    * @param {string} peerCandidateUrl should be something like http(s)://xxx.xxx.xxx.xxx/json-rpc
    */
   async connectWithPeerCandidateUrl(peerCandidateUrl) {
+    if (!peerCandidateUrl || peerCandidateUrl === '') {
+      return;
+    }
     const resp = await sendGetRequest(peerCandidateUrl, 'p2p_getPeerCandidateInfo', { });
     const peerCandidateInfo = _.get(resp, 'data.result.result');
     if (!peerCandidateInfo) {

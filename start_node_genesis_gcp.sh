@@ -199,10 +199,15 @@ else
     exit
 fi
 
+if [[ $NODE_INDEX = 0 ]]; then
+    export P2P_PEER_CANDIDATE_URL=''
+fi
+
 printf "\n"
 printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
 printf "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR\n"
 printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
+printf "P2P_PEER_CANDIDATE_URL=$P2P_PEER_CANDIDATE_URL\n"
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
 if [[ $ACCOUNT_INJECTION_OPTION = "" ]] || [[ "$SHARD_INDEX" -gt 0 ]]; then
