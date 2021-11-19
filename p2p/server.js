@@ -528,7 +528,7 @@ class P2pServer {
               logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
               Object.values(this.client.outbound).forEach((node) => {
                 setTimeout(() => {
-                  this.client.requestChainSegment(node.socket, this.node.bc.lastBlockNumber());
+                  this.client.requestChainSegment(node.socket);
                 }, EPOCH_MS);
               });
             }
