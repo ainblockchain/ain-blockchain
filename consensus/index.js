@@ -275,7 +275,7 @@ class Consensus {
         // this.node.state = BlockchainNodeStates.SYNCING;
         Object.values(this.server.client.outbound).forEach((peer) => {
           setTimeout(() => {
-            this.server.client.requestChainSegment(peer.socket, this.node.bc.lastBlockNumber());
+            this.server.client.requestChainSegment(peer.socket);
           }, EPOCH_MS);
         });
         return;
