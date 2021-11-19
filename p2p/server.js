@@ -649,7 +649,7 @@ class P2pServer {
     const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_RESPONSE,
         { chainSegment: chainSegment, number: number, catchUpInfo: catchUpInfo });
     if (!payload) {
-      logger.error('The cahin segment cannot be sent because of msg encapsulation failure.');
+      logger.error('The chain segment cannot be sent because of msg encapsulation failure.');
       return;
     }
     socket.send(JSON.stringify(payload));
