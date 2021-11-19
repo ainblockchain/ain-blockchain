@@ -595,7 +595,7 @@ class BlockchainNode {
         Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.SEGMENT, proposalTx, true);
         this.tryFinalizeChain();
       } catch (e) {
-        logger.info(`[${LOG_HEADER}] Failed to add new block (${block.hash}) to chain: ${e.stack}`);
+        logger.info(`[${LOG_HEADER}] Failed to add new block (${block.number} / ${block.hash}) to chain: ${e.stack}`);
         return -1; // Merge failed and I'm behind
       }
     }
