@@ -123,6 +123,8 @@ describe("state-node", () => {
 
       const clone = node.clone();
       expect(clone.getVersion()).to.equal(node.getVersion());
+      expect(clone.radixTree.getVersion()).to.equal(node.getVersion());
+      expect(clone.radixTree.root.getVersion()).to.equal(node.getVersion());
       expect(clone.getIsLeaf()).to.equal(true);
       assert.deepEqual(clone.getParentNodes(), []);
       assert.deepEqual(clone.getChildLabels(), []);
@@ -134,7 +136,9 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(node.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(node.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(node.getTreeBytes());
-      assert.deepEqual(clone.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), node.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL));
+      assert.deepEqual(
+          clone.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL),
+          node.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL));
     });
 
     it("internal node", () => {
@@ -151,7 +155,8 @@ describe("state-node", () => {
 
       const clone = stateTree.clone();
       expect(clone.getVersion()).to.equal(stateTree.getVersion());
-      expect(clone.radixTree.root.getVersion()).to.equal(null);
+      expect(clone.radixTree.getVersion()).to.equal(stateTree.getVersion());
+      expect(clone.radixTree.root.getVersion()).to.equal(stateTree.getVersion());
       expect(clone.getIsLeaf()).to.equal(false);
       assert.deepEqual(child1.getParentNodes(), [stateTree, clone]);
       assert.deepEqual(child2.getParentNodes(), [stateTree, clone]);
@@ -168,7 +173,9 @@ describe("state-node", () => {
       expect(clone.getTreeHeight()).to.equal(stateTree.getTreeHeight());
       expect(clone.getTreeSize()).to.equal(stateTree.getTreeSize());
       expect(clone.getTreeBytes()).to.equal(stateTree.getTreeBytes());
-      assert.deepEqual(clone.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL));
+      assert.deepEqual(
+          clone.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL),
+          stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL));
     });
   });
 
@@ -1262,9 +1269,11 @@ describe("state-node", () => {
       node.setVersion(version1);
       expect(node.getVersion()).to.equal(version1);
       expect(node.radixTree.getVersion()).to.equal(version1);
+      expect(node.radixTree.root.getVersion()).to.equal(version1);
       node.setVersion(version2);
       expect(node.getVersion()).to.equal(version2);
       expect(node.radixTree.getVersion()).to.equal(version2);
+      expect(node.radixTree.root.getVersion()).to.equal(version2);
     });
   });
 

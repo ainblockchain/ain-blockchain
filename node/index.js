@@ -296,7 +296,7 @@ class BlockchainNode {
 
   buildBlockchainSnapshot(blockNumber, stateRoot) {
     const block = this.bc.getBlockByNumber(blockNumber);
-    const stateSnapshot = stateRoot.toStateSnapshot();
+    const stateSnapshot = stateRoot.toStateSnapshot({ includeVersion: true });
     const radixSnapshot = stateRoot.toRadixSnapshot();
     const rootProofHash = stateRoot.getProofHash();
     return {
