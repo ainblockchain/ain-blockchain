@@ -144,10 +144,6 @@ elif [[ $SEASON = 'staging' ]]; then
     export TRACKER_WS_ADDR=ws://35.221.150.73:5000
     export P2P_PEER_CANDIDATE_URL="http://35.194.139.219:8080/json-rpc"
 elif [[ $SEASON = 'dev' ]]; then
-  if [[ $SHARD_INDEX -gt 0 ]]; then
-    export GENESIS_CONFIGS_DIR=genesis-configs/sim-shard
-  fi
-
   if [[ $SHARD_INDEX = 0 ]]; then
     export TRACKER_WS_ADDR=ws://34.80.184.73:5000  # dev-tracker-ip
     export P2P_PEER_CANDIDATE_URL="http://35.194.235.180:8080/json-rpc"
@@ -194,6 +190,9 @@ elif [[ $SEASON = 'dev' ]]; then
   else
     printf "Invalid shard ID argument: $SHARD_INDEX\n"
     exit
+  fi
+  if [[ $SHARD_INDEX -gt 0 ]]; then
+    export GENESIS_CONFIGS_DIR=genesis-configs/sim-shard
   fi
 else
     printf "Invalid season argument: $SEASON\n"
