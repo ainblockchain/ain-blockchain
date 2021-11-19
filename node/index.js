@@ -5,7 +5,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const path = require('path');
 const {
-  FeatureFlags,
+  DevFlags,
   PORT,
   ACCOUNT_INDEX,
   ACCOUNT_INJECTION_OPTION,
@@ -266,7 +266,7 @@ class BlockchainNode {
     if (!this.stateManager.finalizeVersion(newFinalVersion)) {
       logger.error(`[${LOG_HEADER}] Failed to finalize version: ${newFinalVersion}`);
     }
-    if (FeatureFlags.enableStateTreeTransfer) {
+    if (DevFlags.enableStateTreeTransfer) {
       logger.info(`[${LOG_HEADER}] Transfering state tree: ${version} -> ${newFinalVersion}`);
       if (!this.stateManager.transferStateTree(version, newFinalVersion)) {
         logger.error(
@@ -452,7 +452,7 @@ class BlockchainNode {
    */
   executeTransactionAndAddToPool(tx) {
     const LOG_HEADER = 'executeTransactionAndAddToPool';
-    if (FeatureFlags.enableRichTransactionLogging) {
+    if (DevFlags.enableRichTransactionLogging) {
       logger.info(`[${LOG_HEADER}] EXECUTING TRANSACTION: ${JSON.stringify(tx, null, 2)}`);
     }
     if (!this.tp.hasRoomForNewTransaction()) {
@@ -489,7 +489,7 @@ class BlockchainNode {
     }
     const result = this.db.executeTransaction(executableTx, false, true, this.bc.lastBlockNumber() + 1);
     if (CommonUtil.isFailedTx(result)) {
-      if (FeatureFlags.enableRichTransactionLogging) {
+      if (DevFlags.enableRichTransactionLogging) {
         logger.error(
             `[${LOG_HEADER}] FAILED TRANSACTION: ${JSON.stringify(executableTx, null, 2)}\n ` +
             `WITH RESULT:${JSON.stringify(result)}`);
