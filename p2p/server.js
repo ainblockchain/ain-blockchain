@@ -33,8 +33,6 @@ const {
   WriteDbOperations,
   ReadDbOperations,
   GenesisSharding,
-  GenesisAccounts,
-  AccountProperties,
   GENESIS_TIMESTAMP,
   RuleProperties,
   ShardingProperties,

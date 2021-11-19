@@ -31,6 +31,7 @@
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
   },
   "genesis": {
+    "GENESIS_ADDR": "0xBBB2219cD5eACc54Ce95deF7a67dDe71C8241891",
     "GENESIS_TIMESTAMP": 1571819318272,
     "NUM_GENESIS_ACCOUNTS": 10
   },
@@ -40,8 +41,25 @@
     "MIN_NUM_VALIDATORS": 3,
     "MAX_NUM_VALIDATORS": 9,
     "EPOCH_MS": 3000,
-    "GENESIS_WHITELIST": {},
-    "GENESIS_VALIDATORS": {}
+    "GENESIS_WHITELIST": {
+      "0x00Ba0Cb2B1157882963024E0CF837E773d11535d": true,
+      "0x01B6B108bE3FEE00d3661777053175421D806Ea6": true,
+      "0x02B3a185C6a9DCd643255329d3eB8603E3D0d743": true
+    },
+    "GENESIS_VALIDATORS": {
+      "0x00Ba0Cb2B1157882963024E0CF837E773d11535d": {
+        "stake": 100000,
+        "proposal_right": true
+      },
+      "0x01B6B108bE3FEE00d3661777053175421D806Ea6": {
+        "stake": 100000,
+        "proposal_right": true
+      },
+      "0x02B3a185C6a9DCd643255329d3eB8603E3D0d743": {
+        "stake": 100000,
+        "proposal_right": true
+      }
+    }
   },
   "network": {
     "P2P_MESSAGE_TIMEOUT_MS": 600000,
@@ -62,6 +80,8 @@
     "MAX_FUNCTION_URLS_PER_DEVELOPER": 3
   },
   "sharding": {
+    "shard_owner": "0xBBB2219cD5eACc54Ce95deF7a67dDe71C8241891",
+    "shard_reporter": "0x00Ba0Cb2B1157882963024E0CF837E773d11535d",
     "sharding_protocol": "POA",
     "sharding_path": "/apps/afan",
     "parent_chain_poc": "http://127.0.0.1:8081",

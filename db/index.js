@@ -3,7 +3,7 @@ const logger = new (require('../logger'))('DATABASE');
 const _ = require('lodash');
 const {
   FeatureFlags,
-  AccountProperties,
+  GENESIS_ADDR,
   ReadDbOperations,
   WriteDbOperations,
   PredefinedDbPaths,
@@ -12,7 +12,6 @@ const {
   StateInfoProperties,
   BlockchainSnapshotProperties,
   ShardingProperties,
-  GenesisAccounts,
   GenesisSharding,
   StateVersions,
   buildOwnerPermissions,
@@ -72,8 +71,7 @@ class DB {
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
     this.stateManager = stateManager;
-    this.ownerAddress = CommonUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
+    this.ownerAddress = GENESIS_ADDR;
     this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: [] };
     this.updateRestFunctionsUrlWhitelistCache();
   }

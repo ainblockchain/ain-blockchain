@@ -30,6 +30,7 @@
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
   },
   "genesis": {
+    "GENESIS_ADDR": "0xAAAf6f50A0304F12119D218b94bea8082642515B",
     "GENESIS_TIMESTAMP": 1571819318272,
     "NUM_GENESIS_ACCOUNTS": 10
   },
@@ -39,8 +40,35 @@
     "MIN_NUM_VALIDATORS": 5,
     "MAX_NUM_VALIDATORS": 15,
     "EPOCH_MS": 3000,
-    "GENESIS_WHITELIST": {},
-    "GENESIS_VALIDATORS": {}
+    "GENESIS_WHITELIST": {
+      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true,
+      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": true,
+      "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": true,
+      "0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A": true,
+      "0x04A456C92A880cd59D7145C457475515a6f6E0f2": true
+    },
+    "GENESIS_VALIDATORS": {
+      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
+        "stake": 100000,
+        "proposal_right": true
+      },
+      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": {
+        "stake": 100000,
+        "proposal_right": true
+      },
+      "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": {
+        "stake": 100000,
+        "proposal_right": true
+      },
+      "0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A": {
+        "stake": 100000,
+        "proposal_right": true
+      },
+      "0x04A456C92A880cd59D7145C457475515a6f6E0f2": {
+        "stake": 100000,
+        "proposal_right": true
+      }
+    }
   },
   "network": {
     "P2P_MESSAGE_TIMEOUT_MS": 600000,
@@ -62,6 +90,8 @@
     "MAX_FUNCTION_URLS_PER_DEVELOPER": 3
   },
   "sharding": {
+    "shard_owner": "",
+    "shard_reporter": "",
     "sharding_protocol": "NONE",
     "sharding_path": "/",
     "parent_chain_poc": "",
