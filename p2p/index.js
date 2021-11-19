@@ -356,11 +356,13 @@ class P2pClient {
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
 
+  // TODO(minsulee2): session token will be applied to enhance security.
   sendPeerInfo(socket) {
     const body = {
       address: this.server.getNodeAddress(),
       peerInfo: this.getStatus(),
       timestamp: Date.now(),
+      // TODO(minsulee2): Implement sessionToken: token
     };
     const signature = signMessage(body, this.server.getNodePrivateKey());
     if (!signature) {
