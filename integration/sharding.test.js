@@ -39,7 +39,8 @@ const {
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true, ENABLE_EXPRESS_RATE_LIMIT: false,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/unit-tests', ENABLE_EXPRESS_RATE_LIMIT: false,
+    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, P2P_PEER_CANDIDATE_URL: '', DEBUG: true,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
@@ -48,36 +49,22 @@ const ENV_VARIABLES = [
     CONSOLE_LOG: false
   },
   {
-    GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9001, P2P_PORT: 6001,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, ENABLE_EXPRESS_RATE_LIMIT: false,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/afan-shard',
+    PORT: 9001, P2P_PORT: 6001, P2P_PEER_CANDIDATE_URL: '',
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 0, ENABLE_EXPRESS_RATE_LIMIT: false,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/afan-shard',
     PORT: 9002, P2P_PORT: 6002,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, ENABLE_EXPRESS_RATE_LIMIT: false,
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 1, ENABLE_EXPRESS_RATE_LIMIT: false,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/afan-shard',
     PORT: 9003, P2P_PORT: 6003,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, ENABLE_EXPRESS_RATE_LIMIT: false,
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 2, ENABLE_EXPRESS_RATE_LIMIT: false,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
-  },
-  {
-    GENESIS_CONFIGS_DIR: 'genesis-configs/afan-shard',
-    PORT: 9004, P2P_PORT: 6004,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, ENABLE_EXPRESS_RATE_LIMIT: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
 ];
 
@@ -86,8 +73,7 @@ const parentServerList = [ parentServer ];
 const server1 = 'http://localhost:' + String(9001 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
 const server2 = 'http://localhost:' + String(9001 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(9001 + Number(ENV_VARIABLES[4].ACCOUNT_INDEX))
-const server4 = 'http://localhost:' + String(9001 + Number(ENV_VARIABLES[5].ACCOUNT_INDEX))
-const shardServerList = [ server1, server2, server3, server4 ];
+const shardServerList = [ server1, server2, server3 ];
 const account = ainUtil.createAccount();
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
@@ -209,19 +195,15 @@ async function cleanUp() {
 
 describe('Sharding', async () => {
   const token =
-      readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_token.json'));
-  const parentAccounts =
-      readConfigFile(path.resolve(__dirname, '../genesis-configs/base', 'genesis_accounts.json'));
-  const parentServerAddr = parentAccounts.others[0].address;
-  const accounts =
-      readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_accounts.json'));
-  const shardOwnerAddr = accounts.owner.address;
-  const shardReporterAddr = accounts.others[0].address;
+      readConfigFile(path.resolve(__dirname, '../blockchain-configs/afan-shard', 'blockchain_params.json')).token;
   const sharding =
-      readConfigFile(path.resolve(__dirname, '../genesis-configs/afan-shard', 'genesis_sharding.json'));
+      readConfigFile(path.resolve(__dirname, '../blockchain-configs/afan-shard', 'blockchain_params.json')).sharding;
+  const shardOwnerAddr = sharding.shard_owner;
+  const shardReporterAddr = sharding.shard_reporter;
+  let parentServerAddr = '';
 
   let parent_tracker_proc, parent_server_proc,
-      tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
+      tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
     rimraf.sync(CHAINS_DIR)
@@ -232,6 +214,8 @@ describe('Sharding', async () => {
     parent_server_proc = startServer(APP_SERVER, 'parent server', ENV_VARIABLES[0], true);
     await CommonUtil.sleep(15000);
     // Give AIN to sharding owner and reporter
+    parentServerAddr = parseOrLog(syncRequest(
+        'GET', parentServer + '/get_address').body.toString('utf-8')).result;
     const shardReportRes = parseOrLog(syncRequest(
       'POST', parentServer + '/set', { json: {
         op_list: [
@@ -251,7 +235,10 @@ describe('Sharding', async () => {
     ).result;
     await waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
     // Create app at the parent chain for the shard
-    await setUpApp('afan', parentServerList, { admin: { [shardOwnerAddr]: true } });
+    await setUpApp('afan', parentServerList, { admin: {
+      [shardOwnerAddr]: true,
+      [shardReporterAddr]: true
+     } });
     
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
     await CommonUtil.sleep(3000);
@@ -262,7 +249,6 @@ describe('Sharding', async () => {
     await CommonUtil.sleep(3000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], true);
     await CommonUtil.sleep(3000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], true);
     await CommonUtil.sleep(3000); // Before shard reporting begins
   });
 
@@ -273,7 +259,6 @@ describe('Sharding', async () => {
     server1_proc.kill()
     server2_proc.kill()
     server3_proc.kill()
-    server4_proc.kill()
 
     rimraf.sync(CHAINS_DIR)
   });
@@ -361,7 +346,10 @@ describe('Sharding', async () => {
   describe('Shard chain initialization', () => {
     before(async () => {
       await waitUntilNetworkIsReady(shardServerList);
-      await setUpApp('afan', shardServerList, { admin: { [shardOwnerAddr]: true } });
+      await setUpApp('afan', shardServerList, { admin: {
+        [shardOwnerAddr]: true,
+        [shardReporterAddr]: true
+      } });
     });
     
     describe('DB values', () => {
@@ -414,7 +402,7 @@ describe('Sharding', async () => {
 
     describe('DB owners', () => {
       it('sharding', () => {
-        const body = parseOrLog(syncRequest('GET', server4 + '/get_owner?ref=/sharding/config')
+        const body = parseOrLog(syncRequest('GET', server3 + '/get_owner?ref=/sharding/config')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['.owner'].owners[shardOwnerAddr]).to.not.be.null;
@@ -495,14 +483,11 @@ describe('Sharding', async () => {
           'GET', server2 + '/get_address').body.toString('utf-8')).result;
       const server3Addr = parseOrLog(syncRequest(
           'GET', server3 + '/get_address').body.toString('utf-8')).result;
-      const server4Addr = parseOrLog(syncRequest(
-          'GET', server4 + '/get_address').body.toString('utf-8')).result;
       await setUpApp('test', shardServerList, { admin: {
         [account.address]: true,
         [server1Addr]: true,
         [server2Addr]: true,
         [server3Addr]: true,
-        [server4Addr]: true
       } });
     })
 
@@ -2069,8 +2054,11 @@ describe('Sharding', async () => {
 
     describe('_updateLatestShardReport', () => {
       before(async () => {
-        const { shard_owner, sharding_path } = shardingConfig;
-        await setUpApp('a_dapp', parentServerList, { admin: { [shard_owner]: true } });
+        const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
+        await setUpApp('a_dapp', parentServerList, { admin: {
+          [shard_owner]: true,
+          [shard_reporter]: true,
+        } });
 
         const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
           json: {
