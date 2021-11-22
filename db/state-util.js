@@ -5,6 +5,7 @@ const _ = require('lodash');
 const espree = require('espree');
 const CommonUtil = require('../common/common-util');
 const {
+  LIGHTWEIGHT,
   HASH_DELIMITER,
   VARIABLE_LABEL_PREFIX,
   PredefinedDbPaths,
@@ -17,7 +18,6 @@ const {
   StateInfoProperties,
   STATE_LABEL_LENGTH_LIMIT,
 } = require('../common/constants');
-const RuleUtil = require('./rule-util');
 
 const WRITE_RULE_ECMA_VERSION = 12;
 const WRITE_RULE_CODE_SNIPPET_PREFIX = '"use strict"; return ';
@@ -839,6 +839,38 @@ function verifyStateInfoForStateTree(stateTree) {
   return true;
 }
 
+function verifyProofHashForStateTreeRecursive(stateTree, curLabels) {
+  const curPath = CommonUtil.formatPath(curLabels);
+  if (stateTree.getIsLeaf()) {
+    const proofHashComputed = LIGHTWEIGHT ?
+        '' : CommonUtil.hashString(CommonUtil.toString(stateTree.getValue()));
+    const isVerified = proofHashComputed === stateTree.getProofHash();
+    const mismatchedPath = isVerified ? null : curPath;
+    const mismatchedProofHash = isVerified ? null : stateTree.getProofHash();
+    const mismatchedProofHashComputed = isVerified ? null : proofHashComputed;
+    return {
+      isVerified,
+      mismatchedPath,
+      mismatchedProofHash,
+      mismatchedProofHashComputed,
+    };
+  } else {
+    if (stateTree.getProofHash() !== stateTree.radixTree.getRootProofHash()) {
+      return {
+        isVerified: false,
+        mismatchedPath: curPath,
+        mismatchedProofHash: stateTree.getProofHash(),
+        mismatchedProofHashComputed: stateTree.radixTree.getRootProofHash(),
+      };
+    }
+    return stateTree.radixTree.verifyProofHashForRadixTree(curLabels);
+  }
+}
+
+function verifyProofHashForStateTree(stateTree) {
+  return verifyProofHashForStateTreeRecursive(stateTree, []);
+}
+
 /**
  * An internal version of getStateProofFromStateRoot().
  * 
@@ -1030,6 +1062,8 @@ module.exports = {
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
+  verifyProofHashForStateTreeRecursive,
+  verifyProofHashForStateTree,
   getStateProofFromStateRoot,
   getProofHashFromStateRoot,
   verifyStateProof,

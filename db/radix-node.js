@@ -8,7 +8,10 @@ const {
   HASH_DELIMITER,
   StateInfoProperties,
 } = require('../common/constants');
-const { deleteStateTreeVersion } = require('./state-util');
+const {
+  verifyProofHashForStateTreeRecursive,
+  deleteStateTreeVersion,
+} = require('./state-util');
 
 /**
  * Implements Radix Node, which is used as a component of RadixTree.
@@ -487,6 +490,47 @@ class RadixNode {
       }
     }
     return true;
+  }
+
+  verifyProofHashForRadixTree(curLabels) {
+    const curPath = CommonUtil.formatPath(curLabels);
+    let preimage = '';
+    if (this.hasChildStateNode()) {
+      const childStateNode = this.getChildStateNode();
+      const proofStateLabel = StateInfoProperties.STATE_LABEL_PREFIX + childStateNode.getLabel();
+      const childStateVerif =
+          verifyProofHashForStateTreeRecursive(childStateNode, [...curLabels, proofStateLabel]);
+      if (childStateVerif.isVerified !== true) {
+        return childStateVerif;
+      }
+      preimage += childStateNode.getProofHash();
+    }
+    preimage += LIGHTWEIGHT ? '' : `${HASH_DELIMITER}`;
+    if (this.numChildren() === 0) {
+      preimage += LIGHTWEIGHT ? '' : `${HASH_DELIMITER}`;
+    } else {
+      for (const child of this.getChildNodes()) {
+        const label = child.getLabel();
+        const proofRadixLabel = StateInfoProperties.RADIX_LABEL_PREFIX + label;
+        const childRadixVerif = child.verifyProofHashForRadixTree([...curLabels, proofRadixLabel]);
+        if (childRadixVerif.isVerified !== true) {
+          return childRadixVerif;
+        }
+        preimage += LIGHTWEIGHT ? '' :
+            `${HASH_DELIMITER}${child.getLabel()}${HASH_DELIMITER}${child.getProofHash()}`;
+      }
+    }
+    const proofHashComputed = LIGHTWEIGHT ? '' : CommonUtil.hashString(preimage);
+    const isVerified = proofHashComputed === this.getProofHash();
+    const mismatchedPath = isVerified ? null : curPath;
+    const mismatchedProofHash = isVerified ? null : this.getProofHash();
+    const mismatchedProofHashComputed = isVerified ? null : proofHashComputed;
+    return {
+      isVerified,
+      mismatchedPath,
+      mismatchedProofHash,
+      mismatchedProofHashComputed,
+    };
   }
 
   getProofOfRadixNode(
