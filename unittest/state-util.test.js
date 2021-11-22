@@ -24,6 +24,7 @@ const {
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
+  verifyProofHashForStateTree,
   getStateProofFromStateRoot,
   getProofHashFromStateRoot,
   verifyStateProof,
@@ -2587,6 +2588,80 @@ describe("state-util", () => {
       expect(verifyStateInfoForStateTree(stateTree)).to.equal(true);
       child111.setProofHash('new ph');
       expect(verifyStateInfoForStateTree(stateTree)).to.equal(false);
+    });
+
+    describe("verifyProofHashForStateTree", () => {
+      beforeEach(() => {
+        updateStateInfoForStateTree(stateTree);
+      });
+
+      it("verified with leaf state node", () => {
+        assert.deepEqual(verifyProofHashForStateTree(child1112), {
+          "isVerified": true,
+          "mismatchedPath": null,
+          "mismatchedProofHash": null,
+          "mismatchedProofHashComputed": null,
+        });
+      });
+
+      it("verified with state tree", () => {
+        assert.deepEqual(verifyProofHashForStateTree(stateTree), {
+          "isVerified": true,
+          "mismatchedPath": null,
+          "mismatchedProofHash": null,
+          "mismatchedProofHashComputed": null,
+        });
+      });
+
+      it("not verified with mismatched leaf state proof hash", () => {
+        child1112.setProofHash('some other value');
+        assert.deepEqual(verifyProofHashForStateTree(stateTree), {
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001/#radix:0011/#state:0x0011/#radix:0111/#state:0x0111/#radix:111/#radix:2/#state:0x1112",
+          "mismatchedProofHash": "some other value",
+          "mismatchedProofHashComputed": "0xfd91d194696561044fc4ae343fc30608cb0ffc3eabd30944087a9fe6a3eef760",
+        });
+      });
+
+      it("not verified with mismatched internal state proof hash", () => {
+        child111.setProofHash('some other value');
+        assert.deepEqual(verifyProofHashForStateTree(stateTree), {
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001/#radix:0011/#state:0x0011/#radix:0111/#state:0x0111",
+          "mismatchedProofHash": "some other value",
+          "mismatchedProofHashComputed": "0xb38b2cf86835718aa59d1e4a6d2cc294761ca2fdcd02e0302a70221a035bfe38",
+        });
+      });
+
+      it("not verified with mismatched terminal radix proof hash", () => {
+        child1112.getParentRadixNodes()[0].setProofHash('some other value');
+        assert.deepEqual(verifyProofHashForStateTree(stateTree), {
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001/#radix:0011/#state:0x0011/#radix:0111/#state:0x0111/#radix:111/#radix:2",
+          "mismatchedProofHash": "some other value",
+          "mismatchedProofHashComputed": "0xf2291b8c0c36fc9a29cb39d023fdebc08bebdd6cf119602ef5890000b6125a6b",
+        });
+      });
+
+      it("not verified with mismatched internal radix proof hash", () => {
+        child1.getParentRadixNodes()[0].getParentNodes()[0].setProofHash('some other value');
+        assert.deepEqual(verifyProofHashForStateTree(stateTree), {
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000",
+          "mismatchedProofHash": "some other value",
+          "mismatchedProofHashComputed": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60",
+        });
+      });
+
+      it("not verified with mismatched root proof hash of radix tree", () => {
+        child111.radixTree.root.setProofHash('some other value');
+        assert.deepEqual(verifyProofHashForStateTree(stateTree), {
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001/#radix:0011/#state:0x0011/#radix:0111/#state:0x0111",
+          "mismatchedProofHash": "0xb38b2cf86835718aa59d1e4a6d2cc294761ca2fdcd02e0302a70221a035bfe38",
+          "mismatchedProofHashComputed": "some other value",
+        });
+      });
     });
 
     describe("getStateProofFromStateRoot", () => {
