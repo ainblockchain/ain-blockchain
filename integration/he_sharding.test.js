@@ -139,10 +139,12 @@ describe('HE Sharding', async () => {
     ).result;
     await waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
     // Create app at the parent chain for the shard
-    await setUpApp(appName, parentServerList, { admin: {
-      [shardOwnerAddr]: true,
-      [shardReporterAddr]: true
-    } });
+    await setUpApp(appName, parentServerList, {
+      admin: {
+        [shardOwnerAddr]: true,
+        [shardReporterAddr]: true
+      }
+    });
     
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
     await CommonUtil.sleep(3000);

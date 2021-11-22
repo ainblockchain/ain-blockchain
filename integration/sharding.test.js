@@ -235,10 +235,12 @@ describe('Sharding', async () => {
     ).result;
     await waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
     // Create app at the parent chain for the shard
-    await setUpApp('afan', parentServerList, { admin: {
-      [shardOwnerAddr]: true,
-      [shardReporterAddr]: true
-     } });
+    await setUpApp('afan', parentServerList, {
+      admin: {
+        [shardOwnerAddr]: true,
+        [shardReporterAddr]: true
+      }
+    });
     
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
     await CommonUtil.sleep(3000);
@@ -346,10 +348,12 @@ describe('Sharding', async () => {
   describe('Shard chain initialization', () => {
     before(async () => {
       await waitUntilNetworkIsReady(shardServerList);
-      await setUpApp('afan', shardServerList, { admin: {
-        [shardOwnerAddr]: true,
-        [shardReporterAddr]: true
-      } });
+      await setUpApp('afan', shardServerList, {
+        admin: {
+          [shardOwnerAddr]: true,
+          [shardReporterAddr]: true
+        }
+      });
     });
     
     describe('DB values', () => {
@@ -483,12 +487,14 @@ describe('Sharding', async () => {
           'GET', server2 + '/get_address').body.toString('utf-8')).result;
       const server3Addr = parseOrLog(syncRequest(
           'GET', server3 + '/get_address').body.toString('utf-8')).result;
-      await setUpApp('test', shardServerList, { admin: {
-        [account.address]: true,
-        [server1Addr]: true,
-        [server2Addr]: true,
-        [server3Addr]: true,
-      } });
+      await setUpApp('test', shardServerList, {
+        admin: {
+          [account.address]: true,
+          [server1Addr]: true,
+          [server2Addr]: true,
+          [server3Addr]: true,
+        }
+      });
     })
 
     describe('Get API', () => {
@@ -2055,10 +2061,12 @@ describe('Sharding', async () => {
     describe('_updateLatestShardReport', () => {
       before(async () => {
         const { shard_owner, shard_reporter, sharding_path } = shardingConfig;
-        await setUpApp('a_dapp', parentServerList, { admin: {
-          [shard_owner]: true,
-          [shard_reporter]: true,
-        } });
+        await setUpApp('a_dapp', parentServerList, {
+          admin: {
+            [shard_owner]: true,
+            [shard_reporter]: true,
+          }
+        });
 
         const res = parseOrLog(syncRequest('POST', parentServer + '/set', {
           json: {
