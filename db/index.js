@@ -2,7 +2,7 @@ const logger = new (require('../logger'))('DATABASE');
 
 const _ = require('lodash');
 const {
-  FeatureFlags,
+  DevFlags,
   GENESIS_ADDR,
   ReadDbOperations,
   WriteDbOperations,
@@ -1440,7 +1440,7 @@ class DB {
     }
     if (!skipFees) {
       this.collectFee(auth, timestamp, tx, blockNumber, executionResult);
-      if (FeatureFlags.enableReceiptsRecording) {
+      if (DevFlags.enableReceiptsRecording) {
         this.recordReceipt(auth, tx, blockNumber, executionResult);
       }
     }

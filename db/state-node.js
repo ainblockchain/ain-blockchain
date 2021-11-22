@@ -55,11 +55,12 @@ class StateNode {
   }
 
   clone(version) {
-    const cloned = StateNode._create(version ? version : this.version, this.label,
-        this.isLeaf, this.value, this.proofHash, this.treeHeight,
-        this.treeSize, this.treeBytes);
+    // For easy testing
+    const versionToSet = version ? version : this.version;
+    const cloned = StateNode._create(versionToSet, this.label, this.isLeaf, this.value,
+        this.proofHash, this.treeHeight, this.treeSize, this.treeBytes);
     if (!this.getIsLeaf()) {
-      cloned.setRadixTree(this.radixTree.clone(version, cloned));
+      cloned.setRadixTree(this.radixTree.clone(versionToSet, cloned));
     }
     return cloned;
   }
