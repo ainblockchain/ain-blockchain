@@ -9,7 +9,7 @@ const {
   StateInfoProperties,
 } = require('../common/constants');
 const {
-  verifyProofHashForStateTreeRecursive,
+  verifyProofHashForStateTree,
   deleteStateTreeVersion,
 } = require('./state-util');
 
@@ -492,14 +492,14 @@ class RadixNode {
     return true;
   }
 
-  verifyProofHashForRadixTree(curLabels) {
+  verifyProofHashForRadixTree(curLabels = []) {
     const curPath = CommonUtil.formatPath(curLabels);
     let preimage = '';
     if (this.hasChildStateNode()) {
       const childStateNode = this.getChildStateNode();
       const proofStateLabel = StateInfoProperties.STATE_LABEL_PREFIX + childStateNode.getLabel();
       const childStateVerif =
-          verifyProofHashForStateTreeRecursive(childStateNode, [...curLabels, proofStateLabel]);
+          verifyProofHashForStateTree(childStateNode, [...curLabels, proofStateLabel]);
       if (childStateVerif.isVerified !== true) {
         return childStateVerif;
       }
