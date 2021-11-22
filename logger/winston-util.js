@@ -10,17 +10,17 @@ const {
   DEBUG,
   CONSOLE_LOG,
   PORT,
-  ACCOUNT_INDEX,
   HOSTING_ENV,
   LIGHTWEIGHT,
-  KEYSTORE_FILE_PATH,
+  ACCOUNT_INDEX,
+  ACCOUNT_INJECTION_OPTION,
 } = require('../common/constants');
 
 const { combine, timestamp, label, printf, colorize } = winston.format;
 
 const logDir = path.join(LOGS_DIR, String(PORT));
-const prefix = ACCOUNT_INDEX ? `node-${ACCOUNT_INDEX}-${PORT}` :
-    KEYSTORE_FILE_PATH ? `node-${PORT}` : `tracker-${PORT}`;
+// TODO(liayoo): Deprecate ACCOUNT_INDEX.
+const prefix = ACCOUNT_INDEX || ACCOUNT_INJECTION_OPTION ? `node-${PORT}` : `tracker-${PORT}`;
 const logFormat = printf(({level, message, label, timestamp}) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
 });

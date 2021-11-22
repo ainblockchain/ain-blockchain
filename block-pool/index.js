@@ -94,7 +94,7 @@ class BlockPool {
     const LOG_HEADER = 'getLongestNotarizedChainList';
     const lastBlockNumber = this.node.bc.lastBlockNumber();
     const lastFinalized = fromBlock ? fromBlock
-        : lastBlockNumber < 1 ? {block: this.node.bc.lastBlock(), notarized: true}
+        : lastBlockNumber < 1 ? { block: this.node.bc.lastBlock(), notarized: true }
             : this.hashToBlockInfo[this.node.bc.lastBlock().hash];
     logger.debug(`[${LOG_HEADER}] lastFinalized: ${JSON.stringify(lastFinalized, null, 2)}`);
     const chainList = [];

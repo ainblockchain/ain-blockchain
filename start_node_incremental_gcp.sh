@@ -77,25 +77,26 @@ printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
-# 1. Configure env vars (GENESIS_CONFIGS_DIR, TRACKER_WS_ADDR, ...)
+# 1. Configure env vars (BLOCKCHAIN_CONFIGS_DIR, TRACKER_WS_ADDR, ...)
 printf "\n#### [Step 1] Configure env vars ####\n\n"
 
-export GENESIS_CONFIGS_DIR=genesis-configs/testnet
 KEYSTORE_DIR=testnet_dev_staging_keys
 if [[ $SEASON = 'spring' ]]; then
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
     export P2P_PEER_CANDIDATE_URL="http://35.221.184.48:8080/json-rpc"
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ $SEASON = 'summer' ]]; then
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_WS_ADDR=ws://35.194.172.106:5000
     export P2P_PEER_CANDIDATE_URL="http://35.194.169.78:8080/json-rpc"
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ $SEASON = 'staging' ]]; then
-    export TRACKER_WS_ADDR=ws://35.221.150.73:5000
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging
     export P2P_PEER_CANDIDATE_URL="http://35.194.139.219:8080/json-rpc"
 elif [[ $SEASON = 'dev' ]]; then
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
     if [[ $SHARD_INDEX = 0 ]]; then
-        export TRACKER_WS_ADDR=ws://34.80.184.73:5000  # dev-tracker-ip
         export P2P_PEER_CANDIDATE_URL="http://35.194.235.180:8080/json-rpc"
     elif [[ $SHARD_INDEX = 1 ]]; then
         export TRACKER_WS_ADDR=ws://35.187.153.22:5000  # dev-shard-1-tracker-ip
@@ -142,13 +143,12 @@ elif [[ $SEASON = 'dev' ]]; then
         exit
     fi
     if [[ $SHARD_INDEX -gt 0 ]]; then
-        # Create a genesis_params.json
-        export GENESIS_CONFIGS_DIR="genesis-configs/shard_$SHARD_INDEX"
-        mkdir -p "./$GENESIS_CONFIGS_DIR"
-        node > "./$GENESIS_CONFIGS_DIR/genesis_params.json" <<EOF
-        const data = require('./genesis-configs/testnet/genesis_params.json');
+        # Create a blockchain_params.json
+        export BLOCKCHAIN_CONFIGS_DIR="blockchain-configs/shard_$SHARD_INDEX"
+        mkdir -p "./$BLOCKCHAIN_CONFIGS_DIR"
+        node > "./$BLOCKCHAIN_CONFIGS_DIR/blockchain_params.json" <<EOF
+        const data = require('./$BLOCKCHAIN_CONFIGS_DIR/blockchain_params.json');
         data.blockchain.TRACKER_WS_ADDR = '$TRACKER_WS_ADDR';
-        data.consensus.MIN_NUM_VALIDATORS = 3;
         console.log(JSON.stringify(data, null, 2));
 EOF
     fi
@@ -157,9 +157,14 @@ else
     exit
 fi
 
+if [[ $NODE_INDEX = 0 ]]; then
+    export P2P_PEER_CANDIDATE_URL=''
+fi
+
 printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
-printf "GENESIS_CONFIGS_DIR=$GENESIS_CONFIGS_DIR\n"
+printf "BLOCKCHAIN_CONFIGS_DIR=$BLOCKCHAIN_CONFIGS_DIR\n"
 printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
+printf "P2P_PEER_CANDIDATE_URL=$P2P_PEER_CANDIDATE_URL\n"
 
 if [[ $SEASON = "staging" ]]; then
   # for performance test pipeline

@@ -13,7 +13,6 @@ const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
   CURRENT_PROTOCOL_VERSION,
   CHAINS_DIR,
-  GenesisAccounts,
   TX_BYTES_LIMIT,
   BATCH_TX_LIST_SIZE_LIMIT,
   TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
@@ -37,40 +36,26 @@ const {
 
 const ENV_VARIABLES = [
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 0, P2P_PEER_CANDIDATE_URL: '', DEBUG: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, CONSOLE_LOG: false,
     MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_EXPRESS_RATE_LIMIT: false,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_EXPRESS_RATE_LIMIT: false,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_EXPRESS_RATE_LIMIT: false,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
-  },
-  {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_EXPRESS_RATE_LIMIT: false,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
 ];
 
 const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCOUNT_INDEX))
 const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
-const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
-const serverList = [ server1, server2, server3, server4 ];
+const serverList = [ server1, server2, server3 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -215,7 +200,7 @@ async function cleanUp() {
 }
 
 describe('Blockchain Node', () => {
-  let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
+  let tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
     rimraf.sync(CHAINS_DIR);
@@ -228,7 +213,6 @@ describe('Blockchain Node', () => {
     await CommonUtil.sleep(3000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     await CommonUtil.sleep(3000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
     await waitUntilNetworkIsReady(serverList);
 
     const server1Addr = parseOrLog(syncRequest(
@@ -237,14 +221,11 @@ describe('Blockchain Node', () => {
         'GET', server2 + '/get_address').body.toString('utf-8')).result;
     const server3Addr = parseOrLog(syncRequest(
         'GET', server3 + '/get_address').body.toString('utf-8')).result;
-    const server4Addr = parseOrLog(syncRequest(
-        'GET', server4 + '/get_address').body.toString('utf-8')).result;
     await setUpApp('test', serverList, {
       admin: {
         [server1Addr]: true,
         [server2Addr]: true,
         [server3Addr]: true,
-        [server4Addr]: true,
       }
     });
   });
@@ -254,7 +235,6 @@ describe('Blockchain Node', () => {
     server1_proc.kill()
     server2_proc.kill()
     server3_proc.kill()
-    server4_proc.kill()
 
     rimraf.sync(CHAINS_DIR)
   });
@@ -412,7 +392,7 @@ describe('Blockchain Node', () => {
               "matched_config": {
                 "path": "/apps/test",
                 "config": {
-                  "write": "auth.addr === '0x00ADEc28B6a845a085e03591bE7550dd68673C1C' || auth.addr === '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204' || auth.addr === '0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00' || auth.addr === '0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A'"
+                  "write": "auth.addr === '0x00ADEc28B6a845a085e03591bE7550dd68673C1C' || auth.addr === '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204' || auth.addr === '0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00'"
                 }
               },
               "subtree_configs": [
@@ -678,8 +658,8 @@ describe('Blockchain Node', () => {
                 .body.toString('utf-8'));
         assert.deepEqual(body.result, {
           "#tree_height": 24,
-          "#tree_size": 70,
-          "#tree_bytes": 13318,
+          "#tree_size": 65,
+          "#tree_bytes": 12200,
         });
       });
     });
@@ -778,7 +758,7 @@ describe('Blockchain Node', () => {
               "matched_config": {
                 "path": "/apps/test",
                 "config": {
-                  "write": "auth.addr === '0x00ADEc28B6a845a085e03591bE7550dd68673C1C' || auth.addr === '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204' || auth.addr === '0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00' || auth.addr === '0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A'"
+                  "write": "auth.addr === '0x00ADEc28B6a845a085e03591bE7550dd68673C1C' || auth.addr === '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204' || auth.addr === '0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00'"
                 }
               },
               "subtree_configs": [
@@ -976,9 +956,9 @@ describe('Blockchain Node', () => {
         .then(res => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
-            "#tree_bytes": 13318,
+            "#tree_bytes": 12200,
             "#tree_height": 24,
-            "#tree_size": 70,
+            "#tree_size": 65,
           });
         })
       })
@@ -1023,7 +1003,7 @@ describe('Blockchain Node', () => {
 
     describe('ain_getAddress api', () => {
       it('returns the correct node address', () => {
-        const expAddr = GenesisAccounts.others[1].address;
+        const expAddr = '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204';
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
         return jsonRpcClient.request('ain_getAddress', { protoVer: CURRENT_PROTOCOL_VERSION })
         .then(res => {
@@ -3524,17 +3504,17 @@ describe('Blockchain Node', () => {
       };
       await setUpApp('test_billing', serverList, { admin: adminConfig, billing: billingConfig });
 
-      const server4Addr =
-          parseOrLog(syncRequest('GET', server4 + '/get_address').body.toString('utf-8')).result;
-      const transferRes = parseOrLog(syncRequest('POST', server4 + '/set', {json: {
+      // const server4Addr =
+      //     parseOrLog(syncRequest('GET', server4 + '/get_address').body.toString('utf-8')).result;
+      const transferRes = parseOrLog(syncRequest('POST', server3 + '/set', {json: {
         op_list: [
           {
-            ref: `/transfer/${server4Addr}/billing|test_billing|A/${Date.now()}/value`,
+            ref: `/transfer/${billingUserB}/billing|test_billing|A/${Date.now()}/value`,
             value: 100,
             type: 'SET_VALUE'
           },
           {
-            ref: `/transfer/${server4Addr}/billing|test_billing|B/${Date.now()}/value`,
+            ref: `/transfer/${billingUserB}/billing|test_billing|B/${Date.now()}/value`,
             value: 100,
             type: 'SET_VALUE'
           }

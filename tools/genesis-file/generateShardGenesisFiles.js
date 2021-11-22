@@ -60,7 +60,7 @@ function createAccounts(num, _prefix) {
   const otherAccounts = [];
   for (let i = 0; i < num; i++) {
     const prefix = _prefix === null ? '' : _.padStart(i, 2, '0') + _prefix;
-    otherAccounts.push(createAccount(prefix));
+    otherAccounts.push({ ...createAccount(prefix), balance: 11000000 });
   }
   return {
     owner: ownerAccount,
@@ -112,7 +112,7 @@ async function processArguments() {
   }
 
   // directory for shard genesis files
-  const shardDir = path.resolve(__dirname, `../genesis-configs/shard_${index}`);
+  const shardDir = path.resolve(__dirname, `../blockchain-configs/shard_${index}`);
   if (!fs.existsSync(shardDir)) {
     fs.mkdirSync(shardDir);
   }
@@ -124,15 +124,16 @@ async function processArguments() {
   const accountsFile = path.join(shardDir, 'genesis_accounts.json');
   writeFile(JSON.stringify(accounts, null, 2), accountsFile);
 
-  // genesis_sharding.json
-  const shardingConfig = getShardingConfig(env, index);
-  const configFile = path.join(shardDir, 'genesis_sharding.json');
-  writeFile(JSON.stringify(shardingConfig, null, 2), configFile);
+  // TODO(liayoo): update this to add sharding & token to blockchain_params.json
+  // // genesis_sharding.json
+  // const shardingConfig = getShardingConfig(env, index);
+  // const configFile = path.join(shardDir, 'genesis_sharding.json');
+  // writeFile(JSON.stringify(shardingConfig, null, 2), configFile);
 
-  // genesis_token.json
-  const shardingToken = getShardingToken(prefix);
-  const tokenFile = path.join(shardDir, 'genesis_token.json');
-  writeFile(JSON.stringify(shardingToken, null, 2), tokenFile);
+  // // genesis_token.json
+  // const shardingToken = getShardingToken(prefix);
+  // const tokenFile = path.join(shardDir, 'genesis_token.json');
+  // writeFile(JSON.stringify(shardingToken, null, 2), tokenFile);
 }
 
 function usage() {

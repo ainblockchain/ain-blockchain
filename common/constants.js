@@ -5,12 +5,16 @@ const CommonUtil = require('./common-util');
 const TrafficStatsManager = require('../traffic/traffic-stats-manager');
 
 // ** Genesis configs **
-const DEFAULT_GENESIS_CONFIGS_DIR = 'genesis-configs/base';
-const CUSTOM_GENESIS_CONFIGS_DIR = process.env.GENESIS_CONFIGS_DIR ?
-    process.env.GENESIS_CONFIGS_DIR : null;
-const GenesisParams = getGenesisConfig('genesis_params.json');
-const GenesisToken = getGenesisConfig('genesis_token.json');
-const GenesisAccounts = getGenesisConfig('genesis_accounts.json');
+const BASE_BLOCKCHAIN_CONFIGS_DIR = 'blockchain-configs/base';
+const CUSTOM_BLOCKCHAIN_CONFIGS_DIR = process.env.BLOCKCHAIN_CONFIGS_DIR ?
+    process.env.BLOCKCHAIN_CONFIGS_DIR : null;
+const GENESIS_BLOCK_DIR =
+    path.resolve(__dirname, '..', process.env.BLOCKCHAIN_CONFIGS_DIR || BASE_BLOCKCHAIN_CONFIGS_DIR);
+const BlockchainParams = getBlockchainConfig('blockchain_params.json');
+const GenesisToken = BlockchainParams.token;
+// TODO(liayoo): Deprecate GenesisAccounts
+const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
+const GenesisSharding = BlockchainParams.sharding;
 
 // ** Dev flags **
 const DevFlags = {
@@ -114,9 +118,9 @@ const FREE_BANDWIDTH_BUDGET_RATIO = 0.05;
 const SERVICE_STATE_BUDGET_RATIO = 0.5;
 const APPS_STATE_BUDGET_RATIO = 0.45;
 const FREE_STATE_BUDGET_RATIO = 0.05;
-const bandwidthBudgetPerBlock = GenesisParams.resource.BANDWIDTH_BUDGET_PER_BLOCK;
+const bandwidthBudgetPerBlock = BlockchainParams.resource.BANDWIDTH_BUDGET_PER_BLOCK;
 const stateTreeBytesLimit = process.env.STATE_TREE_BYTES_LIMIT ?
-    process.env.STATE_TREE_BYTES_LIMIT : GenesisParams.resource.STATE_TREE_BYTES_LIMIT; // = Total state budget
+    process.env.STATE_TREE_BYTES_LIMIT : BlockchainParams.resource.STATE_TREE_BYTES_LIMIT; // = Total state budget
 const SERVICE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * SERVICE_BANDWIDTH_BUDGET_RATIO;
 const APPS_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * APPS_BANDWIDTH_BUDGET_RATIO;
 const FREE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * FREE_BANDWIDTH_BUDGET_RATIO;
@@ -698,48 +702,48 @@ const TrafficEventTypes = {
 
 /**
  * Overwriting environment variables.
- * These parameters are defined in genesis_params.json, but if specified as environment variables,
+ * These parameters are defined in blockchain_params.json, but if specified as environment variables,
  * the env vars take precedence.
- * (priority: base params < genesis_params.json in GENESIS_CONFIGS_DIR < env var)
+ * (priority: base params < blockchain_params.json in BLOCKCHAIN_CONFIGS_DIR < env var)
  */
 const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'P2P_PEER_CANDIDATE_URL', 'HOSTING_ENV'];
 const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'MAX_NUM_VALIDATORS', 'EPOCH_MS'];
 const OVERWRITING_NETWORK_PARAMS =
     ['TARGET_NUM_OUTBOUND_CONNECTION', 'MAX_NUM_INBOUND_CONNECTION', 'REQUEST_BODY_SIZE_LIMIT'];
 
-function overwriteGenesisParams(overwritingParams, type) {
+function overwriteBlockchainParams(overwritingParams, type) {
   for (const key of overwritingParams) {
     const env = process.env[key];
-    if (env) {
+    if (env !== undefined) {
       if (CommonUtil.isIntegerString(env)) {
-        GenesisParams[type][key] = Number(env);
+        BlockchainParams[type][key] = Number(env);
       } else {
-        GenesisParams[type][key] = env;
+        BlockchainParams[type][key] = env;
       }
     }
   }
 
   if (type === 'consensus') {
-    const whitelist = {};
-    const validators = {};
-    for (let i = 0; i < GenesisParams.consensus.MIN_NUM_VALIDATORS; i++) {
-      const addr = GenesisAccounts[AccountProperties.OTHERS][i][AccountProperties.ADDRESS];
-      CommonUtil.setJsObject(whitelist, [addr], true);
-      CommonUtil.setJsObject(validators, [addr], {
-          [PredefinedDbPaths.CONSENSUS_STAKE]: GenesisParams.consensus.MIN_STAKE_PER_VALIDATOR,
-          [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
-        });
+    const whitelist = BlockchainParams.consensus.GENESIS_WHITELIST;
+    const validators = BlockchainParams.consensus.GENESIS_VALIDATORS;
+    // NOTE(liayoo): Modify genesis whitelist & validators iff MIN_NUM_VALIDATORS < current number of GENESIS_VALIDATORS.
+    // This is mainly to support local testing & integration/unit tests with smaller number of validators.
+    const addresses = Object.keys(validators);
+    for (let i = BlockchainParams.consensus.MIN_NUM_VALIDATORS; i < addresses.length; i++) {
+      const addr = addresses[i];
+      delete whitelist[addr];
+      delete validators[addr];
     }
-    GenesisParams.consensus.GENESIS_WHITELIST = whitelist;
-    GenesisParams.consensus.GENESIS_VALIDATORS = validators;
+    BlockchainParams.consensus.GENESIS_WHITELIST = whitelist;
+    BlockchainParams.consensus.GENESIS_VALIDATORS = validators;
   }
 }
 
-overwriteGenesisParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
-overwriteGenesisParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
+overwriteBlockchainParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
+overwriteBlockchainParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
 // NOTE(minsulee2, liayoo, platfowner): As we discussed, the initial values for the OUTBOUND
 // and INBOUND are fixed as 3 and 6.
-overwriteGenesisParams(OVERWRITING_NETWORK_PARAMS, 'network');
+overwriteBlockchainParams(OVERWRITING_NETWORK_PARAMS, 'network');
 
 /**
  * Port number helper.
@@ -747,209 +751,29 @@ overwriteGenesisParams(OVERWRITING_NETWORK_PARAMS, 'network');
  * @param {number} baseValue
  */
 function getPortNumber(defaultValue, baseValue) {
-  if (GenesisParams.blockchain.HOSTING_ENV === 'local') {
+  if (BlockchainParams.blockchain.HOSTING_ENV === 'local') {
     return Number(baseValue) + (ACCOUNT_INDEX !== null ? Number(ACCOUNT_INDEX) + 1 : 0);
   }
   return defaultValue;
 }
 
-/**
- * Genesis DB & sharding config.
- */
-const GenesisSharding = getGenesisSharding();
-const GenesisValues = getGenesisValues();
-const GenesisFunctions = getGenesisFunctions();
-const GenesisRules = getGenesisRules();
-const GenesisOwners = getGenesisOwners();
-
-function getGenesisConfig(filename, additionalEnv) {
+function getBlockchainConfig(filename) {
   let config = null;
-  if (CUSTOM_GENESIS_CONFIGS_DIR) {
-    const configPath = path.resolve(__dirname, '..', CUSTOM_GENESIS_CONFIGS_DIR, filename);
+  if (CUSTOM_BLOCKCHAIN_CONFIGS_DIR) {
+    const configPath = path.resolve(__dirname, '..', CUSTOM_BLOCKCHAIN_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     }
   }
   if (!config) {
-    const configPath = path.resolve(__dirname, '..', DEFAULT_GENESIS_CONFIGS_DIR, filename);
+    const configPath = path.resolve(__dirname, '..', BASE_BLOCKCHAIN_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     } else {
-      throw Error(`Missing genesis config file: ${configPath}`);
-    }
-  }
-  if (additionalEnv) {
-    const parts = additionalEnv.split(':');
-    const dbPath = parts[0];
-    const additionalFilePath = path.resolve(__dirname, '..', parts[1])
-    if (fs.existsSync(additionalFilePath)) {
-      const additionalConfig = JSON.parse(fs.readFileSync(additionalFilePath));
-      CommonUtil.setJsObject(config, [dbPath], additionalConfig);
-    } else {
-      throw Error(`Missing additional genesis config file: ${additionalFilePath}`);
+      throw Error(`Missing blockchain config file: ${configPath}`);
     }
   }
   return config;
-}
-
-function getGenesisSharding() {
-  const config = getGenesisConfig('genesis_sharding.json');
-  if (config[ShardingProperties.SHARDING_PROTOCOL] === ShardingProtocols.POA) {
-    const ownerAddress = CommonUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-    const reporterAddress =
-        GenesisAccounts[AccountProperties.OTHERS][0][AccountProperties.ADDRESS];
-    CommonUtil.setJsObject(config, [ShardingProperties.SHARD_OWNER], ownerAddress);
-    CommonUtil.setJsObject(config, [ShardingProperties.SHARD_REPORTER], reporterAddress);
-  }
-  return config;
-}
-
-function getGenesisValues() {
-  const values = {};
-  CommonUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], GenesisToken);
-  const ownerAddress = CommonUtil.getJsObject(
-      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-  CommonUtil.setJsObject(
-      values,
-      [PredefinedDbPaths.ACCOUNTS, ownerAddress, PredefinedDbPaths.BALANCE],
-      GenesisToken[TokenProperties.TOTAL_SUPPLY]);
-  CommonUtil.setJsObject(
-      values, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], GenesisSharding);
-  CommonUtil.setJsObject(
-      values, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST], GenesisParams.consensus.GENESIS_WHITELIST);
-  CommonUtil.setJsObject(values, [PredefinedDbPaths.DEVELOPERS], getDevelopersValue());
-  return values;
-}
-
-function getGenesisFunctions() {
-  const functions = getGenesisConfig('genesis_functions.json', process.env.ADDITIONAL_FUNCTIONS);
-  return functions;
-}
-
-function getGenesisRules() {
-  const rules = getGenesisConfig('genesis_rules.json', process.env.ADDITIONAL_RULES);
-  if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
-    CommonUtil.setJsObject(
-        rules, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG], getShardingRule());
-  }
-  CommonUtil.setJsObject(rules, [PredefinedDbPaths.DEVELOPERS], getDevelopersRule());
-  return rules;
-}
-
-function getGenesisOwners() {
-  const owners = getGenesisConfig('genesis_owners.json', process.env.ADDITIONAL_OWNERS);
-  CommonUtil.setJsObject(owners, [], getRootOwner());
-  if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
-    CommonUtil.setJsObject(
-        owners, [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
-        getShardingOwner());
-  }
-  CommonUtil.setJsObject(
-      owners, [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST], getWhitelistOwner());
-  CommonUtil.setJsObject(owners, [PredefinedDbPaths.DEVELOPERS], getDevelopersOwner());
-  return owners;
-}
-
-function getDevelopersValue() {
-  const ownerAddress = CommonUtil.getJsObject(
-      GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-  const maxFunctionUrlsPerDeveloper = GenesisParams.resource.MAX_FUNCTION_URLS_PER_DEVELOPER;
-  const defaultFunctionUrlWhitelist = {};
-  DEFAULT_DEVELOPERS_URL_WHITELIST.forEach((url, index) => {
-    defaultFunctionUrlWhitelist[index] = url;
-  })
-  return {
-    [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS]: {
-      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_PARAMS]: {
-        [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER]: maxFunctionUrlsPerDeveloper
-      },
-      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST]: {
-        [ownerAddress]: true
-      },
-      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST]: {
-        [ownerAddress]: defaultFunctionUrlWhitelist
-      }
-    }
-  };
-}
-
-function getShardingRule() {
-  const ownerAddress =
-      CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-  return {
-    [PredefinedDbPaths.DOT_RULE]: {
-      [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`,
-    }
-  };
-}
-
-function getDevelopersRule() {
-  const ownerAddress =
-      CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-  return {
-    [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS]: {
-      [PredefinedDbPaths.DOT_RULE]: {
-        [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`
-      },
-      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST]: {
-        '$user_addr': {
-          '$key': {
-            [PredefinedDbPaths.DOT_RULE]: {
-              [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}' || (auth.addr === $user_addr && util.validateRestFunctionsUrlWhitelistData(auth.addr, data, newData, getValue) === true)`
-            }
-          }
-        }
-      }
-    }
-  };
-}
-
-function getRootOwner() {
-  return {
-    [PredefinedDbPaths.DOT_OWNER]: {
-      [OwnerProperties.OWNERS]: {
-        [GenesisAccounts.owner.address]: buildOwnerPermissions(true, true, true, true),
-        [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
-      }
-    }
-  };
-}
-
-function getShardingOwner() {
-  return {
-    [PredefinedDbPaths.DOT_OWNER]: {
-      [OwnerProperties.OWNERS]: {
-        [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
-        [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
-      }
-    }
-  };
-}
-
-function getWhitelistOwner() {
-  return {
-    [PredefinedDbPaths.DOT_OWNER]: {
-      [OwnerProperties.OWNERS]: {
-        [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
-        [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
-      }
-    }
-  };
-}
-
-function getDevelopersOwner() {
-  const ownerAddress =
-      CommonUtil.getJsObject(GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-  return {
-    [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS]: {
-      [PredefinedDbPaths.DOT_OWNER]: {
-        [OwnerProperties.OWNERS]: {
-          [ownerAddress]: buildOwnerPermissions(true, true, true, true)
-        }
-      }
-    }
-  };
 }
 
 function buildOwnerPermissions(branchOwner, writeFunction, writeOwner, writeRule) {
@@ -1030,6 +854,8 @@ module.exports = {
   STATE_GAS_COEFFICIENT,
   TRAFFIC_DB_INTERVAL_MS,
   TRAFFIC_DB_MAX_INTERVALS,
+  GENESIS_BLOCK_DIR,
+  DEFAULT_DEVELOPERS_URL_WHITELIST,
   MessageTypes,
   TrackerMessageTypes,
   BlockchainNodeStates,
@@ -1057,10 +883,7 @@ module.exports = {
   GenesisToken,
   GenesisAccounts,
   GenesisSharding,
-  GenesisValues,
-  GenesisFunctions,
-  GenesisRules,
-  GenesisOwners,
+  getBlockchainConfig,
   GasFeeConstants,
   SyncModeOptions,
   TrafficEventTypes,
@@ -1069,11 +892,11 @@ module.exports = {
   isAppDependentServiceType,
   buildOwnerPermissions,
   buildRulePermission,
-  ...GenesisParams.blockchain,
-  ...GenesisParams.genesis,
-  ...GenesisParams.consensus,
-  ...GenesisParams.resource,
-  ...GenesisParams.network,
-  GenesisParams,
+  ...BlockchainParams.blockchain,
+  ...BlockchainParams.genesis,
+  ...BlockchainParams.consensus,
+  ...BlockchainParams.resource,
+  ...BlockchainParams.network,
+  BlockchainParams,
   trafficStatsManager,
 };

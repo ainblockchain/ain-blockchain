@@ -33,8 +33,6 @@ const {
   WriteDbOperations,
   ReadDbOperations,
   GenesisSharding,
-  GenesisAccounts,
-  AccountProperties,
   GENESIS_TIMESTAMP,
   RuleProperties,
   ShardingProperties,
@@ -265,7 +263,7 @@ class P2pServer {
       },
       env: {
         NETWORK_OPTIMIZATION: process.env.NETWORK_OPTIMIZATION,
-        GENESIS_CONFIGS_DIR: process.env.GENESIS_CONFIGS_DIR,
+        BLOCKCHAIN_CONFIGS_DIR: process.env.BLOCKCHAIN_CONFIGS_DIR,
         MIN_NUM_VALIDATORS: process.env.MIN_NUM_VALIDATORS,
         MAX_NUM_VALIDATORS: process.env.MAX_NUM_VALIDATORS,
         ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
@@ -544,7 +542,7 @@ class P2pServer {
               logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
               Object.values(this.client.outbound).forEach((node) => {
                 setTimeout(() => {
-                  this.client.requestChainSegment(node.socket, this.node.bc.lastBlockNumber());
+                  this.client.requestChainSegment(node.socket);
                 }, EPOCH_MS);
               });
             }
@@ -665,7 +663,7 @@ class P2pServer {
     const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_RESPONSE,
         { chainSegment: chainSegment, number: number, catchUpInfo: catchUpInfo });
     if (!payload) {
-      logger.error('The cahin segment cannot be sent because of msg encapsulation failure.');
+      logger.error('The chain segment cannot be sent because of msg encapsulation failure.');
       return;
     }
     socket.send(JSON.stringify(payload));
@@ -732,8 +730,7 @@ class P2pServer {
   async setUpDbForSharding() {
     const LOG_HEADER = 'setUpDbForSharding';
     const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
-    const ownerPrivateKey = CommonUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
+    const shardReporterPrivateKey = this.node.account.private_key;
     const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
     const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
     const appName = _.get(CommonUtil.parsePath(shardingPath), 1, null);
@@ -747,11 +744,11 @@ class P2pServer {
     if (shardingAppConfig === null) {
       // Create app first.
       const shardAppCreateTxBody = P2pServer.buildShardAppCreateTxBody(appName);
-      await sendTxAndWaitForFinalization(parentChainEndpoint, shardAppCreateTxBody, ownerPrivateKey);
+      await sendTxAndWaitForFinalization(parentChainEndpoint, shardAppCreateTxBody, shardReporterPrivateKey);
     }
     logger.info(`[${LOG_HEADER}] shard app created`);
     const shardInitTxBody = P2pServer.buildShardingSetupTxBody();
-    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTxBody, ownerPrivateKey);
+    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTxBody, shardReporterPrivateKey);
     logger.info(`[${LOG_HEADER}] shard set up success`);
   }
 
