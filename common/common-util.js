@@ -137,6 +137,10 @@ class CommonUtil {
     return ruleUtil.isValidUrl(url);
   }
 
+  static isValidPrivateUrl(url) {
+    return ruleUtil.isValidPrivateUrl(url);
+  }
+
   static boolOrFalse(value) {
     return ruleUtil.boolOrFalse(value);
   }
