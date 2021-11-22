@@ -419,6 +419,19 @@ class P2pServer {
     return 0;
   }
 
+  /**
+   * Returns true if the socket ip address is the same as the given p2p url ip address,
+   * false otherwise.
+   * @param {string} socketIpAddress is socket._socket.remoteAddress
+   * @param {string} url is peerInfo.networkStatus.urls.p2p.url
+   */
+  checkIpAddressFromPeerInfo(socketIpAddress, url) {
+    // NOTE(minsulee2): Remove ::ffff: to make ipv4 ip address.
+    let ipv4Address =
+        socketIpAddress.substr(0, 7) === '::ffff:' ? socketIpAddress.substr(7) : socketIpAddress;
+    return url.includes(ipv4Address);
+  }
+
   setServerSidePeerEventHandlers(socket) {
     const LOG_HEADER = 'setServerSidePeerEventHandlers';
     socket.on('message', (message) => {
@@ -505,9 +518,12 @@ class P2pServer {
               }
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
-                // TODO(minsulee2): if the url is invalid, then should it disconnect??
                 const p2pUrl = _.get(peerInfo, 'networkStatus.urls.p2p.url');
-                this.client.connectToPeer(p2pUrl);
+                if (this.checkIpAddressFromPeerInfo(socket._socket.remoteAddress, p2pUrl)) {
+                  this.client.connectToPeer(p2pUrl);
+                } else {
+                  closeSocketSafe(this.inbound, socket);
+                }
               }
             }
             break;
