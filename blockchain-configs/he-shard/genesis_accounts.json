@@ -7,19 +7,19 @@
   "others": [
     {
       "address": "0x00Ba0Cb2B1157882963024E0CF837E773d11535d",
-      "balance": 1000000,
+      "balance": 11000000,
       "private_key": "d8f77aa2afe2580a858a8cc97b6056e10f888c6fd07ebb58755d8422b03da816",
       "public_key": "6ec50cb2072f52005e68a6a21190286024b8fdef7adf8fb1e17b91e33ce8566c6a30cbbc7b18a7065cc096a18e8ce41257467847786679c87cfaf34a1dbbe8ac"
     },
     {
       "address": "0x01B6B108bE3FEE00d3661777053175421D806Ea6",
-      "balance": 1000000,
+      "balance": 11000000,
       "private_key": "a3409e22bc14a3d0e73697df25617b3f2eaae9b5eade77615a32abc0ad5ee0df",
       "public_key": "85c296431d012cd32db75e215a41b48b9842ae71654fa2e6ad4eb95ab98e9e2bccc3e02b76d39dad3ffbc8e7a18f1c5f473289cdd33fd88f7127547c8a56c24c"
     },
     {
       "address": "0x02B3a185C6a9DCd643255329d3eB8603E3D0d743",
-      "balance": 1000000,
+      "balance": 11000000,
       "private_key": "c4611582dbb5319f08ba0907af6430a79e02b87b112aa4039d43e8765384f568",
       "public_key": "1e6442a16d01836e121241d1307470eb8efd8a5628f80dd9816078f261d87b812c5128b80abb72ff8144386ebff10a19adbaffd93c48941acc587e7992e86579"
     },

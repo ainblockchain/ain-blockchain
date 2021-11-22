@@ -60,7 +60,7 @@ function createAccounts(num, _prefix) {
   const otherAccounts = [];
   for (let i = 0; i < num; i++) {
     const prefix = _prefix === null ? '' : _.padStart(i, 2, '0') + _prefix;
-    otherAccounts.push({ ...createAccount(prefix), balance: 1000000 });
+    otherAccounts.push({ ...createAccount(prefix), balance: 11000000 });
   }
   return {
     owner: ownerAccount,

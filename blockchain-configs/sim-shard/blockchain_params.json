@@ -35,8 +35,8 @@
     "NUM_GENESIS_ACCOUNTS": 10
   },
   "consensus": {
-    "MIN_STAKE_PER_VALIDATOR": 100000,
-    "MAX_STAKE_PER_VALIDATOR": 100000,
+    "MIN_STAKE_PER_VALIDATOR": 10000000,
+    "MAX_STAKE_PER_VALIDATOR": 10000000,
     "MIN_NUM_VALIDATORS": 3,
     "MAX_NUM_VALIDATORS": 9,
     "EPOCH_MS": 3000,
@@ -47,15 +47,15 @@
     },
     "GENESIS_VALIDATORS": {
       "0x00B0475e875460650CF2d5Ba575B575f27D43369": {
-        "stake": 100000,
+        "stake": 10000000,
         "proposal_right": true
       },
       "0x01B0167aE5Cfd27c6b8736f6CF9A49DEF41E8372": {
-        "stake": 100000,
+        "stake": 10000000,
         "proposal_right": true
       },
       "0x02B0b2c02620f9B2527073FA744676761b0CA93A": {
-        "stake": 100000,
+        "stake": 10000000,
         "proposal_right": true
       }
     }

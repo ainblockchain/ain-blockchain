@@ -62,7 +62,7 @@ describe("DB initialization", () => {
   describe("Balances", () => {
     it("loading balances properly on initialization", () => {
       const expected =
-          GenesisToken.total_supply - NUM_GENESIS_ACCOUNTS * 1000000;
+          GenesisToken.total_supply - 5 * 11000000 - 5 * 1000000;
       const dbPath = `/accounts/${GENESIS_ADDR}/balance`;
       expect(node.db.getValue(dbPath)).to.equal(expected);
     })
