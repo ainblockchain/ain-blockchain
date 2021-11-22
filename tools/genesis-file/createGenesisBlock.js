@@ -34,9 +34,7 @@ const StateNode = require('../../db/state-node');
 
 let GenesisAccounts = {};
 
-/**
- * Genesis DB & sharding config.
- */
+// Genesis DB & sharding config.
 
  function getRootOwner() {
   return {
@@ -209,9 +207,7 @@ function getGenesisOwners() {
   return owners;
 }
 
-/**
- * Genesis transactions.
- */
+// Genesis transactions.
 
 function buildDbSetupTx() {
   const opList = [];
