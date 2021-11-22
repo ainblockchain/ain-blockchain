@@ -570,10 +570,10 @@ class P2pClient {
   }
 
   /**
-   * Returns only url without 'http://', '/json-rpc', and 'port number'.
+   * Returns only private url without 'http://', '/json-rpc', and 'port number'.
    * @param {*} url is an IPv4 ip address with protocols.
    */
-  getOnlyUrl(url) {
+  getOnlyPrivateUrl(url) {
     const urlWithourHttpPrefix = url.includes('http://') ? url.substr(7) : url;
     const urlWithoutJsonRpc = urlWithourHttpPrefix.includes('/json-rpc') ?
         urlWithourHttpPrefix.substr(0, urlWithourHttpPrefix.length - 9) : urlWithourHttpPrefix;
@@ -604,8 +604,8 @@ class P2pClient {
     this.peerCandidates[peerCandidateJsonRpcUrl] = { queriedAt: Date.now() };
     const peerCandidateUrlList = _.get(peerCandidateInfo, 'peerCandidateUrlList', []);
     peerCandidateUrlList.forEach(url => {
-      const onlyUrl = this.getOnlyUrl(url);
-      if (!this.peerCandidates[url] && this.isValidUrl(onlyUrl)) {
+      const onlyPrivateUrl = this.getOnlyPrivateUrl(url);
+      if (!this.peerCandidates[url] && this.isValidUrl(onlyPrivateUrl)) {
         this.peerCandidates[url] = { queriedAt: null };
       }
     });
