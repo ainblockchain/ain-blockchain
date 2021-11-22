@@ -6,7 +6,6 @@ const {
   deleteStateTreeVersion,
 } = require('./state-util');
 const {
-  FeatureFlags,
   StateVersions,
 } = require('../common/constants');
 

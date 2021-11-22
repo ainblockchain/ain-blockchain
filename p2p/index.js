@@ -7,6 +7,7 @@ const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
 const {
+  DevFlags,
   TRACKER_WS_ADDR,
   EPOCH_MS,
   MessageTypes,
@@ -131,8 +132,9 @@ class P2pClient {
 
   getConfig() {
     return {
-      blockchainConfig: BlockchainParams,
       env: process.env,
+      blockchainParams: BlockchainParams,
+      devFlags: DevFlags,
     };
   }
 
@@ -213,10 +215,8 @@ class P2pClient {
   updateP2pState() {
     if (Object.keys(this.outbound).length < TARGET_NUM_OUTBOUND_CONNECTION) {
       this.p2pState = P2pNetworkStates.EXPANDING;
-      return true;
     } else {
       this.p2pState = P2pNetworkStates.STEADY;
-      return false;
     }
   }
 
@@ -246,7 +246,8 @@ class P2pClient {
 
   setIntervalForPeerCandidatesConnection() {
     this.intervalPeerCandidatesConnection = setInterval(async () => {
-      if (this.updateP2pState() && !this.isConnectingToPeerCandidates) {
+      this.updateP2pState();
+      if (this.p2pState === P2pNetworkStates.EXPANDING && !this.isConnectingToPeerCandidates) {
         this.isConnectingToPeerCandidates = true;
         const nextPeerCandidate = this.assignRandomPeerCandidate();
         await this.connectWithPeerCandidateUrl(nextPeerCandidate);
@@ -357,24 +358,28 @@ class P2pClient {
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
 
+  // TODO(minsulee2): session token will be applied to enhance security.
   sendPeerInfo(socket) {
     const body = {
       address: this.server.getNodeAddress(),
       peerInfo: this.getStatus(),
       timestamp: Date.now(),
+      // TODO(minsulee2): Implement sessionToken: token
     };
     const signature = signMessage(body, this.server.getNodePrivateKey());
     if (!signature) {
       logger.error('The signaure is not correctly generated. Discard the message!');
-      return;
+      return false;
     }
     const payload = encapsulateMessage(MessageTypes.ADDRESS_REQUEST,
         { body: body, signature: signature });
     if (!payload) {
       logger.error('The peerInfo message cannot be sent because of msg encapsulation failure.');
-      return;
+      return false;
     }
+
     socket.send(JSON.stringify(payload));
+    return true;
   }
 
   setClientSidePeerEventHandlers(socket) {
@@ -439,6 +444,7 @@ class P2pClient {
             if (!verifySignedMessage(parsedMessage, addressFromSig)) {
               logger.error(`[${LOG_HEADER}] The message is not correctly signed. ` +
                   `Discard the message!!`);
+              closeSocketSafe(this.outbound, socket);
               return;
             }
             logger.info(`[${LOG_HEADER}] A new websocket(${address}) is established.`);
@@ -526,7 +532,8 @@ class P2pClient {
     if (this.server.consensus.isRunning()) {
       this.server.consensus.catchUp(catchUpInfo);
     }
-    if (this.server.node.state !== BlockchainNodeStates.SERVING && this.server.node.bc.lastBlockNumber() <= number) {
+    if (this.server.node.state !== BlockchainNodeStates.SERVING &&
+        this.server.node.bc.lastBlockNumber() <= number) {
       // Continuously request the blockchain segments until
       // your local blockchain matches the height of the consensus blockchain.
       setTimeout(() => {
@@ -613,12 +620,11 @@ class P2pClient {
     socket.on('open', async () => {
       logger.info(`Connected to peer (${url}),`);
       this.setClientSidePeerEventHandlers(socket);
-      // TODO(minsulee2): Send an encrypted form of address(pubkey can be recoverable from address),
-      // ip address, and signature.
-      this.sendPeerInfo(socket);
-      // TODO(minsulee2): Check ack from the corresponding server, then proceed requestChainSegment.
-      this.addPeerConnection(url);
-      this.setTimerForPeerAddressResponse(socket);
+      const isMessageSent = this.sendPeerInfo(socket);
+      if (isMessageSent) {
+        this.addPeerConnection(url);
+        this.setTimerForPeerAddressResponse(socket);
+      }
     });
   }
 

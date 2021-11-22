@@ -4,7 +4,7 @@ const axios = require('axios');
 const _ = require('lodash');
 const matchUrl = require('match-url-wildcard');
 const {
-  FeatureFlags,
+  DevFlags,
   PredefinedDbPaths,
   FunctionTypes,
   FunctionResultCode,
@@ -126,7 +126,7 @@ class Functions {
             this.pushCall(
                 CommonUtil.formatPath(parsedValuePath), value, CommonUtil.formatPath(functionPath),
                 functionEntry.function_id, nativeFunction);
-            if (FeatureFlags.enableRichFunctionLogging) {
+            if (DevFlags.enableRichFunctionLogging) {
               logger.info(
                   `  ==> Triggering NATIVE function [[ ${functionEntry.function_id} ]] ` +
                   `with call stack ${JSON.stringify(this.getFids())} and params:\n` +
@@ -154,7 +154,7 @@ class Functions {
                     otherGasAmount: 0,
                   });
               funcResults[functionEntry.function_id] = result;
-              if (FeatureFlags.enableRichFunctionLogging) {
+              if (DevFlags.enableRichFunctionLogging) {
                 const formattedResult =
                     `  ==>| Execution result of NATIVE function [[ ${functionEntry.function_id} ]] ` +
                     `with call stack ${JSON.stringify(this.getFids())}:\n` +
@@ -177,7 +177,7 @@ class Functions {
         } else if (functionEntry.function_type === FunctionTypes.REST) {
           if (ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
             matchUrl(functionEntry.function_url, this.db.getRestFunctionsUrlWhitelist())) {
-            if (FeatureFlags.enableRichFunctionLogging) {
+            if (DevFlags.enableRichFunctionLogging) {
               logger.info(
                   `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
                   `function_url '${functionEntry.function_url}' with:\n` +
@@ -189,7 +189,7 @@ class Functions {
             }, {
               timeout: REST_FUNCTION_CALL_TIMEOUT_MS
             }).catch((error) => {
-              if (FeatureFlags.enableRichFunctionLogging) {
+              if (DevFlags.enableRichFunctionLogging) {
                 logger.error(
                     `Failed to trigger REST function [[ ${functionEntry.function_id} ]] of ` +
                     `function_url '${functionEntry.function_url}' with error: \n` +

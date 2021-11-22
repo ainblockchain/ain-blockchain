@@ -3,7 +3,7 @@ const logger = new (require('../logger'))('TX_POOL');
 
 const _ = require('lodash');
 const {
-  FeatureFlags,
+  DevFlags,
   TRANSACTION_POOL_TIMEOUT_MS,
   TRANSACTION_TRACKER_TIMEOUT_MS,
   TX_POOL_SIZE_LIMIT,
@@ -217,7 +217,7 @@ class TransactionPool {
           if (nonce >= 0) {
             addrToDiscardedNoncedTx[tx.address] = true;
           }
-          if (FeatureFlags.enableRichTxSelectionLogging) {
+          if (DevFlags.enableRichTxSelectionLogging) {
             logger.debug(`Skipping service tx: ${serviceBandwidthSum + serviceBandwidth} > ${SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}`);
           }
           discardedTxList.push(tx);
@@ -245,7 +245,7 @@ class TransactionPool {
               if (nonce >= 0) {
                 addrToDiscardedNoncedTx[tx.address] = true;
               }
-              if (FeatureFlags.enableRichTxSelectionLogging) {
+              if (DevFlags.enableRichTxSelectionLogging) {
                 logger.debug(`Skipping app tx: ${currAppBandwidthSum + bandwidth} > ${appBandwidthAllocated}`);
               }
               isSkipped = true;

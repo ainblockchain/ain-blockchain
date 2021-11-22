@@ -16,10 +16,8 @@ const GenesisToken = BlockchainParams.token;
 const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
 const GenesisSharding = BlockchainParams.sharding;
 
-// ** Feature flags **
-// NOTE(platfowner): If there is a corresponding env variable (e.g. force... flags),
-//                   the flag value will be OR-ed to the value.
-const FeatureFlags = {
+// ** Dev flags **
+const DevFlags = {
   // Enables rich logging for functions.
   enableRichFunctionLogging: false,
   // Enables rich logging for transactions.
@@ -36,8 +34,6 @@ const FeatureFlags = {
   enableNtpSync: true,
   // Enables traffic monitoring.
   enableTrafficMonitoring: true,
-  // Enables state info updates.
-  enableStateInfoUpdates: true,
 };
 
 // ** Environment variables **
@@ -798,10 +794,10 @@ function buildRulePermission(rule) {
 }
 
 const trafficStatsManager = new TrafficStatsManager(
-    TRAFFIC_DB_INTERVAL_MS, TRAFFIC_DB_MAX_INTERVALS, FeatureFlags.enableTrafficMonitoring);
+    TRAFFIC_DB_INTERVAL_MS, TRAFFIC_DB_MAX_INTERVALS, DevFlags.enableTrafficMonitoring);
 
 module.exports = {
-  FeatureFlags,
+  DevFlags,
   CURRENT_PROTOCOL_VERSION,
   PROTOCOL_VERSION_MAP,
   DATA_PROTOCOL_VERSION,

@@ -26,7 +26,7 @@ const {
   NETWORK_ID,
   MAX_SHARD_REPORT,
   TX_BYTES_LIMIT,
-  FeatureFlags,
+  DevFlags,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
@@ -398,7 +398,7 @@ class P2pServer {
     const messageMajorVersion = VersionUtil.toMajorVersion(messageVersion);
     const isLower = semver.lt(messageMajorVersion, this.majorDataProtocolVersion);
     if (isLower) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+      if (DevFlags.enableRichP2pCommunicationLogging) {
         logger.error(`The given ${msgType} message has unsupported DATA_PROTOCOL_VERSION: ` +
             `theirs(${messageVersion}) < ours(${this.majorDataProtocolVersion})`);
       }
@@ -406,7 +406,7 @@ class P2pServer {
     }
     const isGreater = semver.gt(messageMajorVersion, this.majorDataProtocolVersion);
     if (isGreater) {
-      if (FeatureFlags.enableRichP2pCommunicationLogging) {
+      if (DevFlags.enableRichP2pCommunicationLogging) {
         logger.error('I may be running of the old DATA_PROTOCOL_VERSION ' +
             `theirs(${messageVersion}) > ours(${this.majorDataProtocolVersion}). ` +
             'Please check the new release via visiting the URL below:\n' +
@@ -415,6 +415,19 @@ class P2pServer {
       return 1;
     }
     return 0;
+  }
+
+  /**
+   * Returns true if the socket ip address is the same as the given p2p url ip address,
+   * false otherwise.
+   * @param {string} socketIpAddress is socket._socket.remoteAddress
+   * @param {string} url is peerInfo.networkStatus.urls.p2p.url
+   */
+  checkIpAddressFromPeerInfo(socketIpAddress, url) {
+    // NOTE(minsulee2): Remove ::ffff: to make ipv4 ip address.
+    let ipv4Address =
+        socketIpAddress.substr(0, 7) === '::ffff:' ? socketIpAddress.substr(7) : socketIpAddress;
+    return url.includes(ipv4Address);
   }
 
   setServerSidePeerEventHandlers(socket) {
@@ -503,9 +516,12 @@ class P2pServer {
               }
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
-                // TODO(minsulee2): if the url is invalid, then should it disconnect??
                 const p2pUrl = _.get(peerInfo, 'networkStatus.urls.p2p.url');
-                this.client.connectToPeer(p2pUrl);
+                if (this.checkIpAddressFromPeerInfo(socket._socket.remoteAddress, p2pUrl)) {
+                  this.client.connectToPeer(p2pUrl);
+                } else {
+                  closeSocketSafe(this.inbound, socket);
+                }
               }
             }
             break;
