@@ -3,7 +3,6 @@ const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
 const { CHAINS_DIR } = require('../common/constants');
-const Blockchain = require('../blockchain/');
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const BlockchainNode = require('../node');
@@ -26,7 +25,7 @@ describe('Blockchain', () => {
   });
 
   it('starts with genesis block', () => {
-    assert.deepEqual(node1.bc.chain[0], Block.genesis());
+    assert.deepEqual(node1.bc.chain[0], node1.bc.genesisBlock);
   });
 
   it('adds new block', () => {

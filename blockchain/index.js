@@ -5,11 +5,12 @@ const fs = require('fs');
 const { Block } = require('./block');
 const FileUtil = require('../common/file-util');
 const {
-  BlockchainSnapshotProperties,
   CHAINS_DIR,
   CHAIN_SEGMENT_LENGTH,
   ON_MEMORY_CHAIN_LENGTH,
   GENESIS_TIMESTAMP,
+  GENESIS_BLOCK_DIR,
+  BlockchainSnapshotProperties,
 } = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
@@ -19,10 +20,23 @@ class Blockchain {
     // Finalized chain
     this.chain = [];
     this.blockchainPath = path.resolve(CHAINS_DIR, basePath);
-    this.genesisBlockHash = Block.genesis().hash; // TODO(liayoo): update with the genesis_block.json
+    this.setGenesisBlock();
 
     // Mapping of a block number to the finalized block's info
     this.numberToBlockInfo = {};
+  }
+
+  setGenesisBlock() {
+    const genesisBlockPath = path.join(GENESIS_BLOCK_DIR, 'genesis_block.json.gz');
+    const block = Block.parse(FileUtil.readCompressedJson(genesisBlockPath));
+    if (!block) {
+      throw Error(`Missing genesis block at ${genesisBlockPath}`);
+    }
+    if (block.number !== 0) {
+      throw Error(`Invalid genesis block: ${JSON.stringify(block)}`);
+    }
+    this.genesisBlock = block;
+    this.genesisBlockHash = block.hash;
   }
 
   /**
@@ -41,7 +55,8 @@ class Blockchain {
         logger.info('## Starting FIRST-NODE blockchain with a GENESIS block... ##');
         logger.info('############################################################');
         logger.info('\n');
-        this.writeBlock(Block.genesis()); // TODO(liayoo): remove once genesis_block.json is ready
+        // Copy the genesis block from the genesis configs dir to the blockchain dir.
+        this.writeBlock(this.genesisBlock);
         isGenesisStart = true;
       } else {
         logger.info('\n');
