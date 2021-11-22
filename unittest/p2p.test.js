@@ -14,7 +14,7 @@ const {
   DATA_PROTOCOL_VERSION,
   CHAINS_DIR,
   GENESIS_TIMESTAMP,
-  GenesisParams,
+  BlockchainParams,
   P2pNetworkStates
 } = require('../common/constants');
 const { setNodeForTesting } = require('./test-util');
@@ -198,7 +198,7 @@ describe("P2P", () => {
       it("Gets config", () => {
         assert.deepEqual(p2pClient.getConfig(), {
           env: process.env,
-          blockchainParams: GenesisParams,
+          blockchainParams: BlockchainParams,
           devFlags: {
             "enableNtpSync": true,
             "enableReceiptsRecording": true,
@@ -328,7 +328,7 @@ describe("P2P", () => {
           },
           env: {
             NETWORK_OPTIMIZATION: undefined,
-            GENESIS_CONFIGS_DIR: undefined,
+            BLOCKCHAIN_CONFIGS_DIR: undefined,
             MIN_NUM_VALIDATORS: undefined,
             MAX_NUM_VALIDATORS: undefined,
             ACCOUNT_INDEX: undefined,

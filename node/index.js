@@ -75,7 +75,7 @@ class BlockchainNode {
 
   initAccount() {
     const LOG_HEADER = 'initAccount';
-    if (ACCOUNT_INDEX !== null) {
+    if (ACCOUNT_INDEX !== null) { // TODO(liayoo): Deprecate ACCOUNT_INDEX
       this.setAccountAndInitShardSetting(GenesisAccounts.others[ACCOUNT_INDEX]);
     } else if (ACCOUNT_INJECTION_OPTION !== null) {
       // Create a bootstrap account & wait for the account injection
@@ -142,8 +142,8 @@ class BlockchainNode {
   }
 
   // For testing purpose only.
-  setAccountForTesting(accountIndex) {
-    this.account = GenesisAccounts.others[accountIndex];
+  setAccountForTesting(account) {
+    this.account = account;
   }
 
   setIpAddresses(ipAddrInternal, ipAddrExternal) {
@@ -595,7 +595,7 @@ class BlockchainNode {
         Consensus.validateAndExecuteBlockOnDb(block, this, StateVersions.SEGMENT, proposalTx, true);
         this.tryFinalizeChain();
       } catch (e) {
-        logger.info(`[${LOG_HEADER}] Failed to add new block (${block.hash}) to chain: ${e.stack}`);
+        logger.info(`[${LOG_HEADER}] Failed to add new block (${block.number} / ${block.hash}) to chain: ${e.stack}`);
         return -1; // Merge failed and I'm behind
       }
     }

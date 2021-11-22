@@ -195,11 +195,6 @@ class RuleUtil {
     return getValue(PathUtil.getConsensusStakingAccountBalancePath(address)) || 0;
   }
 
-  getOwnerAddr() {
-    const { GenesisAccounts, AccountProperties } = require('../common/constants');
-    return _.get(GenesisAccounts, `${AccountProperties.OWNER}.${AccountProperties.ADDRESS}`, null);
-  }
-
   getMinStakeAmount() {
     const { MIN_STAKE_PER_VALIDATOR } = require('../common/constants');
     return MIN_STAKE_PER_VALIDATOR;

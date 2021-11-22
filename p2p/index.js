@@ -14,7 +14,6 @@ const {
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
   P2P_PEER_CANDIDATE_URL,
-  ACCOUNT_INDEX,
   ENABLE_STATUS_REPORT_TO_TRACKER,
   DevFlags,
   MessageTypes,
@@ -22,7 +21,7 @@ const {
   BlockchainNodeStates,
   P2pNetworkStates,
   TrafficEventTypes,
-  GenesisParams,
+  BlockchainParams,
   trafficStatsManager,
 } = require('../common/constants');
 const {
@@ -71,7 +70,7 @@ class P2pClient {
     await this.server.listen();
     if (ENABLE_STATUS_REPORT_TO_TRACKER) this.connectToTracker();
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
-      if (Number(ACCOUNT_INDEX) === 0) {
+      if (!P2P_PEER_CANDIDATE_URL || P2P_PEER_CANDIDATE_URL === '') {
         await this.startBlockchainNode(0);
         return;
       } else {
@@ -135,7 +134,7 @@ class P2pClient {
   getConfig() {
     return {
       env: process.env,
-      blockchainParams: GenesisParams,
+      blockchainParams: BlockchainParams,
       devFlags: DevFlags,
     };
   }
@@ -333,11 +332,12 @@ class P2pClient {
     logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
   }
 
-  requestChainSegment(socket, lastBlockNumber) {
+  requestChainSegment(socket) {
     if (this.server.node.state !== BlockchainNodeStates.SYNCING &&
       this.server.node.state !== BlockchainNodeStates.SERVING) {
       return;
     }
+    const lastBlockNumber = this.server.node.bc.lastBlockNumber();
     const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
     if (!payload) {
       logger.error('The request chainSegment cannot be sent because of msg encapsulation failure.');
@@ -538,12 +538,12 @@ class P2pClient {
       // Continuously request the blockchain segments until
       // your local blockchain matches the height of the consensus blockchain.
       setTimeout(() => {
-        this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
+        this.requestChainSegment(socket);
       }, EPOCH_MS);
     }
   }
 
-  setTimerForPeerAddressResponse = (socket) => {
+  setTimerForPeerAddressResponse(socket) {
     setTimeout(() => {
       const address = getAddressFromSocket(this.outbound, socket);
         if (address) {
@@ -587,6 +587,9 @@ class P2pClient {
    * @param {string} peerCandidateUrl should be something like http(s)://xxx.xxx.xxx.xxx/json-rpc
    */
   async connectWithPeerCandidateUrl(peerCandidateUrl) {
+    if (!peerCandidateUrl || peerCandidateUrl === '') {
+      return;
+    }
     const resp = await sendGetRequest(peerCandidateUrl, 'p2p_getPeerCandidateInfo', { });
     const peerCandidateInfo = _.get(resp, 'data.result.result');
     if (!peerCandidateInfo) {
