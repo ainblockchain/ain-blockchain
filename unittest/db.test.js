@@ -4644,9 +4644,9 @@ describe("State info", () => {
       expect(proof).to.not.equal(null);
       expect(proof['#state_ph']).to.not.equal(null);
       const verifResult = verifyStateProof(proof);
-      _.set(verifResult, 'proofHash', 'erased');
+      _.set(verifResult, 'curProofHash', 'erased');
       assert.deepEqual(verifResult, {
-        "proofHash": "erased",
+        "curProofHash": "erased",
         "isVerified": true,
         "mismatchedPath": null,
         "mismatchedProofHash": null,

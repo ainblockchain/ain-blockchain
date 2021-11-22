@@ -930,18 +930,18 @@ function verifyStateProofInternal(proof, curLabels) {
   for (const [label, value] of sortedProof) {
     let childProofHash = null;
     if (CommonUtil.isDict(value)) {
-      const subProof = verifyStateProofInternal(value, [...curLabels, label]);
-      if (childIsVerified === true && subProof.isVerified !== true) {
+      const subVerif = verifyStateProofInternal(value, [...curLabels, label]);
+      if (childIsVerified === true && subVerif.isVerified !== true) {
         childIsVerified = false;
-        childMismatchedPath = subProof.mismatchedPath;
-        childMismatchedProofHash = subProof.mismatchedProofHash;
-        childMismatchedProofHashComputed = subProof.mismatchedProofHashComputed;
+        childMismatchedPath = subVerif.mismatchedPath;
+        childMismatchedProofHash = subVerif.mismatchedProofHash;
+        childMismatchedProofHashComputed = subVerif.mismatchedProofHashComputed;
       }
       if (_.startsWith(label, StateInfoProperties.STATE_LABEL_PREFIX)) {
-        childStatePh = subProof.proofHash;
+        childStatePh = subVerif.curProofHash;
         continue;  // continue
       }
-      childProofHash = subProof.proofHash;
+      childProofHash = subVerif.curProofHash;
     } else {
       childProofHash = value;
     }
@@ -962,7 +962,7 @@ function verifyStateProofInternal(proof, curLabels) {
     const mismatchedProofHash = childIsVerified ? (isVerified ? null : curProofHash) : childMismatchedProofHash;
     const mismatchedProofHashComputed = childIsVerified ? null : childMismatchedProofHashComputed;
     return {
-      proofHash: curProofHash,
+      curProofHash,
       isVerified,
       mismatchedPath,
       mismatchedProofHash,
@@ -975,7 +975,7 @@ function verifyStateProofInternal(proof, curLabels) {
   const mismatchedProofHash = childIsVerified ? (isVerified ? null : curProofHash) : childMismatchedProofHash;
   const mismatchedProofHashComputed = childIsVerified ? (isVerified ? null : computedProofHash) : childMismatchedProofHashComputed;
   return {
-    proofHash: curProofHash,
+    curProofHash,
     isVerified,
     mismatchedPath,
     mismatchedProofHash,
