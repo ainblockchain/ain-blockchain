@@ -5,11 +5,11 @@ const CommonUtil = require('./common-util');
 const TrafficStatsManager = require('../traffic/traffic-stats-manager');
 
 // ** Genesis configs **
-const DEFAULT_BLOCKCHAIN_CONFIGS_DIR = 'blockchain-configs/base';
+const BASE_BLOCKCHAIN_CONFIGS_DIR = 'blockchain-configs/base';
 const CUSTOM_BLOCKCHAIN_CONFIGS_DIR = process.env.BLOCKCHAIN_CONFIGS_DIR ?
     process.env.BLOCKCHAIN_CONFIGS_DIR : null;
 const GENESIS_BLOCK_DIR =
-    path.resolve(__dirname, '..', process.env.BLOCKCHAIN_CONFIGS_DIR || DEFAULT_BLOCKCHAIN_CONFIGS_DIR);
+    path.resolve(__dirname, '..', process.env.BLOCKCHAIN_CONFIGS_DIR || BASE_BLOCKCHAIN_CONFIGS_DIR);
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
 const GenesisToken = BlockchainParams.token;
 // TODO(liayoo): Deprecate GenesisAccounts
@@ -770,7 +770,7 @@ function getBlockchainConfig(filename) {
     }
   }
   if (!config) {
-    const configPath = path.resolve(__dirname, '..', DEFAULT_BLOCKCHAIN_CONFIGS_DIR, filename);
+    const configPath = path.resolve(__dirname, '..', BASE_BLOCKCHAIN_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     } else {
