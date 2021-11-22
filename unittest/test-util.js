@@ -22,7 +22,12 @@ function readConfigFile(filePath) {
 
 function setNodeForTesting(
     node, accountIndex = 0, skipTestingConfig = false, skipShardingConfig = true) {
-  node.setAccountForTesting(accountIndex);
+  const accountsFile = path.resolve(__dirname, './data/accounts_for_testing.json');
+  if (!fs.existsSync(accountsFile)) {
+    throw Error('Missing accounts file: ' + accountsFile);
+  }
+  const accounts = readConfigFile(accountsFile);
+  node.setAccountForTesting(accounts.others[accountIndex]);
 
   node.initNode(true);
 

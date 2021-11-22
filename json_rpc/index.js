@@ -406,7 +406,7 @@ module.exports = function getMethods(node, p2pServer, minProtocolVersion, maxPro
     p2p_getPeerCandidateInfo: function (args, done) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
       const result = p2pServer.client.getPeerCandidateInfo();
-      done (null, addProtocolVersion({ result }));
+      done(null, addProtocolVersion({ result }));
     }
   };
 

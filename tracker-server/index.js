@@ -312,7 +312,7 @@ function getRuntimeInfo() {
     },
     env: {
       NETWORK_OPTIMIZATION: process.env.NETWORK_OPTIMIZATION,
-      GENESIS_CONFIGS_DIR: process.env.GENESIS_CONFIGS_DIR,
+      BLOCKCHAIN_CONFIGS_DIR: process.env.BLOCKCHAIN_CONFIGS_DIR,
       MIN_NUM_VALIDATORS: process.env.MIN_NUM_VALIDATORS,
       MAX_NUM_VALIDATORS: process.env.MAX_NUM_VALIDATORS,
       ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,

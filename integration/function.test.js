@@ -13,6 +13,7 @@ const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
   CURRENT_PROTOCOL_VERSION,
   CHAINS_DIR,
+  GenesisToken,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const {
@@ -27,40 +28,26 @@ const DB = require('../db');
 
 const ENV_VARIABLES = [
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, DEBUG: false, CONSOLE_LOG: false,
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 0, P2P_PEER_CANDIDATE_URL: '', DEBUG: false, CONSOLE_LOG: false,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
     MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
     MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
     MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
-  },
-  {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
   },
 ];
 
 const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCOUNT_INDEX))
 const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
-const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
-const serverList = [ server1, server2, server3, server4 ];
+const serverList = [ server1, server2, server3 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -79,7 +66,7 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 }
 
 describe('Native Function', () => {
-  let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
+  let tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
     rimraf.sync(CHAINS_DIR)
@@ -92,7 +79,6 @@ describe('Native Function', () => {
     await CommonUtil.sleep(3000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     await CommonUtil.sleep(3000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
     await waitUntilNetworkIsReady(serverList);
 
     const server1Addr = parseOrLog(syncRequest(
@@ -101,14 +87,11 @@ describe('Native Function', () => {
         'GET', server2 + '/get_address').body.toString('utf-8')).result;
     const server3Addr = parseOrLog(syncRequest(
         'GET', server3 + '/get_address').body.toString('utf-8')).result;
-    const server4Addr = parseOrLog(syncRequest(
-        'GET', server4 + '/get_address').body.toString('utf-8')).result;
     await setUpApp('test', serverList, {
       admin: {
         [server1Addr]: true,
         [server2Addr]: true,
         [server3Addr]: true,
-        [server4Addr]: true,
       }
     });
   });
@@ -118,7 +101,6 @@ describe('Native Function', () => {
     server1_proc.kill()
     server2_proc.kill()
     server3_proc.kill()
-    server4_proc.kill()
 
     rimraf.sync(CHAINS_DIR)
   });
@@ -3249,10 +3231,10 @@ describe('Native Function', () => {
       describe('Escrow: service -> individual', () => {
         it('escrow: service -> individual: open escrow', async () => {
           const key = 1234567890000 + 101;
-          const server4Addr = parseOrLog(syncRequest(
-            'GET', server4 + '/get_address').body.toString('utf-8')).result;
-          const transferBody = parseOrLog(syncRequest('POST', server4 + '/set_value', {json: {
-            ref: `transfer/${server4Addr}/${serviceAdmin}/${key}/value`,
+          const server3Addr = parseOrLog(syncRequest(
+            'GET', server3 + '/get_address').body.toString('utf-8')).result;
+          const transferBody = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
+            ref: `transfer/${server3Addr}/${serviceAdmin}/${key}/value`,
             value: 100
           }}).body.toString('utf-8'));
           if (!(await waitUntilTxFinalized(serverList, _.get(transferBody, 'result.tx_hash')))) {
@@ -3551,15 +3533,14 @@ describe('Native Function', () => {
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkoutRequestBasePath = `/checkout/requests/${networkName}/${chainId}/${tokenId}`;
       const checkoutHistoryBasePath = `/checkout/history/${networkName}/${chainId}/${tokenId}`;
-      const tokenBridgeConfig = require('../genesis-configs/base/genesis_token.json')
-          .bridge[networkName][chainId][tokenId];
+      const tokenBridgeConfig = GenesisToken.bridge[networkName][chainId][tokenId];
       const {
         token_pool: tokenPoolAddr,
         min_checkout_per_request: minCheckoutPerRequest,
         max_checkout_per_request: maxCheckoutPerRequest,
         max_checkout_per_day: maxCheckoutPerDay,
        } = tokenBridgeConfig;
-      const checkoutAmount = 100;
+      const checkoutAmount = 1000;
       const ethAddress = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // recipient
 
       it('cannot open checkout with invalid params: amount < min_checkout_per_request', async () => {
@@ -4157,7 +4138,7 @@ describe('Native Function', () => {
             '/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548');
         const refundTransfer = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${refund}`).body.toString('utf-8')).result;
-        assert.deepEqual(refundTransfer, { "value": 100 });
+        assert.deepEqual(refundTransfer, { "value": 1000 });
         const afterCloseUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
             .body.toString('utf-8')).result || 0;
@@ -4192,8 +4173,7 @@ describe('Native Function', () => {
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkinRequestBasePath = `/checkin/requests/${networkName}/${chainId}/${tokenId}`;
       const checkinHistoryBasePath = `/checkin/history/${networkName}/${chainId}/${tokenId}`;
-      const tokenPoolAddr = require('../genesis-configs/base/genesis_token.json')
-          .bridge[networkName][chainId][tokenId].token_pool;
+      const tokenPoolAddr = GenesisToken.bridge[networkName][chainId][tokenId].token_pool;
       const checkinAmount = 100;
       const ethAddress = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // sender
 
