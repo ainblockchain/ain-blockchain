@@ -9,36 +9,33 @@ const Consensus = require('../../consensus');
 
 async function verifyBlock(snapshotFile, blockFileList) {
   console.log(`\n<< [0]: ${snapshotFile} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n`);
-  console.log(`* Reading snapshot file: ${snapshotFile}...`);
+  console.log(`\n* Reading snapshot file: ${snapshotFile}...`);
   const snapshot = FileUtil.isCompressedFile(snapshotFile) ?
       FileUtil.readCompressedJson(snapshotFile) : FileUtil.readJson(snapshotFile);
   if (snapshot === null) {
     console.log(`  Failed to read snapshot file: ${snapshotFile}`);
     process.exit(0)
   }
-  console.log(`  Done.`);
 
-  console.log(`* Initializing db states with snapshot...`);
+  console.log(`\n* Initializing db states with snapshot...`);
   const bc = new Blockchain(String(8888));
   const stateManager = new StateManager();
   const db = DB.create(
       StateVersions.EMPTY, 'verifyBlock', bc, false, bc.lastBlockNumber(), stateManager);
   db.initDb(snapshot);
-  console.log(`  Done.`);
 
   let prevBlock = null;
   for (let i = 0; i < blockFileList.length; i++) {
     const blockFile = blockFileList[i];
-    console.log(`\n<< [${i + 1}]: ${blockFile} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n`);
-    console.log(`* Reading block file: ${blockFile}...`);
+    console.log(`\n<< [${i + 1}]: ${blockFile} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`);
+    console.log(`\n* Reading block file: ${blockFile}...`);
     const block = FileUtil.isCompressedFile(blockFile) ?
         FileUtil.readCompressedJson(blockFile) : FileUtil.readJson(blockFile);
     if (block === null) {
       console.log(`  Failed to read block file: ${blockFile}`);
       process.exit(0);
     }
-    console.log(`  Done.`);
-    console.log(`* Executing block on db...`);
+    console.log(`\n* Executing block on db...`);
     try {
       Consensus.validateAndExecuteBlockOnDb(block, snapDb, prevBlock);
       prevBlock = block;
@@ -46,8 +43,7 @@ async function verifyBlock(snapshotFile, blockFileList) {
       console.log(`Failed to validate and excute block ${block.number}: ${e}`);
       process.exit(0);
     }
-    console.log(`  Done.`);
-    console.log(`* Comparing root proof hashes...`);
+    console.log(`\n* Comparing root proof hashes...`);
     console.log(`  > Root proof hash from block header: ${block.state_proof_hash}`);
     console.log(`  > Root proof hash from recomputation: ${db.stateRoot.getProofHash()}`);
     if (db.stateRoot.getProofHash() === block.state_proof_hash) {
@@ -61,7 +57,6 @@ async function verifyBlock(snapshotFile, blockFileList) {
       console.log(`  Halting verification...`);
       break;
     }
-    console.log(`  Done.`);
   }
 }
 
