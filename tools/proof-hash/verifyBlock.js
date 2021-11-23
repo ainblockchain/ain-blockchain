@@ -97,6 +97,7 @@ async function verifyBlock(snapshotFile, blockFileList) {
     const nextBlock = i + 1 < blockList.length ? blockList[i + 1] : null;
     proposalTx = nextBlock ? ConsensusUtil.filterProposalFromVotes(nextBlock.last_votes) : null;
 
+    // TODO(platfowner): Make the block execution code work.
     console.log(`\n* Executing block on db...`);
     try {
       Consensus.validateAndExecuteBlockOnDb(block, node, 'verifyBlock', proposalTx);
