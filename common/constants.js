@@ -62,8 +62,15 @@ BlockchainConfigs.ACCOUNT_INJECTION_OPTION = process.env.ACCOUNT_INJECTION_OPTIO
 BlockchainConfigs.KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
 BlockchainConfigs.ENABLE_STATUS_REPORT_TO_TRACKER =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_STATUS_REPORT_TO_TRACKER, true);
-BlockchainConfigs.DEFAULT_CORS_WHITELIST = ['https://ainetwork.ai', 'https://ainize.ai', 'https://afan.ai',
-    /\.ainetwork\.ai$/, /\.ainize\.ai$/, /\.afan\.ai$/, 'http://localhost:3000'];
+BlockchainConfigs.DEFAULT_CORS_WHITELIST = [
+  'https://ainetwork.ai',
+  'https://ainize.ai',
+  'https://afan.ai',
+  /\.ainetwork\.ai$/,
+  /\.ainize\.ai$/,
+  /\.afan\.ai$/,
+  'http://localhost:3000'
+];
 // NOTE(liayoo): CORS_WHITELIST env var is a comma-separated list of cors-allowed domains.
 // Note that if it includes '*', it will be set to allow all domains.
 BlockchainConfigs.CORS_WHITELIST = CommonUtil.getCorsWhitelist(process.env.CORS_WHITELIST) || BlockchainConfigs.DEFAULT_CORS_WHITELIST;
@@ -810,66 +817,6 @@ const trafficStatsManager = new TrafficStatsManager(
 module.exports = {
   DevFlags,
   BlockchainConfigs,
-  /*
-  CURRENT_PROTOCOL_VERSION,
-  PROTOCOL_VERSION_MAP,
-  DATA_PROTOCOL_VERSION,
-  CONSENSUS_PROTOCOL_VERSION,
-  LOGS_DIR,
-  CHAINS_DIR,
-  CHAINS_N2B_DIR_NAME,
-  CHAINS_H2N_DIR_NAME,
-  CHAINS_N2B_MAX_NUM_FILES,
-  CHAINS_H2N_HASH_PREFIX_LENGTH,
-  CHAIN_SEGMENT_LENGTH,
-  ON_MEMORY_CHAIN_LENGTH,
-  SNAPSHOTS_ROOT_DIR,
-  SNAPSHOTS_N2S_DIR_NAME,
-  DEBUG_SNAPSHOT_FILE_PREFIX,
-  SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
-  MAX_NUM_SNAPSHOTS,
-  MAX_BLOCK_NUMBERS_FOR_RECEIPTS,
-  KEYS_ROOT_DIR,
-  DEBUG,
-  CONSOLE_LOG,
-  ENABLE_DEV_CLIENT_SET_API,
-  ENABLE_JSON_RPC_TX_API,
-  ENABLE_TX_SIG_VERIF_WORKAROUND,
-  ENABLE_GAS_FEE_WORKAROUND,
-  ENABLE_REST_FUNCTION_CALL,
-  ENABLE_EXPRESS_RATE_LIMIT,
-  ACCOUNT_INDEX,
-  ACCOUNT_INJECTION_OPTION,
-  KEYSTORE_FILE_PATH,
-  ENABLE_STATUS_REPORT_TO_TRACKER,
-  CORS_WHITELIST,
-  PORT,
-  P2P_PORT,
-  LIGHTWEIGHT,
-  SYNC_MODE,
-  HASH_DELIMITER,
-  VARIABLE_LABEL_PREFIX,
-  STATE_INFO_PREFIX,
-  TX_NONCE_ERROR_CODE,
-  TX_TIMESTAMP_ERROR_CODE,
-  MICRO_AIN,
-  MILLI_AIN,
-  SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
-  APPS_BANDWIDTH_BUDGET_PER_BLOCK,
-  FREE_BANDWIDTH_BUDGET_PER_BLOCK,
-  SERVICE_STATE_BUDGET,
-  APPS_STATE_BUDGET,
-  FREE_STATE_BUDGET,
-  TREE_SIZE_BUDGET,
-  SERVICE_TREE_SIZE_BUDGET,
-  APPS_TREE_SIZE_BUDGET,
-  FREE_TREE_SIZE_BUDGET,
-  STATE_GAS_COEFFICIENT,
-  TRAFFIC_DB_INTERVAL_MS,
-  TRAFFIC_DB_MAX_INTERVALS,
-  GENESIS_BLOCK_DIR,
-  DEFAULT_DEVELOPERS_URL_WHITELIST,
-  */
   MessageTypes,
   TrackerMessageTypes,
   BlockchainNodeStates,
@@ -906,13 +853,6 @@ module.exports = {
   isAppDependentServiceType,
   buildOwnerPermissions,
   buildRulePermission,
-  /*
-  ...BlockchainParams.blockchain,
-  ...BlockchainParams.genesis,
-  ...BlockchainParams.consensus,
-  ...BlockchainParams.resource,
-  ...BlockchainParams.network,
-  */
   BlockchainParams,
   trafficStatsManager,
 };
