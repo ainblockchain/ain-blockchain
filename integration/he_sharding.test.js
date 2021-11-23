@@ -11,9 +11,7 @@ const { parseOrLog } = require('../unittest/test-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const {
-  CHAINS_DIR,
-} = require('../common/constants');
+const { BlockchainConfigs } = require('../common/constants');
 const {
   ConsensusStates
 } = require('../consensus/constants');
@@ -112,7 +110,7 @@ describe('HE Sharding', async () => {
       tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(CHAINS_DIR)
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
 
     parent_tracker_proc =
         startServer(TRACKER_SERVER, 'parent tracker server', { CONSOLE_LOG: false }, true);
@@ -166,7 +164,7 @@ describe('HE Sharding', async () => {
     server2_proc.kill()
     server3_proc.kill()
 
-    rimraf.sync(CHAINS_DIR)
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
   });
 
   describe('Parent chain initialization', () => {

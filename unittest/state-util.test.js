@@ -29,7 +29,7 @@ const {
   getProofHashFromStateRoot,
   verifyStateProof,
 } = require('../db/state-util');
-const { STATE_LABEL_LENGTH_LIMIT } = require('../common/constants');
+const { BlockchainConfigs } = require('../common/constants');
 const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
@@ -410,9 +410,9 @@ describe("state-util", () => {
     })
 
     it("when long string input", () => {
-      const labelLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      const labelLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT);
       expect(isValidStateLabel(labelLong)).to.equal(true);
-      const labelTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      const labelTooLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT + 1);
       expect(isValidStateLabel(labelTooLong)).to.equal(false);
     })
   })
@@ -462,8 +462,8 @@ describe("state-util", () => {
     })
 
     it("when input with long labels", () => {
-      const labelLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
-      const labelTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      const labelLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT);
+      const labelTooLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT + 1);
       assert.deepEqual(
           isValidPathForStates([labelLong, labelLong]), {isValid: true, invalidPath: ''});
       assert.deepEqual(
@@ -623,8 +623,8 @@ describe("state-util", () => {
     })
 
     it("when input with long labels", () => {
-      const textLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
-      const textTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      const textLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT);
+      const textTooLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT + 1);
       assert.deepEqual(
         isValidJsObjectForStates({
           [textLong]: {
