@@ -461,6 +461,10 @@ class RadixTree {
     return RadixTree.getProofOfStateNodeRecursive(radixLabel, this.root, true, 0, stateProof);
   }
 
+  verifyProofHashForRadixTree(curLabels = []) {
+    return this.root.verifyProofHashForRadixTree(curLabels);
+  }
+
   deleteRadixTreeVersion() {
     this.setNumChildStateNodes(0);
     return this.root.deleteRadixTreeVersion();
