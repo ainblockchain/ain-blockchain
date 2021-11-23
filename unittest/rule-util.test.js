@@ -308,7 +308,9 @@ describe("RuleUtil", () => {
     it("when valid input", () => {
       expect(util.isValidPrivateUrl('172.16.0.36')).to.equal(true);
       expect(util.isValidPrivateUrl('http://172.16.0.36')).to.equal(true);
+      expect(util.isValidPrivateUrl('https://172.16.0.36')).to.equal(true);
       expect(util.isValidPrivateUrl('http://172.16.0.36:8080')).to.equal(true);
+      expect(util.isValidPrivateUrl('https://172.16.0.36:9000')).to.equal(true);
     })
   })
 
