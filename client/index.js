@@ -29,7 +29,7 @@ app.use(express.urlencoded({
   extended: true,
   limit: BlockchainConfigs.REQUEST_BODY_SIZE_LIMIT
 }));
-app.use(cors({ origin: BlockchainConfigs.CORS_WHITELIST }));
+app.use(cors({ origin: CommonUtil.getRegexpList(BlockchainConfigs.CORS_WHITELIST) }));
 if (BlockchainConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
   const limiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute

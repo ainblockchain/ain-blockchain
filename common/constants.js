@@ -63,13 +63,13 @@ BlockchainConfigs.KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
 BlockchainConfigs.ENABLE_STATUS_REPORT_TO_TRACKER =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_STATUS_REPORT_TO_TRACKER, true);
 BlockchainConfigs.DEFAULT_CORS_WHITELIST = [
-  'https://ainetwork.ai',
-  'https://ainize.ai',
-  'https://afan.ai',
-  /\.ainetwork\.ai$/,
-  /\.ainize\.ai$/,
-  /\.afan\.ai$/,
-  'http://localhost:3000'
+  'https://ainetwork\\.ai',
+  'https://ainize\\.ai',
+  'https://afan\\.ai',
+  '\\.ainetwork\\.ai$',
+  '\\.ainize\\.ai$',
+  '\\.afan\\.ai$',
+  'http://localhost:3000',
 ];
 // NOTE(liayoo): CORS_WHITELIST env var is a comma-separated list of cors-allowed domains.
 // Note that if it includes '*', it will be set to allow all domains.
