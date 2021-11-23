@@ -779,6 +779,14 @@ class CommonUtil {
     }
     return jsonDiff.diffString(base, target, { color: "" });
   }
+
+  static getRegexpList(strList) {
+    const regexpList = [];
+    for (const str of strList) {
+      regexpList.push(new RegExp(str));
+    }
+    return regexpList;
+  }
 }
 
 module.exports = CommonUtil;
