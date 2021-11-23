@@ -14,8 +14,8 @@ const v8 = require('v8');
 const { getGraphData } = require('./network-topology');
 const { abbrAddr } = require('./util');
 const {
+  BlockchainConfigs,
   TrackerMessageTypes,
-  CURRENT_PROTOCOL_VERSION
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
@@ -326,6 +326,6 @@ function getRuntimeInfo() {
 
 function getProtocolInfo() {
   return {
-    currentVersion: CURRENT_PROTOCOL_VERSION,
+    currentVersion: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
   };
 }

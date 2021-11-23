@@ -5,11 +5,7 @@ const fs = require('fs');
 const { Block } = require('./block');
 const FileUtil = require('../common/file-util');
 const {
-  CHAINS_DIR,
-  CHAIN_SEGMENT_LENGTH,
-  ON_MEMORY_CHAIN_LENGTH,
-  GENESIS_TIMESTAMP,
-  GENESIS_BLOCK_DIR,
+  BlockchainConfigs,
   BlockchainSnapshotProperties,
 } = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
@@ -19,7 +15,7 @@ class Blockchain {
   constructor(basePath) {
     // Finalized chain
     this.chain = [];
-    this.blockchainPath = path.resolve(CHAINS_DIR, basePath);
+    this.blockchainPath = path.resolve(BlockchainConfigs.CHAINS_DIR, basePath);
     this.setGenesisBlock();
 
     // Mapping of a block number to the finalized block's info
@@ -27,7 +23,7 @@ class Blockchain {
   }
 
   setGenesisBlock() {
-    const genesisBlockPath = path.join(GENESIS_BLOCK_DIR, 'genesis_block.json.gz');
+    const genesisBlockPath = path.join(BlockchainConfigs.GENESIS_BLOCK_DIR, 'genesis_block.json.gz');
     const block = Block.parse(FileUtil.readCompressedJson(genesisBlockPath));
     if (!block) {
       throw Error(`Missing genesis block at ${genesisBlockPath}`);
@@ -115,7 +111,7 @@ class Blockchain {
     const blockNumber = CommonUtil.toNumberOrNaN(number);
     if (!CommonUtil.isNumber(blockNumber)) return null;
     const blockPath = FileUtil.getBlockPath(this.blockchainPath, blockNumber);
-    if (!blockPath || blockNumber > this.lastBlockNumber() - ON_MEMORY_CHAIN_LENGTH) {
+    if (!blockPath || blockNumber > this.lastBlockNumber() - BlockchainConfigs.ON_MEMORY_CHAIN_LENGTH) {
       return this.chain.find((block) => block.number === blockNumber);
     } else {
       return Block.parse(FileUtil.readCompressedJson(blockPath));
@@ -155,7 +151,7 @@ class Blockchain {
   lastBlockTimestamp() {
     const lastBlock = this.lastBlock();
     if (!lastBlock) {
-      return GENESIS_TIMESTAMP;
+      return BlockchainConfigs.GENESIS_TIMESTAMP;
     }
     return lastBlock.timestamp;
   }
@@ -167,7 +163,7 @@ class Blockchain {
     logger.info(`[${LOG_HEADER}] Successfully added block ${block.number} to chain.`);
 
     // Keep up to latest ON_MEMORY_CHAIN_LENGTH blocks
-    while (this.chain.length > ON_MEMORY_CHAIN_LENGTH) {
+    while (this.chain.length > BlockchainConfigs.ON_MEMORY_CHAIN_LENGTH) {
       this.chain.shift();
     }
   }
@@ -309,8 +305,8 @@ class Blockchain {
     if (!Number.isInteger(to) || to < 0) {
       to = this.lastBlockNumber() + 1;
     }
-    if (to - from > CHAIN_SEGMENT_LENGTH) { // NOTE: To prevent large query.
-      to = from + CHAIN_SEGMENT_LENGTH;
+    if (to - from > BlockchainConfigs.CHAIN_SEGMENT_LENGTH) { // NOTE: To prevent large query.
+      to = from + BlockchainConfigs.CHAIN_SEGMENT_LENGTH;
     }
     const blockPaths = FileUtil.getBlockPathList(this.blockchainPath, from, to - from);
     blockPaths.forEach((blockPath) => {

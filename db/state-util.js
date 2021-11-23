@@ -5,8 +5,7 @@ const _ = require('lodash');
 const espree = require('espree');
 const CommonUtil = require('../common/common-util');
 const {
-  HASH_DELIMITER,
-  VARIABLE_LABEL_PREFIX,
+  BlockchainConfigs,
   PredefinedDbPaths,
   FunctionProperties,
   FunctionTypes,
@@ -15,7 +14,6 @@ const {
   OwnerProperties,
   ShardingProperties,
   StateInfoProperties,
-  STATE_LABEL_LENGTH_LIMIT,
 } = require('../common/constants');
 
 const WRITE_RULE_ECMA_VERSION = 12;
@@ -147,7 +145,7 @@ function isValidServiceName(name) {
 function isValidStateLabel(label) {
   if (!CommonUtil.isString(label) ||
       label === '' ||
-      label.length > STATE_LABEL_LENGTH_LIMIT ||
+      label.length > BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT ||
       (hasReservedChar(label) && !hasAllowedPattern(label))) {
     return false;
   }
@@ -224,7 +222,7 @@ function makeWriteRuleCodeSnippet(ruleString) {
 }
 
 function getVariableLabels(parsedRulePath) {
-  return parsedRulePath.filter((label) => _.startsWith(label, VARIABLE_LABEL_PREFIX));
+  return parsedRulePath.filter((label) => _.startsWith(label, BlockchainConfigs.VARIABLE_LABEL_PREFIX));
 }
 
 /**
@@ -921,13 +919,13 @@ function getProofHashFromStateRoot(root, fullPath) {
  */
 function getProofHashOfRadixNode(childStatePh, subProofList) {
   let preimage = childStatePh !== null ? childStatePh : '';
-  preimage += `${HASH_DELIMITER}`;
+  preimage += BlockchainConfigs.HASH_DELIMITER;
   if (subProofList.length === 0) {
-    preimage += `${HASH_DELIMITER}`;
+    preimage += BlockchainConfigs.HASH_DELIMITER;
   } else {
     for (const subProof of subProofList) {
       const radixLabel = subProof.label.slice(StateInfoProperties.RADIX_LABEL_PREFIX.length);
-      preimage += `${HASH_DELIMITER}${radixLabel}${HASH_DELIMITER}${subProof.proofHash}`;
+      preimage += `${BlockchainConfigs.HASH_DELIMITER}${radixLabel}${BlockchainConfigs.HASH_DELIMITER}${subProof.proofHash}`;
     }
   }
   return CommonUtil.hashString(preimage);

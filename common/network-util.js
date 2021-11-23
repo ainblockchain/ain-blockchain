@@ -2,10 +2,7 @@ const logger = new (require('../logger'))('NETWORK-UTIL');
 
 const _ = require('lodash');
 const axios = require('axios');
-const {
-  CURRENT_PROTOCOL_VERSION,
-  CHAIN_ID
-} = require('../common/constants');
+const { BlockchainConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
 async function _waitUntilTxFinalize(endpoint, txHash) {
@@ -61,7 +58,7 @@ async function sendSignedTx(endpoint, params) {
 
 // FIXME(minsulee2): this is duplicated function see: ./tools/util.js
 async function signAndSendTx(endpoint, tx, privateKey) {
-  const { txHash, signedTx } = CommonUtil.signTransaction(tx, privateKey, CHAIN_ID);
+  const { txHash, signedTx } = CommonUtil.signTransaction(tx, privateKey, BlockchainConfigs.CHAIN_ID);
   const result = await sendSignedTx(endpoint, signedTx);
   return Object.assign(result, { txHash });
 }
@@ -73,7 +70,7 @@ function sendGetRequest(endpoint, method, params) {
     endpoint,
     {
       method,
-      params: Object.assign(params, { protoVer: CURRENT_PROTOCOL_VERSION }),
+      params: Object.assign(params, { protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION }),
       jsonrpc: '2.0',
       id: 0
     }

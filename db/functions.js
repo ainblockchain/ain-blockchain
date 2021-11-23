@@ -5,6 +5,7 @@ const _ = require('lodash');
 const matchUrl = require('match-url-wildcard');
 const {
   DevFlags,
+  BlockchainConfigs,
   PredefinedDbPaths,
   FunctionTypes,
   FunctionResultCode,
@@ -13,10 +14,8 @@ const {
   TokenBridgeProperties,
   OwnerProperties,
   GasFeeConstants,
-  REST_FUNCTION_CALL_TIMEOUT_MS,
   buildOwnerPermissions,
   buildRulePermission,
-  ENABLE_REST_FUNCTION_CALL,
 } = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
@@ -175,7 +174,7 @@ class Functions {
             }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
-          if (ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
+          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
             matchUrl(functionEntry.function_url, this.db.getRestFunctionsUrlWhitelist())) {
             if (DevFlags.enableRichFunctionLogging) {
               logger.info(
@@ -187,7 +186,7 @@ class Functions {
               function: functionEntry,
               transaction,
             }, {
-              timeout: REST_FUNCTION_CALL_TIMEOUT_MS
+              timeout: BlockchainConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
             }).catch((error) => {
               if (DevFlags.enableRichFunctionLogging) {
                 logger.error(
