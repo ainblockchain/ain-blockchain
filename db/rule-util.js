@@ -319,6 +319,11 @@ class RuleUtil {
     return this.isString(url) ? strictUrlRegex.test(url) : false;
   }
 
+  isValidPrivateUrl(url) {
+    const privateUrlRegex = /^(https?:\/\/)?(((127\.)|(10\.))((?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])\.){2}(?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])|((192\.168\.)|(172\.1[6-9]\.)|(172\.2[0-9]\.)|(172\.3[0-1]\.))((?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])\.)(?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])|(::1$)|([fF][cCdD]))(:(6553[0-5]|655[0-2](\d)|65[0-4](\d){2}|6[0-4](\d){3}|[1-5](\d){4}|[1-9](\d){0,3}))?$/;
+    return this.isString(url) ? privateUrlRegex.test(url) : false;
+  }
+
   validateRestFunctionsUrlWhitelistData(userAddr, data, newData, getValue) {
     const PathUtil = require('../common/path-util');
     if (getValue(PathUtil.getDevelopersRestFunctionsUserWhitelistUserPath(userAddr)) !== true) {
