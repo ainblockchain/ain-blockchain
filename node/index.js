@@ -42,13 +42,13 @@ const BlockPool = require('../block-pool');
 const ConsensusUtil = require('../consensus/consensus-util');
 
 class BlockchainNode {
-  constructor() {
+  constructor(account = null) {
     this.keysDir = path.resolve(KEYS_ROOT_DIR, `${PORT}`);
     FileUtil.createDir(this.keysDir);
     this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
     FileUtil.createSnapshotDir(this.snapshotDir);
 
-    this.account = null;
+    this.account = account;
     this.bootstrapAccount = null;
     this.ipAddrInternal = null;
     this.ipAddrExternal = null;
@@ -65,7 +65,9 @@ class BlockchainNode {
         this.stateManager);
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
-    this.initAccount();
+    if (account === null) {
+      this.initAccount();
+    }
   }
 
   setAccount(account) {
@@ -517,11 +519,7 @@ class BlockchainNode {
     for (let number = fromBlockNumber; number < numBlockFiles; number++) {
       const block = nextBlock ? nextBlock : this.bc.loadBlock(number);
       nextBlock = this.bc.loadBlock(number + 1);
-      if (nextBlock) {
-        proposalTx = ConsensusUtil.filterProposalFromVotes(nextBlock.last_votes);
-      } else {
-        proposalTx = null;
-      }
+      proposalTx = nextBlock ? ConsensusUtil.filterProposalFromVotes(nextBlock.last_votes) : null;
       if (!block) {
         // NOTE(liayoo): Quick fix for the problem. May be fixed by deleting the block files.
         CommonUtil.finishWithStackTrace(
