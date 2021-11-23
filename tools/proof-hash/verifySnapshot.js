@@ -40,7 +40,7 @@ async function verifySnapshot(snapshotFile) {
   }
 
   console.log(`\n* Comparing root proof hashes...`);
-  console.log(`  > Root proof hash from snapshot: ${snapshot.root_proof_hash}`);
+  console.log(`  > Root proof hash from snapshot header: ${snapshot.root_proof_hash}`);
   console.log(`  > Root proof hash from recomputation: ${db.stateRoot.getProofHash()}`);
   if (db.stateRoot.getProofHash() === snapshot.root_proof_hash) {
     console.log(`  *************`);

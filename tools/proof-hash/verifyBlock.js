@@ -1,11 +1,29 @@
 const _ = require('lodash');
-const { StateVersions } = require('../../common/constants');
-const CommonUtil = require('../../common/common-util');
 const FileUtil = require('../../common/file-util');
-const Blockchain = require('../../blockchain');
-const StateManager = require('../../db/state-manager');
-const DB = require('../../db');
+const {
+  StateVersions,
+  BlockchainNodeStates
+} = require('../../common/constants');
+const BlockchainNode = require('../../node');
 const Consensus = require('../../consensus');
+const ConsensusUtil = require('../../consensus/consensus-util');
+
+async function loadBlocks(blockFileList) {
+  const blockList = [];
+  for (let i = 0; i < blockFileList.length; i++) {
+    const blockFile = blockFileList[i];
+    console.log(`\n<< [${i + 1}]: ${blockFile} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`);
+    console.log(`\n* Reading block file: ${blockFile}...`);
+    const block = FileUtil.isCompressedFile(blockFile) ?
+        FileUtil.readCompressedJson(blockFile) : FileUtil.readJson(blockFile);
+    if (block === null) {
+      console.log(`  Failed to read block file: ${blockFile}`);
+      process.exit(0);
+    }
+    blockList.push(block);
+  }
+  return blockList;
+}
 
 async function verifyBlock(snapshotFile, blockFileList) {
   console.log(`\n<< [0]: ${snapshotFile} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n`);
@@ -17,28 +35,38 @@ async function verifyBlock(snapshotFile, blockFileList) {
     process.exit(0)
   }
 
-  console.log(`\n* Initializing db states with snapshot...`);
-  const bc = new Blockchain(String(8888));
-  const stateManager = new StateManager();
-  const db = DB.create(
-      StateVersions.EMPTY, 'verifyBlock', bc, false, bc.lastBlockNumber(), stateManager);
-  db.initDb(snapshot);
+  const snapshotBlock = snapshot.block;
+  const snapshotBlockNumber = snapshot.block_number;
+  const blockList = await loadBlocks(blockFileList);
+  const nextBlock = blockList[0];
 
-  let prevBlock = null;
-  for (let i = 0; i < blockFileList.length; i++) {
+  console.log(`\n* Initializing db states with snapshot...`);
+  const account = {
+    "address": "0x00ADEc28B6a845a085e03591bE7550dd68673C1C",
+    "private_key": "b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96",
+    "public_key": "63e90c5abdf55221a9736eaa6d859a1346e406f8dde49b6465bb6280c80a3826f66dcf69b5573ad1f91cb0f0b2675c5c282c93d320ba758c27abe3c4662dc545"
+  };
+  const node = new BlockchainNode(account);
+  node.db.initDb(snapshot);
+  node.bc.initBlockchain(true, snapshot);
+  const snapshotProposalTx = ConsensusUtil.filterProposalFromVotes(nextBlock.last_votes);
+  node.bp.addSeenBlock(snapshotBlock, snapshotProposalTx);
+  const latestDb = node.createTempDb(
+      node.db.stateVersion, `${StateVersions.LOAD}:${snapshotBlockNumber}`, snapshotBlockNumber);
+  node.bp.addToHashToDbMap(snapshotBlock.hash, latestDb);
+  node.state = BlockchainNodeStates.SYNCING;
+
+  for (let i = 0; i < blockList.length; i++) {
     const blockFile = blockFileList[i];
     console.log(`\n<< [${i + 1}]: ${blockFile} >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>`);
-    console.log(`\n* Reading block file: ${blockFile}...`);
-    const block = FileUtil.isCompressedFile(blockFile) ?
-        FileUtil.readCompressedJson(blockFile) : FileUtil.readJson(blockFile);
-    if (block === null) {
-      console.log(`  Failed to read block file: ${blockFile}`);
-      process.exit(0);
-    }
+
+    const block = blockList[i];
+    const nextBlock = i + 1 < blockList.length ? blockList[i + 1] : null;
+    proposalTx = nextBlock ? ConsensusUtil.filterProposalFromVotes(nextBlock.last_votes) : null;
+
     console.log(`\n* Executing block on db...`);
     try {
-      Consensus.validateAndExecuteBlockOnDb(block, snapDb, prevBlock);
-      prevBlock = block;
+      Consensus.validateAndExecuteBlockOnDb(block, node, 'verifyBlock', proposalTx);
     } catch (e) {
       console.log(`Failed to validate and excute block ${block.number}: ${e}`);
       process.exit(0);
