@@ -7,15 +7,16 @@ const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
 const {
-  DevFlags,
+  HOSTING_ENV,
   TRACKER_WS_ADDR,
   EPOCH_MS,
-  MessageTypes,
   TARGET_NUM_OUTBOUND_CONNECTION,
   MAX_NUM_INBOUND_CONNECTION,
   NETWORK_ID,
   P2P_PEER_CANDIDATE_URL,
   ENABLE_STATUS_REPORT_TO_TRACKER,
+  DevFlags,
+  MessageTypes,
   TrackerMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
@@ -542,7 +543,6 @@ class P2pClient {
     }
   }
 
-  // TODO(minsulee2): Not just wait for address, but ack. if ack fails, this connection disconnects.
   setTimerForPeerAddressResponse(socket) {
     setTimeout(() => {
       const address = getAddressFromSocket(this.outbound, socket);
@@ -559,6 +559,25 @@ class P2pClient {
           closeSocketSafe(this.outbound, socket);
         }
     }, WAIT_FOR_ADDRESS_TIMEOUT_MS);
+  }
+
+  /**
+   * Checks validity of JSON-RPC endpoint url based on HOSTING_ENV.
+   * @param {string} url is an IPv4 ip address.
+   */
+  isValidJsonRpcUrl(url) {
+    if (!CommonUtil.isString(url)) {
+      return false;
+    }
+    const JSON_RPC_PATH = '/json-rpc';
+    const urlWithoutJsonRpc =
+        url.endsWith(JSON_RPC_PATH) ? url.slice(0, -JSON_RPC_PATH.length) : false;
+    if (!urlWithoutJsonRpc) {
+      return urlWithoutJsonRpc;
+    } else {
+      return HOSTING_ENV === 'local' ? CommonUtil.isValidPrivateUrl(urlWithoutJsonRpc) :
+          CommonUtil.isValidUrl(urlWithoutJsonRpc);
+    }
   }
 
   /**
@@ -586,8 +605,7 @@ class P2pClient {
     this.peerCandidates[peerCandidateJsonRpcUrl] = { queriedAt: Date.now() };
     const peerCandidateUrlList = _.get(peerCandidateInfo, 'peerCandidateUrlList', []);
     peerCandidateUrlList.forEach(url => {
-      // FIXME(minsulee2): CommonUtil.isValidUrl is not working for internal ip addresses.
-      if (!this.peerCandidates[url] && CommonUtil.isValidUrl(url)) {
+      if (!this.peerCandidates[url] && this.isValidJsonRpcUrl(url)) {
         this.peerCandidates[url] = { queriedAt: null };
       }
     });
