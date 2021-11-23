@@ -571,7 +571,7 @@ class P2pClient {
     }
     const JSON_RPC_PATH = '/json-rpc';
     const urlWithoutJsonRpc =
-        url.endsWith(JSON_RPC_PATH) ? url.slice(0, JSON_RPC_PATH.length) : false;
+        url.endsWith(JSON_RPC_PATH) ? url.slice(0, -JSON_RPC_PATH.length) : false;
     if (!urlWithoutJsonRpc) {
       return urlWithoutJsonRpc;
     } else {
