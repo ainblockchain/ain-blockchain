@@ -14,8 +14,8 @@ const {
   BlockchainNodeStates,
   P2pNetworkStates,
   TrafficEventTypes,
-  BlockchainParams,
   trafficStatsManager,
+  BlockchainParams,
 } = require('../common/constants');
 const {
   getAddressFromSocket,
@@ -126,9 +126,10 @@ class P2pClient {
 
   getConfig() {
     return {
-      env: process.env,
       blockchainParams: BlockchainParams,
+      env: process.env,
       devFlags: DevFlags,
+      blockchainConfigs: BlockchainConfigs,
     };
   }
 
