@@ -5,7 +5,6 @@ const _ = require('lodash');
 const espree = require('espree');
 const CommonUtil = require('../common/common-util');
 const {
-  LIGHTWEIGHT,
   HASH_DELIMITER,
   VARIABLE_LABEL_PREFIX,
   PredefinedDbPaths,
@@ -838,8 +837,7 @@ function verifyStateInfoForStateTree(stateTree) {
 function verifyProofHashForStateTree(stateTree, curLabels = []) {
   const curPath = CommonUtil.formatPath(curLabels);
   if (stateTree.getIsLeaf()) {
-    const proofHashComputed = LIGHTWEIGHT ?
-        '' : CommonUtil.hashString(CommonUtil.toString(stateTree.getValue()));
+    const proofHashComputed = CommonUtil.hashString(CommonUtil.toString(stateTree.getValue()));
     const isVerified = proofHashComputed === stateTree.getProofHash();
     const mismatchedPath = isVerified ? null : curPath;
     const mismatchedProofHash = isVerified ? null : stateTree.getProofHash();

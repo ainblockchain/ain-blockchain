@@ -505,9 +505,9 @@ class RadixNode {
       }
       preimage += childStateNode.getProofHash();
     }
-    preimage += LIGHTWEIGHT ? '' : HASH_DELIMITER;
+    preimage += HASH_DELIMITER;
     if (this.numChildren() === 0) {
-      preimage += LIGHTWEIGHT ? '' : HASH_DELIMITER;
+      preimage += HASH_DELIMITER;
     } else {
       for (const child of this.getChildNodes()) {
         const label = child.getLabel();
@@ -516,11 +516,10 @@ class RadixNode {
         if (childRadixVerif.isVerified !== true) {
           return childRadixVerif;
         }
-        preimage += LIGHTWEIGHT ? '' :
-            `${HASH_DELIMITER}${child.getLabel()}${HASH_DELIMITER}${child.getProofHash()}`;
+        preimage += `${HASH_DELIMITER}${child.getLabel()}${HASH_DELIMITER}${child.getProofHash()}`;
       }
     }
-    const proofHashComputed = LIGHTWEIGHT ? '' : CommonUtil.hashString(preimage);
+    const proofHashComputed = CommonUtil.hashString(preimage);
     const isVerified = proofHashComputed === this.getProofHash();
     const mismatchedPath = isVerified ? null : curPath;
     const mismatchedProofHash = isVerified ? null : this.getProofHash();
