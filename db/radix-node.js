@@ -505,9 +505,9 @@ class RadixNode {
       }
       preimage += childStateNode.getProofHash();
     }
-    preimage += LIGHTWEIGHT ? '' : `${HASH_DELIMITER}`;
+    preimage += LIGHTWEIGHT ? '' : HASH_DELIMITER;
     if (this.numChildren() === 0) {
-      preimage += LIGHTWEIGHT ? '' : `${HASH_DELIMITER}`;
+      preimage += LIGHTWEIGHT ? '' : HASH_DELIMITER;
     } else {
       for (const child of this.getChildNodes()) {
         const label = child.getLabel();
