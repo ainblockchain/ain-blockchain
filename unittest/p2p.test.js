@@ -185,25 +185,6 @@ describe("P2P", () => {
       });
     });
 
-    describe("getConfig", () => {
-      it("Gets config", () => {
-        assert.deepEqual(p2pClient.getConfig(), {
-          env: process.env,
-          blockchainParams: BlockchainParams,
-          devFlags: {
-            "enableNtpSync": true,
-            "enableReceiptsRecording": true,
-            "enableRichFunctionLogging": false,
-            "enableRichP2pCommunicationLogging": false,
-            "enableRichTransactionLogging": false,
-            "enableRichTxSelectionLogging": false,
-            "enableStateTreeTransfer": false,
-            "enableTrafficMonitoring": true,
-          }
-        });
-      });
-    });
-
     describe("getNodeStatus", () => {
       it("gets initial node status", () => {
         const actual = p2pServer.getNodeStatus();
@@ -317,23 +298,11 @@ describe("P2P", () => {
             release: '20.4.0',
             uptime: 892864
           },
-          env: {
-            NETWORK_OPTIMIZATION: undefined,
-            BLOCKCHAIN_CONFIGS_DIR: undefined,
-            MIN_NUM_VALIDATORS: undefined,
-            MAX_NUM_VALIDATORS: undefined,
-            ACCOUNT_INDEX: undefined,
-            P2P_PORT: undefined,
-            PORT: undefined,
-            HOSTING_ENV: undefined,
-            DEBUG: undefined
-          }
         };
         const actual = p2pServer.getRuntimeInfo();
         assert.deepEqual(Object.keys(actual), Object.keys(expected));
         assert.deepEqual(Object.keys(actual.process), Object.keys(expected.process));
         assert.deepEqual(Object.keys(actual.os), Object.keys(expected.os));
-        assert.deepEqual(Object.keys(actual.env), Object.keys(expected.env));
       });
     });
 

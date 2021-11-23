@@ -2,7 +2,6 @@ const stringify = require('fast-json-stable-stringify');
 const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 
@@ -22,6 +21,7 @@ class CommonUtil {
   }
 
   static signTransaction(txBody, privateKey, chainId) {
+    const { BlockchainConfigs } = require('../common/constants');
     if (!privateKey) {
       return null;
     }
@@ -36,7 +36,7 @@ class CommonUtil {
       signedTx: {
         tx_body: txBody,
         signature: sig,
-        protoVer: CURRENT_PROTOCOL_VERSION,
+        protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
       }
     };
   }
