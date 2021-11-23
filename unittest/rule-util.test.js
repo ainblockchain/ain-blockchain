@@ -302,13 +302,13 @@ describe("RuleUtil", () => {
       expect(util.isValidPrivateUrl('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8')).to.equal(false);
       expect(util.isValidPrivateUrl('ainetwork.ai')).to.equal(false);
       expect(util.isValidPrivateUrl('https://*.ainetwork.ai')).to.equal(false);
-      expect(util.isValidPrivateUrl('http://172.16.0.36')).to.equal(false);
-      expect(util.isValidPrivateUrl('http://172.16.0.36:8080')).to.equal(false);
       expect(util.isValidPrivateUrl('http://172.16.0.36:8080/json-rpc')).to.equal(false);
     })
 
     it("when valid input", () => {
       expect(util.isValidPrivateUrl('172.16.0.36')).to.equal(true);
+      expect(util.isValidPrivateUrl('http://172.16.0.36')).to.equal(true);
+      expect(util.isValidPrivateUrl('http://172.16.0.36:8080')).to.equal(true);
     })
   })
 

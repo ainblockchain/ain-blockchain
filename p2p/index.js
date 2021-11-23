@@ -562,24 +562,17 @@ class P2pClient {
   }
 
   /**
-   * Checks validity of url based on HOSTING_ENV.
+   * Checks validity of JSON-RPC endpoint url based on HOSTING_ENV.
    * @param {string} url is an IPv4 ip address.
    */
-  isValidUrl(url) {
-    return HOSTING_ENV === 'local' ? CommonUtil.isValidPrivateUrl(url) : CommonUtil.isValidUrl(url);
-  }
-
-  /**
-   * Returns only private url without 'http://', '/json-rpc', and 'port number'.
-   * @param {*} url is an IPv4 ip address with protocols.
-   */
-  getOnlyPrivateUrl(url) {
-    const urlWithourHttpPrefix = url.includes('http://') ? url.substr(7) : url;
-    const urlWithoutJsonRpc = urlWithourHttpPrefix.includes('/json-rpc') ?
-        urlWithourHttpPrefix.substr(0, urlWithourHttpPrefix.length - 9) : urlWithourHttpPrefix;
-    const urlWithoutPort = urlWithoutJsonRpc.includes(':') ?
-        urlWithoutJsonRpc.substr(0, urlWithoutJsonRpc.length - 5) : urlWithoutJsonRpc;
-    return urlWithoutPort;
+  isValidJsonRpcUrl(url) {
+    const urlWithoutJsonRpc = url.includes('/json-rpc') ? url.substr(0, url.length - 9) : false;
+    if (!urlWithoutJsonRpc) {
+      return urlWithoutJsonRpc;
+    } else {
+      return HOSTING_ENV === 'local' ? CommonUtil.isValidPrivateUrl(urlWithoutJsonRpc) :
+          CommonUtil.isValidUrl(urlWithoutJsonRpc);
+    }
   }
 
   /**
@@ -607,8 +600,7 @@ class P2pClient {
     this.peerCandidates[peerCandidateJsonRpcUrl] = { queriedAt: Date.now() };
     const peerCandidateUrlList = _.get(peerCandidateInfo, 'peerCandidateUrlList', []);
     peerCandidateUrlList.forEach(url => {
-      const onlyPrivateUrl = this.getOnlyPrivateUrl(url);
-      if (!this.peerCandidates[url] && this.isValidUrl(onlyPrivateUrl)) {
+      if (!this.peerCandidates[url] && this.isValidJsonRpcUrl(url)) {
         this.peerCandidates[url] = { queriedAt: null };
       }
     });
