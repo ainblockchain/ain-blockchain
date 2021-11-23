@@ -6,14 +6,7 @@ const _ = require('lodash');
 const path = require('path');
 const {
   DevFlags,
-  PORT,
-  ACCOUNT_INDEX,
-  ACCOUNT_INJECTION_OPTION,
-  KEYSTORE_FILE_PATH,
-  SYNC_MODE,
-  SNAPSHOTS_ROOT_DIR,
-  SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
-  MAX_NUM_SNAPSHOTS,
+  BlockchainConfigs,
   BlockchainNodeStates,
   PredefinedDbPaths,
   BlockchainSnapshotProperties,
@@ -24,10 +17,6 @@ const {
   TransactionStates,
   StateVersions,
   SyncModeOptions,
-  LIGHTWEIGHT,
-  TX_POOL_SIZE_LIMIT,
-  TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
-  KEYS_ROOT_DIR,
 } = require('../common/constants');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
@@ -43,9 +32,9 @@ const ConsensusUtil = require('../consensus/consensus-util');
 
 class BlockchainNode {
   constructor(account = null) {
-    this.keysDir = path.resolve(KEYS_ROOT_DIR, `${PORT}`);
+    this.keysDir = path.resolve(BlockchainConfigs.KEYS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
     FileUtil.createDir(this.keysDir);
-    this.snapshotDir = path.resolve(SNAPSHOTS_ROOT_DIR, `${PORT}`);
+    this.snapshotDir = path.resolve(BlockchainConfigs.SNAPSHOTS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
     FileUtil.createSnapshotDir(this.snapshotDir);
 
     this.account = account;
@@ -55,7 +44,7 @@ class BlockchainNode {
     this.urlInternal = null;
     this.urlExternal = null;
 
-    this.bc = new Blockchain(String(PORT));
+    this.bc = new Blockchain(String(BlockchainConfigs.PORT));
     this.tp = new TransactionPool(this);
     this.bp = new BlockPool(this);
     this.stateManager = new StateManager();
@@ -77,9 +66,9 @@ class BlockchainNode {
 
   initAccount() {
     const LOG_HEADER = 'initAccount';
-    if (ACCOUNT_INDEX !== null) { // TODO(liayoo): Deprecate ACCOUNT_INDEX
-      this.setAccountAndInitShardSetting(GenesisAccounts.others[ACCOUNT_INDEX]);
-    } else if (ACCOUNT_INJECTION_OPTION !== null) {
+    if (BlockchainConfigs.ACCOUNT_INDEX !== null) { // TODO(liayoo): Deprecate ACCOUNT_INDEX.
+      this.setAccountAndInitShardSetting(GenesisAccounts.others[BlockchainConfigs.ACCOUNT_INDEX]);
+    } else if (BlockchainConfigs.ACCOUNT_INJECTION_OPTION !== null) {
       // Create a bootstrap account & wait for the account injection
       this.bootstrapAccount = ainUtil.createAccount();
     } else {
@@ -106,7 +95,7 @@ class BlockchainNode {
     try {
       const password = await ainUtil.decryptWithPrivateKey(
           this.bootstrapAccount.private_key, encryptedPassword);
-      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(KEYSTORE_FILE_PATH, password);
+      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(BlockchainConfigs.KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
         this.setAccountAndInitShardSetting(accountFromKeystore)
         return true;
@@ -160,7 +149,7 @@ class BlockchainNode {
   }
 
   static getNodeUrl(ipAddr) {
-    return `http://${ipAddr}:${PORT}`;
+    return `http://${ipAddr}:${BlockchainConfigs.PORT}`;
   }
 
   initNode(isFirstNode) {
@@ -171,7 +160,7 @@ class BlockchainNode {
     let latestSnapshotBlockNumber = -1;
 
     // 1. Get the latest snapshot if in the "fast" sync mode.
-    if (SYNC_MODE === SyncModeOptions.FAST) {
+    if (BlockchainConfigs.SYNC_MODE === SyncModeOptions.FAST) {
       logger.info(`[${LOG_HEADER}] Initializing node in 'fast' mode..`);
       const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
       latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
@@ -287,12 +276,12 @@ class BlockchainNode {
   }
 
   updateSnapshots(blockNumber) {
-    if (blockNumber % SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
+    if (blockNumber % BlockchainConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
           this.snapshotDir,
-          blockNumber - MAX_NUM_SNAPSHOTS * SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
+          blockNumber - BlockchainConfigs.MAX_NUM_SNAPSHOTS * BlockchainConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
   }
 
@@ -393,10 +382,10 @@ class BlockchainNode {
   getTxPoolSizeUtilization(address) {
     const result = {};
     if (address) { // Per account
-      result.limit = TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
+      result.limit = BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
       result.used = this.tp.getPerAccountPoolSize(address);
     } else { // Total
-      result.limit = TX_POOL_SIZE_LIMIT;
+      result.limit = BlockchainConfigs.TX_POOL_SIZE_LIMIT;
       result.used = this.tp.getPoolSize();
     }
     return result;
@@ -477,7 +466,7 @@ class BlockchainNode {
           logger, 5,
           `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
     }
-    if (!LIGHTWEIGHT) {
+    if (!BlockchainConfigs.LIGHTWEIGHT) {
       if (!Transaction.verifyTransaction(executableTx)) {
         return CommonUtil.logAndReturnTxResult(logger, 6, `[${LOG_HEADER}] Invalid signature`);
       }
@@ -513,7 +502,7 @@ class BlockchainNode {
     const LOG_HEADER = 'loadAndExecuteChainOnDb';
 
     const numBlockFiles = this.bc.getNumBlockFiles();
-    const fromBlockNumber = SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
+    const fromBlockNumber = BlockchainConfigs.SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
     let nextBlock = null;
     let proposalTx = null;
     for (let number = fromBlockNumber; number < numBlockFiles; number++) {
@@ -528,7 +517,7 @@ class BlockchainNode {
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
       try {
-        if (latestSnapshotBlockNumber === number && SYNC_MODE === SyncModeOptions.FAST) {
+        if (latestSnapshotBlockNumber === number && BlockchainConfigs.SYNC_MODE === SyncModeOptions.FAST) {
           // TODO(liayoo): Deal with the case where block corresponding to the latestSnapshot doesn't exist.
           if (!this.bp.addSeenBlock(block, proposalTx)) {
             return false;

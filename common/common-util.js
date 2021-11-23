@@ -610,14 +610,14 @@ class CommonUtil {
    * @returns
    */
   static getTotalGasCost(gasPrice, gasAmount) {
-    const { MICRO_AIN } = require('./constants');
+    const { BlockchainConfigs } = require('./constants');
     if (!CommonUtil.isNumber(gasPrice)) {
       gasPrice = 0; // Default gas price = 0 microain
     }
     if (!CommonUtil.isNumber(gasAmount)) {
       gasAmount = 0; // Default gas amount = 0
     }
-    return gasPrice * MICRO_AIN * gasAmount;
+    return gasPrice * BlockchainConfigs.MICRO_AIN * gasAmount;
   }
 
   static getServiceGasCostTotalFromTxList(txList, resList) {
