@@ -8,10 +8,7 @@ const BlockchainNode = require('../node');
 const {setNodeForTesting, getTransaction, txsToDummyReceipts} = require('./test-util');
 const TransactionPool = require('../tx-pool');
 const {
-  BANDWIDTH_BUDGET_PER_BLOCK,
-  SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
-  APPS_BANDWIDTH_BUDGET_PER_BLOCK,
-  FREE_BANDWIDTH_BUDGET_PER_BLOCK,
+  BlockchainConfigs,
   TransactionStates,
 } = require('../common/constants');
 
@@ -505,24 +502,24 @@ describe('TransactionPool', async () => {
         node.db.setValuesForTesting(`/staking/app1/balance_total`, 1); // 100%
         assert.deepEqual(
           node.tp.performBandwidthChecks([
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: APPS_BANDWIDTH_BUDGET_PER_BLOCK}}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK}}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}}
           ], node.db),
           [
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: APPS_BANDWIDTH_BUDGET_PER_BLOCK}}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK}}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}}
           ]
         );
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: 1}}}},
-            {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {bandwidth: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK - 1}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: APPS_BANDWIDTH_BUDGET_PER_BLOCK}}}}}
+            {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK - 1}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK}}}}}
           ], node.db),
           [
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: 1}}}},
-            {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {bandwidth: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK - 1}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: APPS_BANDWIDTH_BUDGET_PER_BLOCK}}}}}
+            {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK - 1}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK}}}}}
           ]
         );
       });
@@ -531,14 +528,14 @@ describe('TransactionPool', async () => {
         node.db.setValuesForTesting(`/staking/app1/balance_total`, 1); // 100%
         assert.deepEqual(
           node.tp.performBandwidthChecks([
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: BANDWIDTH_BUDGET_PER_BLOCK + 1}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.BANDWIDTH_BUDGET_PER_BLOCK + 1}}}}
           ], node.db),
           []
         );
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: 1}}}},
-            {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {bandwidth: {service: BANDWIDTH_BUDGET_PER_BLOCK}}}}
+            {tx_body: {timestamp: 2, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.BANDWIDTH_BUDGET_PER_BLOCK}}}}
           ], node.db),
           [{tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: 1}}}}]
         );
@@ -547,16 +544,16 @@ describe('TransactionPool', async () => {
       it('within SERVICE_BANDWIDTH_BUDGET_PER_BLOCK', () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}}
           ], node.db),
-          [{tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}}]
+          [{tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}}]
         );
       });
 
       it('cannot exceed SERVICE_BANDWIDTH_BUDGET_PER_BLOCK', () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK + 1}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK + 1}}}}
           ], node.db),
           []
         );
@@ -567,25 +564,25 @@ describe('TransactionPool', async () => {
         node.db.setValuesForTesting(`/staking/app2/balance_total`, 10); // 50%
         assert.deepEqual(
           node.tp.performBandwidthChecks([
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app2: APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app2: BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}}
           ], node.db),
           [
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app2: APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app2: BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}}
           ]
         );
         assert.deepEqual(
           node.tp.performBandwidthChecks([
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: (APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2) + 1}}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app2: APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: (BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2) + 1}}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app2: BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}}
           ], node.db),
           [
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}},
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app2: APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {service: BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}},
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app2: BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK / 2}}}}}
           ]
         );
       });
@@ -593,16 +590,16 @@ describe('TransactionPool', async () => {
       it('within 10% free tier for bandwidth budget', () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: FREE_BANDWIDTH_BUDGET_PER_BLOCK}}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: BlockchainConfigs.FREE_BANDWIDTH_BUDGET_PER_BLOCK}}}}}
           ], node.db),
-          [{tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: FREE_BANDWIDTH_BUDGET_PER_BLOCK}}}}}]
+          [{tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: BlockchainConfigs.FREE_BANDWIDTH_BUDGET_PER_BLOCK}}}}}]
         );
       });
 
       it('cannot exceed 10% free tier for bandwidth budget', () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([
-            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: FREE_BANDWIDTH_BUDGET_PER_BLOCK + 1}}}}}
+            {tx_body: {timestamp: 1, gas_price: 1}, extra: {gas: {bandwidth: {app: {app1: BlockchainConfigs.FREE_BANDWIDTH_BUDGET_PER_BLOCK + 1}}}}}
           ], node.db),
           []
         );
@@ -612,7 +609,7 @@ describe('TransactionPool', async () => {
         assert.deepEqual(
           node.tp.performBandwidthChecks([
             {tx_body: {timestamp: 1, gas_price: 1, nonce: 0}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {bandwidth: {service: 1}}}},
-            {tx_body: {timestamp: 1, gas_price: 1, nonce: 1}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {bandwidth: {service: SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}},
+            {tx_body: {timestamp: 1, gas_price: 1, nonce: 1}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {bandwidth: {service: BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}}}},
             {tx_body: {timestamp: 1, gas_price: 1, nonce: 2}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {bandwidth: {service: 1}}}}
           ], node.db),
           [{tx_body: {timestamp: 1, gas_price: 1, nonce: 0}, address: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', extra: {gas: {bandwidth: {service: 1}}}}]

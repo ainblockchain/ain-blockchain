@@ -3,19 +3,12 @@ const rimraf = require('rimraf');
 const _ = require("lodash");
 const ainUtil = require('@ainblockchain/ain-util');
 const {
-  CHAINS_DIR,
-  GenesisToken,
-  NUM_GENESIS_ACCOUNTS,
-  GENESIS_ADDR,
-  GenesisSharding,
-  GENESIS_WHITELIST,
-  GenesisFunctions,
-  GenesisRules,
-  GenesisOwners,
+  BlockchainConfigs,
   PredefinedDbPaths,
   StateInfoProperties,
-  SERVICE_STATE_BUDGET,
   StateVersions,
+  GenesisToken,
+  GenesisSharding,
 } = require('../common/constants')
 const {
   verifyStateProof,
@@ -33,14 +26,14 @@ describe("DB initialization", () => {
   let node;
 
   beforeEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node, 0, true);
   })
 
   afterEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   describe("Sharding path", () => {
@@ -63,7 +56,7 @@ describe("DB initialization", () => {
     it("loading balances properly on initialization", () => {
       const expected =
           GenesisToken.total_supply - 5 * 11000000 - 5 * 1000000;
-      const dbPath = `/accounts/${GENESIS_ADDR}/balance`;
+      const dbPath = `/accounts/${BlockchainConfigs.GENESIS_ADDR}/balance`;
       expect(node.db.getValue(dbPath)).to.equal(expected);
     })
   })
@@ -76,7 +69,7 @@ describe("DB initialization", () => {
 
   describe("Whitelist", () => {
     it("loading whitelist properly on initialization", () => {
-      assert.deepEqual(node.db.getValue(`/consensus/whitelist`), GENESIS_WHITELIST);
+      assert.deepEqual(node.db.getValue(`/consensus/whitelist`), BlockchainConfigs.GENESIS_WHITELIST);
     })
   })
 
@@ -105,7 +98,7 @@ describe("DB operations", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -252,7 +245,7 @@ describe("DB operations", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   describe("Read operations", () => {
@@ -2704,7 +2697,7 @@ describe("DB operations", () => {
     let objectTx;
 
     beforeEach(() => {
-      rimraf.sync(CHAINS_DIR);
+      rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
       node = new BlockchainNode();
       setNodeForTesting(node);
@@ -2728,7 +2721,7 @@ describe("DB operations", () => {
     });
 
     afterEach(() => {
-      rimraf.sync(CHAINS_DIR);
+      rimraf.sync(BlockchainConfigs.CHAINS_DIR);
     });
 
     describe("executeTransaction", () => {
@@ -2854,7 +2847,7 @@ describe("DB operations", () => {
             [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.TRANSFER, node.account.address, addr],
             valueObj);
         node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
-        expect(node.db.getStateUsageAtPath('/')[StateInfoProperties.TREE_BYTES]).to.be.lessThan(SERVICE_STATE_BUDGET);
+        expect(node.db.getStateUsageAtPath('/')[StateInfoProperties.TREE_BYTES]).to.be.lessThan(BlockchainConfigs.SERVICE_STATE_BUDGET);
 
         const expectedGasAmountTotal = {
           bandwidth: {
@@ -3266,7 +3259,7 @@ describe("DB rule config", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     node1 = new BlockchainNode();
     setNodeForTesting(node1, 0);
@@ -3308,7 +3301,7 @@ describe("DB rule config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {
@@ -3383,7 +3376,7 @@ describe("DB owner config", () => {
   let node;
 
   beforeEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -3494,7 +3487,7 @@ describe("DB owner config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   // Known user
@@ -3715,7 +3708,7 @@ describe("DB sharding config", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node, 0, false, false);
@@ -3837,7 +3830,7 @@ describe("DB sharding config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   describe("Sharding path", () => {
@@ -4531,7 +4524,7 @@ describe("State info", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -4560,7 +4553,7 @@ describe("State info", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   describe("Check proof for setValue(), setOwner(), setRule(), and setFunction()", () => {
@@ -4672,7 +4665,7 @@ describe("State info - getStateInfo", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -4695,7 +4688,7 @@ describe("State info - getStateInfo", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   describe("No tree structure change", () => {
@@ -4858,7 +4851,7 @@ describe("State version handling", () => {
   let dbValues;
 
   beforeEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -4890,7 +4883,7 @@ describe("State version handling", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   describe("getRefForReading()", () => {
