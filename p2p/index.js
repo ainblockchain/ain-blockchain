@@ -230,7 +230,7 @@ class P2pClient {
         return value.queriedAt === null;
       });
       if (notQueriedCandidateEntries.length > 0) {
-        shuffled = _.shuffle(notQueriedCandidateEntries);
+        const shuffled = _.shuffle(notQueriedCandidateEntries);
         return shuffled[0][0];
       } else {
         const shuffled = _.shuffle(peerCandidatesEntries);
