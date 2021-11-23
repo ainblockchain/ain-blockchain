@@ -250,17 +250,6 @@ class P2pServer {
         // version: os.version(),
         uptime: os.uptime(),
       },
-      env: {
-        NETWORK_OPTIMIZATION: process.env.NETWORK_OPTIMIZATION,
-        BLOCKCHAIN_CONFIGS_DIR: process.env.BLOCKCHAIN_CONFIGS_DIR,
-        MIN_NUM_VALIDATORS: process.env.MIN_NUM_VALIDATORS,
-        MAX_NUM_VALIDATORS: process.env.MAX_NUM_VALIDATORS,
-        ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
-        P2P_PORT: process.env.P2P_PORT,
-        PORT: process.env.PORT,
-        HOSTING_ENV: process.env.HOSTING_ENV,
-        DEBUG: process.env.DEBUG,
-      },
     };
   }
 
