@@ -566,7 +566,12 @@ class P2pClient {
    * @param {string} url is an IPv4 ip address.
    */
   isValidJsonRpcUrl(url) {
-    const urlWithoutJsonRpc = url.includes('/json-rpc') ? url.substr(0, url.length - 9) : false;
+    if (!CommonUtil.isString(url)) {
+      return false;
+    }
+    const JSON_RPC_PATH = '/json-rpc';
+    const urlWithoutJsonRpc =
+        url.endsWith(JSON_RPC_PATH) ? url.slice(0, JSON_RPC_PATH.length) : false;
     if (!urlWithoutJsonRpc) {
       return urlWithoutJsonRpc;
     } else {
