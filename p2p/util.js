@@ -7,12 +7,7 @@ const logger = new (require('../logger'))('SERVER_UTIL');
 
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const {
-  CURRENT_PROTOCOL_VERSION,
-  DATA_PROTOCOL_VERSION,
-  P2P_MESSAGE_TIMEOUT_MS,
-  NETWORK_ID
-} = require('../common/constants');
+const { BlockchainConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
 function _isValidMessage(message) {
@@ -94,9 +89,9 @@ function encapsulateMessage(type, dataObj) {
   const message = {
     type: type,
     data: dataObj,
-    protoVer: CURRENT_PROTOCOL_VERSION,
-    dataProtoVer: DATA_PROTOCOL_VERSION,
-    networkId: NETWORK_ID,
+    protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+    dataProtoVer: BlockchainConfigs.DATA_PROTOCOL_VERSION,
+    networkId: BlockchainConfigs.NETWORK_ID,
     timestamp: Date.now()
   };
   return message;
@@ -107,7 +102,7 @@ function checkTimestamp(timestamp) {
     return false;
   } else {
     const now = Date.now();
-    if (now - timestamp > P2P_MESSAGE_TIMEOUT_MS) {
+    if (now - timestamp > BlockchainConfigs.P2P_MESSAGE_TIMEOUT_MS) {
       return false;
     } else {
       return true;
@@ -116,7 +111,7 @@ function checkTimestamp(timestamp) {
 }
 
 function isValidNetworkId(networkId) {
-  if (networkId !== NETWORK_ID) {
+  if (networkId !== BlockchainConfigs.NETWORK_ID) {
     return false;
   } else {
     return true;

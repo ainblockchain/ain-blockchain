@@ -2,9 +2,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const {
-  CHAINS_DIR,
-  MIN_STAKE_PER_VALIDATOR,
-  MAX_STAKE_PER_VALIDATOR,
+  BlockchainConfigs,
   PredefinedDbPaths,
 } = require('../common/constants');
 const BlockchainNode = require('../node');
@@ -14,7 +12,7 @@ describe("Consensus", () => {
   let node1, node2;
 
   beforeEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     node1 = new BlockchainNode();
     setNodeForTesting(node1, 0);
@@ -23,7 +21,7 @@ describe("Consensus", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   it("Non-staked nodes cannot vote", () => {
@@ -125,7 +123,7 @@ describe("Consensus", () => {
     node1.cloneAndFinalizeVersion(tempDb.stateVersion, -1); // Bypass already existing final state version
     
     // Staking less than MIN_STAKE_PER_VALIDATOR
-    let stakeAmount = MIN_STAKE_PER_VALIDATOR - 1;
+    let stakeAmount = BlockchainConfigs.MIN_STAKE_PER_VALIDATOR - 1;
     const stakeLessThanMin = getTransaction(node2, {
         operation: { 
           type: 'SET_VALUE', 
@@ -188,7 +186,7 @@ describe("Consensus", () => {
         operation: { 
           type: 'SET_VALUE', 
           ref: `/staking/consensus/${addr}/0/stake/key3/value`, 
-          value: MAX_STAKE_PER_VALIDATOR - MIN_STAKE_PER_VALIDATOR + 1 // 1 more than MAX_STAKE_PER_VALIDATOR
+          value: BlockchainConfigs.MAX_STAKE_PER_VALIDATOR - BlockchainConfigs.MIN_STAKE_PER_VALIDATOR + 1 // 1 more than MAX_STAKE_PER_VALIDATOR
         },
         nonce: -1,
         gas_price: 1

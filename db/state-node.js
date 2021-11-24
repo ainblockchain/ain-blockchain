@@ -4,8 +4,7 @@ const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
-  LIGHTWEIGHT,
-  STATE_INFO_PREFIX,
+  BlockchainConfigs,
   StateInfoProperties,
 } = require('../common/constants');
 const RadixTree = require('./radix-tree');
@@ -109,7 +108,7 @@ class StateNode {
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
         for (const key in obj) {
-          if (_.startsWith(key, STATE_INFO_PREFIX)) {
+          if (_.startsWith(key, BlockchainConfigs.STATE_INFO_PREFIX)) {
             // Skip state properties.
             continue;
           }
@@ -426,7 +425,7 @@ class StateNode {
   buildStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
     const nodeBytes = this.computeNodeBytes();
     if (this.getIsLeaf()) {
-      const proofHash = LIGHTWEIGHT ?
+      const proofHash = BlockchainConfigs.LIGHTWEIGHT ?
           '' : CommonUtil.hashString(CommonUtil.toString(this.getValue()));
       return {
         proofHash,

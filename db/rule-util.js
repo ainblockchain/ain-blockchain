@@ -196,18 +196,18 @@ class RuleUtil {
   }
 
   getMinStakeAmount() {
-    const { MIN_STAKE_PER_VALIDATOR } = require('../common/constants');
-    return MIN_STAKE_PER_VALIDATOR;
+    const { BlockchainConfigs } = require('../common/constants');
+    return BlockchainConfigs.MIN_STAKE_PER_VALIDATOR;
   }
 
   getMaxStakeAmount() {
-    const { MAX_STAKE_PER_VALIDATOR } = require('../common/constants');
-    return MAX_STAKE_PER_VALIDATOR;
+    const { BlockchainConfigs } = require('../common/constants');
+    return BlockchainConfigs.MAX_STAKE_PER_VALIDATOR;
   }
 
   getMinNumValidators() {
-    const { MIN_NUM_VALIDATORS } = require('../common/constants');
-    return MIN_NUM_VALIDATORS;
+    const { BlockchainConfigs } = require('../common/constants');
+    return BlockchainConfigs.MIN_NUM_VALIDATORS;
   }
 
   getConsensusWhitelistSize() {

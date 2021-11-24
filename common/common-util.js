@@ -2,7 +2,6 @@ const stringify = require('fast-json-stable-stringify');
 const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 
@@ -22,6 +21,7 @@ class CommonUtil {
   }
 
   static signTransaction(txBody, privateKey, chainId) {
+    const { BlockchainConfigs } = require('../common/constants');
     if (!privateKey) {
       return null;
     }
@@ -36,7 +36,7 @@ class CommonUtil {
       signedTx: {
         tx_body: txBody,
         signature: sig,
-        protoVer: CURRENT_PROTOCOL_VERSION,
+        protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
       }
     };
   }
@@ -610,14 +610,14 @@ class CommonUtil {
    * @returns
    */
   static getTotalGasCost(gasPrice, gasAmount) {
-    const { MICRO_AIN } = require('./constants');
+    const { BlockchainConfigs } = require('./constants');
     if (!CommonUtil.isNumber(gasPrice)) {
       gasPrice = 0; // Default gas price = 0 microain
     }
     if (!CommonUtil.isNumber(gasAmount)) {
       gasAmount = 0; // Default gas amount = 0
     }
-    return gasPrice * MICRO_AIN * gasAmount;
+    return gasPrice * BlockchainConfigs.MICRO_AIN * gasAmount;
   }
 
   static getServiceGasCostTotalFromTxList(txList, resList) {
@@ -778,6 +778,14 @@ class CommonUtil {
       return '';
     }
     return jsonDiff.diffString(base, target, { color: "" });
+  }
+
+  static getRegexpList(strList) {
+    const regexpList = [];
+    for (const str of strList) {
+      regexpList.push(new RegExp(str));
+    }
+    return regexpList;
   }
 }
 

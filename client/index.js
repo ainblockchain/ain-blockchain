@@ -13,15 +13,7 @@ const P2pClient = require('../p2p');
 const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
 const {
-  ENABLE_DEV_CLIENT_SET_API,
-  ENABLE_EXPRESS_RATE_LIMIT,
-  CURRENT_PROTOCOL_VERSION,
-  PROTOCOL_VERSION_MAP,
-  PORT,
-  NETWORK_ID,
-  CHAIN_ID,
-  REQUEST_BODY_SIZE_LIMIT,
-  CORS_WHITELIST,
+  BlockchainConfigs,
   BlockchainNodeStates,
   WriteDbOperations,
   TrafficEventTypes,
@@ -32,13 +24,13 @@ const { ConsensusStates } = require('../consensus/constants');
 const MAX_BLOCKS = 20;
 
 const app = express();
-app.use(express.json({ limit: REQUEST_BODY_SIZE_LIMIT }));
+app.use(express.json({ limit: BlockchainConfigs.REQUEST_BODY_SIZE_LIMIT }));
 app.use(express.urlencoded({
   extended: true,
-  limit: REQUEST_BODY_SIZE_LIMIT
+  limit: BlockchainConfigs.REQUEST_BODY_SIZE_LIMIT
 }));
-app.use(cors({ origin: CORS_WHITELIST }));
-if (ENABLE_EXPRESS_RATE_LIMIT) {
+app.use(cors({ origin: CommonUtil.getRegexpList(BlockchainConfigs.CORS_WHITELIST) }));
+if (BlockchainConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
   const limiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
     max: 60 // limit each IP to 60 requests per windowMs
@@ -59,8 +51,8 @@ process.on('SIGINT', (_) => {
   process.exit(1);
 });
 
-const { min, max } = VersionUtil.matchVersions(PROTOCOL_VERSION_MAP, CURRENT_PROTOCOL_VERSION);
-const minProtocolVersion = min === undefined ? CURRENT_PROTOCOL_VERSION : min;
+const { min, max } = VersionUtil.matchVersions(BlockchainConfigs.PROTOCOL_VERSION_MAP, BlockchainConfigs.CURRENT_PROTOCOL_VERSION);
+const minProtocolVersion = min === undefined ? BlockchainConfigs.CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 const p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
 const p2pServer = p2pClient.server;
@@ -271,7 +263,7 @@ app.post('/get', (req, res, next) => {
     .end();
 });
 
-if (ENABLE_DEV_CLIENT_SET_API) {
+if (BlockchainConfigs.ENABLE_DEV_CLIENT_SET_API) {
   app.post('/set_value', (req, res, next) => {
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET);
     const result = createAndExecuteTransaction(createSingleSetTxBody(
@@ -613,7 +605,7 @@ app.get('/get_network_id', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result: NETWORK_ID })
+    .send({ code: 0, result: BlockchainConfigs.NETWORK_ID })
     .end();
 });
 
@@ -621,7 +613,7 @@ app.get('/get_chain_id', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result: CHAIN_ID })
+    .send({ code: 0, result: BlockchainConfigs.CHAIN_ID })
     .end();
 });
 
@@ -635,8 +627,8 @@ app.get('/get_config', (req, res) => {
 
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server
-const server = app.listen(PORT, () => {
-  logger.info(`App listening on port ${PORT}`);
+const server = app.listen(BlockchainConfigs.PORT, () => {
+  logger.info(`App listening on port ${BlockchainConfigs.PORT}`);
   logger.info(`Press Ctrl+C to quit.`);
 });
 
