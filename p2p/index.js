@@ -54,6 +54,7 @@ class P2pClient {
     this.outbound = {};
     this.p2pState = P2pNetworkStates.STARTING;
     this.peerConnectionsInProgress = {};
+    this.chainSyncInProgress = null;
     logger.info(`Now p2p network in STARTING state!`);
     this.startHeartbeat();
   }
@@ -216,6 +217,30 @@ class P2pClient {
   }
 
   /**
+   * Use the existing peer or, if the peer is unavailable, randomly assign a peer for syncing the chain.
+   * @returns {Object|Null} The socket of the peer.
+   */
+  assignRandomPeerForChainSync() {
+    if (Object.keys(this.outbound).length === 0) {
+      return null;
+    }
+    const currentPeer = this.chainSyncInProgress ? this.chainSyncInProgress.address : null;
+    if (this.chainSyncInProgress === null || !this.outbound[this.chainSyncInProgress.address]) {
+      const candidates = Object.keys(this.outbound).filter((addr) => {
+        return addr !== currentPeer &&
+            _.get(this.outbound[addr], 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING;
+      });
+      const selectedAddr = _.shuffle(candidates)[0];
+      if (!selectedAddr) {
+        return null;
+      }
+      this.setChainSyncPeer(selectedAddr);
+    }
+    const socket = this.outbound[this.chainSyncInProgress.address].socket;
+    return socket;
+  }
+
+  /**
    * Returns randomly picked connectable peers. Refer to details below:
    * 1) Pick one if it is never queried.
    * 2) Choose one in all peerCandidates if there no exists never queried peerCandidates.
@@ -230,11 +255,9 @@ class P2pClient {
         return value.queriedAt === null;
       });
       if (notQueriedCandidateEntries.length > 0) {
-        const shuffled = _.shuffle(notQueriedCandidateEntries);
-        return shuffled[0][0];
+        return _.shuffle(notQueriedCandidateEntries)[0][0];
       } else {
-        const shuffled = _.shuffle(peerCandidatesEntries);
-        return shuffled[0][0];
+        return _.shuffle(peerCandidatesEntries)[0][0];
       }
     }
   }
@@ -320,23 +343,42 @@ class P2pClient {
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach(node => {
-      node.socket.send(stringPayload);
+    Object.values(this.outbound).forEach((node) => {
+      if (_.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
+        node.socket.send(stringPayload);
+      }
     });
     logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
   }
 
-  requestChainSegment(socket) {
+  /**
+   * Request a chain segment to sync with from a peer.
+   * The peer to request from is randomly selected & maintained until it's disconnected, it gives
+   * an invalid chain, or we're fully synced.
+   */
+  requestChainSegment() {
+    const LOG_HEADER = 'requestChainSegment';
     if (this.server.node.state !== BlockchainNodeStates.SYNCING &&
       this.server.node.state !== BlockchainNodeStates.SERVING) {
       return;
     }
-    const lastBlockNumber = this.server.node.bc.lastBlockNumber();
-    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
-    if (!payload) {
-      logger.error('The request chainSegment cannot be sent because of msg encapsulation failure.');
+    const socket = this.assignRandomPeerForChainSync();
+    if (!socket) {
+      logger.error(`[${LOG_HEADER}] Failed to get a peer for CHAIN_SEGMENT_REQUEST`);
       return;
     }
+    const lastBlockNumber = this.server.node.bc.lastBlockNumber();
+    if (this.chainSyncInProgress.lastBlockNumber >= lastBlockNumber &&
+        this.chainSyncInProgress.updatedAt > Date.now() - BlockchainConfigs.EPOCH_MS) { // time buffer
+      logger.info(`[${LOG_HEADER}] Already sent a request with the same/higher lastBlockNumber`);
+      return;
+    }
+    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
+    if (!payload) {
+      logger.error(`[${LOG_HEADER}] The request chainSegment cannot be sent because of msg encapsulation failure.`);
+      return;
+    }
+    this.updateChainSyncPeer(lastBlockNumber);
     socket.send(JSON.stringify(payload));
   }
 
@@ -491,6 +533,9 @@ class P2pClient {
     socket.on('close', () => {
       const address = getAddressFromSocket(this.outbound, socket);
       removeSocketConnectionIfExists(this.outbound, address);
+      if (_.get(this.chainSyncInProgress, 'address') === address) {
+        this.resetChainSyncPeer();
+      }
       logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
     });
 
@@ -516,24 +561,31 @@ class P2pClient {
 
   handleChainSegment(number, chainSegment, catchUpInfo, socket) {
     const LOG_HEADER = 'handleChainSegment';
-    if (this.tryInitProcesses(number, chainSegment, catchUpInfo)) { // Already caught up
+    const address = getAddressFromSocket(this.outbound, socket);
+    if (_.get(this.chainSyncInProgress, 'address') !== address) { // Received from a peer that I didn't request from
       return;
     }
-    if (this.server.node.mergeChainSegment(chainSegment) >= 0) { // Merge success
+    if (this.tryInitProcesses(number, chainSegment, catchUpInfo)) { // Already caught up
+      this.resetChainSyncPeer();
+      return;
+    }
+    const mergeResult = this.server.node.mergeChainSegment(chainSegment);
+    if (mergeResult !== 0) {
+      // Received an invalid chain, or fully synced with this peer.
+      this.resetChainSyncPeer();
+    } else {
+      // There's more to receive from this peer.
+    }
+    if (mergeResult >= 0) { // Merge success
       this.tryInitProcesses(number, chainSegment, catchUpInfo);
     } else {
       logger.info(`[${LOG_HEADER}] Failed to merge incoming chain segment.`);
     }
-    if (this.server.consensus.isRunning()) {
-      this.server.consensus.catchUp(catchUpInfo);
-    }
-    if (this.server.node.state !== BlockchainNodeStates.SERVING &&
-        this.server.node.bc.lastBlockNumber() <= number) {
+    this.server.consensus.catchUp(catchUpInfo);
+    if (this.server.node.bc.lastBlockNumber() <= number) {
       // Continuously request the blockchain segments until
       // your local blockchain matches the height of the consensus blockchain.
-      setTimeout(() => {
-        this.requestChainSegment(socket);
-      }, BlockchainConfigs.EPOCH_MS);
+      this.requestChainSegment();
     }
   }
 
@@ -541,8 +593,8 @@ class P2pClient {
     setTimeout(() => {
       const address = getAddressFromSocket(this.outbound, socket);
         if (address) {
-          logger.info(`with (${address}).`);
-          this.requestChainSegment(socket, this.server.node.bc.lastBlockNumber());
+          logger.info(`Received address: ${address}`);
+          this.requestChainSegment();
           if (this.server.consensus.stakeTx) {
             this.broadcastTransaction(this.server.consensus.stakeTx);
             this.server.consensus.stakeTx = null;
@@ -627,6 +679,24 @@ class P2pClient {
     delete this.peerConnectionsInProgress[url];
   }
 
+  setChainSyncPeer(address) {
+    this.chainSyncInProgress = {
+      address,
+      lastBlockNumber: -2, // less than -1 (initialized)
+      updatedAt: Date.now
+    };
+  }
+
+  updateChainSyncPeer(lastBlockNumber) {
+    if (!this.chainSyncInProgress) return;
+    this.chainSyncInProgress.lastBlockNumber = lastBlockNumber;
+    this.chainSyncInProgress.updatedAt = Date.now();
+  }
+
+  resetChainSyncPeer() {
+    this.chainSyncInProgress = null;
+  }
+
   connectToPeer(url) {
     const socket = new Websocket(url);
     socket.on('open', async () => {
@@ -642,7 +712,7 @@ class P2pClient {
 
   getAddrFromOutboundMapping(url) {
     for (const address in this.outbound) {
-      const peerInfo = this.outbound[address];
+      const peerInfo = this.outbound[address].peerInfo;
       if (url === peerInfo.networkStatus.urls.p2p.url) {
         return address;
       }
