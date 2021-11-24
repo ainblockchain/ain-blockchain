@@ -369,7 +369,7 @@ class P2pClient {
     }
     const lastBlockNumber = this.server.node.bc.lastBlockNumber();
     if (this.chainSyncInProgress.lastBlockNumber >= lastBlockNumber &&
-        this.chainSyncInProgress.updatedAt > Date.now() - EPOCH_MS) { // time buffer
+        this.chainSyncInProgress.updatedAt > Date.now() - BlockchainConfigs.EPOCH_MS) { // time buffer
       logger.info(`[${LOG_HEADER}] Already sent a request with the same/higher lastBlockNumber`);
       return;
     }
