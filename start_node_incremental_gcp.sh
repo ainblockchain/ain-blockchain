@@ -284,7 +284,7 @@ fi
 MAX_OLD_SPACE_SIZE_MB=11000
 
 # NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
-export CORS_WHITELIST=*
+export CORS_WHITELIST='*'
 printf "CORS_WHITELIST=$CORS_WHITELIST\n"
 
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
