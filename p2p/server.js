@@ -518,11 +518,7 @@ class P2pServer {
               this.consensus.handleConsensusMessage(consensusMessage);
             } else {
               logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
-              Object.values(this.client.outbound).forEach((node) => {
-                setTimeout(() => {
-                  this.client.requestChainSegment(node.socket);
-                }, BlockchainConfigs.EPOCH_MS);
-              });
+              this.client.requestChainSegment();
             }
             break;
           case MessageTypes.TRANSACTION:
@@ -543,8 +539,8 @@ class P2pServer {
               return;
             }
             if (this.node.state !== BlockchainNodeStates.SERVING) {
-              logger.debug(`[${LOG_HEADER}] Not ready to process transactions.\n` +
-                  `My node status is now ${this.node.state}.`);
+              logger.debug(`[${LOG_HEADER}] Not ready to process transactions (${this.node.state}).`);
+              this.client.requestChainSegment();
               return;
             }
             if (Transaction.isBatchTransaction(tx)) {
@@ -580,6 +576,7 @@ class P2pServer {
             if (this.node.state !== BlockchainNodeStates.SERVING) {
               logger.debug(`[${LOG_HEADER}] Not ready to accept chain segment request.\n` +
                   `My node status is now ${this.node.state}.`);
+              this.client.requestChainSegment();
               return;
             }
             // Send a chunk of 20 blocks from your blockchain to the requester.
@@ -613,7 +610,7 @@ class P2pServer {
             const addressFromSocket = getAddressFromSocket(this.inbound, socket);
             // Keep updating both inbound and outbound.
             this.inbound[addressFromSocket].peerInfo = updatePeerInfo;
-            this.client.outbound[addressFromSocket].networkStatus = updatePeerInfo.networkStatus;
+            this.client.outbound[addressFromSocket].peerInfo = updatePeerInfo;
             break;
           default:
             logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
@@ -648,11 +645,17 @@ class P2pServer {
   }
 
   executeAndBroadcastTransaction(tx) {
+    const LOG_HEADER = 'executeAndBroadcastTransaction';
     if (!tx) {
       return {
         tx_hash: null,
         result: false
       };
+    }
+    if (this.node.state !== BlockchainNodeStates.SERVING) {
+      logger.debug(`[${LOG_HEADER}] Not ready to process transactions (${this.node.state})`);
+      this.client.requestChainSegment();
+      return;
     }
     if (Transaction.isBatchTransaction(tx)) {
       const resultList = [];
