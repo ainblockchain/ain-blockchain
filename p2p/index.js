@@ -217,7 +217,7 @@ class P2pClient {
   }
 
   /**
-   * Use the existing peer or, if a peer is unavailable, randomly assign a peer for syncing the chain.
+   * Use the existing peer or, if the peer is unavailable, randomly assign a peer for syncing the chain.
    * @returns {Object|Null} The socket of the peer.
    */
   assignRandomPeerForChainSync() {
