@@ -378,8 +378,7 @@ class P2pClient {
       logger.error(`[${LOG_HEADER}] The request chainSegment cannot be sent because of msg encapsulation failure.`);
       return;
     }
-    this.chainSyncInProgress.lastBlockNumber = lastBlockNumber;
-    this.chainSyncInProgress.updatedAt = Date.now();
+    this.updateChainSyncPeer(lastBlockNumber);
     socket.send(JSON.stringify(payload));
   }
 
@@ -686,6 +685,12 @@ class P2pClient {
       lastBlockNumber: -2, // less than -1 (initialized)
       updatedAt: Date.now
     };
+  }
+
+  updateChainSyncPeer(lastBlockNumber) {
+    if (!this.chainSyncInProgress) return;
+    this.chainSyncInProgress.lastBlockNumber = lastBlockNumber;
+    this.chainSyncInProgress.updatedAt = Date.now();
   }
 
   resetChainSyncPeer() {
