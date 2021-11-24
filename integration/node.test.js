@@ -10,14 +10,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const {
-  CURRENT_PROTOCOL_VERSION,
-  CHAINS_DIR,
-  TX_BYTES_LIMIT,
-  BATCH_TX_LIST_SIZE_LIMIT,
-  TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
-  MICRO_AIN,
-} = require('../common/constants');
+const { BlockchainConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 const {
@@ -203,7 +196,7 @@ describe('Blockchain Node', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
     await CommonUtil.sleep(3000);
@@ -236,7 +229,7 @@ describe('Blockchain Node', () => {
     server2_proc.kill()
     server3_proc.kill()
 
-    rimraf.sync(CHAINS_DIR)
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
   });
 
   describe('Get API', async () => {
@@ -497,7 +490,7 @@ describe('Blockchain Node', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
         const address = "abcd";
-        const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, value, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: true});
@@ -507,7 +500,7 @@ describe('Blockchain Node', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
         const address = "efgh";
-        const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, value, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: false});
@@ -519,7 +512,7 @@ describe('Blockchain Node', () => {
         const ref = "/apps/test/test_owner/some/path";
         const address = "abcd";
         const permission = "write_owner";
-        const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, permission, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         const body = parseOrLog(syncRequest('POST', server1 + '/eval_owner', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(body, {
@@ -669,7 +662,7 @@ describe('Blockchain Node', () => {
         const expected = 100;
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
         return jsonRpcClient.request('ain_get', {
-          protoVer: CURRENT_PROTOCOL_VERSION,
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
           type: 'GET_VALUE',
           ref: "/apps/test/test_value/some/path"
         })
@@ -682,7 +675,7 @@ describe('Blockchain Node', () => {
     describe('ain_matchFunction api', () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_function/some/path";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
         .then(res => {
           assert.deepEqual(res.result.result, {
@@ -710,7 +703,7 @@ describe('Blockchain Node', () => {
     describe('ain_matchRule api', () => {
       it('returns correct value (write)', () => {
         const ref = "/apps/test/test_rule/some/path";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
         .then(res => {
           assert.deepEqual(res.result.result, {
@@ -745,7 +738,7 @@ describe('Blockchain Node', () => {
 
       it('returns correct value (state)', () => {
         const ref = "/apps/test/test_rule/state";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
         .then(res => {
           assert.deepEqual(res.result.result, {
@@ -792,7 +785,7 @@ describe('Blockchain Node', () => {
 
       it('returns correct value (state & write)', () => {
         const ref = "/apps/test/test_rule/state/and/write";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
         .then(res => {
           assert.deepEqual(res.result.result, {
@@ -834,7 +827,7 @@ describe('Blockchain Node', () => {
     describe('ain_matchOwner api', () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_owner/some/path";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
         .then(res => {
           assert.deepEqual(res.result.result, {
@@ -864,7 +857,7 @@ describe('Blockchain Node', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
         const address = "abcd";
-        const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, value, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
         .then(res => {
           expect(res.result.result).to.equal(true);
@@ -875,7 +868,7 @@ describe('Blockchain Node', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
         const address = "efgh";
-        const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, value, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
         .then(res => {
           expect(res.result.result).to.equal(false);
@@ -888,7 +881,7 @@ describe('Blockchain Node', () => {
         const ref = "/apps/test/test_owner/some/path";
         const address = "abcd";
         const permission = "write_owner";
-        const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, permission, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
         .then(res => {
           assert.deepEqual(res.result.result, true);
@@ -899,7 +892,7 @@ describe('Blockchain Node', () => {
     describe('ain_getStateProof api', () => {
       it('returns correct value', () => {
         const ref = '/values/token/symbol';
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
         .then(res => {
           expect(res.result.result['#state_ph']).to.not.equal(null);
@@ -919,7 +912,7 @@ describe('Blockchain Node', () => {
     describe('ain_getProofHash api', () => {
       it('returns correct value', () => {
         const ref = '/values/token/symbol';
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getProofHash', request)
         .then(res => {
           expect(res.result.result).to.not.equal(null);
@@ -930,7 +923,7 @@ describe('Blockchain Node', () => {
     describe('ain_getStateInfo api', () => {
       it('returns correct value', () => {
         const ref = '/values/apps/test/test_state_info/some/path';
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateInfo', request)
         .then(res => {
           const stateInfo = res.result.result;
@@ -951,7 +944,7 @@ describe('Blockchain Node', () => {
 
     describe('ain_getStateUsage api', () => {
       it('returns correct value', () => {
-        const request = { app_name: 'test', protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { app_name: 'test', protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateUsage', request)
         .then(res => {
           const stateUsage = res.result.result;
@@ -969,7 +962,7 @@ describe('Blockchain Node', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getProtocolVersion', {})
         .then(res => {
-          expect(res.result.protoVer).to.equal(CURRENT_PROTOCOL_VERSION);
+          expect(res.result.protoVer).to.equal(BlockchainConfigs.CURRENT_PROTOCOL_VERSION);
         })
       });
     });
@@ -982,7 +975,7 @@ describe('Blockchain Node', () => {
           promises.push(client.request('ain_checkProtocolVersion', {}));
           promises.push(client.request('ain_checkProtocolVersion', {protoVer: 'a.b.c'}));
           promises.push(client.request('ain_checkProtocolVersion', {protoVer: 0}));
-          promises.push(client.request('ain_checkProtocolVersion', {protoVer: CURRENT_PROTOCOL_VERSION}));
+          promises.push(client.request('ain_checkProtocolVersion', {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}));
           promises.push(client.request('ain_checkProtocolVersion', {protoVer: '0.0.1'}));
           Promise.all(promises).then(res => {
             expect(res[0].result.code).to.equal(1);
@@ -1005,7 +998,7 @@ describe('Blockchain Node', () => {
       it('returns the correct node address', () => {
         const expAddr = '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204';
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request('ain_getAddress', { protoVer: CURRENT_PROTOCOL_VERSION })
+        return jsonRpcClient.request('ain_getAddress', { protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION })
         .then(res => {
           expect(res.result.result).to.equal(expAddr);
         });
@@ -2669,12 +2662,12 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const result = _.get(res, 'result.result', null);
           expect(result).to.not.equal(null);
           assert.deepEqual(res.result, {
-            protoVer: CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
             result: {
               result: {
                 code: 0,
@@ -2707,7 +2700,7 @@ describe('Blockchain Node', () => {
         return client.request('ain_getNonce', {
           address: account.address,
           from: 'pending',
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         })
         .then((nonceRes) => {
           const nonce = _.get(nonceRes, 'result.result');
@@ -2725,13 +2718,13 @@ describe('Blockchain Node', () => {
           return client.request('ain_sendSignedTransaction', {
             tx_body: txBody,
             signature,
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           })
           .then((res) => {
             const result = _.get(res, 'result.result', null);
             expect(result).to.not.equal(null);
             assert.deepEqual(res.result, {
-              protoVer: CURRENT_PROTOCOL_VERSION,
+              protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
               result: {
                 result: {
                   code: 0,
@@ -2762,7 +2755,7 @@ describe('Blockchain Node', () => {
 
       it('rejects a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
+        const longText = 'a'.repeat(BlockchainConfigs.TX_BYTES_LIMIT / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -2777,14 +2770,14 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 1,
-              message: `Transaction size exceeds its limit: ${TX_BYTES_LIMIT} bytes.`,
+              message: `Transaction size exceeds its limit: ${BlockchainConfigs.TX_BYTES_LIMIT} bytes.`,
             },
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           });
         })
       })
@@ -2805,14 +2798,14 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransaction', {
           transaction: txBody,  // wrong field name
           signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 2,
               message: `Missing properties.`,
             },
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           });
         })
       })
@@ -2833,14 +2826,14 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 3,
               message: `Invalid transaction format.`,
             },
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           });
         })
       })
@@ -2861,7 +2854,7 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature: signature + '0', // invalid signature
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result.result.result, {
             "error_message": "[executeTransactionAndAddToPool] Invalid signature",
@@ -3064,7 +3057,7 @@ describe('Blockchain Node', () => {
         }
         return client.request('ain_sendSignedTransactionBatch', {
           tx_list: txList,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
           expect(CommonUtil.isArray(resultList)).to.equal(true);
@@ -3092,14 +3085,14 @@ describe('Blockchain Node', () => {
             tx_body: txBody,
             signature,
           },
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 1,
               message: `Invalid batch transaction format.`
             },
-            protoVer: CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
           });
         })
       })
@@ -3116,7 +3109,7 @@ describe('Blockchain Node', () => {
           nonce: -1
         };
         const txList = [];
-        for (let i = 0; i < BATCH_TX_LIST_SIZE_LIMIT; i++) {  // Just under the limit.
+        for (let i = 0; i < BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT; i++) {  // Just under the limit.
           const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
           txBody.timestamp = timestamp + i;
           const signature =
@@ -3128,11 +3121,11 @@ describe('Blockchain Node', () => {
         }
         return client.request('ain_sendSignedTransactionBatch', {
           tx_list: txList,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
           expect(CommonUtil.isArray(resultList)).to.equal(true);
-          expect(resultList.length).to.equal(BATCH_TX_LIST_SIZE_LIMIT);
+          expect(resultList.length).to.equal(BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT);
           for (let i = 0; i < resultList.length; i++) {
             expect(CommonUtil.isFailedTx(resultList[i].result)).to.equal(false);
           }
@@ -3151,7 +3144,7 @@ describe('Blockchain Node', () => {
           nonce: -1
         };
         const txList = [];
-        for (let i = 0; i < BATCH_TX_LIST_SIZE_LIMIT + 1; i++) {  // Just over the limit.
+        for (let i = 0; i < BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT + 1; i++) {  // Just over the limit.
           const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
           txBody.timestamp = timestamp + i;
           const signature =
@@ -3163,14 +3156,14 @@ describe('Blockchain Node', () => {
         }
         return client.request('ain_sendSignedTransactionBatch', {
           tx_list: txList,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 2,
-              message: `Batch transaction list size exceeds its limit: ${BATCH_TX_LIST_SIZE_LIMIT}.`
+              message: `Batch transaction list size exceeds its limit: ${BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT}.`
             },
-            protoVer: CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
           });
         })
       })
@@ -3192,10 +3185,10 @@ describe('Blockchain Node', () => {
 
         // Not over the limit.
         let txCount = 0;
-        while (txCount < TX_POOL_SIZE_LIMIT_PER_ACCOUNT) {
-          const remainingTxCount = TX_POOL_SIZE_LIMIT_PER_ACCOUNT - txCount;
-          const batchTxSize = (remainingTxCount >= BATCH_TX_LIST_SIZE_LIMIT) ?
-              BATCH_TX_LIST_SIZE_LIMIT : remainingTxCount;
+        while (txCount < BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT) {
+          const remainingTxCount = BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT - txCount;
+          const batchTxSize = (remainingTxCount >= BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT) ?
+              BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT : remainingTxCount;
           const txList1 = [];
           for (let i = 0; i < batchTxSize; i++) {
             const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
@@ -3209,7 +3202,7 @@ describe('Blockchain Node', () => {
           }
           const res1 = await client.request('ain_sendSignedTransactionBatch', {
             tx_list: txList1,
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           });
           const resultList1 = _.get(res1, 'result.result', null);
           // Accepts transactions.
@@ -3224,7 +3217,7 @@ describe('Blockchain Node', () => {
         // Just over the limit.
         const txList2 = [];
         const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
-        txBody.timestamp = timestamp + TX_POOL_SIZE_LIMIT_PER_ACCOUNT + 1;
+        txBody.timestamp = timestamp + BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT + 1;
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
         txList2.push({
@@ -3233,7 +3226,7 @@ describe('Blockchain Node', () => {
         });
         const res2 = await client.request('ain_sendSignedTransactionBatch', {
           tx_list: txList2,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         });
         const resultList2 = _.get(res2, 'result.result', null);
         // Rejects transactions.
@@ -3254,7 +3247,7 @@ describe('Blockchain Node', () => {
 
       it('rejects a batch transaction with a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
+        const longText = 'a'.repeat(BlockchainConfigs.TX_BYTES_LIMIT / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -3281,16 +3274,16 @@ describe('Blockchain Node', () => {
               signature: signatureAfter,
             }
           ],
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result');
           expect(CommonUtil.isArray(resultList)).to.equal(false);
           assert.deepEqual(res.result, {
             result: {
               code: 3,
-              message: `Transaction[1]'s size exceededs its limit: ${TX_BYTES_LIMIT} bytes.`,
+              message: `Transaction[1]'s size exceededs its limit: ${BlockchainConfigs.TX_BYTES_LIMIT} bytes.`,
             },
-            protoVer: CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
           });
         })
       })
@@ -3321,14 +3314,14 @@ describe('Blockchain Node', () => {
               signature: signatureAfter,
             }
           ],
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 4,
               message: `Missing properties of transaction[1].`,
             },
-            protoVer: CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
           });
         })
       })
@@ -3361,14 +3354,14 @@ describe('Blockchain Node', () => {
               signature: signatureAfter,
             }
           ],
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 5,
               message: `Invalid format of transaction[1].`
             },
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           });
         })
       })
@@ -3401,7 +3394,7 @@ describe('Blockchain Node', () => {
               signature: signatureAfter,
             }
           ],
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           res.result.result.forEach((res) => {
             res.tx_hash = 'erased';
@@ -3597,7 +3590,7 @@ describe('Blockchain Node', () => {
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
-        gasPrice * MICRO_AIN * txRes.result.gas_amount_charged
+        gasPrice * BlockchainConfigs.MICRO_AIN * txRes.result.gas_amount_charged
       );
     });
 
@@ -3649,7 +3642,7 @@ describe('Blockchain Node', () => {
           'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       assert.deepEqual(
         billingAccountBalanceAfter,
-        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_charged)
+        billingAccountBalanceBefore - (gasPrice * BlockchainConfigs.MICRO_AIN * txRes.result.gas_amount_charged)
       );
     });
 
@@ -3675,7 +3668,7 @@ describe('Blockchain Node', () => {
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
-        gasPrice * MICRO_AIN * txRes.result.gas_amount_charged
+        gasPrice * BlockchainConfigs.MICRO_AIN * txRes.result.gas_amount_charged
       );
     });
 
@@ -3699,7 +3692,7 @@ describe('Blockchain Node', () => {
           'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       assert.deepEqual(
         billingAccountBalanceAfter,
-        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_charged)
+        billingAccountBalanceBefore - (gasPrice * BlockchainConfigs.MICRO_AIN * txRes.result.gas_amount_charged)
       );
     });
 
@@ -3735,7 +3728,7 @@ describe('Blockchain Node', () => {
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
-        gasPrice * MICRO_AIN * txRes.result.gas_amount_charged
+        gasPrice * BlockchainConfigs.MICRO_AIN * txRes.result.gas_amount_charged
       );
     });
 
@@ -3769,7 +3762,7 @@ describe('Blockchain Node', () => {
           'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       assert.deepEqual(
         billingAccountBalanceAfter,
-        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_charged)
+        billingAccountBalanceBefore - (gasPrice * BlockchainConfigs.MICRO_AIN * txRes.result.gas_amount_charged)
       );
     });
 

@@ -16,24 +16,14 @@ const Consensus = require('../consensus');
 const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
 const {
-  MAX_NUM_INBOUND_CONNECTION,
-  CURRENT_PROTOCOL_VERSION,
-  DATA_PROTOCOL_VERSION,
-  PORT,
-  P2P_PORT,
-  HOSTING_ENV,
-  LIGHTWEIGHT,
-  NETWORK_ID,
-  MAX_SHARD_REPORT,
-  TX_BYTES_LIMIT,
   DevFlags,
+  BlockchainConfigs,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
   WriteDbOperations,
   ReadDbOperations,
   GenesisSharding,
-  GENESIS_TIMESTAMP,
   RuleProperties,
   ShardingProperties,
   FunctionProperties,
@@ -41,7 +31,6 @@ const {
   NativeFunctionIds,
   TrafficEventTypes,
   trafficStatsManager,
-  EPOCH_MS,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const {
@@ -70,7 +59,7 @@ const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
 const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
-const txSizeThreshold = TX_BYTES_LIMIT * 0.9;
+const txSizeThreshold = BlockchainConfigs.TX_BYTES_LIMIT * 0.9;
 
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(minsulee2): Sign messages to tracker or peer.
@@ -82,8 +71,8 @@ class P2pServer {
     this.consensus = new Consensus(this, node);
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
-    this.dataProtocolVersion = DATA_PROTOCOL_VERSION;
-    this.majorDataProtocolVersion = VersionUtil.toMajorVersion(DATA_PROTOCOL_VERSION);
+    this.dataProtocolVersion = BlockchainConfigs.DATA_PROTOCOL_VERSION;
+    this.majorDataProtocolVersion = VersionUtil.toMajorVersion(BlockchainConfigs.DATA_PROTOCOL_VERSION);
     this.inbound = {};
     this.isReportingShardProofHash = false;
     this.lastReportedBlockNumberSent = -1;
@@ -91,7 +80,7 @@ class P2pServer {
 
   async listen() {
     this.wsServer = new Websocket.Server({
-      port: P2P_PORT,
+      port: BlockchainConfigs.P2P_PORT,
       // Enables server-side compression. For option details, see
       // https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback
       perMessageDeflate: {
@@ -114,11 +103,11 @@ class P2pServer {
       }
     });
     // Set the number of maximum clients.
-    this.wsServer.setMaxListeners(MAX_NUM_INBOUND_CONNECTION);
+    this.wsServer.setMaxListeners(BlockchainConfigs.MAX_NUM_INBOUND_CONNECTION);
     this.wsServer.on('connection', (socket) => {
       this.setServerSidePeerEventHandlers(socket);
     });
-    logger.info(`Listening to peer-to-peer connections on: ${P2P_PORT}\n`);
+    logger.info(`Listening to peer-to-peer connections on: ${BlockchainConfigs.P2P_PORT}\n`);
     await this.setUpIpAddresses();
     this.urls = this.initUrls();
   }
@@ -141,7 +130,7 @@ class P2pServer {
 
   getProtocolInfo() {
     return {
-      CURRENT_PROTOCOL_VERSION: CURRENT_PROTOCOL_VERSION,
+      CURRENT_PROTOCOL_VERSION: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
       COMPATIBLE_MIN_PROTOCOL_VERSION: this.minProtocolVersion,
       COMPATIBLE_MAX_PROTOCOL_VERSION: this.maxProtocolVersion,
       DATA_PROTOCOL_VERSION: this.dataProtocolVersion,
@@ -169,7 +158,7 @@ class P2pServer {
 
   getBlockStatus() {
     const timestamp = this.node.bc.lastBlockTimestamp();
-    const elapsedTimeMs = (timestamp === GENESIS_TIMESTAMP) ? 0 : Date.now() - timestamp;
+    const elapsedTimeMs = (timestamp === BlockchainConfigs.GENESIS_TIMESTAMP) ? 0 : Date.now() - timestamp;
     return {
       number: this.node.bc.lastBlockNumber(),
       epoch: this.node.bc.lastBlockEpoch(),
@@ -261,17 +250,6 @@ class P2pServer {
         // version: os.version(),
         uptime: os.uptime(),
       },
-      env: {
-        NETWORK_OPTIMIZATION: process.env.NETWORK_OPTIMIZATION,
-        BLOCKCHAIN_CONFIGS_DIR: process.env.BLOCKCHAIN_CONFIGS_DIR,
-        MIN_NUM_VALIDATORS: process.env.MIN_NUM_VALIDATORS,
-        MAX_NUM_VALIDATORS: process.env.MAX_NUM_VALIDATORS,
-        ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
-        P2P_PORT: process.env.P2P_PORT,
-        PORT: process.env.PORT,
-        HOSTING_ENV: process.env.HOSTING_ENV,
-        DEBUG: process.env.DEBUG,
-      },
     };
   }
 
@@ -302,7 +280,7 @@ class P2pServer {
   getIpAddress(internal = false) {
     return Promise.resolve()
     .then(() => {
-      if (HOSTING_ENV === 'gcp') {
+      if (BlockchainConfigs.HOSTING_ENV === 'gcp') {
         return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
           headers: {'Metadata-Flavor': 'Google'},
           timeout: 3000
@@ -334,10 +312,10 @@ class P2pServer {
   }
 
   buildUrls(ip) {
-    const p2pUrl = new URL(`ws://${ip}:${P2P_PORT}`);
+    const p2pUrl = new URL(`ws://${ip}:${BlockchainConfigs.P2P_PORT}`);
     const stringP2pUrl = p2pUrl.toString();
     p2pUrl.protocol = 'http:';
-    p2pUrl.port = PORT;
+    p2pUrl.port = BlockchainConfigs.PORT;
     const clientApiUrl = p2pUrl.toString();
     p2pUrl.pathname = 'json-rpc';
     const jsonRpcUrl = p2pUrl.toString();
@@ -354,7 +332,7 @@ class P2pServer {
     const intIp = this.getInternalIp();
     const extIp = this.getExternalIp();
     let urls;
-    switch (HOSTING_ENV) {
+    switch (BlockchainConfigs.HOSTING_ENV) {
       case 'local':
         urls = this.buildUrls(intIp);
         break;
@@ -368,15 +346,15 @@ class P2pServer {
       ip: extIp,
       p2p: {
         url: urls.p2pUrl,
-        port: P2P_PORT,
+        port: BlockchainConfigs.P2P_PORT,
       },
       clientApi: {
         url: urls.clientApiUrl,
-        port: PORT,
+        port: BlockchainConfigs.PORT,
       },
       jsonRpc: {
         url: urls.jsonRpcUrl,
-        port: PORT,
+        port: BlockchainConfigs.PORT,
       }
     };
   }
@@ -440,7 +418,7 @@ class P2pServer {
         const address = getAddressFromSocket(this.inbound, socket);
         if (!isValidNetworkId(networkId)) {
           logger.error(`The given network ID(${networkId}) of the node(${address}) is MISSING or ` +
-            `DIFFERENT from mine(${NETWORK_ID}). Disconnect the connection.`);
+            `DIFFERENT from mine(${BlockchainConfigs.NETWORK_ID}). Disconnect the connection.`);
           closeSocketSafe(this.inbound, socket);
           return;
         }
@@ -543,7 +521,7 @@ class P2pServer {
               Object.values(this.client.outbound).forEach((node) => {
                 setTimeout(() => {
                   this.client.requestChainSegment(node.socket);
-                }, EPOCH_MS);
+                }, BlockchainConfigs.EPOCH_MS);
               });
             }
             break;
@@ -879,7 +857,7 @@ class P2pServer {
             value: {
               [PredefinedDbPaths.DOT_RULE]: {
                 [RuleProperties.STATE]: {
-                  [RuleProperties.GC_MAX_SIBLINGS]: MAX_SHARD_REPORT
+                  [RuleProperties.GC_MAX_SIBLINGS]: BlockchainConfigs.MAX_SHARD_REPORT
                 }
               }
             }
@@ -894,7 +872,7 @@ class P2pServer {
                 ShardingProperties.PROOF_HASH),
             value: {
               [PredefinedDbPaths.DOT_RULE]: {
-                [RuleProperties.WRITE]: LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
+                [RuleProperties.WRITE]: BlockchainConfigs.LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
               }
             }
           },

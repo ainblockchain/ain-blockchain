@@ -1,5 +1,9 @@
 const _get = require('lodash/get');
-const { WriteDbOperations, PredefinedDbPaths, LIGHTWEIGHT } = require('../common/constants');
+const {
+  BlockchainConfigs,
+  WriteDbOperations,
+  PredefinedDbPaths,
+} = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const { ConsensusErrorCodesToVoteAgainst } = require('./constants');
 const Transaction = require('../tx-pool/transaction');
@@ -10,7 +14,7 @@ class ConsensusUtil {
     if (!Transaction.isExecutable(executableTx)) {
       return false;
     }
-    if (!LIGHTWEIGHT) {
+    if (!BlockchainConfigs.LIGHTWEIGHT) {
       if (!Transaction.verifyTransaction(executableTx)) {
         return false;
       }

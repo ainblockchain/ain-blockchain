@@ -12,10 +12,7 @@ const expect = chai.expect;
 const syncRequest = require('sync-request');
 const ainUtil = require('@ainblockchain/ain-util');
 const stringify = require('fast-json-stable-stringify');
-const {
-  CURRENT_PROTOCOL_VERSION,
-  CHAINS_DIR
-} = require('../common/constants');
+const { BlockchainConfigs } = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
@@ -189,7 +186,7 @@ async function sendTransactions(sentOperations) {
           params: {
             address,
             from: 'pending',
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           }
         }
       }).body.toString('utf-8')).result.result;
@@ -220,7 +217,7 @@ describe('Blockchain Cluster', () => {
   const nodeAddressList = [];
 
   before(async () => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     const promises = [];
     // Start up all servers
@@ -239,7 +236,7 @@ describe('Blockchain Cluster', () => {
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
       jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK,
-          {protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
+          {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}, function(err, response) {
         if (err) {
           resolve();
           throw err;
@@ -273,7 +270,7 @@ describe('Blockchain Cluster', () => {
     }
     trackerProc.kill();
 
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   describe(`Synchronization`, () => {
@@ -282,7 +279,7 @@ describe('Blockchain Cluster', () => {
         await sendTransactions(sentOperations);
         return new Promise((resolve) => {
           jayson.client.http(server1 + JSON_RPC_ENDPOINT)
-          .request(JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION},
+          .request(JSON_RPC_GET_BLOCKS, {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION},
               function(err, response) {
             if (err) throw err;
             baseChain = response.result.result;
@@ -291,7 +288,7 @@ describe('Blockchain Cluster', () => {
         }).then(() => {
           return new Promise((resolve) => {
             jayson.client.http(serverList[i] + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
-                {protoVer: CURRENT_PROTOCOL_VERSION},
+                {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION},
                 function(err, response) {
                   if (err) throw err;
                   const newChain = response.result.result;
@@ -332,7 +329,7 @@ describe('Blockchain Cluster', () => {
       await waitForNewBlocks(newServer);
       return new Promise((resolve) => {
         jayson.client.http(server1 + JSON_RPC_ENDPOINT)
-        .request(JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION},
+        .request(JSON_RPC_GET_BLOCKS, {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION},
             function(err, response) {
           if (err) throw err;
           baseChain = response.result.result;
@@ -342,7 +339,7 @@ describe('Blockchain Cluster', () => {
       }).then(() => {
         return new Promise((resolve) => {
           jayson.client.http(newServer + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
-              {to: number + 1, protoVer: CURRENT_PROTOCOL_VERSION},
+              {to: number + 1, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION},
               function(err, response) {
                 if (err) throw err;
                 const newChain = response.result.result;
@@ -375,7 +372,7 @@ describe('Blockchain Cluster', () => {
                 method: JSON_RPC_GET_BLOCKS,
                 id: 0,
                 params: {
-                  protoVer: CURRENT_PROTOCOL_VERSION
+                  protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
                 }
               }
             }).body.toString('utf-8')).result.result;
@@ -420,7 +417,7 @@ describe('Blockchain Cluster', () => {
         await sendTransactions(sentOperations);
         const blocks = parseOrLog(syncRequest('POST', serverList[i] + '/json-rpc',
             {json: {jsonrpc: '2.0', method: JSON_RPC_GET_BLOCKS, id: 0,
-                    params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
+                    params: {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}}})
             .body.toString('utf-8')).result.result;
         const len = blocks.length;
         for (let j = 0; j < len; j++) {
@@ -513,7 +510,7 @@ describe('Blockchain Cluster', () => {
       await sendTransactions(sentOperations);
       return new Promise((resolve) => {
         jsonRpcClient.request(JSON_RPC_GET_BLOCK_HEADERS,
-                              {from: 2, to: 4, protoVer: CURRENT_PROTOCOL_VERSION},
+                              {from: 2, to: 4, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION},
                               function(err, response) {
           if (err) throw err;
           const body = response.result.result;
@@ -529,14 +526,14 @@ describe('Blockchain Cluster', () => {
       await sendTransactions(sentOperations);
       return new Promise((resolve) => {
         jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            {number: 2, protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
+            {number: 2, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}, function(err, response) {
           if (err) throw err;
           resolve(response.result.result);
         });
       }).then((resultByNumber) => {
         return new Promise((resolve) => {
           jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_HASH,
-              {hash: resultByNumber.hash, protoVer: CURRENT_PROTOCOL_VERSION},
+              {hash: resultByNumber.hash, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION},
                                 function(err, response) {
             if (err) throw err;
             const resultByHash = response.result.result;
@@ -560,9 +557,9 @@ describe('Blockchain Cluster', () => {
       return new Promise((resolve, reject) => {
         let promises = [];
         promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-            { address, protoVer: CURRENT_PROTOCOL_VERSION }));
+            { address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION }));
         promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-            { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
+            { address, from: 'pending', protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION }));
         Promise.all(promises).then(res => {
           promises = [];
           const committedNonceBefore = res[0].result.result;
@@ -575,9 +572,9 @@ describe('Blockchain Cluster', () => {
                   }
                 }).body.toString('utf-8')).result.tx_hash;
           promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-              { address, protoVer: CURRENT_PROTOCOL_VERSION }));
+              { address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION }));
           promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-              { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
+              { address, from: 'pending', protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION }));
           Promise.all(promises).then(async resAfterBroadcast => {
             promises = [];
             committedNonceAfterBroadcast = resAfterBroadcast[0].result.result;
@@ -600,9 +597,9 @@ describe('Blockchain Cluster', () => {
         await waitForNewBlocks(server2);
         let promises = [];
         promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-            { address, protoVer: CURRENT_PROTOCOL_VERSION }));
+            { address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION }));
         promises.push(jsonRpcClient.request(JSON_RPC_GET_NONCE,
-            { address, from: 'pending', protoVer: CURRENT_PROTOCOL_VERSION }));
+            { address, from: 'pending', protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION }));
         Promise.all(promises).then(resAfterCommit => {
           const committedNonceAfterCommit = resAfterCommit[0].result.result;
           const pendingNonceAfterCommit = resAfterCommit[1].result.result;
@@ -622,7 +619,7 @@ describe('Blockchain Cluster', () => {
     it('collected gas cost matches the gas_cost_total in the block', () => {
       return new Promise((resolve) => {
         jayson.client.http(serverList[1] + JSON_RPC_ENDPOINT).request
-            (JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
+            (JSON_RPC_GET_BLOCKS, {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}, function(err, response) {
               if (err) throw err;
               const chain = response.result.result;
               for (const block of chain) {
@@ -658,7 +655,7 @@ describe('Blockchain Cluster', () => {
       }
       return new Promise((resolve) => {
         jayson.client.http(server1 + JSON_RPC_ENDPOINT)
-        .request(JSON_RPC_GET_BLOCKS, {protoVer: CURRENT_PROTOCOL_VERSION},
+        .request(JSON_RPC_GET_BLOCKS, {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION},
             function(err, response) {
           if (err) throw err;
           stoppedChain = response.result.result;
@@ -667,7 +664,7 @@ describe('Blockchain Cluster', () => {
       }).then(() => {
         return new Promise((resolve) => {
           jayson.client.http(serverList[1] + JSON_RPC_ENDPOINT).request(JSON_RPC_GET_BLOCKS,
-              {protoVer: CURRENT_PROTOCOL_VERSION},
+              {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION},
               function(err, response) {
                 if (err) throw err;
                 const baseChain = response.result.result;
@@ -694,10 +691,10 @@ describe('Blockchain Cluster', () => {
     it('accepts API calls with correct protoVer', () => {
       return new Promise((resolve, reject) => {
         jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-          { number: 0, protoVer: CURRENT_PROTOCOL_VERSION }, function (err, response) {
+          { number: 0, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION }, function (err, response) {
             if (err) throw err;
             expect(response.result.result.number).to.equal(0);
-            expect(response.result.protoVer).to.equal(CURRENT_PROTOCOL_VERSION);
+            expect(response.result.protoVer).to.equal(BlockchainConfigs.CURRENT_PROTOCOL_VERSION);
             resolve();
           });
       });

@@ -1,9 +1,7 @@
 const RadixNode = require('../db/radix-node');
 const CommonUtil = require('../common/common-util');
 const StateNode = require('../db/state-node');
-const {
-  HASH_DELIMITER,
-} = require('../common/constants');
+const { BlockchainConfigs } = require('../common/constants');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
@@ -700,9 +698,9 @@ describe("radix-node", () => {
       // With stateNode
       node.setChildStateNode(stateNode);
       const treeInfo = node.buildRadixInfo();
-      const preimage1 = `${stateNodePH}${HASH_DELIMITER}${HASH_DELIMITER}` +
-          `${labelRadix1}${labelSuffix1}${HASH_DELIMITER}${childPH1}` +
-          `${HASH_DELIMITER}${labelRadix2}${labelSuffix2}${HASH_DELIMITER}${childPH2}`;
+      const preimage1 = `${stateNodePH}${BlockchainConfigs.HASH_DELIMITER}${BlockchainConfigs.HASH_DELIMITER}` +
+          `${labelRadix1}${labelSuffix1}${BlockchainConfigs.HASH_DELIMITER}${childPH1}` +
+          `${BlockchainConfigs.HASH_DELIMITER}${labelRadix2}${labelSuffix2}${BlockchainConfigs.HASH_DELIMITER}${childPH2}`;
       const proofHash1 = CommonUtil.hashString(preimage1);
       expect(treeInfo.proofHash).to.equal(proofHash1)
 
@@ -714,9 +712,9 @@ describe("radix-node", () => {
       // Without stateNode
       node.resetChildStateNode();
       const treeInfo2 = node.buildRadixInfo();
-      const preimage2 = `${HASH_DELIMITER}${HASH_DELIMITER}` +
-          `${labelRadix1}${labelSuffix1}${HASH_DELIMITER}${childPH1}` +
-          `${HASH_DELIMITER}${labelRadix2}${labelSuffix2}${HASH_DELIMITER}${childPH2}`;
+      const preimage2 = `${BlockchainConfigs.HASH_DELIMITER}${BlockchainConfigs.HASH_DELIMITER}` +
+          `${labelRadix1}${labelSuffix1}${BlockchainConfigs.HASH_DELIMITER}${childPH1}` +
+          `${BlockchainConfigs.HASH_DELIMITER}${labelRadix2}${labelSuffix2}${BlockchainConfigs.HASH_DELIMITER}${childPH2}`;
       const proofHash2 = CommonUtil.hashString(preimage2);
       expect(treeInfo2.proofHash).to.equal(proofHash2)
     });

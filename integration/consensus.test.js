@@ -9,9 +9,7 @@ const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const syncRequest = require('sync-request');
 const {
-  CURRENT_PROTOCOL_VERSION,
-  CONSENSUS_PROTOCOL_VERSION,
-  CHAINS_DIR,
+  BlockchainConfigs,
   PredefinedDbPaths,
 } = require('../common/constants');
 const {
@@ -124,7 +122,7 @@ describe('Consensus', () => {
   const nodeAddressList = [];
 
   before(async () => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     const promises = [];
     // Start up all servers
@@ -143,7 +141,7 @@ describe('Consensus', () => {
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
       jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK,
-          {protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
+          {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}, function(err, response) {
         if (err) {
           resolve();
           throw err;
@@ -173,7 +171,7 @@ describe('Consensus', () => {
     }
     trackerProc.kill();
 
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   describe('Validators', () => {
@@ -482,7 +480,7 @@ describe('Consensus', () => {
       const invalidProposal = {
         value: { proposalBlock, proposalTx },
         type: ConsensusMessageTypes.PROPOSE,
-        consensusProtoVer: CONSENSUS_PROTOCOL_VERSION
+        consensusProtoVer: BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION
       };
       syncRequest('POST', server1 + '/broadcast_consensus_msg', {json: invalidProposal});
       return { proposalBlock, proposalTx };
