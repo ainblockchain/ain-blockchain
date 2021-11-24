@@ -266,11 +266,7 @@ class Consensus {
         // can keep sending messages with higher numbers, making the node's status unsynced, and
         // prevent the node from getting/handling messages properly.
         // this.node.state = BlockchainNodeStates.SYNCING;
-        Object.values(this.server.client.outbound).forEach((peer) => {
-          setTimeout(() => {
-            this.server.client.requestChainSegment(peer.socket);
-          }, BlockchainConfigs.EPOCH_MS);
-        });
+        this.server.client.requestChainSegment();
         return;
       }
       try {
@@ -296,7 +292,7 @@ class Consensus {
         return;
       }
       if (!this.checkVoteTx(msg.value)) {
-        logger.error(`[${LOG_HEADER}] Invalid vote tx: ${JSON.stringify(msg.value)}`);
+        logger.error(`[${LOG_HEADER}] Cannot process the vote or it's invalid: ${JSON.stringify(msg.value)}`);
         return;
       }
       this.server.client.broadcastConsensusMessage(msg);
@@ -827,13 +823,13 @@ class Consensus {
       block = this.node.bc.lastBlock();
     }
     if (!block) {
-      logger.debug(`[${LOG_HEADER}] Cannot verify the vote without the block it's voting for: ` +
+      logger.info(`[${LOG_HEADER}] Cannot verify the vote without the block it's voting for: ` +
           `${blockHash} / ${JSON.stringify(blockInfo, null, 2)}`);
       // FIXME: ask for the block from peers
       return false;
     }
     if (voteTimestamp < block.timestamp) {
-      logger.debug(`[${LOG_HEADER}] Invalid timestamp in vote: ${JSON.stringify(voteTx)}`);
+      logger.info(`[${LOG_HEADER}] Invalid timestamp in vote: ${JSON.stringify(voteTx)}`);
       return false;
     }
     const executableTx = Transaction.toExecutable(voteTx);
@@ -845,7 +841,7 @@ class Consensus {
     if (isAgainst) {
       const offenseType = ConsensusUtil.getOffenseTypeFromVoteTx(voteTx);
       if (!CommonUtil.isValidatorOffenseType(offenseType)) {
-        logger.debug(`[${LOG_HEADER}] Invalid offense type: ${offenseType}`);
+        logger.info(`[${LOG_HEADER}] Invalid offense type: ${offenseType}`);
         return false;
       }
       const lastBlock = this.node.bc.lastBlock();
@@ -855,7 +851,7 @@ class Consensus {
     } else {
       const snapDb = this.getSnapDb(block);
       if (!snapDb) {
-        logger.debug(
+        logger.info(
             `[${LOG_HEADER}] No state snapshot available for vote ${JSON.stringify(executableTx)}`);
         return false;
       }
@@ -863,7 +859,7 @@ class Consensus {
           snapDb.stateVersion, `${StateVersions.SNAP}:${block.number - 1}`, block.number - 1);
     }
     if (!tempDb) {
-      logger.debug(
+      logger.info(
           `[${LOG_HEADER}] Failed to create a temp state snapshot for vote ${JSON.stringify(executableTx)}`);
       return false;
     }
