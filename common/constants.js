@@ -108,8 +108,8 @@ BlockchainConfigs.SNAPSHOTS_ROOT_DIR = path.resolve(BlockchainConfigs.BLOCKCHAIN
 BlockchainConfigs.SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
 BlockchainConfigs.DEBUG_SNAPSHOT_FILE_PREFIX = 'debug_'; // Prefix for debug snapshot files.
 // NOTE(platfowner): Should have a value bigger than ON_MEMORY_CHAIN_LENGTH.
-BlockchainConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 100; // How often the snapshot is generated.
-BlockchainConfigs.MAX_NUM_SNAPSHOTS = 1000; // Maximum number of snapshots to be kept.
+BlockchainConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
+BlockchainConfigs.MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
 BlockchainConfigs.KEYS_ROOT_DIR = path.resolve(BlockchainConfigs.BLOCKCHAIN_DATA_DIR, 'keys');
 BlockchainConfigs.HASH_DELIMITER = '#';
 BlockchainConfigs.VARIABLE_LABEL_PREFIX = '$';
