@@ -370,8 +370,7 @@ class P2pClient {
     const lastBlockNumber = this.server.node.bc.lastBlockNumber();
     if (this.chainSyncInProgress.lastBlockNumber >= lastBlockNumber &&
         this.chainSyncInProgress.updatedAt > Date.now() - EPOCH_MS) { // time buffer
-      // Already sent a request with the same/higher lastBlockNumber.
-      logger.error(`[${LOG_HEADER}] Already sent a request with the same/higher lastBlockNumber`);
+      logger.info(`[${LOG_HEADER}] Already sent a request with the same/higher lastBlockNumber`);
       return;
     }
     const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
