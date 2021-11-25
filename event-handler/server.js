@@ -1,5 +1,5 @@
 const logger = new (require('../logger'))('EVENT_HANDLER_SERVER');
-const EventHandlerClient = require('./client');
+const EventChannel = require('./event-channel');
 const ws = require('ws');
 const { getIpAddress } = require('../common/network-util');
 const {
@@ -12,8 +12,8 @@ class EventHandlerServer {
   constructor(eventHandler) {
     this.eventHandler = eventHandler;
     this.wsServer = null;
-    this.clients = {};
-    this.eventFilterIdToClientId = {};
+    this.channels = {};
+    this.filterIdToChannelId = {};
   }
 
   async getNetworkInfo() {
@@ -33,17 +33,17 @@ class EventHandlerServer {
   }
 
   handleConnection(webSocket) {
-    const clientId = Date.now(); // Memo: Only used in blockchain
-    if (this.clients[clientId]) { // TODO: Retry logic
-      throw Error(`Client ID ${clientId} is already in use`);
+    const channelId = Date.now(); // Memo: Only used in blockchain
+    if (this.channels[channelId]) { // TODO: Retry logic
+      throw Error(`Channel ID ${channelId} is already in use`);
     }
-    const client = new EventHandlerClient(clientId, webSocket);
-    this.clients[clientId] = client;
+    const channel = new EventChannel(channelId, webSocket);
+    this.channels[channelId] = channel;
     // TODO(cshcomcom): Handle MAX connections
 
-    logger.info(`New connection (${clientId})`);
+    logger.info(`New connection (${channelId})`);
     webSocket.on('message', (message) => {
-      this.handleMessage(client, message);
+      this.handleMessage(channel, message);
     });
     webSocket.on('close', (message) => {
       // TODO(cshcomcom): Delete unused variables
@@ -51,7 +51,7 @@ class EventHandlerServer {
     // TODO(cshcomcom): ping-pong & close broken connections
   }
 
-  handleMessage(client, message) {
+  handleMessage(channel, message) {
     try {
       const parsedMessage = JSON.parse(message);
       const messageType = parsedMessage.type;
@@ -74,10 +74,10 @@ class EventHandlerServer {
             throw Error(`Can't find config from message.data (${JSON.stringify(message)})`);
           }
 
-          const eventFilter =
+          const filter =
               this.eventHandler.createAndRegisterEventFilter(eventFilterId, eventType, config);
-          client.addEventFilter(eventFilter);
-          this.eventFilterIdToClientId[eventFilter.id] = client.id;
+          channel.addEventFilter(filter);
+          this.filterIdToChannelId[filter.id] = channel.id;
           break;
         case EventHandlerMessageTypes.EVENT_FILTER_UNREGISTRATION:
           // TODO(cshcomcom): Implement
@@ -98,19 +98,19 @@ class EventHandlerServer {
     };
   }
 
-  transmitEvent(client, event) {
-    client.webSocket.send(this.makeMessage(EventHandlerMessageTypes.EVENT_EMIT,
+  transmitEvent(channel, event) {
+    channel.webSocket.send(this.makeMessage(EventHandlerMessageTypes.EVENT_EMIT,
         JSON.stringify(event.toObject())));
   }
 
   transmitEventByEventFilterId(eventFilterId, event) {
-    const clientId = this.eventFilterIdToClientId[eventFilterId];
-    const client = this.clients[clientId];
-    if (!client) {
-      logger.error(`Can't find client by event filter id (eventFilterId: ${eventFilterId})`);
+    const channelId = this.filterIdToChannelId[eventFilterId];
+    const channel = this.channels[channelId];
+    if (!channel) {
+      logger.error(`Can't find channel by event filter id (eventFilterId: ${eventFilterId})`);
       return;
     }
-    this.transmitEvent(client, event);
+    this.transmitEvent(channel, event);
   }
 
   close() {
