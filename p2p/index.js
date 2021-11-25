@@ -1,6 +1,7 @@
 /* eslint no-mixed-operators: "off" */
 const logger = new (require('../logger'))('P2P_CLIENT');
 const _ = require('lodash');
+const axios = require('axios');
 const P2pServer = require('./server');
 const Websocket = require('ws');
 const { ConsensusStates } = require('../consensus/constants');
@@ -62,7 +63,7 @@ class P2pClient {
   async run() {
     if (CommonUtil.isEmpty(this.server.node.account)) return;
     await this.server.listen();
-    if (BlockchainConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.connectToTracker();
+    if (BlockchainConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.setIntervalForTrackerUpdate();
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
       if (!BlockchainConfigs.P2P_PEER_CANDIDATE_URL || BlockchainConfigs.P2P_PEER_CANDIDATE_URL === '') {
         await this.startBlockchainNode(0);
@@ -170,14 +171,19 @@ class P2pClient {
     }
   }
 
-  updatePeerInfoToTracker() {
-    const message = {
-      type: TrackerMessageTypes.PEER_INFO_UPDATE,
-      data: this.getStatus()
-    };
-    logger.debug(`\n >> Update to [TRACKER] ${BlockchainConfigs.TRACKER_WS_ADDR}: ` +
-        `${JSON.stringify(message, null, 2)}`);
-    this.trackerWebSocket.send(JSON.stringify(message));
+  async updatePeerInfoToTracker() {
+    try {
+      const url = 'http://localhost:8080';
+      const peerInfo = this.getStatus();
+      Object.assign(peerInfo, { updatedAt: Date.now() });
+      const response = await axios.post(url + '/update_peer_info', { peerInfo });
+      if (response.status === 200) {
+        logger.info(`Update to [TRACKER] (${url}): ${response.data.result}`)
+        logger.debug(`Update to [TRACKER] (${url}): ${JSON.stringify(peerInfo, null, 2)}`);
+      }
+    } catch (error) {
+      logger.error(error);
+    }
   }
 
   setIntervalForTrackerConnection() {

@@ -1,9 +1,11 @@
 const commonUtil = require('../common/common-util');
 const { abbrAddr } = require('./util');
 
+const PEER_LIVENESS_THRESHOLD_MS = 5 * 60 * 1000   // 5 minutes
+
 const _buildGraphData = (peerNodes) => {
-  const filteredPeerNodesEntries = Object.entries(peerNodes).filter(([address, peerNode]) => {
-    return peerNode.isAlive === true
+  const filteredPeerNodesEntries = Object.entries(peerNodes).filter(([, peerNode]) => {
+    return PEER_LIVENESS_THRESHOLD_MS > Date.now() - peerNode.updatedAt;
   });
   const peerNodesAlive = Object.fromEntries(filteredPeerNodesEntries);
   const data = { nodes: [], links: [] };
@@ -26,7 +28,7 @@ const _buildGraphData = (peerNodes) => {
   return data;
 }
 
-const getGraphData = async (networkStatus) => {
+const getGraphData = (networkStatus) => {
   try {
     if (!commonUtil.isEmpty(networkStatus.peerNodes)) {
       const data = _buildGraphData(networkStatus.peerNodes);
@@ -45,8 +47,8 @@ const getGraphData = async (networkStatus) => {
   } catch (error) {
     return {
       "nodes": [
-        { "address": "Tracker is NOT online." },
-        { "address": "Tracker is NOT online." }
+        { "address": "Something went wrong!" },
+        { "error": error }
       ],
       "links": [
         { "source": 0, "target": 1, "weight": 1 }

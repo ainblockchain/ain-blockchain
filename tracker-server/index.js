@@ -53,9 +53,9 @@ app.get('/metrics', (req, res, next) => {
   const status = getStatus();
   const result = CommonUtil.objToMetrics(status);
   res.status(200)
-    .set('Content-Type', 'text/plain')
-    .send(result)
-    .end();
+      .set('Content-Type', 'text/plain')
+      .send(result)
+      .end();
 });
 
 app.get('/network_status', (req, res, next) => {
@@ -67,12 +67,22 @@ app.get('/network_status', (req, res, next) => {
 });
 
 app.get('/network_topology', (req, res) => {
-  res.render(__dirname + '/index.html', {}, async (err, html) => {
+  res.render(__dirname + '/index.html', {}, (err, html) => {
     const networkStatus = getNetworkStatus();
-    const graphData = await getGraphData(networkStatus);
+    const graphData = getGraphData(networkStatus);
+    console.log(graphData)
     html = html.replace(/{ \/\* replace this \*\/ };/g, JSON.stringify(graphData));
     res.send(html);
   });
+});
+
+app.post('/update_peer_info', (req, res) => {
+  const peerInfo = req.body.peerInfo;
+  setPeerNodes2(peerInfo);
+  res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({ result: 'updated' })
+      .end();
 });
 
 const trackerServer = app.listen(PORT, () => {
@@ -163,10 +173,17 @@ server.on('connection', (ws) => {
 
 function setPeerNodes(ws, nodeInfo) {
   wsList[ws.uuid] = nodeInfo.address;
-  nodeInfo.location = getNodeLocation(nodeInfo.networkStatus.ip);
+  nodeInfo.location = getPeerLocation(nodeInfo.networkStatus.ip);
   peerNodes[nodeInfo.address] = nodeInfo;
-  logger.info(`\n<< Update from node [${abbrAddr(nodeInfo.address)}]`);
+  logger.info(`Update from node [${abbrAddr(nodeInfo.address)}]`);
   logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
+}
+
+function setPeerNodes2(peerInfo) {
+  peerInfo.location = getPeerLocation(peerInfo.networkStatus.ip);
+  peerNodes[peerInfo.address] = peerInfo;
+  logger.info(`Update from node [${abbrAddr(peerInfo.address)}]`);
+  logger.debug(`: ${JSON.stringify(peerInfo, null, 2)}`);
 }
 
 function getNumNodesAlive() {
@@ -203,7 +220,7 @@ function getNodeSummary(nodeInfo) {
     `  updatedAt: ${nodeInfo.updatedAt}`;
 }
 
-function getNodeLocation(ip) {
+function getPeerLocation(ip) {
   const geoLocationDict = geoip.lookup(ip);
   if (geoLocationDict === null) {
     return {
