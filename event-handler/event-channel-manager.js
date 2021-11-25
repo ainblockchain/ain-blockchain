@@ -115,7 +115,7 @@ class EventChannelManager {
 
   close() {
     this.wsServer.close(() => {
-      logger.info(`Closed event handler server's socket`);
+      logger.info(`Closed event channel manager's socket`);
       // TODO(cshcomcom): Clear all data
     });
   }
