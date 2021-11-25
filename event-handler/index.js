@@ -11,7 +11,7 @@ class EventHandler {
     this.eventFilters = {};
     this.eventTypeToEventFilterIds = {};
     for (const eventType of Object.keys(BlockchainEventTypes)) {
-      this.eventTypeToEventFilterIds[eventType] = [];
+      this.eventTypeToEventFilterIds[eventType] = new Set();
     }
     this.run();
   }
@@ -57,7 +57,7 @@ class EventHandler {
     }
     const eventFilter = new EventFilter(eventFilterId, eventType, config);
     this.eventFilters[eventFilterId] = eventFilter;
-    this.eventTypeToEventFilterIds[eventType].push(eventFilterId);
+    this.eventTypeToEventFilterIds[eventType].add(eventFilterId);
     return eventFilter;
   }
 }
