@@ -37,11 +37,7 @@ class EventHandler {
       if (eventFilterBlockNumber === -1) {
         continue;
       }
-      const eventBlockNumber = _.get(blockchainEvent, 'payload.block_number', -1);
-      if (eventBlockNumber === -1) {
-        continue;
-      }
-      if (eventFilterBlockNumber === eventBlockNumber) {
+      if (eventFilterBlockNumber === blockNumber) {
         this.server.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
       }
     }
