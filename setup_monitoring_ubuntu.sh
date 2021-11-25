@@ -14,6 +14,10 @@ printf 'npm --version\n'
 npm --version
 
 
+printf 'Fix yarn permission issues'
+sudo chown -R $USER:$GROUP ~/.npm
+sudo chown -R $USER:$GROUP ~/.config
+
 printf 'Installing yarn..\n'
 sudo npm install -g yarn
 
