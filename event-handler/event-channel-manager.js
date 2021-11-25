@@ -34,7 +34,7 @@ class EventChannelManager {
 
   handleConnection(webSocket) {
     const channelId = Date.now(); // NOTE: Only used in blockchain
-    if (this.channels[channelId]) { // TODO: Retry logic
+    if (this.channels[channelId]) { // TODO(cshcomcom): Retry logic
       throw Error(`Channel ID ${channelId} is already in use`);
     }
     const channel = new EventChannel(channelId, webSocket);
