@@ -9,9 +9,9 @@ class EventHandler {
   constructor() {
     this.eventChannelManager = null;
     this.eventFilters = {};
-    this.eventTypeToEventFilters = {};
+    this.eventTypeToEventFilterIds = {};
     for (const eventType of Object.keys(BlockchainEventTypes)) {
-      this.eventTypeToEventFilters[eventType] = [];
+      this.eventTypeToEventFilterIds[eventType] = [];
     }
     this.run();
   }
@@ -31,7 +31,7 @@ class EventHandler {
       block_number: blockNumber,
     });
 
-    for (const eventFilterId of this.eventTypeToEventFilters[BlockchainEventTypes.BLOCK_FINALIZED]) {
+    for (const eventFilterId of this.eventTypeToEventFilterIds[BlockchainEventTypes.BLOCK_FINALIZED]) {
       const eventFilter = this.eventFilters[eventFilterId];
       const eventFilterBlockNumber = _.get(eventFilter, 'config.block_number', -1);
       if (eventFilterBlockNumber === -1) {
@@ -57,7 +57,7 @@ class EventHandler {
     }
     const eventFilter = new EventFilter(eventFilterId, eventType, config);
     this.eventFilters[eventFilterId] = eventFilter;
-    this.eventTypeToEventFilters[eventType].push(eventFilterId);
+    this.eventTypeToEventFilterIds[eventType].push(eventFilterId);
     return eventFilter;
   }
 }
