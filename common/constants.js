@@ -714,7 +714,7 @@ const BlockchainEventTypes = {
   VALUE_CHANGED: 'VALUE_CHANGED',
 };
 
-const EventHandlerMessageTypes = {
+const BlockchainEventMessageTypes = {
   EVENT_FILTER_REGISTRATION: 'EVENT_FILTER_REGISTRATION',
   EVENT_FILTER_UNREGISTRATION: 'EVENT_FILTER_UNREGISTRATION',
   EVENT_EMIT: 'EVENT_EMIT',
@@ -863,7 +863,7 @@ module.exports = {
   SyncModeOptions,
   TrafficEventTypes,
   BlockchainEventTypes,
-  EventHandlerMessageTypes,
+  BlockchainEventMessageTypes,
   isServiceType,
   isServiceAccountServiceType,
   isAppDependentServiceType,
