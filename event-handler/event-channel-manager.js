@@ -76,7 +76,7 @@ class EventChannelManager {
           const filter =
               this.eventHandler.createAndRegisterEventFilter(clientFilterId, channel.id,
                   eventType, config);
-          channel.addEventFilter(filter);
+          channel.addEventFilterId(filter.id);
           this.filterIdToChannelId[filter.id] = channel.id;
           break;
         case BlockchainEventMessageTypes.DEREGISTER_FILTER:
