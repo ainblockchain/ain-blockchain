@@ -1,7 +1,7 @@
 const logger = new (require('../logger'))('EVENT_HANDLER');
 const _ = require('lodash');
 const EventHandlerServer = require('./server');
-const { EventTypes } = require('../common/constants');
+const { BlockchainEventTypes } = require('../common/constants');
 const EventFilter = require('./event-filter');
 const BlockchainEvent = require('./blockchain-event');
 
@@ -10,7 +10,7 @@ class EventHandler {
     this.server = null;
     this.eventFilters = {};
     this.eventTypeToEventFilters = {};
-    for (const eventType of Object.keys(EventTypes)) {
+    for (const eventType of Object.keys(BlockchainEventTypes)) {
       this.eventTypeToEventFilters[eventType] = [];
     }
     run();
@@ -27,11 +27,11 @@ class EventHandler {
       return;
     }
 
-    const blockchainEvent = new BlockchainEvent(EventTypes.BLOCK_FINALIZED, {
+    const blockchainEvent = new BlockchainEvent(BlockchainEventTypes.BLOCK_FINALIZED, {
       block_number: blockNumber,
     });
 
-    for (const eventFilterId of this.eventTypeToEventFilters[EventTypes.BLOCK_FINALIZED]) {
+    for (const eventFilterId of this.eventTypeToEventFilters[BlockchainEventTypes.BLOCK_FINALIZED]) {
       const eventFilter = this.eventFilters[eventFilterId];
       const eventFilterBlockNumber = _.get(eventFilter, 'config.block_number', -1);
       if (eventFilterBlockNumber === -1) {
@@ -48,7 +48,7 @@ class EventHandler {
   }
 
   createAndRegisterEventFilter(eventFilterId, eventType, config) {
-    if (!Object.keys(EventTypes).includes(eventType)) {
+    if (!Object.keys(BlockchainEventTypes).includes(eventType)) {
       throw Error(`Invalid event type (${eventType})`);
     }
     if (this.eventFilters[eventFilterId]) {

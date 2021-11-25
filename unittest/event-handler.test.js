@@ -2,7 +2,7 @@ const EventHandler = require('../event-handler');
 const chai = require('chai');
 const { expect, assert } = chai;
 const { getIpAddress } = require('../common/network-util');
-const { EVENT_HANDLER_PORT, EventTypes } = require('../common/constants');
+const { EVENT_HANDLER_PORT, BlockchainEventTypes } = require('../common/constants');
 
 // TODO(cshcomcom): Add integration test
 describe('EventHandler Test', () => {
@@ -20,7 +20,7 @@ describe('EventHandler Test', () => {
   describe('EventHandler', () => {
     it('createAndRegisterFilter', () => {
       const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
-      eventHandler.createAndRegisterEventFilter(Date.now(), EventTypes.BLOCK_FINALIZED, {
+      eventHandler.createAndRegisterEventFilter(Date.now(), BlockchainEventTypes.BLOCK_FINALIZED, {
         block_number: 100,
       });
       const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
