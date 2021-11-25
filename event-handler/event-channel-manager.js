@@ -50,7 +50,7 @@ class EventChannelManager {
     // TODO(cshcomcom): ping-pong & close broken connections (ref: https://github.com/ainblockchain/ain-blockchain/blob/develop/p2p/index.js#L490)
   }
 
-  handleMessage(channel, message) {
+  handleMessage(channel, message) { // TODO(cshcomcom): Manage EVENT_PROTOCOL_VERSION
     try {
       const parsedMessage = JSON.parse(message);
       const messageType = parsedMessage.type;
