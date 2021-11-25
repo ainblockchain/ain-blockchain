@@ -1,13 +1,13 @@
 const logger = new (require('../logger'))('EVENT_HANDLER');
 const _ = require('lodash');
-const EventHandlerServer = require('./server');
+const EventChannelManager = require('./event-channel-manager');
 const { BlockchainEventTypes } = require('../common/constants');
 const EventFilter = require('./event-filter');
 const BlockchainEvent = require('./blockchain-event');
 
 class EventHandler {
   constructor() {
-    this.server = null;
+    this.eventChannelManager = null;
     this.eventFilters = {};
     this.eventTypeToEventFilters = {};
     for (const eventType of Object.keys(BlockchainEventTypes)) {
@@ -17,8 +17,8 @@ class EventHandler {
   }
 
   run() {
-    this.server = new EventHandlerServer(this);
-    this.server.startListening();
+    this.eventChannelManager = new EventChannelManager(this);
+    this.eventChannelManager.startListening();
     logger.info(`Event handler started!`);
   }
 
@@ -38,7 +38,7 @@ class EventHandler {
         continue;
       }
       if (eventFilterBlockNumber === blockNumber) {
-        this.server.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
+        this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
       }
     }
   }

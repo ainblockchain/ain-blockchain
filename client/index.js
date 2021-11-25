@@ -42,7 +42,7 @@ if (BlockchainConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
 }
 
 const eventHandler = ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
-const eventHandlerServer = eventHandler ? eventHandler.server : null;
+const eventHandlerServer = eventHandler ? eventHandler.eventChannelManager : null;
 const node = new BlockchainNode(eventHandler);
 // NOTE(platfowner): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function(err) {
