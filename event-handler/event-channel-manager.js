@@ -1,4 +1,4 @@
-const logger = new (require('../logger'))('EVENT_HANDLER_SERVER');
+const logger = new (require('../logger'))('EVENT_CHANNEL_MANAGER');
 const EventChannel = require('./event-channel');
 const ws = require('ws');
 const { getIpAddress } = require('../common/network-util');
@@ -8,7 +8,7 @@ const {
   EVENT_HANDLER_PORT,
 } = require('../common/constants');
 
-class EventHandlerServer {
+class EventChannelManager {
   constructor(eventHandler) {
     this.eventHandler = eventHandler;
     this.wsServer = null;
@@ -122,4 +122,4 @@ class EventHandlerServer {
   }
 }
 
-module.exports = EventHandlerServer;
+module.exports = EventChannelManager;
