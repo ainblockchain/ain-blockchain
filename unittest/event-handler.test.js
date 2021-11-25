@@ -2,7 +2,7 @@ const EventHandler = require('../event-handler');
 const chai = require('chai');
 const { expect, assert } = chai;
 const { getIpAddress } = require('../common/network-util');
-const { EVENT_HANDLER_PORT, BlockchainEventTypes } = require('../common/constants');
+const { BlockchainConfigs, BlockchainEventTypes } = require('../common/constants');
 
 // TODO(cshcomcom): Add integration test
 describe('EventHandler Test', () => {
@@ -10,7 +10,6 @@ describe('EventHandler Test', () => {
 
   before(() => {
     eventHandler = new EventHandler();
-    eventHandler.run();
   });
 
   after(() => {
@@ -20,7 +19,7 @@ describe('EventHandler Test', () => {
   describe('EventHandler', () => {
     it('createAndRegisterFilter', () => {
       const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
-      eventHandler.createAndRegisterEventFilter(Date.now(), BlockchainEventTypes.BLOCK_FINALIZED, {
+      eventHandler.createAndRegisterEventFilter(Date.now(), Date.now(), BlockchainEventTypes.BLOCK_FINALIZED, {
         block_number: 100,
       });
       const numberOfFiltersAfter = Object.keys(eventHandler.eventFilters).length;
@@ -28,24 +27,24 @@ describe('EventHandler Test', () => {
     });
   });
 
-  describe('EventHandlerServer', () => {
-    let eventHandlerServer;
+  describe('EvenChannelManager', () => {
+    let eventChannelManager;
 
     before(() => {
-      eventHandlerServer = eventHandler.server;
+      eventChannelManager = eventHandler.eventChannelManager;
     })
 
     after(() => {
-      eventHandlerServer.close();
+      eventChannelManager.close();
     })
 
     it('getNetworkInfo', async () => {
       const intIp = await getIpAddress(true);
-      const intUrl = new URL(`ws://${intIp}:${EVENT_HANDLER_PORT}`);
-      const networkInfo = await eventHandlerServer.getNetworkInfo();
+      const intUrl = new URL(`ws://${intIp}:${BlockchainConfigs.EVENT_HANDLER_PORT}`);
+      const networkInfo = await eventChannelManager.getNetworkInfo();
       assert.deepEqual(networkInfo, {
         url: intUrl.toString(),
-        port: EVENT_HANDLER_PORT,
+        port: BlockchainConfigs.EVENT_HANDLER_PORT,
       });
     });
   });
