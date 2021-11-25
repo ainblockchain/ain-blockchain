@@ -93,7 +93,6 @@ elif [[ $SEASON = 'summer' ]]; then
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$SEASON" = "sandbox" ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
-    # NOTE(liayoo): this is also in blockchain_param.json
     export P2P_PEER_CANDIDATE_URL="http://130.211.244.169:8080/json-rpc"
 elif [[ $SEASON = 'staging' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging
