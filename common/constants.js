@@ -709,7 +709,7 @@ const TrafficEventTypes = {
   CLIENT_API_SET: 'client_api_set',
 };
 
-const EventTypes = {
+const BlockchainEventTypes = {
   BLOCK_FINALIZED: 'BLOCK_FINALIZED',
   VALUE_CHANGED: 'VALUE_CHANGED',
 };
@@ -862,7 +862,7 @@ module.exports = {
   GasFeeConstants,
   SyncModeOptions,
   TrafficEventTypes,
-  EventTypes,
+  BlockchainEventTypes,
   EventHandlerMessageTypes,
   isServiceType,
   isServiceAccountServiceType,
