@@ -4,8 +4,6 @@ const {
   isPeerAlive
 } = require('./util');
 
-const PEER_LIVENESS_THRESHOLD_MS = 5 * 60 * 1000   // 5 minutes
-
 const _buildGraphData = (peerNodes) => {
   const filteredPeerNodesEntries = Object.entries(peerNodes)
       .filter(([, peerNode]) => isPeerAlive(peerNode.updatedAt));
