@@ -4,7 +4,7 @@ const ws = require('ws');
 const { getIpAddress } = require('../common/network-util');
 const {
   HOSTING_ENV,
-  EventHandlerMessageTypes,
+  BlockchainEventMessageTypes,
   EVENT_HANDLER_PORT,
 } = require('../common/constants');
 
@@ -63,7 +63,7 @@ class EventHandlerServer {
         throw Error(`Can't find data from message (${JSON.stringify(message)})`);
       }
       switch (messageType) {
-        case EventHandlerMessageTypes.EVENT_FILTER_REGISTRATION:
+        case BlockchainEventMessageTypes.EVENT_FILTER_REGISTRATION:
           const eventFilterId = data.id;
           const eventType = data.type;
           if (!eventType) {
@@ -79,7 +79,7 @@ class EventHandlerServer {
           channel.addEventFilter(filter);
           this.filterIdToChannelId[filter.id] = channel.id;
           break;
-        case EventHandlerMessageTypes.EVENT_FILTER_UNREGISTRATION:
+        case BlockchainEventMessageTypes.EVENT_FILTER_UNREGISTRATION:
           // TODO(cshcomcom): Implement
           break;
         default:
@@ -99,7 +99,7 @@ class EventHandlerServer {
   }
 
   transmitEvent(channel, event) {
-    channel.webSocket.send(this.makeMessage(EventHandlerMessageTypes.EVENT_EMIT,
+    channel.webSocket.send(this.makeMessage(BlockchainEventMessageTypes.EVENT_EMIT,
         JSON.stringify(event.toObject())));
   }
 
