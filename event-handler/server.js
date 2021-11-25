@@ -48,7 +48,7 @@ class EventHandlerServer {
     webSocket.on('close', (message) => {
       // TODO(cshcomcom): Delete unused variables
     });
-    // TODO(cshcomcom): ping-pong & close broken connections
+    // TODO(cshcomcom): ping-pong & close broken connections (ref: https://github.com/ainblockchain/ain-blockchain/blob/develop/p2p/index.js#L490)
   }
 
   handleMessage(channel, message) {
