@@ -504,7 +504,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
   }
   if (eventHandler !== null) {
     const eventHandlerMethods = {
-      net_getEventHandlerServerNetworkInfo: async function(args) {
+      net_getEventHandlerNetworkInfo: async function(args) {
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
         const result = await eventHandler.eventChannelManager.getNetworkInfo();
         return addProtocolVersion({ result });
