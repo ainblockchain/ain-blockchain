@@ -47,12 +47,13 @@ class EventHandler {
     // TODO(cshcomcom): Implement
   }
 
-  createAndRegisterEventFilter(eventFilterId, eventType, config) {
-    if (!Object.keys(BlockchainEventTypes).includes(eventType)) {
-      throw Error(`Invalid event type (${eventType})`);
-    }
+  createAndRegisterEventFilter(clientFilterId, channelId, eventType, config) {
+    const eventFilterId = `${channelId}:${clientFilterId}`;
     if (this.eventFilters[eventFilterId]) {
       throw Error(`Event filter ID ${eventFilterId} is already in use`);
+    }
+    if (!Object.keys(BlockchainEventTypes).includes(eventType)) {
+      throw Error(`Invalid event type (${eventType})`);
     }
     const eventFilter = new EventFilter(eventFilterId, eventType, config);
     this.eventFilters[eventFilterId] = eventFilter;
