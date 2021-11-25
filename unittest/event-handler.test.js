@@ -18,10 +18,6 @@ describe('EventHandler Test', () => {
   });
 
   describe('EventHandler', () => {
-    it('isRunning', () => {
-      expect(eventHandler.isRunning).to.be.true;
-    });
-
     it('createAndRegisterFilter', () => {
       const numberOfFiltersBefore = Object.keys(eventHandler.eventFilters).length;
       eventHandler.createAndRegisterEventFilter(Date.now(), EventTypes.BLOCK_FINALIZED, {
