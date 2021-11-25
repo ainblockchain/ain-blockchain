@@ -33,7 +33,7 @@ class EventChannelManager {
   }
 
   handleConnection(webSocket) {
-    const channelId = Date.now(); // Memo: Only used in blockchain
+    const channelId = Date.now(); // NOTE: Only used in blockchain
     if (this.channels[channelId]) { // TODO: Retry logic
       throw Error(`Channel ID ${channelId} is already in use`);
     }
