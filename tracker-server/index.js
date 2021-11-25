@@ -1,30 +1,23 @@
 /* eslint no-unused-vars: "off" */
 const logger = new (require('../logger'))('TRACKER_SERVER');
 
-const WebSocketServer = require('ws').Server;
 const geoip = require('geoip-lite');
 const express = require('express');
 const jayson = require('jayson');
 const _ = require('lodash');
-const { v4: uuidv4 } = require('uuid');
 const disk = require('diskusage');
 const os = require('os');
 const v8 = require('v8');
 
 const { getGraphData } = require('./network-topology');
 const { abbrAddr } = require('./util');
-const {
-  BlockchainConfigs,
-  TrackerMessageTypes,
-} = require('../common/constants');
+const { BlockchainConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
-const P2P_PORT = process.env.P2P_PORT || 5000;
 const PORT = process.env.PORT || 8080;
 
 const peerNodes = {};
-const wsList = {};
 
 const app = express();
 const jsonRpcMethods = require('./json-rpc')(peerNodes);
@@ -78,7 +71,7 @@ app.get('/network_topology', (req, res) => {
 
 app.post('/update_peer_info', (req, res) => {
   const peerInfo = req.body.peerInfo;
-  setPeerNodes2(peerInfo);
+  setPeerNodes(peerInfo);
   res.status(200)
       .set('Content-Type', 'application/json')
       .send({ result: 'updated' })
@@ -102,90 +95,16 @@ process.on('SIGINT', () => {
   logger.info('Stopping tracking server....');
   logger.info('Gracefully close websokets....');
   logger.info('Gracefully close websoket server....');
-  server.close(() => {
-    process.exit(1);
-  });
 });
 
-// A tracker server that tracks the peer-to-peer network status of the blockchain nodes.
-// TODO(minsulee2): Sign messages to nodes.
-const server = new WebSocketServer({
-  port: P2P_PORT,
-  // Enables server-side compression. For option details, see
-  // https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback
-  perMessageDeflate: {
-    zlibDeflateOptions: {
-      // See zlib defaults.
-      chunkSize: 1024,
-      memLevel: 7,
-      level: 3
-    },
-    zlibInflateOptions: {
-      chunkSize: 10 * 1024
-    },
-    // Other options settable:
-    clientNoContextTakeover: true, // Defaults to negotiated value.
-    serverNoContextTakeover: true, // Defaults to negotiated value.
-    serverMaxWindowBits: 10, // Defaults to negotiated value.
-    // Below options specified as default values.
-    concurrencyLimit: 10, // Limits zlib concurrency for perf.
-    threshold: 1024 // Size (in bytes) below which messages
-    // should not be compressed.
-  },
-  // TODO(minsulee2): Verify clients.
-  // verifyClient: function() {}
-});
-
-server.on('connection', (ws) => {
-  ws.uuid = uuidv4();
-  wsList[ws.uuid] = null;
-  ws.on('message', (message) => {
-    const parsedMessage = JSON.parse(message);
-    switch(_.get(parsedMessage, 'type')) {
-      case TrackerMessageTypes.PEER_INFO_UPDATE:
-        const updateNodeInfo = Object.assign({ isAlive: true }, parsedMessage.data);
-        setPeerNodes(ws, updateNodeInfo);
-        printNodesInfo();
-        break;
-      default:
-        logger.error(`Unknown message type(${parsedMessage.type}) has been ` +
-            'specified. Ignore the message.');
-        break;
-    }
-  });
-
-  // TODO(minsulee2): Code should be setup ex) code === 1006: SIGINT .
-  ws.on('close', (code) => {
-    const address = wsList[ws.uuid];
-    logger.info(`Disconnected from node [${address ? abbrAddr(address) : 'unknown'}] ` +
-        `with code: ${code}`);
-    delete wsList[ws.uuid];
-    peerNodes[address].isAlive = false;
-    printNodesInfo();
-  });
-
-  ws.on('error', (error) => {
-    const address = wsList[ws.uuid];
-    logger.error(`Error in communication with node [${abbrAddr(address)}]: ` +
-        `${JSON.stringify(error, null, 2)}`);
-  });
-});
-
-function setPeerNodes(ws, nodeInfo) {
-  wsList[ws.uuid] = nodeInfo.address;
-  nodeInfo.location = getPeerLocation(nodeInfo.networkStatus.ip);
-  peerNodes[nodeInfo.address] = nodeInfo;
-  logger.info(`Update from node [${abbrAddr(nodeInfo.address)}]`);
-  logger.debug(`: ${JSON.stringify(nodeInfo, null, 2)}`);
-}
-
-function setPeerNodes2(peerInfo) {
+function setPeerNodes(peerInfo) {
   peerInfo.location = getPeerLocation(peerInfo.networkStatus.ip);
   peerNodes[peerInfo.address] = peerInfo;
   logger.info(`Update from node [${abbrAddr(peerInfo.address)}]`);
   logger.debug(`: ${JSON.stringify(peerInfo, null, 2)}`);
 }
 
+// FIXME(minsulee2): isAlive no exists anymore
 function getNumNodesAlive() {
   return Object.values(peerNodes).reduce((acc, cur) => acc + (cur.isAlive ? 1 : 0), 0);
 }

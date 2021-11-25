@@ -165,15 +165,6 @@ const MessageTypes = {
 };
 
 /**
- * Message types for communication between tracker and node.
- *
- * @enum {string}
- */
-const TrackerMessageTypes = {
-  PEER_INFO_UPDATE: 'PEER_INFO_UPDATE'
-};
-
-/**
  * States of blockchain nodes.
  *
  * @enum {string}
@@ -818,7 +809,6 @@ module.exports = {
   DevFlags,
   BlockchainConfigs,
   MessageTypes,
-  TrackerMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
   PredefinedDbPaths,
