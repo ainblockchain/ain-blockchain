@@ -63,7 +63,7 @@ class EventHandlerServer {
         throw Error(`Can't find data from message (${JSON.stringify(message)})`);
       }
       switch (messageType) {
-        case BlockchainEventMessageTypes.EVENT_FILTER_REGISTRATION:
+        case BlockchainEventMessageTypes.REGISTER_FILTER:
           const eventFilterId = data.id;
           const eventType = data.type;
           if (!eventType) {
@@ -79,7 +79,7 @@ class EventHandlerServer {
           channel.addEventFilter(filter);
           this.filterIdToChannelId[filter.id] = channel.id;
           break;
-        case BlockchainEventMessageTypes.EVENT_FILTER_UNREGISTRATION:
+        case BlockchainEventMessageTypes.DEREGISTER_FILTER:
           // TODO(cshcomcom): Implement
           break;
         default:
@@ -99,7 +99,7 @@ class EventHandlerServer {
   }
 
   transmitEvent(channel, event) {
-    channel.webSocket.send(this.makeMessage(BlockchainEventMessageTypes.EVENT_EMIT,
+    channel.webSocket.send(this.makeMessage(BlockchainEventMessageTypes.EMIT_EVENT,
         JSON.stringify(event.toObject())));
   }
 
