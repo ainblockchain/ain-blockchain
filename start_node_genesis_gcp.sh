@@ -203,6 +203,7 @@ else
     exit
 fi
 
+# Overwrite the P2P_PEER_CANDIDATE_URL value for the first node
 if [[ $NODE_INDEX = 0 ]]; then
     export P2P_PEER_CANDIDATE_URL=''
 fi

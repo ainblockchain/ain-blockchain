@@ -84,23 +84,35 @@ KEYSTORE_DIR=testnet_dev_staging_keys
 if [[ $SEASON = 'spring' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_WS_ADDR=ws://35.221.137.80:5000
-    export P2P_PEER_CANDIDATE_URL="http://35.221.184.48:8080/json-rpc"
+    if [[ $NODE_INDEX -gt 4 ]]; then
+        export P2P_PEER_CANDIDATE_URL="http://35.221.184.48:8080/json-rpc"
+    else
+        export P2P_PEER_CANDIDATE_URL="https://spring-api.ainetwork.ai/json-rpc"
+    fi
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ $SEASON = 'summer' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_WS_ADDR=ws://35.194.172.106:5000
-    export P2P_PEER_CANDIDATE_URL="http://35.194.169.78:8080/json-rpc"
+    if [[ $NODE_INDEX -gt 4 ]]; then
+        export P2P_PEER_CANDIDATE_URL="http://35.194.169.78:8080/json-rpc"
+    else
+        export P2P_PEER_CANDIDATE_URL="https://summer-api.ainetwork.ai/json-rpc"
+    fi
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$SEASON" = "sandbox" ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
     export P2P_PEER_CANDIDATE_URL="http://130.211.244.169:8080/json-rpc"
 elif [[ $SEASON = 'staging' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging
-    export P2P_PEER_CANDIDATE_URL="http://35.194.139.219:8080/json-rpc"
+    if [[ $NODE_INDEX -gt 4 ]]; then
+        export P2P_PEER_CANDIDATE_URL="http://35.194.139.219:8080/json-rpc"
+    fi
 elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
     if [[ $SHARD_INDEX = 0 ]]; then
-        export P2P_PEER_CANDIDATE_URL="http://35.194.235.180:8080/json-rpc"
+        if [[ $NODE_INDEX -gt 4 ]]; then
+            export P2P_PEER_CANDIDATE_URL="http://35.194.235.180:8080/json-rpc"
+        fi
     elif [[ $SHARD_INDEX = 1 ]]; then
         export TRACKER_WS_ADDR=ws://35.187.153.22:5000  # dev-shard-1-tracker-ip
     elif [[ $SHARD_INDEX = 2 ]]; then
@@ -158,10 +170,6 @@ EOF
 else
     printf "Invalid <Project/Season> argument: $SEASON\n"
     exit
-fi
-
-if [[ $NODE_INDEX = 0 ]]; then
-    export P2P_PEER_CANDIDATE_URL=''
 fi
 
 printf "TRACKER_WS_ADDR=$TRACKER_WS_ADDR\n"
