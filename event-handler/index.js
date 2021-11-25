@@ -13,7 +13,7 @@ class EventHandler {
     for (const eventType of Object.keys(BlockchainEventTypes)) {
       this.eventTypeToEventFilters[eventType] = [];
     }
-    run();
+    this.run();
   }
 
   run() {
