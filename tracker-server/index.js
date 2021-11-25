@@ -10,7 +10,10 @@ const os = require('os');
 const v8 = require('v8');
 
 const { getGraphData } = require('./network-topology');
-const { abbrAddr } = require('./util');
+const {
+  abbrAddr,
+  isPeerAlive
+} = require('./util');
 const { BlockchainConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
@@ -97,39 +100,8 @@ function setPeerNodes(peerInfo) {
   logger.debug(`: ${JSON.stringify(peerInfo, null, 2)}`);
 }
 
-// FIXME(minsulee2): isAlive no exists anymore
 function getNumNodesAlive() {
-  return Object.values(peerNodes).reduce((acc, cur) => acc + (cur.isAlive ? 1 : 0), 0);
-}
-
-function getNumNodes() {
-  return Object.keys(peerNodes).length;
-}
-
-function printNodesInfo() {
-  logger.info(`Updated [peerNodes]: Number of nodes: (${getNumNodesAlive()}/${getNumNodes()})`);
-  const nodeInfoList = Object.values(peerNodes).sort((x, y) => {
-    return x.address > y.address ? 1 : (x.address === y.address ? 0 : -1);
-  });
-  nodeInfoList.forEach((nodeInfo) => {
-    logger.info(`NodeSummary: ${getNodeSummary(nodeInfo)}`)
-  });
-}
-
-function getNodeSummary(nodeInfo) {
-  const ip = _.get(nodeInfo, 'networkStatus.ip', '');
-  const diskAvailableMb = Math.floor(_.get(nodeInfo, 'diskStatus.available') / 1000 / 1000);
-  const memoryFreeMb =
-      Math.round(_.get(nodeInfo, 'memoryStatus.heapStats.total_available_size') / 1000 / 1000);
-  return `[${abbrAddr(nodeInfo.address)} (${ip})]:\n` +
-    `  isAlive: ${nodeInfo.isAlive},\n` +
-    `  state: ${_.get(nodeInfo, 'nodeStatus.state')},\n` +
-    `  disk: ${diskAvailableMb}MB,\n` +
-    `  memory: ${memoryFreeMb}MB,\n` +
-    `  peers:\n` +
-    `    outbound (${_.get(nodeInfo, 'networkStatus.connectionStatus.outgoingPeers')}),\n` +
-    `    inbound (${_.get(nodeInfo, 'networkStatus.connectionStatus.incomingPeers')}),\n` +
-    `  updatedAt: ${nodeInfo.updatedAt}`;
+  return Object.values(peerNodes).filter(info => isPeerAlive(info.updatedAt)).length;
 }
 
 function getPeerLocation(ip) {
