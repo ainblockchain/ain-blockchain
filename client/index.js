@@ -42,7 +42,7 @@ if (BlockchainConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
 }
 
 const eventHandler = ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
-
+const eventHandlerServer = eventHandler ? eventHandler.server : null;
 const node = new BlockchainNode(eventHandler);
 // NOTE(platfowner): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function(err) {
@@ -62,8 +62,7 @@ const p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
 const p2pServer = p2pClient.server;
 
 const jsonRpcMethods = require('../json_rpc')(
-    node, p2pServer, eventHandler !== null ? eventHandler.server : null,
-    minProtocolVersion, maxProtocolVersion);
+    node, p2pServer, eventHandlerServer, minProtocolVersion, maxProtocolVersion);
 
 function createAndExecuteTransaction(txBody) {
   const tx = node.createTransaction(txBody);
