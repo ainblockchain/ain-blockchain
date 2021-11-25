@@ -15,8 +15,6 @@ const {
   WriteDbOperations,
   PredefinedDbPaths,
   StateVersions,
-  EventTypes,
-  ENABLE_EVENT_HANDLER,
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
