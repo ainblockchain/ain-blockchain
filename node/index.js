@@ -30,7 +30,6 @@ const Transaction = require('../tx-pool/transaction');
 const Consensus = require('../consensus');
 const BlockPool = require('../block-pool');
 const ConsensusUtil = require('../consensus/consensus-util');
-const BlockchainEvent = require('../event-handler/blockchain-event');
 
 class BlockchainNode {
   constructor(account = null, eventHandler = null) {
@@ -624,7 +623,9 @@ class BlockchainNode {
             });
           });
         }
-        this.eh.emitBlockFinalized(blockToFinalize.number);
+        if (this.eh) {
+          this.eh.emitBlockFinalized(blockToFinalize.number);
+        }
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
             `${JSON.stringify(blockToFinalize, null, 2)}`);
