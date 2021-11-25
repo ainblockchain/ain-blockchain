@@ -119,7 +119,7 @@ if [[ $KEEP_CODE_OPTION = "" ]]; then
 
     printf '\n'
     printf 'Installing node modules..\n'
-    yarn install --ignore-engines
+    sudo yarn install --ignore-engines
 else
     printf '\n'
     printf 'Using old directory..\n'
