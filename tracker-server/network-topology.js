@@ -1,12 +1,14 @@
 const commonUtil = require('../common/common-util');
-const { abbrAddr } = require('./util');
+const {
+  abbrAddr,
+  isPeerAlive
+} = require('./util');
 
 const PEER_LIVENESS_THRESHOLD_MS = 5 * 60 * 1000   // 5 minutes
 
 const _buildGraphData = (peerNodes) => {
-  const filteredPeerNodesEntries = Object.entries(peerNodes).filter(([, peerNode]) => {
-    return PEER_LIVENESS_THRESHOLD_MS > Date.now() - peerNode.updatedAt;
-  });
+  const filteredPeerNodesEntries = Object.entries(peerNodes)
+      .filter(([, peerNode]) => isPeerAlive(peerNode.updatedAt));
   const peerNodesAlive = Object.fromEntries(filteredPeerNodesEntries);
   const data = { nodes: [], links: [] };
   const peerNodeIdMap = { };
