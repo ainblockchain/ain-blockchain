@@ -8,25 +8,21 @@ const BlockchainEvent = require('./blockchain-event');
 class EventHandler {
   constructor() {
     this.server = null;
-    this.isRunning = false;
     this.eventFilters = {};
     this.eventTypeToEventFilters = {};
     for (const eventType of Object.keys(EventTypes)) {
       this.eventTypeToEventFilters[eventType] = [];
     }
+    run();
   }
 
   run() {
     this.server = new EventHandlerServer(this);
     this.server.startListening();
-    this.isRunning = true;
     logger.info(`Event handler started!`);
   }
 
   emitBlockFinalized(blockNumber) {
-    if (!this.isRunning) {
-      return;
-    }
     if (!blockNumber) {
       return;
     }
