@@ -64,7 +64,7 @@ class EventHandlerServer {
       }
       switch (messageType) {
         case BlockchainEventMessageTypes.REGISTER_FILTER:
-          const eventFilterId = data.id;
+          const clientFilterId = data.id
           const eventType = data.type;
           if (!eventType) {
             throw Error(`Can't find eventType from message.data (${JSON.stringify(message)})`);
@@ -75,7 +75,8 @@ class EventHandlerServer {
           }
 
           const filter =
-              this.eventHandler.createAndRegisterEventFilter(eventFilterId, eventType, config);
+              this.eventHandler.createAndRegisterEventFilter(clientFilterId, channel.id,
+                  eventType, config);
           channel.addEventFilter(filter);
           this.filterIdToChannelId[filter.id] = channel.id;
           break;
