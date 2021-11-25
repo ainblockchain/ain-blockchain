@@ -595,7 +595,7 @@ const FunctionResultCode = {
  * @enum {string}
  */
 const TransactionStates = {
-  IN_BLOCK: 'IN_BLOCK',
+  FINALIZED: 'FINALIZED',
   EXECUTED: 'EXECUTED',
   FAILED: 'FAILED',
   PENDING: 'PENDING',
