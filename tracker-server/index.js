@@ -63,7 +63,6 @@ app.get('/network_topology', (req, res) => {
   res.render(__dirname + '/index.html', {}, (err, html) => {
     const networkStatus = getNetworkStatus();
     const graphData = getGraphData(networkStatus);
-    console.log(graphData)
     html = html.replace(/{ \/\* replace this \*\/ };/g, JSON.stringify(graphData));
     res.send(html);
   });
@@ -89,12 +88,6 @@ trackerServer.headersTimeout = 630 * 1000; // 630 seconds
 // NOTE(platfowner): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function(err) {
   logger.error(err);
-});
-
-process.on('SIGINT', () => {
-  logger.info('Stopping tracking server....');
-  logger.info('Gracefully close websokets....');
-  logger.info('Gracefully close websoket server....');
 });
 
 function setPeerNodes(peerInfo) {
