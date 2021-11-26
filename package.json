@@ -33,6 +33,7 @@
     "test_unit_consensus": "ACCOUNT_INDEX=0 P2P_PEER_CANDIDATE_URL='' BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/unit-tests ./node_modules/mocha/bin/mocha --timeout 160000 unittest/consensus.test.js",
     "test_unit_db": "ACCOUNT_INDEX=0 P2P_PEER_CANDIDATE_URL='' BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/unit-tests STATE_TREE_BYTES_LIMIT=20000000 ./node_modules/mocha/bin/mocha --timeout 160000 unittest/db.test.js",
     "test_unit_event_counter": "ACCOUNT_INDEX=0 P2P_PEER_CANDIDATE_URL='' ./node_modules/mocha/bin/mocha --timeout 160000 unittest/event-counter.test.js",
+    "test_unit_event_handler": "ACCOUNT_INDEX=0 P2P_PEER_CANDIDATE_URL='' ./node_modules/mocha/bin/mocha --timeout 160000 unittest/event-handler.test.js",
     "test_unit_functions": "ACCOUNT_INDEX=0 P2P_PEER_CANDIDATE_URL='' BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/unit-tests ./node_modules/mocha/bin/mocha --timeout 160000 unittest/functions.test.js",
     "test_unit_p2p": "ACCOUNT_INDEX=0 P2P_PEER_CANDIDATE_URL='' ./node_modules/mocha/bin/mocha --timeout 320000 unittest/p2p.test.js",
     "test_unit_p2p_util": "ACCOUNT_INDEX=0 P2P_PEER_CANDIDATE_URL='' ./node_modules/mocha/bin/mocha --timeout 160000 unittest/p2p-util.test.js",
