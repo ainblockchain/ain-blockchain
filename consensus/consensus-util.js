@@ -63,6 +63,20 @@ class ConsensusUtil {
     }
   }
 
+  static getBlockNumberFromConsensusTx(tx) {
+    const op = _get(tx, 'tx_body.operation');
+    if (!tx || !op) return null;
+    let parsedPath = [];
+    if (op.type === WriteDbOperations.SET_VALUE) { // vote tx
+      parsedPath = CommonUtil.parsePath(_get(op, 'ref'));
+    } else if (op.type === WriteDbOperations.SET) { // propose tx
+      parsedPath = CommonUtil.parsePath(_get(op, 'op_list.0.ref'));
+    } else {
+      return null;
+    }
+    return _get(parsedPath, 2); // /consensus/number/${blockNumber}/...
+  }
+
   static getStakeFromVoteTx(tx) {
     return _get(tx, 'tx_body.operation.value.stake', 0);
   }
