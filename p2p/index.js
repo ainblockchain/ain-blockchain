@@ -567,6 +567,7 @@ class P2pClient {
     }
     if (this.tryInitProcesses(number, chainSegment, catchUpInfo)) { // Already caught up
       this.resetChainSyncPeer();
+      this.server.consensus.catchUp(catchUpInfo);
       return;
     }
     const mergeResult = this.server.node.mergeChainSegment(chainSegment);
