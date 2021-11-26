@@ -12,7 +12,7 @@ const v8 = require('v8');
 const { getGraphData } = require('./network-topology');
 const {
   abbrAddr,
-  isPeerAlive
+  isNodeAlive
 } = require('./util');
 const { BlockchainConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
@@ -101,7 +101,7 @@ function setPeerNodes(peerInfo) {
 }
 
 function getNumNodesAlive() {
-  return Object.values(peerNodes).filter(info => isPeerAlive(info.updatedAt)).length;
+  return Object.values(peerNodes).filter(nodeInfo => isNodeAlive(nodeInfo)).length;
 }
 
 function getNodeLocation(ip) {

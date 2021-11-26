@@ -1,12 +1,12 @@
 const commonUtil = require('../common/common-util');
 const {
   abbrAddr,
-  isPeerAlive
+  isNodeAlive
 } = require('./util');
 
 const _buildGraphData = (peerNodes) => {
   const filteredPeerNodesEntries = Object.entries(peerNodes)
-      .filter(([, peerNode]) => isPeerAlive(peerNode.updatedAt));
+      .filter(([, peerNode]) => isNodeAlive(peerNode));
   const peerNodesAlive = Object.fromEntries(filteredPeerNodesEntries);
   const data = { nodes: [], links: [] };
   const peerNodeIdMap = { };
