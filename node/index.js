@@ -306,7 +306,7 @@ class BlockchainNode {
       return null;
     }
 
-    if (transactionInfo.state === TransactionStates.IN_BLOCK) {
+    if (transactionInfo.state === TransactionStates.FINALIZED) {
       const block = this.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
       if (!block) {
