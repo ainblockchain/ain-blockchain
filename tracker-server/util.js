@@ -4,11 +4,11 @@ function abbrAddr(address) {
   return `${address.substring(0, 6)}..${address.substring(address.length - 4)}`;
 }
 
-function isPeerAlive(updatedAt) {
-  return PEER_LIVENESS_THRESHOLD_MS > Date.now() - updatedAt;
+function isNodeAlive(nodeInfo) {
+  return PEER_LIVENESS_THRESHOLD_MS > Date.now() - nodeInfo.updatedAt;
 }
 
 module.exports = {
   abbrAddr,
-  isPeerAlive
+  isNodeAlive
 };
