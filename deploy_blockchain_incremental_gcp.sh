@@ -1,14 +1,14 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic] [--restart|--reset]\n"
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic] [--restart|--reset]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 --setup --canary --full-sync --keystore\n"
     printf "\n"
     exit
 fi
 printf "\n[[[[[ deploy_blockchain_incremental_gcp.sh ]]]]]\n\n"
 
-if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]]; then
+if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]]; then
     SEASON="$1"
     if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
         PROJECT_ID="testnet-prod-ground"
@@ -120,8 +120,8 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
-FILES_FOR_TRACKER="blockchain/ block-pool/ client/ common/ consensus/ db/ blockchain-configs/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
-FILES_FOR_NODE="blockchain/ block-pool/ client/ common/ consensus/ db/ blockchain-configs/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ $KEYSTORE_DIR package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
+FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ $KEYSTORE_DIR package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
 NUM_PARENT_NODES=7
 NUM_SHARD_NODES=3
@@ -290,6 +290,7 @@ else
     for j in `seq 0 $(( ${NUM_PARENT_NODES} - 1 ))`
         do
             deploy_node "$j"
+            sleep 40
         done
 fi
 

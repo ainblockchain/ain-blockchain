@@ -17,6 +17,7 @@ const {
   TransactionStates,
   StateVersions,
   SyncModeOptions,
+  EventTypes,
 } = require('../common/constants');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
@@ -31,7 +32,7 @@ const BlockPool = require('../block-pool');
 const ConsensusUtil = require('../consensus/consensus-util');
 
 class BlockchainNode {
-  constructor(account = null) {
+  constructor(account = null, eventHandler = null) {
     this.keysDir = path.resolve(BlockchainConfigs.KEYS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
     FileUtil.createDir(this.keysDir);
     this.snapshotDir = path.resolve(BlockchainConfigs.SNAPSHOTS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
@@ -44,6 +45,7 @@ class BlockchainNode {
     this.urlInternal = null;
     this.urlExternal = null;
 
+    this.eh = eventHandler;
     this.bc = new Blockchain(String(BlockchainConfigs.PORT));
     this.tp = new TransactionPool(this);
     this.bp = new BlockPool(this);
@@ -170,7 +172,7 @@ class BlockchainNode {
           latestSnapshotBlockNumber = latestSnapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
         } catch (err) {
           CommonUtil.finishWithStackTrace(
-              logger, 
+              logger,
               `[${LOG_HEADER}] Failed to read latest snapshot file (${latestSnapshotPath}) ` +
               `with error: ${err.stack}`);
           return false;
@@ -306,7 +308,7 @@ class BlockchainNode {
       return null;
     }
 
-    if (transactionInfo.state === TransactionStates.IN_BLOCK) {
+    if (transactionInfo.state === TransactionStates.FINALIZED) {
       const block = this.bc.getBlockByNumber(transactionInfo.number);
       const index = transactionInfo.index;
       if (!block) {
@@ -620,6 +622,9 @@ class BlockchainNode {
               }
             });
           });
+        }
+        if (this.eh) {
+          this.eh.emitBlockFinalized(blockToFinalize.number);
         }
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +

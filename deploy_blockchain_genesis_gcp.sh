@@ -1,14 +1,14 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|spring|summer] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic] [--restart|--reset]\n"
+    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|spring|summer] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic] [--restart|--reset]\n"
     printf "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --setup --keystore\n"
     printf "\n"
     exit
 fi
 printf "\n[[[[[ deploy_blockchain_genesis_gcp.sh ]]]]]\n\n"
 
-if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]]; then
+if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]]; then
     SEASON="$1"
     if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
         PROJECT_ID="testnet-prod-ground"
@@ -138,8 +138,8 @@ function inject_account() {
 }
 
 # deploy files
-FILES_FOR_TRACKER="blockchain/ block-pool/ client/ common/ consensus/ db/ blockchain-configs/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
-FILES_FOR_NODE="blockchain/ block-pool/ client/ common/ consensus/ db/ blockchain-configs/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json $KEYSTORE_DIR setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
+FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json $KEYSTORE_DIR setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
 TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-tracker-taiwan"
 NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
@@ -260,19 +260,19 @@ printf "START_TRACKER_CMD=$START_TRACKER_CMD\n"
 eval $START_TRACKER_CMD
 
 NUM_NODES=7
-index=0
-while [ $index -lt $NUM_NODES ]
+node_index=0
+while [ $node_index -lt $NUM_NODES ]
 do
-    printf "\n\n##########################\n# Starting parent node $index #\n##########################\n\n"
-    if [[ $index -gt 4 ]]; then
+    printf "\n\n##########################\n# Starting parent node $node_index #\n##########################\n\n"
+    if [[ $node_index -gt 4 ]]; then
         JSON_RPC_OPTION="--json-rpc"
         REST_FUNC_OPTION="--rest-func"
     else
         JSON_RPC_OPTION=""
         REST_FUNC_OPTION=""
     fi
-    NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
-    NODE_ZONE=NODE_${index}_ZONE
+    NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
+    NODE_ZONE=NODE_${node_index}_ZONE
 
     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
     printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
@@ -280,11 +280,11 @@ do
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $index $KEEP_CODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
     printf "START_NODE_CMD=$START_NODE_CMD\n"
     eval $START_NODE_CMD
-    inject_account "$index"
-    ((index++))
+    inject_account "$node_index"
+    ((node_index++))
 done
 
 

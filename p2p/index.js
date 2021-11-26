@@ -34,7 +34,7 @@ const {
 
 // NOTE(minsulee2): consider updating TRACKER_UPDATE_INTERVAL_MS to 2.5 minutes.
 const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
-const PEER_CANDIDATES_CONNECTION_INTERVAL_MS = 60 * 1000;  // 1 minute
+const PEER_CANDIDATES_CONNECTION_INTERVAL_MS = 20 * 1000;  // 20 seconds
 const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 10 * 1000; // 10 seconds
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {

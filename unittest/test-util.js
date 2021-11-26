@@ -125,6 +125,21 @@ async function waitForNewBlocks(server, waitFor = 1) {
   }
 }
 
+function getLatestReportedBlockNumber(parentServer, shardingPath) {
+  return parseOrLog(syncRequest(
+    'GET', parentServer + `/get_value?ref=${shardingPath}/.shard/latest_block_number`)
+  .body.toString('utf-8')).result;
+}
+
+async function waitForNewShardingReports(parentServer, shardingPath) {
+  const latestBefore = getLatestReportedBlockNumber(parentServer, shardingPath);
+  let updatedLastBlockNumber = latestBefore;
+  while (updatedLastBlockNumber <= latestBefore) {
+    await CommonUtil.sleep(1000);
+    updatedLastBlockNumber = getLatestReportedBlockNumber(parentServer, shardingPath);
+  }
+}
+
 async function waitUntilNetworkIsReady(serverList) {
   const MAX_ITERATION = 40;
   let iterCount = 0;
@@ -233,6 +248,7 @@ module.exports = {
   addBlock,
   waitUntilTxFinalized,
   waitForNewBlocks,
+  waitForNewShardingReports,
   waitUntilNetworkIsReady,
   waitUntilNodeSyncs,
   parseOrLog,
