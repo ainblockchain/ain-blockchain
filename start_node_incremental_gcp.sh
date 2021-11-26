@@ -107,12 +107,16 @@ elif [[ $SEASON = 'staging' ]]; then
     if [[ $NODE_INDEX -gt 4 ]]; then
         export P2P_PEER_CANDIDATE_URL="http://35.194.139.219:8080/json-rpc"
     fi
+    # NOTE(platfowner): For non-api-servers, the value in the blockchain configs
+    # (https://staging-api.ainetwork.ai/json-rpc) is used.
 elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
     if [[ $SHARD_INDEX = 0 ]]; then
         if [[ $NODE_INDEX -gt 4 ]]; then
             export P2P_PEER_CANDIDATE_URL="http://35.194.235.180:8080/json-rpc"
         fi
+        # NOTE(platfowner): For non-api-servers, the value in the blockchain configs
+        # (https://dev-api.ainetwork.ai/json-rpc) is used.
     elif [[ $SHARD_INDEX = 1 ]]; then
         export TRACKER_WS_ADDR=ws://35.187.153.22:5000  # dev-shard-1-tracker-ip
     elif [[ $SHARD_INDEX = 2 ]]; then
