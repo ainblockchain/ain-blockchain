@@ -506,7 +506,7 @@ describe('Consensus', () => {
       const againstVotesFromState = await waitUntilAgainstVotesInBlock(proposalBlock);
       const offenseRecords = parseOrLog(syncRequest(
           'GET', server2 + `/get_value?ref=/consensus/offense_records`).body.toString('utf-8')).result;
-      assert.deepEqual(offenseRecords, { [server2Addr]: 1 });
+      expect(offenseRecords[server2Addr]).to.equal(1);
       const blockWithEvidence = (parseOrLog(syncRequest('GET', server2 + `/blocks`)
           .body.toString('utf-8')).result || [])
               .find((block) => !CommonUtil.isEmpty(block.evidence));
@@ -528,7 +528,7 @@ describe('Consensus', () => {
       const offenses = parseOrLog(syncRequest(
         'GET', server2 + `/get_value?ref=/consensus/number/${blockWithEvidence.number}/propose/offenses`)
         .body.toString('utf-8')).result;
-      assert.deepEqual(offenses, { [server2Addr]: { [ValidatorOffenseTypes.INVALID_PROPOSAL]: 1 } });
+      assert.deepEqual(offenses[server2Addr], { [ValidatorOffenseTypes.INVALID_PROPOSAL]: 1 });
     });
 
     it('can penalize malicious validators ', async () => {
