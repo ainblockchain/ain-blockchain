@@ -9,6 +9,7 @@ const {
   P2pNetworkStates
 } = require('../common/constants');
 const { setNodeForTesting } = require('./test-util');
+const { getIpAddress } = require('../common/network-util');
 
 const expect = chai.expect;
 const assert = chai.assert;
@@ -41,7 +42,7 @@ describe("P2P", () => {
   describe("Server Status", () => {
     describe("getIpAddress", () => {
       it("gets ip address", async () => {
-        const actual = await p2pServer.getIpAddress();
+        const actual = await getIpAddress();
         const ipAddressRegex = /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
         // FIXME(minsulee2): We cannot use CommonUtil.isValidUrl for internal ip.
         expect(ipAddressRegex.test(actual)).to.be.true;

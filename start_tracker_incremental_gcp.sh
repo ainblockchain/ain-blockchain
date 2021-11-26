@@ -52,7 +52,7 @@ if [[ $KEEP_CODE_OPTION = "" ]]; then
     printf '\n'
     printf 'Installing node modules..\n'
     cd $NEW_DIR_PATH
-    yarn install --ignore-engines
+    sudo yarn install --ignore-engines
 else
     printf '\n'
     printf 'Using old working directory..\n'
@@ -100,7 +100,7 @@ while :
 do
     numNodesAlive=$(curl -m 20 -X GET -H "Content-Type: application/json" "http://localhost:8080/network_status" | jq -r '.numNodesAlive')
     printf "\nnumNodesAlive = ${numNodesAlive}\n"
-    if [[ "$numNodesAlive" = "$NUM_NODES" ]]; then
+    if [[ $numNodesAlive -gt 0 ]]; then
         printf "\nBlockchain Tracker server is running!\n"
         printf "\nTime it took to sync in seconds: $SECONDS\n"
         break

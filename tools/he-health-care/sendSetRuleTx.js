@@ -18,7 +18,7 @@ function buildSetRuleTxBody(appName, timestamp) {
 }
 
 async function main() {
-  // TODO(sanghee): Support 'node sendSetRuleTx.js <config_filename>' and check args
+  // TODO(cshcomcom): Support 'node sendSetRuleTx.js <config_filename>' and check args
   const setRuleTxBody = buildSetRuleTxBody(healthCareAppName, Date.now());
   const setRuleResult = await signAndSendTx(endpointUrl, setRuleTxBody, serviceOwnerPrivateKey);
   if (!setRuleResult.success) {

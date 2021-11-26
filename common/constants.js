@@ -51,9 +51,12 @@ BlockchainConfigs.ENABLE_REST_FUNCTION_CALL =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_REST_FUNCTION_CALL);
 BlockchainConfigs.ENABLE_EXPRESS_RATE_LIMIT =
     CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_EXPRESS_RATE_LIMIT, true);
+BlockchainConfigs.ENABLE_EVENT_HANDLER =
+    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_EVENT_HANDLER);
 BlockchainConfigs.ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
 BlockchainConfigs.PORT = process.env.PORT || getPortNumber(8080, 8080);
 BlockchainConfigs.P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
+BlockchainConfigs.EVENT_HANDLER_PORT = process.env.EVENT_HANDLER_PORT || getPortNumber(6000, 6000);
 BlockchainConfigs.LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
 BlockchainConfigs.SYNC_MODE = process.env.SYNC_MODE || 'full';
 BlockchainConfigs.MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
@@ -586,7 +589,7 @@ const FunctionResultCode = {
  * @enum {string}
  */
 const TransactionStates = {
-  IN_BLOCK: 'IN_BLOCK',
+  FINALIZED: 'FINALIZED',
   EXECUTED: 'EXECUTED',
   FAILED: 'FAILED',
   PENDING: 'PENDING',
@@ -695,6 +698,17 @@ const TrafficEventTypes = {
   // Client APIs
   CLIENT_API_GET: 'client_api_get',
   CLIENT_API_SET: 'client_api_set',
+};
+
+const BlockchainEventTypes = {
+  BLOCK_FINALIZED: 'BLOCK_FINALIZED',
+  VALUE_CHANGED: 'VALUE_CHANGED',
+};
+
+const BlockchainEventMessageTypes = {
+  REGISTER_FILTER: 'REGISTER_FILTER',
+  DEREGISTER_FILTER: 'DEREGISTER_FILTER',
+  EMIT_EVENT: 'EMIT_EVENT',
 };
 
 /**
@@ -839,6 +853,8 @@ module.exports = {
   GasFeeConstants,
   SyncModeOptions,
   TrafficEventTypes,
+  BlockchainEventTypes,
+  BlockchainEventMessageTypes,
   isServiceType,
   isServiceAccountServiceType,
   isAppDependentServiceType,

@@ -3,7 +3,13 @@ const logger = new (require('../logger'))('NETWORK-UTIL');
 const _ = require('lodash');
 const axios = require('axios');
 const { BlockchainConfigs } = require('../common/constants');
+const ip = require('ip');
+const extIp = require('ext-ip')();
 const CommonUtil = require('../common/common-util');
+const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
+    '/network-interfaces/0/access-configs/0/external-ip';
+const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
+    '/network-interfaces/0/ip';
 
 async function _waitUntilTxFinalize(endpoint, txHash) {
   while (true) {
@@ -82,9 +88,37 @@ function sendGetRequest(endpoint, method, params) {
   });
 }
 
+function getIpAddress(internal = false) {
+  return Promise.resolve()
+  .then(() => {
+    if (BlockchainConfigs.HOSTING_ENV === 'gcp') {
+      return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
+        headers: {'Metadata-Flavor': 'Google'},
+        timeout: 3000
+      })
+      .then((res) => {
+        return res.data;
+      })
+      .catch((err) => {
+        CommonUtil.finishWithStackTrace(
+            logger, `Failed to get ip address: ${JSON.stringify(err, null, 2)}`);
+      });
+    } else {
+      if (internal) {
+        return ip.address();
+      } else {
+        return extIp.get();
+      }
+    }
+  }).then((ipAddr) => {
+    return ipAddr;
+  });
+}
+
 module.exports = {
   sendTxAndWaitForFinalization,
   sendSignedTx,
   signAndSendTx,
-  sendGetRequest
+  sendGetRequest,
+  getIpAddress,
 };

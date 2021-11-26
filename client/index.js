@@ -10,6 +10,7 @@ const _ = require('lodash');
 const rateLimit = require("express-rate-limit");
 const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
+const EventHandler = require('../event-handler');
 const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
 const {
@@ -40,8 +41,8 @@ if (BlockchainConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
   app.use(limiter);
 }
 
-
-const node = new BlockchainNode();
+const eventHandler = BlockchainConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
+const node = new BlockchainNode(null, eventHandler);
 // NOTE(platfowner): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function(err) {
   logger.error(err);
@@ -60,7 +61,7 @@ const p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
 const p2pServer = p2pClient.server;
 
 const jsonRpcMethods = require('../json_rpc')(
-    node, p2pServer, minProtocolVersion, maxProtocolVersion);
+    node, p2pServer, eventHandler, minProtocolVersion, maxProtocolVersion);
 
 function createAndExecuteTransaction(txBody) {
   const tx = node.createTransaction(txBody);
