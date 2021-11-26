@@ -32,6 +32,7 @@ const {
   sendGetRequest
 } = require('../common/network-util');
 
+// NOTE(minsulee2): consider updating TRACKER_UPDATE_INTERVAL_MS to 2.5 minutes.
 const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
 const PEER_CANDIDATES_CONNECTION_INTERVAL_MS = 60 * 1000;  // 1 minute
 const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
@@ -171,9 +172,9 @@ class P2pClient {
   /**
    * Update peer info to tracker via POST.
    */
-  async updatePeerInfoToTracker() {
+  async updateNodeInfoToTracker() {
     try {
-      const url = BlockchainConfigs.TRACKER_UPDATE_PEER_INFO_URL;
+      const url = BlockchainConfigs.TRACKER_UPDATE_URL;
       const peerInfo = this.getStatus();
       Object.assign(peerInfo, { updatedAt: Date.now() });
       const response = await axios.post(url, { peerInfo });
@@ -187,9 +188,9 @@ class P2pClient {
   }
 
   setIntervalForTrackerUpdate() {
-    this.updatePeerInfoToTracker();
+    this.updateNodeInfoToTracker();
     this.intervalTrackerUpdate = setInterval(() => {
-      this.updatePeerInfoToTracker();
+      this.updateNodeInfoToTracker();
     }, TRACKER_UPDATE_INTERVAL_MS);
   }
 
@@ -459,7 +460,7 @@ class P2pClient {
             };
             Object.assign(this.outbound[address], { version: dataProtoVer });
             this.removePeerConnection(socket.url);
-            this.updatePeerInfoToTracker();
+            this.updateNodeInfoToTracker();
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
