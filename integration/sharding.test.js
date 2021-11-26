@@ -29,6 +29,7 @@ const CommonUtil = require('../common/common-util');
 const {
   readConfigFile,
   waitForNewBlocks,
+  waitForNewShardingReports,
   waitUntilNodeSyncs,
   waitUntilTxFinalized,
   waitUntilNetworkIsReady,
@@ -458,9 +459,8 @@ describe('Sharding', async () => {
         await waitForNewBlocks(server2, sharding.reporting_period);
         console.log(`        --> Restarting server[0]...`);
         server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
-        await waitForNewBlocks(server2, sharding.reporting_period * 2);
         await waitUntilNodeSyncs(server1);
-        await waitForNewBlocks(server1, sharding.reporting_period * 2);
+        await waitForNewShardingReports(parentServer, sharding.sharding_path);
         const reportsAfter = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));

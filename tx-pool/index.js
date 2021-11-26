@@ -370,7 +370,7 @@ class TransactionPool {
       }
       addrToTxSet[address].add(hash);
       const tracked = this.transactionTracker[hash];
-      if (tracked && tracked.state !== TransactionStates.IN_BLOCK) {
+      if (tracked && tracked.state !== TransactionStates.FINALIZED) {
         this.transactionTracker[hash].state = TransactionStates.FAILED;
       }
     });
@@ -396,7 +396,7 @@ class TransactionPool {
       const txTimestamp = voteTx.tx_body.timestamp;
       // voting txs with ordered nonces.
       this.transactionTracker[voteTx.hash] = {
-        state: TransactionStates.IN_BLOCK,
+        state: TransactionStates.FINALIZED,
         number: block.number,
         index: -1,
         address: voteTx.address,
@@ -414,7 +414,7 @@ class TransactionPool {
       const txTimestamp = tx.tx_body.timestamp;
       // Update transaction tracker.
       this.transactionTracker[tx.hash] = {
-        state: TransactionStates.IN_BLOCK,
+        state: TransactionStates.FINALIZED,
         number: block.number,
         index: i,
         address: tx.address,
