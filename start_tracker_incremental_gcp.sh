@@ -52,7 +52,7 @@ if [[ $KEEP_CODE_OPTION = "" ]]; then
     printf '\n'
     printf 'Installing node modules..\n'
     cd $NEW_DIR_PATH
-    yarn install --ignore-engines
+    sudo yarn install --ignore-engines
 else
     printf '\n'
     printf 'Using old working directory..\n'
