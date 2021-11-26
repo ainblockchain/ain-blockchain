@@ -94,7 +94,7 @@ process.on('uncaughtException', function(err) {
 });
 
 function setPeerNodes(peerInfo) {
-  peerInfo.location = getPeerLocation(peerInfo.networkStatus.ip);
+  peerInfo.location = getNodeLocation(peerInfo.networkStatus.ip);
   peerNodes[peerInfo.address] = peerInfo;
   logger.info(`Update from node [${abbrAddr(peerInfo.address)}]`);
   logger.debug(`: ${JSON.stringify(peerInfo, null, 2)}`);
@@ -104,7 +104,7 @@ function getNumNodesAlive() {
   return Object.values(peerNodes).filter(info => isPeerAlive(info.updatedAt)).length;
 }
 
-function getPeerLocation(ip) {
+function getNodeLocation(ip) {
   const geoLocationDict = geoip.lookup(ip);
   if (geoLocationDict === null) {
     return {
