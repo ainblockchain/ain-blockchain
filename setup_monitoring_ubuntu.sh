@@ -18,7 +18,7 @@ printf 'Installing yarn..\n'
 sudo npm install -g yarn
 
 printf 'yarn --version\n'
-yarn --version
+sudo yarn --version
 
 
 printf 'Installing make..\n'

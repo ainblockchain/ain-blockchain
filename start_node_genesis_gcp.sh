@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
+    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
     printf "\n"
     exit
@@ -119,7 +119,7 @@ if [[ $KEEP_CODE_OPTION = "" ]]; then
 
     printf '\n'
     printf 'Installing node modules..\n'
-    yarn install --ignore-engines
+    sudo yarn install --ignore-engines
 else
     printf '\n'
     printf 'Using old directory..\n'
@@ -141,6 +141,9 @@ elif [[ $SEASON = 'summer' ]]; then
     export TRACKER_WS_ADDR=ws://35.194.172.106:5000
     export P2P_PEER_CANDIDATE_URL="http://35.194.169.78:8080/json-rpc"
     KEYSTORE_DIR=testnet_prod_keys
+elif [[ "$SEASON" = "sandbox" ]]; then
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
+    export P2P_PEER_CANDIDATE_URL="http://130.211.244.169:8080/json-rpc"
 elif [[ $SEASON = 'staging' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging
     export P2P_PEER_CANDIDATE_URL="http://35.194.139.219:8080/json-rpc"
