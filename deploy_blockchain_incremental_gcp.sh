@@ -290,6 +290,7 @@ else
     for j in `seq 0 $(( ${NUM_PARENT_NODES} - 1 ))`
         do
             deploy_node "$j"
+            sleep 40
         done
 fi
 
