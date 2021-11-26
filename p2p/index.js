@@ -174,14 +174,9 @@ class P2pClient {
    */
   async updateNodeInfoToTracker() {
     try {
-      const url = BlockchainConfigs.TRACKER_UPDATE_URL;
       const peerInfo = this.getStatus();
       Object.assign(peerInfo, { updatedAt: Date.now() });
-      const response = await axios.post(url, { peerInfo });
-      if (response.status === 200) {
-        logger.info(`Update to [TRACKER] (${url}): ${response.data.result}`)
-        logger.debug(`Update to [TRACKER] (${url}): ${JSON.stringify(peerInfo, null, 2)}`);
-      }
+      await sendGetRequest(BlockchainConfigs.TRACKER_UPDATE_URL, 'updateNodeInfo', peerInfo);
     } catch (error) {
       logger.error(error);
     }
