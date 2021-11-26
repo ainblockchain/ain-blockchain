@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 8080;
 const tracker = new Tracker();
 
 const app = express();
-const jsonRpcMethods = require('./json-rpc')(tracker.peerNodes);
+const jsonRpcMethods = require('./json-rpc')(tracker);
 app.use(express.json());
 app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
@@ -58,15 +58,6 @@ app.get('/network_topology', (req, res) => {
     html = html.replace(/{ \/\* replace this \*\/ };/g, JSON.stringify(graphData));
     res.send(html);
   });
-});
-
-app.post('/update_peer_info', (req, res) => {
-  const peerInfo = req.body.peerInfo;
-  tracker.setPeerNodes(peerInfo);
-  res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ result: 'updated' })
-      .end();
 });
 
 const trackerServer = app.listen(PORT, () => {
