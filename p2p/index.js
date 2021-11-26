@@ -632,7 +632,8 @@ class P2pClient {
    * @param {string} peerCandidateUrl should be something like http(s)://xxx.xxx.xxx.xxx/json-rpc
    */
   async connectWithPeerCandidateUrl(peerCandidateUrl) {
-    if (!peerCandidateUrl || peerCandidateUrl === '') {
+    const myUrl = _.get(this.server.urls, 'p2p.url', '');
+    if (!peerCandidateUrl || peerCandidateUrl === '' || peerCandidateUrl === myUrl) {
       return;
     }
     const resp = await sendGetRequest(peerCandidateUrl, 'p2p_getPeerCandidateInfo', { });
@@ -648,24 +649,20 @@ class P2pClient {
       logger.error(`Invalid peer candidate json rpc url from peer candidate url (${peerCandidateUrl}).`);
       return;
     }
-
     this.peerCandidates[peerCandidateJsonRpcUrl] = { queriedAt: Date.now() };
     const peerCandidateUrlList = _.get(peerCandidateInfo, 'peerCandidateUrlList', []);
-    peerCandidateUrlList.forEach(url => {
-      if (!this.peerCandidates[url] && this.isValidJsonRpcUrl(url)) {
+    peerCandidateUrlList.forEach((url) => {
+      if (url !== myUrl && !this.peerCandidates[url] && this.isValidJsonRpcUrl(url)) {
         this.peerCandidates[url] = { queriedAt: null };
       }
     });
-
-    const networkStatus = this.server.getNetworkStatus();
-    const myUrl = _.get(networkStatus, 'urls.p2p.url', '');
     const newPeerUrlList = _.get(peerCandidateInfo, 'newPeerUrlList', []);
-    const newPeerUrlListWithoutMyUrl = newPeerUrlList.filter(url => {
+    const newPeerUrlListWithoutMyUrl = newPeerUrlList.filter((url) => {
       return url !== myUrl;
     });
     const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
     const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.urls.p2p.url');
-    if (isAvailableForConnection && !this.outbound[peerCandidateP2pUrl]) {
+    if (peerCandidateP2pUrl !== myUrl && isAvailableForConnection && !this.outbound[peerCandidateP2pUrl]) {
       // NOTE(minsulee2): Add a peer candidate up on the list if it is not connected.
       newPeerUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
     }

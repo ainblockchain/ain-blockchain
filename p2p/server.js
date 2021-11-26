@@ -580,8 +580,12 @@ class P2pServer {
             const updatePeerInfo = parsedMessage.data;
             const addressFromSocket = getAddressFromSocket(this.inbound, socket);
             // Keep updating both inbound and outbound.
-            this.inbound[addressFromSocket].peerInfo = updatePeerInfo;
-            this.client.outbound[addressFromSocket].peerInfo = updatePeerInfo;
+            if (this.inbound[addressFromSocket]) {
+              this.inbound[addressFromSocket].peerInfo = updatePeerInfo;
+            }
+            if (this.client.outbound[addressFromSocket]) {
+              this.client.outbound[addressFromSocket].peerInfo = updatePeerInfo;
+            }
             break;
           default:
             logger.error(`[${LOG_HEADER}] Unknown message type(${parsedMessage.type}) has been ` +
