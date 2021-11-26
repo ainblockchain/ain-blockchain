@@ -29,7 +29,6 @@ const PathUtil = require('../common/path-util');
 const VersionUtil = require('../common/version-util');
 const FileUtil = require('../common/file-util');
 
-
 class ConsensusError extends Error {
   constructor({ code, level, message }) {
     super(message);
