@@ -64,7 +64,9 @@ class P2pClient {
     await this.server.listen();
     if (BlockchainConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.connectToTracker();
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
-      if (!BlockchainConfigs.P2P_PEER_CANDIDATE_URL || BlockchainConfigs.P2P_PEER_CANDIDATE_URL === '') {
+      if (!BlockchainConfigs.P2P_PEER_CANDIDATE_URL ||
+          BlockchainConfigs.P2P_PEER_CANDIDATE_URL === '' ||
+          BlockchainConfigs.P2P_PEER_CANDIDATE_URL === _.get(this.server.urls, 'jsonRpc.url', '')) {
         await this.startBlockchainNode(0);
         return;
       } else {
