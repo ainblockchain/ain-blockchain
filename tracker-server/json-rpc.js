@@ -8,29 +8,29 @@
  *                  servicing JSON-RPC requests.
  */
 module.exports = function getMethods(tracker) {
-  const peerNodes = tracker.peerNodes;
+  const blockchainNode = tracker.blockchainNode;
   return {
     getNodeInfoList: function(args, done) {
       const list = [];
-      Object.keys(peerNodes).forEach((key) => {
-        list.push(peerNodes[key].getNodeInfo());
+      Object.keys(blockchainNode).forEach((key) => {
+        list.push(blockchainNode[key].getNodeInfo());
       });
       done(null, list);
     },
 
     getNodeAddressList: function(args, done) {
       const list = [];
-      Object.keys(peerNodes).forEach((key) => {
-        list.push(peerNodes[key].address);
+      Object.keys(blockchainNode).forEach((key) => {
+        list.push(blockchainNode[key].address);
       });
       done(null, list);
     },
 
     getNodeInfoByAddress: function(args, done) {
       let result = null;
-      for (let i = 0; i < peerNodes.length; i++) {
-        if (peerNodes[i].address === args[0]) {
-          result = peerNodes[i].getNodeInfo();
+      for (let i = 0; i < blockchainNode.length; i++) {
+        if (blockchainNode[i].address === args[0]) {
+          result = blockchainNode[i].getNodeInfo();
           break;
         }
       }
@@ -39,7 +39,7 @@ module.exports = function getMethods(tracker) {
 
     updateNodeInfo: function(args, done) {
       const nodeInfo = args;
-      tracker.setPeerNodes(nodeInfo);
+      tracker.setBlockchainNode(nodeInfo);
       done(null);
     }
   };
