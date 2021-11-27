@@ -38,7 +38,7 @@ class BlockPool {
         this.hashToBlockInfo[this.longestNotarizedChainTips[0]].block.number : this.node.bc.lastBlockNumber();
   }
 
-  setHeighestSeenBlockNumber(blockNumber) {
+  updateHighestSeenBlockNumber(blockNumber) {
     if (blockNumber > this.heighestSeenBlockNumber) {
       this.heighestSeenBlockNumber = blockNumber;
     }
@@ -302,7 +302,7 @@ class BlockPool {
       this.numberToBlockSet[block.number] = new Set();
     }
     this.numberToBlockSet[block.number].add(block.hash);
-    this.setHeighestSeenBlockNumber(block.number);
+    this.updateHighestSeenBlockNumber(block.number);
   }
 
   addToNextBlockSet(block) {
