@@ -4,23 +4,23 @@ const {
   isNodeAlive
 } = require('./util');
 
-const _buildGraphData = (peerNodes) => {
-  const filteredPeerNodesEntries = Object.entries(peerNodes)
-      .filter(([, peerNode]) => isNodeAlive(peerNode));
-  const peerNodesAlive = Object.fromEntries(filteredPeerNodesEntries);
+const _buildGraphData = (blockchainNode) => {
+  const filteredblockchainNodesEntries = Object.entries(blockchainNode)
+      .filter(([, node]) => isNodeAlive(node));
+  const blockchainNodeAlive = Object.fromEntries(filteredblockchainNodesEntries);
   const data = { nodes: [], links: [] };
-  const peerNodeIdMap = { };
+  const blockchainNodeIdMap = { };
 
-  Object.keys(peerNodesAlive).forEach((address, i) => {
-    Object.assign(peerNodeIdMap, { [address]: i });
+  Object.keys(blockchainNodeAlive).forEach((address, i) => {
+    Object.assign(blockchainNodeIdMap, { [address]: i });
     data.nodes.push({ address: abbrAddr(address) });
   });
 
-  Object.entries(peerNodesAlive).forEach(([address, nodeInfo]) => {
+  Object.entries(blockchainNodeAlive).forEach(([address, nodeInfo]) => {
     const outGoingList = nodeInfo.networkStatus.connectionStatus.outgoingPeers;
     outGoingList.forEach(outGoingAddress => {
       data.links.push({
-        source: peerNodeIdMap[address], target: peerNodeIdMap[outGoingAddress], weight: 1
+        source: blockchainNodeIdMap[address], target: blockchainNodeIdMap[outGoingAddress], weight: 1
       });
     });
   });
@@ -30,14 +30,14 @@ const _buildGraphData = (peerNodes) => {
 
 const getGraphData = (networkStatus) => {
   try {
-    if (!commonUtil.isEmpty(networkStatus.peerNodes)) {
-      const data = _buildGraphData(networkStatus.peerNodes);
+    if (!commonUtil.isEmpty(networkStatus.blockchainNode)) {
+      const data = _buildGraphData(networkStatus.blockchainNode);
       return data;
     } else {
       return {
         "nodes": [
-          { "address": "Peer nodes are NOT online." },
-          { "address": "Peer nodes are NOT online." }
+          { "address": "Blockchain nodes are NOT online." },
+          { "address": "Blockchain nodes are NOT online." }
         ],
         "links": [
           { "source": 0, "target": 1, "weight": 1 }

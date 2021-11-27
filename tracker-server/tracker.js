@@ -14,18 +14,18 @@ const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 
 class Tracker {
   constructor() {
-    this.peerNodes = {};
+    this.blockchainNode = {};
   }
 
-  setPeerNodes(peerInfo) {
+  setBlockchainNode(peerInfo) {
     peerInfo.location = this.getNodeLocation(peerInfo.networkStatus.ip);
-    this.peerNodes[peerInfo.address] = peerInfo;
+    this.blockchainNode[peerInfo.address] = peerInfo;
     logger.info(`Update from node [${abbrAddr(peerInfo.address)}]`);
     logger.debug(`: ${JSON.stringify(peerInfo, null, 2)}`);
   }
 
   getNumNodesAlive() {
-    return Object.values(this.peerNodes).filter(nodeInfo => isNodeAlive(nodeInfo)).length;
+    return Object.values(this.blockchainNode).filter(nodeInfo => isNodeAlive(nodeInfo)).length;
   }
 
   getNodeLocation(ip) {
@@ -49,7 +49,7 @@ class Tracker {
   getNetworkStatus() {
     return {
       numNodesAlive: this.getNumNodesAlive(),
-      peerNodes: this.peerNodes
+      blockchainNode: this.blockchainNode
     };
   }
 
