@@ -302,7 +302,6 @@ class BlockPool {
       this.numberToBlockSet[block.number] = new Set();
     }
     this.numberToBlockSet[block.number].add(block.hash);
-    this.updateHighestSeenBlockNumber(block.number);
   }
 
   addToNextBlockSet(block) {
@@ -341,6 +340,7 @@ class BlockPool {
       this.addToInvalidBlockInfoMap(block, proposalTx);
       this.addToNumberToBlockSet(block);
     }
+    this.updateHighestSeenBlockNumber(block.number);
     return true;
   }
 
