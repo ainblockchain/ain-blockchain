@@ -185,7 +185,7 @@ function deploy_node() {
 
     if [[ $RESET_RESTART_OPTION = "" ]]; then
         # 1. Copy files for node
-        printf "\n\n[[[ Copying files for node $node_index ]]]\n\n"
+        printf "\n\n<<< Copying files for node $node_index >>>\n\n"
         SCP_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${node_target_addr}:~/ --project $PROJECT_ID --zone $node_zone"
         printf "SCP_CMD=$SCP_CMD\n\n"
         eval $SCP_CMD
@@ -194,14 +194,14 @@ function deploy_node() {
     # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
     if [[ $SETUP_OPTION = "--setup" ]]; then
         # 2. Set up node
-        printf "\n\n[[[ Setting up node $node_index ]]]\n\n"
+        printf "\n\n<<< Setting up node $node_index >>>\n\n"
         SETUP_CMD="gcloud compute ssh $node_target_addr --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone $node_zone"
         printf "SETUP_CMD=$SETUP_CMD\n\n"
         eval $SETUP_CMD
     fi
 
     # 3. Start node
-    printf "\n\n[[[ Starting node $node_index ]]]\n\n"
+    printf "\n\n<<< Starting node $node_index >>>\n\n"
     if [[ $node_index -gt 4 ]]; then
         JSON_RPC_OPTION="--json-rpc"
         REST_FUNC_OPTION="--rest-func"
@@ -242,7 +242,7 @@ function deploy_node() {
     fi
 
     #5. Wait until node is synced
-    printf "\n\n[[[ Waiting until node is synced $node_index ]]]\n\n"
+    printf "\n\n<<< Waiting until node $node_index is synced >>>\n\n"
     WAIT_CMD="gcloud compute ssh $node_target_addr --command 'cd \$(find /home/ain-blockchain* -maxdepth 0 -type d); . wait_until_node_sync_gcp.sh' --project $PROJECT_ID --zone $node_zone"
     printf "WAIT_CMD=$WAIT_CMD\n\n"
     eval $WAIT_CMD
