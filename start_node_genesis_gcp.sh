@@ -48,7 +48,7 @@ if ! [[ $3 =~ $number_re ]] ; then
     printf "Invalid <Node Index> argument: $3\n"
     exit
 fi
-if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
+if [[ "$3" -lt 0 ]] || [[ "$3" -gt 100 ]]; then
     printf "Invalid <Node Index> argument: $3\n"
     exit
 fi
