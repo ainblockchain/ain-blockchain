@@ -24,7 +24,7 @@
     "NETWORK_ID": 0,
     "CHAIN_ID": 0,
     "HOSTING_ENV": "local",
-    "TRACKER_UPDATE_URL": "http://localhost:8080/json-rpc",
+    "TRACKER_UPDATE_JSON_RPC_URL": "http://localhost:8080/json-rpc",
     "P2P_PEER_CANDIDATE_URL": "http://localhost:8081/json-rpc",
     "MAX_SHARD_REPORT": 100,
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
