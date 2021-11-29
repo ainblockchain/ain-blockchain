@@ -4,7 +4,7 @@ if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
     printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
     printf "\n"
-    exit
+    return 1
 fi
 printf "\n[[[[[ start_node_genesis_gcp.sh ]]]]]\n\n"
 
@@ -17,13 +17,13 @@ function parse_options() {
     elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             printf "You cannot use both keystore and mnemonic\n"
-            exit
+            return 1
         fi
         ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
             printf "You cannot use both keystore and mnemonic\n"
-            exit
+            return 1
         fi
         ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--json-rpc' ]]; then
@@ -32,7 +32,7 @@ function parse_options() {
         REST_FUNC_OPTION="$option"
     else
         printf "Invalid options: $option\n"
-        exit
+        return 1
     fi
 }
 
@@ -41,16 +41,17 @@ SEASON="$1"
 number_re='^[0-9]+$'
 if ! [[ $2 =~ $number_re ]] ; then
     printf "Invalid <Shard Index> argument: $2\n"
-    exit
+    return 1
 fi
 SHARD_INDEX="$2"
 if ! [[ $3 =~ $number_re ]] ; then
     printf "Invalid <Node Index> argument: $3\n"
-    exit
+    return 1
 fi
+# NOTE(minsulee2): Sandbox has 100 nodes.
 if [[ "$3" -lt 0 ]] || [[ "$3" -gt 100 ]]; then
     printf "Invalid <Node Index> argument: $3\n"
-    exit
+    return 1
 fi
 NODE_INDEX="$3"
 
@@ -193,14 +194,14 @@ elif [[ $SEASON = 'dev' ]]; then
       export TRACKER_WS_ADDR=ws://35.201.248.92:5000  # dev-shard-20-tracker-ip
     else
       printf "Invalid shard ID argument: $SHARD_INDEX\n"
-      exit
+      return 1
     fi
     if [[ $SHARD_INDEX -gt 0 ]]; then
       export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard
     fi
 else
     printf "Invalid season argument: $SEASON\n"
-    exit
+    return 1
 fi
 
 # Overwrite the P2P_PEER_CANDIDATE_URL value for the first node
