@@ -3538,8 +3538,9 @@ describe('Native Function', () => {
         min_checkout_per_request: minCheckoutPerRequest,
         max_checkout_per_request: maxCheckoutPerRequest,
         max_checkout_per_day: maxCheckoutPerDay,
+        checkout_fee_rate: checkoutFeeRate,
        } = tokenBridgeConfig;
-      const checkoutAmount = 1000;
+      const checkoutAmount = minCheckoutPerRequest;
       const ethAddress = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // recipient
 
       it('cannot open checkout with invalid params: amount < min_checkout_per_request', async () => {
@@ -3552,7 +3553,8 @@ describe('Native Function', () => {
           ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: minCheckoutPerRequest - 1,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3581,7 +3583,8 @@ describe('Native Function', () => {
           ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: maxCheckoutPerRequest + 1,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3611,7 +3614,8 @@ describe('Native Function', () => {
           ref,
           value: {
             amount: checkoutAmount,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3641,7 +3645,8 @@ describe('Native Function', () => {
           ref,
           value: {
             amount: checkoutAmount,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3671,7 +3676,8 @@ describe('Native Function', () => {
           ref,
           value: {
             amount: checkoutAmount,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3700,7 +3706,8 @@ describe('Native Function', () => {
           ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: checkoutAmount,
-            recipient: ethAddress.toLowerCase()
+            recipient: ethAddress.toLowerCase(),
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3729,7 +3736,8 @@ describe('Native Function', () => {
           ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: beforeBalance + 1,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3758,7 +3766,8 @@ describe('Native Function', () => {
           ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: checkoutAmount,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           },
           timestamp: 1628255843548
         }}).body.toString('utf-8'));
@@ -3842,8 +3851,9 @@ describe('Native Function', () => {
         const totalPendingAmount = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkout/stats/pending/total`)
             .body.toString('utf-8')).result;
-        expect(afterRequestUserBalance).to.equal(beforeBalance - checkoutAmount);
-        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance + checkoutAmount);
+        const amountPlusFee = checkoutAmount + checkoutAmount * checkoutFeeRate;
+        expect(afterRequestUserBalance).to.equal(beforeBalance - amountPlusFee);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance + amountPlusFee);
         expect(userPendingAmount).to.equal(checkoutAmount);
         expect(totalPendingAmount).to.equal(checkoutAmount);
       });
@@ -3854,7 +3864,8 @@ describe('Native Function', () => {
           value: {
             request: {
               amount: checkoutAmount,
-              recipient: ethAddress
+              recipient: ethAddress,
+              fee_rate: checkoutFeeRate,
             },
             response: {
               status: 0
@@ -3878,7 +3889,8 @@ describe('Native Function', () => {
             value: {
               request: {
                 amount: checkoutAmount,
-                recipient: ethAddress
+                recipient: ethAddress,
+                fee_rate: checkoutFeeRate,
               },
               response: {
                 status: 0,
@@ -3996,7 +4008,8 @@ describe('Native Function', () => {
           ref: `${checkoutRequestBasePath}/${serviceUser}/1`,
           value: {
             amount: checkoutAmount,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
@@ -4010,8 +4023,9 @@ describe('Native Function', () => {
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
             .body.toString('utf-8')).result || 0;
-        expect(afterRequestUserBalance).to.equal(beforeBalance - checkoutAmount);
-        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance + checkoutAmount);
+        const amountPlusFee = checkoutAmount + checkoutAmount * checkoutFeeRate;
+        expect(afterRequestUserBalance).to.equal(beforeBalance - amountPlusFee);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance + amountPlusFee);
         // close failed checkout
         const txBody = {
           operation: {
@@ -4020,7 +4034,8 @@ describe('Native Function', () => {
             value: {
               request: {
                 amount: checkoutAmount,
-                recipient: ethAddress
+                recipient: ethAddress,
+                fee_rate: checkoutFeeRate,
               },
               response: {
                 status: 1,
@@ -4137,7 +4152,7 @@ describe('Native Function', () => {
             '/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548');
         const refundTransfer = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${refund}`).body.toString('utf-8')).result;
-        assert.deepEqual(refundTransfer, { "value": 1000 });
+        assert.deepEqual(refundTransfer, { "value": amountPlusFee });
         const afterCloseUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
             .body.toString('utf-8')).result || 0;
