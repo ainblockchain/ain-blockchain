@@ -13,7 +13,7 @@ sleep 5
 # parent node 0
 printf "\nStarting parent node 0..\n"
 ACCOUNT_INDEX=0 \
-  P2P_PEER_CANDIDATE_URL='' \
+  PEER_CANDIDATE_JSON_RPC_URL='' \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -68,7 +68,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9001 \
   P2P_PORT=6001 \
   ACCOUNT_INDEX=0 \
-  P2P_PEER_CANDIDATE_URL='' \
+  PEER_CANDIDATE_JSON_RPC_URL='' \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
