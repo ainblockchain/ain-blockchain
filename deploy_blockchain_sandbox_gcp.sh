@@ -62,13 +62,13 @@ then
 fi
 
 # GCP node address
-NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
-NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-node-1-oregon"
-NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-node-2-singapore"
-NODE_3_TARGET_ADDR="${GCP_USER}@${SEASON}-node-3-iowa"
-NODE_4_TARGET_ADDR="${GCP_USER}@${SEASON}-node-4-netherlands"
-NODE_5_TARGET_ADDR="${GCP_USER}@${SEASON}-node-5-taiwan"
-NODE_6_TARGET_ADDR="${GCP_USER}@${SEASON}-node-6-oregon"
+# NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
+# NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-node-1-oregon"
+# NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-node-2-singapore"
+# NODE_3_TARGET_ADDR="${GCP_USER}@${SEASON}-node-3-iowa"
+# NODE_4_TARGET_ADDR="${GCP_USER}@${SEASON}-node-4-netherlands"
+# NODE_5_TARGET_ADDR="${GCP_USER}@${SEASON}-node-5-taiwan"
+# NODE_6_TARGET_ADDR="${GCP_USER}@${SEASON}-node-6-oregon"
 NODE_7_TARGET_ADDR="${GCP_USER}@${SEASON}-node-7-singapore"
 NODE_8_TARGET_ADDR="${GCP_USER}@${SEASON}-node-8-iowa"
 NODE_9_TARGET_ADDR="${GCP_USER}@${SEASON}-node-9-netherlands"
@@ -164,222 +164,149 @@ NODE_98_TARGET_ADDR="${GCP_USER}@${SEASON}-node-98-iowa"
 NODE_99_TARGET_ADDR="${GCP_USER}@${SEASON}-node-99-netherlands"
 
 # Node time zone
-NODE_ZONE_ASIA_EAST1_B="asia-east1-b"
-NODE_ZONE_US_WEST1_B="us-west1-b"
-NODE_ZONE_ASIA_SOUTHEAST1_b="asia-southeast1-b"
-NODE_ZONE_US_CENTRAL1_A="us-central1-a"
-NODE_ZONE_EUROPE_WEST4_A="europe-west4-a"
+# NODE_0_ZONE="asia-east1-b"
+# NODE_1_ZONE="us-west1-b"
+# NODE_2_ZONE="asia-southeast1-b"
+# NODE_3_ZONE="us-central1-a"
+# NODE_4_ZONE="europe-west4-a"
+# NODE_5_ZONE="asia-east1-b"
+# NODE_6_ZONE="us-west1-b"
+NODE_7_ZONE="asia-southeast1-b"
+NODE_8_ZONE="us-central1-a"
+NODE_9_ZONE="europe-west4-a"
+NODE_10_ZONE="asia-east1-b"
+NODE_11_ZONE="us-west1-b"
+NODE_12_ZONE="asia-southeast1-b"
+NODE_13_ZONE="us-central1-a"
+NODE_14_ZONE="europe-west4-a"
+NODE_15_ZONE="asia-east1-b"
+NODE_16_ZONE="us-west1-b"
+NODE_17_ZONE="asia-southeast1-b"
+NODE_18_ZONE="us-central1-a"
+NODE_19_ZONE="europe-west4-a"
+NODE_20_ZONE="asia-east1-b"
+NODE_21_ZONE="us-west1-b"
+NODE_22_ZONE="asia-southeast1-b"
+NODE_23_ZONE="us-central1-a"
+NODE_24_ZONE="europe-west4-a"
+NODE_25_ZONE="asia-east1-b"
+NODE_26_ZONE="us-west1-b"
+NODE_27_ZONE="asia-southeast1-b"
+NODE_28_ZONE="us-central1-a"
+NODE_29_ZONE="europe-west4-a"
+NODE_30_ZONE="asia-east1-b"
+NODE_31_ZONE="us-west1-b"
+NODE_32_ZONE="asia-southeast1-b"
+NODE_33_ZONE="us-central1-a"
+NODE_34_ZONE="europe-west4-a"
+NODE_35_ZONE="asia-east1-b"
+NODE_36_ZONE="us-west1-b"
+NODE_37_ZONE="asia-southeast1-b"
+NODE_38_ZONE="us-central1-a"
+NODE_39_ZONE="europe-west4-a"
+NODE_40_ZONE="asia-east1-b"
+NODE_41_ZONE="us-west1-b"
+NODE_42_ZONE="asia-southeast1-b"
+NODE_43_ZONE="us-central1-a"
+NODE_44_ZONE="europe-west4-a"
+NODE_45_ZONE="asia-east1-b"
+NODE_46_ZONE="us-west1-b"
+NODE_47_ZONE="asia-southeast1-b"
+NODE_48_ZONE="us-central1-a"
+NODE_49_ZONE="europe-west4-a"
+NODE_50_ZONE="asia-east1-b"
+NODE_51_ZONE="us-west1-b"
+NODE_52_ZONE="asia-southeast1-b"
+NODE_53_ZONE="us-central1-a"
+NODE_54_ZONE="europe-west4-a"
+NODE_55_ZONE="asia-east1-b"
+NODE_56_ZONE="us-west1-b"
+NODE_57_ZONE="asia-southeast1-b"
+NODE_58_ZONE="us-central1-a"
+NODE_59_ZONE="europe-west4-a"
+NODE_60_ZONE="asia-east1-b"
+NODE_61_ZONE="us-west1-b"
+NODE_62_ZONE="asia-southeast1-b"
+NODE_63_ZONE="us-central1-a"
+NODE_64_ZONE="europe-west4-a"
+NODE_65_ZONE="asia-east1-b"
+NODE_66_ZONE="us-west1-b"
+NODE_67_ZONE="asia-southeast1-b"
+NODE_68_ZONE="us-central1-a"
+NODE_69_ZONE="europe-west4-a"
+NODE_70_ZONE="asia-east1-b"
+NODE_71_ZONE="us-west1-b"
+NODE_72_ZONE="asia-southeast1-b"
+NODE_73_ZONE="us-central1-a"
+NODE_74_ZONE="europe-west4-a"
+NODE_75_ZONE="asia-east1-b"
+NODE_76_ZONE="us-west1-b"
+NODE_77_ZONE="asia-southeast1-b"
+NODE_78_ZONE="us-central1-a"
+NODE_79_ZONE="europe-west4-a"
+NODE_80_ZONE="asia-east1-b"
+NODE_81_ZONE="us-west1-b"
+NODE_82_ZONE="asia-southeast1-b"
+NODE_83_ZONE="us-central1-a"
+NODE_84_ZONE="europe-west4-a"
+NODE_85_ZONE="asia-east1-b"
+NODE_86_ZONE="us-west1-b"
+NODE_87_ZONE="asia-southeast1-b"
+NODE_88_ZONE="us-central1-a"
+NODE_89_ZONE="europe-west4-a"
+NODE_90_ZONE="asia-east1-b"
+NODE_91_ZONE="us-west1-b"
+NODE_92_ZONE="asia-southeast1-b"
+NODE_93_ZONE="us-central1-a"
+NODE_94_ZONE="europe-west4-a"
+NODE_95_ZONE="asia-east1-b"
+NODE_96_ZONE="us-west1-b"
+NODE_97_ZONE="asia-southeast1-b"
+NODE_98_ZONE="us-central1-a"
+NODE_99_ZONE="europe-west4-a"
 
 # kill any processes still alive
 printf "\nKilling all blockchain nodes...\n"
-# gcloud compute ssh $NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null
-# gcloud compute ssh $NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_3_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_4_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_5_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_6_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_7_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_8_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_9_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_10_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_11_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_12_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_13_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_14_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_15_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_16_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_17_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_18_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_19_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_20_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_21_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_22_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_23_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_24_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_25_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_26_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_27_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_28_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_29_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_30_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_31_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_32_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_33_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_34_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_35_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_36_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_37_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_38_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_39_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_40_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_41_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_42_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_43_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_44_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_45_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_46_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_47_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_48_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_49_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_50_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_51_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_52_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_53_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_54_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_55_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_56_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_57_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_58_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_59_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_60_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_61_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_62_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_63_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_64_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_65_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_66_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_67_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_68_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_69_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_70_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_71_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_72_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_73_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_74_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_75_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_76_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_77_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_78_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_79_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_80_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_81_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_82_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_83_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_84_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_85_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_86_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_87_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_88_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_89_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_90_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_91_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_92_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_93_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_94_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-# gcloud compute ssh $NODE_95_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-# gcloud compute ssh $NODE_96_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-# gcloud compute ssh $NODE_97_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-# gcloud compute ssh $NODE_98_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-# gcloud compute ssh $NODE_99_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null
+NUM_NODES=100
+index=7
+while [ $index -lt $NUM_NODES ]
+do
+    NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
+    NODE_ZONE=NODE_${index}_ZONE
+
+    KILL_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command 'sudo killall node' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+    printf "KILL_NODE_CMD=$KILL_NODE_CMD\n"
+    if [[ $index < "$(($NUM_NODES - 1))" ]]; then
+        eval $KILL_NODE_CMD &> /dev/null &
+    else
+        eval $KILL_NODE_CMD &> /dev/null
+    fi
+    ((index++))
+done
 printf "Kill all processes done.\n\n";
 
 # deploy files
-FILES_FOR_NODE="blockchain/ block-pool/ client/ common/ consensus/ db/ blockchain-configs/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh yarn.lock"
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
 # deploy files to GCP instances
 if [[ $RESET_RESTART_OPTION = "" ]]; then
     printf "\nDeploying parent blockchain...\n"
-    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_0_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_1_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_2_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_3_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_4_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_5_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_6_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_7_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_8_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_9_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_10_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_11_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_12_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_13_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_14_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_15_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_16_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_17_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_18_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_19_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_20_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_21_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_22_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_23_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_24_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_25_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_26_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_27_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_28_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_29_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_30_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_31_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_32_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_33_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_34_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_35_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_36_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_37_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_38_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_39_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_40_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_41_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_42_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_43_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_44_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_45_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_46_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_47_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_48_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_49_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_50_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_51_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_52_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_53_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_54_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_55_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_56_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_57_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_58_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_59_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_60_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_61_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_62_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_63_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_64_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_65_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_66_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_67_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_68_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_69_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_70_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_71_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_72_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_73_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_74_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_75_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_76_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_77_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_78_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_79_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_80_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_81_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_82_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_83_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_84_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_85_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_86_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_87_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_88_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_89_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_90_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_91_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_92_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_93_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_94_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_95_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_96_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_97_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_98_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_99_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null
+    NUM_NODES=100
+    index=7
+    while [ $index -lt $NUM_NODES ]
+    do
+        NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
+        NODE_ZONE=NODE_${index}_ZONE
+
+        DEPLOY_BLOCKCHAIN_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${!NODE_TARGET_ADDR}:~/ --project $PROJECT_ID --zone ${!NODE_ZONE}"
+        printf "DEPLOY_BLOCKCHAIN_CMD=$DEPLOY_BLOCKCHAIN_CMD\n"
+        if [[ $index < "$(($NUM_NODES - 1))" ]]; then
+            eval $DEPLOY_BLOCKCHAIN_CMD &> /dev/null &
+        else
+            eval $DEPLOY_BLOCKCHAIN_CMD &> /dev/null
+        fi
+        ((index++))
+    done
 fi
 printf "Deploy files done.\n\n";
 
@@ -489,31 +416,23 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
 fi
 printf "Setting up blockchain nodes done.\n\n";
 
-# Chown for yarn install
-printf "Chown for yarn install\n"
-gcloud compute ssh $NODE_0_TARGET_ADDR --command "sudo chown -R \$USER:\$GROUP ~/.npm && sudo chown -R \$USER:\$GROUP ~/.config" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null
-printf "Chown for yarn install done.\n\n";
 # printf "\nStarting blockchain servers...\n\n"
 # if [[ $RESET_RESTART_OPTION = "--reset" ]]; then
 #     # restart after removing chains, snapshots, and log files
 #     CHAINS_DIR=/home/ain_blockchain_data/chains
 #     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-#     START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_tracker_genesis_gcp.sh"
 #     START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_node_genesis_gcp.sh"
 #     KEEP_CODE_OPTION="--keep-code"
 # elif [[ $RESET_RESTART_OPTION = "--restart" ]]; then
 #     # restart
-#     START_TRACKER_CMD_BASE="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_tracker_genesis_gcp.sh"
 #     START_NODE_CMD_BASE="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_genesis_gcp.sh"
 #     KEEP_CODE_OPTION="--keep-code"
 # else
 #     # start
-#     START_TRACKER_CMD_BASE=". start_tracker_genesis_gcp.sh"
 #     START_NODE_CMD_BASE=". start_node_genesis_gcp.sh"
 #     KEEP_CODE_OPTION=""
 # fi
 # printf "\n"
-# printf "START_TRACKER_CMD_BASE=$START_TRACKER_CMD_BASE\n"
 # printf "START_NODE_CMD_BASE=$START_NODE_CMD_BASE\n"
 # printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
