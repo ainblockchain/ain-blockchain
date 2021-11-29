@@ -85,31 +85,31 @@ if [[ $SEASON = 'spring' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
     if [[ $NODE_INDEX -gt 4 ]]; then
-        export P2P_PEER_CANDIDATE_URL="http://35.221.184.48:8080/json-rpc"
+        export PEER_CANDIDATE_JSON_RPC_URL="http://35.221.184.48:8080/json-rpc"
     else
-        export P2P_PEER_CANDIDATE_URL="https://spring-api.ainetwork.ai/json-rpc"
+        export PEER_CANDIDATE_JSON_RPC_URL="https://spring-api.ainetwork.ai/json-rpc"
     fi
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ $SEASON = 'summer' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.172.106:8080/json-rpc
     if [[ $NODE_INDEX -gt 4 ]]; then
-        export P2P_PEER_CANDIDATE_URL="http://35.194.169.78:8080/json-rpc"
+        export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.169.78:8080/json-rpc"
     else
-        export P2P_PEER_CANDIDATE_URL="https://summer-api.ainetwork.ai/json-rpc"
+        export PEER_CANDIDATE_JSON_RPC_URL="https://summer-api.ainetwork.ai/json-rpc"
     fi
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$SEASON" = "sandbox" ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
     if [[ $NODE_INDEX -gt 4 ]]; then
-        export P2P_PEER_CANDIDATE_URL="http://130.211.244.169:8080/json-rpc"
+        export PEER_CANDIDATE_JSON_RPC_URL="http://130.211.244.169:8080/json-rpc"
     fi
     # NOTE(platfowner): For non-api-servers, the value in the blockchain configs
     # (https://sandbox-api.ainetwork.ai/json-rpc) is used.
 elif [[ $SEASON = 'staging' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging
     if [[ $NODE_INDEX -gt 4 ]]; then
-        export P2P_PEER_CANDIDATE_URL="http://35.194.139.219:8080/json-rpc"
+        export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.139.219:8080/json-rpc"
     fi
     # NOTE(platfowner): For non-api-servers, the value in the blockchain configs
     # (https://staging-api.ainetwork.ai/json-rpc) is used.
@@ -117,7 +117,7 @@ elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
     if [[ $SHARD_INDEX = 0 ]]; then
         if [[ $NODE_INDEX -gt 4 ]]; then
-            export P2P_PEER_CANDIDATE_URL="http://35.194.235.180:8080/json-rpc"
+            export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.235.180:8080/json-rpc"
         fi
         # NOTE(platfowner): For non-api-servers, the value in the blockchain configs
         # (https://dev-api.ainetwork.ai/json-rpc) is used.
@@ -183,7 +183,7 @@ fi
 printf "TRACKER_UPDATE_JSON_RPC_URL=$TRACKER_UPDATE_JSON_RPC_URL\n"
 printf "BLOCKCHAIN_CONFIGS_DIR=$BLOCKCHAIN_CONFIGS_DIR\n"
 printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
-printf "P2P_PEER_CANDIDATE_URL=$P2P_PEER_CANDIDATE_URL\n"
+printf "PEER_CANDIDATE_JSON_RPC_URL=$PEER_CANDIDATE_JSON_RPC_URL\n"
 
 if [[ $SEASON = "staging" ]]; then
   # for performance test pipeline
