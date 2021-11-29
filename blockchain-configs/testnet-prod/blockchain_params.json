@@ -25,7 +25,7 @@
     "CHAIN_ID": 0,
     "HOSTING_ENV": "gcp",
     "TRACKER_UPDATE_JSON_RPC_URL": "",
-    "P2P_PEER_CANDIDATE_URL": "https://testnet-api.ainetwork.ai/json-rpc",
+    "PEER_CANDIDATE_JSON_RPC_URL": "https://testnet-api.ainetwork.ai/json-rpc",
     "MAX_SHARD_REPORT": 100,
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
   },
