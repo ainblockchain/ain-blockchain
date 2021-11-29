@@ -42,7 +42,7 @@ function parse_options() {
 SETUP_OPTION=""
 RESET_RESTART_OPTION=""
 
-ARG_INDEX=4
+ARG_INDEX=2
 while [ $ARG_INDEX -le $# ]
 do
   parse_options "${!ARG_INDEX}"
@@ -265,6 +265,19 @@ NODE_97_ZONE="asia-southeast1-b"
 NODE_98_ZONE="us-central1-a"
 NODE_99_ZONE="europe-west4-a"
 
+# deploy files
+FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
+
+# Loding spinner
+spin="-\|/"
+
+i=0
+spinner() {
+    i=$(( (i+1) %4 ))
+    printf "\r${spin:$i:1}"
+    sleep .1
+}
+
 # kill any processes still alive
 printf "\nKilling all blockchain nodes...\n"
 NUM_NODES=100
@@ -275,18 +288,17 @@ do
     NODE_ZONE=NODE_${index}_ZONE
 
     KILL_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command 'sudo killall node' --project $PROJECT_ID --zone ${!NODE_ZONE}"
-    printf "KILL_NODE_CMD=$KILL_NODE_CMD\n"
+    # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
+    # printf "KILL_NODE_CMD=$KILL_NODE_CMD\n"
     if [[ $index < "$(($NUM_NODES - 1))" ]]; then
         eval $KILL_NODE_CMD &> /dev/null &
     else
         eval $KILL_NODE_CMD &> /dev/null
     fi
     ((index++))
+    spinner
 done
 printf "Kill all processes done.\n\n";
-
-# deploy files
-FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
 # deploy files to GCP instances
 if [[ $RESET_RESTART_OPTION = "" ]]; then
@@ -299,167 +311,87 @@ if [[ $RESET_RESTART_OPTION = "" ]]; then
         NODE_ZONE=NODE_${index}_ZONE
 
         DEPLOY_BLOCKCHAIN_CMD="gcloud compute scp --recurse $FILES_FOR_NODE ${!NODE_TARGET_ADDR}:~/ --project $PROJECT_ID --zone ${!NODE_ZONE}"
-        printf "DEPLOY_BLOCKCHAIN_CMD=$DEPLOY_BLOCKCHAIN_CMD\n"
+        # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
+        # printf "DEPLOY_BLOCKCHAIN_CMD=$DEPLOY_BLOCKCHAIN_CMD\n"
         if [[ $index < "$(($NUM_NODES - 1))" ]]; then
             eval $DEPLOY_BLOCKCHAIN_CMD &> /dev/null &
         else
             eval $DEPLOY_BLOCKCHAIN_CMD &> /dev/null
         fi
         ((index++))
+        spinner
     done
+    printf "Deploy files done.\n\n";
 fi
-printf "Deploy files done.\n\n";
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
 if [[ $SETUP_OPTION = "--setup" ]]; then
     printf "\n\n##########################\n# Setting up blockchain nodes #\n##########################\n"
-    # gcloud compute ssh $NODE_0_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null
-    # gcloud compute ssh $NODE_1_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_2_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_3_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_4_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_5_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_6_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_7_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_8_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_9_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_10_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_11_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_12_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_13_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_14_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_15_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_16_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_17_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_18_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_19_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_20_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_21_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_22_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_23_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_24_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_25_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_26_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_27_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_28_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_29_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_30_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_31_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_32_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_33_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_34_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_35_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_36_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_37_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_38_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_39_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_40_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_41_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_42_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_43_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_44_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_45_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_46_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_47_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_48_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_49_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_50_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_51_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_52_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_53_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_54_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_55_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_56_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_57_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_58_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_59_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_60_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_61_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_62_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_63_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_64_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_65_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_66_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_67_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_68_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_69_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_70_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_71_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_72_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_73_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_74_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_75_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_76_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_77_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_78_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_79_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_80_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_81_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_82_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_83_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_84_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_85_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_86_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_87_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_88_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_89_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_90_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_91_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_92_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_93_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_94_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null &
-    # gcloud compute ssh $NODE_95_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_EAST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_96_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_WEST1_B &> /dev/null &
-    # gcloud compute ssh $NODE_97_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_ASIA_SOUTHEAST1_b &> /dev/null &
-    # gcloud compute ssh $NODE_98_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_US_CENTRAL1_A &> /dev/null &
-    # gcloud compute ssh $NODE_99_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_ZONE_EUROPE_WEST4_A &> /dev/null
+    NUM_NODES=100
+    index=7
+    while [ $index -lt $NUM_NODES ]
+    do
+        NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
+        NODE_ZONE=NODE_${index}_ZONE
+
+        SETUP_BLOCKCHAIN_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '. setup_blockchain_ubuntu.sh' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+        # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
+        # printf "SETUP_BLOCKCHAIN_CMD=$SETUP_BLOCKCHAIN_CMD\n"
+        if [[ $index < "$(($NUM_NODES - 1))" ]]; then
+            eval $SETUP_BLOCKCHAIN_CMD &> /dev/null &
+        else
+            eval $SETUP_BLOCKCHAIN_CMD &> /dev/null
+        fi
+        ((index++))
+        spinner
+    done
+    printf "Setting up blockchain nodes done.\n\n";
 fi
-printf "Setting up blockchain nodes done.\n\n";
 
-# printf "\nStarting blockchain servers...\n\n"
-# if [[ $RESET_RESTART_OPTION = "--reset" ]]; then
-#     # restart after removing chains, snapshots, and log files
-#     CHAINS_DIR=/home/ain_blockchain_data/chains
-#     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-#     START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_node_genesis_gcp.sh"
-#     KEEP_CODE_OPTION="--keep-code"
-# elif [[ $RESET_RESTART_OPTION = "--restart" ]]; then
-#     # restart
-#     START_NODE_CMD_BASE="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_genesis_gcp.sh"
-#     KEEP_CODE_OPTION="--keep-code"
-# else
-#     # start
-#     START_NODE_CMD_BASE=". start_node_genesis_gcp.sh"
-#     KEEP_CODE_OPTION=""
-# fi
-# printf "\n"
-# printf "START_NODE_CMD_BASE=$START_NODE_CMD_BASE\n"
-# printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+printf "\nStarting blockchain servers...\n\n"
+if [[ $RESET_RESTART_OPTION = "--reset" ]]; then
+    # restart after removing chains, snapshots, and log files
+    CHAINS_DIR=/home/ain_blockchain_data/chains
+    SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
+    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_node_genesis_gcp.sh"
+    KEEP_CODE_OPTION="--keep-code"
+elif [[ $RESET_RESTART_OPTION = "--restart" ]]; then
+    # restart
+    START_NODE_CMD_BASE="cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_genesis_gcp.sh"
+    KEEP_CODE_OPTION="--keep-code"
+else
+    # start
+    START_NODE_CMD_BASE=". start_node_genesis_gcp.sh"
+    KEEP_CODE_OPTION=""
+fi
+printf "\n"
+printf "START_NODE_CMD_BASE=$START_NODE_CMD_BASE\n"
+printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
-# NUM_NODES=7
-# index=0
-# while [ $index -lt $NUM_NODES ]
-# do
-#     printf "\n\n##########################\n# Starting parent node $index #\n##########################\n\n"
-#     if [[ $index -gt 4 ]]; then
-#         JSON_RPC_OPTION="--json-rpc"
-#         REST_FUNC_OPTION="--rest-func"
-#     else
-#         JSON_RPC_OPTION=""
-#         REST_FUNC_OPTION=""
-#     fi
-#     NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
-#     NODE_ZONE=NODE_${index}_ZONE
+NUM_NODES=100
+node_index=7
+while [ $node_index -lt $NUM_NODES ]
+do
+    printf "\n\n##########################\n# Starting parent node $node_index #\n##########################\n\n"
+    if [[ $node_index -gt 4 ]]; then
+        JSON_RPC_OPTION="--json-rpc"
+        REST_FUNC_OPTION="--rest-func"
+    else
+        JSON_RPC_OPTION=""
+        REST_FUNC_OPTION=""
+    fi
+    NODE_TARGET_ADDR=NODE_${node_index}_TARGET_ADDR
+    NODE_ZONE=NODE_${node_index}_ZONE
 
-#     printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
-#     printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
-#     printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
-#     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
+    printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+    printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
+    printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
-#     printf "\n"
-#     START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $index $KEEP_CODE_OPTION $ACCOUNT_INJECTION_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
-#     printf "START_NODE_CMD=$START_NODE_CMD\n"
-#     eval $START_NODE_CMD
-#     inject_account "$index"
-#     ((index++))
-# done
+    printf "\n"
+    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+    # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
+    # printf "START_NODE_CMD=$START_NODE_CMD\n"
+    eval $START_NODE_CMD
+    ((node_index++))
+    sleep 1
+done
