@@ -8,29 +8,29 @@
  *                  servicing JSON-RPC requests.
  */
 module.exports = function getMethods(tracker) {
-  const blockchainNode = tracker.blockchainNode;
+  const blockchainNodes = tracker.blockchainNodes;
   return {
     getNodeInfoList: function(args, done) {
       const list = [];
-      Object.keys(blockchainNode).forEach((key) => {
-        list.push(blockchainNode[key].getNodeInfo());
+      Object.keys(blockchainNodes).forEach((key) => {
+        list.push(blockchainNodes[key].getNodeInfo());
       });
       done(null, list);
     },
 
     getNodeAddressList: function(args, done) {
       const list = [];
-      Object.keys(blockchainNode).forEach((key) => {
-        list.push(blockchainNode[key].address);
+      Object.keys(blockchainNodes).forEach((key) => {
+        list.push(blockchainNodes[key].address);
       });
       done(null, list);
     },
 
     getNodeInfoByAddress: function(args, done) {
       let result = null;
-      for (let i = 0; i < blockchainNode.length; i++) {
-        if (blockchainNode[i].address === args[0]) {
-          result = blockchainNode[i].getNodeInfo();
+      for (let i = 0; i < blockchainNodes.length; i++) {
+        if (blockchainNodes[i].address === args[0]) {
+          result = blockchainNodes[i].getNodeInfo();
           break;
         }
       }
