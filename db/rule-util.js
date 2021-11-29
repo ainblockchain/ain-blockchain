@@ -225,11 +225,19 @@ class RuleUtil {
   }
 
   validateCheckoutRequestData(networkName, chainId, tokenId, newData, getValue) {
+    const { TokenBridgeProperties } = require('../common/constants');
     if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
-        !this.isString(newData.recipient)) {
+        !this.isString(newData.recipient) || !this.isNumber(newData.fee_rate)) {
       return false;
     }
-    return this.isDict(this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue));
+    const tokenBridgeConfig = this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue);
+    if (!this.isDict(tokenBridgeConfig)) {
+      return false;
+    }
+    if (tokenBridgeConfig[TokenBridgeProperties.CHECKOUT_FEE_RATE] !== newData.fee_rate) {
+      return false;
+    }
+    return true;
   }
 
   validateCheckoutHistoryData(networkName, chainId, tokenId, userAddr, checkoutId, newData, getValue) {
