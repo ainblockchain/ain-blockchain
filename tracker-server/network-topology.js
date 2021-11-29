@@ -1,24 +1,26 @@
 const commonUtil = require('../common/common-util');
-const { abbrAddr } = require('./util');
+const {
+  abbrAddr,
+  isNodeAlive
+} = require('./util');
 
-const _buildGraphData = (peerNodes) => {
-  const filteredPeerNodesEntries = Object.entries(peerNodes).filter(([address, peerNode]) => {
-    return peerNode.isAlive === true
-  });
-  const peerNodesAlive = Object.fromEntries(filteredPeerNodesEntries);
+const _buildGraphData = (blockchainNodes) => {
+  const filteredblockchainNodesEntries = Object.entries(blockchainNodes)
+      .filter(([, node]) => isNodeAlive(node));
+  const blockchainNodeAlive = Object.fromEntries(filteredblockchainNodesEntries);
   const data = { nodes: [], links: [] };
-  const peerNodeIdMap = { };
+  const blockchainNodeIdMap = { };
 
-  Object.keys(peerNodesAlive).forEach((address, i) => {
-    Object.assign(peerNodeIdMap, { [address]: i });
+  Object.keys(blockchainNodeAlive).forEach((address, i) => {
+    Object.assign(blockchainNodeIdMap, { [address]: i });
     data.nodes.push({ address: abbrAddr(address) });
   });
 
-  Object.entries(peerNodesAlive).forEach(([address, nodeInfo]) => {
+  Object.entries(blockchainNodeAlive).forEach(([address, nodeInfo]) => {
     const outGoingList = nodeInfo.networkStatus.connectionStatus.outgoingPeers;
     outGoingList.forEach(outGoingAddress => {
       data.links.push({
-        source: peerNodeIdMap[address], target: peerNodeIdMap[outGoingAddress], weight: 1
+        source: blockchainNodeIdMap[address], target: blockchainNodeIdMap[outGoingAddress], weight: 1
       });
     });
   });
@@ -26,16 +28,16 @@ const _buildGraphData = (peerNodes) => {
   return data;
 }
 
-const getGraphData = async (networkStatus) => {
+const getGraphData = (networkStatus) => {
   try {
-    if (!commonUtil.isEmpty(networkStatus.peerNodes)) {
-      const data = _buildGraphData(networkStatus.peerNodes);
+    if (!commonUtil.isEmpty(networkStatus.blockchainNodes)) {
+      const data = _buildGraphData(networkStatus.blockchainNodes);
       return data;
     } else {
       return {
         "nodes": [
-          { "address": "Peer nodes are NOT online." },
-          { "address": "Peer nodes are NOT online." }
+          { "address": "Blockchain nodes are NOT online." },
+          { "address": "Blockchain nodes are NOT online." }
         ],
         "links": [
           { "source": 0, "target": 1, "weight": 1 }
@@ -45,8 +47,8 @@ const getGraphData = async (networkStatus) => {
   } catch (error) {
     return {
       "nodes": [
-        { "address": "Tracker is NOT online." },
-        { "address": "Tracker is NOT online." }
+        { "address": "Something went wrong!" },
+        { "error": error }
       ],
       "links": [
         { "source": 0, "target": 1, "weight": 1 }

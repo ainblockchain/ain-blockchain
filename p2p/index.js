@@ -1,6 +1,7 @@
 /* eslint no-mixed-operators: "off" */
 const logger = new (require('../logger'))('P2P_CLIENT');
 const _ = require('lodash');
+const axios = require('axios');
 const P2pServer = require('./server');
 const Websocket = require('ws');
 const { ConsensusStates } = require('../consensus/constants');
@@ -10,7 +11,6 @@ const {
   DevFlags,
   BlockchainConfigs,
   MessageTypes,
-  TrackerMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
   TrafficEventTypes,
@@ -32,7 +32,7 @@ const {
   sendGetRequest
 } = require('../common/network-util');
 
-const TRACKER_RECONNECTION_INTERVAL_MS = 5 * 1000;  // 5 seconds
+// NOTE(minsulee2): consider updating TRACKER_UPDATE_INTERVAL_MS to 2.5 minutes.
 const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
 const PEER_CANDIDATES_CONNECTION_INTERVAL_MS = 20 * 1000;  // 20 seconds
 const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
@@ -50,7 +50,6 @@ class P2pClient {
         this, node, minProtocolVersion, maxProtocolVersion);
     this.peerCandidates = {};
     this.isConnectingToPeerCandidates = false;
-    this.trackerWebSocket = null;
     this.outbound = {};
     this.p2pState = P2pNetworkStates.STARTING;
     this.peerConnectionsInProgress = {};
@@ -62,7 +61,7 @@ class P2pClient {
   async run() {
     if (CommonUtil.isEmpty(this.server.node.account)) return;
     await this.server.listen();
-    if (BlockchainConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.connectToTracker();
+    if (BlockchainConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.setIntervalForTrackerUpdate();
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
       if (!BlockchainConfigs.PEER_CANDIDATE_JSON_RPC_URL ||
           BlockchainConfigs.PEER_CANDIDATE_JSON_RPC_URL === '' ||
@@ -172,33 +171,23 @@ class P2pClient {
     }
   }
 
-  updatePeerInfoToTracker() {
-    const message = {
-      type: TrackerMessageTypes.PEER_INFO_UPDATE,
-      data: this.getStatus()
-    };
-    logger.debug(`\n >> Update to [TRACKER] ${BlockchainConfigs.TRACKER_WS_ADDR}: ` +
-        `${JSON.stringify(message, null, 2)}`);
-    this.trackerWebSocket.send(JSON.stringify(message));
-  }
-
-  setIntervalForTrackerConnection() {
-    if (!this.intervalTrackerConnection) {
-      this.intervalTrackerConnection = setInterval(() => {
-        this.connectToTracker();
-      }, TRACKER_RECONNECTION_INTERVAL_MS);
+  /**
+   * Update peer info to tracker via POST.
+   */
+  async updateNodeInfoToTracker() {
+    try {
+      const peerInfo = this.getStatus();
+      Object.assign(peerInfo, { updatedAt: Date.now() });
+      await sendGetRequest(BlockchainConfigs.TRACKER_UPDATE_JSON_RPC_URL, 'updateNodeInfo', peerInfo);
+    } catch (error) {
+      logger.error(error);
     }
   }
 
-  clearIntervalForTrackerConnection() {
-    clearInterval(this.intervalTrackerConnection);
-    this.intervalTrackerConnection = null;
-  }
-
   setIntervalForTrackerUpdate() {
-    this.updatePeerInfoToTracker();
+    this.updateNodeInfoToTracker();
     this.intervalTrackerUpdate = setInterval(() => {
-      this.updatePeerInfoToTracker();
+      this.updateNodeInfoToTracker();
     }, TRACKER_UPDATE_INTERVAL_MS);
   }
 
@@ -280,14 +269,6 @@ class P2pClient {
     clearInterval(this.intervalPeerCandidatesConnection);
   }
 
-  async setTrackerEventHandlers() {
-    this.trackerWebSocket.on('close', (code) => {
-      logger.info(`\nDisconnected from [TRACKER] ${BlockchainConfigs.TRACKER_WS_ADDR} with code: ${code}`);
-      this.clearIntervalForTrackerUpdate();
-      this.setIntervalForTrackerConnection();
-    });
-  }
-
   async startBlockchainNode(numLivePeers) {
     const LOG_HEADER = 'startBlockchainNode';
 
@@ -319,23 +300,6 @@ class P2pClient {
       }
       logger.info(`[${LOG_HEADER}] Blockchain node initialized!`);
     }
-  }
-
-  connectToTracker() {
-    logger.info(`Reconnecting to tracker (${BlockchainConfigs.TRACKER_WS_ADDR})`);
-    this.trackerWebSocket = new Websocket(BlockchainConfigs.TRACKER_WS_ADDR);
-    this.trackerWebSocket.on('open', () => {
-      logger.info(`Connected to tracker (${BlockchainConfigs.TRACKER_WS_ADDR})`);
-      this.clearIntervalForTrackerConnection();
-      this.setTrackerEventHandlers();
-      this.setIntervalForTrackerUpdate();
-    });
-    this.trackerWebSocket.on('error', (error) => {
-      logger.error(`Error in communication with tracker (${BlockchainConfigs.TRACKER_WS_ADDR}): ` +
-        `${JSON.stringify(error, null, 2)}`);
-      this.clearIntervalForTrackerUpdate();
-      this.setIntervalForTrackerConnection();
-    });
   }
 
   broadcastConsensusMessage(consensusMessage) {
@@ -493,7 +457,7 @@ class P2pClient {
             };
             Object.assign(this.outbound[address], { version: dataProtoVer });
             this.removePeerConnection(socket.url);
-            this.updatePeerInfoToTracker();
+            this.updateNodeInfoToTracker();
           }
           break;
         case MessageTypes.CHAIN_SEGMENT_RESPONSE:
@@ -765,14 +729,9 @@ class P2pClient {
 
   stop() {
     this.server.stop();
-    // NOTE(minsulee2): The trackerWebsocket should be checked initialized in order not to get error
-    // in case trackerWebsocket is not properly setup.
-    this.clearIntervalForTrackerConnection();
     this.clearIntervalForTrackerUpdate();
     this.clearIntervalForPeerCandidateConnection();
     this.clearIntervalForShardProofHashReports();
-    if (this.trackerWebSocket) this.trackerWebSocket.close();
-    logger.info('Disconnect from tracker server.');
     this.stopHeartbeat();
     this.disconnectFromPeers();
     logger.info('Disconnect from connected peers.');

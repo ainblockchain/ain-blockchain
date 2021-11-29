@@ -24,7 +24,7 @@
     "NETWORK_ID": 0,
     "CHAIN_ID": 0,
     "HOSTING_ENV": "gcp",
-    "TRACKER_WS_ADDR": "ws://34.80.184.73:5000",
+    "TRACKER_UPDATE_JSON_RPC_URL": "http://34.80.184.73:8080/json-rpc",
     "PEER_CANDIDATE_JSON_RPC_URL": "https://dev-api.ainetwork.ai/json-rpc",
     "MAX_SHARD_REPORT": 100,
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
