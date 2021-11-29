@@ -168,15 +168,6 @@ const MessageTypes = {
 };
 
 /**
- * Message types for communication between tracker and node.
- *
- * @enum {string}
- */
-const TrackerMessageTypes = {
-  PEER_INFO_UPDATE: 'PEER_INFO_UPDATE'
-};
-
-/**
  * States of blockchain nodes.
  *
  * @enum {string}
@@ -726,7 +717,8 @@ const BlockchainEventMessageTypes = {
  * the env vars take precedence.
  * (priority: base params < blockchain_params.json in BLOCKCHAIN_CONFIGS_DIR < env var)
  */
-const OVERWRITING_BLOCKCHAIN_PARAMS = ['TRACKER_WS_ADDR', 'PEER_CANDIDATE_JSON_RPC_URL', 'HOSTING_ENV'];
+const OVERWRITING_BLOCKCHAIN_PARAMS =
+    ['TRACKER_UPDATE_JSON_RPC_URL', 'PEER_CANDIDATE_JSON_RPC_URL', 'HOSTING_ENV'];
 const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'MAX_NUM_VALIDATORS', 'EPOCH_MS'];
 const OVERWRITING_NETWORK_PARAMS =
     ['TARGET_NUM_OUTBOUND_CONNECTION', 'MAX_NUM_INBOUND_CONNECTION', 'REQUEST_BODY_SIZE_LIMIT'];
@@ -832,7 +824,6 @@ module.exports = {
   DevFlags,
   BlockchainConfigs,
   MessageTypes,
-  TrackerMessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
   PredefinedDbPaths,
