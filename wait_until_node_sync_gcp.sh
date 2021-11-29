@@ -18,10 +18,10 @@ while :
 do
     healthCheck=$(curl -m 20 -X GET -H "Content-Type: application/json" "http://localhost:8080/health_check")
     printf "\nhealthCheck = ${healthCheck}\n"
-    lastBlockNumber=$(curl -m 20 -X POST -H "Content-Type: application/json" --data "$(generate_post_data 'ain_getRecentBlockNumber')" "http://localhost:8080/json-rpc" | jq -r '.result.result')
-    printf "\nlastBlockNumber = ${lastBlockNumber}\n"
     if [[ "$healthCheck" = "true" ]]; then
         printf "\nBlockchain Node server is synced & running!\n"
+        lastBlockNumber=$(curl -m 20 -X GET -H "Content-Type: application/json" "http://localhost:8080/last_block_number" | jq -r '.result')
+        printf "\nlastBlockNumber = ${lastBlockNumber}\n"
         printf "\nTime it took to sync in seconds: $SECONDS\n"
         break
     fi

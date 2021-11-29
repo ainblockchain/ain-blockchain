@@ -64,8 +64,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
 
     ain_getRecentBlockNumber: function(args, done) {
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET);
-      const block = node.bc.lastBlock();
-      done(null, addProtocolVersion({result: block ? block.number : null}));
+      done(null, addProtocolVersion({result: node.bc.lastBlockNumber()}));
     },
 
     ain_getBlockHeadersList: function(args, done) {
