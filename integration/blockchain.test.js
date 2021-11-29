@@ -29,7 +29,7 @@ const { Block } = require('../blockchain/block');
 
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, P2P_PEER_CANDIDATE_URL: '', MIN_NUM_VALIDATORS: 3, DEBUG: false, CONSOLE_LOG: false,
+    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', MIN_NUM_VALIDATORS: 3, DEBUG: false, CONSOLE_LOG: false,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
