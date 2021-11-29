@@ -64,16 +64,16 @@ class P2pClient {
     await this.server.listen();
     if (BlockchainConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.connectToTracker();
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
-      if (!BlockchainConfigs.P2P_PEER_CANDIDATE_URL ||
-          BlockchainConfigs.P2P_PEER_CANDIDATE_URL === '' ||
-          BlockchainConfigs.P2P_PEER_CANDIDATE_URL === _.get(this.server.urls, 'jsonRpc.url', '')) {
+      if (!BlockchainConfigs.PEER_CANDIDATE_JSON_RPC_URL ||
+          BlockchainConfigs.PEER_CANDIDATE_JSON_RPC_URL === '' ||
+          BlockchainConfigs.PEER_CANDIDATE_JSON_RPC_URL === _.get(this.server.urls, 'jsonRpc.url', '')) {
         await this.startBlockchainNode(0);
         return;
       } else {
         await this.startBlockchainNode(1);
       }
     }
-    this.connectWithPeerCandidateUrl(BlockchainConfigs.P2P_PEER_CANDIDATE_URL);
+    this.connectWithPeerCandidateUrl(BlockchainConfigs.PEER_CANDIDATE_JSON_RPC_URL);
     this.setIntervalForPeerCandidatesConnection();
   }
 
@@ -246,12 +246,12 @@ class P2pClient {
    * Returns randomly picked connectable peers. Refer to details below:
    * 1) Pick one if it is never queried.
    * 2) Choose one in all peerCandidates if there no exists never queried peerCandidates.
-   * 3) Use P2P_PEER_CANDIDATE_URL if there are no peerCandidates at all.
+   * 3) Use PEER_CANDIDATE_JSON_RPC_URL if there are no peerCandidates at all.
    */
   assignRandomPeerCandidate() {
     const peerCandidatesEntries = Object.entries(this.peerCandidates);
     if (peerCandidatesEntries.length === 0) {
-      return BlockchainConfigs.P2P_PEER_CANDIDATE_URL;
+      return BlockchainConfigs.PEER_CANDIDATE_JSON_RPC_URL;
     } else {
       const notQueriedCandidateEntries = peerCandidatesEntries.filter(([, value]) => {
         return value.queriedAt === null;
