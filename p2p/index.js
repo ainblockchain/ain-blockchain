@@ -176,7 +176,7 @@ class P2pClient {
     try {
       const peerInfo = this.getStatus();
       Object.assign(peerInfo, { updatedAt: Date.now() });
-      await sendGetRequest(BlockchainConfigs.TRACKER_UPDATE_URL, 'updateNodeInfo', peerInfo);
+      await sendGetRequest(BlockchainConfigs.TRACKER_UPDATE_JSON_RPC_URL, 'updateNodeInfo', peerInfo);
     } catch (error) {
       logger.error(error);
     }
