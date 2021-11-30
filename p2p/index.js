@@ -38,10 +38,10 @@ const PEER_CANDIDATES_CONNECTION_INTERVAL_MS = 20 * 1000;  // 20 seconds
 const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 10 * 1000; // 10 seconds
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
+  '1m': 60,  // 1 minutes
   '5m': 300,  // 5 minutes
   '10m': 600,  // 10 minutes
   '1h': 3600,  // 1 hour
-  '3h': 10800,  // 3 hours
 };
 
 class P2pClient {
@@ -388,7 +388,7 @@ class P2pClient {
   setClientSidePeerEventHandlers(socket) {
     const LOG_HEADER = 'setClientSidePeerEventHandlers';
     socket.on('message', (message) => {
-      trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT);
+      trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, 1);
       const parsedMessage = JSON.parse(message);
       const networkId = _.get(parsedMessage, 'networkId');
       const address = getAddressFromSocket(this.outbound, socket);

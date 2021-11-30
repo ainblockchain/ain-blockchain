@@ -8,7 +8,7 @@ class TrafficStatsManager {
     this.eventCounterMap = new Map();
   }
 
-  addEvent(eventType, currentTimeMs = null) {
+  addEvent(eventType, latencyMs, currentTimeMs = null) {
     if (!this.enabled) {
       return;
     }
@@ -17,15 +17,15 @@ class TrafficStatsManager {
       this.eventCounterMap.set(eventType, newTdb);
     }
     const tdb = this.eventCounterMap.get(eventType);
-    tdb.addEvent(currentTimeMs);
+    tdb.addEvent(latencyMs, currentTimeMs);
   }
 
   countEvents(eventType, periodMs, currentTimeMs = null) {
     if (!this.enabled) {
-      return -1;
+      return null;
     }
     if (!this.eventCounterMap.has(eventType)) {
-      return 0;
+      return null;
     }
     const tdb = this.eventCounterMap.get(eventType);
     return tdb.countEvents(periodMs, currentTimeMs);
@@ -35,18 +35,23 @@ class TrafficStatsManager {
     if (!this.enabled) {
       return {};
     }
-    const rates = {};
+    const stats = {};
     for (const eventType of this.eventCounterMap.keys()) {
-      let rate = -1;
+      let eventRate = 0;
+      let avgLatency = 0;
       if (periodSec > 0) {
-        const count = this.countEvents(eventType, periodSec * 1000, currentTimeMs);
-        if (count >= 0) {
-          rate = count / periodSec;
+        const sums = this.countEvents(eventType, periodSec * 1000, currentTimeMs);
+        if (sums && sums.countSum > 0) {
+          eventRate = sums.countSum / periodSec;
+          avgLatency = sums.latencySum / sums.countSum;
         }
       }
-      rates[eventType] = rate;
+      stats[eventType] = {
+        eventRate,
+        avgLatency,
+      };
     }
-    return rates;
+    return stats;
   }
 }
 
