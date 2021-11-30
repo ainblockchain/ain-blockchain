@@ -621,6 +621,39 @@ const StateVersions = {
   TX_POOL: 'TX_POOL',
 };
 
+/**
+ * Sync mode options.
+ *
+ * @enum {string}
+ */
+const SyncModeOptions = {
+  FULL: 'full',
+  FAST: 'fast',
+};
+
+const TrafficEventTypes = {
+  // JSON-RPC APIs
+  JSON_RPC_GET: 'json_rpc_get',
+  JSON_RPC_SET: 'json_rpc_set',
+  // P2P messages
+  P2P_MESSAGE_CLIENT: 'p2p_message_client',
+  P2P_MESSAGE_SERVER: 'p2p_message_server',
+  // Client APIs
+  CLIENT_API_GET: 'client_api_get',
+  CLIENT_API_SET: 'client_api_set',
+};
+
+const BlockchainEventTypes = {
+  BLOCK_FINALIZED: 'BLOCK_FINALIZED',
+  VALUE_CHANGED: 'VALUE_CHANGED',
+};
+
+const BlockchainEventMessageTypes = {
+  REGISTER_FILTER: 'REGISTER_FILTER',
+  DEREGISTER_FILTER: 'DEREGISTER_FILTER',
+  EMIT_EVENT: 'EMIT_EVENT',
+};
+
 // ** Lists **
 
 /**
@@ -671,39 +704,6 @@ const APP_DEPENDENT_SERVICE_TYPES = [
 function isAppDependentServiceType(type) {
   return APP_DEPENDENT_SERVICE_TYPES.includes(type);
 }
-
-/**
- * Sync mode options.
- *
- * @enum {string}
- */
-const SyncModeOptions = {
-  FULL: 'full',
-  FAST: 'fast',
-};
-
-const TrafficEventTypes = {
-  // JSON-RPC APIs
-  JSON_RPC_GET: 'json_rpc_get',
-  JSON_RPC_SET: 'json_rpc_set',
-  // P2P messages
-  P2P_MESSAGE_CLIENT: 'p2p_message_client',
-  P2P_MESSAGE_SERVER: 'p2p_message_server',
-  // Client APIs
-  CLIENT_API_GET: 'client_api_get',
-  CLIENT_API_SET: 'client_api_set',
-};
-
-const BlockchainEventTypes = {
-  BLOCK_FINALIZED: 'BLOCK_FINALIZED',
-  VALUE_CHANGED: 'VALUE_CHANGED',
-};
-
-const BlockchainEventMessageTypes = {
-  REGISTER_FILTER: 'REGISTER_FILTER',
-  DEREGISTER_FILTER: 'DEREGISTER_FILTER',
-  EMIT_EVENT: 'EMIT_EVENT',
-};
 
 /**
  * Overwriting environment variables.
