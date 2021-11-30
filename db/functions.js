@@ -13,7 +13,6 @@ const {
   WriteDbOperations,
   TokenBridgeProperties,
   OwnerProperties,
-  GasFeeConstants,
   buildOwnerPermissions,
   buildRulePermission,
 } = require('../common/constants');
@@ -200,7 +199,7 @@ class Functions {
             }));
             funcResults[functionEntry.function_id] = {
               code: FunctionResultCode.SUCCESS,
-              bandwidth_gas_amount: GasFeeConstants.REST_FUNCTION_CALL_GAS_AMOUNT,
+              bandwidth_gas_amount: BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT,
             };
             triggerCount++;
           }
@@ -518,7 +517,7 @@ class Functions {
     }
     const toBalance = this.db.getValue(toBalancePath);
     if (toBalance === null) {
-      extraGasAmount = GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT;
+      extraGasAmount = BlockchainConfigs.ACCOUNT_REGISTRATION_GAS_AMOUNT;
     }
     const decResult = this.decValueOrLog(fromBalancePath, value, context);
     if (CommonUtil.isFailedTx(decResult)) {
