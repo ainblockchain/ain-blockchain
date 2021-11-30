@@ -350,6 +350,7 @@ const TokenProperties = {
   MIN_CHECKOUT_PER_REQUEST: 'min_checkout_per_request',
   MAX_CHECKOUT_PER_REQUEST: 'max_checkout_per_request',
   MAX_CHECKOUT_PER_DAY: 'max_checkout_per_day',
+  CHECKOUT_FEE_RATE: 'checkout_fee_rate',
   TOKEN_EXCH_RATE: 'token_exchange_rate',
   TOKEN_EXCH_SCHEME: 'token_exchange_scheme',
 };

@@ -5,9 +5,9 @@
     "total_supply": 700000000,
     "bridge": {
       "ETH": {
-        "3": {
-          "0xB16c0C80a81f73204d454426fC413CAe455525A7": {
-            "token_pool": "0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
+        "1": {
+          "0x3A810ff7211b40c4fA76205a14efe161615d0385": {
+            "token_pool": "0x744Cb74A78Ac6dae46ebdaCa43e38ED60F965B8D",
             "min_checkout_per_request": 10000,
             "max_checkout_per_request": 100000,
             "max_checkout_per_day": 1000000,
@@ -25,13 +25,13 @@
     "NETWORK_ID": 0,
     "CHAIN_ID": 0,
     "HOSTING_ENV": "gcp",
-    "TRACKER_UPDATE_JSON_RPC_URL": "http://34.80.184.73:8080/json-rpc",
-    "PEER_CANDIDATE_JSON_RPC_URL": "https://dev-api.ainetwork.ai/json-rpc",
+    "TRACKER_WS_ADDR": "",
+    "PEER_CANDIDATE_JSON_RPC_URL": "https://mainnet-api.ainetwork.ai/json-rpc",
     "MAX_SHARD_REPORT": 100,
     "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
   },
   "genesis": {
-    "GENESIS_ADDR": "0xAAAf6f50A0304F12119D218b94bea8082642515B",
+    "GENESIS_ADDR": "",
     "GENESIS_TIMESTAMP": 1571819318272,
     "NUM_GENESIS_ACCOUNTS": 10
   },
@@ -42,33 +42,10 @@
     "MAX_NUM_VALIDATORS": 15,
     "EPOCH_MS": 3000,
     "GENESIS_WHITELIST": {
-      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true,
-      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": true,
-      "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": true,
-      "0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A": true,
-      "0x04A456C92A880cd59D7145C457475515a6f6E0f2": true
+      // TBD
     },
     "GENESIS_VALIDATORS": {
-      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
-        "stake": 10000000,
-        "proposal_right": true
-      },
-      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": {
-        "stake": 10000000,
-        "proposal_right": true
-      },
-      "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": {
-        "stake": 10000000,
-        "proposal_right": true
-      },
-      "0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A": {
-        "stake": 10000000,
-        "proposal_right": true
-      },
-      "0x04A456C92A880cd59D7145C457475515a6f6E0f2": {
-        "stake": 10000000,
-        "proposal_right": true
-      }
+      // TBD
     }
   },
   "network": {

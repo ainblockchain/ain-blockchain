@@ -1174,6 +1174,7 @@ class Functions {
       [TokenBridgeProperties.MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
       [TokenBridgeProperties.MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
       [TokenBridgeProperties.MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
+      [TokenBridgeProperties.CHECKOUT_FEE_RATE]: checkoutFeeRate,
       [TokenBridgeProperties.TOKEN_EXCH_RATE]: tokenExchangeRate,
       [TokenBridgeProperties.TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
@@ -1193,8 +1194,9 @@ class Functions {
     if (amountValidated !== true) {
       return this.returnFuncResult(context, amountValidated);
     }
+    const transferAmount = amount + amount * checkoutFeeRate;
     // Transfer from user to token_pool
-    const transferRes = this.setServiceAccountTransferOrLog(user, tokenPool, amount, context);
+    const transferRes = this.setServiceAccountTransferOrLog(user, tokenPool, transferAmount, context);
     if (!CommonUtil.isFailedTx(transferRes)) {
       // NOTE(liayoo): History will be recorded by a checkout server after processing the request.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
@@ -1220,7 +1222,8 @@ class Functions {
     } else {
       // Refund
       const tokenPool = this.db.getValue(PathUtil.getTokenBridgeTokenPoolPath(networkName, chainId, tokenId));
-      const transferRes = this.setServiceAccountTransferOrLog(tokenPool, user, request.amount, context);
+      const refundAmount = request.amount + request.amount * request.fee_rate;
+      const transferRes = this.setServiceAccountTransferOrLog(tokenPool, user, refundAmount, context);
       if (CommonUtil.isFailedTx(transferRes)) {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }
