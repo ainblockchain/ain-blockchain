@@ -1,34 +1,34 @@
-const EventCounter = require('./event-counter');
+const TrafficDatabase = require('./traffic-database');
 
 class TrafficStatsManager {
   constructor(intervalMs, maxIntervals, enabled = true) {
     this.intervalMs = intervalMs;
     this.maxIntervals = maxIntervals;
     this.enabled = enabled;
-    this.eventCounterMap = new Map();
+    this.trafficDbMap = new Map();
   }
 
   addEvent(eventType, latencyMs, currentTimeMs = null) {
     if (!this.enabled) {
       return;
     }
-    if (!this.eventCounterMap.has(eventType)) {
-      const newCounter = new EventCounter(this.intervalMs, this.maxIntervals, currentTimeMs);
-      this.eventCounterMap.set(eventType, newCounter);
+    if (!this.trafficDbMap.has(eventType)) {
+      const newTdb = new TrafficDatabase(this.intervalMs, this.maxIntervals, currentTimeMs);
+      this.trafficDbMap.set(eventType, newTdb);
     }
-    const counter = this.eventCounterMap.get(eventType);
-    counter.addEvent(latencyMs, currentTimeMs);
+    const tdb = this.trafficDbMap.get(eventType);
+    tdb.addEvent(latencyMs, currentTimeMs);
   }
 
   getEventSums(eventType, periodMs, currentTimeMs = null) {
     if (!this.enabled) {
       return null;
     }
-    if (!this.eventCounterMap.has(eventType)) {
+    if (!this.trafficDbMap.has(eventType)) {
       return null;
     }
-    const counter = this.eventCounterMap.get(eventType);
-    return counter.getEventSums(periodMs, currentTimeMs);
+    const tdb = this.trafficDbMap.get(eventType);
+    return tdb.getEventSums(periodMs, currentTimeMs);
   }
 
   getEventStats(periodSec, currentTimeMs = null) {
@@ -36,7 +36,7 @@ class TrafficStatsManager {
       return {};
     }
     const stats = {};
-    for (const eventType of this.eventCounterMap.keys()) {
+    for (const eventType of this.trafficDbMap.keys()) {
       let rate = 0;
       let latency = 0;
       if (periodSec > 0) {

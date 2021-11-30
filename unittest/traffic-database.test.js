@@ -1,15 +1,15 @@
-const EventCounter = require('../traffic/event-counter');
+const TrafficDatabase = require('../traffic/traffic-database');
 
 const { expect, assert } = require('chai');
 
-describe("event-counter", () => {
+describe("traffic-database", () => {
   const intervalMs = 1000;
   const maxIntervals = 10;
   const initialTimeMs = 5000;
   let ec;
 
   beforeEach(() => {
-    ec = new EventCounter(intervalMs, maxIntervals, initialTimeMs);
+    ec = new TrafficDatabase(intervalMs, maxIntervals, initialTimeMs);
   })
 
   describe("initialization", () => {
