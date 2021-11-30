@@ -1726,7 +1726,7 @@ describe('Native Function', () => {
                 }
               },
               "code": 0,
-              "bandwidth_gas_amount": 1000
+              "bandwidth_gas_amount": 2000
             }
           },
           "code": 0,
@@ -1734,7 +1734,7 @@ describe('Native Function', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 1003
+              "service": 2003
             },
             "state": {
               "service": 'erased'
@@ -1830,7 +1830,7 @@ describe('Native Function', () => {
                           }
                         },
                         "code": 0,
-                        "bandwidth_gas_amount": 1000
+                        "bandwidth_gas_amount": 2000
                       }
                     },
                     "code": 0,
@@ -1861,7 +1861,7 @@ describe('Native Function', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 1006
+              "service": 2006
             },
             "state": {
               "service": 'erased'
@@ -1962,7 +1962,7 @@ describe('Native Function', () => {
           "func_results": {
             "0x11111": {
               "code": 0,
-              "bandwidth_gas_amount": 10,
+              "bandwidth_gas_amount": 100,
             }
           },
           "code": 0,
@@ -1971,7 +1971,7 @@ describe('Native Function', () => {
           "gas_amount_total": {
             "bandwidth": {
               "app": {
-                "test": 11
+                "test": 101
               },
               "service": 0
             },
@@ -2145,7 +2145,7 @@ describe('Native Function', () => {
           "func_results": {
             "_transfer": {
               "code": 0,
-              "bandwidth_gas_amount": 1000,
+              "bandwidth_gas_amount": 2000,
               "op_results": {
                 "0": {
                   "path": "/accounts/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance",
@@ -2169,7 +2169,7 @@ describe('Native Function', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 1003
+              "service": 2003
             },
             "state": {
               "service": 'erased'
@@ -2264,7 +2264,7 @@ describe('Native Function', () => {
                       "func_results": {
                         "_transfer": {
                           "code": 0,
-                          "bandwidth_gas_amount": 1000,
+                          "bandwidth_gas_amount": 2000,
                           "op_results": {
                             "0": {
                               "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
@@ -2308,7 +2308,7 @@ describe('Native Function', () => {
             "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
-                "service": 1006
+                "service": 2006
               },
               "state": {
                 "service": 'erased'
@@ -2660,7 +2660,7 @@ describe('Native Function', () => {
                     "func_results": {
                       "_transfer": {
                         "code": 0,
-                        "bandwidth_gas_amount": 1000,
+                        "bandwidth_gas_amount": 2000,
                         "op_results": {
                           "0": {
                             "path": "/accounts/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance",
@@ -2690,7 +2690,7 @@ describe('Native Function', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 1004
+              "service": 2004
             },
             "state": {
               "service": 'erased'
@@ -3053,7 +3053,7 @@ describe('Native Function', () => {
                       "func_results": {
                         "_transfer": {
                           "code": 0,
-                          "bandwidth_gas_amount": 1000,
+                          "bandwidth_gas_amount": 2000,
                           "op_results": {
                             "0": {
                               "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
@@ -3083,7 +3083,7 @@ describe('Native Function', () => {
             "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
-                "service": 1004
+                "service": 2004
               },
               "state": {
                 "service": 'erased'
@@ -3338,7 +3338,7 @@ describe('Native Function', () => {
                       "func_results": {
                         "_transfer": {
                           "code": 0,
-                          "bandwidth_gas_amount": 1000,
+                          "bandwidth_gas_amount": 2000,
                           "op_results": {
                             "0": {
                               "path": "/service_accounts/payments/test_service_escrow/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
@@ -3368,7 +3368,7 @@ describe('Native Function', () => {
             "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
-                "service": 1004
+                "service": 2004
               },
               "state": {
                 "service": 'erased'
@@ -3815,7 +3815,7 @@ describe('Native Function', () => {
                           }
                         },
                         "code": 0,
-                        "bandwidth_gas_amount": 1000
+                        "bandwidth_gas_amount": 2000
                       }
                     },
                     "code": 0,
@@ -3832,7 +3832,7 @@ describe('Native Function', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 1006
+              "service": 2006
             },
             "state": {
               "service": 'erased'
