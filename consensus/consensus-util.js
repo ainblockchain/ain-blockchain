@@ -53,7 +53,8 @@ class ConsensusUtil {
 
   static getBlockHashFromConsensusTx(tx) {
     const op = _get(tx, 'tx_body.operation');
-    if (!tx || !op) return null;
+    if (!tx) return null;
+    if (!op) return null;
     if (op.type === WriteDbOperations.SET_VALUE) { // vote tx
       return _get(op, 'value.block_hash');
     } else if (op.type === WriteDbOperations.SET) { // propose tx
@@ -61,6 +62,21 @@ class ConsensusUtil {
     } else {
       return null;
     }
+  }
+
+  static getBlockNumberFromConsensusTx(tx) {
+    const op = _get(tx, 'tx_body.operation');
+    if (!tx) return null;
+    if (!op) return null;
+    let parsedPath = [];
+    if (op.type === WriteDbOperations.SET_VALUE) { // vote tx
+      parsedPath = CommonUtil.parsePath(_get(op, 'ref'));
+    } else if (op.type === WriteDbOperations.SET) { // propose tx
+      parsedPath = CommonUtil.parsePath(_get(op, 'op_list.0.ref'));
+    } else {
+      return null;
+    }
+    return _get(parsedPath, 2); // /consensus/number/${blockNumber}/...
   }
 
   static getStakeFromVoteTx(tx) {

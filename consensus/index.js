@@ -258,8 +258,8 @@ class Consensus {
         return;
       }
       if (proposalBlock.number > lastNotarizedBlock.number + 1) {
-        logger.info(`[${LOG_HEADER}] Trying to sync. Current last block number: ` +
-            `${lastNotarizedBlock.number}, proposal block number ${proposalBlock.number}`);
+        logger.info(`[${LOG_HEADER}] Proposal block number (${proposalBlock.number}) is greater ` +
+            `than current last notarized block number (${lastNotarizedBlock.number})`);
         // I might be falling behind. Try to catch up.
         // FIXME(liayoo): This has a possibility of being exploited by an attacker. The attacker
         // can keep sending messages with higher numbers, making the node's status unsynced, and
@@ -288,6 +288,14 @@ class Consensus {
     } else if (msg.type === ConsensusMessageTypes.VOTE) {
       if (this.node.tp.transactionTracker[msg.value.hash]) {
         logger.debug(`[${LOG_HEADER}] Already have the vote in my tx tracker`);
+        return;
+      }
+      const voteBlockNumber = ConsensusUtil.getBlockNumberFromConsensusTx(msg.value);
+      const heighestSeenBlockNumber = this.node.bp.getHeighestSeenBlockNumber();
+      if (voteBlockNumber > heighestSeenBlockNumber) {
+        logger.info(`[${LOG_HEADER}] Vote's block number (${voteBlockNumber}) is greater than ` +
+            `current heighest seen block number (${heighestSeenBlockNumber})`);
+        this.server.client.requestChainSegment();
         return;
       }
       if (!this.checkVoteTx(msg.value)) {

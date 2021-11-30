@@ -30,11 +30,22 @@ class BlockPool {
     // Mapping of a number to a set of block hashes proposed for the number.
     // e.g. { [<blockNumber>]: Set<blockHash> }
     this.numberToBlockSet = {};
+    this.heighestSeenBlockNumber = -1;
   }
 
   getLongestNotarizedChainHeight() {
     return this.longestNotarizedChainTips.length > 0 ?
         this.hashToBlockInfo[this.longestNotarizedChainTips[0]].block.number : this.node.bc.lastBlockNumber();
+  }
+
+  updateHighestSeenBlockNumber(blockNumber) {
+    if (blockNumber > this.heighestSeenBlockNumber) {
+      this.heighestSeenBlockNumber = blockNumber;
+    }
+  }
+
+  getHeighestSeenBlockNumber() {
+    return this.heighestSeenBlockNumber;
   }
 
   updateLongestNotarizedChains() {
@@ -329,6 +340,7 @@ class BlockPool {
       this.addToInvalidBlockInfoMap(block, proposalTx);
       this.addToNumberToBlockSet(block);
     }
+    this.updateHighestSeenBlockNumber(block.number);
     return true;
   }
 
