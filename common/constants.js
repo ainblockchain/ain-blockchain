@@ -142,6 +142,8 @@ BlockchainConfigs.SERVICE_TREE_SIZE_BUDGET = BlockchainConfigs.SERVICE_STATE_BUD
 BlockchainConfigs.APPS_TREE_SIZE_BUDGET = BlockchainConfigs.APPS_STATE_BUDGET * BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE;
 BlockchainConfigs.FREE_TREE_SIZE_BUDGET = BlockchainConfigs.FREE_STATE_BUDGET * BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE;
 BlockchainConfigs.STATE_GAS_COEFFICIENT = 1;
+BlockchainConfigs.ACCOUNT_REGISTRATION_GAS_AMOUNT = 2000;
+BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT = 100;
 BlockchainConfigs.TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
 BlockchainConfigs.TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
 BlockchainConfigs.DEFAULT_DEVELOPERS_URL_WHITELIST = [
@@ -618,16 +620,6 @@ const StateVersions = {
   TX_POOL: 'TX_POOL',
 };
 
-/**
- * Gas fee constants.
- *
- * @enum {number}
- */
-const GasFeeConstants = {
-  ACCOUNT_REGISTRATION_GAS_AMOUNT: 2000,
-  REST_FUNCTION_CALL_GAS_AMOUNT: 100,
-};
-
 // ** Lists **
 
 /**
@@ -851,7 +843,6 @@ module.exports = {
   GenesisAccounts,
   GenesisSharding,
   getBlockchainConfig,
-  GasFeeConstants,
   SyncModeOptions,
   TrafficEventTypes,
   BlockchainEventTypes,
