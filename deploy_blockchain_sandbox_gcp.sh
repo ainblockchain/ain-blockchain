@@ -2,7 +2,7 @@
 
 if [[ $# -lt 3 ]] || [[ $# -gt 6 ]]; then
     printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--restart|--reset]\n"
-    printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia 7 100 --setup\n"
+    printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia 7 99 --setup\n"
     printf "\n"
     exit
 fi
@@ -284,9 +284,8 @@ spinner() {
 
 # kill any processes still alive
 printf "\nKilling all blockchain nodes...\n"
-NUM_NODES=100
-index=7
-while [ $index -lt $NUM_NODES ]
+index=$START_NODE_IDX
+while [ $index -le $END_NODE_IDX ]
 do
     NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
     NODE_ZONE=NODE_${index}_ZONE
@@ -307,9 +306,8 @@ printf "Kill all processes done.\n\n";
 # deploy files to GCP instances
 if [[ $RESET_RESTART_OPTION = "" ]]; then
     printf "\nDeploying parent blockchain...\n"
-    NUM_NODES=100
-    index=7
-    while [ $index -lt $NUM_NODES ]
+    index=$START_NODE_IDX
+    while [ $index -le $END_NODE_IDX ]
     do
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
@@ -331,9 +329,8 @@ fi
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
 if [[ $SETUP_OPTION = "--setup" ]]; then
     printf "\n\n##########################\n# Setting up blockchain nodes #\n##########################\n"
-    NUM_NODES=100
-    index=7
-    while [ $index -lt $NUM_NODES ]
+    index=$START_NODE_IDX
+    while [ $index -le $END_NODE_IDX ]
     do
         NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
         NODE_ZONE=NODE_${index}_ZONE
@@ -372,9 +369,8 @@ printf "\n"
 printf "START_NODE_CMD_BASE=$START_NODE_CMD_BASE\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
-NUM_NODES=$END_NODE_IDX
 node_index=$START_NODE_IDX
-while [ $node_index -lt $NUM_NODES ]
+while [ $node_index -le $END_NODE_IDX ]
 do
     printf "\n\n##########################\n# Starting parent node $node_index #\n##########################\n\n"
     if [[ $node_index -gt 4 ]]; then
