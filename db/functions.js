@@ -1194,9 +1194,9 @@ class Functions {
     if (amountValidated !== true) {
       return this.returnFuncResult(context, amountValidated);
     }
-    const fee = amount * checkoutFeeRate;
+    const transferAmount = amount + amount * checkoutFeeRate;
     // Transfer from user to token_pool
-    const transferRes = this.setServiceAccountTransferOrLog(user, tokenPool, amount + fee, context);
+    const transferRes = this.setServiceAccountTransferOrLog(user, tokenPool, transferAmount, context);
     if (!CommonUtil.isFailedTx(transferRes)) {
       // NOTE(liayoo): History will be recorded by a checkout server after processing the request.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
