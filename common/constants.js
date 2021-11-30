@@ -142,6 +142,9 @@ BlockchainConfigs.SERVICE_TREE_SIZE_BUDGET = BlockchainConfigs.SERVICE_STATE_BUD
 BlockchainConfigs.APPS_TREE_SIZE_BUDGET = BlockchainConfigs.APPS_STATE_BUDGET * BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE;
 BlockchainConfigs.FREE_TREE_SIZE_BUDGET = BlockchainConfigs.FREE_STATE_BUDGET * BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE;
 BlockchainConfigs.STATE_GAS_COEFFICIENT = 1;
+BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT = 1;
+BlockchainConfigs.ACCOUNT_REGISTRATION_GAS_AMOUNT = 2000;
+BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT = 100;
 BlockchainConfigs.TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
 BlockchainConfigs.TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
 BlockchainConfigs.DEFAULT_DEVELOPERS_URL_WHITELIST = [
@@ -619,13 +622,36 @@ const StateVersions = {
 };
 
 /**
- * Gas fee constants.
+ * Sync mode options.
  *
- * @enum {number}
+ * @enum {string}
  */
-const GasFeeConstants = {
-  ACCOUNT_REGISTRATION_GAS_AMOUNT: 1000,
-  REST_FUNCTION_CALL_GAS_AMOUNT: 10,
+const SyncModeOptions = {
+  FULL: 'full',
+  FAST: 'fast',
+};
+
+const TrafficEventTypes = {
+  // JSON-RPC APIs
+  JSON_RPC_GET: 'json_rpc_get',
+  JSON_RPC_SET: 'json_rpc_set',
+  // P2P messages
+  P2P_MESSAGE_CLIENT: 'p2p_message_client',
+  P2P_MESSAGE_SERVER: 'p2p_message_server',
+  // Client APIs
+  CLIENT_API_GET: 'client_api_get',
+  CLIENT_API_SET: 'client_api_set',
+};
+
+const BlockchainEventTypes = {
+  BLOCK_FINALIZED: 'BLOCK_FINALIZED',
+  VALUE_CHANGED: 'VALUE_CHANGED',
+};
+
+const BlockchainEventMessageTypes = {
+  REGISTER_FILTER: 'REGISTER_FILTER',
+  DEREGISTER_FILTER: 'DEREGISTER_FILTER',
+  EMIT_EVENT: 'EMIT_EVENT',
 };
 
 // ** Lists **
@@ -678,39 +704,6 @@ const APP_DEPENDENT_SERVICE_TYPES = [
 function isAppDependentServiceType(type) {
   return APP_DEPENDENT_SERVICE_TYPES.includes(type);
 }
-
-/**
- * Sync mode options.
- *
- * @enum {string}
- */
-const SyncModeOptions = {
-  FULL: 'full',
-  FAST: 'fast',
-};
-
-const TrafficEventTypes = {
-  // JSON-RPC APIs
-  JSON_RPC_GET: 'json_rpc_get',
-  JSON_RPC_SET: 'json_rpc_set',
-  // P2P messages
-  P2P_MESSAGE_CLIENT: 'p2p_message_client',
-  P2P_MESSAGE_SERVER: 'p2p_message_server',
-  // Client APIs
-  CLIENT_API_GET: 'client_api_get',
-  CLIENT_API_SET: 'client_api_set',
-};
-
-const BlockchainEventTypes = {
-  BLOCK_FINALIZED: 'BLOCK_FINALIZED',
-  VALUE_CHANGED: 'VALUE_CHANGED',
-};
-
-const BlockchainEventMessageTypes = {
-  REGISTER_FILTER: 'REGISTER_FILTER',
-  DEREGISTER_FILTER: 'DEREGISTER_FILTER',
-  EMIT_EVENT: 'EMIT_EVENT',
-};
 
 /**
  * Overwriting environment variables.
@@ -851,7 +844,6 @@ module.exports = {
   GenesisAccounts,
   GenesisSharding,
   getBlockchainConfig,
-  GasFeeConstants,
   SyncModeOptions,
   TrafficEventTypes,
   BlockchainEventTypes,

@@ -2851,7 +2851,7 @@ describe("DB operations", () => {
 
         const expectedGasAmountTotal = {
           bandwidth: {
-            service: 1509000,
+            service: 3009000,
           },
           state: {
             service: 4086120
@@ -2878,7 +2878,7 @@ describe("DB operations", () => {
         assert.deepEqual(res.code, 25);
         assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11305686 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
-        assert.deepEqual(res.gas_cost_total, 5.59512);
+        assert.deepEqual(res.gas_cost_total, 7.09512);
       });
 
       it("cannot exceed apps state budget", () => {
