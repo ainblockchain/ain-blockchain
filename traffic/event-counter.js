@@ -41,7 +41,7 @@ class EventCounter {
     this.latencyCircularQueue[this.lastQueueIndex] += latencyMs;
   }
 
-  countEvents(periodMs, currentTimeMs = null) {
+  getEventSums(periodMs, currentTimeMs = null) {
     if (periodMs <= 0) {
       return null;
     }
