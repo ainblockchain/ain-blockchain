@@ -13,42 +13,42 @@ class TrafficStatsManager {
       return;
     }
     if (!this.eventCounterMap.has(eventType)) {
-      const newTdb = new EventCounter(this.intervalMs, this.maxIntervals, currentTimeMs);
-      this.eventCounterMap.set(eventType, newTdb);
+      const newCounter = new EventCounter(this.intervalMs, this.maxIntervals, currentTimeMs);
+      this.eventCounterMap.set(eventType, newCounter);
     }
-    const tdb = this.eventCounterMap.get(eventType);
-    tdb.addEvent(latencyMs, currentTimeMs);
+    const counter = this.eventCounterMap.get(eventType);
+    counter.addEvent(latencyMs, currentTimeMs);
   }
 
-  countEvents(eventType, periodMs, currentTimeMs = null) {
+  getEventSums(eventType, periodMs, currentTimeMs = null) {
     if (!this.enabled) {
       return null;
     }
     if (!this.eventCounterMap.has(eventType)) {
       return null;
     }
-    const tdb = this.eventCounterMap.get(eventType);
-    return tdb.countEvents(periodMs, currentTimeMs);
+    const counter = this.eventCounterMap.get(eventType);
+    return counter.getEventSums(periodMs, currentTimeMs);
   }
 
-  getEventRates(periodSec, currentTimeMs = null) {
+  getEventStats(periodSec, currentTimeMs = null) {
     if (!this.enabled) {
       return {};
     }
     const stats = {};
     for (const eventType of this.eventCounterMap.keys()) {
-      let eventRate = 0;
-      let avgLatency = 0;
+      let rate = 0;
+      let latency = 0;
       if (periodSec > 0) {
-        const sums = this.countEvents(eventType, periodSec * 1000, currentTimeMs);
+        const sums = this.getEventSums(eventType, periodSec * 1000, currentTimeMs);
         if (sums && sums.countSum > 0) {
-          eventRate = sums.countSum / periodSec;
-          avgLatency = sums.latencySum / sums.countSum;
+          rate = sums.countSum / periodSec;
+          latency = sums.latencySum / sums.countSum;
         }
       }
       stats[eventType] = {
-        eventRate,
-        avgLatency,
+        rate,
+        latency,
       };
     }
     return stats;
