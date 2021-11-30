@@ -707,37 +707,44 @@ class DB {
     const parsedPath = CommonUtil.parsePath(valuePath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return CommonUtil.returnTxResult(102, `Invalid path: ${isValidPath.invalidPath}`, 1);
+      return CommonUtil.returnTxResult(
+          102, `Invalid path: ${isValidPath.invalidPath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const isValidObj = isValidJsObjectForStates(value);
     if (!isValidObj.isValid) {
-      return CommonUtil.returnTxResult(101, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
+      return CommonUtil.returnTxResult(
+          101, `Invalid object for states: ${isValidObj.invalidPath}`,
+          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return CommonUtil.returnTxResult(0, null, 1);
+      return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, timestamp);
     if (!ruleEvalRes.writePermission) {
-      return CommonUtil.returnTxResult(103, `No write permission on: ${valuePath}`, 1);
+      return CommonUtil.returnTxResult(
+          103, `No write permission on: ${valuePath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     if (!ruleEvalRes.statePermission) {
-      return CommonUtil.returnTxResult(106, `No state permission on: ${valuePath}`, 1);
+      return CommonUtil.returnTxResult(
+          106, `No state permission on: ${valuePath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);
     if (!isWritablePath.isValid) {
       if (isGlobal) {
         // There is nothing to do.
-        return CommonUtil.returnTxResult(0, null, 1);
+        return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
       } else {
         return CommonUtil.returnTxResult(
-            104, `Non-writable path with shard config: ${isWritablePath.invalidPath}`, 1);
+            104, `Non-writable path with shard config: ${isWritablePath.invalidPath}`,
+            BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
       }
     }
     const prevValue = this.getValue(valuePath, { isShallow: false, isGlobal });
-    const prevValueCopy = CommonUtil.isDict(prevValue) ? JSON.parse(JSON.stringify(prevValue)) : prevValue;
+    const prevValueCopy =
+        CommonUtil.isDict(prevValue) ? JSON.parse(JSON.stringify(prevValue)) : prevValue;
     const valueCopy = CommonUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
     let funcResults = null;
@@ -745,20 +752,24 @@ class DB {
       if (blockTime === null) {
         blockTime = this.lastBlockTimestamp();
       }
-      const { func_results } =
-          this.func.triggerFunctions(localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime);
+      const { func_results } = this.func.triggerFunctions(
+          localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime);
       funcResults = func_results;
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
-        return CommonUtil.returnTxResult(105, `Triggered function call failed`, 1, funcResults);
+        return CommonUtil.returnTxResult(
+            105, `Triggered function call failed`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT,
+            funcResults);
       }
     }
     if (value !== null) {
       // NOTE(liayoo): Only apply the state garbage collection rules when it's not a deletion.
-      const applyStateGcRuleRes = this.applyStateGarbageCollectionRule(ruleEvalRes.matched.state, localPath);
-      logger.debug(`[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
+      const applyStateGcRuleRes =
+          this.applyStateGarbageCollectionRule(ruleEvalRes.matched.state, localPath);
+      logger.debug(
+          `[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
     }
 
-    return CommonUtil.returnTxResult(0, null, 1, funcResults);
+    return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT, funcResults);
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
@@ -766,7 +777,9 @@ class DB {
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
-      return CommonUtil.returnTxResult(201, `Not a number type: ${valueBefore} or ${delta}`, 1);
+      return CommonUtil.returnTxResult(
+          201, `Not a number type: ${valueBefore} or ${delta}`,
+          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) + delta;
     return this.setValue(
@@ -778,7 +791,9 @@ class DB {
     const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
-      return CommonUtil.returnTxResult(301, `Not a number type: ${valueBefore} or ${delta}`, 1);
+      return CommonUtil.returnTxResult(
+          301, `Not a number type: ${valueBefore} or ${delta}`,
+          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) - delta;
     return this.setValue(
@@ -789,37 +804,45 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(func);
     if (!isValidObj.isValid) {
-      return CommonUtil.returnTxResult(401, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
+      return CommonUtil.returnTxResult(
+          401, `Invalid object for states: ${isValidObj.invalidPath}`,
+          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const parsedPath = CommonUtil.parsePath(functionPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return CommonUtil.returnTxResult(402, `Invalid path: ${isValidPath.invalidPath}`, 1);
+      return CommonUtil.returnTxResult(
+          402, `Invalid path: ${isValidPath.invalidPath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const isValidFunction = isValidFunctionTree(parsedPath, func);
     if (!isValidFunction.isValid) {
-      return CommonUtil.returnTxResult(405, `Invalid function tree: ${isValidFunction.invalidPath}`, 1);
+      return CommonUtil.returnTxResult(
+          405, `Invalid function tree: ${isValidFunction.invalidPath}`,
+          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     if (!auth || auth.addr !== this.ownerAddress) {
       const ownerOnlyFid = this.func.hasOwnerOnlyFunction(func);
       if (ownerOnlyFid !== null) {
         return CommonUtil.returnTxResult(
-            403, `Trying to write owner-only function: ${ownerOnlyFid}`, 1);
+            403, `Trying to write owner-only function: ${ownerOnlyFid}`,
+            BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
       }
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return CommonUtil.returnTxResult(0, null, 1);
+      return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     if (!this.getPermissionForFunction(localPath, auth)) {
-      return CommonUtil.returnTxResult(404, `No write_function permission on: ${functionPath}`, 1);
+      return CommonUtil.returnTxResult(
+          404, `No write_function permission on: ${functionPath}`,
+          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
     const newFunction = applyFunctionChange(curFunction, func);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, newFunction);
-    return CommonUtil.returnTxResult(0, null, 1);
+    return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
   }
 
   // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
@@ -828,61 +851,73 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(rule);
     if (!isValidObj.isValid) {
-      return CommonUtil.returnTxResult(501, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
+      return CommonUtil.returnTxResult(
+          501, `Invalid object for states: ${isValidObj.invalidPath}`,
+          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const parsedPath = CommonUtil.parsePath(rulePath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return CommonUtil.returnTxResult(502, `Invalid path: ${isValidPath.invalidPath}`, 1);
+      return CommonUtil.returnTxResult(
+          502, `Invalid path: ${isValidPath.invalidPath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const isValidRule = isValidRuleTree(parsedPath, rule);
     if (!isValidRule.isValid) {
-      return CommonUtil.returnTxResult(504, `Invalid rule tree: ${isValidRule.invalidPath}`, 1);
+      return CommonUtil.returnTxResult(
+          504, `Invalid rule tree: ${isValidRule.invalidPath}`,
+          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return CommonUtil.returnTxResult(0, null, 1);
+      return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     if (!this.getPermissionForRule(localPath, auth)) {
-      return CommonUtil.returnTxResult(503, `No write_rule permission on: ${rulePath}`, 1);
+      return CommonUtil.returnTxResult(
+          503, `No write_rule permission on: ${rulePath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const curRule = this.getRule(rulePath, { isShallow: false, isGlobal });
     const newRule = applyRuleChange(curRule, rule);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     this.writeDatabase(fullPath, newRule);
-    return CommonUtil.returnTxResult(0, null, 1);
+    return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
   }
 
   setOwner(ownerPath, owner, auth, options) {
     const isGlobal = options && options.isGlobal;
     const isValidObj = isValidJsObjectForStates(owner);
     if (!isValidObj.isValid) {
-      return CommonUtil.returnTxResult(601, `Invalid object for states: ${isValidObj.invalidPath}`, 1);
+      return CommonUtil.returnTxResult(
+          601, `Invalid object for states: ${isValidObj.invalidPath}`,
+          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const parsedPath = CommonUtil.parsePath(ownerPath);
     const isValidPath = isValidPathForStates(parsedPath);
     if (!isValidPath.isValid) {
-      return CommonUtil.returnTxResult(602, `Invalid path: ${isValidPath.invalidPath}`, 1);
+      return CommonUtil.returnTxResult(
+          602, `Invalid path: ${isValidPath.invalidPath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const isValidOwner = isValidOwnerTree(parsedPath, owner);
     if (!isValidOwner.isValid) {
-      return CommonUtil.returnTxResult(604, `Invalid owner tree: ${isValidOwner.invalidPath}`, 1);
+      return CommonUtil.returnTxResult(
+          604, `Invalid owner tree: ${isValidOwner.invalidPath}`,
+          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return CommonUtil.returnTxResult(0, null, 1);
+      return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     if (!this.getPermissionForOwner(localPath, auth)) {
       return CommonUtil.returnTxResult(
-          603, `No write_owner or branch_owner permission on: ${ownerPath}`, 1);
+          603, `No write_owner or branch_owner permission on: ${ownerPath}`,
+          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
     const newOwner = applyOwnerChange(curOwner, owner);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     this.writeDatabase(fullPath, newOwner);
-    return CommonUtil.returnTxResult(0, null, 1);
+    return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
   }
 
   /**
@@ -953,7 +988,8 @@ class DB {
         result = this.setOwner(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
         break;
       default:
-        return CommonUtil.returnTxResult(14, `Invalid operation type: ${op.type}`, 1);
+        return CommonUtil.returnTxResult(
+            14, `Invalid operation type: ${op.type}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     return result;
   }
@@ -989,7 +1025,8 @@ class DB {
       gas_cost_total: 0
     };
     if (!op) {
-      Object.assign(result, CommonUtil.returnTxResult(11, `Invalid operation: ${op}`, 1));
+      Object.assign(result, CommonUtil.returnTxResult(
+          11, `Invalid operation: ${op}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT));
       DB.updateGasAmountTotal(tx, gasAmountTotal, result);
       return result;
     }
