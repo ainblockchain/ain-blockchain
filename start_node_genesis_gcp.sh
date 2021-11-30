@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# NOTE(minsulee2): Since exit really exits terminals, those are replaced to return 1.
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
     printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"

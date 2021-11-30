@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$#" -lt 1 ]]; then
-    printf "Usage: bash setup_monitoring_gcp.sh [dev|sandbox|staging|spring|summer]\n"
+    printf "Usage: bash setup_monitoring_gcp.sh [dev|staging|sandbox|spring|summer]\n"
     printf "Example: bash setup_monitoring_gcp.sh dev\n"
     printf "\n"
     exit

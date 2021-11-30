@@ -1,8 +1,8 @@
 #!/bin/bash
 
-if [[ $# -lt 1 ]] || [[ $# -gt 4 ]]; then
-    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> [--setup] [--restart|--reset]\n"
-    printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia --setup\n"
+if [[ $# -lt 3 ]] || [[ $# -gt 6 ]]; then
+    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--restart|--reset]\n"
+    printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia 7 100 --setup\n"
     printf "\n"
     exit
 fi
@@ -14,7 +14,11 @@ printf "SEASON=$SEASON\n"
 printf "PROJECT_ID=$PROJECT_ID\n"
 
 GCP_USER="$1"
+START_NODE_IDX="$2"
+END_NODE_IDX="$3"
 printf "GCP_USER=$GCP_USER\n"
+printf "START_NODE_IDX=$START_NODE_IDX\n"
+printf "END_NODE_IDX=$END_NODE_IDX\n"
 
 function parse_options() {
     local option="$1"
@@ -42,7 +46,7 @@ function parse_options() {
 SETUP_OPTION=""
 RESET_RESTART_OPTION=""
 
-ARG_INDEX=2
+ARG_INDEX=4
 while [ $ARG_INDEX -le $# ]
 do
   parse_options "${!ARG_INDEX}"
@@ -268,7 +272,7 @@ NODE_99_ZONE="europe-west4-a"
 # deploy files
 FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
-# Loding spinner
+# Work in progress spinner
 spin="-\|/"
 
 i=0
@@ -368,8 +372,8 @@ printf "\n"
 printf "START_NODE_CMD_BASE=$START_NODE_CMD_BASE\n"
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
 
-NUM_NODES=100
-node_index=7
+NUM_NODES=$END_NODE_IDX
+node_index=$START_NODE_IDX
 while [ $node_index -lt $NUM_NODES ]
 do
     printf "\n\n##########################\n# Starting parent node $node_index #\n##########################\n\n"
