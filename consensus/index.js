@@ -452,7 +452,7 @@ class Consensus {
         { block: lastFinalizedBlock } : bp.hashToBlockInfo[lastHash];
     if (!prevBlockInfo || !prevBlockInfo.block) {
       throw new ConsensusError({
-        code: ConsensusErrorCode.INVALID_PREV_BLOCK,
+        code: ConsensusErrorCode.MISSING_PREV_BLOCK,
         message: `No notarized block at number ${number - 1} with hash ${lastHash}`,
         level: 'error'
       });
