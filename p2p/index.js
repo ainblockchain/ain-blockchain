@@ -508,10 +508,10 @@ class P2pClient {
     // TODO(minsulee2): needs to update socket.on('error').
   }
 
-  tryInitProcesses(number, chainSegment, catchUpInfo) {
+  tryInitProcesses(number) {
     const LOG_HEADER = 'tryInitProcesses';
     const lastBlockNumber = this.server.node.bc.lastBlockNumber();
-    if (lastBlockNumber < number && (chainSegment || catchUpInfo)) {
+    if (lastBlockNumber < number) {
       // Cannot init processes yet
       return false;
     }
@@ -531,7 +531,7 @@ class P2pClient {
     if (_.get(this.chainSyncInProgress, 'address') !== address) { // Received from a peer that I didn't request from
       return;
     }
-    if (this.tryInitProcesses(number, chainSegment, catchUpInfo)) { // Already caught up
+    if (this.tryInitProcesses(number)) { // Already caught up
       this.resetChainSyncPeer();
       this.server.consensus.catchUp(catchUpInfo);
       return;
@@ -544,7 +544,7 @@ class P2pClient {
       // There's more to receive from this peer.
     }
     if (mergeResult >= 0) { // Merge success
-      this.tryInitProcesses(number, chainSegment, catchUpInfo);
+      this.tryInitProcesses(number);
     } else {
       logger.info(`[${LOG_HEADER}] Failed to merge incoming chain segment.`);
     }
