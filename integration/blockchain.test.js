@@ -50,7 +50,7 @@ const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCO
 const serverList = [server1, server2, server3 ];
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
-const JSON_RPC_GET_RECENT_BLOCK = 'ain_getRecentBlock';
+const JSON_RPC_GET_LAST_BLOCK = 'ain_getLastBlock';
 const JSON_RPC_GET_BLOCKS = 'ain_getBlockList';
 const JSON_RPC_GET_BLOCK_HEADERS = 'ain_getBlockHeadersList';
 const JSON_RPC_GET_BLOCK_BY_HASH = 'ain_getBlockByHash';
@@ -235,7 +235,7 @@ describe('Blockchain Cluster', () => {
     await waitUntilNetworkIsReady(serverList);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
-      jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK,
+      jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK,
           {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}, function(err, response) {
         if (err) {
           resolve();

@@ -70,7 +70,7 @@ const server5 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[4].ACCO
 const serverList = [server1, server2, server3, server4, server5];
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
-const JSON_RPC_GET_RECENT_BLOCK = 'ain_getRecentBlock';
+const JSON_RPC_GET_LAST_BLOCK = 'ain_getLastBlock';
 
 class Process {
   constructor(application, envVariables) {
@@ -140,7 +140,7 @@ describe('Consensus', () => {
     await waitUntilNetworkIsReady(serverList);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
-      jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK,
+      jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK,
           {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}, function(err, response) {
         if (err) {
           resolve();
