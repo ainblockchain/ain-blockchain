@@ -1,14 +1,14 @@
 #!/bin/bash
 
 if [[ "$#" -lt 1 ]]; then
-    printf "Usage: bash setup_monitoring_gcp.sh [dev|staging|spring|summer]\n"
+    printf "Usage: bash setup_monitoring_gcp.sh [dev|staging|sandbox|spring|summer]\n"
     printf "Example: bash setup_monitoring_gcp.sh dev\n"
     printf "\n"
     exit
 fi
 printf "\n[[[[[ setup_monitoring_gcp.sh ]]]]]\n\n"
 
-if [[ "$1" != 'spring' ]] && [[ "$1" != 'summer' ]] && [[ "$1" != 'dev' ]] && [[ "$1" != 'staging' ]]; then
+if [[ "$1" != 'spring' ]] && [[ "$1" != 'summer' ]] && [[ "$1" != 'dev' ]] && [[ "$1" != 'staging' ]] && [[ "$1" != 'sandbox' ]]; then
     printf "Invalid season argument: $1\n"
     exit
 fi
