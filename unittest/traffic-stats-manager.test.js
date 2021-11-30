@@ -12,23 +12,23 @@ describe("traffic-stats-manager", () => {
 
   beforeEach(() => {
     tm = new TrafficStatsManager(intervalMs, maxIntervals);
-  })
+  });
 
   describe("initialization", () => {
     it("constructor", () => {
       expect(tm.intervalMs).to.equal(intervalMs);
       expect(tm.maxIntervals).to.equal(maxIntervals);
-      expect(tm.eventCounterMap.size).to.equal(0);
+      expect(tm.trafficDbMap.size).to.equal(0);
     });
   });
 
   describe("addEvent / getEventSums", () => {
     it("with intervals not overlapping", () => {
-      expect(tm.eventCounterMap.size).to.equal(0);
+      expect(tm.trafficDbMap.size).to.equal(0);
 
       tm.addEvent(eventType1, 10, initialTimeMs);
-      expect(tm.eventCounterMap.size).to.equal(1);
-      expect(tm.eventCounterMap.has(eventType1)).to.equal(true);
+      expect(tm.trafficDbMap.size).to.equal(1);
+      expect(tm.trafficDbMap.has(eventType1)).to.equal(true);
       assert.deepEqual(tm.getEventSums(eventType1, intervalMs * 10, initialTimeMs + intervalMs), {
         countSum: 1,
         latencySum: 10,
@@ -36,9 +36,9 @@ describe("traffic-stats-manager", () => {
       assert.deepEqual(tm.getEventSums(eventType2, intervalMs * 10, initialTimeMs + intervalMs), null);
 
       tm.addEvent(eventType2, 100, initialTimeMs + intervalMs);
-      expect(tm.eventCounterMap.size).to.equal(2);
-      expect(tm.eventCounterMap.has(eventType1)).to.equal(true);
-      expect(tm.eventCounterMap.has(eventType2)).to.equal(true);
+      expect(tm.trafficDbMap.size).to.equal(2);
+      expect(tm.trafficDbMap.has(eventType1)).to.equal(true);
+      expect(tm.trafficDbMap.has(eventType2)).to.equal(true);
       assert.deepEqual(tm.getEventSums(eventType1, intervalMs * 10, initialTimeMs + intervalMs * 2), {
         countSum: 1,
         latencySum: 10,
@@ -62,7 +62,7 @@ describe("traffic-stats-manager", () => {
     });
 
     it("with intervals overlapping", () => {
-      expect(tm.eventCounterMap.size).to.equal(0);
+      expect(tm.trafficDbMap.size).to.equal(0);
 
       tm.addEvent(eventType1, 10, initialTimeMs);
       tm.addEvent(eventType1, 10, initialTimeMs);
@@ -97,7 +97,7 @@ describe("traffic-stats-manager", () => {
 
   describe("getEventStats", () => {
     beforeEach(() => {
-      expect(tm.eventCounterMap.size).to.equal(0);
+      expect(tm.trafficDbMap.size).to.equal(0);
       tm.addEvent(eventType1, 10, initialTimeMs);
       tm.addEvent(eventType1, 10, initialTimeMs);
       tm.addEvent(eventType1, 10, initialTimeMs);

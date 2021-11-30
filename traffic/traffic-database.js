@@ -1,6 +1,6 @@
 const _ = require('lodash');
 
-class EventCounter {
+class TrafficDatabase {
   constructor(
       intervalMs,
       maxIntervals,
@@ -65,4 +65,4 @@ class EventCounter {
   }
 }
 
-module.exports = EventCounter;
+module.exports = TrafficDatabase;
