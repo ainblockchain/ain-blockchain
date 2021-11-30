@@ -516,7 +516,7 @@ describe("Functions", () => {
               }
             },
             "code": 0,
-            "bandwidth_gas_amount": 1000
+            "bandwidth_gas_amount": 2000
           }
         });
         return promise_results.then((resp) => {
