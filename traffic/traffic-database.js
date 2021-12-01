@@ -1,6 +1,6 @@
 const _ = require('lodash');
 
-class EventCounter {
+class TrafficDatabase {
   constructor(
       intervalMs,
       maxIntervals,
@@ -8,7 +8,8 @@ class EventCounter {
     this.intervalMs = intervalMs;
     this.maxIntervals = maxIntervals;
     this.initialTimeMs = currentTimeMs;
-    this.circularQueue = _.fill(Array(maxIntervals), 0);
+    this.countCircularQueue = _.fill(Array(maxIntervals), 0);
+    this.latencyCircularQueue = _.fill(Array(maxIntervals), 0);
     this.lastIntervalCount = 0;
     this.lastQueueIndex = 0;
   }
@@ -27,34 +28,41 @@ class EventCounter {
     let oldQueueIndex = this.lastQueueIndex;
     for (let i = 1; i <= queueIndexDelta; i++) {
       this.lastQueueIndex = (oldQueueIndex + i) % this.maxIntervals;
-      this.circularQueue[this.lastQueueIndex] = 0;  // Reset a queue entry.
+      this.countCircularQueue[this.lastQueueIndex] = 0;  // Reset count
+      this.latencyCircularQueue[this.lastQueueIndex] = 0;  // Reset latency
     }
     this.lastIntervalCount = intervalCount;
   }
 
-  addEvent(currentTimeMs = null) {
+  addEvent(latencyMs, currentTimeMs = null) {
     const curTime = currentTimeMs !== null ? currentTimeMs : Date.now();
     this.updateQueueIndex(curTime);
-    this.circularQueue[this.lastQueueIndex] += 1;
+    this.countCircularQueue[this.lastQueueIndex] += 1;
+    this.latencyCircularQueue[this.lastQueueIndex] += latencyMs;
   }
 
-  countEvents(periodMs, currentTimeMs = null) {
+  getEventSums(periodMs, currentTimeMs = null) {
     if (periodMs <= 0) {
-      return -1;
+      return null;
     }
     const numIntervals = Math.floor(periodMs / this.intervalMs);
     if (numIntervals > this.maxIntervals) {
-      return -1;
+      return null;
     }
     const curTime = currentTimeMs !== null ? currentTimeMs : Date.now();
     this.updateQueueIndex(curTime);
-    let count = 0;
+    let countSum = 0;
+    let latencySum = 0;
     for (let i = 1; i <= numIntervals; i++) {
       const queueIndex = (this.lastQueueIndex - i + this.maxIntervals) % this.maxIntervals;
-      count += this.circularQueue[queueIndex];
+      countSum += this.countCircularQueue[queueIndex];
+      latencySum += this.latencyCircularQueue[queueIndex];
     }
-    return count;
+    return {
+      countSum,
+      latencySum,
+    };
   }
 }
 
-module.exports = EventCounter;
+module.exports = TrafficDatabase;

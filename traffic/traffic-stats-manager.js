@@ -1,52 +1,55 @@
-const EventCounter = require('./event-counter');
+const TrafficDatabase = require('./traffic-database');
 
 class TrafficStatsManager {
   constructor(intervalMs, maxIntervals, enabled = true) {
     this.intervalMs = intervalMs;
     this.maxIntervals = maxIntervals;
     this.enabled = enabled;
-    this.eventCounterMap = new Map();
+    this.trafficDbMap = new Map();
   }
 
-  addEvent(eventType, currentTimeMs = null) {
+  addEvent(eventType, latencyMs, currentTimeMs = null) {
     if (!this.enabled) {
       return;
     }
-    if (!this.eventCounterMap.has(eventType)) {
-      const newTdb = new EventCounter(this.intervalMs, this.maxIntervals, currentTimeMs);
-      this.eventCounterMap.set(eventType, newTdb);
+    if (!this.trafficDbMap.has(eventType)) {
+      const newTrafficDb = new TrafficDatabase(this.intervalMs, this.maxIntervals, currentTimeMs);
+      this.trafficDbMap.set(eventType, newTrafficDb);
     }
-    const tdb = this.eventCounterMap.get(eventType);
-    tdb.addEvent(currentTimeMs);
+    const trafficDb = this.trafficDbMap.get(eventType);
+    trafficDb.addEvent(latencyMs, currentTimeMs);
   }
 
-  countEvents(eventType, periodMs, currentTimeMs = null) {
+  getEventSums(eventType, periodMs, currentTimeMs = null) {
     if (!this.enabled) {
-      return -1;
+      return null;
     }
-    if (!this.eventCounterMap.has(eventType)) {
-      return 0;
+    if (!this.trafficDbMap.has(eventType)) {
+      return null;
     }
-    const tdb = this.eventCounterMap.get(eventType);
-    return tdb.countEvents(periodMs, currentTimeMs);
+    const trafficDb = this.trafficDbMap.get(eventType);
+    return trafficDb.getEventSums(periodMs, currentTimeMs);
   }
 
-  getEventRates(periodSec, currentTimeMs = null) {
+  getEventStats(periodSec, currentTimeMs = null) {
     if (!this.enabled) {
       return {};
     }
-    const rates = {};
-    for (const eventType of this.eventCounterMap.keys()) {
-      let rate = -1;
+    const stats = {};
+    for (const eventType of this.trafficDbMap.keys()) {
       if (periodSec > 0) {
-        const count = this.countEvents(eventType, periodSec * 1000, currentTimeMs);
-        if (count >= 0) {
-          rate = count / periodSec;
+        const sums = this.getEventSums(eventType, periodSec * 1000, currentTimeMs);
+        if (sums && sums.countSum > 0) {
+          const rate = sums.countSum / periodSec;
+          const latency = sums.latencySum / sums.countSum;
+          stats[eventType] = {
+            rate,
+            latency,
+          };
         }
       }
-      rates[eventType] = rate;
     }
-    return rates;
+    return stats;
   }
 }
 
