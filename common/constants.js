@@ -146,7 +146,7 @@ BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT = 1;
 BlockchainConfigs.ACCOUNT_REGISTRATION_GAS_AMOUNT = 2000;
 BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT = 100;
 BlockchainConfigs.TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
-BlockchainConfigs.TRAFFIC_DB_MAX_INTERVALS = 180;  // 3 hours
+BlockchainConfigs.TRAFFIC_DB_MAX_INTERVALS = 60;  // 1 hour
 BlockchainConfigs.DEFAULT_DEVELOPERS_URL_WHITELIST = [
   'https://*.ainetwork.ai',
   'https://*.ainize.ai',
@@ -641,6 +641,12 @@ const TrafficEventTypes = {
   // Client APIs
   CLIENT_API_GET: 'client_api_get',
   CLIENT_API_SET: 'client_api_set',
+  // Blocks
+  BLOCK_GAS_AMOUNT: 'block_gas_amount',
+  BLOCK_GAS_COST: 'block_gas_cost',
+  BLOCK_LAST_VOTES: 'block_last_votes',
+  BLOCK_SIZE: 'block_size',
+  BLOCK_TXS: 'block_txs',
 };
 
 const BlockchainEventTypes = {

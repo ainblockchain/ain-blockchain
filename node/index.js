@@ -17,7 +17,7 @@ const {
   TransactionStates,
   StateVersions,
   SyncModeOptions,
-  EventTypes,
+  TrafficEventTypes,
 } = require('../common/constants');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
@@ -32,7 +32,7 @@ const BlockPool = require('../block-pool');
 const ConsensusUtil = require('../consensus/consensus-util');
 
 class BlockchainNode {
-  constructor(account = null, eventHandler = null) {
+  constructor(account = null, eventHandler = null, trafficStatsManager = null) {
     this.keysDir = path.resolve(BlockchainConfigs.KEYS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
     FileUtil.createDir(this.keysDir);
     this.snapshotDir = path.resolve(BlockchainConfigs.SNAPSHOTS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
@@ -46,6 +46,7 @@ class BlockchainNode {
     this.urlExternal = null;
 
     this.eh = eventHandler;
+    this.tsm = trafficStatsManager;
     this.bc = new Blockchain(String(BlockchainConfigs.PORT));
     this.tp = new TransactionPool(this);
     this.bp = new BlockPool(this);
@@ -625,6 +626,19 @@ class BlockchainNode {
         }
         if (this.eh) {
           this.eh.emitBlockFinalized(blockToFinalize.number);
+        }
+        if (this.tsm) {
+          const blockTimestamp = blockToFinalize.timestamp;
+          this.tsm.addEvent(
+              TrafficEventTypes.BLOCK_GAS_AMOUNT, blockToFinalize.gas_amount_total, blockTimestamp);
+          this.tsm.addEvent(
+              TrafficEventTypes.BLOCK_GAS_COST, blockToFinalize.gas_cost_total, blockTimestamp);
+          this.tsm.addEvent(
+              TrafficEventTypes.BLOCK_LAST_VOTES, blockToFinalize.last_votes.length, blockTimestamp);
+          this.tsm.addEvent(
+              TrafficEventTypes.BLOCK_SIZE, blockToFinalize.size, blockTimestamp);
+          this.tsm.addEvent(
+              TrafficEventTypes.BLOCK_TXS, blockToFinalize.transactions.length, blockTimestamp);
         }
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
