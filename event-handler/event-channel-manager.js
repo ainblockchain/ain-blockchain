@@ -98,9 +98,11 @@ class EventChannelManager {
     };
   }
 
-  transmitEvent(channel, event) {
-    channel.webSocket.send(this.makeMessage(BlockchainEventMessageTypes.EMIT_EVENT,
-        JSON.stringify(event.toObject())));
+  transmitEvent(channel, event, eventFilterId) {
+    const eventObj = event.toObject();
+    eventObj.filter_id = eventFilterId;
+    const eventMessage = this.makeMessage(BlockchainEventMessageTypes.EMIT_EVENT, eventObj);
+    channel.webSocket.send(JSON.stringify(eventMessage));
   }
 
   transmitEventByEventFilterId(eventFilterId, event) {
@@ -110,7 +112,7 @@ class EventChannelManager {
       logger.error(`Can't find channel by event filter id (eventFilterId: ${eventFilterId})`);
       return;
     }
-    this.transmitEvent(channel, event);
+    this.transmitEvent(channel, event, eventFilterId);
   }
 
   close() {
