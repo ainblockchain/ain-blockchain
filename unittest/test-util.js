@@ -4,7 +4,10 @@ const _ = require("lodash");
 const syncRequest = require('sync-request');
 const { Block } = require('../blockchain/block');
 const DB = require('../db');
-const { CURRENT_PROTOCOL_VERSION, StateVersions } = require('../common/constants');
+const {
+  BlockchainConfigs,
+  StateVersions,
+} = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
 const GET_OPTIONS_INCLUDE_ALL = {
@@ -22,9 +25,14 @@ function readConfigFile(filePath) {
 
 function setNodeForTesting(
     node, accountIndex = 0, skipTestingConfig = false, skipShardingConfig = true) {
-  node.setAccountForTesting(accountIndex);
+  const accountsFile = path.resolve(__dirname, './data/accounts_for_testing.json');
+  if (!fs.existsSync(accountsFile)) {
+    throw Error('Missing accounts file: ' + accountsFile);
+  }
+  const accounts = readConfigFile(accountsFile);
+  node.setAccountForTesting(accounts.others[accountIndex]);
 
-  node.init(true);
+  node.initNode(true);
 
   if (!skipTestingConfig) {
     const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');
@@ -74,9 +82,10 @@ function addBlock(node, txs, votes, validators) {
       node.bc, true, lastBlock.number, node.stateManager);
   finalDb.executeTransactionList(votes, true);
   finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1);
+  finalDb.removeOldReceipts();
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   const receipts = txsToDummyReceipts(txs);
-  node.addNewBlock(Block.create(
+  node.bc.addBlockToChain(Block.create(
       lastBlock.hash, votes, {}, txs, receipts, lastBlock.number + 1, lastBlock.epoch + 1, '',
       node.account.address, validators, 0, 0));
 }
@@ -116,6 +125,21 @@ async function waitForNewBlocks(server, waitFor = 1) {
   }
 }
 
+function getLatestReportedBlockNumber(parentServer, shardingPath) {
+  return parseOrLog(syncRequest(
+    'GET', parentServer + `/get_value?ref=${shardingPath}/.shard/latest_block_number`)
+  .body.toString('utf-8')).result;
+}
+
+async function waitForNewShardingReports(parentServer, shardingPath) {
+  const latestBefore = getLatestReportedBlockNumber(parentServer, shardingPath);
+  let updatedLastBlockNumber = latestBefore;
+  while (updatedLastBlockNumber <= latestBefore) {
+    await CommonUtil.sleep(1000);
+    updatedLastBlockNumber = getLatestReportedBlockNumber(parentServer, shardingPath);
+  }
+}
+
 async function waitUntilNetworkIsReady(serverList) {
   const MAX_ITERATION = 40;
   let iterCount = 0;
@@ -151,7 +175,7 @@ async function waitUntilNodeSyncs(server) {
     try {
       isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
           {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
-                  params: {protoVer: CURRENT_PROTOCOL_VERSION}}})
+                  params: {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}}})
           .body.toString('utf-8')).result.result;
     } catch (e) {
       // server may not be ready yet
@@ -224,6 +248,7 @@ module.exports = {
   addBlock,
   waitUntilTxFinalized,
   waitForNewBlocks,
+  waitForNewShardingReports,
   waitUntilNetworkIsReady,
   waitUntilNodeSyncs,
   parseOrLog,

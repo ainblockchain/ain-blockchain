@@ -1,5 +1,9 @@
 const _get = require('lodash/get');
-const { WriteDbOperations, PredefinedDbPaths, LIGHTWEIGHT } = require('../common/constants');
+const {
+  BlockchainConfigs,
+  WriteDbOperations,
+  PredefinedDbPaths,
+} = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const { ConsensusErrorCodesToVoteAgainst } = require('./constants');
 const Transaction = require('../tx-pool/transaction');
@@ -10,7 +14,7 @@ class ConsensusUtil {
     if (!Transaction.isExecutable(executableTx)) {
       return false;
     }
-    if (!LIGHTWEIGHT) {
+    if (!BlockchainConfigs.LIGHTWEIGHT) {
       if (!Transaction.verifyTransaction(executableTx)) {
         return false;
       }
@@ -49,7 +53,8 @@ class ConsensusUtil {
 
   static getBlockHashFromConsensusTx(tx) {
     const op = _get(tx, 'tx_body.operation');
-    if (!tx || !op) return null;
+    if (!tx) return null;
+    if (!op) return null;
     if (op.type === WriteDbOperations.SET_VALUE) { // vote tx
       return _get(op, 'value.block_hash');
     } else if (op.type === WriteDbOperations.SET) { // propose tx
@@ -59,12 +64,31 @@ class ConsensusUtil {
     }
   }
 
+  static getBlockNumberFromConsensusTx(tx) {
+    const op = _get(tx, 'tx_body.operation');
+    if (!tx) return null;
+    if (!op) return null;
+    let parsedPath = [];
+    if (op.type === WriteDbOperations.SET_VALUE) { // vote tx
+      parsedPath = CommonUtil.parsePath(_get(op, 'ref'));
+    } else if (op.type === WriteDbOperations.SET) { // propose tx
+      parsedPath = CommonUtil.parsePath(_get(op, 'op_list.0.ref'));
+    } else {
+      return null;
+    }
+    return _get(parsedPath, 2); // /consensus/number/${blockNumber}/...
+  }
+
   static getStakeFromVoteTx(tx) {
-    return _get(tx, 'tx_body.operation.value.stake');
+    return _get(tx, 'tx_body.operation.value.stake', 0);
   }
 
   static getOffenseTypeFromVoteTx(tx) {
     return _get(tx, 'tx_body.operation.value.offense_type');
+  }
+
+  static getTimestampFromVoteTx(tx) {
+    return _get(tx, 'tx_body.timestamp');
   }
 
   static isAgainstVoteTx(tx) {

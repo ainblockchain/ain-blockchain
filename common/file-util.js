@@ -1,23 +1,18 @@
+const logger = new (require('../logger'))('FILE-UTIL');
+
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const {
-  CHAINS_N2B_DIR_NAME,
-  CHAINS_H2N_DIR_NAME,
-  CHAINS_N2B_MAX_NUM_FILES,
-  CHAINS_H2N_HASH_PREFIX_LENGTH,
-  SNAPSHOTS_N2S_DIR_NAME,
-} = require('./constants');
+const { BlockchainConfigs } = require('./constants');
 const CommonUtil = require('./common-util');
 const JSON_GZIP_FILE_EXTENSION = 'json.gz';
-const logger = require('../logger')('FILE-UTIL');
 
 class FileUtil {
   static getBlockDirPath(chainPath, blockNumber) {
-    const n2bPrefix = Math.floor(blockNumber / CHAINS_N2B_MAX_NUM_FILES).toString();
-    return path.join(chainPath, CHAINS_N2B_DIR_NAME, n2bPrefix);
+    const n2bPrefix = Math.floor(blockNumber / BlockchainConfigs.CHAINS_N2B_MAX_NUM_FILES).toString();
+    return path.join(chainPath, BlockchainConfigs.CHAINS_N2B_DIR_NAME, n2bPrefix);
   }
 
   static getBlockPath(chainPath, blockNumber) {
@@ -27,18 +22,25 @@ class FileUtil {
         FileUtil.getBlockFilenameByNumber(blockNumber));
   }
 
-  static getSnapshotPathByBlockNumber(snapshotPath, blockNumber) {
+  static getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug = false) {
     return path.join(
-        snapshotPath, SNAPSHOTS_N2S_DIR_NAME, FileUtil.getBlockFilenameByNumber(blockNumber));
+        snapshotPath,
+        BlockchainConfigs.SNAPSHOTS_N2S_DIR_NAME,
+        FileUtil.getSnapshotFilenameByNumber(blockNumber, isDebug));
   }
 
   static getH2nDirPath(chainPath, blockHash) {
-    const h2nPrefix = blockHash.substring(0, CHAINS_H2N_HASH_PREFIX_LENGTH);
-    return path.join(chainPath, CHAINS_H2N_DIR_NAME, h2nPrefix);
+    const h2nPrefix = blockHash.substring(0, BlockchainConfigs.CHAINS_H2N_HASH_PREFIX_LENGTH);
+    return path.join(chainPath, BlockchainConfigs.CHAINS_H2N_DIR_NAME, h2nPrefix);
   }
 
   static getH2nPath(chainPath, blockHash) {
     return path.join(FileUtil.getH2nDirPath(chainPath, blockHash), blockHash);
+  }
+
+  static getSnapshotFilenameByNumber(blockNumber, isDebug = false) {
+    const filenamePrefix = isDebug ? BlockchainConfigs.DEBUG_SNAPSHOT_FILE_PREFIX : '';
+    return `${filenamePrefix}${blockNumber}.${JSON_GZIP_FILE_EXTENSION}`;
   }
 
   static getBlockFilenameByNumber(blockNumber) {
@@ -50,18 +52,25 @@ class FileUtil {
   }
 
   static getLatestSnapshotInfo(snapshotPath) {
-    const snapshotPathPrefix = path.join(snapshotPath, SNAPSHOTS_N2S_DIR_NAME);
+    const LOG_HEADER = 'getLatestSnapshotInfo';
+
+    const snapshotPathPrefix = path.join(snapshotPath, BlockchainConfigs.SNAPSHOTS_N2S_DIR_NAME);
     let latestSnapshotPath = null;
     let latestSnapshotBlockNumber = -1;
     let files = [];
     try {
       files = fs.readdirSync(snapshotPathPrefix);
     } catch (err) {
-      logger.debug(`Failed to read snapshots: ${err.stack}`);
+      logger.debug(`[${LOG_HEADER}] Failed to read snapshots: ${err.stack}`);
       return { latestSnapshotPath, latestSnapshotBlockNumber };
     }
     for (const file of files) {
-      const blockNumber = _.get(file.split(`.${JSON_GZIP_FILE_EXTENSION}`), 0);
+      // NOTE(platfowner): Skips the file if its name starts with debug snapshot file prefix.
+      if (_.startsWith(file, BlockchainConfigs.DEBUG_SNAPSHOT_FILE_PREFIX)) {
+        logger.info(`[${LOG_HEADER}] Skipping debug snapshot file: ${file}`);
+        continue;
+      }
+      const blockNumber = _.get(_.split(file, `.${JSON_GZIP_FILE_EXTENSION}`), 0);
       if (blockNumber !== undefined && blockNumber > latestSnapshotBlockNumber) {
         latestSnapshotPath = path.join(snapshotPathPrefix, file);
         latestSnapshotBlockNumber = Number(blockNumber);
@@ -71,6 +80,8 @@ class FileUtil {
   }
 
   static getBlockPathList(chainPath, from, size) {
+    const LOG_HEADER = 'getBlockPathList';
+
     const blockPaths = [];
     if (size <= 0) return blockPaths;
     for (let number = from; number < from + size; number++) {
@@ -78,7 +89,7 @@ class FileUtil {
       if (fs.existsSync(blockFile)) {
         blockPaths.push(blockFile);
       } else {
-        logger.debug(`blockFile (${blockFile}) does not exist`);
+        logger.debug(`[${LOG_HEADER}] blockFile (${blockFile}) does not exist`);
         return blockPaths;
       }
     }
@@ -86,8 +97,8 @@ class FileUtil {
   }
 
   static createBlockchainDir(chainPath) {
-    const n2bPath = path.join(chainPath, CHAINS_N2B_DIR_NAME);
-    const h2nPath = path.join(chainPath, CHAINS_H2N_DIR_NAME);
+    const n2bPath = path.join(chainPath, BlockchainConfigs.CHAINS_N2B_DIR_NAME);
+    const h2nPath = path.join(chainPath, BlockchainConfigs.CHAINS_H2N_DIR_NAME);
     let isBlocksDirEmpty = true;
     FileUtil.createDir(chainPath);
     FileUtil.createDir(n2bPath);
@@ -100,7 +111,7 @@ class FileUtil {
 
   static createSnapshotDir(snapshotPath) {
     FileUtil.createDir(snapshotPath);
-    FileUtil.createDir(path.join(snapshotPath, SNAPSHOTS_N2S_DIR_NAME));
+    FileUtil.createDir(path.join(snapshotPath, BlockchainConfigs.SNAPSHOTS_N2S_DIR_NAME));
   }
 
   static createDir(dirPath) {
@@ -139,6 +150,8 @@ class FileUtil {
 
   // TODO(cshcomcom): Change to asynchronous.
   static writeBlockFile(chainPath, block) {
+    const LOG_HEADER = 'writeBlockFile';
+
     const blockPath = FileUtil.getBlockPath(chainPath, block.number);
     if (!fs.existsSync(blockPath)) {
       const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
@@ -146,12 +159,14 @@ class FileUtil {
       const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
       fs.writeFileSync(blockPath, compressed);
     } else {
-      logger.debug(`${blockPath} file already exists!`);
+      logger.debug(`[${LOG_HEADER}] ${blockPath} file already exists!`);
     }
   }
 
   static deleteBlockFile(chainPath, blockNumber) {
-    logger.info(`Deleting block file with block number: ${blockNumber}`);
+    const LOG_HEADER = 'deleteBlockFile';
+
+    logger.info(`[${LOG_HEADER}] Deleting block file with block number: ${blockNumber}`);
     const blockPath = FileUtil.getBlockPath(chainPath, blockNumber);
     if (fs.existsSync(blockPath)) {
       fs.unlinkSync(blockPath);
@@ -159,8 +174,10 @@ class FileUtil {
   }
 
   static writeH2nFile(chainPath, blockHash, blockNumber) {
+    const LOG_HEADER = 'writeH2nFile';
+
     if (!blockHash || !CommonUtil.isNumber(blockNumber) || blockNumber < 0) {
-      logger.error(`Invalid parameters: '${blockHash}', '${blockNumber}'`);
+      logger.error(`[${LOG_HEADER}] Invalid parameters: '${blockHash}', '${blockNumber}'`);
       return;
     }
     const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
@@ -169,12 +186,14 @@ class FileUtil {
       FileUtil.createDir(h2nDirPath);
       fs.writeFileSync(h2nPath, blockNumber.toString());
     } else {
-      logger.debug(`${h2nPath} file already exists!`);
+      logger.debug(`[${LOG_HEADER}] ${h2nPath} file already exists!`);
     }
   }
 
   static deleteH2nFile(chainPath, blockHash) {
-    logger.info(`Deleting h2n file with block hash: ${blockHash}`);
+    const LOG_HEADER = 'deleteH2nFile';
+
+    logger.info(`[${LOG_HEADER}] Deleting h2n file with block hash: ${blockHash}`);
     const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
     if (fs.existsSync(h2nPath)) {
       fs.unlinkSync(h2nPath);
@@ -190,14 +209,16 @@ class FileUtil {
     }
   }
 
-  static writeSnapshot(snapshotPath, blockNumber, snapshot) {
-    const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber);
+  static writeSnapshot(snapshotPath, blockNumber, snapshot, isDebug = false) {
+    const LOG_HEADER = 'writeSnapshot';
+
+    const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
     if (snapshot === null) { // Delete
       if (fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);
         } catch (err) {
-          logger.debug(`Failed to delete ${filePath}: ${err.stack}`);
+          logger.debug(`[${LOG_HEADER}] Failed to delete ${filePath}: ${err.stack}`);
         }
       }
     } else {
@@ -215,7 +236,7 @@ class FileUtil {
     if (!fs.existsSync(path)) {
       return 0;
     }
-    return fs.readdirSync(path).length;
+    return fs.readdirSync(path).filter((file) => file.endsWith(JSON_GZIP_FILE_EXTENSION)).length;
   }
 
   static getNumBlockFiles(chainPath) {
@@ -226,7 +247,7 @@ class FileUtil {
       const blockDirPath = FileUtil.getBlockDirPath(chainPath, blockNumber);
       numFiles = FileUtil.getNumFiles(blockDirPath);
       numBlockFiles += numFiles;
-      blockNumber += CHAINS_N2B_MAX_NUM_FILES;
+      blockNumber += BlockchainConfigs.CHAINS_N2B_MAX_NUM_FILES;
     } while (numFiles > 0);
     return numBlockFiles;
   }

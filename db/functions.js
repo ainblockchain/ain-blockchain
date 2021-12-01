@@ -1,8 +1,11 @@
-const logger = require('../logger')('FUNCTIONS');
+const logger = new (require('../logger'))('FUNCTIONS');
+
 const axios = require('axios');
 const _ = require('lodash');
+const matchUrl = require('match-url-wildcard');
 const {
-  FeatureFlags,
+  DevFlags,
+  BlockchainConfigs,
   PredefinedDbPaths,
   FunctionTypes,
   FunctionResultCode,
@@ -10,21 +13,12 @@ const {
   WriteDbOperations,
   TokenBridgeProperties,
   OwnerProperties,
-  GasFeeConstants,
-  REST_FUNCTION_CALL_TIMEOUT_MS,
   buildOwnerPermissions,
   buildRulePermission,
 } = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
-
-const EventListenerWhitelist = {
-  'https://events.ainetwork.ai/trigger': true,
-  'https://events.ainize.ai/trigger': true,
-  'http://echo-bot.ainetwork.ai/trigger': true,
-  'http://localhost:3000/trigger': true
-};
 
 /**
  * Built-in functions with function paths.
@@ -94,7 +88,8 @@ class Functions {
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
-  triggerFunctions(parsedValuePath, value, prevValue, auth, timestamp, transaction, blockTime) {
+  triggerFunctions(
+      parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
@@ -129,7 +124,7 @@ class Functions {
             this.pushCall(
                 CommonUtil.formatPath(parsedValuePath), value, CommonUtil.formatPath(functionPath),
                 functionEntry.function_id, nativeFunction);
-            if (FeatureFlags.enableRichFunctionLogging) {
+            if (DevFlags.enableRichFunctionLogging) {
               logger.info(
                   `  ==> Triggering NATIVE function [[ ${functionEntry.function_id} ]] ` +
                   `with call stack ${JSON.stringify(this.getFids())} and params:\n` +
@@ -150,13 +145,14 @@ class Functions {
                     timestamp,
                     executedAt,
                     transaction,
+                    blockNumber, 
                     blockTime,
                     auth: newAuth,
                     opResultList: [],
                     otherGasAmount: 0,
                   });
               funcResults[functionEntry.function_id] = result;
-              if (FeatureFlags.enableRichFunctionLogging) {
+              if (DevFlags.enableRichFunctionLogging) {
                 const formattedResult =
                     `  ==>| Execution result of NATIVE function [[ ${functionEntry.function_id} ]] ` +
                     `with call stack ${JSON.stringify(this.getFids())}:\n` +
@@ -177,24 +173,24 @@ class Functions {
             }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
-          if (functionEntry.event_listener &&
-              functionEntry.event_listener in EventListenerWhitelist) {
-            if (FeatureFlags.enableRichFunctionLogging) {
+          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
+            matchUrl(functionEntry.function_url, this.db.getRestFunctionsUrlWhitelist())) {
+            if (DevFlags.enableRichFunctionLogging) {
               logger.info(
                   `  ==> Triggering REST function [[ ${functionEntry.function_id} ]] of ` +
-                  `event listener '${functionEntry.event_listener}' with:\n` +
+                  `function_url '${functionEntry.function_url}' with:\n` +
                   formattedParams);
             }
-            promises.push(axios.post(functionEntry.event_listener, {
+            promises.push(axios.post(functionEntry.function_url, {
               function: functionEntry,
               transaction,
             }, {
-              timeout: REST_FUNCTION_CALL_TIMEOUT_MS
+              timeout: BlockchainConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
             }).catch((error) => {
-              if (FeatureFlags.enableRichFunctionLogging) {
+              if (DevFlags.enableRichFunctionLogging) {
                 logger.error(
                     `Failed to trigger REST function [[ ${functionEntry.function_id} ]] of ` +
-                    `event listener '${functionEntry.event_listener}' with error: \n` +
+                    `function_url '${functionEntry.function_url}' with error: \n` +
                     `${JSON.stringify(error)}` +
                     formattedParams);
               }
@@ -203,7 +199,7 @@ class Functions {
             }));
             funcResults[functionEntry.function_id] = {
               code: FunctionResultCode.SUCCESS,
-              bandwidth_gas_amount: GasFeeConstants.REST_FUNCTION_CALL_GAS_AMOUNT,
+              bandwidth_gas_amount: BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT,
             };
             triggerCount++;
           }
@@ -336,8 +332,11 @@ class Functions {
   setValueOrLog(valuePath, value, context) {
     const timestamp = context.timestamp;
     const transaction = context.transaction;
+    const blockNumber = context.blockNumber;
+    const blockTime = context.blockTime;
     const auth = context.auth;
-    const result = this.db.setValue(valuePath, value, auth, timestamp, transaction);
+    const result =
+        this.db.setValue(valuePath, value, auth, timestamp, transaction, blockNumber, blockTime);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -349,8 +348,11 @@ class Functions {
   incValueOrLog(valuePath, delta, context) {
     const timestamp = context.timestamp;
     const transaction = context.transaction;
+    const blockNumber = context.blockNumber;
+    const blockTime = context.blockTime;
     const auth = context.auth;
-    const result = this.db.incValue(valuePath, delta, auth, timestamp, transaction);
+    const result =
+        this.db.incValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -362,9 +364,11 @@ class Functions {
   decValueOrLog(valuePath, delta, context) {
     const timestamp = context.timestamp;
     const transaction = context.transaction;
+    const blockNumber = context.blockNumber;
+    const blockTime = context.blockTime;
     const auth = context.auth;
-
-    const result = this.db.decValue(valuePath, delta, auth, timestamp, transaction);
+    const result =
+        this.db.decValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to decValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -513,7 +517,7 @@ class Functions {
     }
     const toBalance = this.db.getValue(toBalancePath);
     if (toBalance === null) {
-      extraGasAmount = GasFeeConstants.ACCOUNT_REGISTRATION_GAS_AMOUNT;
+      extraGasAmount = BlockchainConfigs.ACCOUNT_REGISTRATION_GAS_AMOUNT;
     }
     const decResult = this.decValueOrLog(fromBalancePath, value, context);
     if (CommonUtil.isFailedTx(decResult)) {
@@ -881,7 +885,7 @@ class Functions {
   }
 
   _updateLatestShardReport(value, context) {
-    const blockNumber = Number(context.params.block_number);
+    const blockNumberReported = Number(context.params.block_number);
     const parsedValuePath = context.valuePath;
     if (!CommonUtil.isArray(context.functionPath)) {
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
@@ -892,11 +896,12 @@ class Functions {
     }
     const latestReportPath = PathUtil.getLatestShardReportPathFromValuePath(parsedValuePath);
     const currentLatestBlockNumber = this.db.getValue(latestReportPath);
-    if (currentLatestBlockNumber !== null && Number(currentLatestBlockNumber) >= blockNumber) {
+    if (currentLatestBlockNumber !== null &&
+        Number(currentLatestBlockNumber) >= blockNumberReported) {
       // Nothing to update
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
-    const result = this.setValueOrLog(latestReportPath, blockNumber, context);
+    const result = this.setValueOrLog(latestReportPath, blockNumberReported, context);
     if (!CommonUtil.isFailedTx(result)) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     } else {
@@ -904,7 +909,8 @@ class Functions {
     }
   }
 
-  updateStatsForPendingCheckin(networkName, chainId, tokenId, sender, tokenPool, amount, isIncrease, context) {
+  updateStatsForPendingCheckin(
+      networkName, chainId, tokenId, sender, tokenPool, amount, isIncrease, context) {
     if (isIncrease) {
       if (CommonUtil.isFailedTx(
           this.incValueOrLog(
@@ -1167,6 +1173,7 @@ class Functions {
       [TokenBridgeProperties.MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
       [TokenBridgeProperties.MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
       [TokenBridgeProperties.MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
+      [TokenBridgeProperties.CHECKOUT_FEE_RATE]: checkoutFeeRate,
       [TokenBridgeProperties.TOKEN_EXCH_RATE]: tokenExchangeRate,
       [TokenBridgeProperties.TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
@@ -1186,8 +1193,9 @@ class Functions {
     if (amountValidated !== true) {
       return this.returnFuncResult(context, amountValidated);
     }
+    const transferAmount = amount + amount * checkoutFeeRate;
     // Transfer from user to token_pool
-    const transferRes = this.setServiceAccountTransferOrLog(user, tokenPool, amount, context);
+    const transferRes = this.setServiceAccountTransferOrLog(user, tokenPool, transferAmount, context);
     if (!CommonUtil.isFailedTx(transferRes)) {
       // NOTE(liayoo): History will be recorded by a checkout server after processing the request.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
@@ -1213,7 +1221,8 @@ class Functions {
     } else {
       // Refund
       const tokenPool = this.db.getValue(PathUtil.getTokenBridgeTokenPoolPath(networkName, chainId, tokenId));
-      const transferRes = this.setServiceAccountTransferOrLog(tokenPool, user, request.amount, context);
+      const refundAmount = request.amount + request.amount * request.fee_rate;
+      const transferRes = this.setServiceAccountTransferOrLog(tokenPool, user, refundAmount, context);
       if (CommonUtil.isFailedTx(transferRes)) {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }

@@ -12,6 +12,10 @@ class RuleUtil {
     return typeof value === 'number' && isFinite(value);
   }
 
+  isIntegerString(value) {
+    return this.isString(value) && /^-?\d+$/.test(value);
+  }
+
   isInteger(value) {
     return Number.isInteger(value);
   }
@@ -191,24 +195,23 @@ class RuleUtil {
     return getValue(PathUtil.getConsensusStakingAccountBalancePath(address)) || 0;
   }
 
-  getOwnerAddr() {
-    const { GenesisAccounts, AccountProperties } = require('../common/constants');
-    return _.get(GenesisAccounts, `${AccountProperties.OWNER}.${AccountProperties.ADDRESS}`, null);
-  }
-
   getMinStakeAmount() {
-    const { MIN_STAKE_PER_VALIDATOR } = require('../common/constants');
-    return MIN_STAKE_PER_VALIDATOR;
+    const { BlockchainConfigs } = require('../common/constants');
+    return BlockchainConfigs.MIN_STAKE_PER_VALIDATOR;
   }
 
   getMaxStakeAmount() {
-    const { MAX_STAKE_PER_VALIDATOR } = require('../common/constants');
-    return MAX_STAKE_PER_VALIDATOR;
+    const { BlockchainConfigs } = require('../common/constants');
+    return BlockchainConfigs.MAX_STAKE_PER_VALIDATOR;
   }
 
   getMinNumValidators() {
-    const { MIN_NUM_VALIDATORS } = require('../common/constants');
-    return MIN_NUM_VALIDATORS;
+    const { BlockchainConfigs } = require('../common/constants');
+    return BlockchainConfigs.MIN_NUM_VALIDATORS;
+  }
+
+  getConsensusWhitelistSize() {
+    this.length(this.values(getValue(PathUtil.getConsensusWhitelistPath())).filter((x) => x === true));
   }
 
   getTokenBridgeConfig(networkName, chainId, tokenId, getValue) {
@@ -221,61 +224,69 @@ class RuleUtil {
     return getValue(PathUtil.getTokenBridgeTokenPoolPath(networkName, chainId, tokenId));
   }
 
-  validateCheckoutRequestData(networkName, chainId, tokenId, data, getValue) {
-    if (!this.isDict(data) || !this.isNumber(data.amount) || data.amount <= 0 ||
-        !this.isString(data.recipient)) {
+  validateCheckoutRequestData(networkName, chainId, tokenId, newData, getValue) {
+    const { TokenBridgeProperties } = require('../common/constants');
+    if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
+        !this.isString(newData.recipient) || !this.isNumber(newData.fee_rate)) {
       return false;
     }
-    return this.isDict(this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue));
+    const tokenBridgeConfig = this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue);
+    if (!this.isDict(tokenBridgeConfig)) {
+      return false;
+    }
+    if (tokenBridgeConfig[TokenBridgeProperties.CHECKOUT_FEE_RATE] !== newData.fee_rate) {
+      return false;
+    }
+    return true;
   }
 
-  validateCheckoutHistoryData(networkName, chainId, tokenId, userAddr, checkoutId, data, getValue) {
+  validateCheckoutHistoryData(networkName, chainId, tokenId, userAddr, checkoutId, newData, getValue) {
     const PathUtil = require('../common/path-util');
     const { FunctionResultCode } = require('../common/constants');
     const request = getValue(
         PathUtil.getCheckoutRequestPath(networkName, chainId, tokenId, userAddr, checkoutId));
-    if (!request || !this.isDict(request) || !this.isDict(data)) {
+    if (!request || !this.isDict(request) || !this.isDict(newData)) {
       return false;
     }
-    if (!_.isEqual(request, data.request)) {
+    if (!_.isEqual(request, newData.request)) {
       return false;
     }
-    return this.isDict(data.response) && this.isValidHash(data.response.tx_hash) &&
-        (data.response.status === FunctionResultCode.SUCCESS ||
-        data.response.status === FunctionResultCode.FAILURE);
+    return this.isDict(newData.response) && this.isValidHash(newData.response.tx_hash) &&
+        (newData.response.status === FunctionResultCode.SUCCESS ||
+        newData.response.status === FunctionResultCode.FAILURE);
   }
 
-  validateCheckinRequestData(networkName, chainId, tokenId, data, getValue) {
-    if (!this.isDict(data) || !this.isNumber(data.amount) || data.amount <= 0 ||
-        !this.isString(data.sender)) {
+  validateCheckinRequestData(networkName, chainId, tokenId, newData, getValue) {
+    if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
+        !this.isString(newData.sender)) {
       return false;
     }
     return this.isDict(this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue));
   }
 
-  validateCheckinHistoryData(networkName, chainId, tokenId, userAddr, checkinId, data, getValue) {
+  validateCheckinHistoryData(networkName, chainId, tokenId, userAddr, checkinId, newData, getValue) {
     const PathUtil = require('../common/path-util');
     const { FunctionResultCode } = require('../common/constants');
     const request = getValue(
         PathUtil.getCheckinRequestPath(networkName, chainId, tokenId, userAddr, checkinId));
-    if (!request || !this.isDict(request) || !this.isDict(data)) {
+    if (!request || !this.isDict(request) || !this.isDict(newData)) {
       return false;
     }
-    if (!_.isEqual(request, data.request)) {
+    if (!_.isEqual(request, newData.request)) {
       return false;
     }
-    return this.isDict(data.response) && this.isValidHash(data.response.tx_hash) &&
-        (data.response.status === FunctionResultCode.SUCCESS ||
-        data.response.status === FunctionResultCode.FAILURE);
+    return this.isDict(newData.response) && this.isValidHash(newData.response.tx_hash) &&
+        (newData.response.status === FunctionResultCode.SUCCESS ||
+        newData.response.status === FunctionResultCode.FAILURE);
   }
 
-  validateClaimRewardData(userAddr, data, getValue) {
+  validateClaimRewardData(userAddr, newData, getValue) {
     const PathUtil = require('../common/path-util');
-    if (!this.isDict(data) || !this.isNumber(data.amount) || data.amount <= 0) {
+    if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0) {
       return false;
     }
     const unclaimed = getValue(PathUtil.getConsensusRewardsUnclaimedPath(userAddr)) || 0;
-    return data.amount <= unclaimed;
+    return newData.amount <= unclaimed;
   }
 
   validateCollectFeeData(data, newData, from, getValue) {
@@ -283,19 +294,56 @@ class RuleUtil {
         newData.amount <= this.getBalance(from, getValue);
   }
 
-  validateConsensusVoteData(data, userAddr, blockHash, lastBlockNumber, getValue) {
-    if (!this.isDict(data) || !this.isBool(data.is_against) || !this.isNumber(data.stake) || data.block_hash !== blockHash) {
+  validateConsensusVoteData(newData, userAddr, blockHash, lastBlockNumber, getValue) {
+    if (!this.isDict(newData) || !this.isBool(newData.is_against) || !this.isNumber(newData.stake)
+        || newData.block_hash !== blockHash) {
       return false;
     }
-    if (data.is_against && !this.isValidatorOffenseType(data.offense_type)) {
+    if (newData.is_against && !this.isValidatorOffenseType(newData.offense_type)) {
       return false;
     }
-    return lastBlockNumber < 1 || this.getConsensusStakeBalance(userAddr, getValue) === data.stake;
+    return lastBlockNumber < 1 || this.getConsensusStakeBalance(userAddr, getValue) === newData.stake;
   }
 
   isValidatorOffenseType(type) {
     const { ValidatorOffenseTypes } = require('../consensus/constants');
     return !!ValidatorOffenseTypes[type];
+  }
+
+  // NOTE(liayoo): Allows wildcards for function url whitelist items.
+  isValidUrlWhitelistItem(url) {
+    try {
+      new URL(url);
+    } catch (e) {
+      return false;
+    }
+    return true;
+  }
+
+  // NOTE(liayoo): Applies a stricter rule than isValidUrlWhitelistItem() does.
+  // Asterisks are not allowed in the domain name, for instance.
+  isValidUrl(url) {
+    const strictUrlRegex = /^(?:(?:https?|ftp):\/\/)(?:(?:(?:\S+(?::\S*)?@)?(?:(?!(?:10|127|172)(?:\.\d{1,3}){3})(?!(?:169\.254|192\.168)(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)(?:\.(?:[a-z\u00a1-\uffff0-9]-*)*[a-z\u00a1-\uffff0-9]+)*(?:\.(?:[a-z\u00a1-\uffff]{2,}))\.?)|localhost)(?::\d{2,5})?)(?:[/?#]\S*)?$/i
+    return this.isString(url) ? strictUrlRegex.test(url) : false;
+  }
+
+  isValidPrivateUrl(url) {
+    const privateUrlRegex = /^(https?:\/\/)?(((127\.)|(10\.))((?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])\.){2}(?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])|((192\.168\.)|(172\.1[6-9]\.)|(172\.2[0-9]\.)|(172\.3[0-1]\.))((?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])\.)(?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])|(::1$)|([fF][cCdD]))(:(6553[0-5]|655[0-2](\d)|65[0-4](\d){2}|6[0-4](\d){3}|[1-5](\d){4}|[1-9](\d){0,3}))?$/;
+    return this.isString(url) ? privateUrlRegex.test(url) : false;
+  }
+
+  validateRestFunctionsUrlWhitelistData(userAddr, data, newData, getValue) {
+    const PathUtil = require('../common/path-util');
+    if (getValue(PathUtil.getDevelopersRestFunctionsUserWhitelistUserPath(userAddr)) !== true) {
+      return false;
+    }
+    if (newData !== null && !this.isValidUrlWhitelistItem(newData)) {
+      return false;
+    }
+    const maxUrlsPerDeveloper = getValue(PathUtil.getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath());
+    const existingUrls = getValue(PathUtil.getDevelopersRestFunctionsUrlWhitelistUserPath(userAddr)) || {};
+    return data !== null || newData === null ||
+        Object.keys(existingUrls).length < maxUrlsPerDeveloper;
   }
 }
 

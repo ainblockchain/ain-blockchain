@@ -9,9 +9,7 @@ const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const syncRequest = require('sync-request');
 const {
-  CURRENT_PROTOCOL_VERSION,
-  CONSENSUS_PROTOCOL_VERSION,
-  CHAINS_DIR,
+  BlockchainConfigs,
   PredefinedDbPaths,
 } = require('../common/constants');
 const {
@@ -37,39 +35,29 @@ const MAX_ITERATION = 200;
 const MAX_NUM_VALIDATORS = 4;
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
     ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
     ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
     ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
     ACCOUNT_INDEX: 4, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
 ];
 
@@ -82,7 +70,7 @@ const server5 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[4].ACCO
 const serverList = [server1, server2, server3, server4, server5];
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
-const JSON_RPC_GET_RECENT_BLOCK = 'ain_getRecentBlock';
+const JSON_RPC_GET_LAST_BLOCK = 'ain_getLastBlock';
 
 class Process {
   constructor(application, envVariables) {
@@ -134,7 +122,7 @@ describe('Consensus', () => {
   const nodeAddressList = [];
 
   before(async () => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     const promises = [];
     // Start up all servers
@@ -152,8 +140,8 @@ describe('Consensus', () => {
     await waitUntilNetworkIsReady(serverList);
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
-      jsonRpcClient.request(JSON_RPC_GET_RECENT_BLOCK,
-          {protoVer: CURRENT_PROTOCOL_VERSION}, function(err, response) {
+      jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK,
+          {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}, function(err, response) {
         if (err) {
           resolve();
           throw err;
@@ -183,7 +171,7 @@ describe('Consensus', () => {
     }
     trackerProc.kill();
 
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   describe('Validators', () => {
@@ -492,7 +480,7 @@ describe('Consensus', () => {
       const invalidProposal = {
         value: { proposalBlock, proposalTx },
         type: ConsensusMessageTypes.PROPOSE,
-        consensusProtoVer: CONSENSUS_PROTOCOL_VERSION
+        consensusProtoVer: BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION
       };
       syncRequest('POST', server1 + '/broadcast_consensus_msg', {json: invalidProposal});
       return { proposalBlock, proposalTx };
@@ -518,7 +506,7 @@ describe('Consensus', () => {
       const againstVotesFromState = await waitUntilAgainstVotesInBlock(proposalBlock);
       const offenseRecords = parseOrLog(syncRequest(
           'GET', server2 + `/get_value?ref=/consensus/offense_records`).body.toString('utf-8')).result;
-      assert.deepEqual(offenseRecords, { [server2Addr]: 1 });
+      expect(offenseRecords[server2Addr]).to.equal(1);
       const blockWithEvidence = (parseOrLog(syncRequest('GET', server2 + `/blocks`)
           .body.toString('utf-8')).result || [])
               .find((block) => !CommonUtil.isEmpty(block.evidence));
@@ -540,7 +528,7 @@ describe('Consensus', () => {
       const offenses = parseOrLog(syncRequest(
         'GET', server2 + `/get_value?ref=/consensus/number/${blockWithEvidence.number}/propose/offenses`)
         .body.toString('utf-8')).result;
-      assert.deepEqual(offenses, { [server2Addr]: { [ValidatorOffenseTypes.INVALID_PROPOSAL]: 1 } });
+      assert.deepEqual(offenses[server2Addr], { [ValidatorOffenseTypes.INVALID_PROPOSAL]: 1 });
     });
 
     it('can penalize malicious validators ', async () => {

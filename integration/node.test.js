@@ -10,15 +10,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const {
-  CURRENT_PROTOCOL_VERSION,
-  CHAINS_DIR,
-  GenesisAccounts,
-  TX_BYTES_LIMIT,
-  BATCH_TX_LIST_SIZE_LIMIT,
-  TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
-  MICRO_AIN,
-} = require('../common/constants');
+const { BlockchainConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 const {
@@ -37,40 +29,26 @@ const {
 
 const ENV_VARIABLES = [
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', DEBUG: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, CONSOLE_LOG: false,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
-  },
-  {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
 ];
 
 const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCOUNT_INDEX))
 const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
-const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
-const serverList = [ server1, server2, server3, server4 ];
+const serverList = [ server1, server2, server3 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -118,6 +96,25 @@ async function setUp() {
           }
         },
         {
+          type: 'SET_RULE',
+          ref: '/apps/test/test_rule/state',
+          value: {
+            ".rule": {
+              "state": {
+                "max_children": 10,
+                "gc_max_siblings": 100,
+              }
+            },
+            "and": {
+              "write": {
+                ".rule": {
+                  "write": true
+                }
+              }
+            }
+          }
+        },
+        {
           type: 'SET_FUNCTION',
           ref: '/apps/test/test_function/some/path',
           value: {
@@ -125,8 +122,7 @@ async function setUp() {
               "fid": {
                 "function_type": "REST",
                 "function_id": "fid",
-                "event_listener": "https://events.ainetwork.ai/trigger",
-                "service_name": "https://ainetwork.ai",
+                "function_url": "https://events.ainetwork.ai/trigger",
               },
             }
           }
@@ -197,10 +193,10 @@ async function cleanUp() {
 }
 
 describe('Blockchain Node', () => {
-  let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
+  let tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
     await CommonUtil.sleep(3000);
@@ -210,7 +206,6 @@ describe('Blockchain Node', () => {
     await CommonUtil.sleep(3000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     await CommonUtil.sleep(3000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
     await waitUntilNetworkIsReady(serverList);
 
     const server1Addr = parseOrLog(syncRequest(
@@ -219,14 +214,11 @@ describe('Blockchain Node', () => {
         'GET', server2 + '/get_address').body.toString('utf-8')).result;
     const server3Addr = parseOrLog(syncRequest(
         'GET', server3 + '/get_address').body.toString('utf-8')).result;
-    const server4Addr = parseOrLog(syncRequest(
-        'GET', server4 + '/get_address').body.toString('utf-8')).result;
     await setUpApp('test', serverList, {
       admin: {
         [server1Addr]: true,
         [server2Addr]: true,
         [server3Addr]: true,
-        [server4Addr]: true,
       }
     });
   });
@@ -236,9 +228,8 @@ describe('Blockchain Node', () => {
     server1_proc.kill()
     server2_proc.kill()
     server3_proc.kill()
-    server4_proc.kill()
 
-    rimraf.sync(CHAINS_DIR)
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
   });
 
   describe('Get API', async () => {
@@ -250,7 +241,7 @@ describe('Blockchain Node', () => {
       await cleanUp();
     });
 
-    describe('/get_value', () => {
+    describe('/get_value api', () => {
       it('get_value', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=/apps/test/test_value/some/path')
@@ -259,7 +250,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_function', () => {
+    describe('/get_function api', () => {
       it('get_function', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + '/get_function?ref=/apps/test/test_function/some/path')
@@ -271,8 +262,7 @@ describe('Blockchain Node', () => {
               "fid": {
                 "function_type": "REST",
                 "function_id": "fid",
-                "event_listener": "https://events.ainetwork.ai/trigger",
-                "service_name": "https://ainetwork.ai",
+                "function_url": "https://events.ainetwork.ai/trigger",
               },
             }
           }
@@ -280,7 +270,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_rule', () => {
+    describe('/get_rule api', () => {
       it('get_rule', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + '/get_rule?ref=/apps/test/test_rule/some/path')
@@ -296,7 +286,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_owner', () => {
+    describe('/get_owner api', () => {
       it('get_owner', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + '/get_owner?ref=/apps/test/test_owner/some/path')
@@ -319,7 +309,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/match_function', () => {
+    describe('/match_function api', () => {
       it('match_function', () => {
         const ref = "/apps/test/test_function/some/path";
         const body = parseOrLog(syncRequest('GET', `${server1}/match_function?ref=${ref}`)
@@ -333,10 +323,9 @@ describe('Blockchain Node', () => {
           "matched_config": {
             "config": {
               "fid": {
-                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_url": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             },
             "path": "/apps/test/test_function/some/path"
@@ -346,29 +335,131 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/match_rule', () => {
-      it('match_rule', () => {
+    describe('/match_rule api', () => {
+      it('match_rule (write)', () => {
         const ref = "/apps/test/test_rule/some/path";
         const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
             .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: {
-          "matched_path": {
-            "target_path": "/apps/test/test_rule/some/path",
-            "ref_path": "/apps/test/test_rule/some/path",
-            "path_vars": {},
-          },
-          "matched_config": {
-            "config": {
-              "write": "auth.addr === 'abcd'"
+          "write": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/path",
+              "ref_path": "/apps/test/test_rule/some/path",
+              "path_vars": {},
             },
-            "path": "/apps/test/test_rule/some/path"
+            "matched_config": {
+              "config": {
+                "write": "auth.addr === 'abcd'"
+              },
+              "path": "/apps/test/test_rule/some/path"
+            },
+            "subtree_configs": []
           },
-          "subtree_configs": []
+          "state": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/path",
+              "ref_path": "/apps/test/test_rule/some/path",
+              "path_vars": {},
+            },
+            "matched_config": {
+              "config": null,
+              "path": "/"
+            }
+          }
         }});
+      })
+
+      it('match_rule api - state only', () => {
+        const ref = "/apps/test/test_rule/state";
+        const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
+            .body.toString('utf-8'));
+        assert.deepEqual(body, {
+          "code": 0,
+          "result": {
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state",
+                "ref_path": "/apps/test/test_rule/state",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test",
+                "config": {
+                  "write": "auth.addr === '0x00ADEc28B6a845a085e03591bE7550dd68673C1C' || auth.addr === '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204' || auth.addr === '0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00'"
+                }
+              },
+              "subtree_configs": [
+                {
+                  "path": "/and/write",
+                  "config": {
+                    "write": true
+                  }
+                }
+              ]
+            },
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state",
+                "ref_path": "/apps/test/test_rule/state",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test/test_rule/state",
+                "config": {
+                  "state": {
+                    "max_children": 10,
+                    "gc_max_siblings": 100
+                  }
+                }
+              }
+            }
+          }
+        });
+      })
+
+      it('match_rule api - state & write', () => {
+        const ref = "/apps/test/test_rule/state/and/write";
+        const body = parseOrLog(syncRequest('GET', `${server1}/match_rule?ref=${ref}`)
+            .body.toString('utf-8'));
+        assert.deepEqual(body, {
+          "code": 0,
+          "result": {
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state/and/write",
+                "ref_path": "/apps/test/test_rule/state/and/write",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test/test_rule/state/and/write",
+                "config": {
+                  "write": true
+                }
+              },
+              "subtree_configs": []
+            },
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state/and/write",
+                "ref_path": "/apps/test/test_rule/state/and/write",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test/test_rule/state",
+                "config": {
+                  "state": {
+                    "max_children": 10,
+                    "gc_max_siblings": 100
+                  }
+                }
+              }
+            }
+          }
+        });
       })
     })
 
-    describe('/match_owner', () => {
+    describe('/match_owner api', () => {
       it('match_owner', () => {
         const ref = "/apps/test/test_owner/some/path";
         const body = parseOrLog(syncRequest('GET', `${server1}/match_owner?ref=${ref}`)
@@ -394,12 +485,12 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/eval_rule', () => {
+    describe('/eval_rule api', () => {
       it('eval_rule returning true', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
         const address = "abcd";
-        const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, value, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: true});
@@ -409,19 +500,19 @@ describe('Blockchain Node', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
         const address = "efgh";
-        const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, value, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: false});
       })
     })
 
-    describe('/eval_owner', () => {
+    describe('/eval_owner api', () => {
       it('eval_owner', () => {
         const ref = "/apps/test/test_owner/some/path";
         const address = "abcd";
         const permission = "write_owner";
-        const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, permission, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         const body = parseOrLog(syncRequest('POST', server1 + '/eval_owner', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(body, {
@@ -431,7 +522,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get', () => {
+    describe('/get api', () => {
       it('get', () => {
         const request = {
           op_list: [
@@ -476,8 +567,7 @@ describe('Blockchain Node', () => {
                 "fid": {
                   "function_type": "REST",
                   "function_id": "fid",
-                  "event_listener": "https://events.ainetwork.ai/trigger",
-                  "service_name": "https://ainetwork.ai",
+                  "function_url": "https://events.ainetwork.ai/trigger",
                 },
               }
             },
@@ -505,23 +595,25 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/get_state_proof', () => {
+    describe('/get_state_proof api', () => {
       it('get_state_proof', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/values/token/symbol')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['#state_ph']).to.not.equal(null);
         const verifResult = verifyStateProof(body.result);
-        _.set(verifResult, 'rootProofHash', 'erased');
+        _.set(verifResult, 'curProofHash', 'erased');
         assert.deepEqual(verifResult, {
+          "curProofHash": "erased",
           "isVerified": true,
           "mismatchedPath": null,
-          "rootProofHash": "erased",
+          "mismatchedProofHash": null,
+          "mismatchedProofHashComputed": null,
         });
       });
     });
 
-    describe('/get_proof_hash', () => {
+    describe('/get_proof_hash api', () => {
       it('get_proof_hash', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_proof_hash?ref=/values/token/symbol')
             .body.toString('utf-8'));
@@ -530,7 +622,7 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('/get_state_info', () => {
+    describe('/get_state_info api', () => {
       it('get_state_info', () => {
         const infoBody = parseOrLog(syncRequest(
             'GET', server1 + `/get_state_info?ref=/values/apps/test/test_state_info/some/path`)
@@ -552,25 +644,25 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('/get_state_usage', () => {
+    describe('/get_state_usage api', () => {
       it('get_state_usage', () => {
         const body = parseOrLog(syncRequest(
             'GET', server1 + `/get_state_usage?app_name=test`)
                 .body.toString('utf-8'));
         assert.deepEqual(body.result, {
-          "#tree_height": 23,
-          "#tree_size": 62,
-          "#tree_bytes": 11966,
+          "#tree_height": 24,
+          "#tree_size": 65,
+          "#tree_bytes": 12200,
         });
       });
     });
 
-    describe('ain_get', () => {
+    describe('ain_get api', () => {
       it('returns the correct value', () => {
         const expected = 100;
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
         return jsonRpcClient.request('ain_get', {
-          protoVer: CURRENT_PROTOCOL_VERSION,
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
           type: 'GET_VALUE',
           ref: "/apps/test/test_value/some/path"
         })
@@ -580,10 +672,10 @@ describe('Blockchain Node', () => {
       });
     });
 
-    describe('ain_matchFunction', () => {
+    describe('ain_matchFunction api', () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_function/some/path";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
         .then(res => {
           assert.deepEqual(res.result.result, {
@@ -595,10 +687,9 @@ describe('Blockchain Node', () => {
             "matched_config": {
               "config": {
                 "fid": {
-                  "event_listener": "https://events.ainetwork.ai/trigger",
+                  "function_url": "https://events.ainetwork.ai/trigger",
                   "function_id": "fid",
                   "function_type": "REST",
-                  "service_name": "https://ainetwork.ai"
                 }
               },
               "path": "/apps/test/test_function/some/path"
@@ -609,34 +700,134 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_matchRule', () => {
-      it('returns correct value', () => {
+    describe('ain_matchRule api', () => {
+      it('returns correct value (write)', () => {
         const ref = "/apps/test/test_rule/some/path";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
         .then(res => {
           assert.deepEqual(res.result.result, {
-            "matched_path": {
-              "target_path": "/apps/test/test_rule/some/path",
-              "ref_path": "/apps/test/test_rule/some/path",
-              "path_vars": {},
-            },
-            "matched_config": {
-              "config": {
-                "write": "auth.addr === 'abcd'"
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some/path",
+                "ref_path": "/apps/test/test_rule/some/path",
+                "path_vars": {},
               },
-              "path": "/apps/test/test_rule/some/path"
+              "matched_config": {
+                "config": {
+                  "write": "auth.addr === 'abcd'"
+                },
+                "path": "/apps/test/test_rule/some/path"
+              },
+              "subtree_configs": []
             },
-            "subtree_configs": []
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/some/path",
+                "ref_path": "/apps/test/test_rule/some/path",
+                "path_vars": {},
+              },
+              "matched_config": {
+                "config": null,
+                "path": "/"
+              }
+            }
           });
         })
       })
+
+      it('returns correct value (state)', () => {
+        const ref = "/apps/test/test_rule/state";
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
+        .then(res => {
+          assert.deepEqual(res.result.result, {
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state",
+                "ref_path": "/apps/test/test_rule/state",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test",
+                "config": {
+                  "write": "auth.addr === '0x00ADEc28B6a845a085e03591bE7550dd68673C1C' || auth.addr === '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204' || auth.addr === '0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00'"
+                }
+              },
+              "subtree_configs": [
+                {
+                  "path": "/and/write",
+                  "config": {
+                    "write": true
+                  }
+                }
+              ]
+            },
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state",
+                "ref_path": "/apps/test/test_rule/state",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test/test_rule/state",
+                "config": {
+                  "state": {
+                    "max_children": 10,
+                    "gc_max_siblings": 100
+                  }
+                }
+              }
+            }
+          });
+        });
+      })
+
+      it('returns correct value (state & write)', () => {
+        const ref = "/apps/test/test_rule/state/and/write";
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+        return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
+        .then(res => {
+          assert.deepEqual(res.result.result, {
+            "write": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state/and/write",
+                "ref_path": "/apps/test/test_rule/state/and/write",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test/test_rule/state/and/write",
+                "config": {
+                  "write": true
+                }
+              },
+              "subtree_configs": []
+            },
+            "state": {
+              "matched_path": {
+                "target_path": "/apps/test/test_rule/state/and/write",
+                "ref_path": "/apps/test/test_rule/state/and/write",
+                "path_vars": {}
+              },
+              "matched_config": {
+                "path": "/apps/test/test_rule/state",
+                "config": {
+                  "state": {
+                    "max_children": 10,
+                    "gc_max_siblings": 100
+                  }
+                }
+              }
+            }
+          });
+        });
+      })
     })
 
-    describe('ain_matchOwner', () => {
+    describe('ain_matchOwner api', () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_owner/some/path";
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
         .then(res => {
           assert.deepEqual(res.result.result, {
@@ -661,12 +852,12 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_evalRule', () => {
+    describe('ain_evalRule api', () => {
       it('returns true', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
         const address = "abcd";
-        const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, value, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
         .then(res => {
           expect(res.result.result).to.equal(true);
@@ -677,7 +868,7 @@ describe('Blockchain Node', () => {
         const ref = "/apps/test/test_rule/some/path";
         const value = "value";
         const address = "efgh";
-        const request = { ref, value, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, value, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
         .then(res => {
           expect(res.result.result).to.equal(false);
@@ -685,12 +876,12 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_evalOwner', () => {
+    describe('ain_evalOwner api', () => {
       it('returns correct value', () => {
         const ref = "/apps/test/test_owner/some/path";
         const address = "abcd";
         const permission = "write_owner";
-        const request = { ref, permission, address, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, permission, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
         .then(res => {
           assert.deepEqual(res.result.result, true);
@@ -698,28 +889,30 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_getStateProof', () => {
+    describe('ain_getStateProof api', () => {
       it('returns correct value', () => {
         const ref = '/values/token/symbol';
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
         .then(res => {
           expect(res.result.result['#state_ph']).to.not.equal(null);
           const verifResult = verifyStateProof(res.result.result);
-          _.set(verifResult, 'rootProofHash', 'erased');
+          _.set(verifResult, 'curProofHash', 'erased');
           assert.deepEqual(verifResult, {
+            "curProofHash": "erased",
             "isVerified": true,
             "mismatchedPath": null,
-            "rootProofHash": "erased",
+            "mismatchedProofHash": null,
+            "mismatchedProofHashComputed": null,
           });
         })
       })
     })
 
-    describe('ain_getProofHash', () => {
+    describe('ain_getProofHash api', () => {
       it('returns correct value', () => {
         const ref = '/values/token/symbol';
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getProofHash', request)
         .then(res => {
           expect(res.result.result).to.not.equal(null);
@@ -727,10 +920,10 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_getStateInfo', () => {
+    describe('ain_getStateInfo api', () => {
       it('returns correct value', () => {
         const ref = '/values/apps/test/test_state_info/some/path';
-        const request = { ref, protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateInfo', request)
         .then(res => {
           const stateInfo = res.result.result;
@@ -749,32 +942,32 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_getStateUsage', () => {
+    describe('ain_getStateUsage api', () => {
       it('returns correct value', () => {
-        const request = { app_name: 'test', protoVer: CURRENT_PROTOCOL_VERSION };
+        const request = { app_name: 'test', protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateUsage', request)
         .then(res => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
-            "#tree_bytes": 11966,
-            "#tree_height": 23,
-            "#tree_size": 62,
+            "#tree_bytes": 12200,
+            "#tree_height": 24,
+            "#tree_size": 65,
           });
         })
       })
     })
 
-    describe('ain_getProtocolVersion', () => {
+    describe('ain_getProtocolVersion api', () => {
       it('returns the correct version', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
         return client.request('ain_getProtocolVersion', {})
         .then(res => {
-          expect(res.result.protoVer).to.equal(CURRENT_PROTOCOL_VERSION);
+          expect(res.result.protoVer).to.equal(BlockchainConfigs.CURRENT_PROTOCOL_VERSION);
         })
       });
     });
 
-    describe('ain_checkProtocolVersion', () => {
+    describe('ain_checkProtocolVersion api', () => {
       it('checks protocol versions correctly', () => {
         return new Promise((resolve, reject) => {
           const client = jayson.client.http(server1 + '/json-rpc');
@@ -782,7 +975,7 @@ describe('Blockchain Node', () => {
           promises.push(client.request('ain_checkProtocolVersion', {}));
           promises.push(client.request('ain_checkProtocolVersion', {protoVer: 'a.b.c'}));
           promises.push(client.request('ain_checkProtocolVersion', {protoVer: 0}));
-          promises.push(client.request('ain_checkProtocolVersion', {protoVer: CURRENT_PROTOCOL_VERSION}));
+          promises.push(client.request('ain_checkProtocolVersion', {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}));
           promises.push(client.request('ain_checkProtocolVersion', {protoVer: '0.0.1'}));
           Promise.all(promises).then(res => {
             expect(res[0].result.code).to.equal(1);
@@ -801,11 +994,11 @@ describe('Blockchain Node', () => {
       });
     })
 
-    describe('ain_getAddress', () => {
+    describe('ain_getAddress api', () => {
       it('returns the correct node address', () => {
-        const expAddr = GenesisAccounts.others[1].address;
+        const expAddr = '0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204';
         const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
-        return jsonRpcClient.request('ain_getAddress', { protoVer: CURRENT_PROTOCOL_VERSION })
+        return jsonRpcClient.request('ain_getAddress', { protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION })
         .then(res => {
           expect(res.result.result).to.equal(expAddr);
         });
@@ -822,7 +1015,7 @@ describe('Blockchain Node', () => {
       await cleanUp();
     });
 
-    describe('/set_value', async () => {
+    describe('/set_value api', async () => {
       it('set_value', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
@@ -959,7 +1152,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/inc_value', () => {
+    describe('/inc_value api', () => {
       it('inc_value', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
@@ -1025,7 +1218,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/dec_value', () => {
+    describe('/dec_value api', () => {
       it('dec_value', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
@@ -1091,7 +1284,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/set_function', () => {
+    describe('/set_function api', () => {
       it('set_function', async () => {
         // Check the original function.
         const resultBefore = parseOrLog(syncRequest(
@@ -1100,10 +1293,9 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultBefore, {
           ".function": {
             "fid": {
-              "event_listener": "https://events.ainetwork.ai/trigger",
+              "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "fid",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai"
             }
           }
         });
@@ -1113,10 +1305,9 @@ describe('Blockchain Node', () => {
           value: {
             ".function": {
               "fid": {
-                "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+                "function_url": "http://echo-bot.ainetwork.ai/trigger",  // Listener 2
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             }
           }
@@ -1138,10 +1329,9 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultAfter, {
           ".function": {
             "fid": {
-              "event_listener": "https://events.ainetwork.ai/trigger2",  // Listener 2
+              "function_url": "http://echo-bot.ainetwork.ai/trigger",  // Listener 2
               "function_id": "fid",
               "function_type": "REST",
-              "service_name": "https://ainetwork.ai"
             }
           }
         });
@@ -1159,10 +1349,9 @@ describe('Blockchain Node', () => {
           value: {
             ".function": {
               "fid": {
-                "event_listener": "https://events.ainetwork.ai/trigger",
+                "function_url": "https://events.ainetwork.ai/trigger",
                 "function_id": "fid",
                 "function_type": "REST",
-                "service_name": "https://ainetwork.ai"
               }
             }
           }
@@ -1201,7 +1390,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/set_rule', () => {
+    describe('/set_rule api', () => {
       it('set_rule', async () => {
         // Check the original rule.
         const resultBefore = parseOrLog(syncRequest(
@@ -1217,7 +1406,7 @@ describe('Blockchain Node', () => {
           ref: "/apps/test/test_rule/some/path",
           value: {
             ".rule": {
-              "write": "some other rule config"
+              "write": "auth.addr === 'xyz'"
             }
           }
         };
@@ -1236,7 +1425,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, {
           ".rule": {
-            "write": "some other rule config"
+            "write": "auth.addr === 'xyz'"
           }
         });
       })
@@ -1252,7 +1441,7 @@ describe('Blockchain Node', () => {
           ref: "/apps/some/wrong/path",
           value: {
             ".rule": {
-              "write": "some other rule config"
+              "write": "auth.addr === 'xyz'"
             }
           }
         };
@@ -1289,7 +1478,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/set_owner', () => {
+    describe('/set_owner api', () => {
       it('set_owner', async () => {
         // Check the original owner.
         const resultBefore = parseOrLog(syncRequest(
@@ -1405,7 +1594,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/set', () => {
+    describe('/set api', () => {
       it('set with successful operations', async () => {
         // Check the original value.
         const resultBefore = parseOrLog(syncRequest(
@@ -1436,10 +1625,9 @@ describe('Blockchain Node', () => {
               value: {
                 ".function": {
                   "fid": {
-                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 }
               }
@@ -1449,7 +1637,7 @@ describe('Blockchain Node', () => {
               ref: "/apps/test/test_rule/other100/path",
               value: {
                 ".rule": {
-                  "write": "some other100 rule config"
+                  "write": "auth.addr === 'xyz100'"
                 }
               }
             },
@@ -1510,7 +1698,7 @@ describe('Blockchain Node', () => {
             },
             "state": {
               "app": {
-                "test": 4622
+                "test": 4388
               },
               "service": 0
             }
@@ -1565,10 +1753,9 @@ describe('Blockchain Node', () => {
               value: {
                 ".function": {
                   "fid": {
-                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 }
               }
@@ -1641,7 +1828,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('/batch', () => {
+    describe('/batch api', () => {
       it('batch with successful transactions', async () => {
         const address = parseOrLog(syncRequest(
             'GET', server1 + '/get_address').body.toString('utf-8')).result;
@@ -1693,10 +1880,9 @@ describe('Blockchain Node', () => {
                 value: {
                   ".function": {
                     "fid": {
-                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_url": "https://events.ainetwork.ai/trigger",
                       "function_id": "fid",
                       "function_type": "REST",
-                      "service_name": "https://ainetwork.ai"
                     }
                   }
                 }
@@ -1710,7 +1896,7 @@ describe('Blockchain Node', () => {
                 ref: "/apps/test/test_rule/other200/path",
                 value: {
                   ".rule": {
-                    "write": "some other200 rule config"
+                    "write": "auth.addr === 'xyz200'"
                   }
                 }
               },
@@ -1762,10 +1948,9 @@ describe('Blockchain Node', () => {
                     value: {
                       ".function": {
                         "fid": {
-                          "event_listener": "https://events.ainetwork.ai/trigger",
+                          "function_url": "https://events.ainetwork.ai/trigger",
                           "function_id": "fid",
                           "function_type": "REST",
-                          "service_name": "https://ainetwork.ai"
                         }
                       }
                     }
@@ -1775,7 +1960,7 @@ describe('Blockchain Node', () => {
                     ref: "/apps/test/test_rule/other201/path",
                     value: {
                       ".rule": {
-                        "write": "some other201 rule config"
+                        "write": "auth.addr === 'xyz201'"
                       }
                     }
                   },
@@ -1898,7 +2083,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 1552
+                    "test": 1324
                   },
                   "service": 0
                 }
@@ -1921,7 +2106,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 734
+                    "test": 728
                   },
                   "service": 0
                 }
@@ -1991,7 +2176,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 4622
+                    "test": 4388
                   },
                   "service": 0
                 }
@@ -2073,10 +2258,9 @@ describe('Blockchain Node', () => {
                 value: {
                   ".function": {
                     "fid": {
-                      "event_listener": "https://events.ainetwork.ai/trigger",
+                      "function_url": "https://events.ainetwork.ai/trigger",
                       "function_id": "fid",
                       "function_type": "REST",
-                      "service_name": "https://ainetwork.ai"
                     }
                   }
                 }
@@ -2090,7 +2274,7 @@ describe('Blockchain Node', () => {
                 ref: "/apps/test/test_rule/other202/path",
                 value: {
                   ".rule": {
-                    "write": "some other202 rule config"
+                    "write": "auth.addr === 'xyz202'"
                   }
                 }
               },
@@ -2142,10 +2326,9 @@ describe('Blockchain Node', () => {
                     value: {
                       ".function": {
                         "fid": {
-                          "event_listener": "https://events.ainetwork.ai/trigger",
+                          "function_url": "https://events.ainetwork.ai/trigger",
                           "function_id": "fid",
                           "function_type": "REST",
-                          "service_name": "https://ainetwork.ai"
                         }
                       }
                     }
@@ -2155,7 +2338,7 @@ describe('Blockchain Node', () => {
                     ref: "/apps/test/test_rule/other203/path",
                     value: {
                       ".rule": {
-                        "write": "some other203 rule config"
+                        "write": "auth.addr === 'xyz203'"
                       }
                     }
                   },
@@ -2299,7 +2482,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 1552
+                    "test": 1324
                   },
                   "service": 0
                 }
@@ -2322,7 +2505,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 734
+                    "test": 728
                   },
                   "service": 0
                 }
@@ -2392,7 +2575,7 @@ describe('Blockchain Node', () => {
                 },
                 "state": {
                   "app": {
-                    "test": 4622
+                    "test": 4388
                   },
                   "service": 0
                 }
@@ -2415,7 +2598,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_sendSignedTransaction', () => {
+    describe('ain_sendSignedTransaction api', () => {
       const account = {
         address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
         private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
@@ -2479,12 +2662,12 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const result = _.get(res, 'result.result', null);
           expect(result).to.not.equal(null);
           assert.deepEqual(res.result, {
-            protoVer: CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
             result: {
               result: {
                 code: 0,
@@ -2517,7 +2700,7 @@ describe('Blockchain Node', () => {
         return client.request('ain_getNonce', {
           address: account.address,
           from: 'pending',
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         })
         .then((nonceRes) => {
           const nonce = _.get(nonceRes, 'result.result');
@@ -2535,13 +2718,13 @@ describe('Blockchain Node', () => {
           return client.request('ain_sendSignedTransaction', {
             tx_body: txBody,
             signature,
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           })
           .then((res) => {
             const result = _.get(res, 'result.result', null);
             expect(result).to.not.equal(null);
             assert.deepEqual(res.result, {
-              protoVer: CURRENT_PROTOCOL_VERSION,
+              protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
               result: {
                 result: {
                   code: 0,
@@ -2572,7 +2755,7 @@ describe('Blockchain Node', () => {
 
       it('rejects a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
+        const longText = 'a'.repeat(BlockchainConfigs.TX_BYTES_LIMIT / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -2587,14 +2770,14 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 1,
-              message: `Transaction size exceeds its limit: ${TX_BYTES_LIMIT} bytes.`,
+              message: `Transaction size exceeds its limit: ${BlockchainConfigs.TX_BYTES_LIMIT} bytes.`,
             },
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           });
         })
       })
@@ -2615,14 +2798,14 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransaction', {
           transaction: txBody,  // wrong field name
           signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 2,
               message: `Missing properties.`,
             },
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           });
         })
       })
@@ -2643,14 +2826,14 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 3,
               message: `Invalid transaction format.`,
             },
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           });
         })
       })
@@ -2671,7 +2854,7 @@ describe('Blockchain Node', () => {
         return client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature: signature + '0', // invalid signature
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result.result.result, {
             "error_message": "[executeTransactionAndAddToPool] Invalid signature",
@@ -2682,7 +2865,7 @@ describe('Blockchain Node', () => {
       })
     })
 
-    describe('ain_sendSignedTransactionBatch', () => {
+    describe('ain_sendSignedTransactionBatch api', () => {
       const account = {
         address: "0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
         private_key: "b542fc2ca4a68081b3ba238888d3a8783354c3aa81711340fd69f6ff32798525",
@@ -2757,10 +2940,9 @@ describe('Blockchain Node', () => {
               value: {
                 ".function": {
                   "fid": {
-                    "event_listener": "https://events.ainetwork.ai/trigger",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "fid",
                     "function_type": "REST",
-                    "service_name": "https://ainetwork.ai"
                   }
                 }
               }
@@ -2826,10 +3008,9 @@ describe('Blockchain Node', () => {
                   value: {
                     ".function": {
                       "fid": {
-                        "event_listener": "https://events.ainetwork.ai/trigger",
+                        "function_url": "https://events.ainetwork.ai/trigger",
                         "function_id": "fid",
                         "function_type": "REST",
-                        "service_name": "https://ainetwork.ai"
                       }
                     }
                   }
@@ -2876,7 +3057,7 @@ describe('Blockchain Node', () => {
         }
         return client.request('ain_sendSignedTransactionBatch', {
           tx_list: txList,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
           expect(CommonUtil.isArray(resultList)).to.equal(true);
@@ -2904,14 +3085,14 @@ describe('Blockchain Node', () => {
             tx_body: txBody,
             signature,
           },
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 1,
               message: `Invalid batch transaction format.`
             },
-            protoVer: CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
           });
         })
       })
@@ -2928,7 +3109,7 @@ describe('Blockchain Node', () => {
           nonce: -1
         };
         const txList = [];
-        for (let i = 0; i < BATCH_TX_LIST_SIZE_LIMIT; i++) {  // Just under the limit.
+        for (let i = 0; i < BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT; i++) {  // Just under the limit.
           const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
           txBody.timestamp = timestamp + i;
           const signature =
@@ -2940,11 +3121,11 @@ describe('Blockchain Node', () => {
         }
         return client.request('ain_sendSignedTransactionBatch', {
           tx_list: txList,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
           expect(CommonUtil.isArray(resultList)).to.equal(true);
-          expect(resultList.length).to.equal(BATCH_TX_LIST_SIZE_LIMIT);
+          expect(resultList.length).to.equal(BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT);
           for (let i = 0; i < resultList.length; i++) {
             expect(CommonUtil.isFailedTx(resultList[i].result)).to.equal(false);
           }
@@ -2963,7 +3144,7 @@ describe('Blockchain Node', () => {
           nonce: -1
         };
         const txList = [];
-        for (let i = 0; i < BATCH_TX_LIST_SIZE_LIMIT + 1; i++) {  // Just over the limit.
+        for (let i = 0; i < BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT + 1; i++) {  // Just over the limit.
           const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
           txBody.timestamp = timestamp + i;
           const signature =
@@ -2975,14 +3156,14 @@ describe('Blockchain Node', () => {
         }
         return client.request('ain_sendSignedTransactionBatch', {
           tx_list: txList,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 2,
-              message: `Batch transaction list size exceeds its limit: ${BATCH_TX_LIST_SIZE_LIMIT}.`
+              message: `Batch transaction list size exceeds its limit: ${BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT}.`
             },
-            protoVer: CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
           });
         })
       })
@@ -3004,10 +3185,10 @@ describe('Blockchain Node', () => {
 
         // Not over the limit.
         let txCount = 0;
-        while (txCount < TX_POOL_SIZE_LIMIT_PER_ACCOUNT) {
-          const remainingTxCount = TX_POOL_SIZE_LIMIT_PER_ACCOUNT - txCount;
-          const batchTxSize = (remainingTxCount >= BATCH_TX_LIST_SIZE_LIMIT) ?
-              BATCH_TX_LIST_SIZE_LIMIT : remainingTxCount;
+        while (txCount < BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT) {
+          const remainingTxCount = BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT - txCount;
+          const batchTxSize = (remainingTxCount >= BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT) ?
+              BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT : remainingTxCount;
           const txList1 = [];
           for (let i = 0; i < batchTxSize; i++) {
             const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
@@ -3021,7 +3202,7 @@ describe('Blockchain Node', () => {
           }
           const res1 = await client.request('ain_sendSignedTransactionBatch', {
             tx_list: txList1,
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           });
           const resultList1 = _.get(res1, 'result.result', null);
           // Accepts transactions.
@@ -3036,7 +3217,7 @@ describe('Blockchain Node', () => {
         // Just over the limit.
         const txList2 = [];
         const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
-        txBody.timestamp = timestamp + TX_POOL_SIZE_LIMIT_PER_ACCOUNT + 1;
+        txBody.timestamp = timestamp + BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT + 1;
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
         txList2.push({
@@ -3045,7 +3226,7 @@ describe('Blockchain Node', () => {
         });
         const res2 = await client.request('ain_sendSignedTransactionBatch', {
           tx_list: txList2,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         });
         const resultList2 = _.get(res2, 'result.result', null);
         // Rejects transactions.
@@ -3066,7 +3247,7 @@ describe('Blockchain Node', () => {
 
       it('rejects a batch transaction with a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        const longText = 'a'.repeat(TX_BYTES_LIMIT / 2);
+        const longText = 'a'.repeat(BlockchainConfigs.TX_BYTES_LIMIT / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -3093,16 +3274,16 @@ describe('Blockchain Node', () => {
               signature: signatureAfter,
             }
           ],
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           const resultList = _.get(res, 'result.result');
           expect(CommonUtil.isArray(resultList)).to.equal(false);
           assert.deepEqual(res.result, {
             result: {
               code: 3,
-              message: `Transaction[1]'s size exceededs its limit: ${TX_BYTES_LIMIT} bytes.`,
+              message: `Transaction[1]'s size exceededs its limit: ${BlockchainConfigs.TX_BYTES_LIMIT} bytes.`,
             },
-            protoVer: CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
           });
         })
       })
@@ -3133,14 +3314,14 @@ describe('Blockchain Node', () => {
               signature: signatureAfter,
             }
           ],
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 4,
               message: `Missing properties of transaction[1].`,
             },
-            protoVer: CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
           });
         })
       })
@@ -3173,14 +3354,14 @@ describe('Blockchain Node', () => {
               signature: signatureAfter,
             }
           ],
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
               code: 5,
               message: `Invalid format of transaction[1].`
             },
-            protoVer: CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           });
         })
       })
@@ -3213,7 +3394,7 @@ describe('Blockchain Node', () => {
               signature: signatureAfter,
             }
           ],
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           res.result.result.forEach((res) => {
             res.tx_hash = 'erased';
@@ -3316,17 +3497,17 @@ describe('Blockchain Node', () => {
       };
       await setUpApp('test_billing', serverList, { admin: adminConfig, billing: billingConfig });
 
-      const server4Addr =
-          parseOrLog(syncRequest('GET', server4 + '/get_address').body.toString('utf-8')).result;
-      const transferRes = parseOrLog(syncRequest('POST', server4 + '/set', {json: {
+      // const server4Addr =
+      //     parseOrLog(syncRequest('GET', server4 + '/get_address').body.toString('utf-8')).result;
+      const transferRes = parseOrLog(syncRequest('POST', server3 + '/set', {json: {
         op_list: [
           {
-            ref: `/transfer/${server4Addr}/billing|test_billing|A/${Date.now()}/value`,
+            ref: `/transfer/${billingUserB}/billing|test_billing|A/${Date.now()}/value`,
             value: 100,
             type: 'SET_VALUE'
           },
           {
-            ref: `/transfer/${server4Addr}/billing|test_billing|B/${Date.now()}/value`,
+            ref: `/transfer/${billingUserB}/billing|test_billing|B/${Date.now()}/value`,
             value: 100,
             type: 'SET_VALUE'
           }
@@ -3409,7 +3590,7 @@ describe('Blockchain Node', () => {
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
-        gasPrice * MICRO_AIN * txRes.result.gas_amount_charged
+        gasPrice * BlockchainConfigs.MICRO_AIN * txRes.result.gas_amount_charged
       );
     });
 
@@ -3461,7 +3642,7 @@ describe('Blockchain Node', () => {
           'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       assert.deepEqual(
         billingAccountBalanceAfter,
-        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_charged)
+        billingAccountBalanceBefore - (gasPrice * BlockchainConfigs.MICRO_AIN * txRes.result.gas_amount_charged)
       );
     });
 
@@ -3487,7 +3668,7 @@ describe('Blockchain Node', () => {
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
-        gasPrice * MICRO_AIN * txRes.result.gas_amount_charged
+        gasPrice * BlockchainConfigs.MICRO_AIN * txRes.result.gas_amount_charged
       );
     });
 
@@ -3511,7 +3692,7 @@ describe('Blockchain Node', () => {
           'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       assert.deepEqual(
         billingAccountBalanceAfter,
-        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_charged)
+        billingAccountBalanceBefore - (gasPrice * BlockchainConfigs.MICRO_AIN * txRes.result.gas_amount_charged)
       );
     });
 
@@ -3547,7 +3728,7 @@ describe('Blockchain Node', () => {
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
-        gasPrice * MICRO_AIN * txRes.result.gas_amount_charged
+        gasPrice * BlockchainConfigs.MICRO_AIN * txRes.result.gas_amount_charged
       );
     });
 
@@ -3581,7 +3762,7 @@ describe('Blockchain Node', () => {
           'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       assert.deepEqual(
         billingAccountBalanceAfter,
-        billingAccountBalanceBefore - (gasPrice * MICRO_AIN * txRes.result.gas_amount_charged)
+        billingAccountBalanceBefore - (gasPrice * BlockchainConfigs.MICRO_AIN * txRes.result.gas_amount_charged)
       );
     });
 
@@ -3673,27 +3854,6 @@ describe('Blockchain Node', () => {
         "gas_amount_charged": 0,
         "gas_cost_total": 0
       });
-    });
-
-    it(`removes an old transaction receipt`, async () => {
-      const MAX_BLOCK_NUMBERS_FOR_RECEIPTS = 100;
-      let lastBlockNumber = getLastBlockNumber(server1);
-      if (lastBlockNumber <= MAX_BLOCK_NUMBERS_FOR_RECEIPTS) {
-        await waitForNewBlocks(server1, MAX_BLOCK_NUMBERS_FOR_RECEIPTS - lastBlockNumber + 1);
-        lastBlockNumber = getLastBlockNumber(server1);
-      }
-      let oldBlockNumber = lastBlockNumber - MAX_BLOCK_NUMBERS_FOR_RECEIPTS;
-      let oldBlock = getBlockByNumber(server1, oldBlockNumber);
-      while (!oldBlock.transactions.length) {
-        oldBlock = getBlockByNumber(server1, --oldBlockNumber);
-        await CommonUtil.sleep(2000);
-      }
-      for (const tx of oldBlock.transactions) {
-        const receipt = parseOrLog(syncRequest(
-          'GET', server1 + `/get_value?ref=${PathUtil.getReceiptPath(tx.hash)}`)
-          .body.toString('utf-8')).result;
-        assert.deepEqual(receipt, null);
-      }
     });
 
     it('failed transaction', async () => {

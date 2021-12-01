@@ -5,19 +5,21 @@ const {
 } = require('../../db/state-util');
 
 async function verifyProof(proofFile) {
-  console.log(`* Reading proof file: ${proofFile}...`);
+  console.log(`\n* Reading proof file: ${proofFile}...`);
   const proof = FileUtil.isCompressedFile(proofFile) ?
       FileUtil.readCompressedJson(proofFile) : FileUtil.readJson(proofFile);
   if (proof === null) {
     console.log(`  Failed to read proof file: ${proofFile}`);
     process.exit(0)
   }
-  console.log(`  Done.`);
-  console.log(`* Trying to verify proof...`);
+
+  console.log(`\n* Verifying proof...`);
   const result = verifyStateProof(proof);
-  console.log(`  > Root proof hash: ${result.rootProofHash}`);
+  console.log(`  > Root proof hash: ${result.curProofHash}`);
   console.log(`  > Is verified: ${result.isVerified}`);
   console.log(`  > Mismatched path: ${result.mismatchedPath}`);
+  console.log(`  > Mismatched proof hash: ${result.mismatchedProofHash}`);
+  console.log(`  > Mismatched proof hash computed: ${result.mismatchedProofHashComputed}`);
   if (result.isVerified === true) {
     console.log(`  *************`);
     console.log(`  * VERIFIED! *`);
@@ -27,7 +29,6 @@ async function verifyProof(proofFile) {
     console.log(`  * NOT-VERIFIED! *`);
     console.log(`  *****************`);
   }
-  console.log(`  Done.`);
 }
 
 async function processArguments() {

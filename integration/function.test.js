@@ -11,8 +11,8 @@ const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
-  CURRENT_PROTOCOL_VERSION,
-  CHAINS_DIR,
+  BlockchainConfigs,
+  GenesisToken,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const {
@@ -27,40 +27,26 @@ const DB = require('../db');
 
 const ENV_VARIABLES = [
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', DEBUG: false, CONSOLE_LOG: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
-  },
-  {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
+    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
   },
 ];
 
 const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCOUNT_INDEX))
 const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
-const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
-const serverList = [ server1, server2, server3, server4 ];
+const serverList = [ server1, server2, server3 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -79,10 +65,10 @@ function startServer(application, serverName, envVars, stdioInherit = false) {
 }
 
 describe('Native Function', () => {
-  let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc
+  let tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(CHAINS_DIR)
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
     await CommonUtil.sleep(3000);
@@ -92,7 +78,6 @@ describe('Native Function', () => {
     await CommonUtil.sleep(3000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     await CommonUtil.sleep(3000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
     await waitUntilNetworkIsReady(serverList);
 
     const server1Addr = parseOrLog(syncRequest(
@@ -101,14 +86,11 @@ describe('Native Function', () => {
         'GET', server2 + '/get_address').body.toString('utf-8')).result;
     const server3Addr = parseOrLog(syncRequest(
         'GET', server3 + '/get_address').body.toString('utf-8')).result;
-    const server4Addr = parseOrLog(syncRequest(
-        'GET', server4 + '/get_address').body.toString('utf-8')).result;
     await setUpApp('test', serverList, {
       admin: {
         [server1Addr]: true,
         [server2Addr]: true,
         [server3Addr]: true,
-        [server4Addr]: true,
       }
     });
   });
@@ -118,9 +100,8 @@ describe('Native Function', () => {
     server1_proc.kill()
     server2_proc.kill()
     server3_proc.kill()
-    server4_proc.kill()
 
-    rimraf.sync(CHAINS_DIR)
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
   });
 
   describe('Function triggering', () => {
@@ -390,8 +371,7 @@ describe('Native Function', () => {
                 ".function": {
                   "0x11111": {
                     "function_type": "REST",
-                    "event_listener": "https://events.ainetwork.ai/trigger",
-                    "service_name": "https://ainetwork.ai",
+                    "function_url": "https://events.ainetwork.ai/trigger",
                     "function_id": "0x11111"
                   }
                 }
@@ -854,6 +834,290 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result
           // Should be not null.
           expect(ownerConfig).to.not.equal(null);
+        });
+      });
+    });
+
+    describe('REST functions whitelist', () => {
+      it('cannot add a function url if not a whitelisted developer', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/0`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('cannot whitelist a developer if not an admin', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/user_whitelist/${serviceUser}`,
+          value: true,
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/rest_functions/user_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('can whitelist a developer as an admin', async () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/developers/rest_functions/user_whitelist/${serviceUser}`,
+            value: true
+          },
+          timestamp: 1628255843548,
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from('a2b5848760d81afe205884284716f90356ad82be5ab77b8130980bdb0b7ba2ba', 'hex'));
+        const res = await client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+        });
+        if (!(await waitUntilTxFinalized([server2], _.get(res, 'result.result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(res.result.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 248
+            }
+          },
+          "gas_cost_total": 0,
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 249
+        });
+      });
+
+      it('can add a function url', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/0`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 448
+            }
+          },
+          "gas_cost_total": 0,
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 449
+        });
+      });
+
+      it('cannot add an invalid function url', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/1`,
+          value: '*.ainetwork.ai', // missing protocol
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('cannot add more than the max number of function urls per developer', async () => {
+        // Add 2 more & try to add 1 more
+        const addRestFunctionUrl2 = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/1`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(addRestFunctionUrl2, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        expect(addRestFunctionUrl2.result.result.code).to.be.equal(0);
+        const addRestFunctionUrl3 = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/2`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(addRestFunctionUrl3, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        expect(addRestFunctionUrl3.result.result.code).to.be.equal(0);
+        const userRestFunctionUrls = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/developers/rest_functions/url_whitelist/${serviceUser}`).body.toString('utf-8'));
+        assert.deepEqual(userRestFunctionUrls, {
+          "code": 0,
+          "result": {
+            "0": "http://localhost:3000",
+            "1": "http://localhost:3000",
+            "2": "http://localhost:3000"
+          }
+        });
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/3`,
+          value: 'http://localhost:3000',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/3",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('can replace a function url', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/0`,
+          value: 'http://localhost:8080',
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it('can remove a function url', async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/${serviceUser}/0`,
+          value: null,
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "code": 0,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
+        });
+      });
+
+      it(`cannot remove other's function urls`, async () => {
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `/developers/rest_functions/url_whitelist/0xAAAf6f50A0304F12119D218b94bea8082642515B/0`,
+          value: null,
+          timestamp: Date.now(),
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        assert.deepEqual(body.result.result, {
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": 0
+            }
+          },
+          "gas_cost_total": 0,
+          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0xAAAf6f50A0304F12119D218b94bea8082642515B/0",
+          "code": 103,
+          "bandwidth_gas_amount": 1,
+          "gas_amount_charged": 1
         });
       });
     });
@@ -1462,7 +1726,7 @@ describe('Native Function', () => {
                 }
               },
               "code": 0,
-              "bandwidth_gas_amount": 1000
+              "bandwidth_gas_amount": 2000
             }
           },
           "code": 0,
@@ -1470,7 +1734,7 @@ describe('Native Function', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 1003
+              "service": 2003
             },
             "state": {
               "service": 'erased'
@@ -1566,7 +1830,7 @@ describe('Native Function', () => {
                           }
                         },
                         "code": 0,
-                        "bandwidth_gas_amount": 1000
+                        "bandwidth_gas_amount": 2000
                       }
                     },
                     "code": 0,
@@ -1597,7 +1861,7 @@ describe('Native Function', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 1006
+              "service": 2006
             },
             "state": {
               "service": 'erased'
@@ -1698,7 +1962,7 @@ describe('Native Function', () => {
           "func_results": {
             "0x11111": {
               "code": 0,
-              "bandwidth_gas_amount": 10,
+              "bandwidth_gas_amount": 100,
             }
           },
           "code": 0,
@@ -1707,7 +1971,7 @@ describe('Native Function', () => {
           "gas_amount_total": {
             "bandwidth": {
               "app": {
-                "test": 11
+                "test": 101
               },
               "service": 0
             },
@@ -1881,7 +2145,7 @@ describe('Native Function', () => {
           "func_results": {
             "_transfer": {
               "code": 0,
-              "bandwidth_gas_amount": 1000,
+              "bandwidth_gas_amount": 2000,
               "op_results": {
                 "0": {
                   "path": "/accounts/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance",
@@ -1905,7 +2169,7 @@ describe('Native Function', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 1003
+              "service": 2003
             },
             "state": {
               "service": 'erased'
@@ -2000,7 +2264,7 @@ describe('Native Function', () => {
                       "func_results": {
                         "_transfer": {
                           "code": 0,
-                          "bandwidth_gas_amount": 1000,
+                          "bandwidth_gas_amount": 2000,
                           "op_results": {
                             "0": {
                               "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
@@ -2044,7 +2308,7 @@ describe('Native Function', () => {
             "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
-                "service": 1006
+                "service": 2006
               },
               "state": {
                 "service": 'erased'
@@ -2396,7 +2660,7 @@ describe('Native Function', () => {
                     "func_results": {
                       "_transfer": {
                         "code": 0,
-                        "bandwidth_gas_amount": 1000,
+                        "bandwidth_gas_amount": 2000,
                         "op_results": {
                           "0": {
                             "path": "/accounts/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance",
@@ -2426,7 +2690,7 @@ describe('Native Function', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 1004
+              "service": 2004
             },
             "state": {
               "service": 'erased'
@@ -2789,7 +3053,7 @@ describe('Native Function', () => {
                       "func_results": {
                         "_transfer": {
                           "code": 0,
-                          "bandwidth_gas_amount": 1000,
+                          "bandwidth_gas_amount": 2000,
                           "op_results": {
                             "0": {
                               "path": "/accounts/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
@@ -2819,7 +3083,7 @@ describe('Native Function', () => {
             "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
-                "service": 1004
+                "service": 2004
               },
               "state": {
                 "service": 'erased'
@@ -2966,10 +3230,10 @@ describe('Native Function', () => {
       describe('Escrow: service -> individual', () => {
         it('escrow: service -> individual: open escrow', async () => {
           const key = 1234567890000 + 101;
-          const server4Addr = parseOrLog(syncRequest(
-            'GET', server4 + '/get_address').body.toString('utf-8')).result;
-          const transferBody = parseOrLog(syncRequest('POST', server4 + '/set_value', {json: {
-            ref: `transfer/${server4Addr}/${serviceAdmin}/${key}/value`,
+          const server3Addr = parseOrLog(syncRequest(
+            'GET', server3 + '/get_address').body.toString('utf-8')).result;
+          const transferBody = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
+            ref: `transfer/${server3Addr}/${serviceAdmin}/${key}/value`,
             value: 100
           }}).body.toString('utf-8'));
           if (!(await waitUntilTxFinalized(serverList, _.get(transferBody, 'result.tx_hash')))) {
@@ -3074,7 +3338,7 @@ describe('Native Function', () => {
                       "func_results": {
                         "_transfer": {
                           "code": 0,
-                          "bandwidth_gas_amount": 1000,
+                          "bandwidth_gas_amount": 2000,
                           "op_results": {
                             "0": {
                               "path": "/service_accounts/payments/test_service_escrow/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/balance",
@@ -3104,7 +3368,7 @@ describe('Native Function', () => {
             "gas_amount_charged": 'erased',
             "gas_amount_total": {
               "bandwidth": {
-                "service": 1004
+                "service": 2004
               },
               "state": {
                 "service": 'erased'
@@ -3268,15 +3532,15 @@ describe('Native Function', () => {
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkoutRequestBasePath = `/checkout/requests/${networkName}/${chainId}/${tokenId}`;
       const checkoutHistoryBasePath = `/checkout/history/${networkName}/${chainId}/${tokenId}`;
-      const tokenBridgeConfig = require('../genesis-configs/base/genesis_token.json')
-          .bridge[networkName][chainId][tokenId];
+      const tokenBridgeConfig = GenesisToken.bridge[networkName][chainId][tokenId];
       const {
         token_pool: tokenPoolAddr,
         min_checkout_per_request: minCheckoutPerRequest,
         max_checkout_per_request: maxCheckoutPerRequest,
         max_checkout_per_day: maxCheckoutPerDay,
+        checkout_fee_rate: checkoutFeeRate,
        } = tokenBridgeConfig;
-      const checkoutAmount = 100;
+      const checkoutAmount = minCheckoutPerRequest;
       const ethAddress = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // recipient
 
       it('cannot open checkout with invalid params: amount < min_checkout_per_request', async () => {
@@ -3289,7 +3553,8 @@ describe('Native Function', () => {
           ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: minCheckoutPerRequest - 1,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3318,7 +3583,8 @@ describe('Native Function', () => {
           ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: maxCheckoutPerRequest + 1,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3348,7 +3614,8 @@ describe('Native Function', () => {
           ref,
           value: {
             amount: checkoutAmount,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3378,7 +3645,8 @@ describe('Native Function', () => {
           ref,
           value: {
             amount: checkoutAmount,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3408,7 +3676,8 @@ describe('Native Function', () => {
           ref,
           value: {
             amount: checkoutAmount,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3437,7 +3706,8 @@ describe('Native Function', () => {
           ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: checkoutAmount,
-            recipient: ethAddress.toLowerCase()
+            recipient: ethAddress.toLowerCase(),
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3466,7 +3736,8 @@ describe('Native Function', () => {
           ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: beforeBalance + 1,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(1);
@@ -3495,7 +3766,8 @@ describe('Native Function', () => {
           ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
           value: {
             amount: checkoutAmount,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           },
           timestamp: 1628255843548
         }}).body.toString('utf-8'));
@@ -3543,7 +3815,7 @@ describe('Native Function', () => {
                           }
                         },
                         "code": 0,
-                        "bandwidth_gas_amount": 1000
+                        "bandwidth_gas_amount": 2000
                       }
                     },
                     "code": 0,
@@ -3560,7 +3832,7 @@ describe('Native Function', () => {
           "gas_amount_charged": 'erased',
           "gas_amount_total": {
             "bandwidth": {
-              "service": 1006
+              "service": 2006
             },
             "state": {
               "service": 'erased'
@@ -3579,8 +3851,9 @@ describe('Native Function', () => {
         const totalPendingAmount = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkout/stats/pending/total`)
             .body.toString('utf-8')).result;
-        expect(afterRequestUserBalance).to.equal(beforeBalance - checkoutAmount);
-        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance + checkoutAmount);
+        const amountPlusFee = checkoutAmount + checkoutAmount * checkoutFeeRate;
+        expect(afterRequestUserBalance).to.equal(beforeBalance - amountPlusFee);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance + amountPlusFee);
         expect(userPendingAmount).to.equal(checkoutAmount);
         expect(totalPendingAmount).to.equal(checkoutAmount);
       });
@@ -3591,7 +3864,8 @@ describe('Native Function', () => {
           value: {
             request: {
               amount: checkoutAmount,
-              recipient: ethAddress
+              recipient: ethAddress,
+              fee_rate: checkoutFeeRate,
             },
             response: {
               status: 0
@@ -3615,7 +3889,8 @@ describe('Native Function', () => {
             value: {
               request: {
                 amount: checkoutAmount,
-                recipient: ethAddress
+                recipient: ethAddress,
+                fee_rate: checkoutFeeRate,
               },
               response: {
                 status: 0,
@@ -3631,7 +3906,7 @@ describe('Native Function', () => {
         const res = await client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         });
         const txHash = _.get(res, 'result.result.tx_hash');
         if (!(await waitUntilTxFinalized(serverList, txHash))) {
@@ -3733,7 +4008,8 @@ describe('Native Function', () => {
           ref: `${checkoutRequestBasePath}/${serviceUser}/1`,
           value: {
             amount: checkoutAmount,
-            recipient: ethAddress
+            recipient: ethAddress,
+            fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
@@ -3747,8 +4023,9 @@ describe('Native Function', () => {
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
             .body.toString('utf-8')).result || 0;
-        expect(afterRequestUserBalance).to.equal(beforeBalance - checkoutAmount);
-        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance + checkoutAmount);
+        const amountPlusFee = checkoutAmount + checkoutAmount * checkoutFeeRate;
+        expect(afterRequestUserBalance).to.equal(beforeBalance - amountPlusFee);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance + amountPlusFee);
         // close failed checkout
         const txBody = {
           operation: {
@@ -3757,7 +4034,8 @@ describe('Native Function', () => {
             value: {
               request: {
                 amount: checkoutAmount,
-                recipient: ethAddress
+                recipient: ethAddress,
+                fee_rate: checkoutFeeRate,
               },
               response: {
                 status: 1,
@@ -3774,7 +4052,7 @@ describe('Native Function', () => {
         const res = await client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         });
         const txHash = _.get(res, 'result.result.tx_hash');
         if (!(await waitUntilTxFinalized(serverList, txHash))) {
@@ -3874,7 +4152,7 @@ describe('Native Function', () => {
             '/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548');
         const refundTransfer = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${refund}`).body.toString('utf-8')).result;
-        assert.deepEqual(refundTransfer, { "value": 100 });
+        assert.deepEqual(refundTransfer, { "value": amountPlusFee });
         const afterCloseUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
             .body.toString('utf-8')).result || 0;
@@ -3909,8 +4187,7 @@ describe('Native Function', () => {
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkinRequestBasePath = `/checkin/requests/${networkName}/${chainId}/${tokenId}`;
       const checkinHistoryBasePath = `/checkin/history/${networkName}/${chainId}/${tokenId}`;
-      const tokenPoolAddr = require('../genesis-configs/base/genesis_token.json')
-          .bridge[networkName][chainId][tokenId].token_pool;
+      const tokenPoolAddr = GenesisToken.bridge[networkName][chainId][tokenId].token_pool;
       const checkinAmount = 100;
       const ethAddress = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // sender
 
@@ -4259,7 +4536,7 @@ describe('Native Function', () => {
         const res = await client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         });
         const txHash = _.get(res, 'result.result.tx_hash');
         if (!(await waitUntilTxFinalized(serverList, txHash))) {
@@ -4431,7 +4708,7 @@ describe('Native Function', () => {
         const res = await client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
         });
         const txHash = _.get(res, 'result.result.tx_hash');
         if (!(await waitUntilTxFinalized(serverList, txHash))) {

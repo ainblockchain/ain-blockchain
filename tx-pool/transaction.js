@@ -1,11 +1,10 @@
+const logger = new (require('../logger'))('TRANSACTION');
+
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const logger = require('../logger')('TRANSACTION');
 const {
-  ENABLE_TX_SIG_VERIF_WORKAROUND,
-  ENABLE_GAS_FEE_WORKAROUND,
+  BlockchainConfigs,
   WriteDbOperations,
-  CHAIN_ID
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
@@ -35,11 +34,11 @@ class Transaction {
     let address = null;
     let skipVerif = false;
     // A devel method for bypassing the signature verification.
-    if (ENABLE_TX_SIG_VERIF_WORKAROUND && txBody.address !== undefined) {
+    if (BlockchainConfigs.ENABLE_TX_SIG_VERIF_WORKAROUND && txBody.address !== undefined) {
       address = txBody.address;
       skipVerif = true;
     } else {
-      address = CommonUtil.getAddressFromSignature(hash.slice(2), signature);
+      address = CommonUtil.getAddressFromSignature(logger, hash.slice(2), signature);
     }
     const createdAt = Date.now();
     return new Transaction(txBody, signature, hash, address, skipVerif, createdAt);
@@ -52,7 +51,7 @@ class Transaction {
     // A devel method for bypassing the transaction verification.
     let signature = '';
     if (!txBody.address) {
-      const signed = CommonUtil.signTransaction(txBody, privateKey, CHAIN_ID);
+      const signed = CommonUtil.signTransaction(txBody, privateKey, BlockchainConfigs.CHAIN_ID);
       const sig = _.get(signed, 'signedTx.signature', null);
       if (!sig) {
         return null;
@@ -228,7 +227,7 @@ class Transaction {
 
   static isValidGasPrice(gasPrice) {
     // NOTE(platfowner): Allow 'undefined' value for backward compatibility.
-    return gasPrice > 0 || ENABLE_GAS_FEE_WORKAROUND && (gasPrice === undefined || gasPrice === 0);
+    return gasPrice > 0 || BlockchainConfigs.ENABLE_GAS_FEE_WORKAROUND && (gasPrice === undefined || gasPrice === 0);
   }
 
   static isValidBilling(billing) {
@@ -239,10 +238,8 @@ class Transaction {
     const sanitized = Transaction.sanitizeTxBody(txBody);
     const isIdentical = _.isEqual(JSON.parse(JSON.stringify(sanitized)), txBody, { strict: true });
     if (!isIdentical) {
-      logger.info(
-          `Transaction body in a non-standard format ` +
-          `- input:\n${JSON.stringify(txBody, null, 2)}\n\n` +
-          `- sanitized:\n${JSON.stringify(sanitized, null, 2)}\n\n`);
+      const diffLines = CommonUtil.getJsonDiff(sanitized, txBody);
+      logger.info(`Transaction body is in a non-standard format:\n${diffLines}\n`);
       return false;
     }
     return true;

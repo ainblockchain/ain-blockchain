@@ -1,7 +1,7 @@
 const stringify = require('fast-json-stable-stringify');
+const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
-const CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 
@@ -21,6 +21,7 @@ class CommonUtil {
   }
 
   static signTransaction(txBody, privateKey, chainId) {
+    const { BlockchainConfigs } = require('../common/constants');
     if (!privateKey) {
       return null;
     }
@@ -35,7 +36,7 @@ class CommonUtil {
       signedTx: {
         tx_body: txBody,
         signature: sig,
-        protoVer: CURRENT_PROTOCOL_VERSION,
+        protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
       }
     };
   }
@@ -50,8 +51,7 @@ class CommonUtil {
   /**
    * Gets address from hash and signature.
    */
-  static getAddressFromSignature(hash, signature) {
-    const logger = require('../logger')('CHAIN_UTIL');
+  static getAddressFromSignature(logger, hash, signature) {
     const LOG_HEADER = 'getAddressFromSignature';
     let address = '';
     try {
@@ -76,6 +76,10 @@ class CommonUtil {
   static isNumber(value) {
     return ruleUtil.isNumber(value);
   }
+
+  static isIntegerString(value) {
+    return ruleUtil.isIntegerString(value);
+}
 
   static isInteger(value) {
     return ruleUtil.isInteger(value);
@@ -127,6 +131,14 @@ class CommonUtil {
 
   static isValidatorOffenseType(type) {
     return ruleUtil.isValidatorOffenseType(type);
+  }
+
+  static isValidUrl(url) {
+    return ruleUtil.isValidUrl(url);
+  }
+
+  static isValidPrivateUrl(url) {
+    return ruleUtil.isValidPrivateUrl(url);
   }
 
   static boolOrFalse(value) {
@@ -208,23 +220,23 @@ class CommonUtil {
 
   static toGetOptions(args) {
     const options = {};
-    if (args.is_shallow !== undefined) {
-      options.isShallow = CommonUtil.toBool(args.is_shallow);
-    }
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
     }
     if (args.is_final !== undefined) {
       options.isFinal = CommonUtil.toBool(args.is_final);
     }
+    if (args.is_shallow !== undefined) {
+      options.isShallow = CommonUtil.toBool(args.is_shallow);
+    }
+    if (args.include_version !== undefined) {
+      options.includeVersion = CommonUtil.toBool(args.include_version);
+    }
     if (args.include_tree_info !== undefined) {
       options.includeTreeInfo = CommonUtil.toBool(args.include_tree_info);
     }
     if (args.include_proof !== undefined) {
       options.includeProof = CommonUtil.toBool(args.include_proof);
-    }
-    if (args.include_version !== undefined) {
-      options.includeVersion = CommonUtil.toBool(args.include_version);
     }
     return options;
   }
@@ -598,14 +610,14 @@ class CommonUtil {
    * @returns
    */
   static getTotalGasCost(gasPrice, gasAmount) {
-    const { MICRO_AIN } = require('./constants');
+    const { BlockchainConfigs } = require('./constants');
     if (!CommonUtil.isNumber(gasPrice)) {
       gasPrice = 0; // Default gas price = 0 microain
     }
     if (!CommonUtil.isNumber(gasAmount)) {
       gasAmount = 0; // Default gas amount = 0
     }
-    return gasPrice * MICRO_AIN * gasAmount;
+    return gasPrice * BlockchainConfigs.MICRO_AIN * gasAmount;
   }
 
   static getServiceGasCostTotalFromTxList(txList, resList) {
@@ -648,6 +660,27 @@ class CommonUtil {
       logger.debug(message);
     }
     return CommonUtil.returnTxResult(code, message);
+  }
+
+  /**
+   * Logs an error message with stack trace.
+   *
+   * @param logger logger to log with
+   * @param message message to log
+   */
+  static logErrorWithStackTrace(logger, message) {
+    logger.error(message + `\n${new Error().stack}.`);
+  }
+
+  /**
+   * Finishes logging after stack trace logging.
+   *
+   * @param logger logger to log with
+   * @param message message to log
+   */
+  static finishWithStackTrace(logger, message) {
+    CommonUtil.logErrorWithStackTrace(logger, message);
+    logger.finish();
   }
 
   static keyStackToMetricName(keyStack) {
@@ -738,6 +771,21 @@ class CommonUtil {
       return '*';
     }
     return [...new Set([...inputList])];
+  }
+
+  static getJsonDiff(base, target) {
+    if (!CommonUtil.isDict(base) || !CommonUtil.isDict(target)) {
+      return '';
+    }
+    return jsonDiff.diffString(base, target, { color: "" });
+  }
+
+  static getRegexpList(strList) {
+    const regexpList = [];
+    for (const str of strList) {
+      regexpList.push(new RegExp(str));
+    }
+    return regexpList;
   }
 }
 

@@ -1,12 +1,11 @@
 /* eslint guard-for-in: "off" */
-const logger = require('../logger')('STATE_UTIL');
+const logger = new (require('../logger'))('STATE_UTIL');
 
 const _ = require('lodash');
-const validUrl = require('valid-url');
+const espree = require('espree');
 const CommonUtil = require('../common/common-util');
 const {
-  FeatureFlags,
-  HASH_DELIMITER,
+  BlockchainConfigs,
   PredefinedDbPaths,
   FunctionProperties,
   FunctionTypes,
@@ -15,8 +14,32 @@ const {
   OwnerProperties,
   ShardingProperties,
   StateInfoProperties,
-  STATE_LABEL_LENGTH_LIMIT,
 } = require('../common/constants');
+
+const WRITE_RULE_ECMA_VERSION = 12;
+const WRITE_RULE_CODE_SNIPPET_PREFIX = '"use strict"; return ';
+const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
+  // 1) from parameters
+  'auth',
+  'currentTime',
+  'data',
+  'evalOwner',
+  'evalRule',
+  'getFunction',
+  'getOwner',
+  'getRule',
+  'getValue',
+  'lastBlockNumber',
+  'newData',
+  'util',
+  // 2) from language
+  'Number',  // type casting
+  'String',  // type casting
+  'Boolean',  // type casting
+];
+const WRITE_RULE_PUNC_TOKEN_BLACKLIST = [
+  '=',  // assignment
+];
 
 function isEmptyNode(node) {
   return node.getIsLeaf() && node.getValue() === null;
@@ -27,7 +50,7 @@ function hasConfig(node, label) {
 }
 
 function getConfig(node, label) {
-  return hasConfig(node, label) ? node.getChild(label).toJsObject() : null;
+  return hasConfig(node, label) ? node.getChild(label).toStateSnapshot() : null;
 }
 
 function hasShardConfig(valueNode) {
@@ -48,6 +71,10 @@ function getFunctionConfig(funcNode) {
 
 function hasRuleConfig(ruleNode) {
   return hasConfig(ruleNode, PredefinedDbPaths.DOT_RULE);
+}
+
+function hasRuleConfigWithProp(ruleNode, ruleProp) {
+  return hasRuleConfig(ruleNode) && ruleNode.getChild(PredefinedDbPaths.DOT_RULE).getChild(ruleProp) !== null;
 }
 
 function getRuleConfig(ruleNode) {
@@ -118,7 +145,7 @@ function isValidServiceName(name) {
 function isValidStateLabel(label) {
   if (!CommonUtil.isString(label) ||
       label === '' ||
-      label.length > STATE_LABEL_LENGTH_LIMIT ||
+      label.length > BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT ||
       (hasReservedChar(label) && !hasAllowedPattern(label))) {
     return false;
   }
@@ -138,7 +165,7 @@ function isValidPathForStates(fullPath) {
   return { isValid, invalidPath: isValid ? '' : CommonUtil.formatPath(path) };
 }
 
-function isValidJsObjectForStatesRecursive(obj, path) {
+function isValidJsObjectForStates(obj, path = []) {
   if (CommonUtil.isDict(obj)) {
     if (CommonUtil.isEmpty(obj)) {
       return { isValid: false, invalidPath: CommonUtil.formatPath(path) };
@@ -149,7 +176,7 @@ function isValidJsObjectForStatesRecursive(obj, path) {
         return { isValid: false, invalidPath: CommonUtil.formatPath(path) };
       }
       const childObj = obj[key];
-      const isValidChild = isValidJsObjectForStatesRecursive(childObj, path);
+      const isValidChild = isValidJsObjectForStates(childObj, path);
       if (!isValidChild.isValid) {
         return isValidChild;
       }
@@ -165,23 +192,153 @@ function isValidJsObjectForStatesRecursive(obj, path) {
   return { isValid: true, invalidPath: '' };
 }
 
-function isValidJsObjectForStates(obj) {
-  return isValidJsObjectForStatesRecursive(obj, []);
+function sanitizeRuleConfig(rule) {
+  if (!rule) {
+    return null;
+  }
+  const sanitized = {};
+  if (rule.hasOwnProperty(RuleProperties.WRITE)) {
+    CommonUtil.setJsObject(sanitized, [RuleProperties.WRITE], rule[RuleProperties.WRITE]);
+  }
+  if (rule.hasOwnProperty(RuleProperties.STATE)) {
+    if (rule[RuleProperties.STATE] === null) {
+      CommonUtil.setJsObject(sanitized, [RuleProperties.STATE], null);
+    } else {
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.MAX_CHILDREN],
+            rule[RuleProperties.STATE][RuleProperties.MAX_CHILDREN]);
+      }
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.GC_MAX_SIBLINGS)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.GC_MAX_SIBLINGS],
+            rule[RuleProperties.STATE][RuleProperties.GC_MAX_SIBLINGS]);
+      }
+    }
+  }
+  return sanitized;
+}
+
+function makeWriteRuleCodeSnippet(ruleString) {
+  return WRITE_RULE_CODE_SNIPPET_PREFIX + ruleString;
+}
+
+function getVariableLabels(parsedRulePath) {
+  return parsedRulePath.filter((label) => _.startsWith(label, BlockchainConfigs.VARIABLE_LABEL_PREFIX));
+}
+
+/**
+ * Extract top-level identifier tokens (e.g. auth, newData, not auth.addr nor newData.proposer)
+ * from the given token list.
+ */
+function getTopLevelIdTokens(tokenList) {
+  let withProceedingDot = false;
+  return tokenList.filter((token) => {
+    const isTopLevelIdToken = token.type === 'Identifier' && !withProceedingDot;
+    withProceedingDot = token.type === 'Punctuator' && token.value === '.';
+    return isTopLevelIdToken;
+  }).map((token) => token.value);
+}
+
+/**
+ * Extract punctuator tokens from the given token list.
+ */
+function getPuncTokens(tokenList) {
+  return tokenList.filter((token) => token.type === 'Punctuator').map((token) => token.value);
+}
+
+function isValidWriteRule(parsedRulePath, ruleString) {
+  const LOG_HEADER = 'isValidWriteRule';
+
+  if (ruleString !== null && !CommonUtil.isBool(ruleString) && !CommonUtil.isString(ruleString)) {
+    return false;
+  }
+  if (CommonUtil.isString(ruleString)) {
+    const variableLabelList = getVariableLabels(parsedRulePath);
+    const idTokenWhitelistSet = new Set([
+      ...WRITE_RULE_ID_TOKEN_WHITELIST_BASE,
+      ...variableLabelList,
+    ]);
+    const ruleCodeSnippet = makeWriteRuleCodeSnippet(ruleString);
+    const tokenList = espree.tokenize(ruleCodeSnippet, { ecmaVersion: WRITE_RULE_ECMA_VERSION });
+    const idTokens = getTopLevelIdTokens(tokenList);
+    for (const token of idTokens) {
+      if (!idTokenWhitelistSet.has(token)) {
+        logger.info(
+            `[${LOG_HEADER}] Rule includes a not-allowed identifier token (${token}) ` +
+            `in rule string: ${ruleString}`);
+        return false;
+      }
+    }
+    const puncTokenBlacklistSet = new Set([
+      ...WRITE_RULE_PUNC_TOKEN_BLACKLIST
+    ]);
+    const puncTokens = getPuncTokens(tokenList);
+    for (const token of puncTokens) {
+      if (puncTokenBlacklistSet.has(token)) {
+        logger.info(
+            `[${LOG_HEADER}] Rule includes a not-allowed punctuator token (${token}) ` +
+            `in rule string: ${ruleString}`);
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+function isValidStateRule(stateRule) {
+  if (stateRule === null) {
+    return true;
+  }
+  if (!CommonUtil.isDict(stateRule) || CommonUtil.isEmpty(stateRule)) {
+    return false;
+  }
+  let hasValidProperty = false;
+  if (stateRule.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+    if (!CommonUtil.isNumber(stateRule[RuleProperties.MAX_CHILDREN]) ||
+        stateRule[RuleProperties.MAX_CHILDREN] <= 0) {
+      return false;
+    }
+    hasValidProperty = true;
+  }
+  if (stateRule.hasOwnProperty(RuleProperties.GC_MAX_SIBLINGS)) {
+    if (!CommonUtil.isNumber(stateRule[RuleProperties.GC_MAX_SIBLINGS]) ||
+      stateRule[RuleProperties.GC_MAX_SIBLINGS] <= 0) {
+      return false;
+    }
+    hasValidProperty = true;
+  }
+  return hasValidProperty;
 }
 
 /**
  * Checks the validity of the given rule configuration.
+ * 
+ * @param {Object} configPath path of the config
+ * @param {Object} ruleConfigObj rule config object
  */
- function isValidRuleConfig(ruleConfigObj) {
+// NOTE(platfowner): Should have the same parameters as isValidFunctionConfig() and
+// isValidOwnerConfig() to be used with isValidConfigTreeRecursive().
+function isValidRuleConfig(configPath, ruleConfigObj) {
   if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
-  if (!ruleConfigObj.hasOwnProperty(RuleProperties.WRITE)) {
+  if (!ruleConfigObj.hasOwnProperty(RuleProperties.WRITE) &&
+      !ruleConfigObj.hasOwnProperty(RuleProperties.STATE)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
-  const writeProp = ruleConfigObj[RuleProperties.WRITE];
-  if (!CommonUtil.isBool(writeProp) && !CommonUtil.isString(writeProp)) {
+
+  const sanitized = sanitizeRuleConfig(ruleConfigObj);
+  const isIdentical = _.isEqual(JSON.parse(JSON.stringify(sanitized)), ruleConfigObj);
+  if (!isIdentical) {
+    return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
+  }
+  const writeRule = sanitized[RuleProperties.WRITE];
+  if (sanitized.hasOwnProperty(RuleProperties.WRITE) && !isValidWriteRule(configPath, writeRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
+  }
+  const stateRule = sanitized[RuleProperties.STATE];
+  if (sanitized.hasOwnProperty(RuleProperties.STATE) && !isValidStateRule(stateRule)) {
+    return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.STATE]) };
   }
 
   return { isValid: true, invalidPath: '' };
@@ -202,16 +359,16 @@ function sanitizeFunctionInfo(functionInfoObj) {
     sanitized[FunctionProperties.FUNCTION_TYPE] = functionType;
     sanitized[FunctionProperties.FUNCTION_ID] =
         CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.FUNCTION_ID]);
-    sanitized[FunctionProperties.EVENT_LISTENER] =
-        CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.EVENT_LISTENER]);
-    sanitized[FunctionProperties.SERVICE_NAME] =
-        CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.SERVICE_NAME]);
+    sanitized[FunctionProperties.FUNCTION_URL] =
+        CommonUtil.stringOrEmpty(functionInfoObj[FunctionProperties.FUNCTION_URL]);
   }
 
   return sanitized;
 }
 
 function isValidFunctionInfo(functionInfoObj) {
+  const LOG_HEADER = 'isValidFunctionInfo';
+
   if (CommonUtil.isEmpty(functionInfoObj)) {
     return false;
   }
@@ -219,11 +376,12 @@ function isValidFunctionInfo(functionInfoObj) {
   const isIdentical =
       _.isEqual(JSON.parse(JSON.stringify(sanitized)), functionInfoObj, { strict: true });
   if (!isIdentical) {
+    const diffLines = CommonUtil.getJsonDiff(sanitized, functionInfoObj);
+    logger.info(`[${LOG_HEADER}] Function info is in a non-standard format:\n${diffLines}\n`);
     return false;
   }
-  const eventListener = functionInfoObj[FunctionProperties.EVENT_LISTENER];
-  if (eventListener !== undefined &&
-      !validUrl.isUri(functionInfoObj[FunctionProperties.EVENT_LISTENER])) {
+  const functionUrl = functionInfoObj[FunctionProperties.FUNCTION_URL];
+  if (functionUrl !== undefined && !CommonUtil.isValidUrl(functionUrl)) {
     return false;
   }
   return true;
@@ -231,8 +389,13 @@ function isValidFunctionInfo(functionInfoObj) {
 
 /**
  * Checks the validity of the given function configuration.
+ * 
+ * @param {Object} configPath path of the config
+ * @param {Object} functionConfigObj function config object
  */
-function isValidFunctionConfig(functionConfigObj) {
+// NOTE(platfowner): Should have the same parameters as isValidRuleConfig() and
+// isValidOwnerConfig() to be used with isValidConfigTreeRecursive().
+function isValidFunctionConfig(configPath, functionConfigObj) {
   if (!CommonUtil.isDict(functionConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
@@ -278,19 +441,30 @@ function sanitizeOwnerPermissions(ownerPermissionsObj) {
 }
 
 function isValidOwnerPermissions(ownerPermissionsObj) {
+  const LOG_HEADER = 'isValidOwnerPermissions';
+
   if (CommonUtil.isEmpty(ownerPermissionsObj)) {
     return false;
   }
   const sanitized = sanitizeOwnerPermissions(ownerPermissionsObj);
   const isIdentical =
       _.isEqual(JSON.parse(JSON.stringify(sanitized)), ownerPermissionsObj, { strict: true });
+  if (!isIdentical) {
+    const diffLines = CommonUtil.getJsonDiff(sanitized, ownerPermissionsObj);
+    logger.info(`[${LOG_HEADER}] Owner permission is in a non-standard format:\n${diffLines}\n`);
+  }
   return isIdentical;
 }
 
 /**
  * Checks the validity of the given owner configuration.
+ * 
+ * @param {Object} configPath path of the config
+ * @param {Object} ownerConfigObj owner config object
  */
-function isValidOwnerConfig(ownerConfigObj) {
+// NOTE(platfowner): Should have the same parameters as isValidFunctionConfig() and
+// isValidRuleConfig() to be used with isValidConfigTreeRecursive().
+function isValidOwnerConfig(configPath, ownerConfigObj) {
   if (!CommonUtil.isDict(ownerConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
@@ -331,30 +505,40 @@ function isValidOwnerConfig(ownerConfigObj) {
   return { isValid: true, invalidPath: '' };
 }
 
-function isValidConfigTreeRecursive(stateTreeObj, path, configLabel, stateConfigValidator) {
+/**
+ * Checks the validity of the given state tree with the given config label and
+ * state config validator.
+ * 
+ * @param {*} treePath path of the state tree
+ * @param {*} stateTreeObj state tree to check the validity
+ * @param {*} path recursion path
+ * @param {*} configLabel config label
+ * @param {*} stateConfigValidator state config validator function
+ */
+function isValidConfigTreeRecursive(treePath, stateTreeObj, subtreePath, configLabel, stateConfigValidator) {
   if (!CommonUtil.isDict(stateTreeObj) || CommonUtil.isEmpty(stateTreeObj)) {
-    return { isValid: false, invalidPath: CommonUtil.formatPath(path) };
+    return { isValid: false, invalidPath: CommonUtil.formatPath(subtreePath) };
   }
 
   for (const label in stateTreeObj) {
-    path.push(label);
+    subtreePath.push(label);
     const subtree = stateTreeObj[label];
     if (label === configLabel) {
-      const isValidConfig = stateConfigValidator(subtree);
+      const isValidConfig = stateConfigValidator([...treePath, ...subtreePath], subtree);
       if (!isValidConfig.isValid) {
         return {
           isValid: false,
-          invalidPath: CommonUtil.appendPath(CommonUtil.formatPath(path), isValidConfig.invalidPath)
+          invalidPath: CommonUtil.appendPath(CommonUtil.formatPath(subtreePath), isValidConfig.invalidPath)
         };
       }
     } else {
       const isValidSubtree =
-          isValidConfigTreeRecursive(subtree, path, configLabel, stateConfigValidator);
+          isValidConfigTreeRecursive(treePath, subtree, subtreePath, configLabel, stateConfigValidator);
       if (!isValidSubtree.isValid) {
         return isValidSubtree;
       }
     }
-    path.pop();
+    subtreePath.pop();
   }
 
   return { isValid: true, invalidPath: '' };
@@ -363,36 +547,37 @@ function isValidConfigTreeRecursive(stateTreeObj, path, configLabel, stateConfig
 /**
  * Checks the validity of the given rule tree.
  */
-function isValidRuleTree(ruleTreeObj) {
+function isValidRuleTree(treePath, ruleTreeObj) {
   if (ruleTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
-  return isValidConfigTreeRecursive(ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig);
+  return isValidConfigTreeRecursive(
+      treePath, ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig);
 }
 
 /**
  * Checks the validity of the given function tree.
  */
-function isValidFunctionTree(functionTreeObj) {
+function isValidFunctionTree(treePath, functionTreeObj) {
   if (functionTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      functionTreeObj, [], PredefinedDbPaths.DOT_FUNCTION, isValidFunctionConfig);
+      treePath, functionTreeObj, [], PredefinedDbPaths.DOT_FUNCTION, isValidFunctionConfig);
 }
 
 /**
  * Checks the validity of the given owner tree.
  */
-function isValidOwnerTree(ownerTreeObj) {
+function isValidOwnerTree(treePath, ownerTreeObj) {
   if (ownerTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      ownerTreeObj, [], PredefinedDbPaths.DOT_OWNER, isValidOwnerConfig);
+      treePath, ownerTreeObj, [], PredefinedDbPaths.DOT_OWNER, isValidOwnerConfig);
 }
 
 /**
@@ -424,14 +609,56 @@ function hasConfigLabelOnly(stateTreeObj, configLabel) {
 }
 
 /**
+ * Returns a new rule tree created by applying the rule change to
+ * the current rule tree.
+ * 
+ * @param {Object} curRuleTree current rule tree (to be modified by this rule)
+ * @param {Object} ruleChange rule change
+ */
+// NOTE(platfowner): Partial set is applied only when the current rule tree has
+// .rule property and the rule change has .rule property as the only property.
+function applyRuleChange(curRuleTree, ruleChange) {
+  if (!hasConfigLabel(curRuleTree, PredefinedDbPaths.DOT_RULE) ||
+      !hasConfigLabelOnly(ruleChange, PredefinedDbPaths.DOT_RULE)) {
+    return CommonUtil.isDict(ruleChange) ?
+        JSON.parse(JSON.stringify(ruleChange)) : ruleChange;
+  }
+  const ruleChangeMap = CommonUtil.getJsObject(ruleChange, [PredefinedDbPaths.DOT_RULE]);
+  if (!ruleChangeMap || Object.keys(ruleChangeMap).length === 0) {
+    return curRuleTree;
+  }
+  const newRuleConfig = {}
+  if (CommonUtil.isDict(curRuleTree) && curRuleTree[PredefinedDbPaths.DOT_RULE]) {
+    CommonUtil.setJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE], curRuleTree[PredefinedDbPaths.DOT_RULE]);
+  }
+  let newRuleMap = CommonUtil.getJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
+  if (!CommonUtil.isDict(newRuleMap)) {
+    // Add a place holder.
+    CommonUtil.setJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE], {});
+    newRuleMap = CommonUtil.getJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
+  }
+  for (const ruleKey in ruleChangeMap) {
+    const ruleInfo = ruleChangeMap[ruleKey];
+    if (ruleInfo === null) {
+      delete newRuleMap[ruleKey];
+    } else {
+      newRuleMap[ruleKey] = ruleInfo;
+    }
+  }
+
+  return newRuleConfig;
+}
+
+/**
  * Returns a new function tree created by applying the function change to
  * the current function tree.
+ * 
  * @param {Object} curFuncTree current function tree (to be modified by this function)
  * @param {Object} functionChange function change
  */
+// NOTE(platfowner): Partial set is applied only when the current function tree has
+// .function property and the function change has .function property as the only property.
 function applyFunctionChange(curFuncTree, functionChange) {
-  // NOTE(platfowner): Partial set is applied only when the current function tree has
-  // .function property and the function change has .function property as the only property.
   if (!hasConfigLabel(curFuncTree, PredefinedDbPaths.DOT_FUNCTION) ||
       !hasConfigLabelOnly(functionChange, PredefinedDbPaths.DOT_FUNCTION)) {
     return CommonUtil.isDict(functionChange) ?
@@ -464,12 +691,13 @@ function applyFunctionChange(curFuncTree, functionChange) {
 /**
  * Returns a new owner tree created by applying the owner change to
  * the current owner tree.
+ * 
  * @param {Object} curOwnerTree current owner tree (to be modified by this function)
  * @param {Object} ownerChange owner change
  */
+// NOTE(platfowner): Partial set is applied only when the current owner tree has
+// .owner property and the owner change has .owner property as the only property.
 function applyOwnerChange(curOwnerTree, ownerChange) {
-  // NOTE(platfowner): Partial set is applied only when the current owner tree has
-  // .owner property and the owner change has .owner property as the only property.
   if (!hasConfigLabel(curOwnerTree, PredefinedDbPaths.DOT_OWNER) ||
       !hasConfigLabelOnly(ownerChange, PredefinedDbPaths.DOT_OWNER)) {
     return CommonUtil.isDict(ownerChange) ?
@@ -551,9 +779,6 @@ function updateStateInfoForAllRootPathsRecursive(
   if (updatedChildEmpty) {
     curNode.deleteChild(updatedChildLabel, true);  // shouldUpdateStateInfo = true
   } else {
-    if (!FeatureFlags.enableStateInfoUpdates) {
-      return 0;
-    }
     curNode.updateStateInfo(updatedChildLabel, true);  // shouldRebuildRadixInfo = true
   }
   const curLabel = curNode.getLabel();
@@ -571,9 +796,9 @@ function updateStateInfoForAllRootPaths(curNode, updatedChildLabel = null) {
 
   const childNode = curNode.getChild(updatedChildLabel);
   if (childNode === null) {
-    logger.error(
-        `[${LOG_HEADER}] Updating state info with non-existing label: ${updatedChildLabel} ` +
-        `at: ${new Error().stack}.`);
+    CommonUtil.logErrorWithStackTrace(
+        logger, 
+        `[${LOG_HEADER}] Updating state info with non-existing label: ${updatedChildLabel}`);
     return 0;
   }
   return updateStateInfoForAllRootPathsRecursive(
@@ -581,9 +806,6 @@ function updateStateInfoForAllRootPaths(curNode, updatedChildLabel = null) {
 }
 
 function updateStateInfoForStateTree(stateTree) {
-  if (!FeatureFlags.enableStateInfoUpdates) {
-    return 0;
-  }
   let numAffectedNodes = 0;
   if (!stateTree.getIsLeaf()) {
     for (const node of stateTree.getChildNodes()) {
@@ -608,6 +830,33 @@ function verifyStateInfoForStateTree(stateTree) {
     }
   }
   return true;
+}
+
+function verifyProofHashForStateTree(stateTree, curLabels = []) {
+  const curPath = CommonUtil.formatPath(curLabels);
+  if (stateTree.getIsLeaf()) {
+    const proofHashComputed = CommonUtil.hashString(CommonUtil.toString(stateTree.getValue()));
+    const isVerified = proofHashComputed === stateTree.getProofHash();
+    const mismatchedPath = isVerified ? null : curPath;
+    const mismatchedProofHash = isVerified ? null : stateTree.getProofHash();
+    const mismatchedProofHashComputed = isVerified ? null : proofHashComputed;
+    return {
+      isVerified,
+      mismatchedPath,
+      mismatchedProofHash,
+      mismatchedProofHashComputed,
+    };
+  } else {
+    if (stateTree.getProofHash() !== stateTree.radixTree.getRootProofHash()) {
+      return {
+        isVerified: false,
+        mismatchedPath: curPath,
+        mismatchedProofHash: stateTree.getProofHash(),
+        mismatchedProofHashComputed: stateTree.radixTree.getRootProofHash(),
+      };
+    }
+    return stateTree.radixTree.verifyProofHashForRadixTree(curLabels);
+  }
 }
 
 /**
@@ -670,99 +919,88 @@ function getProofHashFromStateRoot(root, fullPath) {
  */
 function getProofHashOfRadixNode(childStatePh, subProofList) {
   let preimage = childStatePh !== null ? childStatePh : '';
-  preimage += `${HASH_DELIMITER}`;
+  preimage += BlockchainConfigs.HASH_DELIMITER;
   if (subProofList.length === 0) {
-    preimage += `${HASH_DELIMITER}`;
+    preimage += BlockchainConfigs.HASH_DELIMITER;
   } else {
     for (const subProof of subProofList) {
-      preimage += `${HASH_DELIMITER}${subProof.label}${HASH_DELIMITER}${subProof.proofHash}`;
+      const radixLabel = subProof.label.slice(StateInfoProperties.RADIX_LABEL_PREFIX.length);
+      preimage += `${BlockchainConfigs.HASH_DELIMITER}${radixLabel}${BlockchainConfigs.HASH_DELIMITER}${subProof.proofHash}`;
     }
   }
   return CommonUtil.hashString(preimage);
 }
 
 /**
- * An internal version of verifyStateProof().
+ * Verifies a state path.
  * 
  * @param {Object} proof state proof
- * 
- * Returns { proofHash, isStateNode } when successful, otherwise null.
  */
-function verifyStateProofInternal(proof, curLabels) {
+function verifyStateProof(proof, curLabels = []) {
   const curPath = CommonUtil.formatPath(curLabels);
   let childStatePh = null;
   let curProofHash = null;
-  let isStateNode = false;
   let childIsVerified = true;
   let childMismatchedPath = null;
+  let childMismatchedProofHash = null;
+  let childMismatchedProofHashComputed = null;
   const subProofList = [];
   // NOTE(platfowner): Sort child nodes by label radix for stability.
   const sortedProof = Object.entries(proof).sort((a, b) => a[0].localeCompare(b[0]));
   for (const [label, value] of sortedProof) {
     let childProofHash = null;
     if (CommonUtil.isDict(value)) {
-      const subProof = verifyStateProofInternal(value, [...curLabels, label]);
-      if (childIsVerified === true && subProof.isVerified !== true) {
+      const subVerif = verifyStateProof(value, [...curLabels, label]);
+      if (childIsVerified === true && subVerif.isVerified !== true) {
         childIsVerified = false;
-        childMismatchedPath = subProof.mismatchedPath;
+        childMismatchedPath = subVerif.mismatchedPath;
+        childMismatchedProofHash = subVerif.mismatchedProofHash;
+        childMismatchedProofHashComputed = subVerif.mismatchedProofHashComputed;
       }
-      if (subProof.isStateNode === true) {
-        childStatePh = subProof.proofHash;
+      if (_.startsWith(label, StateInfoProperties.STATE_LABEL_PREFIX)) {
+        childStatePh = subVerif.curProofHash;
         continue;  // continue
       }
-      childProofHash = subProof.proofHash;
+      childProofHash = subVerif.curProofHash;
     } else {
       childProofHash = value;
     }
     if (label === StateInfoProperties.STATE_PROOF_HASH) {
       curProofHash = childProofHash;
-      isStateNode = true;
-      continue;  // continue
-    }
-    if (label === StateInfoProperties.RADIX_PROOF_HASH) {
+    } else if (label === StateInfoProperties.RADIX_PROOF_HASH) {
       curProofHash = childProofHash;
-      continue;  // continue
+    } else {
+      subProofList.push({
+        label,
+        proofHash: childProofHash,
+      });
     }
-    subProofList.push({
-      label,
-      proofHash: childProofHash,
-    });
   }
   if (subProofList.length === 0 && childStatePh === null) {
     const isVerified = childIsVerified && curProofHash !== null;
     const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
+    const mismatchedProofHash = childIsVerified ? (isVerified ? null : curProofHash) : childMismatchedProofHash;
+    const mismatchedProofHashComputed = childIsVerified ? null : childMismatchedProofHashComputed;
     return {
-      proofHash: curProofHash,
-      isStateNode: isStateNode,
-      isVerified: isVerified,
-      mismatchedPath: mismatchedPath,
+      curProofHash,
+      isVerified,
+      mismatchedPath,
+      mismatchedProofHash,
+      mismatchedProofHashComputed,
     };
   }
   const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
   const isVerified = childIsVerified && computedProofHash === curProofHash;
   const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
+  const mismatchedProofHash = childIsVerified ? (isVerified ? null : curProofHash) : childMismatchedProofHash;
+  const mismatchedProofHashComputed = childIsVerified ? (isVerified ? null : computedProofHash) : childMismatchedProofHashComputed;
   return {
-    proofHash: computedProofHash,
-    isStateNode: isStateNode,
-    isVerified: isVerified,
-    mismatchedPath: mismatchedPath,
+    curProofHash,
+    isVerified,
+    mismatchedPath,
+    mismatchedProofHash,
+    mismatchedProofHashComputed,
   }
-}
-
-/**
- * Verifies a state path.
- * 
- * @param {Object} proof state proof
- * 
- * Returns root proof hash if successful, otherwise null.
- */
-function verifyStateProof(proof) {
-  const result = verifyStateProofInternal(proof, []);
-  return {
-    rootProofHash: result.proofHash,
-    isVerified: result.isVerified,
-    mismatchedPath: result.mismatchedPath,
-  };
 }
 
 module.exports = {
@@ -772,6 +1010,7 @@ module.exports = {
   hasFunctionConfig,
   getFunctionConfig,
   hasRuleConfig,
+  hasRuleConfigWithProp,
   getRuleConfig,
   hasOwnerConfig,
   getOwnerConfig,
@@ -783,12 +1022,16 @@ module.exports = {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  makeWriteRuleCodeSnippet,
+  isValidWriteRule,
+  isValidStateRule,
   isValidRuleConfig,
   isValidRuleTree,
   isValidFunctionConfig,
   isValidFunctionTree,
   isValidOwnerConfig,
   isValidOwnerTree,
+  applyRuleChange,
   applyFunctionChange,
   applyOwnerChange,
   renameStateTreeVersion,
@@ -796,6 +1039,7 @@ module.exports = {
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
+  verifyProofHashForStateTree,
   getStateProofFromStateRoot,
   getProofHashFromStateRoot,
   verifyStateProof,

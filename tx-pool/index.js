@@ -1,15 +1,10 @@
 /* eslint guard-for-in: "off" */
-const logger = require('../logger')('TX_POOL');
+const logger = new (require('../logger'))('TX_POOL');
+
 const _ = require('lodash');
 const {
-  FeatureFlags,
-  TRANSACTION_POOL_TIMEOUT_MS,
-  TRANSACTION_TRACKER_TIMEOUT_MS,
-  TX_POOL_SIZE_LIMIT,
-  TX_POOL_SIZE_LIMIT_PER_ACCOUNT,
-  SERVICE_BANDWIDTH_BUDGET_PER_BLOCK,
-  APPS_BANDWIDTH_BUDGET_PER_BLOCK,
-  FREE_BANDWIDTH_BUDGET_PER_BLOCK,
+  DevFlags,
+  BlockchainConfigs,
   TransactionStates,
   WriteDbOperations,
   StateVersions,
@@ -60,19 +55,19 @@ class TransactionPool {
   }
 
   isTimedOutFromPool(txTimestamp, lastBlockTimestamp) {
-    return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_POOL_TIMEOUT_MS);
+    return this.isTimedOut(txTimestamp, lastBlockTimestamp, BlockchainConfigs.TRANSACTION_POOL_TIMEOUT_MS);
   }
 
   isTimedOutFromTracker(txTimestamp, lastBlockTimestamp) {
-    return this.isTimedOut(txTimestamp, lastBlockTimestamp, TRANSACTION_TRACKER_TIMEOUT_MS);
+    return this.isTimedOut(txTimestamp, lastBlockTimestamp, BlockchainConfigs.TRANSACTION_TRACKER_TIMEOUT_MS);
   }
 
   hasRoomForNewTransaction() {
-    return this.getPoolSize() < TX_POOL_SIZE_LIMIT;
+    return this.getPoolSize() < BlockchainConfigs.TX_POOL_SIZE_LIMIT;
   }
 
   hasPerAccountRoomForNewTransaction(address) {
-    return this.getPerAccountPoolSize(address) < TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
+    return this.getPerAccountPoolSize(address) < BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
   }
 
   isNotEligibleTransaction(tx) {
@@ -183,7 +178,7 @@ class TransactionPool {
 
   getAppBandwidthAllocated(db, appStakesTotal, appName) {
     const appStake = db ? db.getAppStake(appName) : 0;
-    return appStakesTotal > 0 ? APPS_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
+    return appStakesTotal > 0 ? BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
   }
 
   // NOTE(liayoo): txList is already sorted by their gas prices and/or timestamps,
@@ -211,13 +206,13 @@ class TransactionPool {
       const appBandwidth = _.get(tx, 'extra.gas.bandwidth.app', null);
       // Check if tx exceeds service bandwidth
       if (serviceBandwidth) {
-        if (serviceBandwidthSum + serviceBandwidth > SERVICE_BANDWIDTH_BUDGET_PER_BLOCK) {
+        if (serviceBandwidthSum + serviceBandwidth > BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK) {
           // Exceeds service bandwidth budget. Discard tx.
           if (nonce >= 0) {
             addrToDiscardedNoncedTx[tx.address] = true;
           }
-          if (FeatureFlags.enableRichTxSelectionLogging) {
-            logger.debug(`Skipping service tx: ${serviceBandwidthSum + serviceBandwidth} > ${SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}`);
+          if (DevFlags.enableRichTxSelectionLogging) {
+            logger.debug(`Skipping service tx: ${serviceBandwidthSum + serviceBandwidth} > ${BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}`);
           }
           discardedTxList.push(tx);
           continue;
@@ -236,7 +231,7 @@ class TransactionPool {
               _.get(appBandwidthSum, appName, 0) + _.get(tempAppBandwidthSum, appName, 0);
           if (currAppBandwidthSum + bandwidth > appBandwidthAllocated) {
             if (appBandwidthAllocated === 0 &&
-              tempFreeTierBandwidthSum + bandwidth <= FREE_BANDWIDTH_BUDGET_PER_BLOCK) {
+              tempFreeTierBandwidthSum + bandwidth <= BlockchainConfigs.FREE_BANDWIDTH_BUDGET_PER_BLOCK) {
               // May be able to include this tx for the free tier budget.
               tempFreeTierBandwidthSum += bandwidth;
             } else {
@@ -244,7 +239,7 @@ class TransactionPool {
               if (nonce >= 0) {
                 addrToDiscardedNoncedTx[tx.address] = true;
               }
-              if (FeatureFlags.enableRichTxSelectionLogging) {
+              if (DevFlags.enableRichTxSelectionLogging) {
                 logger.debug(`Skipping app tx: ${currAppBandwidthSum + bandwidth} > ${appBandwidthAllocated}`);
               }
               isSkipped = true;
@@ -375,7 +370,7 @@ class TransactionPool {
       }
       addrToTxSet[address].add(hash);
       const tracked = this.transactionTracker[hash];
-      if (tracked && tracked.state !== TransactionStates.IN_BLOCK) {
+      if (tracked && tracked.state !== TransactionStates.FINALIZED) {
         this.transactionTracker[hash].state = TransactionStates.FAILED;
       }
     });
@@ -401,7 +396,7 @@ class TransactionPool {
       const txTimestamp = voteTx.tx_body.timestamp;
       // voting txs with ordered nonces.
       this.transactionTracker[voteTx.hash] = {
-        state: TransactionStates.IN_BLOCK,
+        state: TransactionStates.FINALIZED,
         number: block.number,
         index: -1,
         address: voteTx.address,
@@ -419,7 +414,7 @@ class TransactionPool {
       const txTimestamp = tx.tx_body.timestamp;
       // Update transaction tracker.
       this.transactionTracker[tx.hash] = {
-        state: TransactionStates.IN_BLOCK,
+        state: TransactionStates.FINALIZED,
         number: block.number,
         index: i,
         address: tx.address,
