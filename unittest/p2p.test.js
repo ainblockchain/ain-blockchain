@@ -340,7 +340,7 @@ describe("P2P", () => {
 
     describe("getTrafficStats", () => {
       it("gets traffic stats", () => {
-        const expected = { '1m': {}, '5m': {}, '10m': {}, '1h': {} };
+        const expected = { '1m': {}, '5m': {}, '1h': {} };
         assert.deepEqual(p2pClient.getTrafficStats(), expected);
       });
     });
