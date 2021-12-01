@@ -9,7 +9,7 @@ class TrafficDatabase {
     this.maxIntervals = maxIntervals;
     this.initialTimeMs = currentTimeMs;
     this.countCircularQueue = _.fill(Array(maxIntervals), 0);
-    this.latencyCircularQueue = _.fill(Array(maxIntervals), 0);
+    this.metricCircularQueue = _.fill(Array(maxIntervals), 0);
     this.lastIntervalCount = 0;
     this.lastQueueIndex = 0;
   }
@@ -29,16 +29,16 @@ class TrafficDatabase {
     for (let i = 1; i <= queueIndexDelta; i++) {
       this.lastQueueIndex = (oldQueueIndex + i) % this.maxIntervals;
       this.countCircularQueue[this.lastQueueIndex] = 0;  // Reset count
-      this.latencyCircularQueue[this.lastQueueIndex] = 0;  // Reset latency
+      this.metricCircularQueue[this.lastQueueIndex] = 0;  // Reset metric
     }
     this.lastIntervalCount = intervalCount;
   }
 
-  addEvent(latencyMs, currentTimeMs = null) {
+  addEvent(metricValue, currentTimeMs = null) {
     const curTime = currentTimeMs !== null ? currentTimeMs : Date.now();
     this.updateQueueIndex(curTime);
     this.countCircularQueue[this.lastQueueIndex] += 1;
-    this.latencyCircularQueue[this.lastQueueIndex] += latencyMs;
+    this.metricCircularQueue[this.lastQueueIndex] += metricValue;
   }
 
   getEventSums(periodMs, currentTimeMs = null) {
@@ -52,15 +52,15 @@ class TrafficDatabase {
     const curTime = currentTimeMs !== null ? currentTimeMs : Date.now();
     this.updateQueueIndex(curTime);
     let countSum = 0;
-    let latencySum = 0;
+    let metricSum = 0;
     for (let i = 1; i <= numIntervals; i++) {
       const queueIndex = (this.lastQueueIndex - i + this.maxIntervals) % this.maxIntervals;
       countSum += this.countCircularQueue[queueIndex];
-      latencySum += this.latencyCircularQueue[queueIndex];
+      metricSum += this.metricCircularQueue[queueIndex];
     }
     return {
       countSum,
-      latencySum,
+      metricSum,
     };
   }
 }
