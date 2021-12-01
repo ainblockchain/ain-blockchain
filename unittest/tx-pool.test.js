@@ -12,7 +12,7 @@ const {
   TransactionStates,
 } = require('../common/constants');
 
-describe('TransactionPool', async () => {
+describe('TransactionPool', () => {
   let node, transaction;
 
   beforeEach(async () => {
@@ -32,10 +32,10 @@ describe('TransactionPool', async () => {
   });
 
   describe('Transaction addition', () => {
-    let initialNonce = node.getNonce();
     let txToAdd;
 
     beforeEach(async () => {
+      let initialNonce = node.getNonce();
       txToAdd = getTransaction(node, {
         operation: {
           type: 'SET_VALUE',
@@ -149,7 +149,7 @@ describe('TransactionPool', async () => {
         }).map((tx) => {
           return tx.tx_body.nonce;
         });
-        assert.deepEqual(sortedNonces1, [...Array(11).keys()]);
+        assert.deepEqual(sortedNonces1, [...Array(10).keys()]);
         assert.deepEqual(sortedNonces2, [...Array(11).keys()]);
         assert.deepEqual(sortedNonces3, [...Array(11).keys()]);
         assert.deepEqual(sortedNonces4, [...Array(11).keys()]);
@@ -621,15 +621,15 @@ describe('TransactionPool', async () => {
   describe('Transaction pool clean-up', () => {
     it('cleanUpForNewBlock()', () => {
       const number = 1;
-      const lastBlock = node1.bc.genesisBlock;
-      const transactions = node1.tp.getValidTransactions();
+      const lastBlock = node.bc.genesisBlock;
+      const transactions = node.tp.getValidTransactions();
       const receipts = txsToDummyReceipts(transactions);
       const block = Block.create(
-          lastBlock.hash, [], transactions, receipts, number, lastBlock.epoch + 1, '',
-          node.account.address, []);
+          lastBlock.hash, [], {}, transactions, receipts, number, lastBlock.epoch + 1, '',
+          node.account.address, {}, 0, 0);
       const newTransactions = {};
       newTransactions[node.account.address] = [];
-      let initialNonce = node.getNonce();
+      let initialNonce = node.getNonce() + 1;
       for (let i = 0; i < 10; i++) {
         newTransactions[node.account.address].push(getTransaction(node, {
           operation: {
@@ -642,6 +642,7 @@ describe('TransactionPool', async () => {
         }));
         node.tp.addTransaction(newTransactions[node.account.address][i]);
       }
+      console.log(node.tp.transactions[node.account.address]);
       node.tp.cleanUpForNewBlock(block);
       assert.deepEqual(newTransactions, node.tp.transactions);
     });
