@@ -626,7 +626,7 @@ describe('TransactionPool', () => {
       const receipts = txsToDummyReceipts(transactions);
       const block = Block.create(
           lastBlock.hash, [], {}, transactions, receipts, number, lastBlock.epoch + 1, '',
-          node.account.address, [], 0, 0);
+          node.account.address, {}, 0, 0);
       const newTransactions = {};
       newTransactions[node.account.address] = [];
       let initialNonce = node.getNonce() + 1;
@@ -642,6 +642,7 @@ describe('TransactionPool', () => {
         }));
         node.tp.addTransaction(newTransactions[node.account.address][i]);
       }
+      console.log(node.tp.transactions[node.account.address]);
       node.tp.cleanUpForNewBlock(block);
       assert.deepEqual(newTransactions, node.tp.transactions);
     });
