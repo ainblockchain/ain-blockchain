@@ -13,11 +13,11 @@ class TrafficStatsManager {
       return;
     }
     if (!this.trafficDbMap.has(eventType)) {
-      const newTdb = new TrafficDatabase(this.intervalMs, this.maxIntervals, currentTimeMs);
-      this.trafficDbMap.set(eventType, newTdb);
+      const newTrafficDb = new TrafficDatabase(this.intervalMs, this.maxIntervals, currentTimeMs);
+      this.trafficDbMap.set(eventType, newTrafficDb);
     }
-    const tdb = this.trafficDbMap.get(eventType);
-    tdb.addEvent(latencyMs, currentTimeMs);
+    const trafficDb = this.trafficDbMap.get(eventType);
+    trafficDb.addEvent(latencyMs, currentTimeMs);
   }
 
   getEventSums(eventType, periodMs, currentTimeMs = null) {
@@ -27,8 +27,8 @@ class TrafficStatsManager {
     if (!this.trafficDbMap.has(eventType)) {
       return null;
     }
-    const tdb = this.trafficDbMap.get(eventType);
-    return tdb.getEventSums(periodMs, currentTimeMs);
+    const trafficDb = this.trafficDbMap.get(eventType);
+    return trafficDb.getEventSums(periodMs, currentTimeMs);
   }
 
   getEventStats(periodSec, currentTimeMs = null) {
@@ -37,19 +37,17 @@ class TrafficStatsManager {
     }
     const stats = {};
     for (const eventType of this.trafficDbMap.keys()) {
-      let rate = 0;
-      let latency = 0;
       if (periodSec > 0) {
         const sums = this.getEventSums(eventType, periodSec * 1000, currentTimeMs);
         if (sums && sums.countSum > 0) {
-          rate = sums.countSum / periodSec;
-          latency = sums.latencySum / sums.countSum;
+          const rate = sums.countSum / periodSec;
+          const latency = sums.latencySum / sums.countSum;
+          stats[eventType] = {
+            rate,
+            latency,
+          };
         }
       }
-      stats[eventType] = {
-        rate,
-        latency,
-      };
     }
     return stats;
   }
