@@ -1,25 +1,10 @@
+const logger = new (require('../logger'))('BLOCK');
+
 const stringify = require('fast-json-stable-stringify');
 const sizeof = require('object-sizeof');
-const moment = require('moment');
-const _ = require('lodash');
-const logger = require('../logger')('BLOCK');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
-const StateNode = require('../db/state-node');
-const DB = require('../db');
-const {
-  PredefinedDbPaths,
-  GenesisAccounts,
-  GENESIS_VALIDATORS,
-  GenesisValues,
-  GenesisFunctions,
-  GenesisRules,
-  GenesisOwners,
-  AccountProperties,
-  StateInfoProperties,
-  StateVersions,
-} = require('../common/constants');
-const PathUtil = require('../common/path-util');
+const { PredefinedDbPaths } = require('../common/constants');
 
 class Block {
   constructor(lastHash, lastVotes, evidence, transactions, receipts, number, epoch, timestamp,
@@ -104,6 +89,7 @@ class Block {
   }
 
   static parse(blockInfo) {
+    // TODO(liayoo): add sanitization logic.
     if (!Block.hasRequiredFields(blockInfo)) return null;
     if (blockInfo instanceof Block) return blockInfo;
     return new Block(blockInfo.last_hash, blockInfo.last_votes, blockInfo.evidence,
@@ -163,218 +149,6 @@ class Block {
       }
     }
     return true;
-  }
-
-  static validateProposedBlock(block) {
-    const LOG_HEADER = 'validateProposedBlock';
-
-    if (!Block.validateHashes(block)) return false;
-    const nonceTracker = {};
-    let tx;
-    for (let i = 0; i < block.transactions.length; i++) {
-      tx = block.transactions[i];
-      if (tx.tx_body.nonce < 0) {
-        continue;
-      }
-      if (!(tx.address in nonceTracker)) {
-        nonceTracker[tx.address] = tx.tx_body.nonce;
-        continue;
-      }
-      if (tx.tx_body.nonce != nonceTracker[tx.address] + 1) {
-        logger.error(`[${LOG_HEADER}] Invalid noncing for ${tx.address} ` +
-            `Expected ${nonceTracker[tx.address] + 1} ` +
-            `Received ${tx.tx_body.nonce}`);
-        return false;
-      }
-      nonceTracker[tx.address] = tx.tx_body.nonce;
-    }
-    if (!Block.validateValidators(block.validators)) {
-      logger.error(
-          `[${LOG_HEADER}] Invalid validators format: ${JSON.stringify(block.validators)} ` +
-          `(${block.number} / ${block.epoch})`);
-      return false;
-    }
-
-    logger.info(`[${LOG_HEADER}] Validated block: ${block.number} / ${block.epoch}`);
-    return true;
-  }
-
-  static buildDbSetupTx(timestamp, privateKey) {
-    const opList = [];
-
-    // Values operation
-    opList.push({
-      type: 'SET_VALUE',
-      ref: '/',
-      value: GenesisValues,
-    });
-
-    // Functions operation
-    opList.push({
-      type: 'SET_FUNCTION',
-      ref: '/',
-      value: GenesisFunctions,
-    });
-
-    // Rules operation
-    opList.push({
-      type: 'SET_RULE',
-      ref: '/',
-      value: GenesisRules,
-    });
-
-    // Owners operation
-    opList.push({
-      type: 'SET_OWNER',
-      ref: '/',
-      value: GenesisOwners,
-    });
-
-    // Transaction
-    const firstTxBody = {
-      nonce: -1,
-      timestamp,
-      gas_price: 1,
-      operation: {
-        type: 'SET',
-        op_list: opList,
-      }
-    };
-    return Transaction.fromTxBody(firstTxBody, privateKey);
-  }
-
-  static buildAccountsSetupTx(timestamp, privateKey, ownerAddress) {
-    const transferOps = [];
-    const otherAccounts = GenesisAccounts[AccountProperties.OTHERS];
-    if (otherAccounts && CommonUtil.isArray(otherAccounts) && otherAccounts.length > 0 &&
-        GenesisAccounts[AccountProperties.SHARES] > 0) {
-      for (let i = 0; i < otherAccounts.length; i++) {
-        const accountAddress = otherAccounts[i][AccountProperties.ADDRESS];
-        // Transfer operation
-        const op = {
-          type: 'SET_VALUE',
-          ref: PathUtil.getTransferValuePath(ownerAddress, accountAddress, i),
-          value: GenesisAccounts[AccountProperties.SHARES],
-        };
-        transferOps.push(op);
-      }
-    }
-
-    // Transaction
-    const secondTxBody = {
-      nonce: -1,
-      timestamp,
-      gas_price: 1,
-      operation: {
-        type: 'SET',
-        op_list: transferOps
-      }
-    };
-    return Transaction.fromTxBody(secondTxBody, privateKey);
-  }
-
-  static buildConsensusAppTx(timestamp, privateKey, ownerAddress) {
-    const thirdTxBody = {
-      nonce: -1,
-      timestamp,
-      gas_price: 1,
-      operation: {
-        type: 'SET_VALUE',
-        ref: PathUtil.getCreateAppRecordPath(PredefinedDbPaths.CONSENSUS, timestamp),
-        value: {
-          [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
-            [ownerAddress]: true
-          },
-          [PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE]: {
-            [PredefinedDbPaths.STAKING]: {
-              [PredefinedDbPaths.STAKING_LOCKUP_DURATION]: moment.duration(180, 'days').as('milliseconds')
-            }
-          }
-        }
-      }
-    }
-    return Transaction.fromTxBody(thirdTxBody, privateKey);
-  }
-
-  static buildGenesisStakingTxs(timestamp) {
-    const txs = [];
-    Object.entries(GENESIS_VALIDATORS).forEach(([address, info], index) => {
-      const privateKey = _.get(GenesisAccounts,
-          `${AccountProperties.OTHERS}.${index}.${AccountProperties.PRIVATE_KEY}`);
-      if (!privateKey) {
-        throw Error(`GenesisAccounts missing values: ${JSON.stringify(GenesisAccounts)}, ${address}`);
-      }
-      const txBody = {
-        nonce: -1,
-        timestamp,
-        gas_price: 1,
-        operation: {
-          type: 'SET_VALUE',
-          ref: PathUtil.getStakingStakeRecordValuePath(PredefinedDbPaths.CONSENSUS, address, 0, timestamp),
-          value: info[PredefinedDbPaths.CONSENSUS_STAKE]
-        }
-      };
-      txs.push(Transaction.fromTxBody(txBody, privateKey));
-    });
-    return txs;
-  }
-
-  static getGenesisBlockTxs(genesisTime) {
-    const ownerAddress = CommonUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-    const ownerPrivateKey = CommonUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.PRIVATE_KEY]);
-
-    const firstTx = this.buildDbSetupTx(genesisTime, ownerPrivateKey);
-    const secondTx = this.buildAccountsSetupTx(genesisTime, ownerPrivateKey, ownerAddress);
-    const thirdTx = this.buildConsensusAppTx(genesisTime, ownerPrivateKey, ownerAddress);
-    // TODO(liayoo): Change the logic to staking & signing by the current node.
-    const stakingTxs = this.buildGenesisStakingTxs(genesisTime);
-
-    return [firstTx, secondTx, thirdTx, ...stakingTxs];
-  }
-
-  static executeGenesisTxsAndGetData(genesisTxs, genesisTime) {
-    const tempGenesisDb = new DB(
-        new StateNode(StateVersions.EMPTY), StateVersions.EMPTY, null, -1, null);
-    tempGenesisDb.initDbStates();
-    const resList = [];
-    for (const tx of genesisTxs) {
-      const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx), true, false, 0, genesisTime);
-      if (CommonUtil.isFailedTx(res)) {
-        logger.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
-            `\nRESULT: ${JSON.stringify(res)}`)
-        return null;
-      }
-      resList.push(res);
-    }
-    const { gasAmountTotal, gasCostTotal } = CommonUtil.getServiceGasCostTotalFromTxList(genesisTxs, resList);
-    return {
-      stateProofHash: tempGenesisDb.getProofHash('/'),
-      gasAmountTotal,
-      gasCostTotal,
-      receipts: CommonUtil.txResultsToReceipts(resList),
-    };
-  }
-
-  static genesis() {
-    // This is a temporary fix for the genesis block. Code should be modified after
-    // genesis block broadcasting feature is implemented.
-    const ownerAddress = CommonUtil.getJsObject(
-        GenesisAccounts, [AccountProperties.OWNER, AccountProperties.ADDRESS]);
-    const genesisTime = GenesisAccounts[AccountProperties.TIMESTAMP];
-    const lastHash = '';
-    const lastVotes = [];
-    const evidence = {};
-    const transactions = Block.getGenesisBlockTxs(genesisTime);
-    const number = 0;
-    const epoch = 0;
-    const proposer = ownerAddress;
-    const validators = GENESIS_VALIDATORS;
-    const { stateProofHash, gasAmountTotal, gasCostTotal, receipts } =
-        Block.executeGenesisTxsAndGetData(transactions, genesisTime);
-    return new Block(lastHash, lastVotes, evidence, transactions, receipts, number, epoch,
-        genesisTime, stateProofHash, proposer, validators, gasAmountTotal, gasCostTotal);
   }
 }
 

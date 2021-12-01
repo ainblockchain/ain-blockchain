@@ -8,12 +8,15 @@ const {
   isValidStateLabel,
   isValidPathForStates,
   isValidJsObjectForStates,
+  isValidWriteRule,
+  isValidStateRule,
   isValidRuleConfig,
   isValidRuleTree,
   isValidFunctionConfig,
   isValidFunctionTree,
   isValidOwnerConfig,
   isValidOwnerTree,
+  applyRuleChange,
   applyFunctionChange,
   applyOwnerChange,
   renameStateTreeVersion,
@@ -21,11 +24,12 @@ const {
   updateStateInfoForAllRootPaths,
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
+  verifyProofHashForStateTree,
   getStateProofFromStateRoot,
   getProofHashFromStateRoot,
   verifyStateProof,
 } = require('../db/state-util');
-const { STATE_LABEL_LENGTH_LIMIT } = require('../common/constants');
+const { BlockchainConfigs } = require('../common/constants');
 const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
@@ -35,16 +39,15 @@ const assert = chai.assert;
 describe("state-util", () => {
   describe("hasEnabledShardConfig", () => {
     it("when input without matched shard config returning false", () => {
-      expect(hasEnabledShardConfig(StateNode.fromJsObject(null))).to.equal(false);
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({}))).to.equal(false);
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot(null))).to.equal(false);
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({}))).to.equal(false);
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({
         subtree: {
           path: "some value"
         },
         str: "string value"
-      }
-      ))).to.equal(false);
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({
+      }))).to.equal(false);
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({
         subtree: {
           path: "some value",
           ".shard": {
@@ -52,12 +55,11 @@ describe("state-util", () => {
           }
         },
         str: "string value"
-      }
-      ))).to.equal(false);
+      }))).to.equal(false);
     })
 
     it("when input with matched shard config returning false", () => {
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({
         subtree: {
           path: "some value",
         },
@@ -70,7 +72,7 @@ describe("state-util", () => {
     })
 
     it("when input with shard config returning true", () => {
-      expect(hasEnabledShardConfig(StateNode.fromJsObject({
+      expect(hasEnabledShardConfig(StateNode.fromStateSnapshot({
         subtree: {
           path: "some value",
         },
@@ -87,7 +89,7 @@ describe("state-util", () => {
     it("when non-writable path with shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: {
                 ".shard": {
@@ -98,7 +100,7 @@ describe("state-util", () => {
           })), {isValid: false, invalidPath: '/some/path'});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               other_path: true,
               ".shard": {
@@ -111,14 +113,14 @@ describe("state-util", () => {
     it("when writable path without shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: true
             }
           })), {isValid: true, invalidPath: ''});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               other_path: true
             }
@@ -128,7 +130,7 @@ describe("state-util", () => {
     it("when writable path with shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: {
                 ".shard": {
@@ -139,7 +141,7 @@ describe("state-util", () => {
           })), {isValid: true, invalidPath: ''});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               other_path: true,
               ".shard": {
@@ -152,7 +154,7 @@ describe("state-util", () => {
     it("when writable path through shard config", () => {
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path', '.shard', 'sharding_enabled'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: {
                 ".shard": {
@@ -163,7 +165,7 @@ describe("state-util", () => {
           })), {isValid: true, invalidPath: ''});
       assert.deepEqual(isWritablePathWithSharding(
           ['some', 'path', '.shard', 'proof_hash_map'],
-          StateNode.fromJsObject({
+          StateNode.fromStateSnapshot({
             some: {
               path: {
                 ".shard": {
@@ -408,9 +410,9 @@ describe("state-util", () => {
     })
 
     it("when long string input", () => {
-      const labelLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
+      const labelLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT);
       expect(isValidStateLabel(labelLong)).to.equal(true);
-      const labelTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      const labelTooLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT + 1);
       expect(isValidStateLabel(labelTooLong)).to.equal(false);
     })
   })
@@ -460,8 +462,8 @@ describe("state-util", () => {
     })
 
     it("when input with long labels", () => {
-      const labelLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
-      const labelTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      const labelLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT);
+      const labelTooLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT + 1);
       assert.deepEqual(
           isValidPathForStates([labelLong, labelLong]), {isValid: true, invalidPath: ''});
       assert.deepEqual(
@@ -621,8 +623,8 @@ describe("state-util", () => {
     })
 
     it("when input with long labels", () => {
-      const textLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT);
-      const textTooLong = 'a'.repeat(STATE_LABEL_LENGTH_LIMIT + 1);
+      const textLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT);
+      const textTooLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT + 1);
       assert.deepEqual(
         isValidJsObjectForStates({
           [textLong]: {
@@ -644,128 +646,238 @@ describe("state-util", () => {
     })
   })
 
+  describe("isValidWriteRule", () => {
+    it('when invalid input', () => {
+      expect(isValidWriteRule([], undefined)).to.equal(false);
+      expect(isValidWriteRule([], {})).to.equal(false);
+      expect(isValidWriteRule([], [])).to.equal(false);
+      expect(isValidWriteRule([], [1, 2, 3])).to.equal(false);
+      expect(isValidWriteRule([], 0)).to.equal(false);
+      expect(isValidWriteRule([], 1)).to.equal(false);
+      expect(isValidStateRule([], { "invalid_top_level_token": true })).to.equal(false);
+      expect(isValidWriteRule([], 'process.exit(0)')).to.equal(false);
+      // assignment
+      expect(isValidWriteRule([], "newData = 'some code'")).to.equal(false);
+      // assignment & invoke
+      expect(isValidWriteRule([], "newData = 'some code'; newData();")).to.equal(false);
+    })
+
+    it('when valid input', () => {
+      expect(isValidWriteRule([], null)).to.equal(true);
+      expect(isValidWriteRule([], true)).to.equal(true);
+      expect(isValidWriteRule([], false)).to.equal(true);
+      // with whitelisted id tokens
+      expect(isValidWriteRule([], "data")).to.equal(true);
+      expect(isValidWriteRule([], "newData")).to.equal(true);
+      expect(isValidWriteRule([], "currentTime")).to.equal(true);
+      expect(isValidWriteRule([], "lastBlockNumber")).to.equal(true);
+      expect(isValidWriteRule([], "auth.fid == '_stake'")).to.equal(true);
+      expect(isValidWriteRule([], "auth.fid === '_stake'")).to.equal(true);
+      expect(isValidWriteRule([], "auth.addr === 'some addr'")).to.equal(true);
+      expect(isValidWriteRule([], "newData.proposer === auth.addr")).to.equal(true);
+      expect(isValidWriteRule([], "getValue('some path')")).to.equal(true);
+      expect(isValidWriteRule([], "Number('some string')")).to.equal(true);
+      // with RuleUtil class properties
+      expect(isValidWriteRule([], "util.isBool('some expr')")).to.equal(true);
+      expect(isValidWriteRule([], "util.isServAcntName('some name')")).to.equal(true);
+      // with varilable labels
+      expect(isValidWriteRule(
+          ['transfer', '$from', '$to', '$key', 'value'],
+          "!getValue('transfer/' + $from + '/' + $to + '/' + $key)")).to.equal(true);
+      // mixed
+      expect(isValidWriteRule(
+          ['transfer', '$from', '$to', '$key', 'value'],
+          "(auth.addr === $from || auth.fid === '_stake') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && util.isServAcntName($from)"))
+          .to.equal(true);
+    })
+  })
+
+  describe("isValidStateRule", () => {
+    it('when invalid input', () => {
+      expect(isValidStateRule(undefined)).to.equal(false);
+      expect(isValidStateRule({})).to.equal(false);
+      expect(isValidStateRule([])).to.equal(false);
+      expect(isValidStateRule([1, 2, 3])).to.equal(false);
+      expect(isValidStateRule(0)).to.equal(false);
+      expect(isValidStateRule(true)).to.equal(false);
+      expect(isValidStateRule(false)).to.equal(false);
+      expect(isValidStateRule({ "invalid_field": true })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": '123'
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": -1
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": 0
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": ''
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": -1
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": 0
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": 10,
+        "gc_max_siblings": -1
+      })).to.equal(false);
+    })
+
+    it('when valid input', () => {
+      expect(isValidStateRule({
+        "max_children": 10
+      })).to.equal(true);
+      expect(isValidStateRule({
+        "gc_max_siblings": 1
+      })).to.equal(true);
+      expect(isValidStateRule({
+        "max_children": 10,
+        "gc_max_siblings": 2
+      })).to.equal(true);
+    })
+  })
+
   describe("isValidRuleConfig", () => {
     it("when invalid input", () => {
-      assert.deepEqual(isValidRuleConfig(null), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig(undefined), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({}), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig([]), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], null), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], {}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], []), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], [1, 2, 3]), {isValid: false, invalidPath: '/'});
       assert.deepEqual(
-          isValidRuleConfig(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+          isValidRuleConfig([], ['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], {
         undef: undefined 
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         empty_obj: {}
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         array: []
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         array: [1, 2, 3]
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         'a': {
           '.': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         'a': {
           '$': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         'a': {
           '*b': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], {
         'a': {
           'b*': 'x'
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig([], {
+        "state": {
+          "max_children": 123,
+          "invalid_field": true
         }
       }), {isValid: false, invalidPath: '/'});
     })
 
     it("when valid input", () => {
-      assert.deepEqual(isValidRuleConfig({ "write": true }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig({ "write": false }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig({ "write": "auth.addr === 'abcd'" }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleConfig({
+      assert.deepEqual(isValidRuleConfig([], { "write": true }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig([], { "write": false }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig([], { "write": "auth.addr === 'abcd'" }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig(['transfer', '$from', '$to', '$key', 'value'], {
         "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig([], {
+        "state": {
+          "max_children": 1
+        }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig([], {
+        "state": {
+          "gc_max_siblings": 1
+        }
+      }), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleConfig([], {
+        "write": "auth.addr === 'abcd'",
+        "state": {
+          "max_children": 1,
+          "gc_max_siblings": 1
+        }
       }), {isValid: true, invalidPath: ''});
     })
   })
 
   describe("isValidRuleTree", () => {
     it("when invalid input", () => {
-      assert.deepEqual(isValidRuleTree(undefined), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleTree({}), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleTree([]), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleTree([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree([], undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree([], {}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree([], []), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree([], [1, 2, 3]), {isValid: false, invalidPath: '/'});
       assert.deepEqual(
-          isValidRuleTree(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidRuleTree({
+          isValidRuleTree([], ['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleTree([], {
         undef: undefined 
       }), {isValid: false, invalidPath: '/undef'});
-      assert.deepEqual(isValidRuleTree({
+      assert.deepEqual(isValidRuleTree([], {
         empty_obj: {}
       }), {isValid: false, invalidPath: '/empty_obj'});
-      assert.deepEqual(isValidRuleTree({
+      assert.deepEqual(isValidRuleTree([], {
         array: []
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidRuleTree({
+      assert.deepEqual(isValidRuleTree([], {
         array: [1, 2, 3]
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidRuleTree({
+      assert.deepEqual(isValidRuleTree([], {
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidRuleTree({
+      assert.deepEqual(isValidRuleTree([], {
         some_key: {}
       }), {isValid: false, invalidPath: '/some_key'});
-      assert.deepEqual(isValidRuleTree({
+      assert.deepEqual(isValidRuleTree([], {
         some_key: null
       }), {isValid: false, invalidPath: '/some_key'});
-      assert.deepEqual(isValidRuleTree({
+      assert.deepEqual(isValidRuleTree([], {
         some_key: undefined
       }), {isValid: false, invalidPath: '/some_key'});
     })
 
-    it("when invalid input with invalid owner config", () => {
-      assert.deepEqual(isValidRuleTree({
+    it("when invalid input with invalid rule config", () => {
+      assert.deepEqual(isValidRuleTree([], {
         some_path: {
           '.rule': {
             'write': {}
           }
         }
       }), {isValid: false, invalidPath: '/some_path/.rule/write'});
-      assert.deepEqual(isValidRuleTree({
-        some_path: {
-          '.rule': {
-            'write': null 
-          }
-        }
-      }), {isValid: false, invalidPath: '/some_path/.rule/write'});
-      assert.deepEqual(isValidRuleTree({
+      assert.deepEqual(isValidRuleTree([], {
         some_path: {
           '.rule': {
             'write': undefined
           }
         }
-      }), {isValid: false, invalidPath: '/some_path/.rule/write'});
+      }), {isValid: false, invalidPath: '/some_path/.rule'});
     })
 
     it("when valid input", () => {
-      assert.deepEqual(isValidRuleTree(null), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleTree({
+      assert.deepEqual(isValidRuleTree([], null), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidRuleTree([], {
         '.rule': {
           'write': true 
         }
       }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidRuleTree({
+      assert.deepEqual(isValidRuleTree([], {
         some_path1: {
           '.rule': {
             'write': true
@@ -777,49 +889,57 @@ describe("state-util", () => {
           }
         }
       }), {isValid: true, invalidPath: ''});
+      // with variable label
+      assert.deepEqual(isValidRuleTree(['$var_label1'], {
+        ['$var_label2']: {
+          '.rule': {
+            'write': "$var_label1 === 'name1' && $var_label2 === 'name2'"
+          }
+        }
+      }), {isValid: true, invalidPath: ''});
     })
   })
 
   describe("isValidFunctionConfig", () => {
     it("when invalid input", () => {
-      assert.deepEqual(isValidFunctionConfig(null), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionConfig(undefined), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionConfig({}), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionConfig([]), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionConfig([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig([], null), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig([], undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig([], {}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig([], []), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig([], [1, 2, 3]), {isValid: false, invalidPath: '/'});
       assert.deepEqual(
-          isValidFunctionConfig(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionConfig({
+          isValidFunctionConfig([], ['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig([], {
         undef: undefined 
       }), {isValid: false, invalidPath: '/undef'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         empty_obj: {}
       }), {isValid: false, invalidPath: '/empty_obj'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         array: []
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         array: [1, 2, 3]
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         'a': {
           '.': 'x'
         }
       }), {isValid: false, invalidPath: '/a'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         'a': {
           '$': 'x'
         }
       }), {isValid: false, invalidPath: '/a'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         'a': {
           '*b': 'x'
         }
       }), {isValid: false, invalidPath: '/a'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         'a': {
           'b*': 'x'
         }
@@ -827,41 +947,41 @@ describe("state-util", () => {
     })
 
     it("when invalid input with deeper path", () => {
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         a_fid: {}
       }), {isValid: false, invalidPath: '/a_fid'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         a_fid: 'some string'
       }), {isValid: false, invalidPath: '/a_fid'});
     })
 
     it("when invalid input with NATIVE type", () => {
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         "_transfer": {
           // Missing function_type
           "function_id": "_transfer"
         }
       }), {isValid: false, invalidPath: '/_transfer'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         "_transfer": {
           "function_type": "NATIVE",
           // Missing function_id
         }
       }), {isValid: false, invalidPath: '/_transfer'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         "_transfer": {
           "function_type": "NATIVE",
           "function_id": "_transfer",
           "unknown_property": "some value"  // Unknown property
         }
       }), {isValid: false, invalidPath: '/_transfer'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         "_transfer": {
           "function_type": "unknown type",  // Unknown function_type
           "function_id": "_transfer"
         }
       }), {isValid: false, invalidPath: '/_transfer'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         "_transfer": {
           "function_type": "NATIVE",
           "function_id": "some other fid"  // Wrong function_id
@@ -870,67 +990,53 @@ describe("state-util", () => {
     })
 
     it("when invalid input with REST type", () => {
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         "0x11111": {
           // Missing function_type
           "function_id": "0x11111",
-          "event_listener": "https://events.ainetwork.ai/trigger",
-          "service_name": "https://ainetwork.ai",
+          "function_url": "https://events.ainetwork.ai/trigger",
         }
       }), {isValid: false, invalidPath: '/0x11111'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         "0x11111": {
           "function_type": "REST",
           // Missing function_id
-          "event_listener": "https://events.ainetwork.ai/trigger",
-          "service_name": "https://ainetwork.ai",
+          "function_url": "https://events.ainetwork.ai/trigger",
         }
       }), {isValid: false, invalidPath: '/0x11111'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
-          // Missing event_listener
-          "service_name": "https://ainetwork.ai",
+          // Missing function_url
         }
       }), {isValid: false, invalidPath: '/0x11111'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
-          "event_listener": "https://events.ainetwork.ai/trigger",
-          // Missing service_name
-        }
-      }), {isValid: false, invalidPath: '/0x11111'});
-      assert.deepEqual(isValidFunctionConfig({
-        "0x11111": {
-          "function_type": "REST",
-          "function_id": "0x11111",
-          "event_listener": "https://events.ainetwork.ai/trigger",
-          "service_name": "https://ainetwork.ai",
+          "function_url": "https://events.ainetwork.ai/trigger",
           "unknown_property": "some value"  // Unknown property
         }
       }), {isValid: false, invalidPath: '/0x11111'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         "0x11111": {
           "function_type": "REST",
           "function_id": "some other fid",  // Wrong function_id
-          "event_listener": "https://events.ainetwork.ai/trigger",
-          "service_name": "https://ainetwork.ai",
+          "function_url": "https://events.ainetwork.ai/trigger",
         }
       }), {isValid: false, invalidPath: '/0x11111/function_id'});
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
-          "event_listener": "some non-url value",  // Invalid url
-          "service_name": "https://ainetwork.ai",
+          "function_url": "some non-url value",  // Invalid url
         }
       }), {isValid: false, invalidPath: '/0x11111'});
     })
 
     it("when valid input", () => {
-      assert.deepEqual(isValidFunctionConfig({
+      assert.deepEqual(isValidFunctionConfig([], {
         "_transfer": {
           "function_type": "NATIVE",
           "function_id": "_transfer",
@@ -938,8 +1044,7 @@ describe("state-util", () => {
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
-          "event_listener": "https://events.ainetwork.ai/trigger",
-          "service_name": "https://ainetwork.ai",
+          "function_url": "https://events.ainetwork.ai/trigger",
         },
         "fid_to_delete": null  // To be deleted
       }), {isValid: true, invalidPath: ''});
@@ -948,51 +1053,51 @@ describe("state-util", () => {
 
   describe("isValidFunctionTree", () => {
     it("when invalid input", () => {
-      assert.deepEqual(isValidFunctionTree(undefined), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionTree({}), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionTree([]), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionTree([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionTree([], undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionTree([], {}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionTree([], []), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionTree([], [1, 2, 3]), {isValid: false, invalidPath: '/'});
       assert.deepEqual(
-          isValidFunctionTree(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionTree({
+          isValidFunctionTree([], ['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionTree([], {
         undef: undefined 
       }), {isValid: false, invalidPath: '/undef'});
-      assert.deepEqual(isValidFunctionTree({
+      assert.deepEqual(isValidFunctionTree([], {
         empty_obj: {}
       }), {isValid: false, invalidPath: '/empty_obj'});
-      assert.deepEqual(isValidFunctionTree({
+      assert.deepEqual(isValidFunctionTree([], {
         array: []
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidFunctionTree({
+      assert.deepEqual(isValidFunctionTree([], {
         array: [1, 2, 3]
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidFunctionTree({
+      assert.deepEqual(isValidFunctionTree([], {
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidFunctionTree({
+      assert.deepEqual(isValidFunctionTree([], {
         some_key: {}
       }), {isValid: false, invalidPath: '/some_key'});
-      assert.deepEqual(isValidFunctionTree({
+      assert.deepEqual(isValidFunctionTree([], {
         some_key: null
       }), {isValid: false, invalidPath: '/some_key'});
-      assert.deepEqual(isValidFunctionTree({
+      assert.deepEqual(isValidFunctionTree([], {
         some_key: undefined
       }), {isValid: false, invalidPath: '/some_key'});
     })
 
     it("when invalid input with invalid owner config", () => {
-      assert.deepEqual(isValidFunctionTree({
+      assert.deepEqual(isValidFunctionTree([], {
         some_path: {
           '.function': {
           }
         }
       }), {isValid: false, invalidPath: '/some_path/.function'});
-      assert.deepEqual(isValidFunctionTree({
+      assert.deepEqual(isValidFunctionTree([], {
         some_path: {
           '.function': null 
         }
       }), {isValid: false, invalidPath: '/some_path/.function'});
-      assert.deepEqual(isValidFunctionTree({
+      assert.deepEqual(isValidFunctionTree([], {
         some_path: {
           '.function': undefined
         }
@@ -1000,8 +1105,8 @@ describe("state-util", () => {
     })
 
     it("when valid input", () => {
-      assert.deepEqual(isValidFunctionTree(null), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidFunctionTree({
+      assert.deepEqual(isValidFunctionTree([], null), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidFunctionTree([], {
         '.function': {
           "_transfer": {
             "function_type": "NATIVE",
@@ -1010,12 +1115,11 @@ describe("state-util", () => {
           "0x11111": {
             "function_type": "REST",
             "function_id": "0x11111",
-            "event_listener": "https://events.ainetwork.ai/trigger",
-            "service_name": "https://ainetwork.ai",
+            "function_url": "https://events.ainetwork.ai/trigger",
           }
         }
       }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidFunctionTree({
+      assert.deepEqual(isValidFunctionTree([], {
         some_path1: {
           '.function': {
             "_transfer": {
@@ -1025,8 +1129,7 @@ describe("state-util", () => {
             "0x11111": {
               "function_type": "REST",
               "function_id": "0x11111",
-              "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
+              "function_url": "https://events.ainetwork.ai/trigger",
             }
           }
         },
@@ -1039,8 +1142,7 @@ describe("state-util", () => {
             "0x11111": {
               "function_type": "REST",
               "function_id": "0x11111",
-              "event_listener": "https://events.ainetwork.ai/trigger",
-              "service_name": "https://ainetwork.ai",
+              "function_url": "https://events.ainetwork.ai/trigger",
             }
           }
         }
@@ -1050,44 +1152,44 @@ describe("state-util", () => {
 
   describe("isValidOwnerConfig", () => {
     it("when invalid input", () => {
-      assert.deepEqual(isValidOwnerConfig(null), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig(undefined), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({}), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig([]), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig([], null), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig([], undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig([], {}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig([], []), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig([], [1, 2, 3]), {isValid: false, invalidPath: '/'});
       assert.deepEqual(
-          isValidOwnerConfig(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({
+          isValidOwnerConfig([], ['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig([], {
         undef: undefined 
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         empty_obj: {}
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         array: []
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         array: [1, 2, 3]
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'a': {
           '.': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'a': {
           '$': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'a': {
           '*b': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'a': {
           'b*': 'x'
         }
@@ -1095,19 +1197,19 @@ describe("state-util", () => {
     })
 
     it("when invalid input with deeper path", () => {
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         some_key: {}
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'owners': null
       }), {isValid: false, invalidPath: '/owners'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'owners': {}
       }), {isValid: false, invalidPath: '/owners'});
     })
 
     it("when invalid input with invalid owner (address or fid)", () => {
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'owners': {
           '0x0': {  // Invalid address
             "branch_owner": true,
@@ -1117,7 +1219,7 @@ describe("state-util", () => {
           }
         }
       }), {isValid: false, invalidPath: '/owners/0x0'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'owners': {
           '0x09a0d53fdf1c36a131938eb379b98910e55eefe1': {  // Non-checksum address
             "branch_owner": true,
@@ -1127,7 +1229,7 @@ describe("state-util", () => {
           }
         }
       }), {isValid: false, invalidPath: '/owners/0x09a0d53fdf1c36a131938eb379b98910e55eefe1'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'owners': {
           'fid:_invalidFid': {  // Invalid fid
             "branch_owner": true,
@@ -1140,7 +1242,7 @@ describe("state-util", () => {
     })
 
     it("when invalid input with invalid owner permissions", () => {
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'owners': {
           '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
             "branch_owner": true,
@@ -1150,7 +1252,7 @@ describe("state-util", () => {
           },
         }
       }), {isValid: false, invalidPath: '/owners/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'owners': {
           '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
             "branch_owner": true,
@@ -1161,7 +1263,7 @@ describe("state-util", () => {
           },
         }
       }), {isValid: false, invalidPath: '/owners/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'});
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'owners': {
           '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
             "branch_owner": true,
@@ -1174,7 +1276,7 @@ describe("state-util", () => {
     })
 
     it("when valid input", () => {
-      assert.deepEqual(isValidOwnerConfig({
+      assert.deepEqual(isValidOwnerConfig([], {
         'owners': {
           '*': {
             "branch_owner": true,
@@ -1201,51 +1303,51 @@ describe("state-util", () => {
 
   describe("isValidOwnerTree", () => {
     it("when invalid input", () => {
-      assert.deepEqual(isValidOwnerTree(undefined), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerTree({}), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerTree([]), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerTree([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerTree([], undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerTree([], {}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerTree([], []), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerTree([], [1, 2, 3]), {isValid: false, invalidPath: '/'});
       assert.deepEqual(
-          isValidOwnerTree(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerTree({
+          isValidOwnerTree([], ['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerTree([], {
         undef: undefined 
       }), {isValid: false, invalidPath: '/undef'});
-      assert.deepEqual(isValidOwnerTree({
+      assert.deepEqual(isValidOwnerTree([], {
         empty_obj: {}
       }), {isValid: false, invalidPath: '/empty_obj'});
-      assert.deepEqual(isValidOwnerTree({
+      assert.deepEqual(isValidOwnerTree([], {
         array: []
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidOwnerTree({
+      assert.deepEqual(isValidOwnerTree([], {
         array: [1, 2, 3]
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidOwnerTree({
+      assert.deepEqual(isValidOwnerTree([], {
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidOwnerTree({
+      assert.deepEqual(isValidOwnerTree([], {
         some_key: {}
       }), {isValid: false, invalidPath: '/some_key'});
-      assert.deepEqual(isValidOwnerTree({
+      assert.deepEqual(isValidOwnerTree([], {
         some_key: null
       }), {isValid: false, invalidPath: '/some_key'});
-      assert.deepEqual(isValidOwnerTree({
+      assert.deepEqual(isValidOwnerTree([], {
         some_key: undefined
       }), {isValid: false, invalidPath: '/some_key'});
     })
 
     it("when invalid input with invalid owner config", () => {
-      assert.deepEqual(isValidOwnerTree({
+      assert.deepEqual(isValidOwnerTree([], {
         some_path: {
           '.owner': {
           }
         }
       }), {isValid: false, invalidPath: '/some_path/.owner'});
-      assert.deepEqual(isValidOwnerTree({
+      assert.deepEqual(isValidOwnerTree([], {
         some_path: {
           '.owner': null 
         }
       }), {isValid: false, invalidPath: '/some_path/.owner'});
-      assert.deepEqual(isValidOwnerTree({
+      assert.deepEqual(isValidOwnerTree([], {
         some_path: {
           '.owner': undefined
         }
@@ -1253,8 +1355,8 @@ describe("state-util", () => {
     })
 
     it("when valid input", () => {
-      assert.deepEqual(isValidOwnerTree(null), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidOwnerTree({
+      assert.deepEqual(isValidOwnerTree([], null), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidOwnerTree([], {
         '.owner': {
           'owners': {
             '*': {
@@ -1279,7 +1381,7 @@ describe("state-util", () => {
           }
         }
       }), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidOwnerTree({
+      assert.deepEqual(isValidOwnerTree([], {
         some_path1: {
           '.owner': {
             'owners': {
@@ -1332,6 +1434,101 @@ describe("state-util", () => {
         }
       }), {isValid: true, invalidPath: ''});
     })
+  })
+
+  describe("applyRuleChange()", () => {
+    const curRule = {
+      ".rule": {
+        "write": "auth.addr === 'abcd'",
+        "state": {
+          "max_children": 10,
+          "ordering": "FIFO"
+        }
+      },
+      "deeper": {
+        ".rule": {  // deeper rule
+          "write": true,
+          "state": {
+            "max_children": 10,
+            "ordering": "FIFO"
+          }
+        }
+      }
+    };
+
+    it("add / delete / modify non-existing rule", () => {
+      assert.deepEqual(applyRuleChange(null, curRule), curRule); // the same as the given rule change.
+    });
+
+    it("delete / modify existing rule", () => {
+      assert.deepEqual(applyRuleChange(curRule, {
+        ".rule": {
+          "write": null,  // delete
+          "state": {  // modify
+            "max_children": 100,
+            "ordering": "FIFO"
+          }
+        }
+      }), {
+        ".rule": {
+          // write: deleted
+          "state": {  // modified
+            "max_children": 100,
+            "ordering": "FIFO"
+          }
+        }
+        // deeper rule deleted
+      });
+
+      assert.deepEqual(applyRuleChange({
+        ".rule": {
+          "write": true
+        }
+      }, {
+        ".rule": {
+          "state": { // add
+            "max_children": 10,
+            "ordering": "FIFO"
+          }
+        }
+      }), {
+        ".rule": {
+          "write": true,
+          "state": { // added
+            "max_children": 10,
+            "ordering": "FIFO"
+          }
+        }
+      });
+    });
+
+    it("replace existing rule with deeper rule", () => {
+      assert.deepEqual(applyRuleChange(curRule, {
+        ".rule": {
+          "write": "auth.addr === 'efgh'", // modify
+          "state": null // delete
+        },
+        "deeper": {
+          ".rule": { // deeper function
+            "write": false
+          }
+        }
+      }), {
+        ".rule": {
+          "write": "auth.addr === 'efgh'", // modified
+          "state": null // deleted
+        },
+        "deeper": {
+          ".rule": { // replaced
+            "write": false
+          }
+        }
+      });
+    });
+
+    it("with null rule change", () => {
+      assert.deepEqual(applyRuleChange(curRule, null), null);
+    });
   })
 
   describe("applyFunctionChange()", () => {
@@ -1403,7 +1600,6 @@ describe("state-util", () => {
           "0x222": {  // modify
             "function_type": "REST",
             "function_id": "0x222",
-            "service_name": "https://ainetwork.ai",
           },
           "0x444": {  // add
             "function_type": "REST",
@@ -1415,7 +1611,6 @@ describe("state-util", () => {
           "0x222": {  // modified
             "function_type": "REST",
             "function_id": "0x222",
-            "service_name": "https://ainetwork.ai",
           },
           "0x333": {  // untouched
             "function_type": "REST",
@@ -1443,7 +1638,6 @@ describe("state-util", () => {
           "0x222": {  // modify
             "function_type": "REST",
             "function_id": "0x222",
-            "service_name": "https://ainetwork.ai",
           },
           "0x444": {  // add
             "function_type": "REST",
@@ -1463,7 +1657,6 @@ describe("state-util", () => {
           "0x222": {
             "function_type": "REST",
             "function_id": "0x222",
-            "service_name": "https://ainetwork.ai",
           },
           "0x444": {
             "function_type": "REST",
@@ -1703,7 +1896,7 @@ describe("state-util", () => {
       const ver1 = 'ver1';
       const ver2 = 'ver2';
 
-      const stateNode = StateNode.fromJsObject(true, ver1);
+      const stateNode = StateNode.fromStateSnapshot(true, ver1);
 
       const numRenamed = renameStateTreeVersion(stateNode, 'other version', ver2);
       expect(numRenamed).to.equal(0);
@@ -1714,7 +1907,7 @@ describe("state-util", () => {
       const ver1 = 'ver1';
       const ver2 = 'ver2';
 
-      const stateNode = StateNode.fromJsObject(true, ver1);
+      const stateNode = StateNode.fromStateSnapshot(true, ver1);
 
       const numRenamed = renameStateTreeVersion(stateNode, ver1, ver2);
       expect(numRenamed).to.equal(1);
@@ -1743,7 +1936,7 @@ describe("state-util", () => {
       const stateTree = new StateNode(ver3);
       stateTree.setChild('label1', child1);
       stateTree.setChild('label2', child2);
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+      assert.deepEqual(stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), {
         "#num_parents": 0,
         "#state_ph": null,
         "#tree_bytes": 0,
@@ -1798,7 +1991,7 @@ describe("state-util", () => {
 
       const numNodes = renameStateTreeVersion(stateTree, ver2, ver3);
       expect(numNodes).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+      assert.deepEqual(stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), {
         "#num_parents": 0,
         "#state_ph": null,
         "#tree_bytes": 0,
@@ -1880,7 +2073,7 @@ describe("state-util", () => {
 
     it("leaf node", () => {
       // Delete a leaf node without version.
-      const stateNode1 = StateNode.fromJsObject(true);
+      const stateNode1 = StateNode.fromStateSnapshot(true);
       updateStateInfoForStateTree(stateNode1);
       expect(deleteStateTreeVersion(stateNode1)).to.equal(2);
       expect(stateNode1.getVersion()).to.equal(null);
@@ -1888,7 +2081,7 @@ describe("state-util", () => {
       expect(stateNode1.numChildren()).to.equal(0);
 
       // Delete a leaf node with a different version.
-      const stateNode2 = StateNode.fromJsObject(true, 'ver2');
+      const stateNode2 = StateNode.fromStateSnapshot(true, 'ver2');
       updateStateInfoForStateTree(stateNode2);
       expect(deleteStateTreeVersion(stateNode2)).to.equal(2);
       expect(stateNode2.getVersion()).to.equal(null);
@@ -1896,7 +2089,7 @@ describe("state-util", () => {
       expect(stateNode2.numChildren()).to.equal(0);
 
       // Delete a leaf node with the same version.
-      const stateNode3 = StateNode.fromJsObject(true, ver1);
+      const stateNode3 = StateNode.fromStateSnapshot(true, ver1);
       updateStateInfoForStateTree(stateNode3);
       expect(deleteStateTreeVersion(stateNode3)).to.equal(2);
       expect(stateNode3.getVersion()).to.equal(null);
@@ -1904,7 +2097,7 @@ describe("state-util", () => {
       expect(stateNode3.numChildren()).to.equal(0);
 
       // Delete a leaf node with the same version but with non-zero numParents() value.
-      const stateNode4 = StateNode.fromJsObject(true, ver1);
+      const stateNode4 = StateNode.fromStateSnapshot(true, ver1);
       parent.setChild(nodeLabel, stateNode4);
       updateStateInfoForStateTree(stateNode4);
       expect(deleteStateTreeVersion(stateNode4)).to.equal(0);
@@ -1933,7 +2126,7 @@ describe("state-util", () => {
 
       expect(deleteStateTreeVersion(stateTree)).to.equal(0);
       // State tree is not deleted.
-      assert.deepEqual(stateTree.toJsObject(GET_OPTIONS_INCLUDE_ALL), {
+      assert.deepEqual(stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL), {
         "#num_parents": 1,
         "#num_parents:label1": 1,
         "#num_parents:label2": 1,
@@ -2005,7 +2198,7 @@ describe("state-util", () => {
     let child1111;
 
     beforeEach(() => {
-      stateTree = StateNode.fromJsObject(jsObject, null);
+      stateTree = StateNode.fromStateSnapshot(jsObject, null);
       child1 = stateTree.getChild(label1);
       child11 = child1.getChild(label11);
       child111 = child11.getChild(label111);
@@ -2013,7 +2206,7 @@ describe("state-util", () => {
     });
 
     it("updateStateInfoForAllRootPaths on empty node with a single root path", () => {
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "0x0001": {
           "#state_ph": null,
@@ -2033,7 +2226,7 @@ describe("state-util", () => {
         }
       });
       expect(updateStateInfoForAllRootPaths(child111, label1111)).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
           "#state_ph": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
@@ -2059,7 +2252,7 @@ describe("state-util", () => {
       const label3 = '0x003';
       stateTreeClone.setChild(label3, child3);
 
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "0x0001": {
           "#state_ph": null,
@@ -2078,7 +2271,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeClone.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "#state_ph:0x003": null,
         "0x0001": {
@@ -2096,7 +2289,7 @@ describe("state-util", () => {
       });
       assert.deepEqual(child1111.getParentNodes(), [child111, child111Clone]);
       expect(updateStateInfoForAllRootPaths(child111, label1111)).to.equal(4);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
           "#state_ph": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
@@ -2107,7 +2300,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeClone.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "#state_ph:0x003": null,
         "0x0001": {
@@ -2136,7 +2329,7 @@ describe("state-util", () => {
       const label3 = '0x003';
       stateTreeClone.setChild(label3, child3);
 
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "0x0001": {
           "#state_ph": null,
@@ -2155,7 +2348,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeClone.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "#state_ph:0x003": null,
         "0x0001": {
@@ -2173,7 +2366,7 @@ describe("state-util", () => {
       });
       assert.deepEqual(child111.getParentNodes(), [child11, child11Clone]);
       expect(updateStateInfoForAllRootPaths(child111, label1111)).to.equal(7);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0x69350f4b5f666b90fd2d459dee2c5ae513f35be924ad765d601ce9c15f81f283",
         "0x0001": {
           "#state_ph": "0x79df089f535b03c34313f67ec207781875db7a7425230a78b2f71dd827a592fc",
@@ -2184,7 +2377,7 @@ describe("state-util", () => {
           }
         }
       });
-      assert.deepEqual(stateTreeClone.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTreeClone.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0x4982c00e8daae6d0ca0cb3b0cc6bcec88b97183a7f7f8decfcd013eb402b6f32",
         "#state_ph:0x003": null,
         "0x003": "value0003",
@@ -2192,7 +2385,7 @@ describe("state-util", () => {
     });
 
     it("updateStateInfoAllRootPaths on non-empty node", () => {
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": null,
         "0x0001": {
           "#state_ph": null,
@@ -2212,7 +2405,7 @@ describe("state-util", () => {
         }
       });
       expect(updateStateInfoForAllRootPaths(child11, label111, false)).to.equal(3);
-      assert.deepEqual(stateTree.toJsObject({ includeProof: true }), {
+      assert.deepEqual(stateTree.toStateSnapshot({ includeProof: true }), {
         "#state_ph": "0xf8de149cbb6e6ec6eed202d0c1c2927f955bd693dde8725aff64ecd694302be2",
         "0x0001": {
           "#state_ph": "0xbeec2ad3bd5285e375bb66f49ccef377af065bb674a3d5c43937d0c66656a61b",
@@ -2266,7 +2459,7 @@ describe("state-util", () => {
     let child21;
 
     beforeEach(() => {
-      stateTree = StateNode.fromJsObject(jsObject, null);
+      stateTree = StateNode.fromStateSnapshot(jsObject, null);
       child1 = stateTree.getChild(label1);
       child11 = child1.getChild(label11);
       child111 = child11.getChild(label111);
@@ -2397,28 +2590,154 @@ describe("state-util", () => {
       expect(verifyStateInfoForStateTree(stateTree)).to.equal(false);
     });
 
-    it("getStateProofFromStateRoot", () => {
-      updateStateInfoForStateTree(stateTree);
-      assert.deepEqual(getStateProofFromStateRoot(stateTree, [label1, label11]), {
-        "#state_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-        "000": {
-          "1": {
-            "#radix_ph": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
-            "0x0001": {
-              "#state_ph": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116",
-              "0011": {
-                "#radix_ph": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
-                "0x0011": {
-                  "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb",
-                }
+    describe("verifyProofHashForStateTree", () => {
+      beforeEach(() => {
+        updateStateInfoForStateTree(stateTree);
+      });
+
+      it("verified with leaf state node", () => {
+        assert.deepEqual(verifyProofHashForStateTree(child1112), {
+          "isVerified": true,
+          "mismatchedPath": null,
+          "mismatchedProofHash": null,
+          "mismatchedProofHashComputed": null,
+        });
+      });
+
+      it("verified with state tree", () => {
+        assert.deepEqual(verifyProofHashForStateTree(stateTree), {
+          "isVerified": true,
+          "mismatchedPath": null,
+          "mismatchedProofHash": null,
+          "mismatchedProofHashComputed": null,
+        });
+      });
+
+      it("not verified with mismatched leaf state proof hash", () => {
+        child1112.setProofHash('some other value');
+        assert.deepEqual(verifyProofHashForStateTree(stateTree), {
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001/#radix:0011/#state:0x0011/#radix:0111/#state:0x0111/#radix:111/#radix:2/#state:0x1112",
+          "mismatchedProofHash": "some other value",
+          "mismatchedProofHashComputed": "0xfd91d194696561044fc4ae343fc30608cb0ffc3eabd30944087a9fe6a3eef760",
+        });
+      });
+
+      it("not verified with mismatched internal state proof hash", () => {
+        child111.setProofHash('some other value');
+        assert.deepEqual(verifyProofHashForStateTree(stateTree), {
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001/#radix:0011/#state:0x0011/#radix:0111/#state:0x0111",
+          "mismatchedProofHash": "some other value",
+          "mismatchedProofHashComputed": "0xb38b2cf86835718aa59d1e4a6d2cc294761ca2fdcd02e0302a70221a035bfe38",
+        });
+      });
+
+      it("not verified with mismatched terminal radix proof hash", () => {
+        child1112.getParentRadixNodes()[0].setProofHash('some other value');
+        assert.deepEqual(verifyProofHashForStateTree(stateTree), {
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001/#radix:0011/#state:0x0011/#radix:0111/#state:0x0111/#radix:111/#radix:2",
+          "mismatchedProofHash": "some other value",
+          "mismatchedProofHashComputed": "0xf2291b8c0c36fc9a29cb39d023fdebc08bebdd6cf119602ef5890000b6125a6b",
+        });
+      });
+
+      it("not verified with mismatched internal radix proof hash", () => {
+        child1.getParentRadixNodes()[0].getParentNodes()[0].setProofHash('some other value');
+        assert.deepEqual(verifyProofHashForStateTree(stateTree), {
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000",
+          "mismatchedProofHash": "some other value",
+          "mismatchedProofHashComputed": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60",
+        });
+      });
+
+      it("not verified with mismatched root proof hash of radix tree", () => {
+        child111.radixTree.root.setProofHash('some other value');
+        assert.deepEqual(verifyProofHashForStateTree(stateTree), {
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001/#radix:0011/#state:0x0011/#radix:0111/#state:0x0111",
+          "mismatchedProofHash": "0xb38b2cf86835718aa59d1e4a6d2cc294761ca2fdcd02e0302a70221a035bfe38",
+          "mismatchedProofHashComputed": "some other value",
+        });
+      });
+    });
+
+    describe("getStateProofFromStateRoot", () => {
+      it("general case", () => {
+        updateStateInfoForStateTree(stateTree);
+        assert.deepEqual(getStateProofFromStateRoot(stateTree, [label1, label11]), {
+          "#state_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+          "#radix:000": {
+            "#radix:1": {
+              "#radix_ph": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
+              "#state:0x0001": {
+                "#radix:0011": {
+                  "#radix_ph": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
+                  "#state:0x0011": {
+                    "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb"
+                  }
+                },
+                "#state_ph": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116"
               }
+            },
+            "#radix:2": {
+              "#radix_ph": "0x201d6a312774b74827e1ae95e37b98558ee25170d1e40f6def42c22ed161dab5"
+            },
+            "#radix_ph": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60"
+          }
+        });
+      });
+
+      it("with conflicted labels between radix node and state node without prefix", () => {
+        const stateTree2 = StateNode.fromStateSnapshot({
+          "3": {
+            "3-1": "value3-1"
+          },
+          "30": {
+            "30-1": "value30-1"
+          },
+          "31": {
+            "31-1": "value31-1"
+          },
+        });
+        updateStateInfoForStateTree(stateTree2);
+        assert.deepEqual(getStateProofFromStateRoot(stateTree2, ['31', '31-1']), {
+          "#state_ph": "0x8c2734c83cbcdc673190a8d164892c1489f908b3f80d6068257753a39de16181",
+          "#radix:33": {
+            "#radix:3": {
+              "#radix:0": {
+                "#radix_ph": "0xda7fde2ca07a62397245f255309752fb69ef011c03e48be00e16e9b89edb992e"
+              },
+              "#radix:1": {
+                "#radix_ph": "0xc2171aa7a68514ee8d10163f01936e6b057f0dd9d1c09965987455c423cc0083",
+                "#state:31": {
+                  "#radix:33312d31": {
+                    "#radix_ph": "0xcbb7f3f7590245dcd747fea8d019b093a366dc055722488bfa6e88b4e85ba5f5",
+                    "#state:31-1": {
+                      "#state_ph": "0xb5db965c4f86627bf107f798f5946ce1eb24cb5a86c16a78e34e3b224262e1d5"
+                    }
+                  },
+                  "#state_ph": "0x444d17cf54ec9db68a38c29f8d3fd9fc4ca33162bbe118980eb84264f1e5cb50"
+                }
+              },
+              "#radix_ph": "0x19502261f0280695c3ad696c08068ffbed1f76c075e7a985351e1fd3359e7cc3"
+            },
+            "#radix_ph": "0xa79f73e0527ebdeb2df5c7501723d99a23b3afb9c0cf1d15d6e04d0c842ff8d4",
+            "#state:3": {
+              "#state_ph": "0x4d8ff5217be0d6876e37d4509e05929aeb8ecc65d06a7a3b0a863d9694b51a3a"
             }
-          },
-          "2": {
-            "#radix_ph": "0x201d6a312774b74827e1ae95e37b98558ee25170d1e40f6def42c22ed161dab5",
-          },
-          "#radix_ph": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60",
-        }
+          }
+        });
+        const proof = getStateProofFromStateRoot(stateTree2, ['31', '31-1']);
+        assert.deepEqual(verifyStateProof(proof), {
+          "curProofHash": "0x8c2734c83cbcdc673190a8d164892c1489f908b3f80d6068257753a39de16181",
+          "isVerified": true,
+          "mismatchedPath": null,
+          "mismatchedProofHash": null,
+          "mismatchedProofHashComputed": null,
+        });
       });
     });
 
@@ -2429,72 +2748,88 @@ describe("state-util", () => {
       );
     });
 
-    it("verifyStateProof", () => {
-      updateStateInfoForStateTree(stateTree);
+    describe("verifyStateProof", () => {
       const proof = {
         "#state_ph": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-        "000": {
-          "1": {
+        "#radix:000": {
+          "#radix:1": {
             "#radix_ph": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
-            "0x0001": {
+            "#state:0x0001": {
               "#state_ph": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116",
-              "0011": {
+              "#radix:0011": {
                 "#radix_ph": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
-                "0x0011": {
+                "#state:0x0011": {
                   "#state_ph": "0xf98d4c522afdb4db066766ec7e14b9a864845b723287b2cf8c328b599c027dfb"
                 }
               }
             }
           },
-          "2": {
+          "#radix:2": {
             "#radix_ph": "0x201d6a312774b74827e1ae95e37b98558ee25170d1e40f6def42c22ed161dab5"
           },
           "#radix_ph": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60"
         }
       };
 
-      assert.deepEqual(verifyStateProof(proof), {
-        "rootProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-        "isVerified": true,
-        "mismatchedPath": null,
+      it("verified", () => {
+        assert.deepEqual(verifyStateProof(proof), {
+          "curProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+          "isVerified": true,
+          "mismatchedPath": null,
+          "mismatchedProofHash": null,
+          "mismatchedProofHashComputed": null,
+        });
       });
 
-      // radix proof hash manipulated
-      const proofManipulated1 = JSON.parse(JSON.stringify(proof));
-      _.set(proofManipulated1, '000.1.#radix_ph', 'some other value');
-      assert.deepEqual(verifyStateProof(proofManipulated1), {
-        "rootProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-        "isVerified": false,
-        "mismatchedPath": "/000/1",
+      it("not verified with radix proof hash manipulated", () => {
+        const proofManipulated1 = JSON.parse(JSON.stringify(proof));
+        _.set(proofManipulated1, '#radix:000.#radix:1.#radix_ph', 'some other value');
+        assert.deepEqual(verifyStateProof(proofManipulated1), {
+          "curProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1",
+          "mismatchedProofHash": "some other value",
+          "mismatchedProofHashComputed": "0x261afdef504f3e2e4cc79afa89465097c6cea5670650a6def113a58c161775e3",
+        });
       });
 
-      // internal state proof hash manipulated
-      const proofManipulated2 = JSON.parse(JSON.stringify(proof));
-      _.set(proofManipulated2, '000.1.0x0001.#state_ph', 'some other value');
-      assert.deepEqual(verifyStateProof(proofManipulated2), {
-        "rootProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
-        "isVerified": false,
-        "mismatchedPath": "/000/1/0x0001",
+
+      it("not verified with internal state proof hash manipulated", () => {
+        const proofManipulated2 = JSON.parse(JSON.stringify(proof));
+        _.set(proofManipulated2, '#radix:000.#radix:1.#state:0x0001.#state_ph', 'some other value');
+        assert.deepEqual(verifyStateProof(proofManipulated2), {
+          "curProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001",
+          "mismatchedProofHash": "some other value",
+          "mismatchedProofHashComputed": "0xffed7eb102370c2b47273b64f69e9454c0d3f0650b229ae5dd8a554e6c02f116",
+        });
       });
 
-      // terminal state proof hash manipulated
-      const proofManipulated3 = JSON.parse(JSON.stringify(proof));
-      _.set(proofManipulated3, '000.1.0x0001.0011.0x0011.#state_ph', 'some other value');
-      assert.deepEqual(verifyStateProof(proofManipulated3), {
-        "rootProofHash": "0x54b7f39d18471220274c0ac87fef5e26254fde7ac7a016266758497ffad1aecf",
-        "isVerified": false,
-        "mismatchedPath": "/000/1/0x0001/0011",
+      it("not verified with terminal state proof hash manipulated", () => {
+        const proofManipulated3 = JSON.parse(JSON.stringify(proof));
+        _.set(proofManipulated3, '#radix:000.#radix:1.#state:0x0001.#radix:0011.#state:0x0011.#state_ph', 'some other value');
+        assert.deepEqual(verifyStateProof(proofManipulated3), {
+          "curProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000/#radix:1/#state:0x0001/#radix:0011",
+          "mismatchedProofHash": "0x52a4acf001d21563169d3bb6a847333c248882351d56e1c5057a3544f26342e1",
+          "mismatchedProofHashComputed": "0x7798ecb6063003183a0370ec083260912b756f52054fa3d0ca8e5a88db4a40a8",
+        });
       });
 
-      // label changed ('2' -> '3')
-      const proofManipulated4 = JSON.parse(JSON.stringify(proof));
-      const temp = _.get(proofManipulated4, '000.2');
-      _.unset(proofManipulated4, '000.2');
-      _.set(proofManipulated4, '000.3', temp);
-      assert.deepEqual(verifyStateProof(proofManipulated4), {
-        "rootProofHash": "0x5aad1e7b28a46bd987680c6af3a82c49f5c09003b0397a5d972d1275b286084e",
-        "isVerified": false,
-        "mismatchedPath": "/000",
+      it("not verified with label changed: '2' -> '3'", () => {
+        const proofManipulated4 = JSON.parse(JSON.stringify(proof));
+        const temp = _.get(proofManipulated4, '#radix:000.#radix:2');
+        _.unset(proofManipulated4, '#radix:000.#radix:2');
+        _.set(proofManipulated4, '#radix:000.#radix:3', temp);
+        assert.deepEqual(verifyStateProof(proofManipulated4), {
+          "curProofHash": "0x75900d9758128b84206553291e8300633989fdb6ea8c809d0a6e332f80600407",
+          "isVerified": false,
+          "mismatchedPath": "/#radix:000",
+          "mismatchedProofHash": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60",
+          "mismatchedProofHashComputed": "0x0c479cea57cfd0b5d2f6b0e91f30d802002deda19a26cc44581b56b1be882b6c",
+        });
       });
     });
   });

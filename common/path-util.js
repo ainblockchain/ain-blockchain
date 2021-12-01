@@ -1,5 +1,4 @@
 const {
-  FeatureFlags,
   PredefinedDbPaths,
   ShardingProperties
 } = require('./constants');
@@ -176,11 +175,11 @@ class PathUtil {
   }
 
   static getLatestShardReportPath(branchPath) {
-    return CommonUtil.appendPath(branchPath, ShardingProperties.LATEST);
+    return CommonUtil.appendPath(branchPath, ShardingProperties.LATEST_BLOCK_NUMBER);
   }
 
   static getLatestShardReportPathFromValuePath(valuePath) {
-    const branchPath = CommonUtil.formatPath(valuePath.slice(0, -2));
+    const branchPath = CommonUtil.formatPath(valuePath.slice(0, -3));
     return PathUtil.getLatestShardReportPath(branchPath);
   }
 
@@ -326,6 +325,29 @@ class PathUtil {
 
   static getReceiptPath(txHash) {
     return CommonUtil.formatPath([PredefinedDbPaths.RECEIPTS, txHash]);
+  }
+
+  static getDevelopersRestFunctionsUrlWhitelistPath() {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS,
+        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST]);
+  }
+
+  static getDevelopersRestFunctionsUrlWhitelistUserPath(address) {
+    return CommonUtil.appendPath(PathUtil.getDevelopersRestFunctionsUrlWhitelistPath(), address);
+  }
+
+  static getDevelopersRestFunctionsUserWhitelistUserPath(address) {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS,
+        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST, address]);
+  }
+
+  static getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath() {
+    return CommonUtil.formatPath([
+        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS,
+        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_PARAMS,
+        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER]);
   }
 }
 

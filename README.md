@@ -97,9 +97,9 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=0 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_SET_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
-MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=1 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_SET_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
-MIN_NUM_VALIDATORS=3 ACCOUNT_INDEX=2 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_SET_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+ACCOUNT_INDEX=0 PEER_CANDIDATE_JSON_RPC_URL='' DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+ACCOUNT_INDEX=1 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
+ACCOUNT_INDEX=2 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
 Before starting node jobs, remove existing blockchain files and logs if necessary:
@@ -109,10 +109,10 @@ rm -rf /path/to/data/dir logs
 The default blockchain data directory is ~/ain_blockchain_data (e.g. chain data will be at ~/ain_blockchain_data/chains). You can use a different directory by specifying the `BLOCKCHAIN_DATA_DIR` environment variable.
   
 The default minimum size of the validator whitelist is 3. Change MIN_NUM_VALIDATORS parameter in 
-the genesis-configs/base/genesis.json to change this value. You may also need to modify the GENESIS_WHITELIST and GENESIS_VALIDATORS accordingly.
-The genesis configs directory used is `genesis-configs/base` by default and it can be altered using `GENESIS_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
+the blockchain-configs/base/genesis.json to change this value. You may also need to modify the GENESIS_WHITELIST and GENESIS_VALIDATORS accordingly.
+The genesis configs directory used is `blockchain-configs/base` by default and it can be altered using `BLOCKCHAIN_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
 ```
-GENESIS_CONFIGS_DIR=genesis-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDEX=0 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_SET_CLIENT_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDEX=0 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 
 #### On Google Cloud Platform (GCP)

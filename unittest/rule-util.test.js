@@ -54,6 +54,34 @@ describe("RuleUtil", () => {
     })
   })
 
+  describe("isIntegerString", () => {
+    it("when invalid input", () => {
+      expect(util.isIntegerString(true)).to.equal(false);
+      expect(util.isIntegerString(false)).to.equal(false);
+      expect(util.isIntegerString(null)).to.equal(false);
+      expect(util.isIntegerString(undefined)).to.equal(false);
+      expect(util.isIntegerString(Infinity)).to.equal(false);
+      expect(util.isIntegerString(NaN)).to.equal(false);
+      expect(util.isIntegerString('')).to.equal(false);
+      expect(util.isIntegerString('abc')).to.equal(false);
+      expect(util.isIntegerString({})).to.equal(false);
+      expect(util.isIntegerString({a: 'A'})).to.equal(false);
+      expect(util.isIntegerString([])).to.equal(false);
+      expect(util.isIntegerString([10])).to.equal(false);
+      expect(util.isIntegerString(0)).to.equal(false);
+      expect(util.isIntegerString(10)).to.equal(false);
+      expect(util.isIntegerString(-1)).to.equal(false);
+      expect(util.isIntegerString(15.5)).to.equal(false);
+      expect(util.isIntegerString('15.5')).to.equal(false);
+    });
+
+    it("when valid input", () => {
+      expect(util.isIntegerString('0')).to.equal(true);
+      expect(util.isIntegerString('10')).to.equal(true);
+      expect(util.isIntegerString('-1')).to.equal(true);
+    })
+  });
+
   describe("isInteger", () => {
     it("when invalid input", () => {
       expect(util.isInteger(true)).to.equal(false);
@@ -224,6 +252,93 @@ describe("RuleUtil", () => {
     it("when valid input", () => {
       expect(util.isValidHash('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c')).to.equal(true);
       expect(util.isValidHash('0x89a1b02058f0d0b7c93957d0ff290cf44cef419d1275afcb430f6e9536e4afb5')).to.equal(true);
+    })
+  })
+
+  describe("isValidUrl", () => {
+    it("when invalid input", () => {
+      expect(util.isValidUrl(true)).to.equal(false);
+      expect(util.isValidUrl(false)).to.equal(false);
+      expect(util.isValidUrl(0)).to.equal(false);
+      expect(util.isValidUrl(10)).to.equal(false);
+      expect(util.isValidUrl(null)).to.equal(false);
+      expect(util.isValidUrl(undefined)).to.equal(false);
+      expect(util.isValidUrl(Infinity)).to.equal(false);
+      expect(util.isValidUrl(NaN)).to.equal(false);
+      expect(util.isValidUrl('')).to.equal(false);
+      expect(util.isValidUrl('abc')).to.equal(false);
+      expect(util.isValidUrl('0')).to.equal(false);
+      expect(util.isValidUrl([10])).to.equal(false);
+      expect(util.isValidUrl({a: 'A'})).to.equal(false);
+      expect(util.isValidUrl('0x')).to.equal(false);
+      expect(util.isValidUrl('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8')).to.equal(false);
+      expect(util.isValidUrl('ainetwork.ai')).to.equal(false);
+      expect(util.isValidUrl('https://*.ainetwork.ai')).to.equal(false);
+    })
+
+    it("when valid input", () => {
+      expect(util.isValidUrl('http://ainetwork.ai')).to.equal(true);
+      expect(util.isValidUrl('https://ainetwork.ai')).to.equal(true);
+      expect(util.isValidUrl('https://ainetwork.ai/some/api')).to.equal(true);
+    })
+  })
+
+  describe("isValidPrivateUrl", () => {
+    it("when invalid input", () => {
+      expect(util.isValidPrivateUrl(true)).to.equal(false);
+      expect(util.isValidPrivateUrl(false)).to.equal(false);
+      expect(util.isValidPrivateUrl(0)).to.equal(false);
+      expect(util.isValidPrivateUrl(10)).to.equal(false);
+      expect(util.isValidPrivateUrl(null)).to.equal(false);
+      expect(util.isValidPrivateUrl(undefined)).to.equal(false);
+      expect(util.isValidPrivateUrl(Infinity)).to.equal(false);
+      expect(util.isValidPrivateUrl(NaN)).to.equal(false);
+      expect(util.isValidPrivateUrl('')).to.equal(false);
+      expect(util.isValidPrivateUrl('abc')).to.equal(false);
+      expect(util.isValidPrivateUrl('0')).to.equal(false);
+      expect(util.isValidPrivateUrl([10])).to.equal(false);
+      expect(util.isValidPrivateUrl({a: 'A'})).to.equal(false);
+      expect(util.isValidPrivateUrl('0x')).to.equal(false);
+      expect(util.isValidPrivateUrl('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8')).to.equal(false);
+      expect(util.isValidPrivateUrl('ainetwork.ai')).to.equal(false);
+      expect(util.isValidPrivateUrl('https://*.ainetwork.ai')).to.equal(false);
+      expect(util.isValidPrivateUrl('http://172.16.0.36:8080/json-rpc')).to.equal(false);
+    })
+
+    it("when valid input", () => {
+      expect(util.isValidPrivateUrl('172.16.0.36')).to.equal(true);
+      expect(util.isValidPrivateUrl('http://172.16.0.36')).to.equal(true);
+      expect(util.isValidPrivateUrl('https://172.16.0.36')).to.equal(true);
+      expect(util.isValidPrivateUrl('http://172.16.0.36:8080')).to.equal(true);
+      expect(util.isValidPrivateUrl('https://172.16.0.36:9000')).to.equal(true);
+    })
+  })
+
+  describe("isValidUrlWhitelistItem", () => {
+    it("when invalid input", () => {
+      expect(util.isValidUrlWhitelistItem(true)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(false)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(0)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(10)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(null)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(undefined)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(Infinity)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem(NaN)).to.equal(false);
+      expect(util.isValidUrlWhitelistItem('')).to.equal(false);
+      expect(util.isValidUrlWhitelistItem('abc')).to.equal(false);
+      expect(util.isValidUrlWhitelistItem('0')).to.equal(false);
+      expect(util.isValidUrlWhitelistItem([10])).to.equal(false);
+      expect(util.isValidUrlWhitelistItem({a: 'A'})).to.equal(false);
+      expect(util.isValidUrlWhitelistItem('0x')).to.equal(false);
+      expect(util.isValidUrlWhitelistItem('0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8')).to.equal(false);
+      expect(util.isValidUrlWhitelistItem('ainetwork.ai')).to.equal(false);
+    })
+
+    it("when valid input", () => {
+      expect(util.isValidUrlWhitelistItem('http://ainetwork.ai')).to.equal(true);
+      expect(util.isValidUrlWhitelistItem('https://ainetwork.ai')).to.equal(true);
+      expect(util.isValidUrlWhitelistItem('https://ainetwork.ai/some/api')).to.equal(true);
+      expect(util.isValidUrlWhitelistItem('https://*.ainetwork.ai')).to.equal(true);
     })
   })
 

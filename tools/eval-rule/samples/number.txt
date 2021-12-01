@@ -1,0 +1,1 @@
+newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))

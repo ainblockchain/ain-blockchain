@@ -15,7 +15,7 @@ function buildSetValueTxBody(appName, timestamp) {
 }
 
 async function main() {
-  // TODO(sanghee): Support 'node sendTaskRequestTx.js <config_filename>' and check args
+  // TODO(cshcomcom): Support 'node sendTaskRequestTx.js <config_filename>' and check args
   const setValueTxBody = buildSetValueTxBody(healthCareAppName, Date.now());
   const setValueResult = await signAndSendTx(endpointUrl, setValueTxBody, userPrivateKey);
   if (!setValueResult.success) {

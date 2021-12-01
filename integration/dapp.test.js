@@ -5,7 +5,7 @@ const rimraf = require('rimraf');
 const spawn = require('child_process').spawn;
 const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
-const { CHAINS_DIR } = require('../common/constants');
+const { BlockchainConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const {
   waitUntilTxFinalized,
@@ -19,28 +19,23 @@ const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 
 const ENV_VARIABLES = [
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', DEBUG: false, CONSOLE_LOG: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-  },
-  {
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3, DEBUG: false, CONSOLE_LOG: false,
-    ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
 ];
 
 const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCOUNT_INDEX));
 const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX));
 const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX));
-const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX));
-const serverList = [ server1, server2, server3, server4 ];
+const serverList = [ server1, server2, server3 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -65,15 +60,12 @@ async function setUp() {
       'GET', server2 + '/get_address').body.toString('utf-8')).result;
   const server3Addr = parseOrLog(syncRequest(
       'GET', server3 + '/get_address').body.toString('utf-8')).result;
-  const server4Addr = parseOrLog(syncRequest(
-      'GET', server4 + '/get_address').body.toString('utf-8')).result;
 
   await setUpApp('afan', serverList, {
     admin: {
       [server1Addr]: true,
       [server2Addr]: true,
       [server3Addr]: true,
-      [server4Addr]: true,
     }
   });
 }
@@ -103,10 +95,10 @@ async function cleanUp() {
 }
 
 describe('DApp Test', async () => {
-  let tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
+  let tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
     await CommonUtil.sleep(3000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
@@ -115,7 +107,6 @@ describe('DApp Test', async () => {
     await CommonUtil.sleep(3000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[2], true);
     await CommonUtil.sleep(3000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[3], true);
     await waitUntilNetworkIsReady(serverList);
   });
 
@@ -124,9 +115,8 @@ describe('DApp Test', async () => {
     server1_proc.kill();
     server2_proc.kill();
     server3_proc.kill();
-    server4_proc.kill();
 
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   set_value = (ref, value) => {
@@ -240,7 +230,7 @@ describe('DApp Test', async () => {
       });
 
       it('three fans', () => {
-        const afanClient = new AfanClient(server4);
+        const afanClient = new AfanClient(server3);
 
         return set_value('/apps/afan/balance/uid0', 20)
           .then(async (res) => await waitUntilTxFinalized(serverList, _.get(res, 'result.tx_hash')))

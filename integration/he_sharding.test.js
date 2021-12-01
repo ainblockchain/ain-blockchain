@@ -11,9 +11,7 @@ const { parseOrLog } = require('../unittest/test-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const {
-  CHAINS_DIR,
-} = require('../common/constants');
+const { BlockchainConfigs } = require('../common/constants');
 const {
   ConsensusStates
 } = require('../consensus/constants');
@@ -21,6 +19,7 @@ const CommonUtil = require('../common/common-util');
 const {
   readConfigFile,
   waitForNewBlocks,
+  waitForNewShardingReports,
   waitUntilNodeSyncs,
   waitUntilTxFinalized,
   waitUntilNetworkIsReady,
@@ -30,8 +29,9 @@ const {
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, DEBUG: true,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/unit-tests', ACCOUNT_INDEX: 0,
+    PEER_CANDIDATE_JSON_RPC_URL: '', DEBUG: true, ENABLE_EXPRESS_RATE_LIMIT: false,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     // For shard chain tracker
@@ -39,36 +39,22 @@ const ENV_VARIABLES = [
     CONSOLE_LOG: false
   },
   {
-    GENESIS_CONFIGS_DIR: 'genesis-configs/he-shard',
-    PORT: 9091, P2P_PORT: 6001,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 0,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard',
+    PORT: 9091, P2P_PORT: 6001, ENABLE_EXPRESS_RATE_LIMIT: false,
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '',
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
-    GENESIS_CONFIGS_DIR: 'genesis-configs/he-shard',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard',
     PORT: 9092, P2P_PORT: 6002,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 1,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 1, ENABLE_EXPRESS_RATE_LIMIT: false,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
-    GENESIS_CONFIGS_DIR: 'genesis-configs/he-shard',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard',
     PORT: 9093, P2P_PORT: 6003,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 2,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
-  },
-  {
-    GENESIS_CONFIGS_DIR: 'genesis-configs/he-shard',
-    PORT: 9094, P2P_PORT: 6004,
-    MIN_NUM_VALIDATORS: 4, ACCOUNT_INDEX: 3,
-    CONSOLE_LOG: false, ENABLE_DEV_SET_CLIENT_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    ADDITIONAL_OWNERS: 'test:unittest/data/owners_for_testing.json',
-    ADDITIONAL_RULES: 'test:unittest/data/rules_for_testing.json'
+    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 2, ENABLE_EXPRESS_RATE_LIMIT: false,
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
 ];
 
@@ -77,8 +63,7 @@ const parentServerList = [ parentServer ];
 const server1 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
 const server2 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
 const server3 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[4].ACCOUNT_INDEX))
-const server4 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[5].ACCOUNT_INDEX))
-const shardServerList = [ server1, server2, server3, server4 ];
+const shardServerList = [ server1, server2, server3 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
   const options = {
@@ -111,22 +96,22 @@ async function waitUntilShardReporterStarts() {
 describe('HE Sharding', async () => {
   const appName = 'he_health_care';
   const token =
-      readConfigFile(path.resolve(__dirname, '../genesis-configs/he-shard', 'genesis_token.json'));
+      readConfigFile(path.resolve(__dirname, '../blockchain-configs/he-shard', 'blockchain_params.json')).token;
   const parentAccounts =
-      readConfigFile(path.resolve(__dirname, '../genesis-configs/base', 'genesis_accounts.json'));
+      readConfigFile(path.resolve(__dirname, '../blockchain-configs/base', 'genesis_accounts.json'));
   const parentServerAddr = parentAccounts.others[0].address;
   const accounts =
-      readConfigFile(path.resolve(__dirname, '../genesis-configs/he-shard', 'genesis_accounts.json'));
+      readConfigFile(path.resolve(__dirname, '../blockchain-configs/he-shard', 'genesis_accounts.json'));
   const shardOwnerAddr = accounts.owner.address;
   const shardReporterAddr = accounts.others[0].address;
   const sharding =
-      readConfigFile(path.resolve(__dirname, '../genesis-configs/he-shard', 'genesis_sharding.json'));
+      readConfigFile(path.resolve(__dirname, '../blockchain-configs/he-shard', 'blockchain_params.json')).sharding;
 
   let parent_tracker_proc, parent_server_proc,
-      tracker_proc, server1_proc, server2_proc, server3_proc, server4_proc;
+      tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(CHAINS_DIR)
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
 
     parent_tracker_proc =
         startServer(TRACKER_SERVER, 'parent tracker server', { CONSOLE_LOG: false }, true);
@@ -153,7 +138,12 @@ describe('HE Sharding', async () => {
     ).result;
     await waitUntilTxFinalized(parentServerList, shardReportRes.tx_hash);
     // Create app at the parent chain for the shard
-    await setUpApp(appName, parentServerList, { admin: { [shardOwnerAddr]: true } });
+    await setUpApp(appName, parentServerList, {
+      admin: {
+        [shardOwnerAddr]: true,
+        [shardReporterAddr]: true
+      }
+    });
     
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', ENV_VARIABLES[1], true);
     await CommonUtil.sleep(3000);
@@ -164,7 +154,6 @@ describe('HE Sharding', async () => {
     await CommonUtil.sleep(3000);
     server3_proc = startServer(APP_SERVER, 'server3', ENV_VARIABLES[4], true);
     await CommonUtil.sleep(3000);
-    server4_proc = startServer(APP_SERVER, 'server4', ENV_VARIABLES[5], true);
     await CommonUtil.sleep(3000); // Before shard reporting begins
   });
 
@@ -175,9 +164,8 @@ describe('HE Sharding', async () => {
     server1_proc.kill()
     server2_proc.kill()
     server3_proc.kill()
-    server4_proc.kill()
 
-    rimraf.sync(CHAINS_DIR)
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
   });
 
   describe('Parent chain initialization', () => {
@@ -208,9 +196,7 @@ describe('HE Sharding', async () => {
           code: 0,
           result: {
             sharding_enabled: true,
-            proof_hash_map: {
-              latest: -1
-            }
+            latest_block_number: -1
           },
         });
       });
@@ -267,7 +253,7 @@ describe('HE Sharding', async () => {
       await waitUntilNetworkIsReady(shardServerList);
       await setUpApp(appName, shardServerList, { admin: { [shardOwnerAddr]: true } });
     });
-    
+
     describe('DB values', () => {
       it('token', () => {
         const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/token')
@@ -318,7 +304,7 @@ describe('HE Sharding', async () => {
 
     describe('DB owners', () => {
       it('sharding', () => {
-        const body = parseOrLog(syncRequest('GET', server4 + '/get_owner?ref=/sharding/config')
+        const body = parseOrLog(syncRequest('GET', server3 + '/get_owner?ref=/sharding/config')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['.owner'].owners[shardOwnerAddr]).to.not.be.null;
@@ -338,8 +324,7 @@ describe('HE Sharding', async () => {
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         let blockNumber = 0;
-        const sortedReports = _.without(
-            Object.keys(body.result), 'latest').sort((a, b) => Number(a) - Number(b));
+        const sortedReports = Object.keys(body.result).sort((a, b) => Number(a) - Number(b));
         for (const key of sortedReports) {
           expect(blockNumber).to.equal(Number(key));
           blockNumber++;
@@ -353,9 +338,10 @@ describe('HE Sharding', async () => {
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        const latest = body.result.latest;
-        const sortedReports = _.without(
-            Object.keys(body.result), 'latest').sort((a, b) => Number(a) - Number(b));
+        const latest = parseOrLog(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/latest_block_number`)
+            .body.toString('utf-8')).result;
+        const sortedReports = Object.keys(body.result).sort((a, b) => Number(a) - Number(b));
         const highest = sortedReports[sortedReports.length - 1];
         expect(latest).to.equal(Number(highest));
       });
@@ -363,28 +349,29 @@ describe('HE Sharding', async () => {
 
     describe('Shard reporter node restart', () => {
       it('can resume reporting after missing some reports', async () => {
-        const reportsBefore = parseOrLog(syncRequest(
-            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
-          .body.toString('utf-8'));
+        const latestBefore = parseOrLog(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/latest_block_number`)
+          .body.toString('utf-8')).result;
         console.log(`        --> Shutting down server[0]...`);
         server1_proc.kill();
         await waitForNewBlocks(server2, sharding.reporting_period);
         console.log(`        --> Restarting server[0]...`);
         server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
-        await waitForNewBlocks(server2, sharding.reporting_period * 2);
         await waitUntilNodeSyncs(server1);
-        await waitForNewBlocks(server1, sharding.reporting_period);
+        await waitForNewShardingReports(parentServer, sharding.sharding_path);
         const reportsAfter = parseOrLog(syncRequest(
             'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/proof_hash_map`)
           .body.toString('utf-8'));
+        const latestAfter = parseOrLog(syncRequest(
+            'GET', parentServer + `/get_value?ref=${sharding.sharding_path}/.shard/latest_block_number`)
+          .body.toString('utf-8')).result;
         let blockNumber = 0;
-        const sortedReports = _.without(
-            Object.keys(reportsAfter.result), 'latest').sort((a, b) => Number(a) - Number(b));
+        const sortedReports = Object.keys(reportsAfter.result).sort((a, b) => Number(a) - Number(b));
         for (const key of sortedReports) {
           expect(blockNumber).to.equal(Number(key));
           blockNumber++;
         }
-        expect(reportsAfter.result.latest).to.be.greaterThan(reportsBefore.result.latest);
+        expect(latestAfter).to.be.greaterThan(latestBefore);
       });
     });
   });

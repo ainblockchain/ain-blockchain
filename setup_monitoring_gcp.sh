@@ -1,25 +1,27 @@
 #!/bin/bash
 
 if [[ "$#" -lt 1 ]]; then
-    echo "Usage: bash setup_monitoring_gcp.sh [dev|staging|spring|summer]"
-    echo "Example: bash setup_monitoring_gcp.sh dev"
+    printf "Usage: bash setup_monitoring_gcp.sh [dev|staging|sandbox|spring|summer]\n"
+    printf "Example: bash setup_monitoring_gcp.sh dev\n"
+    printf "\n"
     exit
 fi
+printf "\n[[[[[ setup_monitoring_gcp.sh ]]]]]\n\n"
 
-if [[ "$1" != 'spring' ]] && [[ "$1" != 'summer' ]] && [[ "$1" != 'dev' ]] && [[ "$1" != 'staging' ]]; then
-    echo "Invalid season argument: $1"
+if [[ "$1" != 'spring' ]] && [[ "$1" != 'summer' ]] && [[ "$1" != 'dev' ]] && [[ "$1" != 'staging' ]] && [[ "$1" != 'sandbox' ]]; then
+    printf "Invalid season argument: $1\n"
     exit
 fi
 
 SEASON="$1"
 
 
-echo 'Killing old jobs..'
+printf 'Killing old jobs..\n'
 killall prometheus
 killall grafana-server
 
 
-echo 'Setting up working directory..'
+printf 'Setting up working directory..\n'
 cd
 sudo rm -rf ../ain-blockchain
 sudo mkdir ../ain-blockchain
@@ -28,7 +30,7 @@ mv * ../ain-blockchain
 cd ../ain-blockchain
 
 
-echo 'Installing Prometheus..'
+printf 'Installing Prometheus..\n'
 curl -s https://api.github.com/repos/prometheus/prometheus/releases/latest \
   | grep browser_download_url \
   | grep linux-amd64 \
@@ -37,11 +39,11 @@ curl -s https://api.github.com/repos/prometheus/prometheus/releases/latest \
 
 tar xvf prometheus*.tar.gz
 
-echo 'Renaming Prometheus folder..'
+printf 'Renaming Prometheus folder..\n'
 mv prometheus*/ prometheus
 
 
-echo 'Copying Prometheus yml file..'
+printf 'Copying Prometheus yml file..\n'
 PROMETHEUS_CONFIG_FILE="prometheus-${SEASON}.yml"
-echo "PROMETHEUS_CONFIG_FILE=${PROMETHEUS_CONFIG_FILE}"
+printf "PROMETHEUS_CONFIG_FILE=${PROMETHEUS_CONFIG_FILE}\n"
 cp -f monitoring/${PROMETHEUS_CONFIG_FILE} prometheus/prometheus.yml

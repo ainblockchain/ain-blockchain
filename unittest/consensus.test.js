@@ -2,9 +2,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const {
-  CHAINS_DIR,
-  MIN_STAKE_PER_VALIDATOR,
-  MAX_STAKE_PER_VALIDATOR,
+  BlockchainConfigs,
   PredefinedDbPaths,
 } = require('../common/constants');
 const BlockchainNode = require('../node');
@@ -14,7 +12,7 @@ describe("Consensus", () => {
   let node1, node2;
 
   beforeEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     node1 = new BlockchainNode();
     setNodeForTesting(node1, 0);
@@ -23,7 +21,7 @@ describe("Consensus", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   it("Non-staked nodes cannot vote", () => {
@@ -39,14 +37,16 @@ describe("Consensus", () => {
     );
     addBlock(node1, [tx], [], {});
     const lastBlock = node1.bc.lastBlock();
+    const timestamp = lastBlock.timestamp + 1;
     const voteTx = getTransaction(node2, {
         operation: { 
           type: 'SET_VALUE', 
           ref: `/consensus/number/1/${lastBlock.hash}/vote/${node2.account.address}`,
-          value: { block_hash: lastBlock.hash, stake: 100000, is_against: false }
+          value: { block_hash: lastBlock.hash, stake: 100000, is_against: false, timestamp }
         },
         nonce: -1,
-        gas_price: 1
+        gas_price: 1,
+        timestamp
       }
     );
     expect(node1.db.executeTransaction(voteTx).code).to.equal(103);
@@ -66,14 +66,16 @@ describe("Consensus", () => {
     );
     addBlock(node1, [stakeTx], [], {});
     const lastBlock = node1.bc.lastBlock();
+    const timestamp = lastBlock.timestamp + 1;
     const voteTx = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE', 
           ref: `/consensus/number/${lastBlock.number}/${lastBlock.hash}/vote/${addr}`,
-          value: { block_hash: lastBlock.hash, stake: 100000, is_against: false }
+          value: { block_hash: lastBlock.hash, stake: 100000, is_against: false, timestamp }
         },
         nonce: -1,
-        gas_price: 1
+        gas_price: 1,
+        timestamp
       }
     );
     expect(node1.db.executeTransaction(voteTx).code).to.equal(0);
@@ -93,7 +95,7 @@ describe("Consensus", () => {
     );
     addBlock(node1, [stakeTx], [], {});
     const lastBlock = node1.bc.lastBlock();
-    const voteTx = getTransaction(node2, {
+    const proposeTx = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE', 
           ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
@@ -107,7 +109,7 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(voteTx).code).to.equal(103);
+    expect(node1.db.executeTransaction(proposeTx).code).to.equal(103);
   });
 
   it('Whitelisted validators must stake within MIN_STAKE_PER_VALIDATOR & MAX_STAKE_PER_VALIDATOR to have the producing rights', () => {
@@ -121,7 +123,7 @@ describe("Consensus", () => {
     node1.cloneAndFinalizeVersion(tempDb.stateVersion, -1); // Bypass already existing final state version
     
     // Staking less than MIN_STAKE_PER_VALIDATOR
-    let stakeAmount = MIN_STAKE_PER_VALIDATOR - 1;
+    let stakeAmount = BlockchainConfigs.MIN_STAKE_PER_VALIDATOR - 1;
     const stakeLessThanMin = getTransaction(node2, {
         operation: { 
           type: 'SET_VALUE', 
@@ -134,7 +136,7 @@ describe("Consensus", () => {
     );
     addBlock(node1, [stakeLessThanMin], [], {});
     lastBlock = node1.bc.lastBlock();
-    const voteWithStakeLessThanMin = getTransaction(node2, {
+    const proposeWithStakeLessThanMin = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE',
           ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
@@ -148,7 +150,7 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(voteWithStakeLessThanMin).code).to.equal(103); // Fails
+    expect(node1.db.executeTransaction(proposeWithStakeLessThanMin).code).to.equal(103); // Fails
 
     // Staking MIN_STAKE_PER_VALIDATOR
     const stakeEqualMin = getTransaction(node2, {
@@ -163,7 +165,7 @@ describe("Consensus", () => {
     );
     addBlock(node1, [stakeEqualMin], [], {});
     lastBlock = node1.bc.lastBlock();
-    const voteWithStakeEqualMin = getTransaction(node2, {
+    const proposeWithStakeEqualMin = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE', 
           ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
@@ -177,14 +179,14 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(voteWithStakeEqualMin).code).to.equal(0); // Succeeds
+    expect(node1.db.executeTransaction(proposeWithStakeEqualMin).code).to.equal(0); // Succeeds
 
     // Staking more than MAX_STAKE_PER_VALIDATOR
     const stakeMoreThanMax = getTransaction(node2, {
         operation: { 
           type: 'SET_VALUE', 
           ref: `/staking/consensus/${addr}/0/stake/key3/value`, 
-          value: MAX_STAKE_PER_VALIDATOR - MIN_STAKE_PER_VALIDATOR + 1 // 1 more than MAX_STAKE_PER_VALIDATOR
+          value: BlockchainConfigs.MAX_STAKE_PER_VALIDATOR - BlockchainConfigs.MIN_STAKE_PER_VALIDATOR + 1 // 1 more than MAX_STAKE_PER_VALIDATOR
         },
         nonce: -1,
         gas_price: 1
@@ -192,7 +194,7 @@ describe("Consensus", () => {
     );
     addBlock(node1, [stakeMoreThanMax], [], {});
     lastBlock = node1.bc.lastBlock();
-    const voteWithStakeMoreThanMax = getTransaction(node2, {
+    const proposeWithStakeMoreThanMax = getTransaction(node2, {
         operation: {
           type: 'SET_VALUE', 
           ref: `/consensus/number/${lastBlock.number + 1}/propose/${addr}`,
@@ -206,6 +208,6 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(voteWithStakeMoreThanMax).code).to.equal(103); // Fails
+    expect(node1.db.executeTransaction(proposeWithStakeMoreThanMax).code).to.equal(103); // Fails
   });
 });

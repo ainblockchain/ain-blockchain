@@ -1277,5 +1277,43 @@ describe("CommonUtil", () => {
         ]
       }), ['app_a', 'app_b']);
     });
+  });
+
+  describe('getJsonDiff', () => { 
+    it("when abnormal input", () => {
+      assert.deepEqual(CommonUtil.getJsonDiff(null, null), '');
+      assert.deepEqual(CommonUtil.getJsonDiff(null, undefined), '');
+      assert.deepEqual(CommonUtil.getJsonDiff(null, []), '');
+      assert.deepEqual(CommonUtil.getJsonDiff({}, null), '');
+      assert.deepEqual(CommonUtil.getJsonDiff({}, undefined), '');
+      assert.deepEqual(CommonUtil.getJsonDiff({}, []), '');
+    });
+
+    it("when normal input", () => {
+      const diffLines = CommonUtil.getJsonDiff({
+        a: 'aaa',
+        b: {
+          bb: 'bbbbbb'
+        },
+        c: 'ccc'
+      }, {
+        b: {
+          bb: 'bbbbbb_new'
+        },
+        c: 'ccc',
+        d: 'ddd'
+      });
+      assert.deepEqual(diffLines.split('\n'), [
+        " {",
+        "-  a: \"aaa\"",
+        "+  d: \"ddd\"",
+        "   b: {",
+        "-    bb: \"bbbbbb\"",
+        "+    bb: \"bbbbbb_new\"",
+        "   }",
+        " }",
+        "",
+      ]);
+    });
   })
 })

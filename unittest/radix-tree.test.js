@@ -9,9 +9,9 @@ describe("radix-tree", () => {
   describe("initialization", () => {
     it("construct without version", () => {
       const tree = new RadixTree();
-      expect(tree.version).to.equal(null);
-      expect(tree.nodeSerial).to.equal(1);
-      expect(tree.numTerminalNodes).to.equal(0);
+      expect(tree.getVersion()).to.equal(null);
+      expect(tree.getNextSerial()).to.equal(1);
+      expect(tree.getNumChildStateNodes()).to.equal(0);
       expect(tree.root.getVersion()).to.equal(null);
       expect(tree.root.getSerial()).to.equal(0);
       expect(tree.root.getParentStateNode()).to.equal(null);
@@ -20,9 +20,9 @@ describe("radix-tree", () => {
     it("construct with version", () => {
       const version = 'ver';
       const tree = new RadixTree(version);
-      expect(tree.version).to.equal(version);
-      expect(tree.nodeSerial).to.equal(1);
-      expect(tree.numTerminalNodes).to.equal(0);
+      expect(tree.getVersion()).to.equal(version);
+      expect(tree.getNextSerial()).to.equal(1);
+      expect(tree.getNumChildStateNodes()).to.equal(0);
       expect(tree.root.getVersion()).to.equal(version);
       expect(tree.root.getSerial()).to.equal(0);
       expect(tree.root.getParentStateNode()).to.equal(null);
@@ -31,9 +31,9 @@ describe("radix-tree", () => {
     it("construct with parent state node", () => {
       const parentStateNode = new StateNode();
       const tree = new RadixTree(null, parentStateNode);
-      expect(tree.version).to.equal(null);
-      expect(tree.nodeSerial).to.equal(1);
-      expect(tree.numTerminalNodes).to.equal(0);
+      expect(tree.getVersion()).to.equal(null);
+      expect(tree.getNextSerial()).to.equal(1);
+      expect(tree.getNumChildStateNodes()).to.equal(0);
       expect(tree.root.getVersion()).to.equal(null);
       expect(tree.root.getSerial()).to.equal(0);
       expect(tree.root.getParentStateNode()).to.equal(parentStateNode);
@@ -68,7 +68,7 @@ describe("radix-tree", () => {
       tree.set(label22, stateNode22);
 
       assert.deepEqual(tree.root.getParentStateNode(), parentStateNode);
-      expect(tree.numChildStateNodes()).to.equal(4);
+      expect(tree.getNumChildStateNodes()).to.equal(4);
       assert.deepEqual(tree.toJsObject(true, true), {
         "#serial": 0,
         "#version": "ver",
@@ -78,7 +78,7 @@ describe("radix-tree", () => {
           "aaa": {
             "#serial": 2,
             "#version": "ver",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#version": "ver",
             }
           },
@@ -86,20 +86,20 @@ describe("radix-tree", () => {
             "111": {
               "#serial": 7,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#version": "ver",
               }
             },
             "222": {
               "#serial": 9,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#version": "ver",
               }
             },
             "#serial": 5,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#version": "ver",
             }
           }
@@ -118,9 +118,9 @@ describe("radix-tree", () => {
       const cloned = tree.clone(version2, parentStateNode2);
 
       assert.deepEqual(cloned.root.getParentStateNode(), parentStateNode2);
-      expect(cloned.version).to.equal(version2);
-      expect(cloned.nodeSerial).to.equal(tree.nodeSerial);
-      expect(cloned.numTerminalNodes).to.equal(4);
+      expect(cloned.getVersion()).to.equal(version2);
+      expect(cloned.getNextSerial()).to.equal(tree.nextSerial);
+      expect(cloned.getNumChildStateNodes()).to.equal(4);
       assert.deepEqual(cloned.toJsObject(true, true), {
         "#serial": 0,
         "#version": "ver2",
@@ -130,7 +130,7 @@ describe("radix-tree", () => {
           "aaa": {
             "#serial": 2,
             "#version": "ver",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#version": "ver",
             }
           },
@@ -138,20 +138,20 @@ describe("radix-tree", () => {
             "111": {
               "#serial": 7,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#version": "ver",
               }
             },
             "222": {
               "#serial": 9,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#version": "ver",
               }
             },
             "#serial": 5,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#version": "ver",
             }
           }
@@ -178,19 +178,19 @@ describe("radix-tree", () => {
       expect(node1.getVersion()).to.equal(version);
       expect(node1.getSerial()).to.equal(1);
       expect(node1.getParentStateNode()).to.equal(null);
-      expect(tree.nodeSerial).to.equal(2);
+      expect(tree.getNextSerial()).to.equal(2);
 
       const node2 = tree._newRadixNode();
       expect(node2.getVersion()).to.equal(version);
       expect(node2.getSerial()).to.equal(2);
       expect(node2.getParentStateNode()).to.equal(null);
-      expect(tree.nodeSerial).to.equal(3);
+      expect(tree.getNextSerial()).to.equal(3);
 
       const node3 = tree._newRadixNode();
       expect(node3.getVersion()).to.equal(version);
       expect(node3.getSerial()).to.equal(3);
       expect(node3.getParentStateNode()).to.equal(null);
-      expect(tree.nodeSerial).to.equal(4);
+      expect(tree.getNextSerial()).to.equal(4);
     });
   });
 
@@ -324,7 +324,7 @@ describe("radix-tree", () => {
           "a": {
             "#radix_ph": null,
             "#version": "ver",
-            "0xa": {
+            "#state:0xa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -344,7 +344,7 @@ describe("radix-tree", () => {
           "a": {
             "#radix_ph": null,
             "#version": "ver",
-            "0xa": {
+            "#state:0xa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -352,7 +352,7 @@ describe("radix-tree", () => {
           "b": {
             "#radix_ph": null,
             "#version": "ver",
-            "0xb": {
+            "#state:0xb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -371,7 +371,7 @@ describe("radix-tree", () => {
           "b": {
             "#radix_ph": null,
             "#version": "ver",
-            "0xb": {
+            "#state:0xb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -415,7 +415,7 @@ describe("radix-tree", () => {
           "aaa": {
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaa": {
+            "#state:0xaaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -435,7 +435,7 @@ describe("radix-tree", () => {
           "aaa": {
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaa": {
+            "#state:0xaaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -443,7 +443,7 @@ describe("radix-tree", () => {
           "bbb": {
             "#radix_ph": null,
             "#version": "ver",
-            "0xbbb": {
+            "#state:0xbbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -462,7 +462,7 @@ describe("radix-tree", () => {
           "bbb": {
             "#radix_ph": null,
             "#version": "ver",
-            "0xbbb": {
+            "#state:0xbbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -501,14 +501,14 @@ describe("radix-tree", () => {
           "aaa": {
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaa": {
+            "#state:0xaaa": {
               "#state_ph": null,
               "#version": null,
             },
             "bbb": {
               "#radix_ph": null,
               "#version": "ver",
-              "0xaaabbb": {
+              "#state:0xaaabbb": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -540,7 +540,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaabbb": {
+            "#state:0xaaabbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -555,7 +555,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaabbb": {
+            "#state:0xaaabbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -577,7 +577,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaa": {
+            "#state:0xaaa": {
               "#state_ph": null,
               "#version": null,
             },
@@ -585,7 +585,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0xaaabbb": {
+              "#state:0xaaabbb": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -601,7 +601,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaabbb": {
+            "#state:0xaaabbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -630,14 +630,14 @@ describe("radix-tree", () => {
           "aaa": {
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaa": {
+            "#state:0xaaa": {
               "#state_ph": null,
               "#version": null,
             },
             "bbb": {
               "#radix_ph": null,
               "#version": "ver",
-              "0xaaabbb": {
+              "#state:0xaaabbb": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -668,7 +668,7 @@ describe("radix-tree", () => {
           "aaa": {
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaa_": {
+            "#state:0xaaa_": {
               "#state_ph": null,
               "#version": null,
             }
@@ -699,7 +699,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaa": {
+            "#state:0xaaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -714,7 +714,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaa": {
+            "#state:0xaaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -736,7 +736,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaa": {
+            "#state:0xaaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -745,7 +745,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0xbbb": {
+            "#state:0xbbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -760,7 +760,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0xaaa": {
+            "#state:0xaaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -796,7 +796,7 @@ describe("radix-tree", () => {
             "111": {
               "#radix_ph": null,
               "#version": "ver",
-              "0xbbb111": {
+              "#state:0xbbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -804,14 +804,14 @@ describe("radix-tree", () => {
             "222": {
               "#radix_ph": null,
               "#version": "ver",
-              "0xbbb222": {
+              "#state:0xbbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
             },
             "#radix_ph": null,
             "#version": "ver",
-            "0xbbb": {
+            "#state:0xbbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -833,7 +833,7 @@ describe("radix-tree", () => {
             "111": {
               "#radix_ph": null,
               "#version": "ver",
-              "0xbbb111": {
+              "#state:0xbbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -841,7 +841,7 @@ describe("radix-tree", () => {
             "222": {
               "#radix_ph": null,
               "#version": "ver",
-              "0xbbb222": {
+              "#state:0xbbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -875,14 +875,14 @@ describe("radix-tree", () => {
             "111": {
               "#radix_ph": null,
               "#version": "ver",
-              "0xbbb111": {
+              "#state:0xbbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
             },
             "#radix_ph": null,
             "#version": "ver",
-            "0xbbb": {
+            "#state:0xbbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -902,7 +902,7 @@ describe("radix-tree", () => {
           "bbb111": {
             "#radix_ph": null,
             "#version": "ver",
-            "0xbbb111": {
+            "#state:0xbbb111": {
               "#state_ph": null,
               "#version": null,
             }
@@ -940,7 +940,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0xbbb111": {
+              "#state:0xbbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -949,7 +949,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0xbbb222": {
+              "#state:0xbbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -957,7 +957,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0xbbb": {
+            "#state:0xbbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -982,7 +982,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0xbbb222": {
+              "#state:0xbbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -990,7 +990,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0xbbb": {
+            "#state:0xbbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1022,7 +1022,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0xbbb111": {
+              "#state:0xbbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1031,7 +1031,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0xbbb222": {
+              "#state:0xbbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1057,7 +1057,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0xbbb222": {
+            "#state:0xbbb222": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1091,7 +1091,7 @@ describe("radix-tree", () => {
           "000a": {
             "#radix_ph": null,
             "#version": "ver",
-            "0x000a": {
+            "#state:0x000a": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1114,7 +1114,7 @@ describe("radix-tree", () => {
             "a": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000a": {
+              "#state:0x000a": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1122,7 +1122,7 @@ describe("radix-tree", () => {
             "b": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000b": {
+              "#state:0x000b": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1142,7 +1142,7 @@ describe("radix-tree", () => {
           "000b": {
             "#radix_ph": null,
             "#version": "ver",
-            "0x000b": {
+            "#state:0x000b": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1186,7 +1186,7 @@ describe("radix-tree", () => {
           "000aaa": {
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1209,7 +1209,7 @@ describe("radix-tree", () => {
             "aaa": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000aaa": {
+              "#state:0x000aaa": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1217,7 +1217,7 @@ describe("radix-tree", () => {
             "bbb": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb": {
+              "#state:0x000bbb": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1237,7 +1237,7 @@ describe("radix-tree", () => {
           "000bbb": {
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1281,7 +1281,7 @@ describe("radix-tree", () => {
           "000aaa": {
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1304,7 +1304,7 @@ describe("radix-tree", () => {
             "aaa": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000aaa": {
+              "#state:0x000aaa": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1312,7 +1312,7 @@ describe("radix-tree", () => {
             "bbb": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb": {
+              "#state:0x000bbb": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1332,7 +1332,7 @@ describe("radix-tree", () => {
           "000bbb": {
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1366,7 +1366,7 @@ describe("radix-tree", () => {
             "aaa": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000aaa": {
+              "#state:0x000aaa": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1374,7 +1374,7 @@ describe("radix-tree", () => {
             "bbb": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb": {
+              "#state:0x000bbb": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1398,14 +1398,14 @@ describe("radix-tree", () => {
           "000": {
             "#radix_ph": null,
             "#version": "ver",
-            "0x000": {
+            "#state:0x000": {
               "#state_ph": null,
               "#version": null,
             },
             "aaa": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000aaa": {
+              "#state:0x000aaa": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1413,7 +1413,7 @@ describe("radix-tree", () => {
             "bbb": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb": {
+              "#state:0x000bbb": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1443,14 +1443,14 @@ describe("radix-tree", () => {
           "000aaa": {
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#state_ph": null,
               "#version": null,
             },
             "bbb": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000aaabbb": {
+              "#state:0x000aaabbb": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1482,7 +1482,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaabbb": {
+            "#state:0x000aaabbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1497,7 +1497,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaabbb": {
+            "#state:0x000aaabbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1519,7 +1519,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#state_ph": null,
               "#version": null,
             },
@@ -1527,7 +1527,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000aaabbb": {
+              "#state:0x000aaabbb": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1544,7 +1544,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaabbb": {
+            "#state:0x000aaabbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1573,14 +1573,14 @@ describe("radix-tree", () => {
           "000aaa": {
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#state_ph": null,
               "#version": null,
             },
             "bbb": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000aaabbb": {
+              "#state:0x000aaabbb": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1611,7 +1611,7 @@ describe("radix-tree", () => {
           "000aaa": {
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaa_": {
+            "#state:0x000aaa_": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1642,7 +1642,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1657,7 +1657,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1683,7 +1683,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000aaa": {
+              "#state:0x000aaa": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1692,7 +1692,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb": {
+              "#state:0x000bbb": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1709,7 +1709,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1753,7 +1753,7 @@ describe("radix-tree", () => {
             "aaa": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000aaa": {
+              "#state:0x000aaa": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1762,7 +1762,7 @@ describe("radix-tree", () => {
               "111": {
                 "#radix_ph": null,
                 "#version": "ver",
-                "0x000bbb111": {
+                "#state:0x000bbb111": {
                   "#state_ph": null,
                   "#version": null,
                 }
@@ -1770,14 +1770,14 @@ describe("radix-tree", () => {
               "222": {
                 "#radix_ph": null,
                 "#version": "ver",
-                "0x000bbb222": {
+                "#state:0x000bbb222": {
                   "#state_ph": null,
                   "#version": null,
                 }
               },
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb": {
+              "#state:0x000bbb": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1802,7 +1802,7 @@ describe("radix-tree", () => {
             "111": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1810,14 +1810,14 @@ describe("radix-tree", () => {
             "222": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
             },
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1848,14 +1848,14 @@ describe("radix-tree", () => {
             "111": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
             },
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1875,7 +1875,7 @@ describe("radix-tree", () => {
           "000bbb111": {
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb111": {
+            "#state:0x000bbb111": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1917,7 +1917,7 @@ describe("radix-tree", () => {
               "#num_parents": 2,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1925,7 +1925,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1936,7 +1936,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb111": {
+            "#state:0x000bbb111": {
               "#state_ph": null,
               "#version": null,
             }
@@ -1962,7 +1962,7 @@ describe("radix-tree", () => {
               "#num_parents": 2,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -1977,7 +1977,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb111": {
+            "#state:0x000bbb111": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2011,14 +2011,14 @@ describe("radix-tree", () => {
             "111": {
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
             },
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2038,7 +2038,7 @@ describe("radix-tree", () => {
           "000bbb111": {
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb111": {
+            "#state:0x000bbb111": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2076,7 +2076,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2085,7 +2085,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2093,7 +2093,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2118,7 +2118,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2126,7 +2126,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2164,7 +2164,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2173,7 +2173,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2181,7 +2181,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2206,7 +2206,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2214,7 +2214,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": "0xfca2961686b9d9ee4b618bee6f6c7857c85644cf88e13e93179289fd18985fa8",
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2262,7 +2262,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2271,7 +2271,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2279,7 +2279,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2294,7 +2294,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2303,7 +2303,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2311,7 +2311,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2336,7 +2336,7 @@ describe("radix-tree", () => {
               "#num_parents": 2,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2344,7 +2344,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": "0xfca2961686b9d9ee4b618bee6f6c7857c85644cf88e13e93179289fd18985fa8",
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2360,7 +2360,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2369,7 +2369,7 @@ describe("radix-tree", () => {
               "#num_parents": 2,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2377,7 +2377,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2409,7 +2409,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2418,7 +2418,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2444,7 +2444,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb222": {
+            "#state:0x000bbb222": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2476,7 +2476,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2485,7 +2485,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2511,7 +2511,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb222": {
+            "#state:0x000bbb222": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2554,7 +2554,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2563,7 +2563,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2582,7 +2582,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2591,7 +2591,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2618,7 +2618,7 @@ describe("radix-tree", () => {
               "#num_parents": 2,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2638,7 +2638,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2647,7 +2647,7 @@ describe("radix-tree", () => {
               "#num_parents": 2,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2692,7 +2692,7 @@ describe("radix-tree", () => {
               "#num_parents": 2,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2701,7 +2701,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -2716,7 +2716,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb111": {
+            "#state:0x000bbb111": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2741,7 +2741,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb222": {
+            "#state:0x000bbb222": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2753,7 +2753,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb111": {
+            "#state:0x000bbb111": {
               "#state_ph": null,
               "#version": null,
             }
@@ -2762,6 +2762,39 @@ describe("radix-tree", () => {
           "#radix_ph": null,
           "#version": "ver2",
         });
+      });
+    });
+
+    describe("other getters and setters", () => {
+      it("getVersion", () => {
+        expect(tree.getVersion()).to.equal(version);
+        tree.setVersion('ver2');
+        expect(tree.getVersion()).to.equal('ver2');
+        expect(tree.root.getVersion()).to.equal('ver2');
+      });
+
+      it("getNextSerial / getAndIncNextSerial / setNextSerial", () => {
+        expect(tree.getNextSerial()).to.equal(1);
+        expect(tree.getAndIncNextSerial()).to.equal(1);
+        expect(tree.getNextSerial()).to.equal(2);
+        tree.setNextSerial(1000);
+        expect(tree.getNextSerial()).to.equal(1000);
+      });
+
+      it("setRoot", () => {
+        const newRoot = new RadixNode();
+        tree.setRoot(newRoot);
+        assert.deepEqual(tree.root, newRoot);
+      });
+
+      it("getNumChildStateNodes / setNumChildStateNodes / incNumChildStateNodes / decNumChildStateNodes", () => {
+        expect(tree.getNumChildStateNodes()).to.equal(0);
+        tree.setNumChildStateNodes(100);
+        expect(tree.getNumChildStateNodes()).to.equal(100);
+        tree.incNumChildStateNodes();
+        expect(tree.getNumChildStateNodes()).to.equal(101);
+        tree.decNumChildStateNodes();
+        expect(tree.getNumChildStateNodes()).to.equal(100);
       });
     });
 
@@ -2837,26 +2870,32 @@ describe("radix-tree", () => {
       it("get / has / set / update / verify", () => {
         const label1 = '0x000aaa';
         const stateNode1 = new StateNode();
+        stateNode1.setLabel(label1);
         stateNode1.setProofHash('stateNodePH1');
 
         const label11 = '0x000aaa111';
         const stateNode11 = new StateNode();
+        stateNode11.setLabel(label11);
         stateNode11.setProofHash('stateNodePH11');
 
         const label12 = '0x000aaa212';
         const stateNode12 = new StateNode();
+        stateNode12.setLabel(label12);
         stateNode12.setProofHash('stateNodePH12');
 
         const label21 = '0x000bbb121';
         const stateNode21 = new StateNode();
+        stateNode21.setLabel(label21);
         stateNode21.setProofHash('stateNodePH21');
 
         const label22 = '0x000bbb222';
         const stateNode22 = new StateNode();
+        stateNode22.setLabel(label22);
         stateNode22.setProofHash('stateNodePH22');
 
         const label3 = '0x111ccc';
         const stateNode3 = new StateNode();
+        stateNode3.setLabel(label3);
         stateNode3.setProofHash('stateNodePH3');
 
         tree.set(label1, stateNode1);
@@ -2873,40 +2912,40 @@ describe("radix-tree", () => {
             "aaa": {
               "111": {
                 "#radix_ph": null,
-                "null": {
+                "#state:0x000aaa111": {
                   "#state_ph": "stateNodePH11",
                 }
               },
               "212": {
                 "#radix_ph": null,
-                "null": {
+                "#state:0x000aaa212": {
                   "#state_ph": "stateNodePH12",
                 }
               },
               "#radix_ph": null,
-              "null": {
+              "#state:0x000aaa": {
                 "#state_ph": "stateNodePH1",
               }
             },
             "bbb": {
               "121": {
                 "#radix_ph": null,
-                "null": {
+                "#state:0x000bbb121": {
                   "#state_ph": "stateNodePH21",
                 }
               },
               "222": {
                 "#radix_ph": null,
-                "null": {
+                "#state:0x000bbb222": {
                   "#state_ph": "stateNodePH22",
                 }
               },
-              "#radix_ph": null,
+              "#radix_ph": null
             }
           },
           "111ccc": {
             "#radix_ph": null,
-            "null": {
+            "#state:0x111ccc": {
               "#state_ph": "stateNodePH3",
             }
           }
@@ -2975,31 +3014,31 @@ describe("radix-tree", () => {
             "aaa": {
               "111": {
                 "#radix_ph": "0xac8e0ca829cea8d80a79260078fb8e1b38a05b6d087c72a1c92f63849a47b96b",
-                "0x000aaa111": {
+                "#state:0x000aaa111": {
                   "#state_ph": "stateNodePH11",
                 }
               },
               "212": {
                 "#radix_ph": "0x7fc53637a6ff6b7efa8cf7c9ba95552ed7479262ad8c07a61b4d2b1e8002d360",
-                "0x000aaa212": {
+                "#state:0x000aaa212": {
                   "#state_ph": "stateNodePH12",
                 }
               },
               "#radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0",
-              "0x000aaa": {
+              "#state:0x000aaa": {
                 "#state_ph": "stateNodePH1",
               }
             },
             "bbb": {
               "121": {
                 "#radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7",
-                "0x000bbb121": {
+                "#state:0x000bbb121": {
                   "#state_ph": "stateNodePH21",
                 }
               },
               "222": {
                 "#radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2",
-                "0x000bbb222": {
+                "#state:0x000bbb222": {
                   "#state_ph": "stateNodePH22",
                 }
               },
@@ -3011,13 +3050,13 @@ describe("radix-tree", () => {
         // on an internal radix node
         assert.deepEqual(tree.getProofOfStateNode(label1, 'state_proof1'), {
           "#state_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
-          "000": {
+          "#radix:000": {
             "#radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
-            "aaa": {
+            "#radix:aaa": {
               "#radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0",
-              "0x000aaa": "state_proof1",
+              "#state:0x000aaa": "state_proof1"
             },
-            "bbb": {
+            "#radix:bbb": {
               "#radix_ph": "0x78d50ec884283d1759dc14ae88aa3e832199ff650b450da3b45cd507c2cd8474",
             }
           }
@@ -3026,18 +3065,18 @@ describe("radix-tree", () => {
         // on a terminal radix node
         assert.deepEqual(tree.getProofOfStateNode(label22, 'state_proof22'), {
           "#state_ph": "0x05fc6d77a0a0885714b0bfcf6c00d9349f54da13eb0e87ea90fc4d4e450f307a",
-          "000": {
+          "#radix:000": {
             "#radix_ph": "0x051bf0bbc34bc40d44d4abafe0822f209ca8d9b0cf6dc0c8ef1fcff0021d7520",
-            "aaa": {
+            "#radix:aaa": {
               "#radix_ph": "0xb08357cc732df1732db4dd2ec5a12e1d9d7ab8198ef2c40f92ee8d6a6c2755d0",
             },
-            "bbb": {
-              "121": {
+            "#radix:bbb": {
+              "#radix:121": {
                 "#radix_ph": "0xa8c806fde336879bd0cb320c809ad8a1f6e1e526711ed239eb216f83e4fb19d7",
               },
-              "222": {
+              "#radix:222": {
                 "#radix_ph": "0x0dd8afcb4c2839ff30e6872c7268f9ed687fd53c52ce78f0330de82d5b33a0a2",
-                "0x000bbb222": "state_proof22",
+                "#state:0x000bbb222": "state_proof22"
               },
               "#radix_ph": "0x78d50ec884283d1759dc14ae88aa3e832199ff650b450da3b45cd507c2cd8474",
             }
@@ -3099,7 +3138,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -3109,7 +3148,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -3118,7 +3157,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -3126,7 +3165,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -3145,7 +3184,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver_another",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -3155,7 +3194,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -3164,7 +3203,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -3172,7 +3211,7 @@ describe("radix-tree", () => {
             "#num_parents": 2,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -3202,7 +3241,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000aaa": {
+            "#state:0x000aaa": {
               "#state_ph": null,
               "#version": null,
             }
@@ -3212,7 +3251,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb111": {
+              "#state:0x000bbb111": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -3221,7 +3260,7 @@ describe("radix-tree", () => {
               "#num_parents": 1,
               "#radix_ph": null,
               "#version": "ver",
-              "0x000bbb222": {
+              "#state:0x000bbb222": {
                 "#state_ph": null,
                 "#version": null,
               }
@@ -3229,7 +3268,7 @@ describe("radix-tree", () => {
             "#num_parents": 1,
             "#radix_ph": null,
             "#version": "ver",
-            "0x000bbb": {
+            "#state:0x000bbb": {
               "#state_ph": null,
               "#version": null,
             }
@@ -3249,6 +3288,168 @@ describe("radix-tree", () => {
       expect(stateNode21.numParentRadixNodes()).to.equal(1);
       expect(stateNode22.numParentRadixNodes()).to.equal(1);
       expect(stateNodeAnother1.numParentRadixNodes()).to.equal(1);  // decreased!!
+    });
+
+    it("fromRadixSnapshot / toRadixSnapshot", () => {
+      const label1 = '0x000aaa';
+      const label2 = '0x000bbb';
+      const label21 = '0x000bbb111';
+      const label22 = '0x000bbb222';
+
+      const stateNode1 = new StateNode('ver1');
+      const stateNode2 = new StateNode('ver2');
+      const stateNode21 = new StateNode('ver21');
+      const stateNode22 = new StateNode('ver22');
+
+      // set state nodes
+      tree.set(label1, stateNode1);
+      tree.set(label2, stateNode2);
+      tree.set(label21, stateNode21);
+      tree.set(label22, stateNode22);
+
+      // set versions of radix nodes
+      tree.get(label1).getParentRadixNodes()[0].setVersion('ver1_radix_p');
+      tree.get(label2).getParentRadixNodes()[0].setVersion('ver2_radix_p');
+      tree.get(label21).getParentRadixNodes()[0].setVersion('ver21_radix_p');
+      tree.get(label22).getParentRadixNodes()[0].setVersion('ver22_radix_p');
+
+      stateNode1.setValue('value1');
+      stateNode2.setValue('value2');
+      stateNode21.setValue('value21');
+      stateNode22.setValue('value22');
+
+      stateNode1.setLabel(label1);
+      stateNode2.setLabel(label2);
+      stateNode21.setLabel(label21);
+      stateNode22.setLabel(label22);
+
+      // toRadixSnapshot()
+      const snapshot = tree.toRadixSnapshot();
+      assert.deepEqual(snapshot, {
+        "#next_serial": 10,
+        "#radix:000": {
+          "#radix:aaa": {
+            "#serial": 2,
+            "#state:0x000aaa": "value1",
+            "#version": "ver1_radix_p",
+            "#version:0x000aaa": "ver1",
+          },
+          "#radix:bbb": {
+            "#radix:111": {
+              "#serial": 7,
+              "#state:0x000bbb111": "value21",
+              "#version": "ver21_radix_p",
+              "#version:0x000bbb111": "ver21",
+            },
+            "#radix:222": {
+              "#serial": 9,
+              "#state:0x000bbb222": "value22",
+              "#version": "ver22_radix_p",
+              "#version:0x000bbb222": "ver22",
+            },
+            "#serial": 5,
+            "#state:0x000bbb": "value2",
+            "#version": "ver2_radix_p",
+            "#version:0x000bbb": "ver2",
+          },
+          "#serial": 3,
+          "#version": "ver",
+        },
+        "#serial": 0,
+        "#version": "ver",
+      });
+
+      // fromRadixSnapshot()
+      const treeRebuilt = RadixTree.fromRadixSnapshot(snapshot);
+      assert.deepEqual(treeRebuilt.toRadixSnapshot(), {
+        "#next_serial": 10,
+        "#radix:000": {
+          "#radix:aaa": {
+            "#serial": 2,
+            "#state:0x000aaa": "value1",
+            "#version": "ver1_radix_p",
+            "#version:0x000aaa": "ver1",
+          },
+          "#radix:bbb": {
+            "#radix:111": {
+              "#serial": 7,
+              "#state:0x000bbb111": "value21",
+              "#version": "ver21_radix_p",
+              "#version:0x000bbb111": "ver21",
+            },
+            "#radix:222": {
+              "#serial": 9,
+              "#state:0x000bbb222": "value22",
+              "#version": "ver22_radix_p",
+              "#version:0x000bbb222": "ver22",
+            },
+            "#serial": 5,
+            "#state:0x000bbb": "value2",
+            "#version": "ver2_radix_p",
+            "#version:0x000bbb": "ver2",
+          },
+          "#serial": 3,
+          "#version": "ver",
+        },
+        "#serial": 0,
+        "#version": "ver",
+      });
+      assert.deepEqual(treeRebuilt.toRadixSnapshot(), snapshot);
+      assert.deepEqual(treeRebuilt.getChildStateLabels(), [
+        "0x000aaa",
+        "0x000bbb",
+        "0x000bbb111",
+        "0x000bbb222",
+      ]);
+      expect(treeRebuilt.getNumChildStateNodes()).to.equal(4);
+      assert.deepEqual(treeRebuilt.toJsObject(true, true, false, false, true, true), {
+        "#has_parent_state_node": false,
+        "#num_parents": 0,
+        "#serial": 0,
+        "#version": "ver",
+        "000": {
+          "#has_parent_state_node": false,
+          "#num_parents": 1,
+          "#serial": 3,
+          "#version": "ver",
+          "aaa": {
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 2,
+            "#state:0x000aaa": {
+              "#version": "ver1",
+            },
+            "#version": "ver1_radix_p",
+          },
+          "bbb": {
+            "111": {
+              "#has_parent_state_node": false,
+              "#num_parents": 1,
+              "#serial": 7,
+              "#state:0x000bbb111": {
+                "#version": "ver21",
+              },
+              "#version": "ver21_radix_p",
+            },
+            "222": {
+              "#has_parent_state_node": false,
+              "#num_parents": 1,
+              "#serial": 9,
+              "#state:0x000bbb222": {
+                "#version": "ver22",
+              },
+              "#version": "ver22_radix_p",
+            },
+            "#has_parent_state_node": false,
+            "#num_parents": 1,
+            "#serial": 5,
+            "#state:0x000bbb": {
+              "#version": "ver2",
+            },
+            "#version": "ver2_radix_p",
+          }
+        }
+      });
     });
   });
 });

@@ -2,8 +2,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
-const { CHAINS_DIR } = require('../common/constants');
-const Blockchain = require('../blockchain/');
+const { BlockchainConfigs } = require('../common/constants');
 const Transaction = require('../tx-pool/transaction');
 const { Block } = require('../blockchain/block');
 const BlockchainNode = require('../node');
@@ -13,7 +12,7 @@ describe('Blockchain', () => {
   let node1, node2;
 
   beforeEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
 
     node1 = new BlockchainNode();
     setNodeForTesting(node1, 0);
@@ -22,11 +21,11 @@ describe('Blockchain', () => {
   });
 
   afterEach(() => {
-    rimraf.sync(CHAINS_DIR);
+    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
   });
 
   it('starts with genesis block', () => {
-    assert.deepEqual(node1.bc.chain[0], Block.genesis());
+    assert.deepEqual(node1.bc.chain[0], node1.bc.genesisBlock);
   });
 
   it('adds new block', () => {
@@ -37,7 +36,7 @@ describe('Blockchain', () => {
     const lastBlock = node1.bc.lastBlock();
     const txs = [tx];
     const receipts = txsToDummyReceipts(txs);
-    node1.addNewBlock(Block.create(
+    node1.bc.addBlockToChain(Block.create(
         lastBlock.hash, [], {}, txs, receipts,
         lastBlock.number + 1, lastBlock.epoch + 1, '', node1.account.address, {}, 0, 0));
     assert.deepEqual(
@@ -45,42 +44,14 @@ describe('Blockchain', () => {
         Transaction.toJsObject(tx));
   });
 
-  // TODO(platfowner): Uncomment this test case.
-  //                   (see https://www.notion.so/comcom/438194a854554dee9532678d2ee3a2f2?v=a17b78ac99684b72b158deba529f66e0&p=5f4246fb8ec24813978e7145d00ae217)
-  /*
-  it('validates a valid chain', () => {
-    const data = 'foo';
-    node1.bc.addNewBlock(Block.create(
-        data, node1, node1.bc.lastBlockNumber() + 1, node1.bc.lastBlock(), 0, 0));
-    expect(Blockchain.validateChainSegment(node1.bc.chain)).to.equal(true);
-  });
-  */
-
-  it('invalidates chain with corrupt genesis block', () => {
-    node1.bc.chain[0].transactions = ':(';
-    expect(Blockchain.validateChainSegment(node1.bc.chain)).to.equal(false);
-  });
-
-  it('invalidates corrupt chain', () => {
-    const tx = getTransaction(node1, {
-      operation: { type: 'SET_VALUE', ref: '/afan/test', value: 'foo' },
-      gas_price: 1
-    });
-    const lastBlock = node1.bc.lastBlock();
-    const txs = [tx];
-    const receipts = txsToDummyReceipts(txs);
-    node1.addNewBlock(Block.create(
-        lastBlock.hash, [], {}, txs, receipts,
-        lastBlock.number + 1, lastBlock.epoch + 1, '', node1.account.address, {}, 0, 0));
-    node1.bc.chain[node1.bc.chain.length - 1].transactions = ':(';
-    expect(Blockchain.validateChainSegment(node1.bc.chain)).to.equal(false);
-  });
-
   describe('with lots of blocks', () => {
     let blocks; let blockHash;
 
     beforeEach(() => {
       blocks = [];
+      const validators = {
+        [node1.account.address]: { stake: 10, proposal_right: true }
+      };
 
       for (let i = 0; i < 1000; i++) {
         // let i represent a fake block here
@@ -97,24 +68,14 @@ describe('Blockchain', () => {
         const transactions = node1.tp.getValidTransactions();
         const receipts = txsToDummyReceipts(transactions);
         const block = Block.create(
-            lastBlock.hash, [], {}, transactions, receipts, lastBlock.number + 1, i,
-            finalRoot.getProofHash(), node1.account.address, [], 0, 0);
+            lastBlock.hash, [], {}, transactions, receipts, lastBlock.number + 1, Date.now() + i,
+            finalRoot.getProofHash(), node1.account.address, validators, 0, 0);
         if (block.number === 500) {
           blockHash = block.hash;
         }
         blocks.push(block);
-        node1.addNewBlock(block);
+        node1.bc.addBlockToChainAndWriteToDisk(block, true);
       }
-    });
-
-    it('can sync on startup', () => {
-      while (!node1.bc.lastBlock() || !node2.bc.lastBlock() || node1.bc.lastBlock().hash !== node2.bc.lastBlock().hash) {
-        const blockSection = node1.bc.getBlockList(node2.bc.lastBlock().number + 1);
-        if (blockSection) {
-          expect(node2.mergeChainSegment(blockSection)).to.equal(true);
-        }
-      }
-      assert.deepEqual(JSON.stringify(node1.bc.chain), JSON.stringify(node2.bc.chain));
     });
 
     it('can be queried by index', () => {

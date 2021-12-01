@@ -17,8 +17,7 @@ function buildSetFunctionTxBody(appName, timestamp) {
         '.function': {
           'he-trigger': {
             function_type: 'REST',
-            event_listener: workerTriggerUrl,
-            service_name: healthCareServiceName,
+            function_url: workerTriggerUrl,
             function_id: 'he-trigger',
           },
         },
@@ -30,7 +29,7 @@ function buildSetFunctionTxBody(appName, timestamp) {
 }
 
 async function main() {
-  // TODO(sanghee): Support 'node sendSetFunctionTx.js <config_filename>' and check args
+  // TODO(cshcomcom): Support 'node sendSetFunctionTx.js <config_filename>' and check args
   const setFunctionTxBody = buildSetFunctionTxBody(healthCareAppName, Date.now());
   const setFunctionResult = await signAndSendTx(endpointUrl, setFunctionTxBody, serviceOwnerPrivateKey);
   if (!setFunctionResult.success) {
