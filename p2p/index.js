@@ -38,10 +38,10 @@ const PEER_CANDIDATES_CONNECTION_INTERVAL_MS = 20 * 1000;  // 20 seconds
 const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
 const WAIT_FOR_ADDRESS_TIMEOUT_MS = 10 * 1000; // 10 seconds
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
+  '1m': 60,  // 1 minutes
   '5m': 300,  // 5 minutes
   '10m': 600,  // 10 minutes
   '1h': 3600,  // 1 hour
-  '3h': 10800,  // 3 hours
 };
 
 class P2pClient {
@@ -93,7 +93,7 @@ class P2pClient {
   getTrafficStats() {
     const stats = {};
     for (const [periodName, periodSecs] of Object.entries(TRAFFIC_STATS_PERIOD_SECS_LIST)) {
-      stats[periodName] = trafficStatsManager.getEventRates(periodSecs)
+      stats[periodName] = trafficStatsManager.getEventStats(periodSecs)
     }
     return stats;
   }
@@ -388,7 +388,7 @@ class P2pClient {
   setClientSidePeerEventHandlers(socket) {
     const LOG_HEADER = 'setClientSidePeerEventHandlers';
     socket.on('message', (message) => {
-      trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT);
+      const beginTime = Date.now();
       const parsedMessage = JSON.parse(message);
       const networkId = _.get(parsedMessage, 'networkId');
       const address = getAddressFromSocket(this.outbound, socket);
@@ -396,6 +396,8 @@ class P2pClient {
         logger.error(`The given network ID(${networkId}) of the node(${address}) is MISSING or ` +
           `DIFFERENT from mine(${BlockchainConfigs.NETWORK_ID}). Disconnect the connection.`);
         closeSocketSafe(this.outbound, socket);
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
         return;
       }
       const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
@@ -403,12 +405,16 @@ class P2pClient {
         logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
         closeSocketSafe(this.outbound, socket);
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
         return;
       }
       if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
         logger.error(`[${LOG_HEADER}] The message from the node(${address}) is stale. ` +
             `Discard the message.`);
         logger.debug(`[${LOG_HEADER}] The detail is as follows: ${parsedMessage}`);
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
         return;
       }
 
@@ -429,12 +435,16 @@ class P2pClient {
             logger.error(`[${LOG_HEADER}] Providing an address is compulsary when initiating ` +
                 `p2p communication.`);
             closeSocketSafe(this.outbound, socket);
+            const latency = Date.now() - beginTime;
+            trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
             return;
           } else if (!_.get(parsedMessage, 'data.signature')) {
             logger.error(`[${LOG_HEADER}] A sinature of the peer(${address}) is missing during ` +
                 `p2p communication. Cannot proceed the further communication.`);
             // NOTE(minsulee2): Strictly close socket necessary??
             closeSocketSafe(this.outbound, socket);
+            const latency = Date.now() - beginTime;
+            trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
             return;
           } else {
             const addressFromSig = getAddressFromMessage(parsedMessage);
@@ -442,12 +452,16 @@ class P2pClient {
               logger.error(`[${LOG_HEADER}] The addresses(${addressFromSig} and ${address}) are ` +
                   `not the same!!`);
               closeSocketSafe(this.outbound, socket);
+              const latency = Date.now() - beginTime;
+              trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
               return;
             }
             if (!verifySignedMessage(parsedMessage, addressFromSig)) {
               logger.error(`[${LOG_HEADER}] The message is not correctly signed. ` +
                   `Discard the message!!`);
               closeSocketSafe(this.outbound, socket);
+              const latency = Date.now() - beginTime;
+              trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
               return;
             }
             logger.info(`[${LOG_HEADER}] A new websocket(${address}) is established.`);
@@ -465,6 +479,8 @@ class P2pClient {
               this.server.node.state !== BlockchainNodeStates.SERVING) {
             logger.error(`[${LOG_HEADER}] Not ready to process chain segment response.\n` +
                 `Node state: ${this.server.node.state}.`);
+            const latency = Date.now() - beginTime;
+            trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
             return;
           }
           const dataVersionCheckForChainSegment =
@@ -472,6 +488,8 @@ class P2pClient {
           if (dataVersionCheckForChainSegment > 0) {
             logger.error(`[${LOG_HEADER}] CANNOT deal with higher data protocol ` +
                 `version(${dataProtoVer}). Discard the CHAIN_SEGMENT_RESPONSE message.`);
+            const latency = Date.now() - beginTime;
+            trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
             return;
           } else if (dataVersionCheckForChainSegment < 0) {
             // TODO(minsulee2): need to convert message when updating CHAIN_SEGMENT_RESPONSE.
@@ -489,6 +507,8 @@ class P2pClient {
               `specified. Igonore the message.`);
           break;
       }
+      const latency = Date.now() - beginTime;
+      trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
     });
 
     socket.on('pong', () => {
