@@ -146,7 +146,7 @@ BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT = 1;
 BlockchainConfigs.ACCOUNT_REGISTRATION_GAS_AMOUNT = 2000;
 BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT = 100;
 BlockchainConfigs.TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
-BlockchainConfigs.TRAFFIC_DB_MAX_INTERVALS = 60;  // 1 hour
+BlockchainConfigs.TRAFFIC_DB_MAX_INTERVALS = 61;  // 1 hour
 BlockchainConfigs.DEFAULT_DEVELOPERS_URL_WHITELIST = [
   'https://*.ainetwork.ai',
   'https://*.ainize.ai',
