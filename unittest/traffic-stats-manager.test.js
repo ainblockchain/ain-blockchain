@@ -134,27 +134,9 @@ describe("traffic-stats-manager", () => {
 
     it("with invalid periods", () => {
       // with invalid interval period
-      assert.deepEqual(tm.getEventStats(0, initialTimeMs + intervalMs * 4), {
-        "event_type1": {
-          "rate": 0,
-          "latency": 0,
-        },
-        "event_type2": {
-          "rate": 0,
-          "latency": 0,
-        },
-      })
+      assert.deepEqual(tm.getEventStats(0, initialTimeMs + intervalMs * 4), {})
       // with 11 interval period
-      assert.deepEqual(tm.getEventStats(intervalMs / 1000 * 11, initialTimeMs + intervalMs * 4), {
-        "event_type1": {
-          "rate": 0,
-          "latency": 0,
-        },
-        "event_type2": {
-          "rate": 0,
-          "latency": 0,
-        },
-      })
+      assert.deepEqual(tm.getEventStats(intervalMs / 1000 * 11, initialTimeMs + intervalMs * 4), {})
     });
 
     it("with valid periods", () => {
