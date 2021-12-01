@@ -18,6 +18,7 @@ const {
   StateVersions,
   SyncModeOptions,
   TrafficEventTypes,
+  WriteDbOperations,
 } = require('../common/constants');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
@@ -592,6 +593,67 @@ class BlockchainNode {
     return 0; // Successfully merged
   }
 
+  addTrafficEventsForTxOp(opType, blockTimestamp) {
+    switch (opType) {
+      case WriteDbOperations.INC_VALUE:
+        this.tsm.addEvent(TrafficEventTypes.TX_INC_VALUE, 1, blockTimestamp);
+        break;
+      case WriteDbOperations.DEC_VALUE:
+        this.tsm.addEvent(TrafficEventTypes.TX_DEC_VALUE, 1, blockTimestamp);
+        break;
+      case WriteDbOperations.SET_RULE:
+        this.tsm.addEvent(TrafficEventTypes.TX_SET_RULE, 1, blockTimestamp);
+        break;
+      case WriteDbOperations.SET_FUNCTION:
+        this.tsm.addEvent(TrafficEventTypes.TX_SET_FUNCTION, 1, blockTimestamp);
+        break;
+      case WriteDbOperations.SET_OWNER:
+        this.tsm.addEvent(TrafficEventTypes.TX_SET_OWNER, 1, blockTimestamp);
+        break;
+      case WriteDbOperations.SET_VALUE:
+      default:  // undefined means SET_VALUE.
+        this.tsm.addEvent(TrafficEventTypes.TX_SET_VALUE, 1, blockTimestamp);
+    }
+  }
+
+  addTrafficEventsForTx(tx, receipt, blockTimestamp) {
+    const opType = _.get(tx, 'tx_body.operation.type', null);
+    if (opType === WriteDbOperations.SET) {
+      this.tsm.addEvent(TrafficEventTypes.TX_SET, 1, blockTimestamp);
+      const opList =_.get(tx, 'tx_body.operation.op_list', []);
+      for (const subOp of opList) {
+        const subOpType = subOp.type;
+        this.addTrafficEventsForTxOp(subOpType, blockTimestamp);
+      }
+    } else {
+      this.addTrafficEventsForTxOp(opType, blockTimestamp);
+    }
+    this.tsm.addEvent(TrafficEventTypes.TX_GAS_AMOUNT, receipt.gas_amount_charged, blockTimestamp);
+    this.tsm.addEvent(TrafficEventTypes.TX_GAS_COST, receipt.gas_cost_total, blockTimestamp);
+  }
+
+  addTrafficEventsForBlock(block) {
+    const blockTimestamp = block.timestamp;
+    this.tsm.addEvent(
+        TrafficEventTypes.BLOCK_GAS_AMOUNT, block.gas_amount_total, blockTimestamp);
+    this.tsm.addEvent(
+        TrafficEventTypes.BLOCK_GAS_COST, block.gas_cost_total, blockTimestamp);
+    this.tsm.addEvent(
+        TrafficEventTypes.BLOCK_LAST_VOTES, block.last_votes.length, blockTimestamp);
+    this.tsm.addEvent(
+        TrafficEventTypes.BLOCK_SIZE, block.size, blockTimestamp);
+    this.tsm.addEvent(
+        TrafficEventTypes.BLOCK_TXS, block.transactions.length, blockTimestamp);
+
+    for (let i = 0; i < Math.min(block.transactions.length, block.receipts.length); i++) {
+      const tx = block.transactions[i];
+      const receipt = block.receipts[i];
+      // NOTE(platfowner): We use block timestamp instead of tx timestamp to have
+      // monotonic increasing values.
+      this.addTrafficEventsForTx(tx, receipt, blockTimestamp);
+    }
+  }
+
   tryFinalizeChain(isGenesisStart = false) {
     const LOG_HEADER = 'tryFinalizeChain';
     const finalizableChain = this.bp.getFinalizableChain(isGenesisStart);
@@ -628,17 +690,7 @@ class BlockchainNode {
           this.eh.emitBlockFinalized(blockToFinalize.number);
         }
         if (this.tsm) {
-          const blockTimestamp = blockToFinalize.timestamp;
-          this.tsm.addEvent(
-              TrafficEventTypes.BLOCK_GAS_AMOUNT, blockToFinalize.gas_amount_total, blockTimestamp);
-          this.tsm.addEvent(
-              TrafficEventTypes.BLOCK_GAS_COST, blockToFinalize.gas_cost_total, blockTimestamp);
-          this.tsm.addEvent(
-              TrafficEventTypes.BLOCK_LAST_VOTES, blockToFinalize.last_votes.length, blockTimestamp);
-          this.tsm.addEvent(
-              TrafficEventTypes.BLOCK_SIZE, blockToFinalize.size, blockTimestamp);
-          this.tsm.addEvent(
-              TrafficEventTypes.BLOCK_TXS, blockToFinalize.transactions.length, blockTimestamp);
+          this.addTrafficEventsForBlock(blockToFinalize);
         }
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +

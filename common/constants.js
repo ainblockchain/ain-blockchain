@@ -647,6 +647,16 @@ const TrafficEventTypes = {
   BLOCK_LAST_VOTES: 'block_last_votes',
   BLOCK_SIZE: 'block_size',
   BLOCK_TXS: 'block_txs',
+  // Txs
+  TX_GAS_AMOUNT: 'tx_gas_amount',
+  TX_GAS_COST: 'tx_gas_cost',
+  TX_SET_VALUE: 'tx_set_value',
+  TX_INC_VALUE: 'tx_inc_value',
+  TX_DEC_VALUE: 'tx_dec_value',
+  TX_SET_RULE: 'tx_set_rule',
+  TX_SET_FUNCTION: 'tx_set_function',
+  TX_SET_OWNER: 'tx_set_owner',
+  TX_SET: 'tx_set',
 };
 
 const BlockchainEventTypes = {
