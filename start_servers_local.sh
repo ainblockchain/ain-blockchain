@@ -6,6 +6,7 @@ printf "\n[[[[[ start_servers_local.sh ]]]]]\n\n"
 # parent tracker
 printf "\nStarting parent tracker..\n"
 BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
+  HOSTING_ENV=local \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -14,6 +15,7 @@ printf "\nStarting parent node 0..\n"
 ACCOUNT_INDEX=0 \
   PEER_CANDIDATE_JSON_RPC_URL='' \
   STAKE=100000 \
+  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -28,6 +30,7 @@ sleep 10
 printf "\nStarting parent node 1..\n"
 ACCOUNT_INDEX=1 \
   STAKE=100000 \
+  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -42,6 +45,7 @@ sleep 10
 printf "\nStarting parent node 2..\n"
 ACCOUNT_INDEX=2 \
   STAKE=100000 \
+  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -57,6 +61,7 @@ sleep 10
 # child 1 tracker
 printf "\nStarting child 1 tracker..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
+  HOSTING_ENV=local \
   PORT=9000 \
   P2P_PORT=6000 \
   BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
@@ -71,6 +76,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   ACCOUNT_INDEX=0 \
   PEER_CANDIDATE_JSON_RPC_URL='' \
   STAKE=100000 \
+  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -100,6 +106,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   P2P_PORT=6002 \
   ACCOUNT_INDEX=1 \
   STAKE=100000 \
+  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -117,6 +124,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   P2P_PORT=6003 \
   ACCOUNT_INDEX=2 \
   STAKE=100000 \
+  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -134,6 +142,7 @@ printf "\nStarting child 2 tracker..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   PORT=9010 \
   P2P_PORT=6010 \
+  HOSTING_ENV=local \
   BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
@@ -145,6 +154,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   P2P_PORT=6011 \
   ACCOUNT_INDEX=0 \
   STAKE=100000 \
+  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -174,6 +184,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   P2P_PORT=6012 \
   ACCOUNT_INDEX=1 \
   STAKE=100000 \
+  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -191,6 +202,7 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard \
   P2P_PORT=6013 \
   ACCOUNT_INDEX=2 \
   STAKE=100000 \
+  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
