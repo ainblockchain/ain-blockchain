@@ -40,7 +40,6 @@ const WAIT_FOR_ADDRESS_TIMEOUT_MS = 10 * 1000; // 10 seconds
 const TRAFFIC_STATS_PERIOD_SECS_LIST = {
   '1m': 60,  // 1 minutes
   '5m': 300,  // 5 minutes
-  '10m': 600,  // 10 minutes
   '1h': 3600,  // 1 hour
 };
 

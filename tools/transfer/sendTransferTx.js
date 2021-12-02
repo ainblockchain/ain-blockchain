@@ -9,6 +9,7 @@ function buildTransferTxBody(fromAddr, toAddr, key, amount, timestamp) {
       ref: `/transfer/${fromAddr}/${toAddr}/${key}/value`,
       value: amount,
     },
+    gas_price: 1,
     timestamp,
     nonce: -1
   }

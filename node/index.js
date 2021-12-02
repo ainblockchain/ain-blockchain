@@ -3,6 +3,7 @@ const logger = new (require('../logger'))('NODE');
 
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
+const sizeof = require('object-sizeof');
 const path = require('path');
 const {
   DevFlags,
@@ -17,7 +18,8 @@ const {
   TransactionStates,
   StateVersions,
   SyncModeOptions,
-  EventTypes,
+  TrafficEventTypes,
+  WriteDbOperations,
 } = require('../common/constants');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
@@ -32,7 +34,7 @@ const BlockPool = require('../block-pool');
 const ConsensusUtil = require('../consensus/consensus-util');
 
 class BlockchainNode {
-  constructor(account = null, eventHandler = null) {
+  constructor(account = null, eventHandler = null, trafficStatsManager = null) {
     this.keysDir = path.resolve(BlockchainConfigs.KEYS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
     FileUtil.createDir(this.keysDir);
     this.snapshotDir = path.resolve(BlockchainConfigs.SNAPSHOTS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
@@ -46,6 +48,7 @@ class BlockchainNode {
     this.urlExternal = null;
 
     this.eh = eventHandler;
+    this.tsm = trafficStatsManager;
     this.bc = new Blockchain(String(BlockchainConfigs.PORT));
     this.tp = new TransactionPool(this);
     this.bp = new BlockPool(this);
@@ -591,6 +594,43 @@ class BlockchainNode {
     return 0; // Successfully merged
   }
 
+  addTrafficEventsForTx(tx, receipt, blockTimestamp) {
+    const opType = _.get(tx, 'tx_body.operation.type', null);
+    if (opType === WriteDbOperations.SET) {
+      const opList =_.get(tx, 'tx_body.operation.op_list', []);
+      this.tsm.addEvent(TrafficEventTypes.TX_OP_SIZE, opList.length, blockTimestamp);
+    } else {
+      this.tsm.addEvent(TrafficEventTypes.TX_OP_SIZE, 1, blockTimestamp);
+    }
+    this.tsm.addEvent(TrafficEventTypes.TX_BYTES, sizeof(tx), blockTimestamp);
+    this.tsm.addEvent(TrafficEventTypes.TX_GAS_AMOUNT, receipt.gas_amount_charged, blockTimestamp);
+    this.tsm.addEvent(TrafficEventTypes.TX_GAS_COST, receipt.gas_cost_total, blockTimestamp);
+  }
+
+  addTrafficEventsForBlock(block) {
+    const blockTimestamp = block.timestamp;
+    this.tsm.addEvent(
+        TrafficEventTypes.BLOCK_GAS_AMOUNT, block.gas_amount_total, blockTimestamp);
+    this.tsm.addEvent(
+        TrafficEventTypes.BLOCK_GAS_COST, block.gas_cost_total, blockTimestamp);
+    this.tsm.addEvent(
+        TrafficEventTypes.BLOCK_LAST_VOTES, block.last_votes.length, blockTimestamp);
+    this.tsm.addEvent(
+        TrafficEventTypes.BLOCK_SIZE, block.size, blockTimestamp);
+    this.tsm.addEvent(
+        TrafficEventTypes.BLOCK_TXS, block.transactions.length, blockTimestamp);
+    this.tsm.addEvent(
+        TrafficEventTypes.BLOCK_EVIDENCE, Object.keys(block.evidence).length, blockTimestamp);
+
+    for (let i = 0; i < Math.min(block.transactions.length, block.receipts.length); i++) {
+      const tx = block.transactions[i];
+      const receipt = block.receipts[i];
+      // NOTE(platfowner): We use block timestamp instead of tx timestamp to have
+      // monotonic increasing values.
+      this.addTrafficEventsForTx(tx, receipt, blockTimestamp);
+    }
+  }
+
   tryFinalizeChain(isGenesisStart = false) {
     const LOG_HEADER = 'tryFinalizeChain';
     const finalizableChain = this.bp.getFinalizableChain(isGenesisStart);
@@ -625,6 +665,9 @@ class BlockchainNode {
         }
         if (this.eh) {
           this.eh.emitBlockFinalized(blockToFinalize.number);
+        }
+        if (this.tsm) {
+          this.addTrafficEventsForBlock(blockToFinalize);
         }
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +

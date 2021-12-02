@@ -15,12 +15,10 @@ const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
 const {
   BlockchainConfigs,
-  BlockchainNodeStates,
   WriteDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
 } = require('../common/constants');
-const { ConsensusStates } = require('../consensus/constants');
 
 const MAX_BLOCKS = 20;
 
@@ -42,7 +40,7 @@ if (BlockchainConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
 }
 
 const eventHandler = BlockchainConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
-const node = new BlockchainNode(null, eventHandler);
+const node = new BlockchainNode(null, eventHandler, trafficStatsManager);
 // NOTE(platfowner): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function(err) {
   logger.error(err);
@@ -88,11 +86,7 @@ app.get('/', (req, res, next) => {
 });
 
 app.get('/health_check', (req, res, next) => {
-  const nodeStatus = p2pServer.getNodeStatus();
-  const consensusStatus = p2pServer.consensus.getStatus();
-  const result = nodeStatus.state === BlockchainNodeStates.SERVING &&
-      consensusStatus.state === ConsensusStates.RUNNING &&
-      consensusStatus.health === true;
+  const result = p2pServer.getNodeHealth();
   res.status(200)
     .set('Content-Type', 'text/plain')
     .send(result)

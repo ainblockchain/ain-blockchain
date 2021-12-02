@@ -31,7 +31,7 @@ describe("traffic-stats-manager", () => {
       expect(tm.trafficDbMap.has(eventType1)).to.equal(true);
       assert.deepEqual(tm.getEventSums(eventType1, intervalMs * 10, initialTimeMs + intervalMs), {
         countSum: 1,
-        latencySum: 10,
+        metricSum: 10,
       });
       assert.deepEqual(tm.getEventSums(eventType2, intervalMs * 10, initialTimeMs + intervalMs), null);
 
@@ -41,11 +41,11 @@ describe("traffic-stats-manager", () => {
       expect(tm.trafficDbMap.has(eventType2)).to.equal(true);
       assert.deepEqual(tm.getEventSums(eventType1, intervalMs * 10, initialTimeMs + intervalMs * 2), {
         countSum: 1,
-        latencySum: 10,
+        metricSum: 10,
       });
       assert.deepEqual(tm.getEventSums(eventType2, intervalMs * 10, initialTimeMs + intervalMs * 2), {
         countSum: 1,
-        latencySum: 100,
+        metricSum: 100,
       });
 
       tm.addEvent(eventType1, 10, initialTimeMs + intervalMs * 2);
@@ -53,11 +53,11 @@ describe("traffic-stats-manager", () => {
       tm.addEvent(eventType1, 10, initialTimeMs + intervalMs * 2);
       assert.deepEqual(tm.getEventSums(eventType1, intervalMs * 10, initialTimeMs + intervalMs * 3), {
         countSum: 3,
-        latencySum: 30,
+        metricSum: 30,
       });
       assert.deepEqual(tm.getEventSums(eventType2, intervalMs * 10, initialTimeMs + intervalMs * 3), {
         countSum: 2,
-        latencySum: 200,
+        metricSum: 200,
       });
     });
 
@@ -71,26 +71,44 @@ describe("traffic-stats-manager", () => {
       tm.addEvent(eventType2, 100, initialTimeMs);
       // numIntervals = 10, lastQueueIndex = 0
       assert.deepEqual(tm.getEventSums(eventType1, intervalMs * maxIntervals, initialTimeMs), {
-        countSum: 3,
-        latencySum: 30,
+        countSum: 0,
+        metricSum: 0,
       });
       assert.deepEqual(tm.getEventSums(eventType2, intervalMs * maxIntervals, initialTimeMs), {
+        countSum: 0,
+        metricSum: 0,
+      });
+      // numIntervals = 10, lastQueueIndex = 1
+      assert.deepEqual(tm.getEventSums(eventType1, intervalMs * maxIntervals, initialTimeMs + intervalMs), {
+        countSum: 3,
+        metricSum: 30,
+      });
+      assert.deepEqual(tm.getEventSums(eventType2, intervalMs * maxIntervals, initialTimeMs + intervalMs), {
         countSum: 2,
-        latencySum: 200,
+        metricSum: 200,
       });
 
-      // overlapping of 100 rounds
-      tm.addEvent(eventType1, 10, initialTimeMs + intervalMs * (maxIntervals * 100 + 4));
-      tm.addEvent(eventType1, 10, initialTimeMs + intervalMs * (maxIntervals * 100 + 4));
-      tm.addEvent(eventType2, 100, initialTimeMs + intervalMs * (maxIntervals * 100 + 4));
+      // overlapping of 1.9 rounds
+      tm.addEvent(eventType1, 10, initialTimeMs + intervalMs * (maxIntervals * 2));
+      tm.addEvent(eventType1, 10, initialTimeMs + intervalMs * (maxIntervals * 2));
+      tm.addEvent(eventType2, 100, initialTimeMs + intervalMs * (maxIntervals * 2));
       // numIntervals = 10, lastQueueIndex = 0
-      assert.deepEqual(tm.getEventSums(eventType1, intervalMs * maxIntervals, initialTimeMs), {
-        countSum: 2,
-        latencySum: 20,
+      assert.deepEqual(tm.getEventSums(eventType1, intervalMs * maxIntervals, initialTimeMs + intervalMs * (maxIntervals * 2)), {
+        countSum: 0,
+        metricSum: 0,
       });
-      assert.deepEqual(tm.getEventSums(eventType2, intervalMs * maxIntervals, initialTimeMs), {
+      assert.deepEqual(tm.getEventSums(eventType2, intervalMs * maxIntervals, initialTimeMs + intervalMs * (maxIntervals * 2)), {
+        countSum: 0,
+        metricSum: 0,
+      });
+      // numIntervals = 10, lastQueueIndex = 1
+      assert.deepEqual(tm.getEventSums(eventType1, intervalMs * maxIntervals, initialTimeMs + intervalMs * (maxIntervals * 2 + 1)), {
+        countSum: 2,
+        metricSum: 20,
+      });
+      assert.deepEqual(tm.getEventSums(eventType2, intervalMs * maxIntervals, initialTimeMs + intervalMs * (maxIntervals * 2 + 1)), {
         countSum: 1,
-        latencySum: 100,
+        metricSum: 100,
       });
     });
   });
@@ -144,44 +162,44 @@ describe("traffic-stats-manager", () => {
       assert.deepEqual(tm.getEventStats(intervalMs / 1000, initialTimeMs + intervalMs * 4), {
         "event_type1": {
           "rate": 5,
-          "latency": 10,
+          "metric": 10,
         },
         "event_type2": {
           "rate": 5,
-          "latency": 100,
+          "metric": 100,
         },
       })
       // with 2 interval period
       assert.deepEqual(tm.getEventStats(intervalMs / 1000 * 2, initialTimeMs + intervalMs * 4), {
         "event_type1": {
           "rate": 2.5,
-          "latency": 10,
+          "metric": 10,
         },
         "event_type2": {
           "rate": 2.5,
-          "latency": 100,
+          "metric": 100,
         },
       })
       // with 3 interval period
       assert.deepEqual(tm.getEventStats(intervalMs / 1000 * 3, initialTimeMs + intervalMs * 4), {
         "event_type1": {
           "rate": 3.3333333333333335,
-          "latency": 10,
+          "metric": 10,
         },
         "event_type2": {
           "rate": 3.3333333333333335,
-          "latency": 100,
+          "metric": 100,
         },
       })
       // with 10 interval period
       assert.deepEqual(tm.getEventStats(intervalMs / 1000 * 10, initialTimeMs + intervalMs * 4), {
         "event_type1": {
           "rate": 1.5,
-          "latency": 10,
+          "metric": 10,
         },
         "event_type2": {
           "rate": 1.5,
-          "latency": 100,
+          "metric": 100,
         },
       })
     });
