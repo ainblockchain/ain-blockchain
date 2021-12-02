@@ -30,6 +30,7 @@ const {
   trafficStatsManager,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
+const { ConsensusStates } = require('../consensus/constants');
 const {
   sendGetRequest,
   signAndSendTx,
@@ -49,10 +50,6 @@ const {
 } = require('./util');
 const PathUtil = require('../common/path-util');
 
-const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
-    '/network-interfaces/0/access-configs/0/external-ip';
-const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
-    '/network-interfaces/0/ip';
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
@@ -165,8 +162,16 @@ class P2pServer {
     };
   }
 
+  getNodeHealth() {
+    const consensusStatus = this.getConsensusStatus();
+    return this.node.state === BlockchainNodeStates.SERVING &&
+        consensusStatus.state === ConsensusStates.RUNNING &&
+        consensusStatus.health === true;
+  }
+
   getNodeStatus() {
     return {
+      health: this.getNodeHealth(),
       address: this.getNodeAddress(),
       state: this.node.state,
       stateNumeric: Object.keys(BlockchainNodeStates).indexOf(this.node.state),
