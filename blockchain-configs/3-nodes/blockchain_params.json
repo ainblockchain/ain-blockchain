@@ -1,18 +1,18 @@
 {
   "token": {
-    "name": "ShardCoinB0",
-    "symbol": "SHARDCOB0",
-    "total_supply": 100000000000,
+    "name": "AI Network",
+    "symbol": "AIN",
+    "total_supply": 700000000,
     "bridge": {
-      "AIN": {
-        "0": {
-          "0": {
-            "token_pool": "0xB0B0d133E6a82A982396Fa7E4B4F9eC85d1DFBF4",
+      "ETH": {
+        "3": {
+          "0xB16c0C80a81f73204d454426fC413CAe455525A7": {
+            "token_pool": "0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
             "min_checkout_per_request": 10000,
             "max_checkout_per_request": 100000,
             "max_checkout_per_day": 1000000,
             "checkout_fee_rate": 0.001,
-            "token_exchange_rate": 10,
+            "token_exchange_rate": 1,
             "token_exchange_scheme": "FIXED"
           }
         }
@@ -26,31 +26,31 @@
     "min_stake_per_validator": 10000000,
     "max_stake_per_validator": 10000000,
     "min_num_validators": 3,
-    "max_num_validators": 9,
+    "max_num_validators": 3,
     "epoch_ms": 3000,
     "genesis_whitelist": {
-      "0x00B0475e875460650CF2d5Ba575B575f27D43369": true,
-      "0x01B0167aE5Cfd27c6b8736f6CF9A49DEF41E8372": true,
-      "0x02B0b2c02620f9B2527073FA744676761b0CA93A": true
+      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true,
+      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": true,
+      "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": true
     },
     "genesis_validators": {
-      "0x00B0475e875460650CF2d5Ba575B575f27D43369": {
+      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
         "stake": 10000000,
         "proposal_right": true
       },
-      "0x01B0167aE5Cfd27c6b8736f6CF9A49DEF41E8372": {
+      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": {
         "stake": 10000000,
         "proposal_right": true
       },
-      "0x02B0b2c02620f9B2527073FA744676761b0CA93A": {
+      "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": {
         "stake": 10000000,
         "proposal_right": true
       }
     }
   },
   "genesis": {
-    "genesis_addr": "0xB0B0d133E6a82A982396Fa7E4B4F9eC85d1DFBF4",
-    "genesis_timestamp": 1603090467225,
+    "genesis_addr": "0xAAAf6f50A0304F12119D218b94bea8082642515B",
+    "genesis_timestamp": 1571819318272,
     "num_genesis_accounts": 10
   },
   "network": {
@@ -58,12 +58,12 @@
     "p2p_message_timeout_ms": 600000,
     "target_num_outbound_connection": 3,
     "max_num_inbound_connection": 6,
-    "tracker_update_json_rpc_url": "http://localhost:9010/json-rpc",
-    "peer_candidate_json_rpc_url": "http://localhost:9011/json-rpc"
+    "tracker_update_json_rpc_url": "http://localhost:8080/json-rpc",
+    "peer_candidate_json_rpc_url": "http://localhost:8081/json-rpc"
   },
   "resource": {
     "state_tree_height_limit": 30,
-    "state_tree_bytes_limit": 5000000000,
+    "state_tree_bytes_limit": 20000000,
     "state_label_length_limit": 150,
     "bandwidth_budget_per_block": 10000,
     "min_staking_for_app_tx": 0,
@@ -83,12 +83,12 @@
     "tx_tracker_timeout_ms": 86400000
   },
   "sharding": {
-    "shard_owner": "0xB0B0d133E6a82A982396Fa7E4B4F9eC85d1DFBF4",
-    "shard_reporter": "0x00B0475e875460650CF2d5Ba575B575f27D43369",
-    "sharding_protocol": "POA",
-    "sharding_path": "/apps/shard_1",
-    "parent_chain_poc": "http://127.0.0.1:8081",
-    "reporting_period": 5,
+    "shard_owner": "",
+    "shard_reporter": "",
+    "sharding_protocol": "NONE",
+    "sharding_path": "/",
+    "parent_chain_poc": "",
+    "reporting_period": 0,
     "max_shard_report": 100
   }
 }

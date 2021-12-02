@@ -11,6 +11,11 @@
       }
     }
   },
+  "blockchain_params": {
+    ".rule": {
+      "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true"
+    }
+  },
   "checkin": {
     "history": {
       "$network_name": {
@@ -114,7 +119,7 @@
         },
         "propose": {
           ".rule": {
-            "write": "util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || (getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount() && getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') <= util.getMaxStakeAmount())) && util.isNumber(newData.gas_cost_total)"
+            "write": "util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || (getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount(getValue) && getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') <= util.getMaxStakeAmount(getValue))) && util.isNumber(newData.gas_cost_total)"
           }
         },
         "$block_hash": {
@@ -138,7 +143,23 @@
     "whitelist": {
       "$user_addr": {
         ".rule": {
-          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusWhitelistSize() > util.getMinNumValidators()))"
+          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusWhitelistSize() > util.getMinNumValidators(getValue)))"
+        }
+      }
+    }
+  },
+  "developers": {
+    "rest_functions": {
+      ".rule": {
+        "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true"
+      },
+      "url_whitelist":{
+        "$user_addr": {
+          "$key": {
+            ".rule": {
+              "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true || (auth.addr === $user_addr && util.validateRestFunctionsUrlWhitelistData(auth.addr, data, newData, getValue) === true)"
+            }
+          }
         }
       }
     }
