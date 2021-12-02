@@ -71,24 +71,42 @@ describe("traffic-stats-manager", () => {
       tm.addEvent(eventType2, 100, initialTimeMs);
       // numIntervals = 10, lastQueueIndex = 0
       assert.deepEqual(tm.getEventSums(eventType1, intervalMs * maxIntervals, initialTimeMs), {
+        countSum: 0,
+        metricSum: 0,
+      });
+      assert.deepEqual(tm.getEventSums(eventType2, intervalMs * maxIntervals, initialTimeMs), {
+        countSum: 0,
+        metricSum: 0,
+      });
+      // numIntervals = 10, lastQueueIndex = 1
+      assert.deepEqual(tm.getEventSums(eventType1, intervalMs * maxIntervals, initialTimeMs + intervalMs), {
         countSum: 3,
         metricSum: 30,
       });
-      assert.deepEqual(tm.getEventSums(eventType2, intervalMs * maxIntervals, initialTimeMs), {
+      assert.deepEqual(tm.getEventSums(eventType2, intervalMs * maxIntervals, initialTimeMs + intervalMs), {
         countSum: 2,
         metricSum: 200,
       });
 
-      // overlapping of 100 rounds
-      tm.addEvent(eventType1, 10, initialTimeMs + intervalMs * (maxIntervals * 100 + 4));
-      tm.addEvent(eventType1, 10, initialTimeMs + intervalMs * (maxIntervals * 100 + 4));
-      tm.addEvent(eventType2, 100, initialTimeMs + intervalMs * (maxIntervals * 100 + 4));
+      // overlapping of 1.9 rounds
+      tm.addEvent(eventType1, 10, initialTimeMs + intervalMs * (maxIntervals * 2));
+      tm.addEvent(eventType1, 10, initialTimeMs + intervalMs * (maxIntervals * 2));
+      tm.addEvent(eventType2, 100, initialTimeMs + intervalMs * (maxIntervals * 2));
       // numIntervals = 10, lastQueueIndex = 0
-      assert.deepEqual(tm.getEventSums(eventType1, intervalMs * maxIntervals, initialTimeMs), {
+      assert.deepEqual(tm.getEventSums(eventType1, intervalMs * maxIntervals, initialTimeMs + intervalMs * (maxIntervals * 2)), {
+        countSum: 0,
+        metricSum: 0,
+      });
+      assert.deepEqual(tm.getEventSums(eventType2, intervalMs * maxIntervals, initialTimeMs + intervalMs * (maxIntervals * 2)), {
+        countSum: 0,
+        metricSum: 0,
+      });
+      // numIntervals = 10, lastQueueIndex = 1
+      assert.deepEqual(tm.getEventSums(eventType1, intervalMs * maxIntervals, initialTimeMs + intervalMs * (maxIntervals * 2 + 1)), {
         countSum: 2,
         metricSum: 20,
       });
-      assert.deepEqual(tm.getEventSums(eventType2, intervalMs * maxIntervals, initialTimeMs), {
+      assert.deepEqual(tm.getEventSums(eventType2, intervalMs * maxIntervals, initialTimeMs + intervalMs * (maxIntervals * 2 + 1)), {
         countSum: 1,
         metricSum: 100,
       });
