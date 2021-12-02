@@ -491,12 +491,12 @@ describe('HE Protocol', () => {
         }
 
         // Clear function
-        const functioinRequest = {
+        const functionRequest = {
           ref: `${appScenario1TaskPath}`,
           value: null
         };
         const functionResp = parseOrLog(syncRequest('POST',
-            server1 + '/set_function', {json: functioinRequest})
+            server1 + '/set_function', {json: functionRequest})
             .body.toString('utf-8')).result;
         assert.deepEqual(eraseStateGas(functionResp.result), {
           "bandwidth_gas_amount": 1,
@@ -546,7 +546,7 @@ describe('HE Protocol', () => {
           "code": 0,
           "func_results": {
             "call_he_worker": {  // Function triggering was done
-              "bandwidth_gas_amount": 10,
+              "bandwidth_gas_amount": BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT,
               "code": 0
             }
           },
@@ -554,7 +554,7 @@ describe('HE Protocol', () => {
           "gas_amount_total": {
             "bandwidth": {
               "app": {
-                "he_health_care": 11
+                "he_health_care": 1 + BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT
               },
               "service": 0
             },
