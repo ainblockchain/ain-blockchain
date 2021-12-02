@@ -3,7 +3,7 @@ const util = require('../p2p/util');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
-const { BlockchainConfigs } = require('../common/constants');
+const { BlockchainConfigs, BlockchainParams } = require('../common/constants');
 
 describe("P2P Util", () => {
   const mockAddress = '0x012345678abcdef';
@@ -82,29 +82,29 @@ describe("P2P Util", () => {
     const wrongData5 = false;
 
     it("cannot encapsulate messages with wrong types", () => {
-      expect(util.encapsulateMessage(wrongType1, mockDataObj)).to.equal(null);
-      expect(util.encapsulateMessage(wrongType2, mockDataObj)).to.equal(null);
-      expect(util.encapsulateMessage(wrongType3, mockDataObj)).to.equal(null);
-      expect(util.encapsulateMessage(wrongType4, mockDataObj)).to.equal(null);
-      expect(util.encapsulateMessage(wrongType5, mockDataObj)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType1, mockDataObj, BlockchainParams.network.network_id)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType2, mockDataObj, BlockchainParams.network.network_id)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType3, mockDataObj, BlockchainParams.network.network_id)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType4, mockDataObj, BlockchainParams.network.network_id)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType5, mockDataObj, BlockchainParams.network.network_id)).to.equal(null);
     });
 
     it("cannot encapsulate messages with wrong data", () => {
-      expect(util.encapsulateMessage(mockType, wrongData1)).to.equal(null);
-      expect(util.encapsulateMessage(mockType, wrongData2)).to.equal(null);
-      expect(util.encapsulateMessage(mockType, wrongData3)).to.equal(null);
-      expect(util.encapsulateMessage(mockType, wrongData4)).to.equal(null);
-      expect(util.encapsulateMessage(mockType, wrongData5)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData1, BlockchainParams.network.network_id)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData2, BlockchainParams.network.network_id)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData3, BlockchainParams.network.network_id)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData4, BlockchainParams.network.network_id)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData5, BlockchainParams.network.network_id)).to.equal(null);
     });
 
     it("encapsulates the message successfully", () => {
-      const encapsulatedMessage = util.encapsulateMessage(mockType, mockDataObj);
+      const encapsulatedMessage = util.encapsulateMessage(mockType, mockDataObj, BlockchainParams.network.network_id);
       assert.deepEqual(encapsulatedMessage, {
         type: mockType,
         data: mockDataObj,
         protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
         dataProtoVer: BlockchainConfigs.DATA_PROTOCOL_VERSION,
-        networkId: BlockchainConfigs.NETWORK_ID,
+        networkId: BlockchainParams.network.network_id,
         timestamp: encapsulatedMessage.timestamp
       });
     });
@@ -117,16 +117,16 @@ describe("P2P Util", () => {
       const wrongTimestamp3 = ['a', 1];
       const wrongTimestamp4 = { foo: 'bar' };
       const wrongTimestamp5 = true;
-      expect(util.checkTimestamp(wrongTimestamp1)).to.equal(false);
-      expect(util.checkTimestamp(wrongTimestamp2)).to.equal(false);
-      expect(util.checkTimestamp(wrongTimestamp3)).to.equal(false);
-      expect(util.checkTimestamp(wrongTimestamp4)).to.equal(false);
-      expect(util.checkTimestamp(wrongTimestamp5)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp1, BlockchainParams.network.p2p_message_timeout_ms)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp2, BlockchainParams.network.p2p_message_timeout_ms)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp3, BlockchainParams.network.p2p_message_timeout_ms)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp4, BlockchainParams.network.p2p_message_timeout_ms)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp5, BlockchainParams.network.p2p_message_timeout_ms)).to.equal(false);
     });
 
     it("passes the timestamp check", () => {
       const timestamp = Date.now();
-      expect(util.checkTimestamp(timestamp)).to.equal(true);
+      expect(util.checkTimestamp(timestamp, BlockchainParams.network.p2p_message_timeout_ms)).to.equal(true);
     });
   });
 

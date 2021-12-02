@@ -2,7 +2,7 @@ const EventHandler = require('../event-handler');
 const chai = require('chai');
 const { expect, assert } = chai;
 const { getIpAddress } = require('../common/network-util');
-const { BlockchainConfigs, BlockchainEventTypes } = require('../common/constants');
+const { NodeConfigs, BlockchainEventTypes } = require('../common/constants');
 
 // TODO(cshcomcom): Add integration test
 describe('EventHandler Test', () => {
@@ -40,11 +40,11 @@ describe('EventHandler Test', () => {
 
     it('getNetworkInfo', async () => {
       const intIp = await getIpAddress(true);
-      const intUrl = new URL(`ws://${intIp}:${BlockchainConfigs.EVENT_HANDLER_PORT}`);
+      const intUrl = new URL(`ws://${intIp}:${NodeConfigs.EVENT_HANDLER_PORT}`);
       const networkInfo = await eventChannelManager.getNetworkInfo();
       assert.deepEqual(networkInfo, {
         url: intUrl.toString(),
-        port: BlockchainConfigs.EVENT_HANDLER_PORT,
+        port: NodeConfigs.EVENT_HANDLER_PORT,
       });
     });
   });

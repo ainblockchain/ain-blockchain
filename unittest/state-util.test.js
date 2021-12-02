@@ -29,12 +29,13 @@ const {
   getProofHashFromStateRoot,
   verifyStateProof,
 } = require('../db/state-util');
-const { BlockchainConfigs } = require('../common/constants');
+const { BlockchainConfigs, BlockchainParams } = require('../common/constants');
 const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
+const stateLabelLengthLimit = BlockchainParams.resource.state_label_length_limit;
 
 describe("state-util", () => {
   describe("hasEnabledShardConfig", () => {
@@ -368,164 +369,164 @@ describe("state-util", () => {
 
   describe("isValidStateLabel", () => {
     it("when non-string input", () => {
-      expect(isValidStateLabel(null)).to.equal(false);
-      expect(isValidStateLabel(undefined)).to.equal(false);
-      expect(isValidStateLabel(true)).to.equal(false);
-      expect(isValidStateLabel(false)).to.equal(false);
-      expect(isValidStateLabel(0)).to.equal(false);
-      expect(isValidStateLabel([])).to.equal(false);
-      expect(isValidStateLabel({})).to.equal(false);
+      expect(isValidStateLabel(null, stateLabelLengthLimit)).to.equal(false);
+      expect(isValidStateLabel(undefined, stateLabelLengthLimit)).to.equal(false);
+      expect(isValidStateLabel(true, stateLabelLengthLimit)).to.equal(false);
+      expect(isValidStateLabel(false, stateLabelLengthLimit)).to.equal(false);
+      expect(isValidStateLabel(0, stateLabelLengthLimit)).to.equal(false);
+      expect(isValidStateLabel([], stateLabelLengthLimit)).to.equal(false);
+      expect(isValidStateLabel({}, stateLabelLengthLimit)).to.equal(false);
     })
 
     it("when string input returning false", () => {
-      expect(isValidStateLabel('')).to.equal(false);
-      expect(isValidStateLabel('.')).to.equal(false);
-      expect(isValidStateLabel('$')).to.equal(false);
-      expect(isValidStateLabel('/')).to.equal(false);
-      expect(isValidStateLabel("'")).to.equal(false);
-      expect(isValidStateLabel('"')).to.equal(false);
-      expect(isValidStateLabel('`')).to.equal(false);
+      expect(isValidStateLabel('', stateLabelLengthLimit)).to.equal(false);
+      expect(isValidStateLabel('.', stateLabelLengthLimit)).to.equal(false);
+      expect(isValidStateLabel('$', stateLabelLengthLimit)).to.equal(false);
+      expect(isValidStateLabel('/', stateLabelLengthLimit)).to.equal(false);
+      expect(isValidStateLabel("'", stateLabelLengthLimit)).to.equal(false);
+      expect(isValidStateLabel('"', stateLabelLengthLimit)).to.equal(false);
+      expect(isValidStateLabel('`', stateLabelLengthLimit)).to.equal(false);
     })
 
     it("when string input returning true", () => {
-      expect(isValidStateLabel('a')).to.equal(true);
-      expect(isValidStateLabel('0')).to.equal(true);
-      expect(isValidStateLabel('.a')).to.equal(true);
-      expect(isValidStateLabel('$a')).to.equal(true);
-      expect(isValidStateLabel('*')).to.equal(true);
-      expect(isValidStateLabel('~')).to.equal(true);
-      expect(isValidStateLabel('!')).to.equal(true);
-      expect(isValidStateLabel('@')).to.equal(true);
-      expect(isValidStateLabel('%')).to.equal(true);
-      expect(isValidStateLabel('^')).to.equal(true);
-      expect(isValidStateLabel('&')).to.equal(true);
-      expect(isValidStateLabel('-')).to.equal(true);
-      expect(isValidStateLabel('_')).to.equal(true);
-      expect(isValidStateLabel('=')).to.equal(true);
-      expect(isValidStateLabel('+')).to.equal(true);
-      expect(isValidStateLabel('|')).to.equal(true);
-      expect(isValidStateLabel(';')).to.equal(true);
-      expect(isValidStateLabel(',')).to.equal(true);
-      expect(isValidStateLabel('?')).to.equal(true);
+      expect(isValidStateLabel('a', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('0', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('.a', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('$a', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('*', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('~', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('!', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('@', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('%', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('^', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('&', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('-', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('_', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('=', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('+', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('|', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel(';', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel(',', stateLabelLengthLimit)).to.equal(true);
+      expect(isValidStateLabel('?', stateLabelLengthLimit)).to.equal(true);
     })
 
     it("when long string input", () => {
-      const labelLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT);
-      expect(isValidStateLabel(labelLong)).to.equal(true);
-      const labelTooLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT + 1);
-      expect(isValidStateLabel(labelTooLong)).to.equal(false);
+      const labelLong = 'a'.repeat(stateLabelLengthLimit);
+      expect(isValidStateLabel(labelLong, stateLabelLengthLimit)).to.equal(true);
+      const labelTooLong = 'a'.repeat(stateLabelLengthLimit + 1);
+      expect(isValidStateLabel(labelTooLong, stateLabelLengthLimit)).to.equal(false);
     })
   })
 
   describe("isValidPathForStates", () => {
     it("when invalid input", () => {
-      assert.deepEqual(isValidPathForStates([null]), {isValid: false, invalidPath: '/null'});
+      assert.deepEqual(isValidPathForStates([null], stateLabelLengthLimit), {isValid: false, invalidPath: '/null'});
       assert.deepEqual(
-          isValidPathForStates([undefined]), {isValid: false, invalidPath: '/undefined'});
-      assert.deepEqual(isValidPathForStates([Infinity]), {isValid: false, invalidPath: '/null'});
-      assert.deepEqual(isValidPathForStates([NaN]), {isValid: false, invalidPath: '/null'});
-      assert.deepEqual(isValidPathForStates([true]), {isValid: false, invalidPath: '/true'});
-      assert.deepEqual(isValidPathForStates([false]), {isValid: false, invalidPath: '/false'});
-      assert.deepEqual(isValidPathForStates([0]), {isValid: false, invalidPath: '/0'});
-      assert.deepEqual(isValidPathForStates(['']), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidPathForStates(['', '', '']), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidPathForStates([{}]), {isValid: false, invalidPath: '/{}'});
+          isValidPathForStates([undefined], stateLabelLengthLimit), {isValid: false, invalidPath: '/undefined'});
+      assert.deepEqual(isValidPathForStates([Infinity], stateLabelLengthLimit), {isValid: false, invalidPath: '/null'});
+      assert.deepEqual(isValidPathForStates([NaN], stateLabelLengthLimit), {isValid: false, invalidPath: '/null'});
+      assert.deepEqual(isValidPathForStates([true], stateLabelLengthLimit), {isValid: false, invalidPath: '/true'});
+      assert.deepEqual(isValidPathForStates([false], stateLabelLengthLimit), {isValid: false, invalidPath: '/false'});
+      assert.deepEqual(isValidPathForStates([0], stateLabelLengthLimit), {isValid: false, invalidPath: '/0'});
+      assert.deepEqual(isValidPathForStates([''], stateLabelLengthLimit), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidPathForStates(['', '', ''], stateLabelLengthLimit), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidPathForStates([{}], stateLabelLengthLimit), {isValid: false, invalidPath: '/{}'});
       assert.deepEqual(
-          isValidPathForStates([{a: 'A'}]), {isValid: false, invalidPath: '/{"a":"A"}'});
-      assert.deepEqual(isValidPathForStates([[]]), {isValid: false, invalidPath: '/[]'});
-      assert.deepEqual(isValidPathForStates([['a']]), {isValid: false, invalidPath: '/["a"]'});
-      assert.deepEqual(isValidPathForStates(['a', '/']), {isValid: false, invalidPath: '/a//'});
-      assert.deepEqual(isValidPathForStates(['a', '.']), {isValid: false, invalidPath: '/a/.'});
-      assert.deepEqual(isValidPathForStates(['a', '$']), {isValid: false, invalidPath: '/a/$'});
-      assert.deepEqual(isValidPathForStates(['a', '*b']), {isValid: false, invalidPath: '/a/*b'});
-      assert.deepEqual(isValidPathForStates(['a', 'b*']), {isValid: false, invalidPath: '/a/b*'});
-      assert.deepEqual(isValidPathForStates(['a', '#']), {isValid: false, invalidPath: '/a/#'});
-      assert.deepEqual(isValidPathForStates(['a', '{']), {isValid: false, invalidPath: '/a/{'});
-      assert.deepEqual(isValidPathForStates(['a', '}']), {isValid: false, invalidPath: '/a/}'});
-      assert.deepEqual(isValidPathForStates(['a', '[']), {isValid: false, invalidPath: '/a/['});
-      assert.deepEqual(isValidPathForStates(['a', ']']), {isValid: false, invalidPath: '/a/]'});
+          isValidPathForStates([{a: 'A'}], stateLabelLengthLimit), {isValid: false, invalidPath: '/{"a":"A"}'});
+      assert.deepEqual(isValidPathForStates([[]], stateLabelLengthLimit), {isValid: false, invalidPath: '/[]'});
+      assert.deepEqual(isValidPathForStates([['a']], stateLabelLengthLimit), {isValid: false, invalidPath: '/["a"]'});
+      assert.deepEqual(isValidPathForStates(['a', '/'], stateLabelLengthLimit), {isValid: false, invalidPath: '/a//'});
+      assert.deepEqual(isValidPathForStates(['a', '.'], stateLabelLengthLimit), {isValid: false, invalidPath: '/a/.'});
+      assert.deepEqual(isValidPathForStates(['a', '$'], stateLabelLengthLimit), {isValid: false, invalidPath: '/a/$'});
+      assert.deepEqual(isValidPathForStates(['a', '*b'], stateLabelLengthLimit), {isValid: false, invalidPath: '/a/*b'});
+      assert.deepEqual(isValidPathForStates(['a', 'b*'], stateLabelLengthLimit), {isValid: false, invalidPath: '/a/b*'});
+      assert.deepEqual(isValidPathForStates(['a', '#'], stateLabelLengthLimit), {isValid: false, invalidPath: '/a/#'});
+      assert.deepEqual(isValidPathForStates(['a', '{'], stateLabelLengthLimit), {isValid: false, invalidPath: '/a/{'});
+      assert.deepEqual(isValidPathForStates(['a', '}'], stateLabelLengthLimit), {isValid: false, invalidPath: '/a/}'});
+      assert.deepEqual(isValidPathForStates(['a', '['], stateLabelLengthLimit), {isValid: false, invalidPath: '/a/['});
+      assert.deepEqual(isValidPathForStates(['a', ']'], stateLabelLengthLimit), {isValid: false, invalidPath: '/a/]'});
       assert.deepEqual(
-          isValidPathForStates(['a', '\x00']), {isValid: false, invalidPath: '/a/\x00'});
+          isValidPathForStates(['a', '\x00'], stateLabelLengthLimit), {isValid: false, invalidPath: '/a/\x00'});
       assert.deepEqual(
-          isValidPathForStates(['a', '\x1F']), {isValid: false, invalidPath: '/a/\x1F'});
+          isValidPathForStates(['a', '\x1F'], stateLabelLengthLimit), {isValid: false, invalidPath: '/a/\x1F'});
       assert.deepEqual(
-          isValidPathForStates(['a', '\x7F']), {isValid: false, invalidPath: '/a/\x7F'});
+          isValidPathForStates(['a', '\x7F'], stateLabelLengthLimit), {isValid: false, invalidPath: '/a/\x7F'});
     })
 
     it("when valid input", () => {
-      assert.deepEqual(isValidPathForStates(['a', 'b', 'c']), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', 'b', 'c'], stateLabelLengthLimit), {isValid: true, invalidPath: ''});
       assert.deepEqual(
-          isValidPathForStates(['0', 'true', 'false']), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidPathForStates(['a', '.b']), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidPathForStates(['a', '$b']), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidPathForStates(['a', '*']), {isValid: true, invalidPath: ''});
+          isValidPathForStates(['0', 'true', 'false'], stateLabelLengthLimit), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '.b'], stateLabelLengthLimit), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '$b'], stateLabelLengthLimit), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidPathForStates(['a', '*'], stateLabelLengthLimit), {isValid: true, invalidPath: ''});
     })
 
     it("when input with long labels", () => {
-      const labelLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT);
-      const labelTooLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT + 1);
+      const labelLong = 'a'.repeat(stateLabelLengthLimit);
+      const labelTooLong = 'a'.repeat(stateLabelLengthLimit + 1);
       assert.deepEqual(
-          isValidPathForStates([labelLong, labelLong]), {isValid: true, invalidPath: ''});
+          isValidPathForStates([labelLong, labelLong], stateLabelLengthLimit), {isValid: true, invalidPath: ''});
       assert.deepEqual(
-          isValidPathForStates([labelTooLong, labelLong]),
+          isValidPathForStates([labelTooLong, labelLong], stateLabelLengthLimit),
           {isValid: false, invalidPath: `/${labelTooLong}`});
       assert.deepEqual(
-          isValidPathForStates([labelLong, labelTooLong]),
+          isValidPathForStates([labelLong, labelTooLong], stateLabelLengthLimit),
           {isValid: false, invalidPath: `/${labelLong}/${labelTooLong}`});
     })
   })
 
   describe("isValidJsObjectForStates", () => {
     it("when invalid input", () => {
-      assert.deepEqual(isValidJsObjectForStates(undefined), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidJsObjectForStates({}), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidJsObjectForStates([]), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidJsObjectForStates([1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidJsObjectForStates(undefined, stateLabelLengthLimit), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidJsObjectForStates({}, stateLabelLengthLimit), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidJsObjectForStates([], stateLabelLengthLimit), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidJsObjectForStates([1, 2, 3], stateLabelLengthLimit), {isValid: false, invalidPath: '/'});
       assert.deepEqual(
-          isValidJsObjectForStates(['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+          isValidJsObjectForStates(['a', 'b', 'c'], stateLabelLengthLimit), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidJsObjectForStates({
-        undef: undefined 
-      }), {isValid: false, invalidPath: '/undef'});
+        undef: undefined
+      }, stateLabelLengthLimit), {isValid: false, invalidPath: '/undef'});
       assert.deepEqual(
         isValidJsObjectForStates({
         empty_obj: {}
-      }), {isValid: false, invalidPath: '/empty_obj'});
+      }, stateLabelLengthLimit), {isValid: false, invalidPath: '/empty_obj'});
       assert.deepEqual(
         isValidJsObjectForStates({
         array: []
-      }), {isValid: false, invalidPath: '/array'});
+      }, stateLabelLengthLimit), {isValid: false, invalidPath: '/array'});
       assert.deepEqual(
         isValidJsObjectForStates({
         array: [1, 2, 3]
-      }), {isValid: false, invalidPath: '/array'});
+      }, stateLabelLengthLimit), {isValid: false, invalidPath: '/array'});
       assert.deepEqual(
         isValidJsObjectForStates({
         array: ['a', 'b', 'c']
-      }), {isValid: false, invalidPath: '/array'});
+      }, stateLabelLengthLimit), {isValid: false, invalidPath: '/array'});
       assert.deepEqual(
         isValidJsObjectForStates({
           'a': {
             '.': 'x'
           }
-      }), {isValid: false, invalidPath: '/a/.'});
+      }, stateLabelLengthLimit), {isValid: false, invalidPath: '/a/.'});
       assert.deepEqual(
         isValidJsObjectForStates({
           'a': {
             '$': 'x'
           }
-      }), {isValid: false, invalidPath: '/a/$'});
+      }, stateLabelLengthLimit), {isValid: false, invalidPath: '/a/$'});
       assert.deepEqual(
         isValidJsObjectForStates({
           'a': {
             '*b': 'x'
           }
-      }), {isValid: false, invalidPath: '/a/*b'});
+      }, stateLabelLengthLimit), {isValid: false, invalidPath: '/a/*b'});
       assert.deepEqual(
         isValidJsObjectForStates({
           'a': {
             'b*': 'x'
           }
-      }), {isValid: false, invalidPath: '/a/b*'});
+      }, stateLabelLengthLimit), {isValid: false, invalidPath: '/a/b*'});
     })
 
     it("when invalid input with deeper path", () => {
@@ -552,14 +553,14 @@ describe("state-util", () => {
             }
           },
         }
-      }), {isValid: false, invalidPath: '/internal1/internal2b/internal3b/undef'});
+      }, stateLabelLengthLimit), {isValid: false, invalidPath: '/internal1/internal2b/internal3b/undef'});
     })
 
     it("when valid input", () => {
       // leaf nodes
-      assert.deepEqual(isValidJsObjectForStates(10), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidJsObjectForStates("str"), {isValid: true, invalidPath: ''});
-      assert.deepEqual(isValidJsObjectForStates(null), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidJsObjectForStates(10, stateLabelLengthLimit), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidJsObjectForStates("str", stateLabelLengthLimit), {isValid: true, invalidPath: ''});
+      assert.deepEqual(isValidJsObjectForStates(null, stateLabelLengthLimit), {isValid: true, invalidPath: ''});
 
       // internal node
       assert.deepEqual(isValidJsObjectForStates({
@@ -582,7 +583,7 @@ describe("state-util", () => {
           empty_str: '',
           null: null,
         }
-      }), {isValid: true, invalidPath: ''});
+      }, stateLabelLengthLimit), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidJsObjectForStates({
         "owners": {
           ".owner": {
@@ -601,48 +602,48 @@ describe("state-util", () => {
             "write": true
           }
         }
-      }), {isValid: true, invalidPath: ''});
+      }, stateLabelLengthLimit), {isValid: true, invalidPath: ''});
       assert.deepEqual(
         isValidJsObjectForStates({
           'a': {
             '.b': 'x'
           }
-      }), {isValid: true, invalidPath: ''});
+      }, stateLabelLengthLimit), {isValid: true, invalidPath: ''});
       assert.deepEqual(
         isValidJsObjectForStates({
           'a': {
             '$b': 'x'
           }
-      }), {isValid: true, invalidPath: ''});
+      }, stateLabelLengthLimit), {isValid: true, invalidPath: ''});
       assert.deepEqual(
         isValidJsObjectForStates({
           'a': {
             '*': 'x'
           }
-      }), {isValid: true, invalidPath: ''});
+      }, stateLabelLengthLimit), {isValid: true, invalidPath: ''});
     })
 
     it("when input with long labels", () => {
-      const textLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT);
-      const textTooLong = 'a'.repeat(BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT + 1);
+      const textLong = 'a'.repeat(stateLabelLengthLimit);
+      const textTooLong = 'a'.repeat(stateLabelLengthLimit + 1);
       assert.deepEqual(
         isValidJsObjectForStates({
           [textLong]: {
             [textLong]: textTooLong
           }
-      }), {isValid: true, invalidPath: ''});
+      }, stateLabelLengthLimit), {isValid: true, invalidPath: ''});
       assert.deepEqual(
         isValidJsObjectForStates({
           [textTooLong]: {
             [textLong]: textTooLong
           }
-      }), {isValid: false, invalidPath: `/${textTooLong}`});
+      }, stateLabelLengthLimit), {isValid: false, invalidPath: `/${textTooLong}`});
       assert.deepEqual(
         isValidJsObjectForStates({
           [textLong]: {
             [textTooLong]: textTooLong
           }
-      }), {isValid: false, invalidPath: `/${textLong}/${textTooLong}`});
+      }, stateLabelLengthLimit), {isValid: false, invalidPath: `/${textLong}/${textTooLong}`});
     })
   })
 

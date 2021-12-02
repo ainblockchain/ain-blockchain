@@ -5,8 +5,9 @@ const VersionUtil = require('../common/version-util');
 const P2pClient = require('../p2p');
 const {
   BlockchainConfigs,
-  BlockchainParams,
-  P2pNetworkStates
+  NodeConfigs,
+  P2pNetworkStates,
+  BlockchainParams
 } = require('../common/constants');
 const { setNodeForTesting } = require('./test-util');
 const { getIpAddress } = require('../common/network-util');
@@ -73,10 +74,10 @@ describe("P2P", () => {
     describe("buildUrls", () => {
       it("builds both internal and external ip addresses", () => {
         const intIp = p2pServer.getInternalIp();
-        const actualP2pUrl = new URL(`ws://${intIp}:${BlockchainConfigs.P2P_PORT}`);
+        const actualP2pUrl = new URL(`ws://${intIp}:${NodeConfigs.P2P_PORT}`);
         const stringP2pUrl = actualP2pUrl.toString();
         actualP2pUrl.protocol = 'http:';
-        actualP2pUrl.port = BlockchainConfigs.PORT;
+        actualP2pUrl.port = NodeConfigs.PORT;
         const actualClientApiUrl = actualP2pUrl.toString();
         actualP2pUrl.pathname = 'json-rpc';
         const actualJsonRpcUrl = actualP2pUrl.toString();
@@ -105,15 +106,15 @@ describe("P2P", () => {
           ip: extIp,
           p2p: {
             url: urls.p2pUrl,
-            port: BlockchainConfigs.P2P_PORT,
+            port: NodeConfigs.P2P_PORT,
           },
           clientApi: {
             url: urls.clientApiUrl,
-            port: BlockchainConfigs.PORT,
+            port: NodeConfigs.PORT,
           },
           jsonRpc: {
             url: urls.jsonRpcUrl,
-            port: BlockchainConfigs.PORT,
+            port: NodeConfigs.PORT,
           }
         }
         assert.deepEqual(expected, p2pServer.initUrls());
@@ -181,7 +182,7 @@ describe("P2P", () => {
         const actual = p2pServer.getBlockStatus();
         delete actual.elapsedTimeMs;
         assert.deepEqual(actual, {
-          number: 0, epoch: 0, timestamp: BlockchainConfigs.GENESIS_TIMESTAMP
+          number: 0, epoch: 0, timestamp: BlockchainParams.genesis.genesis_timestamp
         });
       });
     });
@@ -329,8 +330,8 @@ describe("P2P", () => {
       it("shows initial values of connection status", () => {
         assert.deepEqual(p2pClient.getConnectionStatus(), {
           p2pState: P2pNetworkStates.STARTING,
-          maxInbound: BlockchainConfigs.MAX_NUM_INBOUND_CONNECTION,
-          targetOutBound: BlockchainConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
+          maxInbound: BlockchainParams.network.max_num_inbound_connection,
+          targetOutBound: BlockchainParams.network.target_num_outbound_connection,
           numInbound: 0,
           numOutbound: 0,
           incomingPeers: [],
