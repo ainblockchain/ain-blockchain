@@ -142,22 +142,20 @@ function isValidServiceName(name) {
   return hasVarNamePattern(name);
 }
 
-function isValidStateLabel(label) {
-  if (!CommonUtil.isString(label) ||
-      label === '' ||
-      label.length > BlockchainConfigs.STATE_LABEL_LENGTH_LIMIT ||
+function isValidStateLabel(label, stateLabelLengthLimit) {
+  if (!CommonUtil.isString(label) || label === '' || label.length > stateLabelLengthLimit ||
       (hasReservedChar(label) && !hasAllowedPattern(label))) {
     return false;
   }
   return true;
 }
 
-function isValidPathForStates(fullPath) {
+function isValidPathForStates(fullPath, stateLabelLengthLimit) {
   let isValid = true;
   const path = [];
   for (const label of fullPath) {
     path.push(label);
-    if (!isValidStateLabel(label)) {
+    if (!isValidStateLabel(label, stateLabelLengthLimit)) {
       isValid = false;
       break;
     }
@@ -165,18 +163,18 @@ function isValidPathForStates(fullPath) {
   return { isValid, invalidPath: isValid ? '' : CommonUtil.formatPath(path) };
 }
 
-function isValidJsObjectForStates(obj, path = []) {
+function isValidJsObjectForStates(obj, stateLabelLengthLimit, path = []) {
   if (CommonUtil.isDict(obj)) {
     if (CommonUtil.isEmpty(obj)) {
       return { isValid: false, invalidPath: CommonUtil.formatPath(path) };
     }
     for (const key in obj) {
       path.push(key);
-      if (!isValidStateLabel(key)) {
+      if (!isValidStateLabel(key, stateLabelLengthLimit)) {
         return { isValid: false, invalidPath: CommonUtil.formatPath(path) };
       }
       const childObj = obj[key];
-      const isValidChild = isValidJsObjectForStates(childObj, path);
+      const isValidChild = isValidJsObjectForStates(childObj, stateLabelLengthLimit, path);
       if (!isValidChild.isValid) {
         return isValidChild;
       }

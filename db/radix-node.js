@@ -5,6 +5,7 @@ const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
   BlockchainConfigs,
+  NodeConfigs,
   StateInfoProperties,
 } = require('../common/constants');
 const {
@@ -406,7 +407,7 @@ class RadixNode {
     if (this.hasChildStateNode()) {
       const childStateNode = this.getChildStateNode();
       const childStateNodeLabel = CommonUtil.stringOrEmpty(childStateNode.getLabel());
-      const preimage = BlockchainConfigs.LIGHTWEIGHT ? '' : childStateNode.getProofHash();
+      const preimage = NodeConfigs.LIGHTWEIGHT ? '' : childStateNode.getProofHash();
       treeInfo = {
         preimage,
         treeHeight: childStateNode.getTreeHeight(),
@@ -419,7 +420,7 @@ class RadixNode {
       treeInfo.preimage += BlockchainConfigs.HASH_DELIMITER;
     } else {
       treeInfo = this.getChildNodes().reduce((acc, child) => {
-        const accPreimage = BlockchainConfigs.LIGHTWEIGHT ? '' : acc.preimage +
+        const accPreimage = NodeConfigs.LIGHTWEIGHT ? '' : acc.preimage +
             `${BlockchainConfigs.HASH_DELIMITER}${child.getLabel()}${BlockchainConfigs.HASH_DELIMITER}${child.getProofHash()}`;
         const accTreeHeight = Math.max(acc.treeHeight, child.getTreeHeight());
         const accTreeSize = acc.treeSize + child.getTreeSize();
@@ -432,7 +433,7 @@ class RadixNode {
         };
       }, treeInfo);
     }
-    const proofHash = BlockchainConfigs.LIGHTWEIGHT ? '' : CommonUtil.hashString(treeInfo.preimage);
+    const proofHash = NodeConfigs.LIGHTWEIGHT ? '' : CommonUtil.hashString(treeInfo.preimage);
     return {
       proofHash,
       treeHeight: treeInfo.treeHeight,

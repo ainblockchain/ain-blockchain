@@ -1,6 +1,6 @@
 const _get = require('lodash/get');
 const {
-  BlockchainConfigs,
+  NodeConfigs,
   WriteDbOperations,
   PredefinedDbPaths,
 } = require('../common/constants');
@@ -14,7 +14,7 @@ class ConsensusUtil {
     if (!Transaction.isExecutable(executableTx)) {
       return false;
     }
-    if (!BlockchainConfigs.LIGHTWEIGHT) {
+    if (!NodeConfigs.LIGHTWEIGHT) {
       if (!Transaction.verifyTransaction(executableTx)) {
         return false;
       }

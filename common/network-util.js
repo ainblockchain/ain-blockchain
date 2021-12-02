@@ -2,7 +2,7 @@ const logger = new (require('../logger'))('NETWORK-UTIL');
 
 const _ = require('lodash');
 const axios = require('axios');
-const { BlockchainConfigs } = require('../common/constants');
+const { BlockchainConfigs, NodeConfigs } = require('../common/constants');
 const ip = require('ip');
 const extIp = require('ext-ip')();
 const CommonUtil = require('../common/common-util');
@@ -32,8 +32,8 @@ async function _waitUntilTxFinalize(endpoint, txHash) {
   }
 }
 
-async function sendTxAndWaitForFinalization(endpoint, tx, privateKey) {
-  const res = await signAndSendTx(endpoint, tx, privateKey);
+async function sendTxAndWaitForFinalization(endpoint, tx, privateKey, chainId) {
+  const res = await signAndSendTx(endpoint, tx, privateKey, chainId);
   if (_.get(res, 'errMsg', false) || !_.get(res, 'success', false)) {
     throw Error(`Failed to sign and send tx: ${res.errMsg}`);
   }
@@ -63,8 +63,8 @@ async function sendSignedTx(endpoint, params) {
 }
 
 // FIXME(minsulee2): this is duplicated function see: ./tools/util.js
-async function signAndSendTx(endpoint, tx, privateKey) {
-  const { txHash, signedTx } = CommonUtil.signTransaction(tx, privateKey, BlockchainConfigs.CHAIN_ID);
+async function signAndSendTx(endpoint, tx, privateKey, chainId) {
+  const { txHash, signedTx } = CommonUtil.signTransaction(tx, privateKey, chainId);
   const result = await sendSignedTx(endpoint, signedTx);
   return Object.assign(result, { txHash });
 }
@@ -91,7 +91,7 @@ function sendGetRequest(endpoint, method, params) {
 function getIpAddress(internal = false) {
   return Promise.resolve()
   .then(() => {
-    if (BlockchainConfigs.HOSTING_ENV === 'gcp') {
+    if (NodeConfigs.HOSTING_ENV === 'gcp') {
       return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
         headers: {'Metadata-Flavor': 'Google'},
         timeout: 3000

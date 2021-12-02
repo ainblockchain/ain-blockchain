@@ -15,6 +15,7 @@ const VersionUtil = require('../common/version-util');
 const {
   DevFlags,
   BlockchainConfigs,
+  NodeConfigs,
   MessageTypes,
   BlockchainNodeStates,
   PredefinedDbPaths,
@@ -28,6 +29,7 @@ const {
   NativeFunctionIds,
   TrafficEventTypes,
   trafficStatsManager,
+  BlockchainParamsCategories,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const { ConsensusStates } = require('../consensus/constants');
@@ -46,7 +48,6 @@ const {
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage,
-  isValidNetworkId
 } = require('./util');
 const PathUtil = require('../common/path-util');
 
@@ -54,7 +55,6 @@ const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
 const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
-const txSizeThreshold = BlockchainConfigs.TX_BYTES_LIMIT * 0.9;
 
 // A peer-to-peer network server that broadcasts changes in the database.
 // TODO(minsulee2): Sign messages to tracker or peer.
@@ -75,7 +75,7 @@ class P2pServer {
 
   async listen() {
     this.wsServer = new Websocket.Server({
-      port: BlockchainConfigs.P2P_PORT,
+      port: NodeConfigs.P2P_PORT,
       // Enables server-side compression. For option details, see
       // https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback
       perMessageDeflate: {
@@ -98,11 +98,11 @@ class P2pServer {
       }
     });
     // Set the number of maximum clients.
-    this.wsServer.setMaxListeners(BlockchainConfigs.MAX_NUM_INBOUND_CONNECTION);
+    this.wsServer.setMaxListeners(this.client.maxNumInboundConnections);
     this.wsServer.on('connection', (socket) => {
       this.setServerSidePeerEventHandlers(socket);
     });
-    logger.info(`Listening to peer-to-peer connections on: ${BlockchainConfigs.P2P_PORT}\n`);
+    logger.info(`Listening to peer-to-peer connections on: ${NodeConfigs.P2P_PORT}\n`);
     await this.setUpIpAddresses();
     this.urls = this.initUrls();
   }
@@ -153,7 +153,9 @@ class P2pServer {
 
   getBlockStatus() {
     const timestamp = this.node.bc.lastBlockTimestamp();
-    const elapsedTimeMs = (timestamp === BlockchainConfigs.GENESIS_TIMESTAMP) ? 0 : Date.now() - timestamp;
+    const genesisTimestamp = this.node.getBlockchainParam(
+        BlockchainParamsCategories.GENESIS, 'genesis_timestamp');
+    const elapsedTimeMs = (timestamp === genesisTimestamp) ? 0 : Date.now() - timestamp;
     return {
       number: this.node.bc.lastBlockNumber(),
       epoch: this.node.bc.lastBlockEpoch(),
@@ -288,10 +290,10 @@ class P2pServer {
   }
 
   buildUrls(ip) {
-    const p2pUrl = new URL(`ws://${ip}:${BlockchainConfigs.P2P_PORT}`);
+    const p2pUrl = new URL(`ws://${ip}:${NodeConfigs.P2P_PORT}`);
     const stringP2pUrl = p2pUrl.toString();
     p2pUrl.protocol = 'http:';
-    p2pUrl.port = BlockchainConfigs.PORT;
+    p2pUrl.port = NodeConfigs.PORT;
     const clientApiUrl = p2pUrl.toString();
     p2pUrl.pathname = 'json-rpc';
     const jsonRpcUrl = p2pUrl.toString();
@@ -308,7 +310,7 @@ class P2pServer {
     const intIp = this.getInternalIp();
     const extIp = this.getExternalIp();
     let urls;
-    switch (BlockchainConfigs.HOSTING_ENV) {
+    switch (NodeConfigs.HOSTING_ENV) {
       case 'local':
         urls = this.buildUrls(intIp);
         break;
@@ -322,15 +324,15 @@ class P2pServer {
       ip: extIp,
       p2p: {
         url: urls.p2pUrl,
-        port: BlockchainConfigs.P2P_PORT,
+        port: NodeConfigs.P2P_PORT,
       },
       clientApi: {
         url: urls.clientApiUrl,
-        port: BlockchainConfigs.PORT,
+        port: NodeConfigs.PORT,
       },
       jsonRpc: {
         url: urls.jsonRpcUrl,
-        port: BlockchainConfigs.PORT,
+        port: NodeConfigs.PORT,
       }
     };
   }
@@ -343,7 +345,7 @@ class P2pServer {
   }
 
   disconnectFromPeers() {
-    Object.values(this.inbound).forEach(node => {
+    Object.values(this.inbound).forEach((node) => {
       node.socket.close();
     });
   }
@@ -379,7 +381,7 @@ class P2pServer {
    */
   checkIpAddressFromPeerInfo(socketIpAddress, url) {
     // NOTE(minsulee2): Remove ::ffff: to make ipv4 ip address.
-    let ipv4Address =
+    const ipv4Address =
         socketIpAddress.substr(0, 7) === '::ffff:' ? socketIpAddress.substr(7) : socketIpAddress;
     return url.includes(ipv4Address);
   }
@@ -392,9 +394,9 @@ class P2pServer {
         const parsedMessage = JSON.parse(message);
         const networkId = _.get(parsedMessage, 'networkId');
         const address = getAddressFromSocket(this.inbound, socket);
-        if (!isValidNetworkId(networkId)) {
+        if (networkId !== this.client.networkId) {
           logger.error(`The given network ID(${networkId}) of the node(${address}) is MISSING or ` +
-            `DIFFERENT from mine(${BlockchainConfigs.NETWORK_ID}). Disconnect the connection.`);
+            `DIFFERENT from mine. Disconnect the connection.`);
           closeSocketSafe(this.inbound, socket);
           const latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
@@ -409,7 +411,9 @@ class P2pServer {
           trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
           return;
         }
-        if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
+        const p2pMsgTimeoutMs = this.node.getBlockchainParam(
+            BlockchainParamsCategories.NETWORK, 'p2p_message_timeout_ms');
+        if (!checkTimestamp(_.get(parsedMessage, 'timestamp'), p2pMsgTimeoutMs)) {
           logger.error(`The message from the node(${address}) is stale. Discard the message.`);
           logger.debug(`The detail is as follows: ${parsedMessage}`);
           const latency = Date.now() - beginTime;
@@ -480,8 +484,8 @@ class P2pServer {
                 trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
                 return;
               }
-              const payload = encapsulateMessage(MessageTypes.ADDRESS_RESPONSE,
-                  { body: body, signature: signature });
+              const payload = encapsulateMessage(
+                  MessageTypes.ADDRESS_RESPONSE, { body: body, signature: signature }, this.client.networkId);
               if (!payload) {
                 logger.error('The address cannot be sent because of msg encapsulation failure.');
                 const latency = Date.now() - beginTime;
@@ -649,8 +653,8 @@ class P2pServer {
   }
 
   sendChainSegment(socket, chainSegment, number, catchUpInfo) {
-    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_RESPONSE,
-        { chainSegment: chainSegment, number: number, catchUpInfo: catchUpInfo });
+    const payload = encapsulateMessage(
+        MessageTypes.CHAIN_SEGMENT_RESPONSE, { chainSegment, number, catchUpInfo }, this.client.networkId);
     if (!payload) {
       logger.error('The chain segment cannot be sent because of msg encapsulation failure.');
       return;
@@ -739,11 +743,13 @@ class P2pServer {
     if (shardingAppConfig === null) {
       // Create app first.
       const shardAppCreateTxBody = P2pServer.buildShardAppCreateTxBody(appName);
-      await sendTxAndWaitForFinalization(parentChainEndpoint, shardAppCreateTxBody, shardReporterPrivateKey);
+      await sendTxAndWaitForFinalization(
+          parentChainEndpoint, shardAppCreateTxBody, shardReporterPrivateKey, this.client.chainId);
     }
     logger.info(`[${LOG_HEADER}] shard app created`);
     const shardInitTxBody = P2pServer.buildShardingSetupTxBody();
-    await sendTxAndWaitForFinalization(parentChainEndpoint, shardInitTxBody, shardReporterPrivateKey);
+    await sendTxAndWaitForFinalization(
+        parentChainEndpoint, shardInitTxBody, shardReporterPrivateKey, this.client.chainId);
     logger.info(`[${LOG_HEADER}] shard set up success`);
   }
 
@@ -766,8 +772,10 @@ class P2pServer {
     try {
       let blockNumberToReport = lastReportedBlockNumberConfirmed + 1;
       const opList = [];
+      const txBytesLimit = this.node.getBlockchainParam(
+          BlockchainParamsCategories.RESOURCE, 'tx_bytes_limit');
       while (blockNumberToReport <= lastFinalizedBlockNumber) {
-        if (sizeof(opList) >= txSizeThreshold) {
+        if (sizeof(opList) >= txBytesLimit * 0.9) {
           break;
         }
         const block = blockNumberToReport === lastFinalizedBlockNumber ?
@@ -799,7 +807,7 @@ class P2pServer {
         };
         // TODO(liayoo): save the blockNumber - txHash mapping at /sharding/reports of
         // the child state.
-        await signAndSendTx(parentChainEndpoint, tx, this.node.account.private_key);
+        await signAndSendTx(parentChainEndpoint, tx, this.node.account.private_key, this.client.chainId);
       }
     } catch (err) {
       logger.error(`Failed to report state proof hashes: ${err} ${err.stack}`);
@@ -874,7 +882,7 @@ class P2pServer {
             value: {
               [PredefinedDbPaths.DOT_RULE]: {
                 [RuleProperties.STATE]: {
-                  [RuleProperties.GC_MAX_SIBLINGS]: BlockchainConfigs.MAX_SHARD_REPORT
+                  [RuleProperties.GC_MAX_SIBLINGS]: GenesisSharding[ShardingProperties.MAX_SHARD_REPORT]
                 }
               }
             }
@@ -889,7 +897,7 @@ class P2pServer {
                 ShardingProperties.PROOF_HASH),
             value: {
               [PredefinedDbPaths.DOT_RULE]: {
-                [RuleProperties.WRITE]: BlockchainConfigs.LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
+                [RuleProperties.WRITE]: NodeConfigs.LIGHTWEIGHT ? proofHashRulesLight : proofHashRules
               }
             }
           },

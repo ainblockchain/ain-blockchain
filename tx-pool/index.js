@@ -4,7 +4,7 @@ const logger = new (require('../logger'))('TX_POOL');
 const _ = require('lodash');
 const {
   DevFlags,
-  BlockchainConfigs,
+  BlockchainParamsCategories,
   TransactionStates,
   WriteDbOperations,
   StateVersions,
@@ -55,19 +55,27 @@ class TransactionPool {
   }
 
   isTimedOutFromPool(txTimestamp, lastBlockTimestamp) {
-    return this.isTimedOut(txTimestamp, lastBlockTimestamp, BlockchainConfigs.TRANSACTION_POOL_TIMEOUT_MS);
+    const txPoolTimeoutMs = this.node.getBlockchainParam(
+        BlockchainParamsCategories.RESOURCE, 'tx_pool_timeout_ms');
+    return this.isTimedOut(txTimestamp, lastBlockTimestamp, txPoolTimeoutMs);
   }
 
   isTimedOutFromTracker(txTimestamp, lastBlockTimestamp) {
-    return this.isTimedOut(txTimestamp, lastBlockTimestamp, BlockchainConfigs.TRANSACTION_TRACKER_TIMEOUT_MS);
+    const txTrackerTimeoutMs = this.node.getBlockchainParam(
+        BlockchainParamsCategories.RESOURCE, 'tx_tracker_timeout_ms');
+    return this.isTimedOut(txTimestamp, lastBlockTimestamp, txTrackerTimeoutMs);
   }
 
   hasRoomForNewTransaction() {
-    return this.getPoolSize() < BlockchainConfigs.TX_POOL_SIZE_LIMIT;
+    const txPoolSizeLimit = this.node.getBlockchainParam(
+        BlockchainParamsCategories.RESOURCE, 'tx_pool_size_limit');
+    return this.getPoolSize() < txPoolSizeLimit;
   }
 
   hasPerAccountRoomForNewTransaction(address) {
-    return this.getPerAccountPoolSize(address) < BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
+    const txPoolSizeLimitPerAccount = this.node.getBlockchainParam(
+        BlockchainParamsCategories.RESOURCE, 'tx_pool_size_limit_per_account');
+    return this.getPerAccountPoolSize(address) < txPoolSizeLimitPerAccount;
   }
 
   isNotEligibleTransaction(tx) {
@@ -176,9 +184,9 @@ class TransactionPool {
     return checkedTxs;
   }
 
-  getAppBandwidthAllocated(db, appStakesTotal, appName) {
+  getAppBandwidthAllocated(db, appStakesTotal, appName, appsBandwidthBudgetPerBlock) {
     const appStake = db ? db.getAppStake(appName) : 0;
-    return appStakesTotal > 0 ? BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK * appStake / appStakesTotal : 0;
+    return appStakesTotal > 0 ? appsBandwidthBudgetPerBlock * appStake / appStakesTotal : 0;
   }
 
   // NOTE(liayoo): txList is already sorted by their gas prices and/or timestamps,
@@ -195,6 +203,11 @@ class TransactionPool {
     // nonced txs from the same address that come after the discarded tx need to be dropped as well.
     const addrToDiscardedNoncedTx = {};
     const discardedTxList = [];
+    const {
+      serviceBandwidthBudgetPerBlock,
+      appsBandwidthBudgetPerBlock,
+      freeBandwidthBudgetPerBlock,
+    } = this.node.getBandwidthBudgets();
     for (const tx of txList) {
       const nonce = tx.tx_body.nonce;
       if (addrToDiscardedNoncedTx[tx.address] && nonce >= 0) {
@@ -206,13 +219,13 @@ class TransactionPool {
       const appBandwidth = _.get(tx, 'extra.gas.bandwidth.app', null);
       // Check if tx exceeds service bandwidth
       if (serviceBandwidth) {
-        if (serviceBandwidthSum + serviceBandwidth > BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK) {
+        if (serviceBandwidthSum + serviceBandwidth > serviceBandwidthBudgetPerBlock) {
           // Exceeds service bandwidth budget. Discard tx.
           if (nonce >= 0) {
             addrToDiscardedNoncedTx[tx.address] = true;
           }
           if (DevFlags.enableRichTxSelectionLogging) {
-            logger.debug(`Skipping service tx: ${serviceBandwidthSum + serviceBandwidth} > ${BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK}`);
+            logger.debug(`Skipping service tx: ${serviceBandwidthSum + serviceBandwidth} > ${serviceBandwidthBudgetPerBlock}`);
           }
           discardedTxList.push(tx);
           continue;
@@ -226,12 +239,12 @@ class TransactionPool {
         let tempFreeTierBandwidthSum = freeTierBandwidthSum;
         for (const [appName, bandwidth] of Object.entries(appBandwidth)) {
           const appBandwidthAllocated =
-              this.getAppBandwidthAllocated(db, appStakesTotal, appName);
+              this.getAppBandwidthAllocated(db, appStakesTotal, appName, appsBandwidthBudgetPerBlock);
           const currAppBandwidthSum =
               _.get(appBandwidthSum, appName, 0) + _.get(tempAppBandwidthSum, appName, 0);
           if (currAppBandwidthSum + bandwidth > appBandwidthAllocated) {
             if (appBandwidthAllocated === 0 &&
-              tempFreeTierBandwidthSum + bandwidth <= BlockchainConfigs.FREE_BANDWIDTH_BUDGET_PER_BLOCK) {
+              tempFreeTierBandwidthSum + bandwidth <= freeBandwidthBudgetPerBlock) {
               // May be able to include this tx for the free tier budget.
               tempFreeTierBandwidthSum += bandwidth;
             } else {

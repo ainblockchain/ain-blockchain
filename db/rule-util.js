@@ -195,22 +195,32 @@ class RuleUtil {
     return getValue(PathUtil.getConsensusStakingAccountBalancePath(address)) || 0;
   }
 
-  getMinStakeAmount() {
-    const { BlockchainConfigs } = require('../common/constants');
-    return BlockchainConfigs.MIN_STAKE_PER_VALIDATOR;
+  getMinStakeAmount(getValue) {
+    const { BlockchainParamsCategories } = require('../common/constants');
+    const PathUtil = require('../common/path-util');
+    return getValue(
+        PathUtil.getSingleBlockchainParamPath(
+            BlockchainParamsCategories.CONSENSUS, 'min_stake_per_validator'));
   }
 
-  getMaxStakeAmount() {
-    const { BlockchainConfigs } = require('../common/constants');
-    return BlockchainConfigs.MAX_STAKE_PER_VALIDATOR;
+  getMaxStakeAmount(getValue) {
+    const { BlockchainParamsCategories } = require('../common/constants');
+    const PathUtil = require('../common/path-util');
+    return getValue(
+        PathUtil.getSingleBlockchainParamPath(
+            BlockchainParamsCategories.CONSENSUS, 'max_stake_per_validator'));
   }
 
-  getMinNumValidators() {
-    const { BlockchainConfigs } = require('../common/constants');
-    return BlockchainConfigs.MIN_NUM_VALIDATORS;
+  getMinNumValidators(getValue) {
+    const { BlockchainParamsCategories } = require('../common/constants');
+    const PathUtil = require('../common/path-util');
+    return getValue(
+        PathUtil.getSingleBlockchainParamPath(
+            BlockchainParamsCategories.CONSENSUS, 'min_num_validators'));
   }
 
-  getConsensusWhitelistSize() {
+  getConsensusWhitelistSize(getValue) {
+    const PathUtil = require('../common/path-util');
     this.length(this.values(getValue(PathUtil.getConsensusWhitelistPath())).filter((x) => x === true));
   }
 
@@ -340,7 +350,7 @@ class RuleUtil {
     if (newData !== null && !this.isValidUrlWhitelistItem(newData)) {
       return false;
     }
-    const maxUrlsPerDeveloper = getValue(PathUtil.getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath());
+    const maxUrlsPerDeveloper = getValue(PathUtil.getBlockchainParamsMaxUrlsPerDeveloperPath());
     const existingUrls = getValue(PathUtil.getDevelopersRestFunctionsUrlWhitelistUserPath(userAddr)) || {};
     return data !== null || newData === null ||
         Object.keys(existingUrls).length < maxUrlsPerDeveloper;
