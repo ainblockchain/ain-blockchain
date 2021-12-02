@@ -18,7 +18,7 @@ class Tracker {
   }
 
   setBlockchainNode(peerInfo) {
-    peerInfo.location = this.getNodeLocation(peerInfo.networkStatus.ip);
+    peerInfo.location = this.getNodeLocation(peerInfo.networkStatus.urls.ip);
     this.blockchainNodes[peerInfo.address] = peerInfo;
     logger.info(`Update from node [${abbrAddr(peerInfo.address)}]`);
     logger.debug(`: ${JSON.stringify(peerInfo, null, 2)}`);
