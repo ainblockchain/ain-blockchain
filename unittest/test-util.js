@@ -7,6 +7,7 @@ const DB = require('../db');
 const {
   BlockchainConfigs,
   StateVersions,
+  BlockchainParams,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
@@ -79,7 +80,7 @@ function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
   const finalDb = DB.create(
       node.stateManager.getFinalVersion(), `${StateVersions.FINAL}:${lastBlock.number + 1}`,
-      node.bc, true, lastBlock.number, node.stateManager);
+      node.bc, true, lastBlock.number, node.stateManager, BlockchainParams.genesis.genesis_addr);
   finalDb.executeTransactionList(votes, true);
   finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1);
   finalDb.removeOldReceipts();

@@ -9,6 +9,7 @@ const {
   StateVersions,
   GenesisToken,
   GenesisSharding,
+  BlockchainParams,
 } = require('../common/constants')
 const {
   verifyStateProof,
@@ -56,7 +57,7 @@ describe("DB initialization", () => {
     it("loading balances properly on initialization", () => {
       const expected =
           GenesisToken.total_supply - 5 * 11000000 - 5 * 1000000;
-      const dbPath = `/accounts/${BlockchainConfigs.GENESIS_ADDR}/balance`;
+      const dbPath = `/accounts/${BlockchainParams.genesis.genesis_addr}/balance`;
       expect(node.db.getValue(dbPath)).to.equal(expected);
     })
   })
@@ -69,7 +70,7 @@ describe("DB initialization", () => {
 
   describe("Whitelist", () => {
     it("loading whitelist properly on initialization", () => {
-      assert.deepEqual(node.db.getValue(`/consensus/whitelist`), BlockchainConfigs.GENESIS_WHITELIST);
+      assert.deepEqual(node.db.getValue(`/consensus/whitelist`), BlockchainParams.consensus.genesis_whitelist);
     })
   })
 
@@ -2839,7 +2840,8 @@ describe("DB operations", () => {
             }
           }
         }
-        const tempDb = node.createTempDb(node.db.stateVersion, 'CONSENSUS_UNIT_TEST', node.bc.lastBlockNumber());
+        const tempDb = node.createTempDb(node.db.stateVersion, 'CONSENSUS_UNIT_TEST',
+            node.bc.lastBlockNumber(), BlockchainParams.genesis.genesis_addr);
         tempDb.writeDatabase(
           [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.ACCOUNTS, node.account.address, PredefinedDbPaths.BALANCE],
           1000000000);
@@ -2847,7 +2849,8 @@ describe("DB operations", () => {
             [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.TRANSFER, node.account.address, addr],
             valueObj);
         node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
-        expect(node.db.getStateUsageAtPath('/')[StateInfoProperties.TREE_BYTES]).to.be.lessThan(BlockchainConfigs.SERVICE_STATE_BUDGET);
+        const serviceStateBudget = BlockchainParams.resource.state_tree_bytes_limit * BlockchainConfigs.SERVICE_STATE_BUDGET_RATIO;
+        expect(node.db.getStateUsageAtPath('/')[StateInfoProperties.TREE_BYTES]).to.be.lessThan(serviceStateBudget);
 
         const expectedGasAmountTotal = {
           bandwidth: {
@@ -2876,7 +2879,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11305686 > 10000000)");
+        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11322026 > 10000000)");
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
         assert.deepEqual(res.gas_cost_total, 7.09512);
       });
@@ -4107,8 +4110,8 @@ describe("DB sharding config", () => {
 
     it("setFunction with isGlobal = true", () => {
       expect(node.db.setFunction(
-          "/apps/afan/apps/test/test_sharding/some/path/to", funcChange, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          { isGlobal: true }).code)
+          "/apps/afan/apps/test/test_sharding/some/path/to", funcChange,
+          { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
               .to.equal(0);
       assert.deepEqual(
           node.db.getFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newFunc);
@@ -4116,7 +4119,7 @@ describe("DB sharding config", () => {
 
     it("setFunction with isGlobal = true and non-existing path", () => {
       expect(node.db.setFunction(
-          "/apps/some/non-existing/path", funcChange, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isGlobal: true }).code)
+          "/apps/some/non-existing/path", funcChange, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
               .to.equal(0);
     })
 
@@ -4231,14 +4234,14 @@ describe("DB sharding config", () => {
 
     it("setRule with isGlobal = true", () => {
       expect(node.db.setRule(
-          "/apps/afan/apps/test/test_sharding/some/path/to", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isGlobal: true }).code)
+          "/apps/afan/apps/test/test_sharding/some/path/to", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
               .to.equal(0);
       assert.deepEqual(
           node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newRule);
     })
 
     it("setRule with isGlobal = true and non-existing path", () => {
-      expect(node.db.setRule("/apps/some/non-existing/path", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isGlobal: true }).code)
+      expect(node.db.setRule("/apps/some/non-existing/path", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
           .to.equal(0);
     })
 
@@ -4428,7 +4431,7 @@ describe("DB sharding config", () => {
     it("setOwner with isGlobal = true", () => {
       expect(node.db.setOwner(
           "/apps/afan/apps/test/test_sharding/some/path/to", ownerChange,
-          { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isGlobal: true }).code)
+          { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
               .to.equal(0);
       assert.deepEqual(
           node.db.getOwner("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newOwner);
@@ -4437,7 +4440,7 @@ describe("DB sharding config", () => {
     it("setOwner with isGlobal = true and non-existing path", () => {
       expect(node.db.setOwner(
           "/apps/some/non-existing/path", ownerChange,
-          { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isGlobal: true }).code).to.equal(0);
+          { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code).to.equal(0);
     })
 
     it("matchOwner with isGlobal = false", () => {

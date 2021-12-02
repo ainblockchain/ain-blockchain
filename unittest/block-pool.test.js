@@ -5,6 +5,7 @@ const assert = chai.assert;
 const {
   BlockchainConfigs,
   PredefinedDbPaths,
+  BlockchainParams,
 } = require('../common/constants');
 const BlockPool = require('../block-pool');
 const BlockchainNode = require('../node');
@@ -30,7 +31,7 @@ describe("BlockPool", () => {
         lastBlock.hash, [], {}, [], [], number, epoch, '', node.account.address,
         {
           [node.account.address]: {
-            [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainConfigs.MIN_STAKE_PER_VALIDATOR,
+            [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainParams.consensus.min_stake_per_validator,
             [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
           }
         }, 0, 0);
@@ -43,11 +44,11 @@ describe("BlockPool", () => {
             epoch: block.epoch,
             validators: {
               [node.account.address]: {
-                [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainConfigs.MIN_STAKE_PER_VALIDATOR,
+                [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainParams.consensus.min_stake_per_validator,
                 [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
               }
             },
-            total_at_stake: BlockchainConfigs.MIN_STAKE_PER_VALIDATOR,
+            total_at_stake: BlockchainParams.consensus.min_stake_per_validator,
             proposer: node.account.address,
             block_hash: block.hash
           }
@@ -66,7 +67,7 @@ describe("BlockPool", () => {
         ref: `/consensus/number/${block.number}/${block.hash}/vote`,
         value: {
           block_hash: block.hash,
-          stake: BlockchainConfigs.MIN_STAKE_PER_VALIDATOR,
+          stake: BlockchainParams.consensus.min_stake_per_validator,
           is_against: false
         }
       },
@@ -82,7 +83,7 @@ describe("BlockPool", () => {
         lastBlock.hash, [], {}, [], [], lastBlock.number + 1, lastBlock.epoch + 1, '', addr,
         {
           [addr]: {
-            [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainConfigs.MIN_STAKE_PER_VALIDATOR,
+            [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainParams.consensus.min_stake_per_validator,
             [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
           }
         }, 0, 0);
@@ -95,11 +96,11 @@ describe("BlockPool", () => {
             epoch: block.epoch,
             validators: {
               [addr]: {
-                [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainConfigs.MIN_STAKE_PER_VALIDATOR,
+                [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainParams.consensus.min_stake_per_validator,
                 [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
               }
             },
-            total_at_stake: BlockchainConfigs.MIN_STAKE_PER_VALIDATOR,
+            total_at_stake: BlockchainParams.consensus.min_stake_per_validator,
             proposer: addr,
             block_hash: block.hash
           }
@@ -121,7 +122,7 @@ describe("BlockPool", () => {
         lastBlock.hash, [], {}, [], [], lastBlock.number + 1, lastBlock.epoch + 1, '', addr,
         {
           [addr]: {
-            [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainConfigs.MIN_STAKE_PER_VALIDATOR,
+            [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainParams.consensus.min_stake_per_validator,
             [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
           }
         }, 0, 0);
@@ -134,11 +135,11 @@ describe("BlockPool", () => {
             epoch: block.epoch,
             validators: {
               [addr]: {
-                [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainConfigs.MIN_STAKE_PER_VALIDATOR,
+                [PredefinedDbPaths.CONSENSUS_STAKE]: BlockchainParams.consensus.min_stake_per_validator,
                 [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
               }
             },
-            total_at_stake: BlockchainConfigs.MIN_STAKE_PER_VALIDATOR,
+            total_at_stake: BlockchainParams.consensus.min_stake_per_validator,
             proposer: addr,
             block_hash: block.hash
           }

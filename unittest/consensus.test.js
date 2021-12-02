@@ -4,6 +4,7 @@ const rimraf = require('rimraf');
 const {
   BlockchainConfigs,
   PredefinedDbPaths,
+  BlockchainParams,
 } = require('../common/constants');
 const BlockchainNode = require('../node');
 const { setNodeForTesting, getTransaction, addBlock } = require('./test-util')
@@ -123,7 +124,7 @@ describe("Consensus", () => {
     node1.cloneAndFinalizeVersion(tempDb.stateVersion, -1); // Bypass already existing final state version
     
     // Staking less than MIN_STAKE_PER_VALIDATOR
-    let stakeAmount = BlockchainConfigs.MIN_STAKE_PER_VALIDATOR - 1;
+    let stakeAmount = BlockchainParams.consensus.min_stake_per_validator - 1;
     const stakeLessThanMin = getTransaction(node2, {
         operation: { 
           type: 'SET_VALUE', 
@@ -182,11 +183,13 @@ describe("Consensus", () => {
     expect(node1.db.executeTransaction(proposeWithStakeEqualMin).code).to.equal(0); // Succeeds
 
     // Staking more than MAX_STAKE_PER_VALIDATOR
+    const amount = BlockchainParams.consensus.max_stake_per_validator
+      - BlockchainParams.consensus.min_stake_per_validator + 1;
     const stakeMoreThanMax = getTransaction(node2, {
         operation: { 
           type: 'SET_VALUE', 
           ref: `/staking/consensus/${addr}/0/stake/key3/value`, 
-          value: BlockchainConfigs.MAX_STAKE_PER_VALIDATOR - BlockchainConfigs.MIN_STAKE_PER_VALIDATOR + 1 // 1 more than MAX_STAKE_PER_VALIDATOR
+          value: amount
         },
         nonce: -1,
         gas_price: 1

@@ -5,7 +5,7 @@ const chai = require('chai');
 const assert = chai.assert;
 const nock = require('nock');
 const _ = require('lodash');
-const { BlockchainConfigs } = require('../common/constants')
+const { BlockchainConfigs, NodeConfigs } = require('../common/constants')
 const BlockchainNode = require('../node')
 const {
   setNodeForTesting,
@@ -139,7 +139,7 @@ describe("Functions", () => {
         const { func_results, promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRest),
             null, null, null, null, transaction);
-        if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+        if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
           assert.deepEqual(func_results, {
             "0x11111": {
               "code": 0,
@@ -150,7 +150,7 @@ describe("Functions", () => {
           assert.deepEqual(func_results, {});
         }
         return promise_results.then((resp) => {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
               func_count: 1,
               trigger_count: 1,
@@ -211,7 +211,7 @@ describe("Functions", () => {
             CommonUtil.parsePath(refPathRestMulti),
             null, null, null, null, transaction);
         return promise_results.then((resp) => {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
               func_count: 2,
               trigger_count: 2,
@@ -296,7 +296,7 @@ describe("Functions", () => {
             CommonUtil.parsePath(refPathRestWithoutListener),
             null, null, null, null, transaction);
         return promise_results.then((resp) => {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
               func_count: 1,
               trigger_count: 1,
@@ -372,7 +372,7 @@ describe("Functions", () => {
             CommonUtil.parsePath(refPathRestNewlyWhitelisted),
             null, null, null, null, transaction);
         return promise_results.then((resp) => {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
               func_count: 1,
               trigger_count: 1,
@@ -596,7 +596,7 @@ describe("Functions", () => {
         const { func_results, promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRest),
             null, null, null, null, transaction);
-        if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+        if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
           assert.deepEqual(func_results, {
             "0x11111": {
               "code": 0,
@@ -607,7 +607,7 @@ describe("Functions", () => {
           assert.deepEqual(func_results, {});
         }
         return promise_results.then((resp) => {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
               func_count: 1,
               trigger_count: 1,
