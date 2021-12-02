@@ -8,6 +8,7 @@ const path = require('path');
 const {
   DevFlags,
   BlockchainConfigs,
+  NodeConfigs,
   BlockchainNodeStates,
   PredefinedDbPaths,
   BlockchainSnapshotProperties,
@@ -20,6 +21,7 @@ const {
   SyncModeOptions,
   TrafficEventTypes,
   WriteDbOperations,
+  BlockchainParamsCategories,
 } = require('../common/constants');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
@@ -32,12 +34,13 @@ const Transaction = require('../tx-pool/transaction');
 const Consensus = require('../consensus');
 const BlockPool = require('../block-pool');
 const ConsensusUtil = require('../consensus/consensus-util');
+const PathUtil = require('../common/path-util');
 
 class BlockchainNode {
   constructor(account = null, eventHandler = null, trafficStatsManager = null) {
-    this.keysDir = path.resolve(BlockchainConfigs.KEYS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
+    this.keysDir = path.resolve(BlockchainConfigs.KEYS_ROOT_DIR, `${NodeConfigs.PORT}`);
     FileUtil.createDir(this.keysDir);
-    this.snapshotDir = path.resolve(BlockchainConfigs.SNAPSHOTS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
+    this.snapshotDir = path.resolve(BlockchainConfigs.SNAPSHOTS_ROOT_DIR, `${NodeConfigs.PORT}`);
     FileUtil.createSnapshotDir(this.snapshotDir);
 
     this.account = account;
@@ -49,14 +52,15 @@ class BlockchainNode {
 
     this.eh = eventHandler;
     this.tsm = trafficStatsManager;
-    this.bc = new Blockchain(String(BlockchainConfigs.PORT));
+    this.bc = new Blockchain(String(NodeConfigs.PORT));
     this.tp = new TransactionPool(this);
     this.bp = new BlockPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
+    this.genesisAddr = this.getBlockchainParam(BlockchainParamsCategories.GENESIS, 'genesis_addr');
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
-        this.stateManager);
+        this.stateManager, this.genesisAddr);
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
     if (account === null) {
@@ -71,9 +75,9 @@ class BlockchainNode {
 
   initAccount() {
     const LOG_HEADER = 'initAccount';
-    if (BlockchainConfigs.ACCOUNT_INDEX !== null) { // TODO(liayoo): Deprecate ACCOUNT_INDEX.
-      this.setAccountAndInitShardSetting(GenesisAccounts.others[BlockchainConfigs.ACCOUNT_INDEX]);
-    } else if (BlockchainConfigs.ACCOUNT_INJECTION_OPTION !== null) {
+    if (NodeConfigs.ACCOUNT_INDEX !== null) { // TODO(liayoo): Deprecate ACCOUNT_INDEX.
+      this.setAccountAndInitShardSetting(GenesisAccounts.others[NodeConfigs.ACCOUNT_INDEX]);
+    } else if (NodeConfigs.ACCOUNT_INJECTION_OPTION !== null) {
       // Create a bootstrap account & wait for the account injection
       this.bootstrapAccount = ainUtil.createAccount();
     } else {
@@ -100,7 +104,7 @@ class BlockchainNode {
     try {
       const password = await ainUtil.decryptWithPrivateKey(
           this.bootstrapAccount.private_key, encryptedPassword);
-      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(BlockchainConfigs.KEYSTORE_FILE_PATH, password);
+      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(NodeConfigs.KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
         this.setAccountAndInitShardSetting(accountFromKeystore)
         return true;
@@ -154,7 +158,7 @@ class BlockchainNode {
   }
 
   static getNodeUrl(ipAddr) {
-    return `http://${ipAddr}:${BlockchainConfigs.PORT}`;
+    return `http://${ipAddr}:${NodeConfigs.PORT}`;
   }
 
   initNode(isFirstNode) {
@@ -165,7 +169,7 @@ class BlockchainNode {
     let latestSnapshotBlockNumber = -1;
 
     // 1. Get the latest snapshot if in the "fast" sync mode.
-    if (BlockchainConfigs.SYNC_MODE === SyncModeOptions.FAST) {
+    if (NodeConfigs.SYNC_MODE === SyncModeOptions.FAST) {
       logger.info(`[${LOG_HEADER}] Initializing node in 'fast' mode..`);
       const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
       latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
@@ -190,7 +194,7 @@ class BlockchainNode {
     logger.info(`[${LOG_HEADER}] Initializing DB..`);
     const startingDb = DB.create(
         StateVersions.EMPTY, StateVersions.START, this.bc, true, latestSnapshotBlockNumber,
-        this.stateManager);
+        this.stateManager, this.genesisAddr);
     startingDb.initDb(latestSnapshot);
 
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
@@ -228,7 +232,7 @@ class BlockchainNode {
           `[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`);
       return null;
     }
-    return new DB(tempRoot, tempVersion, null, blockNumberSnapshot, this.stateManager);
+    return new DB(tempRoot, tempVersion, null, blockNumberSnapshot, this.stateManager, this.genesisAddr);
   }
 
   syncDbAndNonce(newVersion) {
@@ -387,13 +391,33 @@ class BlockchainNode {
   getTxPoolSizeUtilization(address) {
     const result = {};
     if (address) { // Per account
-      result.limit = BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
+      result.limit = this.getBlockchainParam(
+          BlockchainParamsCategories.RESOURCE, 'tx_pool_size_limit_per_account');
       result.used = this.tp.getPerAccountPoolSize(address);
     } else { // Total
-      result.limit = BlockchainConfigs.TX_POOL_SIZE_LIMIT;
+      result.limit = this.getBlockchainParam(BlockchainParamsCategories.RESOURCE, 'tx_pool_size_limit');
       result.used = this.tp.getPoolSize();
     }
     return result;
+  }
+
+  getBlockchainParam(category, name, blockNumber = null, stateVersion = null) {
+    return DB.getBlockchainParam(category, name,
+        blockNumber !== null ? blockNumber : this.bc.lastBlockNumber(),
+        stateVersion ? this.stateManager.getRoot(stateVersion) : this.stateManager.getFinalRoot());
+  }
+
+  getBandwidthBudgets() {
+    const bandwidthBudgetPerBlock = this.getBlockchainParam(
+        BlockchainParamsCategories.RESOURCE, 'bandwidth_budget_per_block');
+    const serviceBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_RATIO;
+    const appsBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConfigs.APPS_BANDWIDTH_BUDGET_RATIO;
+    const freeBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConfigs.FREE_BANDWIDTH_BUDGET_RATIO;
+    return {
+      serviceBandwidthBudgetPerBlock,
+      appsBandwidthBudgetPerBlock,
+      freeBandwidthBudgetPerBlock,
+    }
   }
 
   /**
@@ -439,7 +463,8 @@ class BlockchainNode {
     if (txBody.gas_price === undefined) {
       txBody.gas_price = 0;
     }
-    return Transaction.fromTxBody(txBody, this.account.private_key);
+    return Transaction.fromTxBody(txBody, this.account.private_key,
+        this.getBlockchainParam(BlockchainParamsCategories.BLOCKCHAIN, 'chain_id'));
   }
 
   /**
@@ -471,7 +496,7 @@ class BlockchainNode {
           logger, 5,
           `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
     }
-    if (!BlockchainConfigs.LIGHTWEIGHT) {
+    if (!NodeConfigs.LIGHTWEIGHT) {
       if (!Transaction.verifyTransaction(executableTx)) {
         return CommonUtil.logAndReturnTxResult(logger, 6, `[${LOG_HEADER}] Invalid signature`);
       }
@@ -507,7 +532,7 @@ class BlockchainNode {
     const LOG_HEADER = 'loadAndExecuteChainOnDb';
 
     const numBlockFiles = this.bc.getNumBlockFiles();
-    const fromBlockNumber = BlockchainConfigs.SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
+    const fromBlockNumber = NodeConfigs.SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
     let nextBlock = null;
     let proposalTx = null;
     for (let number = fromBlockNumber; number < numBlockFiles; number++) {
@@ -522,7 +547,7 @@ class BlockchainNode {
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
       try {
-        if (latestSnapshotBlockNumber === number && BlockchainConfigs.SYNC_MODE === SyncModeOptions.FAST) {
+        if (latestSnapshotBlockNumber === number && NodeConfigs.SYNC_MODE === SyncModeOptions.FAST) {
           // TODO(liayoo): Deal with the case where block corresponding to the latestSnapshot doesn't exist.
           if (!this.bp.addSeenBlock(block, proposalTx)) {
             return false;

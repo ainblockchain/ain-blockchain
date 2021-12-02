@@ -18,20 +18,22 @@ const {
   WriteDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
+  BlockchainParamsCategories,
+  NodeConfigs,
 } = require('../common/constants');
 
 const MAX_BLOCKS = 20;
 
 const app = express();
-app.use(express.json({ limit: BlockchainConfigs.REQUEST_BODY_SIZE_LIMIT }));
+app.use(express.json({ limit: NodeConfigs.REQUEST_BODY_SIZE_LIMIT }));
 app.use(express.urlencoded({
   extended: true,
-  limit: BlockchainConfigs.REQUEST_BODY_SIZE_LIMIT
+  limit: NodeConfigs.REQUEST_BODY_SIZE_LIMIT
 }));
-const corsOrigin = BlockchainConfigs.CORS_WHITELIST === '*' ?
-    BlockchainConfigs.CORS_WHITELIST : CommonUtil.getRegexpList(BlockchainConfigs.CORS_WHITELIST);
+const corsOrigin = NodeConfigs.CORS_WHITELIST === '*' ?
+    NodeConfigs.CORS_WHITELIST : CommonUtil.getRegexpList(NodeConfigs.CORS_WHITELIST);
 app.use(cors({ origin: corsOrigin }));
-if (BlockchainConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
+if (NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
   const limiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
     max: 60 // limit each IP to 60 requests per windowMs
@@ -39,7 +41,7 @@ if (BlockchainConfigs.ENABLE_EXPRESS_RATE_LIMIT) {
   app.use(limiter);
 }
 
-const eventHandler = BlockchainConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
+const eventHandler = NodeConfigs.ENABLE_EVENT_HANDLER === true ? new EventHandler() : null;
 const node = new BlockchainNode(null, eventHandler, trafficStatsManager);
 // NOTE(platfowner): This is very useful when the server dies without any logs.
 process.on('uncaughtException', function(err) {
@@ -290,7 +292,7 @@ app.post('/get', (req, res, next) => {
     .end();
 });
 
-if (BlockchainConfigs.ENABLE_DEV_CLIENT_SET_API) {
+if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
   app.post('/set_value', (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
@@ -702,11 +704,12 @@ app.get('/get_consensus_status', (req, res) => {
 
 app.get('/get_network_id', (req, res) => {
   const beginTime = Date.now();
+  const result = node.getBlockchainParam(BlockchainParamsCategories.NETWORK, 'network_id');
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result: BlockchainConfigs.NETWORK_ID })
+    .send({ code: 0, result })
     .end();
 });
 
@@ -716,7 +719,10 @@ app.get('/get_chain_id', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result: BlockchainConfigs.CHAIN_ID })
+    .send({
+      code: 0,
+      result: node.getBlockchainParam(BlockchainParamsCategories.BLOCKCHAIN, 'chain_id')
+    })
     .end();
 });
 
@@ -732,8 +738,8 @@ app.get('/get_config', (req, res) => {
 
 // We will want changes in ports and the database to be broadcast across
 // all instances so lets pass this info into the p2p server
-const server = app.listen(BlockchainConfigs.PORT, () => {
-  logger.info(`App listening on port ${BlockchainConfigs.PORT}`);
+const server = app.listen(NodeConfigs.PORT, () => {
+  logger.info(`App listening on port ${NodeConfigs.PORT}`);
   logger.info(`Press Ctrl+C to quit.`);
 });
 

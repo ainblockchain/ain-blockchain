@@ -151,7 +151,7 @@ class Blockchain {
   lastBlockTimestamp() {
     const lastBlock = this.lastBlock();
     if (!lastBlock) {
-      return BlockchainConfigs.GENESIS_TIMESTAMP;
+      return this.genesisBlock.timestamp;
     }
     return lastBlock.timestamp;
   }

@@ -12,9 +12,11 @@ const PushId = require('../db/push-id');
 const {
   DevFlags,
   BlockchainConfigs,
+  NodeConfigs,
   WriteDbOperations,
   PredefinedDbPaths,
   StateVersions,
+  BlockchainParamsCategories,
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
@@ -69,6 +71,7 @@ class Consensus {
     // NOTE(liayoo): epoch increases by 1 every EPOCH_MS,
     // and at each epoch a new proposer is pseudo-randomly selected.
     this.epoch = 1;
+    this.epochMs = node.getBlockchainParam(BlockchainParamsCategories.CONSENSUS, 'epoch_ms');
 
     // Values used for status reporting
     this.validators = {};
@@ -116,7 +119,7 @@ class Consensus {
     const LOG_HEADER = 'startEpochTransition';
     const genesisBlock = this.node.bc.genesisBlock;
     this.startingTime = genesisBlock.timestamp;
-    this.epoch = Math.ceil((Date.now() - this.startingTime) / BlockchainConfigs.EPOCH_MS);
+    this.epoch = Math.ceil((Date.now() - this.startingTime) / this.epochMs);
     logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.epoch}`);
 
     this.setEpochTransition();
@@ -146,7 +149,7 @@ class Consensus {
         }
       }
       currentTime -= this.timeAdjustment;
-      const absEpoch = Math.floor((currentTime - this.startingTime) / BlockchainConfigs.EPOCH_MS);
+      const absEpoch = Math.floor((currentTime - this.startingTime) / this.epochMs);
       if (this.epoch + 1 < absEpoch) {
         logger.debug(`[${LOG_HEADER}] Epoch is too low: ${this.epoch} / ${absEpoch}`);
       } else if (this.epoch + 1 > absEpoch) {
@@ -161,7 +164,7 @@ class Consensus {
         this.tryPropose();
       }
       this.isInEpochTransition = false;
-    }, BlockchainConfigs.EPOCH_MS);
+    }, this.epochMs);
   }
 
   stop() {
@@ -370,7 +373,7 @@ class Consensus {
     const lastBlock = longestNotarizedChain && longestNotarizedChain.length ?
         longestNotarizedChain[longestNotarizedChain.length - 1] : this.node.bc.lastBlock();
     const blockNumber = lastBlock.number + 1;
-    if (BlockchainConfigs.LIGHTWEIGHT && blockNumber > 1 && this.cache[blockNumber]) {
+    if (NodeConfigs.LIGHTWEIGHT && blockNumber > 1 && this.cache[blockNumber]) {
       throw Error(`[${LOG_HEADER}] Already proposed ${blockNumber} / ${this.cache[blockNumber]}`);
     }
     if (lastBlock.epoch >= epoch) {
@@ -393,7 +396,9 @@ class Consensus {
       tempDb.destroyDb();
       throw Error(`[${LOG_HEADER}] No whitelisted validators`);
     }
-    if (numValidators < BlockchainConfigs.MIN_NUM_VALIDATORS) {
+    const minNumValidators = this.node.getBlockchainParam(
+        BlockchainParamsCategories.CONSENSUS, 'min_num_validators', lastBlock.number, tempDb.stateVersion);
+    if (numValidators < minNumValidators) {
       tempDb.destroyDb();
       throw Error(`[${LOG_HEADER}] Not enough validators: ${JSON.stringify(validators)}`);
     }
@@ -402,12 +407,12 @@ class Consensus {
         validators, recordedInvalidBlockHashSet, blockTime, tempDb);
     const { transactions, receipts, gasAmountTotal, gasCostTotal } = this.executeAndGetValidTransactions(
         longestNotarizedChain, blockNumber, blockTime, tempDb);
-    const stateProofHash = BlockchainConfigs.LIGHTWEIGHT ? '' : tempDb.getProofHash('/');
+    const stateProofHash = NodeConfigs.LIGHTWEIGHT ? '' : tempDb.getProofHash('/');
     const proposalBlock = Block.create(
         lastBlock.hash, lastVotes, evidence, transactions, receipts, blockNumber, epoch,
         stateProofHash, this.node.account.address, validators, gasAmountTotal, gasCostTotal, blockTime);
     const proposalTx = this.getProposalTx(blockNumber, validators, totalAtStake, gasCostTotal, offenses, proposalBlock);
-    if (BlockchainConfigs.LIGHTWEIGHT) {
+    if (NodeConfigs.LIGHTWEIGHT) {
       this.cache[blockNumber] = proposalBlock.hash;
     }
     tempDb.destroyDb();
@@ -491,7 +496,7 @@ class Consensus {
   }
 
   static validateBlockNumberAndHashes(block, prevBlock, genesisBlockHash) {
-    if (!BlockchainConfigs.LIGHTWEIGHT) {
+    if (!NodeConfigs.LIGHTWEIGHT) {
       return;
     }
     if (!Blockchain.validateBlock(block)) {
@@ -531,12 +536,16 @@ class Consensus {
     }
   }
 
-  static validateValidators(validators) {
-    if (Object.keys(validators).length < BlockchainConfigs.MIN_NUM_VALIDATORS || Object.keys(validators).length > BlockchainConfigs.MAX_NUM_VALIDATORS) {
+  static validateValidators(validators, baseBlockNumber, baseVersion, node) {
+    const minNumValidators = node.getBlockchainParam(
+        BlockchainParamsCategories.CONSENSUS, 'min_num_validators', baseBlockNumber, baseVersion);
+    const maxNumValidators = node.getBlockchainParam(
+        BlockchainParamsCategories.CONSENSUS, 'max_num_validators', baseBlockNumber, baseVersion);
+    if (Object.keys(validators).length < minNumValidators || Object.keys(validators).length > maxNumValidators) {
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_VALIDATORS_SIZE,
         message: `Invalid validator set size (${JSON.stringify(validators)})\n` +
-            `MIN_NUM_VALIDATORS: ${BlockchainConfigs.MIN_NUM_VALIDATORS}, MAX_NUM_VALIDATORS: ${BlockchainConfigs.MAX_NUM_VALIDATORS}`,
+            `min_num_validators: ${minNumValidators}, max_num_validators: ${maxNumValidators}`,
         level: 'error'
       });
     }
@@ -683,7 +692,7 @@ class Consensus {
   }
 
   static validateStateProofHash(expectedStateProofHash, number, db, node, takeSnapshot) {
-    if (BlockchainConfigs.LIGHTWEIGHT) return;
+    if (NodeConfigs.LIGHTWEIGHT) return;
     const stateProofHash = db.getProofHash('/');
     if (stateProofHash !== expectedStateProofHash) {
       if (takeSnapshot) {
@@ -770,7 +779,7 @@ class Consensus {
 
     try {
       Consensus.validateBlockNumberAndHashes(block, prevBlock, node.bc.genesisBlockHash);
-      Consensus.validateValidators(validators);
+      Consensus.validateValidators(validators, number - 1, baseVersion, node);
       Consensus.validateProposer(number, prevBlockLastVotesHash, epoch, validators, proposer);
       Consensus.validateAndExecuteLastVotes(last_votes, last_hash, number, timestamp, db, node.bp);
       Consensus.validateAndExecuteOffensesAndEvidence(
@@ -1112,11 +1121,19 @@ class Consensus {
     const LOG_HEADER = 'getValidators';
     let candidates = [];
     const validators = {};
+    const minStakePerValidator = this.node.getBlockchainParam(
+        BlockchainParamsCategories.CONSENSUS, 'min_stake_per_validator', blockNumber, stateVersion);
+    const maxStakePerValidator = this.node.getBlockchainParam(
+        BlockchainParamsCategories.CONSENSUS, 'max_stake_per_validator', blockNumber, stateVersion);
+    const maxNumValidators = this.node.getBlockchainParam(
+        BlockchainParamsCategories.CONSENSUS, 'max_num_validators', blockNumber, stateVersion);
     // Need the block #1 to be finalized to have the stakes reflected in the state.
     if (this.node.bc.lastBlockNumber() < 1) {
-      for (const address of Object.keys(BlockchainConfigs.GENESIS_WHITELIST)) {
+      const genesisWhitelist = this.node.getBlockchainParam(
+          BlockchainParamsCategories.CONSENSUS, 'genesis_whitelist', blockNumber, stateVersion);
+      for (const address of Object.keys(genesisWhitelist)) {
         const stake = this.getConsensusStakeFromAddr(stateVersion, address);
-        if (stake && stake >= BlockchainConfigs.MIN_STAKE_PER_VALIDATOR && stake <= BlockchainConfigs.MAX_STAKE_PER_VALIDATOR) {
+        if (stake && stake >= minStakePerValidator && stake <= maxStakePerValidator) {
           validators[address] = {
             [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
             [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
@@ -1142,7 +1159,7 @@ class Consensus {
       const stake = this.getConsensusStakeFromAddr(stateVersion, address);
       if (stake) {
         if (whitelist[address] === true) {
-          if (stake >= BlockchainConfigs.MIN_STAKE_PER_VALIDATOR && stake <= BlockchainConfigs.MAX_STAKE_PER_VALIDATOR) {
+          if (stake >= minStakePerValidator && stake <= maxStakePerValidator) {
             validators[address] = {
               [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
               [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
@@ -1160,7 +1177,7 @@ class Consensus {
     // NOTE(liayoo): tie-breaking by addresses as a temporary solution.
     candidates = _.orderBy(candidates, ['stake', 'expireAt', 'address'], ['desc', 'desc', 'asc']);
     for (const candidate of candidates) {
-      if (Object.keys(validators).length < BlockchainConfigs.MAX_NUM_VALIDATORS) {
+      if (Object.keys(validators).length < maxNumValidators) {
         validators[candidate.address] = {
           [PredefinedDbPaths.CONSENSUS_STAKE]: candidate.stake,
           [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: false

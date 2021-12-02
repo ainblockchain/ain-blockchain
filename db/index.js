@@ -4,6 +4,7 @@ const _ = require('lodash');
 const {
   DevFlags,
   BlockchainConfigs,
+  NodeConfigs,
   ReadDbOperations,
   WriteDbOperations,
   PredefinedDbPaths,
@@ -15,6 +16,9 @@ const {
   GenesisSharding,
   StateVersions,
   buildOwnerPermissions,
+  BlockchainParams,
+  OverwritableBlockchainParams,
+  BlockchainParamsCategories,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
@@ -46,7 +50,7 @@ const RuleUtil = require('./rule-util');
 const PathUtil = require('../common/path-util');
 
 class DB {
-  constructor(stateRoot, stateVersion, bc, blockNumberSnapshot, stateManager) {
+  constructor(stateRoot, stateVersion, bc, blockNumberSnapshot, stateManager, genesisAddr) {
     this.shardingPath = null;
     this.isRootBlockchain = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
@@ -58,7 +62,7 @@ class DB {
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
     this.stateManager = stateManager;
-    this.ownerAddress = BlockchainConfigs.GENESIS_ADDR;
+    this.genesisAddr = genesisAddr;
     this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: [] };
     this.updateRestFunctionsUrlWhitelistCache();
   }
@@ -294,8 +298,7 @@ class DB {
     this.deleteBackupStateVersion();
   }
 
-  static create(
-      baseVersion, newVersion, bc, finalizeVersion, blockNumberSnapshot, stateManager) {
+  static create(baseVersion, newVersion, bc, finalizeVersion, blockNumberSnapshot, stateManager, genesisAddr) {
     const LOG_HEADER = 'create';
 
     logger.debug(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
@@ -309,7 +312,7 @@ class DB {
     if (finalizeVersion) {
       stateManager.finalizeVersion(newVersion);
     }
-    return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager);
+    return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager, genesisAddr);
   }
 
   takeStateSnapshot() {
@@ -437,7 +440,7 @@ class DB {
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
     const tree = StateNode.fromStateSnapshot(stateObj, stateVersion);
-    if (!BlockchainConfigs.LIGHTWEIGHT) {
+    if (!NodeConfigs.LIGHTWEIGHT) {
       updateStateInfoForStateTree(tree);
     }
     if (fullPath.length === 0) {
@@ -535,6 +538,33 @@ class DB {
       [StateInfoProperties.STATE_PROOF_HASH]: stateNode.getProofHash(),
       [StateInfoProperties.VERSION]: stateNode.getVersion(),
     };
+  }
+
+  static getBlockchainParam(category, name, blockNumber, stateRoot) {
+    if (typeof stateRoot === 'string') {
+      logger.error(`${new Error('getBlockchainParam stateRoot is a string').stack}`);
+    }
+    let ret;
+    if (_.get(OverwritableBlockchainParams, `${category}.${name}`) !== undefined) {
+      ret = NodeConfigs[name.toUpperCase()];
+      return ret;
+    }
+    // NOTE(liayoo): For certain parameters such as network params, we might need them before we
+    // have the genesis block and the params in the state.
+    if (blockNumber <= 0) {
+      ret = BlockchainParams[category][name];
+      return ret;
+    }
+    ret = DB.getValueFromStateRoot(stateRoot, PathUtil.getSingleBlockchainParamPath(category, name));
+    return ret;
+  }
+
+  isConsensusAppAdmin(address) {
+    const admins = this.getValue(PathUtil.getManageAppConfigAdminPath('consensus'));
+    if (admins === null) {
+      return this.genesisAddr === address;
+    }
+    return admins[address] === true;
   }
 
   matchFunction(funcPath, options) {
@@ -705,12 +735,14 @@ class DB {
     const LOG_HEADER = 'setValue';
     const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(valuePath);
-    const isValidPath = isValidPathForStates(parsedPath);
+    const stateLabelLengthLimit = DB.getBlockchainParam(
+        BlockchainParamsCategories.RESOURCE, 'state_label_length_limit', blockNumber, this.stateRoot);
+    const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(
           102, `Invalid path: ${isValidPath.invalidPath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
-    const isValidObj = isValidJsObjectForStates(value);
+    const isValidObj = isValidJsObjectForStates(value, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
           101, `Invalid object for states: ${isValidObj.invalidPath}`,
@@ -800,16 +832,18 @@ class DB {
         valuePath, valueAfter, auth, timestamp, transaction, blockNumber, blockTime, options);
   }
 
-  setFunction(functionPath, func, auth, options) {
+  setFunction(functionPath, func, auth, blockNumber, options) {
     const isGlobal = options && options.isGlobal;
-    const isValidObj = isValidJsObjectForStates(func);
+    const stateLabelLengthLimit = DB.getBlockchainParam(
+        BlockchainParamsCategories.RESOURCE, 'state_label_length_limit', blockNumber, this.stateRoot);
+    const isValidObj = isValidJsObjectForStates(func, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
           401, `Invalid object for states: ${isValidObj.invalidPath}`,
           BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const parsedPath = CommonUtil.parsePath(functionPath);
-    const isValidPath = isValidPathForStates(parsedPath);
+    const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(
           402, `Invalid path: ${isValidPath.invalidPath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
@@ -820,7 +854,7 @@ class DB {
           405, `Invalid function tree: ${isValidFunction.invalidPath}`,
           BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
-    if (!auth || auth.addr !== this.ownerAddress) {
+    if (!auth || !this.isConsensusAppAdmin(auth.addr)) {
       const ownerOnlyFid = this.func.hasOwnerOnlyFunction(func);
       if (ownerOnlyFid !== null) {
         return CommonUtil.returnTxResult(
@@ -847,16 +881,18 @@ class DB {
 
   // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
   //                   multiple path variables).
-  setRule(rulePath, rule, auth, options) {
+  setRule(rulePath, rule, auth, blockNumber, options) {
     const isGlobal = options && options.isGlobal;
-    const isValidObj = isValidJsObjectForStates(rule);
+    const stateLabelLengthLimit = DB.getBlockchainParam(
+        BlockchainParamsCategories.RESOURCE, 'state_label_length_limit', blockNumber, this.stateRoot);
+    const isValidObj = isValidJsObjectForStates(rule, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
           501, `Invalid object for states: ${isValidObj.invalidPath}`,
           BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const parsedPath = CommonUtil.parsePath(rulePath);
-    const isValidPath = isValidPathForStates(parsedPath);
+    const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(
           502, `Invalid path: ${isValidPath.invalidPath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
@@ -883,16 +919,18 @@ class DB {
     return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
   }
 
-  setOwner(ownerPath, owner, auth, options) {
+  setOwner(ownerPath, owner, auth, blockNumber, options) {
     const isGlobal = options && options.isGlobal;
-    const isValidObj = isValidJsObjectForStates(owner);
+    const stateLabelLengthLimit = DB.getBlockchainParam(
+        BlockchainParamsCategories.RESOURCE, 'state_label_length_limit', blockNumber, this.stateRoot);
+    const isValidObj = isValidJsObjectForStates(owner, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
           601, `Invalid object for states: ${isValidObj.invalidPath}`,
           BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
     }
     const parsedPath = CommonUtil.parsePath(ownerPath);
-    const isValidPath = isValidPathForStates(parsedPath);
+    const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(
           602, `Invalid path: ${isValidPath.invalidPath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
@@ -979,13 +1017,13 @@ class DB {
             CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_FUNCTION:
-        result = this.setFunction(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
+        result = this.setFunction(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_RULE:
-        result = this.setRule(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
+        result = this.setRule(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_OWNER:
-        result = this.setOwner(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
+        result = this.setOwner(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
         break;
       default:
         return CommonUtil.returnTxResult(
@@ -1043,7 +1081,10 @@ class DB {
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
     DB.updateGasAmountTotal(tx, gasAmountTotal, result);
     if (!CommonUtil.isFailedTx(result)) {
-      const heightCheck = this.checkTreeHeightAndSize();
+      const stateTreeBytesLimit = DB.getBlockchainParam(
+          BlockchainParamsCategories.RESOURCE, 'state_tree_bytes_limit', blockNumber, this.stateRoot);
+      const budgets = DB.getStateBudgets(stateTreeBytesLimit);
+      const heightCheck = this.checkTreeHeightAndSize(budgets, blockNumber);
       if (CommonUtil.isFailedTx(heightCheck)) {
         return Object.assign(result, heightCheck);
       }
@@ -1054,7 +1095,7 @@ class DB {
           tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore,
           stateUsagePerAppAfter);
       const stateGasBudgetCheck = this.checkStateGasBudgets(
-          op, allStateUsageAfter.apps, allStateUsageAfter.service, result);
+          op, allStateUsageAfter.apps, allStateUsageAfter.service, result, budgets);
       if (stateGasBudgetCheck !== true) {
         return stateGasBudgetCheck;
       }
@@ -1145,38 +1186,57 @@ class DB {
     }, {});
   }
 
-  checkStateGasBudgets(op, allAppsStateUsage, serviceStateUsage, result) {
-    if (serviceStateUsage[StateInfoProperties.TREE_BYTES] > BlockchainConfigs.SERVICE_STATE_BUDGET) {
+  static getStateBudgets(stateTreeBytesLimit) {
+    const serviceStateBudget = stateTreeBytesLimit * BlockchainConfigs.SERVICE_STATE_BUDGET_RATIO;
+    const appsStateBudget = stateTreeBytesLimit * BlockchainConfigs.APPS_STATE_BUDGET_RATIO;
+    const freeStateBudget = stateTreeBytesLimit * BlockchainConfigs.FREE_STATE_BUDGET_RATIO;
+    const treeSizeBudget = stateTreeBytesLimit * BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE;
+    const serviceTreeSizeBudget = serviceStateBudget * BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE;
+    const appsTreeSizeBudget = appsStateBudget * BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE;
+    const freeTreeSizeBudget = freeStateBudget * BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE;
+    return {
+      serviceStateBudget,
+      appsStateBudget,
+      freeStateBudget,
+      treeSizeBudget,
+      serviceTreeSizeBudget,
+      appsTreeSizeBudget,
+      freeTreeSizeBudget,
+    };
+  }
+
+  checkStateGasBudgets(op, allAppsStateUsage, serviceStateUsage, result, budgets) {
+    if (serviceStateUsage[StateInfoProperties.TREE_BYTES] > budgets.serviceStateBudget) {
       return Object.assign(result, {
           code: 25,
           error_message: `Exceeded state budget limit for services ` +
-            `(${serviceStateUsage[StateInfoProperties.TREE_BYTES]} > ${BlockchainConfigs.SERVICE_STATE_BUDGET})`
+            `(${serviceStateUsage[StateInfoProperties.TREE_BYTES]} > ${budgets.serviceStateBudget})`
       });
     }
-    if (allAppsStateUsage[StateInfoProperties.TREE_BYTES] > BlockchainConfigs.APPS_STATE_BUDGET) {
+    if (allAppsStateUsage[StateInfoProperties.TREE_BYTES] > budgets.appsStateBudget) {
       return Object.assign(result, {
           code: 26,
           error_message: `Exceeded state budget limit for apps ` +
-            `(${allAppsStateUsage[StateInfoProperties.TREE_BYTES]} > ${BlockchainConfigs.APPS_STATE_BUDGET})`
+            `(${allAppsStateUsage[StateInfoProperties.TREE_BYTES]} > ${budgets.appsStateBudget})`
       });
     }
-    if (serviceStateUsage[StateInfoProperties.TREE_SIZE] > BlockchainConfigs.SERVICE_TREE_SIZE_BUDGET) {
+    if (serviceStateUsage[StateInfoProperties.TREE_SIZE] > budgets.serviceTreeSizeBudget) {
       return Object.assign(result, {
           code: 27,
           error_message: `Exceeded state tree size limit for services ` +
-            `(${serviceStateUsage[StateInfoProperties.TREE_SIZE]} > ${BlockchainConfigs.SERVICE_TREE_SIZE_BUDGET})`
+            `(${serviceStateUsage[StateInfoProperties.TREE_SIZE]} > ${budgets.serviceTreeSizeBudget})`
       });
     }
-    if (allAppsStateUsage[StateInfoProperties.TREE_SIZE] > BlockchainConfigs.APPS_TREE_SIZE_BUDGET) {
+    if (allAppsStateUsage[StateInfoProperties.TREE_SIZE] > budgets.appsTreeSizeBudget) {
       return Object.assign(result, {
           code: 28,
           error_message: `Exceeded state tree size limit for apps ` +
-            `(${allAppsStateUsage[StateInfoProperties.TREE_SIZE]} > ${BlockchainConfigs.APPS_TREE_SIZE_BUDGET})`
+            `(${allAppsStateUsage[StateInfoProperties.TREE_SIZE]} > ${budgets.appsTreeSizeBudget})`
       });
     }
     const stateFreeTierUsage = this.getStateFreeTierUsage();
-    const freeTierTreeBytesLimitReached = stateFreeTierUsage[StateInfoProperties.TREE_BYTES] >= BlockchainConfigs.FREE_STATE_BUDGET;
-    const freeTierTreeSizeLimitReached = stateFreeTierUsage[StateInfoProperties.TREE_SIZE] >= BlockchainConfigs.FREE_TREE_SIZE_BUDGET;
+    const freeTierTreeBytesLimitReached = stateFreeTierUsage[StateInfoProperties.TREE_BYTES] >= budgets.freeStateBudget;
+    const freeTierTreeSizeLimitReached = stateFreeTierUsage[StateInfoProperties.TREE_SIZE] >= budgets.freeTreeSizeBudget;
     const appStakesTotal = this.getAppStakesTotal();
     for (const appName of CommonUtil.getAppNameList(op, this.shardingPath)) {
       const appStateUsage = this.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
@@ -1186,32 +1246,32 @@ class DB {
           return Object.assign(result, {
               code: 29,
               error_message: `Exceeded state budget limit for free tier ` +
-                `(${stateFreeTierUsage[StateInfoProperties.TREE_BYTES]} > ${BlockchainConfigs.FREE_STATE_BUDGET})`
+                `(${stateFreeTierUsage[StateInfoProperties.TREE_BYTES]} > ${budgets.freeStateBudget})`
           });
         }
         if (freeTierTreeSizeLimitReached) {
           return Object.assign(result, {
             code: 30,
             error_message: `Exceeded state tree size limit for free tier ` +
-              `(${stateFreeTierUsage[StateInfoProperties.TREE_SIZE]} > ${BlockchainConfigs.FREE_TREE_SIZE_BUDGET})`
+              `(${stateFreeTierUsage[StateInfoProperties.TREE_SIZE]} > ${budgets.freeTreeSizeBudget})`
           });
         }
         // else, we allow apps without stakes
       } else {
-        const appStateBudget = BlockchainConfigs.APPS_STATE_BUDGET * appStake / appStakesTotal;
-        const appTreeSizeBudget = BlockchainConfigs.APPS_TREE_SIZE_BUDGET * appStake / appStakesTotal;
-        if (appStateUsage[StateInfoProperties.TREE_BYTES] > appStateBudget) {
+        const singleAppStateBudget = budgets.appsStateBudget * appStake / appStakesTotal;
+        const singleAppTreeSizeBudget = budgets.appsStateBudget * appStake / appStakesTotal;
+        if (appStateUsage[StateInfoProperties.TREE_BYTES] > singleAppStateBudget) {
           return Object.assign(result, {
               code: 31,
               error_message: `Exceeded state budget limit for app ${appName} ` +
-                `(${appStateUsage[StateInfoProperties.TREE_BYTES]} > ${appStateBudget})`
+                `(${appStateUsage[StateInfoProperties.TREE_BYTES]} > ${singleAppStateBudget})`
           });
         }
-        if (appStateUsage[StateInfoProperties.TREE_SIZE] > appTreeSizeBudget) {
+        if (appStateUsage[StateInfoProperties.TREE_SIZE] > singleAppTreeSizeBudget) {
           return Object.assign(result, {
               code: 32,
               error_message: `Exceeded state tree size limit for app ${appName} ` +
-                `(${appStateUsage[StateInfoProperties.TREE_SIZE]} > ${appTreeSizeBudget})`
+                `(${appStateUsage[StateInfoProperties.TREE_SIZE]} > ${singleAppTreeSizeBudget})`
           });
         }
       }
@@ -1383,17 +1443,21 @@ class DB {
     const billedTo = billing ? CommonUtil.toBillingAccountName(billing) : addr;
     if (CommonUtil.hasServiceOp(op)) {
       const balance = this.getBalance(billedTo);
-      if (balance < BlockchainConfigs.MIN_BALANCE_FOR_SERVICE_TX) {
+      const minBalanceForServiceTx = DB.getBlockchainParam(
+          BlockchainParamsCategories.RESOURCE, 'min_balance_for_service_tx', blockNumber, this.stateRoot);
+      if (balance < minBalanceForServiceTx) {
         return CommonUtil.logAndReturnTxResult(
-          logger, 34, `[${LOG_HEADER}] Balance too low (${balance} < ${BlockchainConfigs.MIN_BALANCE_FOR_SERVICE_TX})`);
+          logger, 34, `[${LOG_HEADER}] Balance too low (${balance} < ${minBalanceForServiceTx})`);
       }
     }
+    const minStakingForAppTx = DB.getBlockchainParam(
+        BlockchainParamsCategories.RESOURCE, 'min_staking_for_app_tx', blockNumber, this.stateRoot);
     const appNameList = CommonUtil.getAppNameList(op, this.shardingPath);
     appNameList.forEach((appName) => {
       const appStake = this.getAppStake(appName);
-      if (appStake < BlockchainConfigs.MIN_STAKING_FOR_APP_TX) {
+      if (appStake < minStakingForAppTx) {
         return CommonUtil.logAndReturnTxResult(
-          logger, 35, `[${LOG_HEADER}] App stake too low (${appStake} < ${BlockchainConfigs.MIN_STAKING_FOR_APP_TX})`);
+          logger, 35, `[${LOG_HEADER}] App stake too low (${appStake} < ${minStakingForAppTx})`);
       }
     });
     return true;
@@ -1491,21 +1555,23 @@ class DB {
     return resList;
   }
 
-  checkTreeHeightAndSize() {
+  checkTreeHeightAndSize(budgets, blockNumber) {
     const {
       [StateInfoProperties.TREE_HEIGHT]: treeHeight,
       [StateInfoProperties.TREE_SIZE]: treeSize,
     } = this.getStateInfo('/');
-    if (treeHeight > BlockchainConfigs.STATE_TREE_HEIGHT_LIMIT) {
+    const stateTreeHeightLimit = DB.getBlockchainParam(
+        BlockchainParamsCategories.RESOURCE, 'state_tree_height_limit', blockNumber, this.stateRoot);
+    if (treeHeight > stateTreeHeightLimit) {
       return {
         code: 23,
-        error_message: `Out of tree height limit (${treeHeight} > ${BlockchainConfigs.STATE_TREE_HEIGHT_LIMIT})`
+        error_message: `Out of tree height limit (${treeHeight} > ${stateTreeHeightLimit})`
       };
     }
-    if (treeSize > BlockchainConfigs.TREE_SIZE_BUDGET) {
+    if (treeSize > budgets.treeSizeBudget) {
       return {
         code: 24,
-        error_message: `Out of tree size budget (${treeSize} > ${BlockchainConfigs.TREE_SIZE_BUDGET})`
+        error_message: `Out of tree size budget (${treeSize} > ${budgets.treeSizeBudget})`
       };
     }
     return {

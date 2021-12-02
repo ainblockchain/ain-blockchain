@@ -5,6 +5,7 @@ const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
   BlockchainConfigs,
+  NodeConfigs,
   StateInfoProperties,
 } = require('../common/constants');
 const RadixTree = require('./radix-tree');
@@ -425,7 +426,7 @@ class StateNode {
   buildStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
     const nodeBytes = this.computeNodeBytes();
     if (this.getIsLeaf()) {
-      const proofHash = BlockchainConfigs.LIGHTWEIGHT ?
+      const proofHash = NodeConfigs.LIGHTWEIGHT ?
           '' : CommonUtil.hashString(CommonUtil.toString(this.getValue()));
       return {
         proofHash,

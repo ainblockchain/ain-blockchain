@@ -6,6 +6,7 @@ const matchUrl = require('match-url-wildcard');
 const {
   DevFlags,
   BlockchainConfigs,
+  NodeConfigs,
   PredefinedDbPaths,
   FunctionTypes,
   FunctionResultCode,
@@ -173,7 +174,7 @@ class Functions {
             }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
             matchUrl(functionEntry.function_url, this.db.getRestFunctionsUrlWhitelist())) {
             if (DevFlags.enableRichFunctionLogging) {
               logger.info(
@@ -390,7 +391,8 @@ class Functions {
 
   setOwnerOrLog(ownerPath, owner, context) {
     const auth = context.auth;
-    const result = this.db.setOwner(ownerPath, owner, auth);
+    const blockNumber = context.blockNumber;
+    const result = this.db.setOwner(ownerPath, owner, auth, blockNumber);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setOwner on '${ownerPath}' with error: ${JSON.stringify(result)}`);
@@ -401,7 +403,8 @@ class Functions {
 
   setRuleOrLog(rulePath, rule, context) {
     const auth = context.auth;
-    const result = this.db.setRule(rulePath, rule, auth);
+    const blockNumber = context.blockNumber;
+    const result = this.db.setRule(rulePath, rule, auth, blockNumber);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setRule on '${rulePath}' with error: ${JSON.stringify(result)}`);

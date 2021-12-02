@@ -343,11 +343,18 @@ class PathUtil {
         PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST, address]);
   }
 
-  static getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath() {
+  static getBlockchainParamsMaxUrlsPerDeveloperPath() {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS,
-        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_PARAMS,
-        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER]);
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS, PredefinedDbPaths.BLOCKCHAIN_PARAMS_RESOURCE,
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS_MAX_FUNCTION_URLS_PER_DEVELOPER]);
+  }
+
+  static getBlockchainParamsRootPath() {
+    return CommonUtil.formatPath([PredefinedDbPaths.BLOCKCHAIN_PARAMS]);
+  }
+
+  static getSingleBlockchainParamPath(category, name) {
+    return CommonUtil.formatPath([PredefinedDbPaths.BLOCKCHAIN_PARAMS, category, name]);
   }
 }
 

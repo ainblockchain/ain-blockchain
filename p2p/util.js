@@ -77,7 +77,7 @@ function verifySignedMessage(message, address) {
   }
 }
 
-function encapsulateMessage(type, dataObj) {
+function encapsulateMessage(type, dataObj, networkId) {
   if (!type || !CommonUtil.isString(type)) {
     logger.error('Type must be specified.');
     return null;
@@ -87,34 +87,26 @@ function encapsulateMessage(type, dataObj) {
     return null;
   }
   const message = {
-    type: type,
+    type,
     data: dataObj,
     protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
     dataProtoVer: BlockchainConfigs.DATA_PROTOCOL_VERSION,
-    networkId: BlockchainConfigs.NETWORK_ID,
+    networkId,
     timestamp: Date.now()
   };
   return message;
 }
 
-function checkTimestamp(timestamp) {
+function checkTimestamp(timestamp, p2pMsgTimeoutMs) {
   if (!timestamp || !CommonUtil.isNumber(timestamp)) {
     return false;
   } else {
     const now = Date.now();
-    if (now - timestamp > BlockchainConfigs.P2P_MESSAGE_TIMEOUT_MS) {
+    if (now - timestamp > p2pMsgTimeoutMs) {
       return false;
     } else {
       return true;
     }
-  }
-}
-
-function isValidNetworkId(networkId) {
-  if (networkId !== BlockchainConfigs.NETWORK_ID) {
-    return false;
-  } else {
-    return true;
   }
 }
 
@@ -127,5 +119,4 @@ module.exports = {
   closeSocketSafe,
   checkTimestamp,
   encapsulateMessage,
-  isValidNetworkId
 };

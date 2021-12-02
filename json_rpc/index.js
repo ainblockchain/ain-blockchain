@@ -5,7 +5,9 @@ const sizeof = require('object-sizeof');
 const _ = require('lodash');
 const {
   BlockchainConfigs,
+  NodeConfigs,
   BlockchainNodeStates,
+  BlockchainParamsCategories,
   ReadDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
@@ -483,7 +485,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
 
     net_getNetworkId: function (args, done) {
       const beginTime = Date.now();
-      const result = BlockchainConfigs.NETWORK_ID;
+      const result = p2pServer.node.getBlockchainParam(BlockchainParamsCategories.NETWORK, 'network_id');
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, addProtocolVersion({ result }));
@@ -491,7 +493,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
 
     net_getChainId: function (args, done) {
       const beginTime = Date.now();
-      const result = BlockchainConfigs.CHAIN_ID;
+      const result = p2pServer.node.getBlockchainParam(BlockchainParamsCategories.BLOCKCHAIN, 'chain_id');
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, addProtocolVersion({ result }));
@@ -526,13 +528,15 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
   const txMethods = {
     ain_sendSignedTransaction: function(args, done) {
       const beginTime = Date.now();
-      if (sizeof(args) > BlockchainConfigs.TX_BYTES_LIMIT) {
+      const txBytesLimit = p2pServer.node.getBlockchainParam(
+          BlockchainParamsCategories.RESOURCE, 'tx_bytes_limit');
+      if (sizeof(args) > txBytesLimit) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
         done(null, addProtocolVersion({
           result: {
             code: 1,
-            message: `Transaction size exceeds its limit: ${BlockchainConfigs.TX_BYTES_LIMIT} bytes.`
+            message: `Transaction size exceeds its limit: ${txBytesLimit} bytes.`
           }
         }));
       } else if (!args.tx_body || !args.signature) {
@@ -566,6 +570,8 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
 
     ain_sendSignedTransactionBatch: function(args, done) {
       const beginTime = Date.now();
+      const batchTxListSizeLimit = p2pServer.node.getBlockchainParam(
+          BlockchainParamsCategories.RESOURCE, 'batch_tx_list_size_limit');
       if (!args.tx_list || !CommonUtil.isArray(args.tx_list)) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
@@ -575,26 +581,28 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
             message: `Invalid batch transaction format.`
           }
         }));
-      } else if (args.tx_list.length > BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT) {
+      } else if (args.tx_list.length > batchTxListSizeLimit) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
         done(null, addProtocolVersion({
           result: {
             code: 2,
-            message: `Batch transaction list size exceeds its limit: ${BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT}.`
+            message: `Batch transaction list size exceeds its limit: ${batchTxListSizeLimit}.`
           }
         }));
       } else {
+        const txBytesLimit = p2pServer.node.getBlockchainParam(
+            BlockchainParamsCategories.RESOURCE, 'tx_bytes_limit');
         const txList = [];
         for (let i = 0; i < args.tx_list.length; i++) {
           const tx = args.tx_list[i];
-          if (sizeof(tx) > BlockchainConfigs.TX_BYTES_LIMIT) {
+          if (sizeof(tx) > txBytesLimit) {
             const latency = Date.now() - beginTime;
             trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
             done(null, addProtocolVersion({
               result: {
                 code: 3,
-                message: `Transaction[${i}]'s size exceededs its limit: ${BlockchainConfigs.TX_BYTES_LIMIT} bytes.`
+                message: `Transaction[${i}]'s size exceededs its limit: ${txBytesLimit} bytes.`
               }
             }));
             return;
@@ -632,7 +640,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
   };
 
   let methods = nonTxMethods;
-  if (BlockchainConfigs.ENABLE_JSON_RPC_TX_API) {
+  if (NodeConfigs.ENABLE_JSON_RPC_TX_API) {
     methods = Object.assign(methods, txMethods);
   }
   if (eventHandler !== null) {
