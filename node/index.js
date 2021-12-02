@@ -407,6 +407,14 @@ class BlockchainNode {
         stateVersion ? this.stateManager.getRoot(stateVersion) : this.stateManager.getFinalRoot());
   }
 
+  getAllBlockchainParamsFromState() {
+    const params = DB.getValueFromStateRoot(
+        this.stateManager.getFinalRoot(), PathUtil.getBlockchainParamsRootPath()) || {};
+    const token = DB.getValueFromStateRoot(this.stateManager.getFinalRoot(), PredefinedDbPaths.TOKEN) || {};
+    const sharding = DB.getValueFromStateRoot(this.stateManager.getFinalRoot(), PredefinedDbPaths.SHARDING) || {};
+    return Object.assign(params, { token }, { sharding });
+  }
+
   getBandwidthBudgets() {
     const bandwidthBudgetPerBlock = this.getBlockchainParam(
         BlockchainParamsCategories.RESOURCE, 'bandwidth_budget_per_block');
