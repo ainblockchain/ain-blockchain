@@ -15,12 +15,10 @@ const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
 const {
   BlockchainConfigs,
-  BlockchainNodeStates,
   WriteDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
 } = require('../common/constants');
-const { ConsensusStates } = require('../consensus/constants');
 
 const MAX_BLOCKS = 20;
 
@@ -88,11 +86,7 @@ app.get('/', (req, res, next) => {
 });
 
 app.get('/health_check', (req, res, next) => {
-  const nodeStatus = p2pServer.getNodeStatus();
-  const consensusStatus = p2pServer.consensus.getStatus();
-  const result = nodeStatus.state === BlockchainNodeStates.SERVING &&
-      consensusStatus.state === ConsensusStates.RUNNING &&
-      consensusStatus.health === true;
+  const result = p2pServer.getNodeHealth();
   res.status(200)
     .set('Content-Type', 'text/plain')
     .send(result)
