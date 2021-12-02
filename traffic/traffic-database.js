@@ -31,7 +31,7 @@ class TrafficDatabase {
       // Multiple rounds are compressed to 1 round.
       queueIndexDelta = this.maxIntervals + queueIndexDelta % this.maxIntervals;
     }
-    let oldQueueIndex = this.lastQueueIndex;
+    const oldQueueIndex = this.lastQueueIndex;
     for (let i = 0; i < queueIndexDelta; i++) {
       this.lastQueueIndex = (oldQueueIndex + i) % this.maxIntervals;
       if (queueIndexDelta < this.maxIntervals) {
