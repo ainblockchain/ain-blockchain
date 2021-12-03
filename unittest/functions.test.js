@@ -5,7 +5,7 @@ const chai = require('chai');
 const assert = chai.assert;
 const nock = require('nock');
 const _ = require('lodash');
-const { BlockchainConfigs, NodeConfigs } = require('../common/constants')
+const { BlockchainConsts, NodeConfigs } = require('../common/constants')
 const BlockchainNode = require('../node')
 const {
   setNodeForTesting,
@@ -19,7 +19,7 @@ describe("Functions", () => {
     let functions;
 
     before(() => {
-      rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+      rimraf.sync(BlockchainConsts.CHAINS_DIR);
 
       node = new BlockchainNode();
       setNodeForTesting(node);
@@ -27,7 +27,7 @@ describe("Functions", () => {
     })
 
     after(() => {
-      rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+      rimraf.sync(BlockchainConsts.CHAINS_DIR);
     });
 
     describe("Function triggering", () => {

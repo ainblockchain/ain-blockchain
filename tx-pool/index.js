@@ -5,6 +5,7 @@ const _ = require('lodash');
 const {
   DevFlags,
   NodeConfigs,
+  BlockchainConsts,
   BlockchainParamsCategories,
   TransactionStates,
   WriteDbOperations,

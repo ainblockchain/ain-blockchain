@@ -5,7 +5,7 @@
 const axios = require('axios');
 const _ = require('lodash');
 const CommonUtil = require('../../common/common-util');
-const { BlockchainConfigs } = require('../../common/constants');
+const { BlockchainConsts } = require('../../common/constants');
 
 async function getBlockList(from, to, endpointUrl) {
   console.log(`getting block list from ${from} to ${to}`);
@@ -16,7 +16,7 @@ async function getBlockList(from, to, endpointUrl) {
       params: {
         from,
         to,
-        protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+        protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
       },
       jsonrpc: '2.0',
       id: 0
@@ -30,8 +30,8 @@ async function getProposerStats(startBlockNumber, endBlockNumber, endpointUrl) {
   console.log(`* Gathering blockchain info... ${startBlockNumber} ... ${endBlockNumber}`);
   const blocksProposed = {};
   let totalCount = 0;
-  for (let i = startBlockNumber; i <= endBlockNumber; i += BlockchainConfigs.CHAIN_SEGMENT_LENGTH) {
-    const blockList = await getBlockList(i, Math.min(endBlockNumber + 1, i + BlockchainConfigs.CHAIN_SEGMENT_LENGTH), endpointUrl);
+  for (let i = startBlockNumber; i <= endBlockNumber; i += BlockchainConsts.CHAIN_SEGMENT_LENGTH) {
+    const blockList = await getBlockList(i, Math.min(endBlockNumber + 1, i + BlockchainConsts.CHAIN_SEGMENT_LENGTH), endpointUrl);
     console.log(`blockList: ${blockList.length}`);
     for (const block of blockList) {
       if (!blocksProposed[block.proposer]) {

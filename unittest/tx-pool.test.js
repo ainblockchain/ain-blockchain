@@ -8,7 +8,6 @@ const BlockchainNode = require('../node');
 const {setNodeForTesting, getTransaction, txsToDummyReceipts} = require('./test-util');
 const TransactionPool = require('../tx-pool');
 const {
-  BlockchainConfigs,
   TransactionStates,
   BlockchainParams,
 } = require('../common/constants');
@@ -30,7 +29,7 @@ describe('TransactionPool', () => {
       gas_price: 1
     });
     node.tp.addTransaction(transaction);
-    bandwidthBudgets = node.getBandwidthBudgets();
+    bandwidthBudgets = node.tp.getBandwidthBudgets();
     await CommonUtil.sleep(1);
   });
 

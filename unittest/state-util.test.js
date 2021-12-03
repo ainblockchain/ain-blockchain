@@ -29,7 +29,7 @@ const {
   getProofHashFromStateRoot,
   verifyStateProof,
 } = require('../db/state-util');
-const { BlockchainConfigs, BlockchainParams } = require('../common/constants');
+const { BlockchainParams } = require('../common/constants');
 const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
 const StateNode = require('../db/state-node');
 const chai = require('chai');
