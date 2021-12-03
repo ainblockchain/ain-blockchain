@@ -492,8 +492,19 @@ function usage() {
   console.log('\nUsage:\n  node createGenesisBlock.js\n');
   console.log('Optional environment variables:');
   console.log('  BLOCKCHAIN_CONFIGS_DIR     The path to the directory containing blockchain config files.');
-  console.log('\nExample:');
-  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/base node createGenesisBlock.js');
+  console.log('\nExamples:');
+  console.log('  node createGenesisBlock.js'); // Same as BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/base
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node node createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/2-nodes node createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/3-nodes node createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard node createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/he-shard node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging node tools/genesis-file/createGenesisBlock.js');
   process.exit(0);
 }
 
