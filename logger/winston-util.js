@@ -6,13 +6,13 @@ const { LoggingWinston } = require('@google-cloud/logging-winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
 const {
-  BlockchainConfigs,
+  BlockchainConsts,
   NodeConfigs,
 } = require('../common/constants');
 
 const { combine, timestamp, label, printf, colorize } = winston.format;
 
-const logDir = path.join(BlockchainConfigs.LOGS_DIR, String(NodeConfigs.PORT));
+const logDir = path.join(BlockchainConsts.LOGS_DIR, String(NodeConfigs.PORT));
 // TODO(liayoo): Deprecate ACCOUNT_INDEX.
 const prefix = NodeConfigs.ACCOUNT_INDEX || NodeConfigs.ACCOUNT_INJECTION_OPTION ? `node-${NodeConfigs.PORT}` : `tracker-${NodeConfigs.PORT}`;
 const logFormat = printf(({level, message, label, timestamp}) => {

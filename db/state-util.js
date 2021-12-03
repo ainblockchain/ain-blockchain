@@ -5,7 +5,7 @@ const _ = require('lodash');
 const espree = require('espree');
 const CommonUtil = require('../common/common-util');
 const {
-  BlockchainConfigs,
+  BlockchainConsts,
   PredefinedDbPaths,
   FunctionProperties,
   FunctionTypes,
@@ -220,7 +220,7 @@ function makeWriteRuleCodeSnippet(ruleString) {
 }
 
 function getVariableLabels(parsedRulePath) {
-  return parsedRulePath.filter((label) => _.startsWith(label, BlockchainConfigs.VARIABLE_LABEL_PREFIX));
+  return parsedRulePath.filter((label) => _.startsWith(label, BlockchainConsts.VARIABLE_LABEL_PREFIX));
 }
 
 /**
@@ -917,13 +917,13 @@ function getProofHashFromStateRoot(root, fullPath) {
  */
 function getProofHashOfRadixNode(childStatePh, subProofList) {
   let preimage = childStatePh !== null ? childStatePh : '';
-  preimage += BlockchainConfigs.HASH_DELIMITER;
+  preimage += BlockchainConsts.HASH_DELIMITER;
   if (subProofList.length === 0) {
-    preimage += BlockchainConfigs.HASH_DELIMITER;
+    preimage += BlockchainConsts.HASH_DELIMITER;
   } else {
     for (const subProof of subProofList) {
       const radixLabel = subProof.label.slice(StateInfoProperties.RADIX_LABEL_PREFIX.length);
-      preimage += `${BlockchainConfigs.HASH_DELIMITER}${radixLabel}${BlockchainConfigs.HASH_DELIMITER}${subProof.proofHash}`;
+      preimage += `${BlockchainConsts.HASH_DELIMITER}${radixLabel}${BlockchainConsts.HASH_DELIMITER}${subProof.proofHash}`;
     }
   }
   return CommonUtil.hashString(preimage);

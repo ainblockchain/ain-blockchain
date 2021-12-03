@@ -4,7 +4,7 @@ const BlockchainNode = require('../node');
 const VersionUtil = require('../common/version-util');
 const P2pClient = require('../p2p');
 const {
-  BlockchainConfigs,
+  BlockchainConsts,
   NodeConfigs,
   P2pNetworkStates,
   BlockchainParams
@@ -15,8 +15,8 @@ const { getIpAddress } = require('../common/network-util');
 const expect = chai.expect;
 const assert = chai.assert;
 
-const { min, max } = VersionUtil.matchVersions(BlockchainConfigs.PROTOCOL_VERSION_MAP, BlockchainConfigs.CURRENT_PROTOCOL_VERSION);
-const minProtocolVersion = min === undefined ? BlockchainConfigs.CURRENT_PROTOCOL_VERSION : min;
+const { min, max } = VersionUtil.matchVersions(BlockchainConsts.PROTOCOL_VERSION_MAP, BlockchainConsts.CURRENT_PROTOCOL_VERSION);
+const minProtocolVersion = min === undefined ? BlockchainConsts.CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 
 describe("P2P", () => {
@@ -25,7 +25,7 @@ describe("P2P", () => {
   let p2pServer;
 
   before(async () => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node, 0, true, true);
@@ -37,7 +37,7 @@ describe("P2P", () => {
   after(() => {
     p2pClient.stop();
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
   });
 
   describe("Server Status", () => {
@@ -148,9 +148,9 @@ describe("P2P", () => {
         assert.deepEqual(p2pServer.getProtocolInfo(), {
           COMPATIBLE_MAX_PROTOCOL_VERSION: maxProtocolVersion,
           COMPATIBLE_MIN_PROTOCOL_VERSION: minProtocolVersion,
-          CONSENSUS_PROTOCOL_VERSION: BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION,
-          CURRENT_PROTOCOL_VERSION: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
-          DATA_PROTOCOL_VERSION: BlockchainConfigs.DATA_PROTOCOL_VERSION
+          CONSENSUS_PROTOCOL_VERSION: BlockchainConsts.CONSENSUS_PROTOCOL_VERSION,
+          CURRENT_PROTOCOL_VERSION: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          DATA_PROTOCOL_VERSION: BlockchainConsts.DATA_PROTOCOL_VERSION
         });
       });
     });

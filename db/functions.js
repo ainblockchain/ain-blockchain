@@ -5,7 +5,7 @@ const _ = require('lodash');
 const matchUrl = require('match-url-wildcard');
 const {
   DevFlags,
-  BlockchainConfigs,
+  BlockchainConsts,
   NodeConfigs,
   PredefinedDbPaths,
   FunctionTypes,
@@ -186,7 +186,7 @@ class Functions {
               function: functionEntry,
               transaction,
             }, {
-              timeout: BlockchainConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
+              timeout: BlockchainConsts.REST_FUNCTION_CALL_TIMEOUT_MS
             }).catch((error) => {
               if (DevFlags.enableRichFunctionLogging) {
                 logger.error(
@@ -200,7 +200,7 @@ class Functions {
             }));
             funcResults[functionEntry.function_id] = {
               code: FunctionResultCode.SUCCESS,
-              bandwidth_gas_amount: BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT,
+              bandwidth_gas_amount: BlockchainConsts.REST_FUNCTION_CALL_GAS_AMOUNT,
             };
             triggerCount++;
           }
@@ -520,7 +520,7 @@ class Functions {
     }
     const toBalance = this.db.getValue(toBalancePath);
     if (toBalance === null) {
-      extraGasAmount = BlockchainConfigs.ACCOUNT_REGISTRATION_GAS_AMOUNT;
+      extraGasAmount = BlockchainConsts.ACCOUNT_REGISTRATION_GAS_AMOUNT;
     }
     const decResult = this.decValueOrLog(fromBalancePath, value, context);
     if (CommonUtil.isFailedTx(decResult)) {

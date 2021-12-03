@@ -4,7 +4,7 @@ const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
-  BlockchainConfigs,
+  BlockchainConsts,
   NodeConfigs,
   StateInfoProperties,
 } = require('../common/constants');
@@ -415,13 +415,13 @@ class RadixNode {
         treeBytes: sizeof(childStateNodeLabel) + childStateNode.getTreeBytes(),
       };
     }
-    treeInfo.preimage += BlockchainConfigs.HASH_DELIMITER;
+    treeInfo.preimage += BlockchainConsts.HASH_DELIMITER;
     if (this.numChildren() === 0) {
-      treeInfo.preimage += BlockchainConfigs.HASH_DELIMITER;
+      treeInfo.preimage += BlockchainConsts.HASH_DELIMITER;
     } else {
       treeInfo = this.getChildNodes().reduce((acc, child) => {
         const accPreimage = NodeConfigs.LIGHTWEIGHT ? '' : acc.preimage +
-            `${BlockchainConfigs.HASH_DELIMITER}${child.getLabel()}${BlockchainConfigs.HASH_DELIMITER}${child.getProofHash()}`;
+            `${BlockchainConsts.HASH_DELIMITER}${child.getLabel()}${BlockchainConsts.HASH_DELIMITER}${child.getProofHash()}`;
         const accTreeHeight = Math.max(acc.treeHeight, child.getTreeHeight());
         const accTreeSize = acc.treeSize + child.getTreeSize();
         const accTreeBytes = acc.treeBytes + child.getTreeBytes();
@@ -505,9 +505,9 @@ class RadixNode {
       }
       preimage += childStateNode.getProofHash();
     }
-    preimage += BlockchainConfigs.HASH_DELIMITER;
+    preimage += BlockchainConsts.HASH_DELIMITER;
     if (this.numChildren() === 0) {
-      preimage += BlockchainConfigs.HASH_DELIMITER;
+      preimage += BlockchainConsts.HASH_DELIMITER;
     } else {
       for (const child of this.getChildNodes()) {
         const label = child.getLabel();
@@ -516,7 +516,7 @@ class RadixNode {
         if (childRadixVerif.isVerified !== true) {
           return childRadixVerif;
         }
-        preimage += `${BlockchainConfigs.HASH_DELIMITER}${child.getLabel()}${BlockchainConfigs.HASH_DELIMITER}${child.getProofHash()}`;
+        preimage += `${BlockchainConsts.HASH_DELIMITER}${child.getLabel()}${BlockchainConsts.HASH_DELIMITER}${child.getProofHash()}`;
       }
     }
     const proofHashComputed = CommonUtil.hashString(preimage);

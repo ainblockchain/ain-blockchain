@@ -8,7 +8,7 @@ const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
 const {
   DevFlags,
-  BlockchainConfigs,
+  BlockchainConsts,
   NodeConfigs,
   MessageTypes,
   BlockchainNodeStates,
@@ -131,7 +131,7 @@ class P2pClient {
       blockchainParams: this.server.node.getAllBlockchainParamsFromState(),
       env: process.env,
       devFlags: DevFlags,
-      blockchainConfigs: BlockchainConfigs,
+      blockchainConfigs: BlockchainConsts,
       nodeConfigs: NodeConfigs,
     };
   }

@@ -14,7 +14,7 @@ const Transaction = require('../tx-pool/transaction');
 const VersionUtil = require('../common/version-util');
 const {
   DevFlags,
-  BlockchainConfigs,
+  BlockchainConsts,
   NodeConfigs,
   MessageTypes,
   BlockchainNodeStates,
@@ -66,8 +66,8 @@ class P2pServer {
     this.consensus = new Consensus(this, node);
     this.minProtocolVersion = minProtocolVersion;
     this.maxProtocolVersion = maxProtocolVersion;
-    this.dataProtocolVersion = BlockchainConfigs.DATA_PROTOCOL_VERSION;
-    this.majorDataProtocolVersion = VersionUtil.toMajorVersion(BlockchainConfigs.DATA_PROTOCOL_VERSION);
+    this.dataProtocolVersion = BlockchainConsts.DATA_PROTOCOL_VERSION;
+    this.majorDataProtocolVersion = VersionUtil.toMajorVersion(BlockchainConsts.DATA_PROTOCOL_VERSION);
     this.inbound = {};
     this.isReportingShardProofHash = false;
     this.lastReportedBlockNumberSent = -1;
@@ -125,7 +125,7 @@ class P2pServer {
 
   getProtocolInfo() {
     return {
-      CURRENT_PROTOCOL_VERSION: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+      CURRENT_PROTOCOL_VERSION: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
       COMPATIBLE_MIN_PROTOCOL_VERSION: this.minProtocolVersion,
       COMPATIBLE_MAX_PROTOCOL_VERSION: this.maxProtocolVersion,
       DATA_PROTOCOL_VERSION: this.dataProtocolVersion,

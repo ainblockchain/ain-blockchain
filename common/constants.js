@@ -125,7 +125,7 @@ function setOverwritableNodeParams() {
 setOverwritableNodeParams();
 
 // ** Blockchain configs **
-const BlockchainConfigs = {};
+const BlockchainConsts = {};
 // *** Genesis ***
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
 // TODO(liayoo): Use on-chain value instead of GenesisToken
@@ -135,65 +135,65 @@ const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
 // TODO(liayoo): Use on-chain value instead of GenesisSharding
 const GenesisSharding = BlockchainParams.sharding;
 // *** Protocol Versions ***
-BlockchainConfigs.CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-if (!semver.valid(BlockchainConfigs.CURRENT_PROTOCOL_VERSION)) {
+BlockchainConsts.CURRENT_PROTOCOL_VERSION = require('../package.json').version;
+if (!semver.valid(BlockchainConsts.CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
 }
-BlockchainConfigs.PROTOCOL_VERSIONS = path.resolve(__dirname, '../client/protocol_versions.json');
-if (!fs.existsSync(BlockchainConfigs.PROTOCOL_VERSIONS)) {
-  throw Error('Missing protocol versions file: ' + BlockchainConfigs.PROTOCOL_VERSIONS);
+BlockchainConsts.PROTOCOL_VERSIONS = path.resolve(__dirname, '../client/protocol_versions.json');
+if (!fs.existsSync(BlockchainConsts.PROTOCOL_VERSIONS)) {
+  throw Error('Missing protocol versions file: ' + BlockchainConsts.PROTOCOL_VERSIONS);
 }
-BlockchainConfigs.PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(BlockchainConfigs.PROTOCOL_VERSIONS));
-BlockchainConfigs.DATA_PROTOCOL_VERSION = '1.0.0';
-if (!semver.valid(BlockchainConfigs.DATA_PROTOCOL_VERSION)) {
+BlockchainConsts.PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(BlockchainConsts.PROTOCOL_VERSIONS));
+BlockchainConsts.DATA_PROTOCOL_VERSION = '1.0.0';
+if (!semver.valid(BlockchainConsts.DATA_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for DATA_PROTOCOL_VERSION');
 }
-BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION = '1.0.0';
-if (!semver.valid(BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION)) {
+BlockchainConsts.CONSENSUS_PROTOCOL_VERSION = '1.0.0';
+if (!semver.valid(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for CONSENSUS_PROTOCOL_VERSION');
 }
 // *** Directories & Files ***
-BlockchainConfigs.LOGS_DIR = path.resolve(__dirname, '../logs');
-BlockchainConfigs.CHAINS_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'chains');
-BlockchainConfigs.CHAINS_N2B_DIR_NAME = 'n2b'; // Number-to-block directory name.
-BlockchainConfigs.CHAINS_H2N_DIR_NAME = 'h2n'; // Hash-to-number directory name.
-BlockchainConfigs.CHAINS_N2B_MAX_NUM_FILES = 100000;
-BlockchainConfigs.CHAINS_H2N_HASH_PREFIX_LENGTH = 5;
-BlockchainConfigs.CHAIN_SEGMENT_LENGTH = 20;
-BlockchainConfigs.SNAPSHOTS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'snapshots');
-BlockchainConfigs.ON_MEMORY_CHAIN_LENGTH = 10;
-BlockchainConfigs.SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
-BlockchainConfigs.DEBUG_SNAPSHOT_FILE_PREFIX = 'debug_'; // Prefix for debug snapshot files.
+BlockchainConsts.LOGS_DIR = path.resolve(__dirname, '../logs');
+BlockchainConsts.CHAINS_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'chains');
+BlockchainConsts.CHAINS_N2B_DIR_NAME = 'n2b'; // Number-to-block directory name.
+BlockchainConsts.CHAINS_H2N_DIR_NAME = 'h2n'; // Hash-to-number directory name.
+BlockchainConsts.CHAINS_N2B_MAX_NUM_FILES = 100000;
+BlockchainConsts.CHAINS_H2N_HASH_PREFIX_LENGTH = 5;
+BlockchainConsts.CHAIN_SEGMENT_LENGTH = 20;
+BlockchainConsts.SNAPSHOTS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'snapshots');
+BlockchainConsts.ON_MEMORY_CHAIN_LENGTH = 10;
+BlockchainConsts.SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
+BlockchainConsts.DEBUG_SNAPSHOT_FILE_PREFIX = 'debug_'; // Prefix for debug snapshot files.
 // NOTE(platfowner): Should have a value bigger than ON_MEMORY_CHAIN_LENGTH.
-BlockchainConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
-BlockchainConfigs.MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
-BlockchainConfigs.HASH_DELIMITER = '#';
-BlockchainConfigs.VARIABLE_LABEL_PREFIX = '$';
-BlockchainConfigs.STATE_INFO_PREFIX = '#';
-BlockchainConfigs.KEYS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'keys');
+BlockchainConsts.SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
+BlockchainConsts.MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
+BlockchainConsts.HASH_DELIMITER = '#';
+BlockchainConsts.VARIABLE_LABEL_PREFIX = '$';
+BlockchainConsts.STATE_INFO_PREFIX = '#';
+BlockchainConsts.KEYS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'keys');
 // *** Error Codes ***
-BlockchainConfigs.TX_NONCE_ERROR_CODE = 900;
-BlockchainConfigs.TX_TIMESTAMP_ERROR_CODE = 901;
+BlockchainConsts.TX_NONCE_ERROR_CODE = 900;
+BlockchainConsts.TX_TIMESTAMP_ERROR_CODE = 901;
 // *** Token Denominations ***
-BlockchainConfigs.MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
-BlockchainConfigs.MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
+BlockchainConsts.MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
+BlockchainConsts.MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
 // *** State Budgets ***
-BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_RATIO = 0.5;
-BlockchainConfigs.APPS_BANDWIDTH_BUDGET_RATIO = 0.45;
-BlockchainConfigs.FREE_BANDWIDTH_BUDGET_RATIO = 0.05;
-BlockchainConfigs.SERVICE_STATE_BUDGET_RATIO = 0.5;
-BlockchainConfigs.APPS_STATE_BUDGET_RATIO = 0.45;
-BlockchainConfigs.FREE_STATE_BUDGET_RATIO = 0.05;
-BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE = 0.01;
-BlockchainConfigs.STATE_GAS_COEFFICIENT = 1;
-BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT = 1;
-BlockchainConfigs.ACCOUNT_REGISTRATION_GAS_AMOUNT = 2000;
-BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT = 100;
+BlockchainConsts.SERVICE_BANDWIDTH_BUDGET_RATIO = 0.5;
+BlockchainConsts.APPS_BANDWIDTH_BUDGET_RATIO = 0.45;
+BlockchainConsts.FREE_BANDWIDTH_BUDGET_RATIO = 0.05;
+BlockchainConsts.SERVICE_STATE_BUDGET_RATIO = 0.5;
+BlockchainConsts.APPS_STATE_BUDGET_RATIO = 0.45;
+BlockchainConsts.FREE_STATE_BUDGET_RATIO = 0.05;
+BlockchainConsts.MAX_STATE_TREE_SIZE_PER_BYTE = 0.01;
+BlockchainConsts.STATE_GAS_COEFFICIENT = 1;
+BlockchainConsts.UNIT_WRITE_GAS_AMOUNT = 1;
+BlockchainConsts.ACCOUNT_REGISTRATION_GAS_AMOUNT = 2000;
+BlockchainConsts.REST_FUNCTION_CALL_GAS_AMOUNT = 100;
 // *** Traffic ***
-BlockchainConfigs.TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
-BlockchainConfigs.TRAFFIC_DB_MAX_INTERVALS = 60;  // 1 hour
+BlockchainConsts.TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
+BlockchainConsts.TRAFFIC_DB_MAX_INTERVALS = 60;  // 1 hour
 // *** Functions ***
-BlockchainConfigs.REST_FUNCTION_CALL_TIMEOUT_MS = 10000; // 10 sec
+BlockchainConsts.REST_FUNCTION_CALL_TIMEOUT_MS = 10000; // 10 sec
 
 // ** Enums **
 /**
@@ -830,11 +830,11 @@ function buildRulePermission(rule) {
 }
 
 const trafficStatsManager = new TrafficStatsManager(
-    BlockchainConfigs.TRAFFIC_DB_INTERVAL_MS, BlockchainConfigs.TRAFFIC_DB_MAX_INTERVALS, DevFlags.enableTrafficMonitoring);
+    BlockchainConsts.TRAFFIC_DB_INTERVAL_MS, BlockchainConsts.TRAFFIC_DB_MAX_INTERVALS, DevFlags.enableTrafficMonitoring);
 
 module.exports = {
   DevFlags,
-  BlockchainConfigs,
+  BlockchainConsts,
   NodeConfigs,
   MessageTypes,
   BlockchainNodeStates,

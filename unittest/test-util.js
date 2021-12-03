@@ -5,7 +5,7 @@ const syncRequest = require('sync-request');
 const { Block } = require('../blockchain/block');
 const DB = require('../db');
 const {
-  BlockchainConfigs,
+  BlockchainConsts,
   StateVersions,
   BlockchainParams,
 } = require('../common/constants');
@@ -176,7 +176,7 @@ async function waitUntilNodeSyncs(server) {
     try {
       isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
           {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
-                  params: {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}}})
+                  params: {protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION}}})
           .body.toString('utf-8')).result.result;
     } catch (e) {
       // server may not be ready yet

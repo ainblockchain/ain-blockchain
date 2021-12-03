@@ -11,7 +11,7 @@ const DB = require('../db');
 const PushId = require('../db/push-id');
 const {
   DevFlags,
-  BlockchainConfigs,
+  BlockchainConsts,
   NodeConfigs,
   WriteDbOperations,
   PredefinedDbPaths,
@@ -61,8 +61,8 @@ class Consensus {
     this.state = null;
     this.stateChangedBlockNumber = null;
     this.setState(ConsensusStates.STARTING);
-    this.consensusProtocolVersion = BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION;
-    this.majorConsensusProtocolVersion = VersionUtil.toMajorVersion(BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION);
+    this.consensusProtocolVersion = BlockchainConsts.CONSENSUS_PROTOCOL_VERSION;
+    this.majorConsensusProtocolVersion = VersionUtil.toMajorVersion(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION);
     this.epochInterval = null;
     this.startingTime = 0;
     this.timeAdjustment = 0;

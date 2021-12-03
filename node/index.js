@@ -7,7 +7,7 @@ const sizeof = require('object-sizeof');
 const path = require('path');
 const {
   DevFlags,
-  BlockchainConfigs,
+  BlockchainConsts,
   NodeConfigs,
   BlockchainNodeStates,
   PredefinedDbPaths,
@@ -38,9 +38,9 @@ const PathUtil = require('../common/path-util');
 
 class BlockchainNode {
   constructor(account = null, eventHandler = null, trafficStatsManager = null) {
-    this.keysDir = path.resolve(BlockchainConfigs.KEYS_ROOT_DIR, `${NodeConfigs.PORT}`);
+    this.keysDir = path.resolve(BlockchainConsts.KEYS_ROOT_DIR, `${NodeConfigs.PORT}`);
     FileUtil.createDir(this.keysDir);
-    this.snapshotDir = path.resolve(BlockchainConfigs.SNAPSHOTS_ROOT_DIR, `${NodeConfigs.PORT}`);
+    this.snapshotDir = path.resolve(BlockchainConsts.SNAPSHOTS_ROOT_DIR, `${NodeConfigs.PORT}`);
     FileUtil.createSnapshotDir(this.snapshotDir);
 
     this.account = account;
@@ -285,12 +285,12 @@ class BlockchainNode {
   }
 
   updateSnapshots(blockNumber) {
-    if (blockNumber % BlockchainConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
+    if (blockNumber % BlockchainConsts.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
           this.snapshotDir,
-          blockNumber - BlockchainConfigs.MAX_NUM_SNAPSHOTS * BlockchainConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
+          blockNumber - BlockchainConsts.MAX_NUM_SNAPSHOTS * BlockchainConsts.SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
   }
 
@@ -417,9 +417,9 @@ class BlockchainNode {
   getBandwidthBudgets() {
     const bandwidthBudgetPerBlock = this.getBlockchainParam(
         BlockchainParamsCategories.RESOURCE, 'bandwidth_budget_per_block');
-    const serviceBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_RATIO;
-    const appsBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConfigs.APPS_BANDWIDTH_BUDGET_RATIO;
-    const freeBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConfigs.FREE_BANDWIDTH_BUDGET_RATIO;
+    const serviceBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.SERVICE_BANDWIDTH_BUDGET_RATIO;
+    const appsBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.APPS_BANDWIDTH_BUDGET_RATIO;
+    const freeBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.FREE_BANDWIDTH_BUDGET_RATIO;
     return {
       serviceBandwidthBudgetPerBlock,
       appsBandwidthBudgetPerBlock,

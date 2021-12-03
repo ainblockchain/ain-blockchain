@@ -4,7 +4,7 @@ const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
-  BlockchainConfigs,
+  BlockchainConsts,
   NodeConfigs,
   StateInfoProperties,
 } = require('../common/constants');
@@ -109,7 +109,7 @@ class StateNode {
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
         for (const key in obj) {
-          if (_.startsWith(key, BlockchainConfigs.STATE_INFO_PREFIX)) {
+          if (_.startsWith(key, BlockchainConsts.STATE_INFO_PREFIX)) {
             // Skip state properties.
             continue;
           }
