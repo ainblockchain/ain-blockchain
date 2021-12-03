@@ -16,7 +16,6 @@ const {
   WriteDbOperations,
   PredefinedDbPaths,
   StateVersions,
-  BlockchainParamsCategories,
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
@@ -71,7 +70,7 @@ class Consensus {
     // NOTE(liayoo): epoch increases by 1 every EPOCH_MS,
     // and at each epoch a new proposer is pseudo-randomly selected.
     this.epoch = 1;
-    this.epochMs = node.getBlockchainParam(BlockchainParamsCategories.CONSENSUS, 'epoch_ms');
+    this.epochMs = node.getBlockchainParam('consensus/epoch_ms');
 
     // Values used for status reporting
     this.validators = {};
@@ -397,7 +396,7 @@ class Consensus {
       throw Error(`[${LOG_HEADER}] No whitelisted validators`);
     }
     const minNumValidators = this.node.getBlockchainParam(
-        BlockchainParamsCategories.CONSENSUS, 'min_num_validators', lastBlock.number, tempDb.stateVersion);
+        'consensus/min_num_validators', lastBlock.number, tempDb.stateVersion);
     if (numValidators < minNumValidators) {
       tempDb.destroyDb();
       throw Error(`[${LOG_HEADER}] Not enough validators: ${JSON.stringify(validators)}`);
@@ -538,9 +537,9 @@ class Consensus {
 
   static validateValidators(validators, baseBlockNumber, baseVersion, node) {
     const minNumValidators = node.getBlockchainParam(
-        BlockchainParamsCategories.CONSENSUS, 'min_num_validators', baseBlockNumber, baseVersion);
+        'consensus/min_num_validators', baseBlockNumber, baseVersion);
     const maxNumValidators = node.getBlockchainParam(
-        BlockchainParamsCategories.CONSENSUS, 'max_num_validators', baseBlockNumber, baseVersion);
+        'consensus/max_num_validators', baseBlockNumber, baseVersion);
     if (Object.keys(validators).length < minNumValidators || Object.keys(validators).length > maxNumValidators) {
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_VALIDATORS_SIZE,
@@ -1122,15 +1121,15 @@ class Consensus {
     let candidates = [];
     const validators = {};
     const minStakeForProposer = this.node.getBlockchainParam(
-        BlockchainParamsCategories.CONSENSUS, 'min_stake_for_proposer', blockNumber, stateVersion);
+        'consensus/min_stake_for_proposer', blockNumber, stateVersion);
     const maxStakeForProposer = this.node.getBlockchainParam(
-        BlockchainParamsCategories.CONSENSUS, 'max_stake_for_proposer', blockNumber, stateVersion);
+        'consensus/max_stake_for_proposer', blockNumber, stateVersion);
     const maxNumValidators = this.node.getBlockchainParam(
-        BlockchainParamsCategories.CONSENSUS, 'max_num_validators', blockNumber, stateVersion);
+        'consensus/max_num_validators', blockNumber, stateVersion);
     // Need the block #1 to be finalized to have the stakes reflected in the state.
     if (this.node.bc.lastBlockNumber() < 1) {
       const genesisProposerWhitelist = this.node.getBlockchainParam(
-          BlockchainParamsCategories.CONSENSUS, 'genesis_proposer_whitelist', blockNumber, stateVersion);
+          'consensus/genesis_proposer_whitelist', blockNumber, stateVersion);
       for (const address of Object.keys(genesisProposerWhitelist)) {
         const stake = this.getConsensusStakeFromAddr(stateVersion, address);
         if (stake && stake >= minStakeForProposer && stake <= maxStakeForProposer) {

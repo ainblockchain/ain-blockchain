@@ -6,7 +6,6 @@ const {
   DevFlags,
   NodeConfigs,
   BlockchainConsts,
-  BlockchainParamsCategories,
   TransactionStates,
   WriteDbOperations,
   StateVersions,
@@ -184,8 +183,7 @@ class TransactionPool {
   }
 
   getBandwidthBudgets() {
-    const bandwidthBudgetPerBlock = this.node.getBlockchainParam(
-        BlockchainParamsCategories.RESOURCE, 'bandwidth_budget_per_block');
+    const bandwidthBudgetPerBlock = this.node.getBlockchainParam('resource/bandwidth_budget_per_block');
     const serviceBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.SERVICE_BANDWIDTH_BUDGET_RATIO;
     const appsBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.APPS_BANDWIDTH_BUDGET_RATIO;
     const freeBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.FREE_BANDWIDTH_BUDGET_RATIO;
