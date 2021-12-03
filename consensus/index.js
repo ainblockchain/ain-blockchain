@@ -1121,10 +1121,10 @@ class Consensus {
     const LOG_HEADER = 'getValidators';
     let candidates = [];
     const validators = {};
-    const minStakePerValidator = this.node.getBlockchainParam(
-        BlockchainParamsCategories.CONSENSUS, 'min_stake_per_validator', blockNumber, stateVersion);
-    const maxStakePerValidator = this.node.getBlockchainParam(
-        BlockchainParamsCategories.CONSENSUS, 'max_stake_per_validator', blockNumber, stateVersion);
+    const minStakeForProposer = this.node.getBlockchainParam(
+        BlockchainParamsCategories.CONSENSUS, 'min_stake_for_proposer', blockNumber, stateVersion);
+    const maxStakeForProposer = this.node.getBlockchainParam(
+        BlockchainParamsCategories.CONSENSUS, 'max_stake_for_proposer', blockNumber, stateVersion);
     const maxNumValidators = this.node.getBlockchainParam(
         BlockchainParamsCategories.CONSENSUS, 'max_num_validators', blockNumber, stateVersion);
     // Need the block #1 to be finalized to have the stakes reflected in the state.
@@ -1133,7 +1133,7 @@ class Consensus {
           BlockchainParamsCategories.CONSENSUS, 'genesis_whitelist', blockNumber, stateVersion);
       for (const address of Object.keys(genesisWhitelist)) {
         const stake = this.getConsensusStakeFromAddr(stateVersion, address);
-        if (stake && stake >= minStakePerValidator && stake <= maxStakePerValidator) {
+        if (stake && stake >= minStakeForProposer && stake <= maxStakeForProposer) {
           validators[address] = {
             [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
             [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
@@ -1159,7 +1159,7 @@ class Consensus {
       const stake = this.getConsensusStakeFromAddr(stateVersion, address);
       if (stake) {
         if (whitelist[address] === true) {
-          if (stake >= minStakePerValidator && stake <= maxStakePerValidator) {
+          if (stake >= minStakeForProposer && stake <= maxStakeForProposer) {
             validators[address] = {
               [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
               [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
