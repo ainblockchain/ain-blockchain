@@ -23,8 +23,8 @@
     "chain_id": 0
   },
   "consensus": {
-    "min_stake_per_validator": 10000000,
-    "max_stake_per_validator": 10000000,
+    "min_stake_for_proposer": 10000000,
+    "max_stake_for_proposer": 10000000,
     "min_num_validators": 2,
     "max_num_validators": 2,
     "epoch_ms": 3000,

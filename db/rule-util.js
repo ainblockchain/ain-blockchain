@@ -200,7 +200,7 @@ class RuleUtil {
     const PathUtil = require('../common/path-util');
     return getValue(
         PathUtil.getSingleBlockchainParamPath(
-            BlockchainParamsCategories.CONSENSUS, 'min_stake_per_validator'));
+            BlockchainParamsCategories.CONSENSUS, 'min_stake_for_proposer'));
   }
 
   getMaxStakeAmount(getValue) {
@@ -208,7 +208,7 @@ class RuleUtil {
     const PathUtil = require('../common/path-util');
     return getValue(
         PathUtil.getSingleBlockchainParamPath(
-            BlockchainParamsCategories.CONSENSUS, 'max_stake_per_validator'));
+            BlockchainParamsCategories.CONSENSUS, 'max_stake_for_proposer'));
   }
 
   getMinNumValidators(getValue) {
