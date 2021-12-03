@@ -1,4 +1,5 @@
 {
+  "_description": "Blockchain params for a 3+ nodes shard network. Mostly used for the start_servers_afan_local.sh script.",
   "token": {
     "name": "Fancoin",
     "symbol": "FANCO",

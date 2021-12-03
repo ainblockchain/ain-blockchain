@@ -1,4 +1,5 @@
 {
+  "_description": "Blockchain params for a 3+ nodes shard network. Mostly used for the he integration tests.",
   "token": {
     "name": "Hecoin",
     "symbol": "HECO",
