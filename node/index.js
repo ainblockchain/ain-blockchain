@@ -415,19 +415,6 @@ class BlockchainNode {
     return Object.assign(params, { token }, { sharding });
   }
 
-  getBandwidthBudgets() {
-    const bandwidthBudgetPerBlock = this.getBlockchainParam(
-        BlockchainParamsCategories.RESOURCE, 'bandwidth_budget_per_block');
-    const serviceBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.SERVICE_BANDWIDTH_BUDGET_RATIO;
-    const appsBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.APPS_BANDWIDTH_BUDGET_RATIO;
-    const freeBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.FREE_BANDWIDTH_BUDGET_RATIO;
-    return {
-      serviceBandwidthBudgetPerBlock,
-      appsBandwidthBudgetPerBlock,
-      freeBandwidthBudgetPerBlock,
-    }
-  }
-
   /**
     * Validates transaction is valid according to AIN database rules and returns a transaction
     * instance
