@@ -5,6 +5,7 @@ const _ = require('lodash');
 const {
   DevFlags,
   NodeConfigs,
+  BlockchainParamsCategories,
   TransactionStates,
   WriteDbOperations,
   StateVersions,
@@ -181,6 +182,19 @@ class TransactionPool {
     return appStakesTotal > 0 ? appsBandwidthBudgetPerBlock * appStake / appStakesTotal : 0;
   }
 
+  getBandwidthBudgets() {
+    const bandwidthBudgetPerBlock = this.node.getBlockchainParam(
+        BlockchainParamsCategories.RESOURCE, 'bandwidth_budget_per_block');
+    const serviceBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.SERVICE_BANDWIDTH_BUDGET_RATIO;
+    const appsBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.APPS_BANDWIDTH_BUDGET_RATIO;
+    const freeBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.FREE_BANDWIDTH_BUDGET_RATIO;
+    return {
+      serviceBandwidthBudgetPerBlock,
+      appsBandwidthBudgetPerBlock,
+      freeBandwidthBudgetPerBlock,
+    };
+  }
+
   // NOTE(liayoo): txList is already sorted by their gas prices and/or timestamps,
   // depending on the types of the transactions (service vs app).
   // TODO(): Try allocating the excess bandwidth to app txs.
@@ -199,7 +213,7 @@ class TransactionPool {
       serviceBandwidthBudgetPerBlock,
       appsBandwidthBudgetPerBlock,
       freeBandwidthBudgetPerBlock,
-    } = this.node.getBandwidthBudgets();
+    } = this.getBandwidthBudgets();
     for (const tx of txList) {
       const nonce = tx.tx_body.nonce;
       if (addrToDiscardedNoncedTx[tx.address] && nonce >= 0) {
