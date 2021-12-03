@@ -715,14 +715,12 @@ app.get('/get_network_id', (req, res) => {
 
 app.get('/get_chain_id', (req, res) => {
   const beginTime = Date.now();
+  const result = node.getBlockchainParam(BlockchainParamsCategories.BLOCKCHAIN, 'chain_id');
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({
-      code: 0,
-      result: node.getBlockchainParam(BlockchainParamsCategories.BLOCKCHAIN, 'chain_id')
-    })
+    .send({ code: 0, result })
     .end();
 });
 
