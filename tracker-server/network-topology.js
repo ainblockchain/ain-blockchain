@@ -19,9 +19,13 @@ const _buildGraphData = (blockchainNodes) => {
   Object.entries(blockchainNodeAlive).forEach(([address, nodeInfo]) => {
     const outGoingList = nodeInfo.networkStatus.connectionStatus.outgoingPeers;
     outGoingList.forEach(outGoingAddress => {
-      data.links.push({
-        source: blockchainNodeIdMap[address], target: blockchainNodeIdMap[outGoingAddress], weight: 1
-      });
+      const sourceId = blockchainNodeIdMap[address];
+      const targetId = blockchainNodeIdMap[outGoingAddress];
+      if (sourceId !== undefined && targetId !== undefined) {
+        data.links.push({
+          source: sourceId, target: targetId, weight: 1
+        });
+      }
     });
   });
 
