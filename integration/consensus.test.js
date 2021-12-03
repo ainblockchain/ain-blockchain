@@ -4,6 +4,7 @@ const assert = chai.assert;
 const spawn = require('child_process').spawn;
 const rimraf = require('rimraf');
 const jayson = require('jayson/promise');
+const ainUtil = require('@ainblockchain/ain-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
@@ -35,29 +36,29 @@ const MAX_ITERATION = 200;
 const MAX_NUM_VALIDATORS = 4;
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5, ENABLE_EXPRESS_RATE_LIMIT: false,
+    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
+    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, DEBUG: false,
+    HOSTING_ENV: 'local', ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
+    ACCOUNT_INDEX: 1, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5, ENABLE_EXPRESS_RATE_LIMIT: false,
+    HOSTING_ENV: 'local', ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
+    ACCOUNT_INDEX: 2, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5, ENABLE_EXPRESS_RATE_LIMIT: false,
+    HOSTING_ENV: 'local', ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    ACCOUNT_INDEX: 3, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
+    ACCOUNT_INDEX: 3, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5, ENABLE_EXPRESS_RATE_LIMIT: false,
+    HOSTING_ENV: 'local', ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    ACCOUNT_INDEX: 4, MIN_NUM_VALIDATORS: 3, MAX_NUM_VALIDATORS, DEBUG: false,
+    ACCOUNT_INDEX: 4, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', DEBUG: false,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    TARGET_NUM_OUTBOUND_CONNECTION: 5, MAX_NUM_INBOUND_CONNECTION: 5, ENABLE_EXPRESS_RATE_LIMIT: false,
+    HOSTING_ENV: 'local', ENABLE_EXPRESS_RATE_LIMIT: false,
   },
 ];
 
@@ -175,6 +176,31 @@ describe('Consensus', () => {
   });
 
   describe('Validators', () => {
+    before(async () => {
+      // Update max_num_validators to 4
+      const client = jayson.client.http(server1 + '/json-rpc');
+      const txBody = {
+        operation: {
+          type: 'SET_VALUE',
+          ref: `/blockchain_params/consensus/max_num_validators`,
+          value: MAX_NUM_VALIDATORS
+        },
+        timestamp: Date.now(),
+        nonce: -1
+      };
+      const signature =
+          ainUtil.ecSignTransaction(txBody, Buffer.from('a2b5848760d81afe205884284716f90356ad82be5ab77b8130980bdb0b7ba2ba', 'hex'));
+      const res = await client.request('ain_sendSignedTransaction', {
+        tx_body: txBody,
+        signature,
+        protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+      });
+      if (!(await waitUntilTxFinalized([server1], _.get(res, 'result.result.tx_hash')))) {
+        console.error(`Failed to check finalization of tx.`);
+      }
+      expect(res.result.result.result.code).to.be.equal(0);
+    })
+
     it('Number of validators cannot exceed MAX_NUM_VALIDATORS', async () => {
       // 1. server4 stakes 100000
       const server4StakeRes = parseOrLog(syncRequest('POST', server4 + '/set_value', {json: {

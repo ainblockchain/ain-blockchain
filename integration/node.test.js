@@ -10,7 +10,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const { BlockchainConfigs } = require('../common/constants');
+const { BlockchainConfigs, BlockchainParams } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 const {
@@ -29,19 +29,22 @@ const {
 
 const ENV_VARIABLES = [
   {
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', DEBUG: false,
+    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', DEBUG: false, HOSTING_ENV: 'local',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, CONSOLE_LOG: false,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_EXPRESS_RATE_LIMIT: false,
+    ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
+    ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false, HOSTING_ENV: 'local',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_EXPRESS_RATE_LIMIT: false,
+    ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
+    ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false, HOSTING_ENV: 'local',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_EXPRESS_RATE_LIMIT: false,
+    ENABLE_EXPRESS_RATE_LIMIT: false,
   },
 ];
 
@@ -2755,7 +2758,7 @@ describe('Blockchain Node', () => {
 
       it('rejects a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        const longText = 'a'.repeat(BlockchainConfigs.TX_BYTES_LIMIT / 2);
+        const longText = 'a'.repeat(BlockchainParams.resource.tx_bytes_limit / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -2775,7 +2778,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: {
               code: 1,
-              message: `Transaction size exceeds its limit: ${BlockchainConfigs.TX_BYTES_LIMIT} bytes.`,
+              message: `Transaction size exceeds its limit: ${BlockchainParams.resource.tx_bytes_limit} bytes.`,
             },
             protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
           });
@@ -3109,7 +3112,7 @@ describe('Blockchain Node', () => {
           nonce: -1
         };
         const txList = [];
-        for (let i = 0; i < BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT; i++) {  // Just under the limit.
+        for (let i = 0; i < BlockchainParams.resource.batch_tx_list_size_limit; i++) {  // Just under the limit.
           const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
           txBody.timestamp = timestamp + i;
           const signature =
@@ -3125,7 +3128,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           const resultList = _.get(res, 'result.result', null);
           expect(CommonUtil.isArray(resultList)).to.equal(true);
-          expect(resultList.length).to.equal(BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT);
+          expect(resultList.length).to.equal(BlockchainParams.resource.batch_tx_list_size_limit);
           for (let i = 0; i < resultList.length; i++) {
             expect(CommonUtil.isFailedTx(resultList[i].result)).to.equal(false);
           }
@@ -3144,7 +3147,7 @@ describe('Blockchain Node', () => {
           nonce: -1
         };
         const txList = [];
-        for (let i = 0; i < BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT + 1; i++) {  // Just over the limit.
+        for (let i = 0; i < BlockchainParams.resource.batch_tx_list_size_limit + 1; i++) {  // Just over the limit.
           const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
           txBody.timestamp = timestamp + i;
           const signature =
@@ -3161,7 +3164,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: {
               code: 2,
-              message: `Batch transaction list size exceeds its limit: ${BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT}.`
+              message: `Batch transaction list size exceeds its limit: ${BlockchainParams.resource.batch_tx_list_size_limit}.`
             },
             protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
           });
@@ -3185,10 +3188,10 @@ describe('Blockchain Node', () => {
 
         // Not over the limit.
         let txCount = 0;
-        while (txCount < BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT) {
-          const remainingTxCount = BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT - txCount;
-          const batchTxSize = (remainingTxCount >= BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT) ?
-              BlockchainConfigs.BATCH_TX_LIST_SIZE_LIMIT : remainingTxCount;
+        while (txCount < BlockchainParams.resource.tx_pool_size_limit_per_account) {
+          const remainingTxCount = BlockchainParams.resource.tx_pool_size_limit_per_account - txCount;
+          const batchTxSize = (remainingTxCount >= BlockchainParams.resource.batch_tx_list_size_limit) ?
+              BlockchainParams.resource.batch_tx_list_size_limit : remainingTxCount;
           const txList1 = [];
           for (let i = 0; i < batchTxSize; i++) {
             const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
@@ -3217,7 +3220,7 @@ describe('Blockchain Node', () => {
         // Just over the limit.
         const txList2 = [];
         const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
-        txBody.timestamp = timestamp + BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT + 1;
+        txBody.timestamp = timestamp + BlockchainParams.resource.tx_pool_size_limit_per_account + 1;
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
         txList2.push({
@@ -3247,7 +3250,7 @@ describe('Blockchain Node', () => {
 
       it('rejects a batch transaction with a transaction that exceeds its size limit.', () => {
         const client = jayson.client.http(server1 + '/json-rpc');
-        const longText = 'a'.repeat(BlockchainConfigs.TX_BYTES_LIMIT / 2);
+        const longText = 'a'.repeat(BlockchainParams.resource.tx_bytes_limit / 2);
         const txBody = {
           operation: {
             type: 'SET_VALUE',
@@ -3281,7 +3284,7 @@ describe('Blockchain Node', () => {
           assert.deepEqual(res.result, {
             result: {
               code: 3,
-              message: `Transaction[1]'s size exceededs its limit: ${BlockchainConfigs.TX_BYTES_LIMIT} bytes.`,
+              message: `Transaction[1]'s size exceededs its limit: ${BlockchainParams.resource.tx_bytes_limit} bytes.`,
             },
             protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
           });
