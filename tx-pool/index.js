@@ -4,7 +4,7 @@ const logger = new (require('../logger'))('TX_POOL');
 const _ = require('lodash');
 const {
   DevFlags,
-  BlockchainParamsCategories,
+  NodeConfigs,
   TransactionStates,
   WriteDbOperations,
   StateVersions,
@@ -55,27 +55,19 @@ class TransactionPool {
   }
 
   isTimedOutFromPool(txTimestamp, lastBlockTimestamp) {
-    const txPoolTimeoutMs = this.node.getBlockchainParam(
-        BlockchainParamsCategories.RESOURCE, 'tx_pool_timeout_ms');
-    return this.isTimedOut(txTimestamp, lastBlockTimestamp, txPoolTimeoutMs);
+    return this.isTimedOut(txTimestamp, lastBlockTimestamp, NodeConfigs.TX_POOL_TIMEOUT_MS);
   }
 
   isTimedOutFromTracker(txTimestamp, lastBlockTimestamp) {
-    const txTrackerTimeoutMs = this.node.getBlockchainParam(
-        BlockchainParamsCategories.RESOURCE, 'tx_tracker_timeout_ms');
-    return this.isTimedOut(txTimestamp, lastBlockTimestamp, txTrackerTimeoutMs);
+    return this.isTimedOut(txTimestamp, lastBlockTimestamp, NodeConfigs.TX_TRACKER_TIMEOUT_MS);
   }
 
   hasRoomForNewTransaction() {
-    const txPoolSizeLimit = this.node.getBlockchainParam(
-        BlockchainParamsCategories.RESOURCE, 'tx_pool_size_limit');
-    return this.getPoolSize() < txPoolSizeLimit;
+    return this.getPoolSize() < NodeConfigs.TX_POOL_SIZE_LIMIT;
   }
 
   hasPerAccountRoomForNewTransaction(address) {
-    const txPoolSizeLimitPerAccount = this.node.getBlockchainParam(
-        BlockchainParamsCategories.RESOURCE, 'tx_pool_size_limit_per_account');
-    return this.getPerAccountPoolSize(address) < txPoolSizeLimitPerAccount;
+    return this.getPerAccountPoolSize(address) < NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
   }
 
   isNotEligibleTransaction(tx) {

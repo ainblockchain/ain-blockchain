@@ -54,12 +54,7 @@
     "num_genesis_accounts": 10
   },
   "network": {
-    "network_id": 0,
-    "p2p_message_timeout_ms": 600000,
-    "target_num_outbound_connection": 3,
-    "max_num_inbound_connection": 6,
-    "tracker_update_json_rpc_url": "http://localhost:8080/json-rpc",
-    "peer_candidate_json_rpc_url": "http://localhost:8081/json-rpc"
+    "network_id": 0
   },
   "resource": {
     "state_tree_height_limit": 30,
@@ -76,11 +71,7 @@
       "3": "http://localhost:3000"
     },
     "tx_bytes_limit": 10000,
-    "batch_tx_list_size_limit": 50,
-    "tx_pool_size_limit": 1000,
-    "tx_pool_size_limit_per_account": 100,
-    "tx_pool_timeout_ms": 3600000,
-    "tx_tracker_timeout_ms": 86400000
+    "batch_tx_list_size_limit": 50
   },
   "sharding": {
     "shard_owner": "",

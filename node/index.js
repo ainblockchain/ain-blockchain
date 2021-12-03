@@ -391,11 +391,10 @@ class BlockchainNode {
   getTxPoolSizeUtilization(address) {
     const result = {};
     if (address) { // Per account
-      result.limit = this.getBlockchainParam(
-          BlockchainParamsCategories.RESOURCE, 'tx_pool_size_limit_per_account');
+      result.limit = NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
       result.used = this.tp.getPerAccountPoolSize(address);
     } else { // Total
-      result.limit = this.getBlockchainParam(BlockchainParamsCategories.RESOURCE, 'tx_pool_size_limit');
+      result.limit = NodeConfigs.TX_POOL_SIZE_LIMIT;
       result.used = this.tp.getPoolSize();
     }
     return result;

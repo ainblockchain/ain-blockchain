@@ -5,6 +5,7 @@ const fs = require('fs');
 const { Block } = require('./block');
 const FileUtil = require('../common/file-util');
 const {
+  NodeConfigs,
   BlockchainConfigs,
   BlockchainSnapshotProperties,
 } = require('../common/constants');
@@ -23,7 +24,7 @@ class Blockchain {
   }
 
   setGenesisBlock() {
-    const genesisBlockPath = path.join(BlockchainConfigs.GENESIS_BLOCK_DIR, 'genesis_block.json.gz');
+    const genesisBlockPath = path.join(NodeConfigs.GENESIS_BLOCK_DIR, 'genesis_block.json.gz');
     const block = Block.parse(FileUtil.readCompressedJson(genesisBlockPath));
     if (!block) {
       throw Error(`Missing genesis block at ${genesisBlockPath}`);

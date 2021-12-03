@@ -330,8 +330,8 @@ describe("P2P", () => {
       it("shows initial values of connection status", () => {
         assert.deepEqual(p2pClient.getConnectionStatus(), {
           p2pState: P2pNetworkStates.STARTING,
-          maxInbound: BlockchainParams.network.max_num_inbound_connection,
-          targetOutBound: BlockchainParams.network.target_num_outbound_connection,
+          maxInbound: NodeConfigs.MAX_NUM_INBOUND_CONNECTION,
+          targetOutBound: NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
           numInbound: 0,
           numOutbound: 0,
           incomingPeers: [],

@@ -17,7 +17,6 @@ const {
   StateVersions,
   buildOwnerPermissions,
   BlockchainParams,
-  OverwritableBlockchainParams,
   BlockchainParamsCategories,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
@@ -544,19 +543,12 @@ class DB {
     if (typeof stateRoot === 'string') {
       logger.error(`${new Error('getBlockchainParam stateRoot is a string').stack}`);
     }
-    let ret;
-    if (_.get(OverwritableBlockchainParams, `${category}.${name}`) !== undefined) {
-      ret = NodeConfigs[name.toUpperCase()];
-      return ret;
-    }
     // NOTE(liayoo): For certain parameters such as network params, we might need them before we
     // have the genesis block and the params in the state.
     if (blockNumber <= 0) {
-      ret = BlockchainParams[category][name];
-      return ret;
+      return BlockchainParams[category][name];
     }
-    ret = DB.getValueFromStateRoot(stateRoot, PathUtil.getSingleBlockchainParamPath(category, name));
-    return ret;
+    return DB.getValueFromStateRoot(stateRoot, PathUtil.getSingleBlockchainParamPath(category, name));
   }
 
   isConsensusAppAdmin(address) {

@@ -4,7 +4,7 @@ const zlib = require('zlib');
 const _ = require('lodash');
 const moment = require('moment');
 const {
-  BlockchainConfigs,
+  NodeConfigs,
   PredefinedDbPaths,
   OwnerProperties,
   RuleProperties,
@@ -18,7 +18,6 @@ const {
   getBlockchainConfig,
   buildOwnerPermissions,
   BlockchainParams,
-  OverwritableBlockchainParams,
 } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
 const FileUtil = require('../../common/file-util');
@@ -166,16 +165,6 @@ function getBlockchainParamsOwner() {
   };
 }
 
-function excludeOverwritableBlockchainParams(params, category) {
-  const paramsCopy = JSON.parse(JSON.stringify(params[category]));
-  for (const name of Object.keys(paramsCopy)) {
-    if (_.get(OverwritableBlockchainParams, `${category}.${name}`)) {
-      delete paramsCopy[name];
-    }
-  }
-  return paramsCopy;
-}
-
 function getGenesisValues() {
   const values = {};
   const ownerAddress = GenesisAccounts.owner.address;
@@ -204,8 +193,7 @@ function getGenesisValues() {
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_BLOCKCHAIN]: BlockchainParams.blockchain,
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_CONSENSUS]: BlockchainParams.consensus,
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_GENESIS]: BlockchainParams.genesis,
-    // Only network params have overwritable params as of now.
-    [PredefinedDbPaths.BLOCKCHAIN_PARAMS_NETWORK]: excludeOverwritableBlockchainParams(BlockchainParams, 'network'),
+    [PredefinedDbPaths.BLOCKCHAIN_PARAMS_NETWORK]: BlockchainParams.network,
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_RESOURCE]: BlockchainParams.resource,
   });
   return values;
@@ -485,7 +473,7 @@ function processArguments() {
 
   GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
   const genesisBlock = createGenesisBlock();
-  writeCompressedBlock(BlockchainConfigs.GENESIS_BLOCK_DIR, genesisBlock);
+  writeCompressedBlock(NodeConfigs.GENESIS_BLOCK_DIR, genesisBlock);
 }
 
 function usage() {

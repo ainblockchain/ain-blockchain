@@ -411,9 +411,7 @@ class P2pServer {
           trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
           return;
         }
-        const p2pMsgTimeoutMs = this.node.getBlockchainParam(
-            BlockchainParamsCategories.NETWORK, 'p2p_message_timeout_ms');
-        if (!checkTimestamp(_.get(parsedMessage, 'timestamp'), p2pMsgTimeoutMs)) {
+        if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
           logger.error(`The message from the node(${address}) is stale. Discard the message.`);
           logger.debug(`The detail is as follows: ${parsedMessage}`);
           const latency = Date.now() - beginTime;

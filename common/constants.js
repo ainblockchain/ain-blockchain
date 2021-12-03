@@ -69,16 +69,64 @@ NodeConfigs.BLOCKCHAIN_DATA_DIR = process.env.BLOCKCHAIN_DATA_DIR || path.resolv
 if (!fs.existsSync(NodeConfigs.BLOCKCHAIN_DATA_DIR)) {
   fs.mkdirSync(NodeConfigs.BLOCKCHAIN_DATA_DIR, { recursive: true });
 }
+const BASE_BLOCKCHAIN_CONFIGS_DIR = 'blockchain-configs/base';
+NodeConfigs.CUSTOM_BLOCKCHAIN_CONFIGS_DIR = process.env.BLOCKCHAIN_CONFIGS_DIR || null;
+NodeConfigs.GENESIS_BLOCK_DIR = path.resolve(__dirname, '..',
+    process.env.BLOCKCHAIN_CONFIGS_DIR || BASE_BLOCKCHAIN_CONFIGS_DIR);
 
+/**
+ * Overwriting node_params.json with environment variables.
+ * These parameters are defined in node_params.json, but if specified as environment variables,
+ * the env vars take precedence.
+ * (priority: env var > node_params.json in BLOCKCHAIN_CONFIGS_DIR > base params)
+ */
+// 1. Set NodeConfigs as env vars
+NodeConfigs.P2P_MESSAGE_TIMEOUT_MS = process.env.P2P_MESSAGE_TIMEOUT_MS ?
+    Number(process.env.P2P_MESSAGE_TIMEOUT_MS) : undefined;
+NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION = process.env.TARGET_NUM_OUTBOUND_CONNECTION ?
+    Number(process.env.TARGET_NUM_OUTBOUND_CONNECTION) : undefined;
+NodeConfigs.MAX_NUM_INBOUND_CONNECTION = process.env.MAX_NUM_INBOUND_CONNECTION ?
+    Number(process.env.MAX_NUM_INBOUND_CONNECTION) : undefined;
+NodeConfigs.TRACKER_UPDATE_JSON_RPC_URL = process.env.TRACKER_UPDATE_JSON_RPC_URL;
+NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL = process.env.PEER_CANDIDATE_JSON_RPC_URL;
+NodeConfigs.TX_POOL_SIZE_LIMIT = process.env.TX_POOL_SIZE_LIMIT ?
+    Number(process.env.TX_POOL_SIZE_LIMIT) : undefined;
+NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT = process.env.TX_POOL_SIZE_LIMIT_PER_ACCOUNT ?
+    Number(process.env.TX_POOL_SIZE_LIMIT_PER_ACCOUNT) : undefined;
+NodeConfigs.TX_POOL_TIMEOUT_MS = process.env.TX_POOL_TIMEOUT_MS ?
+    Number(process.env.TX_POOL_TIMEOUT_MS) : undefined;
+NodeConfigs.TX_TRACKER_TIMEOUT_MS = process.env.TX_TRACKER_TIMEOUT_MS ?
+    Number(process.env.TX_TRACKER_TIMEOUT_MS) : undefined;
+const OverwritableNodeParamsDefaultValues = {
+  'P2P_MESSAGE_TIMEOUT_MS': 600000,
+  'TARGET_NUM_OUTBOUND_CONNECTION': 3,
+  'MAX_NUM_INBOUND_CONNECTION': 6,
+  'TRACKER_UPDATE_JSON_RPC_URL': 'http://localhost:8080/json-rpc',
+  'PEER_CANDIDATE_JSON_RPC_URL': 'http://localhost:8081/json-rpc',
+  'TX_POOL_SIZE_LIMIT': 1000,
+  'TX_POOL_SIZE_LIMIT_PER_ACCOUNT': 100,
+  'TX_POOL_TIMEOUT_MS': 3600000,
+  'TX_TRACKER_TIMEOUT_MS': 86400000
+};
+const NodeParams = getBlockchainConfig('node_params.json');
+function setOverwritableNodeParams() {
+  for (const [param, defaultValue] of Object.entries(OverwritableNodeParamsDefaultValues)) {
+    if (NodeConfigs[param] === undefined) {
+      if (NodeParams[param] !== undefined) {
+        // 2. Set node params as values in node_param.json
+        NodeConfigs[param] = NodeParams[param];
+      } else {
+        // 3. Set as the default value
+        NodeConfigs[param] = defaultValue;
+      }
+    }
+  }
+}
+setOverwritableNodeParams();
 
 // ** Blockchain configs **
 const BlockchainConfigs = {};
 // *** Genesis ***
-BlockchainConfigs.BASE_BLOCKCHAIN_CONFIGS_DIR = 'blockchain-configs/base';
-BlockchainConfigs.CUSTOM_BLOCKCHAIN_CONFIGS_DIR = process.env.BLOCKCHAIN_CONFIGS_DIR ?
-    process.env.BLOCKCHAIN_CONFIGS_DIR : null;
-BlockchainConfigs.GENESIS_BLOCK_DIR =
-    path.resolve(__dirname, '..', process.env.BLOCKCHAIN_CONFIGS_DIR || BlockchainConfigs.BASE_BLOCKCHAIN_CONFIGS_DIR);
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
 // TODO(liayoo): Use on-chain value instead of GenesisToken
 const GenesisToken = BlockchainParams.token;
@@ -86,42 +134,6 @@ const GenesisToken = BlockchainParams.token;
 const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
 // TODO(liayoo): Use on-chain value instead of GenesisSharding
 const GenesisSharding = BlockchainParams.sharding;
-/**
- * Overwriting blockchain params with environment variables.
- * These parameters are defined in blockchain_params.json, but if specified as environment variables,
- * the env vars take precedence.
- * (priority: env var > blockchain_params.json in BLOCKCHAIN_CONFIGS_DIR > base params)
- */
- const OverwritableBlockchainParams = {
-  network: {
-    tracker_update_json_rpc_url: true,
-    peer_candidate_json_rpc_url: true,
-    target_num_outbound_connection: true,
-    max_num_inbound_connection: true,
-  }
-  // TODO(liayoo): Add tx_pool_* resource params
-};
-
-function setOverwritableBlockchainParams() {
-  for (const [category, params] of Object.entries(OverwritableBlockchainParams)) {
-    for (const name of Object.keys(params)) {
-      const upperCase = name.toUpperCase();
-      const env = process.env[upperCase];
-      if (env !== undefined) {
-        if (CommonUtil.isIntegerString(env)) {
-          NodeConfigs[upperCase] = Number(env);
-        } else {
-          NodeConfigs[upperCase] = env;
-        }
-      } else {
-        NodeConfigs[upperCase] = BlockchainParams[category][name];
-      }
-    }
-  }
-}
-
-setOverwritableBlockchainParams();
-
 // *** Protocol Versions ***
 BlockchainConfigs.CURRENT_PROTOCOL_VERSION = require('../package.json').version;
 if (!semver.valid(BlockchainConfigs.CURRENT_PROTOCOL_VERSION)) {
@@ -132,11 +144,11 @@ if (!fs.existsSync(BlockchainConfigs.PROTOCOL_VERSIONS)) {
   throw Error('Missing protocol versions file: ' + BlockchainConfigs.PROTOCOL_VERSIONS);
 }
 BlockchainConfigs.PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(BlockchainConfigs.PROTOCOL_VERSIONS));
-BlockchainConfigs.DATA_PROTOCOL_VERSION = "1.0.0";
+BlockchainConfigs.DATA_PROTOCOL_VERSION = '1.0.0';
 if (!semver.valid(BlockchainConfigs.DATA_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for DATA_PROTOCOL_VERSION');
 }
-BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION = "1.0.0";
+BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION = '1.0.0';
 if (!semver.valid(BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for CONSENSUS_PROTOCOL_VERSION');
 }
@@ -783,14 +795,14 @@ function getPortNumber(defaultValue, baseValue) {
 
 function getBlockchainConfig(filename) {
   let config = null;
-  if (BlockchainConfigs.CUSTOM_BLOCKCHAIN_CONFIGS_DIR) {
-    const configPath = path.resolve(__dirname, '..', BlockchainConfigs.CUSTOM_BLOCKCHAIN_CONFIGS_DIR, filename);
+  if (NodeConfigs.CUSTOM_BLOCKCHAIN_CONFIGS_DIR) {
+    const configPath = path.resolve(__dirname, '..', NodeConfigs.CUSTOM_BLOCKCHAIN_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     }
   }
   if (!config) {
-    const configPath = path.resolve(__dirname, '..', BlockchainConfigs.BASE_BLOCKCHAIN_CONFIGS_DIR, filename);
+    const configPath = path.resolve(__dirname, '..', BASE_BLOCKCHAIN_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     } else {
@@ -862,6 +874,5 @@ module.exports = {
   buildOwnerPermissions,
   buildRulePermission,
   BlockchainParams,
-  OverwritableBlockchainParams,
   trafficStatsManager,
 };
