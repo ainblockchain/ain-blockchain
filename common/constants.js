@@ -78,51 +78,20 @@ NodeConfigs.GENESIS_BLOCK_DIR = path.resolve(__dirname, '..',
  * Overwriting node_params.json with environment variables.
  * These parameters are defined in node_params.json, but if specified as environment variables,
  * the env vars take precedence.
- * (priority: env var > node_params.json in BLOCKCHAIN_CONFIGS_DIR > base params)
+ * (priority: env var > ${BLOCKCHAIN_CONFIGS_DIR}/node_params.json > ./genesis-configs/base/node_params.json)
  */
-// 1. Set NodeConfigs as env vars
-NodeConfigs.P2P_MESSAGE_TIMEOUT_MS = process.env.P2P_MESSAGE_TIMEOUT_MS ?
-    Number(process.env.P2P_MESSAGE_TIMEOUT_MS) : undefined;
-NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION = process.env.TARGET_NUM_OUTBOUND_CONNECTION ?
-    Number(process.env.TARGET_NUM_OUTBOUND_CONNECTION) : undefined;
-NodeConfigs.MAX_NUM_INBOUND_CONNECTION = process.env.MAX_NUM_INBOUND_CONNECTION ?
-    Number(process.env.MAX_NUM_INBOUND_CONNECTION) : undefined;
-NodeConfigs.TRACKER_UPDATE_JSON_RPC_URL = process.env.TRACKER_UPDATE_JSON_RPC_URL;
-NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL = process.env.PEER_CANDIDATE_JSON_RPC_URL;
-NodeConfigs.TX_POOL_SIZE_LIMIT = process.env.TX_POOL_SIZE_LIMIT ?
-    Number(process.env.TX_POOL_SIZE_LIMIT) : undefined;
-NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT = process.env.TX_POOL_SIZE_LIMIT_PER_ACCOUNT ?
-    Number(process.env.TX_POOL_SIZE_LIMIT_PER_ACCOUNT) : undefined;
-NodeConfigs.TX_POOL_TIMEOUT_MS = process.env.TX_POOL_TIMEOUT_MS ?
-    Number(process.env.TX_POOL_TIMEOUT_MS) : undefined;
-NodeConfigs.TX_TRACKER_TIMEOUT_MS = process.env.TX_TRACKER_TIMEOUT_MS ?
-    Number(process.env.TX_TRACKER_TIMEOUT_MS) : undefined;
-const OverwritableNodeParamsDefaultValues = {
-  'P2P_MESSAGE_TIMEOUT_MS': 600000,
-  'TARGET_NUM_OUTBOUND_CONNECTION': 3,
-  'MAX_NUM_INBOUND_CONNECTION': 6,
-  'TRACKER_UPDATE_JSON_RPC_URL': 'http://localhost:8080/json-rpc',
-  'PEER_CANDIDATE_JSON_RPC_URL': 'http://localhost:8081/json-rpc',
-  'TX_POOL_SIZE_LIMIT': 1000,
-  'TX_POOL_SIZE_LIMIT_PER_ACCOUNT': 100,
-  'TX_POOL_TIMEOUT_MS': 3600000,
-  'TX_TRACKER_TIMEOUT_MS': 86400000
-};
 const NodeParams = getBlockchainConfig('node_params.json');
-function setOverwritableNodeParams() {
-  for (const [param, defaultValue] of Object.entries(OverwritableNodeParamsDefaultValues)) {
-    if (NodeConfigs[param] === undefined) {
-      if (NodeParams[param] !== undefined) {
-        // 2. Set node params as values in node_param.json
-        NodeConfigs[param] = NodeParams[param];
-      } else {
-        // 3. Set as the default value
-        NodeConfigs[param] = defaultValue;
-      }
+function overwriteNodeConfigs() {
+  for (const [param, valFromNodeParams] of Object.entries(NodeParams)) {
+    const valFromEnvVar = process.env[param];
+    if (valFromEnvVar !== undefined) {
+      NodeConfigs[param] = CommonUtil.isIntegerString(valFromEnvVar) ? Number(valFromEnvVar) : valFromEnvVar;
+    } else {
+      NodeConfigs[param] = valFromNodeParams;
     }
   }
 }
-setOverwritableNodeParams();
+overwriteNodeConfigs();
 
 // ** Blockchain configs **
 const BlockchainConsts = {};
@@ -806,7 +775,7 @@ function getBlockchainConfig(filename) {
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     } else {
-      return {};
+      throw Error(`Missing blockchain config file: ${configPath}`);
     }
   }
   return config;
