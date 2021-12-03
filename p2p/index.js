@@ -1,7 +1,6 @@
 /* eslint no-mixed-operators: "off" */
 const logger = new (require('../logger'))('P2P_CLIENT');
 const _ = require('lodash');
-const axios = require('axios');
 const P2pServer = require('./server');
 const Websocket = require('ws');
 const { ConsensusStates } = require('../consensus/constants');
@@ -16,7 +15,6 @@ const {
   P2pNetworkStates,
   TrafficEventTypes,
   trafficStatsManager,
-  BlockchainParams,
   BlockchainParamsCategories,
 } = require('../common/constants');
 const {
@@ -57,14 +55,6 @@ class P2pClient {
     this.epochMs = node.getBlockchainParam(BlockchainParamsCategories.CONSENSUS, 'epoch_ms');
     this.networkId = node.getBlockchainParam(BlockchainParamsCategories.NETWORK, 'network_id');
     this.chainId = node.getBlockchainParam(BlockchainParamsCategories.BLOCKCHAIN, 'chain_id');
-    this.targetNumOutboundConnections = node.getBlockchainParam(
-        BlockchainParamsCategories.NETWORK, 'target_num_outbound_connection');
-    this.maxNumInboundConnections = node.getBlockchainParam(
-        BlockchainParamsCategories.NETWORK, 'max_num_inbound_connection');
-    this.trackerUpdateJsonRpcUrl = node.getBlockchainParam(
-        BlockchainParamsCategories.NETWORK, 'tracker_update_json_rpc_url');
-    this.peerCandidateJsonRpcUrl = node.getBlockchainParam(
-        BlockchainParamsCategories.NETWORK, 'peer_candidate_json_rpc_url') || '';
     logger.info(`Now p2p network in STARTING state!`);
     this.startHeartbeat();
   }
@@ -74,15 +64,15 @@ class P2pClient {
     await this.server.listen();
     if (NodeConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.setIntervalForTrackerUpdate();
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
-      if (this.peerCandidateJsonRpcUrl === '' ||
-          this.peerCandidateJsonRpcUrl === _.get(this.server.urls, 'jsonRpc.url', '')) {
+      if (NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL === '' ||
+          NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL === _.get(this.server.urls, 'jsonRpc.url', '')) {
         await this.startBlockchainNode(0);
         return;
       } else {
         await this.startBlockchainNode(1);
       }
     }
-    this.connectWithPeerCandidateUrl(this.peerCandidateJsonRpcUrl);
+    this.connectWithPeerCandidateUrl(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL);
     this.setIntervalForPeerCandidatesConnection();
   }
 
@@ -91,8 +81,8 @@ class P2pClient {
     const outgoingPeers = Object.keys(this.outbound);
     return {
       p2pState: this.p2pState,
-      maxInbound: this.maxNumInboundConnections,
-      targetOutBound: this.targetNumOutboundConnections,
+      maxInbound: NodeConfigs.MAX_NUM_INBOUND_CONNECTION,
+      targetOutBound: NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
       numInbound: incomingPeers.length,
       numOutbound: outgoingPeers.length,
       incomingPeers: incomingPeers,
@@ -174,7 +164,8 @@ class P2pClient {
 
   getPeerCandidateInfo() {
     return {
-      isAvailableForConnection: this.maxNumInboundConnections > Object.keys(this.server.inbound).length,
+      isAvailableForConnection:
+          NodeConfigs.MAX_NUM_INBOUND_CONNECTION > Object.keys(this.server.inbound).length,
       networkStatus: this.server.getNetworkStatus(),
       peerCandidateJsonRpcUrlList: this.getPeerCandidateJsonRpcUrlList(),
       newPeerP2pUrlList: this.getPeerP2pUrlList()
@@ -188,7 +179,7 @@ class P2pClient {
     try {
       const peerInfo = this.getStatus();
       Object.assign(peerInfo, { updatedAt: Date.now() });
-      await sendGetRequest(this.trackerUpdateJsonRpcUrl, 'updateNodeInfo', peerInfo);
+      await sendGetRequest(NodeConfigs.TRACKER_UPDATE_JSON_RPC_URL, 'updateNodeInfo', peerInfo);
     } catch (error) {
       logger.error(error);
     }
@@ -210,7 +201,7 @@ class P2pClient {
    * Returns either true or false and also set p2pState.
    */
   updateP2pState() {
-    if (Object.keys(this.outbound).length < this.targetNumOutboundConnections) {
+    if (Object.keys(this.outbound).length < NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION) {
       this.p2pState = P2pNetworkStates.EXPANDING;
     } else {
       this.p2pState = P2pNetworkStates.STEADY;
@@ -245,12 +236,12 @@ class P2pClient {
    * Returns randomly picked connectable peers. Refer to details below:
    * 1) Pick one if it is never queried.
    * 2) Choose one in all peerCandidates if there no exists never queried peerCandidates.
-   * 3) Use peer_candidate_json_rpc_url if there are no peerCandidates at all.
+   * 3) Use PEER_CANDIDATE_JSON_RPC_URL if there are no peerCandidates at all.
    */
   assignRandomPeerCandidate() {
     const peerCandidatesEntries = Object.entries(this.peerCandidates);
     if (peerCandidatesEntries.length === 0) {
-      return this.peerCandidateJsonRpcUrl;
+      return NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL;
     } else {
       const notQueriedCandidateEntries = peerCandidatesEntries.filter(([, value]) => {
         return value.queriedAt === null;
@@ -419,9 +410,7 @@ class P2pClient {
         trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
         return;
       }
-      const p2pMsgTimeoutMs = this.server.node.getBlockchainParam(
-            BlockchainParamsCategories.NETWORK, 'p2p_message_timeout_ms');
-      if (!checkTimestamp(_.get(parsedMessage, 'timestamp'), p2pMsgTimeoutMs)) {
+      if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
         logger.error(`[${LOG_HEADER}] The message from the node(${address}) is stale. ` +
             `Discard the message.`);
         logger.debug(`[${LOG_HEADER}] The detail is as follows: ${parsedMessage}`);
@@ -722,7 +711,7 @@ class P2pClient {
   getMaxNumberOfNewPeers() {
     const totalConnections =
         Object.keys(this.outbound).length + Object.keys(this.peerConnectionsInProgress).length;
-    return Math.max(0, this.targetNumOutboundConnections - totalConnections);
+    return Math.max(0, NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION - totalConnections);
   }
 
   connectWithPeerUrlList(newPeerP2pUrlList) {

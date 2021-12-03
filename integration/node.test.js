@@ -10,7 +10,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const { BlockchainConfigs, BlockchainParams } = require('../common/constants');
+const { BlockchainConfigs, BlockchainParams, NodeConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 const {
@@ -3188,8 +3188,8 @@ describe('Blockchain Node', () => {
 
         // Not over the limit.
         let txCount = 0;
-        while (txCount < BlockchainParams.resource.tx_pool_size_limit_per_account) {
-          const remainingTxCount = BlockchainParams.resource.tx_pool_size_limit_per_account - txCount;
+        while (txCount < NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT) {
+          const remainingTxCount = NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT - txCount;
           const batchTxSize = (remainingTxCount >= BlockchainParams.resource.batch_tx_list_size_limit) ?
               BlockchainParams.resource.batch_tx_list_size_limit : remainingTxCount;
           const txList1 = [];
@@ -3220,7 +3220,7 @@ describe('Blockchain Node', () => {
         // Just over the limit.
         const txList2 = [];
         const txBody = JSON.parse(JSON.stringify(txBodyTemplate));
-        txBody.timestamp = timestamp + BlockchainParams.resource.tx_pool_size_limit_per_account + 1;
+        txBody.timestamp = timestamp + NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT + 1;
         const signature =
             ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
         txList2.push({

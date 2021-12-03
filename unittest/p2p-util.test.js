@@ -117,16 +117,16 @@ describe("P2P Util", () => {
       const wrongTimestamp3 = ['a', 1];
       const wrongTimestamp4 = { foo: 'bar' };
       const wrongTimestamp5 = true;
-      expect(util.checkTimestamp(wrongTimestamp1, BlockchainParams.network.p2p_message_timeout_ms)).to.equal(false);
-      expect(util.checkTimestamp(wrongTimestamp2, BlockchainParams.network.p2p_message_timeout_ms)).to.equal(false);
-      expect(util.checkTimestamp(wrongTimestamp3, BlockchainParams.network.p2p_message_timeout_ms)).to.equal(false);
-      expect(util.checkTimestamp(wrongTimestamp4, BlockchainParams.network.p2p_message_timeout_ms)).to.equal(false);
-      expect(util.checkTimestamp(wrongTimestamp5, BlockchainParams.network.p2p_message_timeout_ms)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp1)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp2)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp3)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp4)).to.equal(false);
+      expect(util.checkTimestamp(wrongTimestamp5)).to.equal(false);
     });
 
     it("passes the timestamp check", () => {
       const timestamp = Date.now();
-      expect(util.checkTimestamp(timestamp, BlockchainParams.network.p2p_message_timeout_ms)).to.equal(true);
+      expect(util.checkTimestamp(timestamp)).to.equal(true);
     });
   });
 

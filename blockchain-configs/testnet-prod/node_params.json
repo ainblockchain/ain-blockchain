@@ -1,0 +1,4 @@
+{
+  "TRACKER_UPDATE_JSON_RPC_URL": "", // Need to be set differently for spring/summer
+  "PEER_CANDIDATE_JSON_RPC_URL": "https://testnet-api.ainetwork.ai/json-rpc"
+}

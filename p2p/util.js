@@ -7,7 +7,7 @@ const logger = new (require('../logger'))('SERVER_UTIL');
 
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const { BlockchainConfigs } = require('../common/constants');
+const { BlockchainConfigs, NodeConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
 function _isValidMessage(message) {
@@ -97,12 +97,12 @@ function encapsulateMessage(type, dataObj, networkId) {
   return message;
 }
 
-function checkTimestamp(timestamp, p2pMsgTimeoutMs) {
+function checkTimestamp(timestamp) {
   if (!timestamp || !CommonUtil.isNumber(timestamp)) {
     return false;
   } else {
     const now = Date.now();
-    if (now - timestamp > p2pMsgTimeoutMs) {
+    if (now - timestamp > NodeConfigs.P2P_MESSAGE_TIMEOUT_MS) {
       return false;
     } else {
       return true;

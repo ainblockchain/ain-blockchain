@@ -5,9 +5,9 @@
     "total_supply": 700000000,
     "bridge": {
       "ETH": {
-        "1": {
-          "0x3A810ff7211b40c4fA76205a14efe161615d0385": {
-            "token_pool": "0x744Cb74A78Ac6dae46ebdaCa43e38ED60F965B8D",
+        "3": {
+          "0x5d73565cbf3d6dE9610CD8a16a062B1b9dCff97a": {
+            "token_pool": "0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
             "min_checkout_per_request": 10000,
             "max_checkout_per_request": 100000,
             "max_checkout_per_day": 1000000,
@@ -20,28 +20,41 @@
     }
   },
   "blockchain": {
-    "chain_id": 1
+    "chain_id": 0
   },
   "consensus": {
     "min_stake_per_validator": 10000000,
     "max_stake_per_validator": 10000000,
-    "min_num_validators": 5,
-    "max_num_validators": 15,
+    "min_num_validators": 3,
+    "max_num_validators": 9,
     "epoch_ms": 3000,
     "genesis_whitelist": {
-      // TBD
+      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true,
+      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": true,
+      "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": true
     },
     "genesis_validators": {
-      // TBD
+      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": {
+        "stake": 10000000,
+        "proposal_right": true
+      }
     }
   },
   "genesis": {
-    "genesis_addr": "",
-    "genesis_timestamp": 0, // TBD
-    "num_genesis_accounts": 10 // TBD
+    "genesis_addr": "0xAAAf6f50A0304F12119D218b94bea8082642515B",
+    "genesis_timestamp": 1571819318272,
+    "num_genesis_accounts": 10
   },
   "network": {
-    "network_id": 1
+    "network_id": 0
   },
   "resource": {
     "state_tree_height_limit": 30,
