@@ -98,7 +98,7 @@ class P2pServer {
       }
     });
     // Set the number of maximum clients.
-    this.wsServer.setMaxListeners(this.client.maxNumInboundConnections);
+    this.wsServer.setMaxListeners(NodeConfigs.MAX_NUM_INBOUND_CONNECTION);
     this.wsServer.on('connection', (socket) => {
       this.setServerSidePeerEventHandlers(socket);
     });
