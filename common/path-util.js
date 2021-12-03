@@ -269,12 +269,12 @@ class PathUtil {
     return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_OFFENSE_RECORDS, address]);
   }
 
-  static getConsensusWhitelistPath() {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST]);
+  static getConsensusProposerWhitelistPath() {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST]);
   }
 
-  static getConsensusWhitelistAddrPath(address) {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST, address]);
+  static getConsensusProposerWhitelistAddrPath(address) {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST, address]);
   }
 
   static getConsensusStakingAccountPath(address) {

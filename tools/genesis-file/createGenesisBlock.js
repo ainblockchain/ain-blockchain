@@ -118,7 +118,7 @@ function getTokenRule() {
   return rules;
 }
 
-function getWhitelistOwner() {
+function getConsensusProposerWhitelistOwner() {
   return {
     [PredefinedDbPaths.DOT_OWNER]: {
       [OwnerProperties.OWNERS]: {
@@ -181,8 +181,8 @@ function getGenesisValues() {
   );
   CommonUtil.setJsObject(
     values,
-    [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST],
-    BlockchainParams.consensus.genesis_whitelist
+    [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST],
+    BlockchainParams.consensus.genesis_proposer_whitelist
   );
   CommonUtil.setJsObject(
     values,
@@ -237,8 +237,8 @@ function getGenesisOwners() {
   );
   CommonUtil.setJsObject(
     owners,
-    [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST],
-    getWhitelistOwner()
+    [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST],
+    getConsensusProposerWhitelistOwner()
   );
   CommonUtil.setJsObject(
     owners,
@@ -493,6 +493,8 @@ function usage() {
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod node tools/genesis-file/createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox node tools/genesis-file/createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging node tools/genesis-file/createGenesisBlock.js');
+
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/token-bridge node tools/genesis-file/createGenesisBlock.js');
   process.exit(0);
 }
 
@@ -501,3 +503,5 @@ try {
 } catch (e) {
   console.log(e);
 }
+
+// TODO: update GENESIS_TIMESTAMP in blockchain_params.json

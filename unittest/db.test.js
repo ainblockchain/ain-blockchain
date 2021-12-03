@@ -70,7 +70,7 @@ describe("DB initialization", () => {
 
   describe("Whitelist", () => {
     it("loading whitelist properly on initialization", () => {
-      assert.deepEqual(node.db.getValue(`/consensus/whitelist`), BlockchainParams.consensus.genesis_whitelist);
+      assert.deepEqual(node.db.getValue(`/consensus/proposer_whitelist`), BlockchainParams.consensus.genesis_proposer_whitelist);
     })
   })
 

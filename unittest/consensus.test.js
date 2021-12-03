@@ -119,7 +119,7 @@ describe("Consensus", () => {
     // Bypass whitelist rule check (need owner's private key)
     const tempDb = node1.createTempDb(node1.db.stateVersion, 'CONSENSUS_UNIT_TEST', lastBlock.number);
     tempDb.writeDatabase(
-        [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST, addr],
+        [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST, addr],
         true);
     node1.cloneAndFinalizeVersion(tempDb.stateVersion, -1); // Bypass already existing final state version
     
