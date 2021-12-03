@@ -18,7 +18,7 @@
         }
       }
     }
-  },  
+  },
   "blockchain": {
     "chain_id": 0
   },
@@ -90,5 +90,5 @@
     "parent_chain_poc": "http://127.0.0.1:8081",
     "reporting_period": 5,
     "max_shard_report": 100
-  }  
+  }
 }

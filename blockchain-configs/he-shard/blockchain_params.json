@@ -18,7 +18,7 @@
         }
       }
     }
-  },  
+  },
   "blockchain": {
     "chain_id": 0
   },
@@ -58,7 +58,7 @@
     "p2p_message_timeout_ms": 600000,
     "target_num_outbound_connection": 3,
     "max_num_inbound_connection": 6,
-    "tracker_update_json_rpc_url": "http://localhost:8080/json-rpc",
+    "tracker_update_json_rpc_url": "http://localhost:9090/json-rpc",
     "peer_candidate_json_rpc_url": "http://localhost:9091/json-rpc"
   },
   "resource": {
@@ -90,5 +90,5 @@
     "parent_chain_poc": "http://127.0.0.1:8081",
     "reporting_period": 5,
     "max_shard_report": 100
-  }  
+  }
 }
