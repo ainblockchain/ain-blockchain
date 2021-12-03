@@ -7,7 +7,6 @@ const {
   BlockchainConsts,
   NodeConfigs,
   BlockchainNodeStates,
-  BlockchainParamsCategories,
   ReadDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
@@ -485,7 +484,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
 
     net_getNetworkId: function (args, done) {
       const beginTime = Date.now();
-      const result = p2pServer.node.getBlockchainParam(BlockchainParamsCategories.NETWORK, 'network_id');
+      const result = p2pServer.node.getBlockchainParam('network/network_id');
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, addProtocolVersion({ result }));
@@ -493,7 +492,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
 
     net_getChainId: function (args, done) {
       const beginTime = Date.now();
-      const result = p2pServer.node.getBlockchainParam(BlockchainParamsCategories.BLOCKCHAIN, 'chain_id');
+      const result = p2pServer.node.getBlockchainParam('blockchain/chain_id');
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, addProtocolVersion({ result }));
@@ -528,8 +527,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
   const txMethods = {
     ain_sendSignedTransaction: function(args, done) {
       const beginTime = Date.now();
-      const txBytesLimit = p2pServer.node.getBlockchainParam(
-          BlockchainParamsCategories.RESOURCE, 'tx_bytes_limit');
+      const txBytesLimit = p2pServer.node.getBlockchainParam('resource/tx_bytes_limit');
       if (sizeof(args) > txBytesLimit) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
@@ -570,8 +568,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
 
     ain_sendSignedTransactionBatch: function(args, done) {
       const beginTime = Date.now();
-      const batchTxListSizeLimit = p2pServer.node.getBlockchainParam(
-          BlockchainParamsCategories.RESOURCE, 'batch_tx_list_size_limit');
+      const batchTxListSizeLimit = p2pServer.node.getBlockchainParam('resource/batch_tx_list_size_limit');
       if (!args.tx_list || !CommonUtil.isArray(args.tx_list)) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
@@ -591,8 +588,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
           }
         }));
       } else {
-        const txBytesLimit = p2pServer.node.getBlockchainParam(
-            BlockchainParamsCategories.RESOURCE, 'tx_bytes_limit');
+        const txBytesLimit = p2pServer.node.getBlockchainParam('resource/tx_bytes_limit');
         const txList = [];
         for (let i = 0; i < args.tx_list.length; i++) {
           const tx = args.tx_list[i];

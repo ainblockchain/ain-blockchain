@@ -29,7 +29,6 @@ const {
   NativeFunctionIds,
   TrafficEventTypes,
   trafficStatsManager,
-  BlockchainParamsCategories,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const { ConsensusStates } = require('../consensus/constants');
@@ -153,8 +152,7 @@ class P2pServer {
 
   getBlockStatus() {
     const timestamp = this.node.bc.lastBlockTimestamp();
-    const genesisTimestamp = this.node.getBlockchainParam(
-        BlockchainParamsCategories.GENESIS, 'genesis_timestamp');
+    const genesisTimestamp = this.node.getBlockchainParam('genesis/genesis_timestamp');
     const elapsedTimeMs = (timestamp === genesisTimestamp) ? 0 : Date.now() - timestamp;
     return {
       number: this.node.bc.lastBlockNumber(),
@@ -770,8 +768,7 @@ class P2pServer {
     try {
       let blockNumberToReport = lastReportedBlockNumberConfirmed + 1;
       const opList = [];
-      const txBytesLimit = this.node.getBlockchainParam(
-          BlockchainParamsCategories.RESOURCE, 'tx_bytes_limit');
+      const txBytesLimit = this.node.getBlockchainParam('resource/tx_bytes_limit');
       while (blockNumberToReport <= lastFinalizedBlockNumber) {
         if (sizeof(opList) >= txBytesLimit * 0.9) {
           break;

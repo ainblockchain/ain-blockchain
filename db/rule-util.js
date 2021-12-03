@@ -196,27 +196,21 @@ class RuleUtil {
   }
 
   getMinStakeAmount(getValue) {
-    const { BlockchainParamsCategories } = require('../common/constants');
     const PathUtil = require('../common/path-util');
     return getValue(
-        PathUtil.getSingleBlockchainParamPath(
-            BlockchainParamsCategories.CONSENSUS, 'min_stake_for_proposer'));
+        PathUtil.getSingleBlockchainParamPath('consensus', 'min_stake_for_proposer'));
   }
 
   getMaxStakeAmount(getValue) {
-    const { BlockchainParamsCategories } = require('../common/constants');
     const PathUtil = require('../common/path-util');
     return getValue(
-        PathUtil.getSingleBlockchainParamPath(
-            BlockchainParamsCategories.CONSENSUS, 'max_stake_for_proposer'));
+        PathUtil.getSingleBlockchainParamPath('consensus', 'max_stake_for_proposer'));
   }
 
   getMinNumValidators(getValue) {
-    const { BlockchainParamsCategories } = require('../common/constants');
     const PathUtil = require('../common/path-util');
     return getValue(
-        PathUtil.getSingleBlockchainParamPath(
-            BlockchainParamsCategories.CONSENSUS, 'min_num_validators'));
+        PathUtil.getSingleBlockchainParamPath('consensus', 'min_num_validators'));
   }
 
   getConsensusProposerWhitelistSize(getValue) {

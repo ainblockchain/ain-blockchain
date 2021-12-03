@@ -15,7 +15,6 @@ const {
   P2pNetworkStates,
   TrafficEventTypes,
   trafficStatsManager,
-  BlockchainParamsCategories,
 } = require('../common/constants');
 const {
   getAddressFromSocket,
@@ -52,9 +51,9 @@ class P2pClient {
     this.p2pState = P2pNetworkStates.STARTING;
     this.peerConnectionsInProgress = {};
     this.chainSyncInProgress = null;
-    this.epochMs = node.getBlockchainParam(BlockchainParamsCategories.CONSENSUS, 'epoch_ms');
-    this.networkId = node.getBlockchainParam(BlockchainParamsCategories.NETWORK, 'network_id');
-    this.chainId = node.getBlockchainParam(BlockchainParamsCategories.BLOCKCHAIN, 'chain_id');
+    this.epochMs = node.getBlockchainParam('consensus/epoch_ms');
+    this.networkId = node.getBlockchainParam('network/network_id');
+    this.chainId = node.getBlockchainParam('blockchain/chain_id');
     logger.info(`Now p2p network in STARTING state!`);
     this.startHeartbeat();
   }

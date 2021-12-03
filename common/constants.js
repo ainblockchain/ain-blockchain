@@ -204,21 +204,6 @@ const P2pNetworkStates = {
 };
 
 /**
- * Categories of blockchain parameters.
- *
- * @enum {String}
- */
-const BlockchainParamsCategories = {
-  BLOCKCHAIN: 'blockchain',
-  CONSENSUS: 'consensus',
-  GENESIS: 'genesis',
-  NETWORK: 'network',
-  RESOURCE: 'resource',
-  SHARDING: 'sharding',
-  TOKEN: 'token',
-};
-
-/**
  * Predefined database paths.
  * @enum {string}
  */
@@ -808,7 +793,6 @@ module.exports = {
   MessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
-  BlockchainParamsCategories,
   PredefinedDbPaths,
   TokenProperties,
   TokenBridgeProperties,

@@ -21,7 +21,6 @@ const {
   SyncModeOptions,
   TrafficEventTypes,
   WriteDbOperations,
-  BlockchainParamsCategories,
 } = require('../common/constants');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
@@ -57,7 +56,7 @@ class BlockchainNode {
     this.bp = new BlockPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
-    this.genesisAddr = this.getBlockchainParam(BlockchainParamsCategories.GENESIS, 'genesis_addr');
+    this.genesisAddr = this.getBlockchainParam('genesis/genesis_addr');
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
         this.stateManager, this.genesisAddr);
@@ -401,10 +400,12 @@ class BlockchainNode {
   }
 
   // TODO(liayoo): Rename lastBlockNumber to finalBlockNumber.
-  getBlockchainParam(category, name, blockNumber = null, stateVersion = null) {
-    return DB.getBlockchainParam(category, name,
-        blockNumber !== null ? blockNumber : this.bc.lastBlockNumber(),
-        stateVersion ? this.stateManager.getRoot(stateVersion) : this.stateManager.getFinalRoot());
+  getBlockchainParam(paramName, blockNumber = null, stateVersion = null) {
+    return DB.getBlockchainParam(
+      paramName,
+      blockNumber !== null ? blockNumber : this.bc.lastBlockNumber(),
+      stateVersion ? this.stateManager.getRoot(stateVersion) : this.stateManager.getFinalRoot()
+    );
   }
 
   getAllBlockchainParamsFromState() {
@@ -459,7 +460,7 @@ class BlockchainNode {
       txBody.gas_price = 0;
     }
     return Transaction.fromTxBody(txBody, this.account.private_key,
-        this.getBlockchainParam(BlockchainParamsCategories.BLOCKCHAIN, 'chain_id'));
+        this.getBlockchainParam('blockchain/chain_id'));
   }
 
   /**

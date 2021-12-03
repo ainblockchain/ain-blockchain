@@ -17,7 +17,6 @@ const {
   StateVersions,
   buildOwnerPermissions,
   BlockchainParams,
-  BlockchainParamsCategories,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
@@ -539,10 +538,15 @@ class DB {
     };
   }
 
-  static getBlockchainParam(category, name, blockNumber, stateRoot) {
-    if (typeof stateRoot === 'string') {
-      logger.error(`${new Error('getBlockchainParam stateRoot is a string').stack}`);
+  static getBlockchainParam(paramName, blockNumber, stateRoot) {
+    const LOG_HEADER = 'getBlockchainParam';
+    const split = paramName.split('/');
+    if (split.length !== 2) {
+      logger.error(`[${LOG_HEADER}] Invalid paramName: ${paramName}`);
+      return null;
     }
+    const category = split[0];
+    const name = split[1];
     // NOTE(liayoo): For certain parameters such as network params, we might need them before we
     // have the genesis block and the params in the state.
     if (blockNumber <= 0) {
@@ -728,7 +732,7 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(valuePath);
     const stateLabelLengthLimit = DB.getBlockchainParam(
-        BlockchainParamsCategories.RESOURCE, 'state_label_length_limit', blockNumber, this.stateRoot);
+        'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(
@@ -827,7 +831,7 @@ class DB {
   setFunction(functionPath, func, auth, blockNumber, options) {
     const isGlobal = options && options.isGlobal;
     const stateLabelLengthLimit = DB.getBlockchainParam(
-        BlockchainParamsCategories.RESOURCE, 'state_label_length_limit', blockNumber, this.stateRoot);
+        'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const isValidObj = isValidJsObjectForStates(func, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -876,7 +880,7 @@ class DB {
   setRule(rulePath, rule, auth, blockNumber, options) {
     const isGlobal = options && options.isGlobal;
     const stateLabelLengthLimit = DB.getBlockchainParam(
-        BlockchainParamsCategories.RESOURCE, 'state_label_length_limit', blockNumber, this.stateRoot);
+        'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const isValidObj = isValidJsObjectForStates(rule, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -914,7 +918,7 @@ class DB {
   setOwner(ownerPath, owner, auth, blockNumber, options) {
     const isGlobal = options && options.isGlobal;
     const stateLabelLengthLimit = DB.getBlockchainParam(
-        BlockchainParamsCategories.RESOURCE, 'state_label_length_limit', blockNumber, this.stateRoot);
+        'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const isValidObj = isValidJsObjectForStates(owner, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -1074,7 +1078,7 @@ class DB {
     DB.updateGasAmountTotal(tx, gasAmountTotal, result);
     if (!CommonUtil.isFailedTx(result)) {
       const stateTreeBytesLimit = DB.getBlockchainParam(
-          BlockchainParamsCategories.RESOURCE, 'state_tree_bytes_limit', blockNumber, this.stateRoot);
+          'resource/state_tree_bytes_limit', blockNumber, this.stateRoot);
       const budgets = DB.getStateBudgets(stateTreeBytesLimit);
       const heightCheck = this.checkTreeHeightAndSize(budgets, blockNumber);
       if (CommonUtil.isFailedTx(heightCheck)) {
@@ -1436,14 +1440,14 @@ class DB {
     if (CommonUtil.hasServiceOp(op)) {
       const balance = this.getBalance(billedTo);
       const minBalanceForServiceTx = DB.getBlockchainParam(
-          BlockchainParamsCategories.RESOURCE, 'min_balance_for_service_tx', blockNumber, this.stateRoot);
+          'resource/min_balance_for_service_tx', blockNumber, this.stateRoot);
       if (balance < minBalanceForServiceTx) {
         return CommonUtil.logAndReturnTxResult(
           logger, 34, `[${LOG_HEADER}] Balance too low (${balance} < ${minBalanceForServiceTx})`);
       }
     }
     const minStakingForAppTx = DB.getBlockchainParam(
-        BlockchainParamsCategories.RESOURCE, 'min_staking_for_app_tx', blockNumber, this.stateRoot);
+        'resource/min_staking_for_app_tx', blockNumber, this.stateRoot);
     const appNameList = CommonUtil.getAppNameList(op, this.shardingPath);
     appNameList.forEach((appName) => {
       const appStake = this.getAppStake(appName);
@@ -1553,7 +1557,7 @@ class DB {
       [StateInfoProperties.TREE_SIZE]: treeSize,
     } = this.getStateInfo('/');
     const stateTreeHeightLimit = DB.getBlockchainParam(
-        BlockchainParamsCategories.RESOURCE, 'state_tree_height_limit', blockNumber, this.stateRoot);
+        'resource/state_tree_height_limit', blockNumber, this.stateRoot);
     if (treeHeight > stateTreeHeightLimit) {
       return {
         code: 23,
