@@ -806,7 +806,7 @@ function getBlockchainConfig(filename) {
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     } else {
-      throw Error(`Missing blockchain config file: ${configPath}`);
+      return {};
     }
   }
   return config;
