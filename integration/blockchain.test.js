@@ -29,15 +29,18 @@ const { Block } = require('../blockchain/block');
 
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', MIN_NUM_VALIDATORS: 3, DEBUG: false, CONSOLE_LOG: false,
+    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', DEBUG: false, CONSOLE_LOG: false,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', HOSTING_ENV: 'local',
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    ACCOUNT_INDEX: 1, MIN_NUM_VALIDATORS: 3, DEBUG: false, CONSOLE_LOG: false,
+    ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', HOSTING_ENV: 'local',
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    ACCOUNT_INDEX: 2, MIN_NUM_VALIDATORS: 3, DEBUG: false, CONSOLE_LOG: false,
+    ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', HOSTING_ENV: 'local',
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
 ];
