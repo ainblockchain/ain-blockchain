@@ -219,9 +219,9 @@ class RuleUtil {
             BlockchainParamsCategories.CONSENSUS, 'min_num_validators'));
   }
 
-  getConsensusWhitelistSize(getValue) {
+  getConsensusProposerWhitelistSize(getValue) {
     const PathUtil = require('../common/path-util');
-    this.length(this.values(getValue(PathUtil.getConsensusWhitelistPath())).filter((x) => x === true));
+    this.length(this.values(getValue(PathUtil.getConsensusProposerWhitelistPath())).filter((x) => x === true));
   }
 
   getTokenBridgeConfig(networkName, chainId, tokenId, getValue) {

@@ -447,7 +447,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
     ain_isValidator: function(args, done) {
       const beginTime = Date.now();
       const addr = args.address;
-      const whitelisted = p2pServer.node.db.getValue(PathUtil.getConsensusWhitelistAddrPath(addr));
+      const whitelisted = p2pServer.node.db.getValue(PathUtil.getConsensusProposerWhitelistAddrPath(addr));
       const stake = p2pServer.node.db.getValue(PathUtil.getServiceAccountBalancePath(addr));
       const result = stake && whitelisted ? stake : 0;
       const latency = Date.now() - beginTime;

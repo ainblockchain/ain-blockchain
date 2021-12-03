@@ -1109,10 +1109,10 @@ class Consensus {
     return validators;
   }
 
-  getWhitelist(stateVersion) {
-    const LOG_HEADER = 'getWhitelist';
+  getProposerWhitelist(stateVersion) {
+    const LOG_HEADER = 'getProposerWhitelist';
     const stateRoot = this.node.stateManager.getRoot(stateVersion);
-    const whitelist = DB.getValueFromStateRoot(stateRoot, PathUtil.getConsensusWhitelistPath());
+    const whitelist = DB.getValueFromStateRoot(stateRoot, PathUtil.getConsensusProposerWhitelistPath());
     logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
     return whitelist || {};
   }
@@ -1129,9 +1129,9 @@ class Consensus {
         BlockchainParamsCategories.CONSENSUS, 'max_num_validators', blockNumber, stateVersion);
     // Need the block #1 to be finalized to have the stakes reflected in the state.
     if (this.node.bc.lastBlockNumber() < 1) {
-      const genesisWhitelist = this.node.getBlockchainParam(
-          BlockchainParamsCategories.CONSENSUS, 'genesis_whitelist', blockNumber, stateVersion);
-      for (const address of Object.keys(genesisWhitelist)) {
+      const genesisProposerWhitelist = this.node.getBlockchainParam(
+          BlockchainParamsCategories.CONSENSUS, 'genesis_proposer_whitelist', blockNumber, stateVersion);
+      for (const address of Object.keys(genesisProposerWhitelist)) {
         const stake = this.getConsensusStakeFromAddr(stateVersion, address);
         if (stake && stake >= minStakeForProposer && stake <= maxStakeForProposer) {
           validators[address] = {
@@ -1151,14 +1151,14 @@ class Consensus {
       logger.error(err);
       throw Error(err);
     }
-    const whitelist = this.getWhitelist(stateVersion);
+    const proposerWhitelist = this.getProposerWhitelist(stateVersion);
     const stateRoot = this.node.stateManager.getRoot(stateVersion);
     const allStakeInfo = DB.getValueFromStateRoot(
         stateRoot, PathUtil.getStakingServicePath(PredefinedDbPaths.CONSENSUS)) || {};
     for (const [address, stakeInfo] of Object.entries(allStakeInfo)) {
       const stake = this.getConsensusStakeFromAddr(stateVersion, address);
       if (stake) {
-        if (whitelist[address] === true) {
+        if (proposerWhitelist[address] === true) {
           if (stake >= minStakeForProposer && stake <= maxStakeForProposer) {
             validators[address] = {
               [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
@@ -1187,7 +1187,7 @@ class Consensus {
       }
     }
     logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators, null, 2)}, ` +
-        `whitelist: ${JSON.stringify(whitelist, null, 2)}`);
+        `proposer_whitelist: ${JSON.stringify(proposerWhitelist, null, 2)}`);
     return validators;
   }
 

@@ -119,7 +119,7 @@
         },
         "propose": {
           ".rule": {
-            "write": "util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || (getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount(getValue) && getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') <= util.getMaxStakeAmount(getValue))) && util.isNumber(newData.gas_cost_total)"
+            "write": "util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/proposer_whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || (getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount(getValue) && getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') <= util.getMaxStakeAmount(getValue))) && util.isNumber(newData.gas_cost_total)"
           }
         },
         "$block_hash": {
@@ -133,17 +133,17 @@
         }
       }
     },
+    "proposer_whitelist": {
+      "$user_addr": {
+        ".rule": {
+          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusProposerWhitelistSize() > util.getMinNumValidators(getValue)))"
+        }
+      }
+    },
     "rewards": {
       "$user_addr": {
         ".rule": {
           "write": "auth.fid === '_distributeFee' || auth.fid === '_claimReward'"
-        }
-      }
-    },
-    "whitelist": {
-      "$user_addr": {
-        ".rule": {
-          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusWhitelistSize() > util.getMinNumValidators(getValue)))"
         }
       }
     }
