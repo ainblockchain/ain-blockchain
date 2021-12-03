@@ -1,4 +1,5 @@
 {
+  "_description": "Blockchain params for the testnet-sandbox on GCP.",
   "token": {
     "name": "AI Network",
     "symbol": "AIN",

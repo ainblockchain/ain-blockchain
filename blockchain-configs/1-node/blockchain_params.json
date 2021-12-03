@@ -1,4 +1,5 @@
 {
+  "_description": "Blockchain params for a 1-node network. Mostly used for unit tests.",
   "token": {
     "name": "AI Network",
     "symbol": "AIN",
