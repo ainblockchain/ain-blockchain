@@ -400,6 +400,7 @@ class BlockchainNode {
     return result;
   }
 
+  // TODO(liayoo): Rename lastBlockNumber to finalBlockNumber.
   getBlockchainParam(category, name, blockNumber = null, stateVersion = null) {
     return DB.getBlockchainParam(category, name,
         blockNumber !== null ? blockNumber : this.bc.lastBlockNumber(),
