@@ -2,7 +2,7 @@ const logger = new (require('../logger'))('NETWORK-UTIL');
 
 const _ = require('lodash');
 const axios = require('axios');
-const { BlockchainConfigs, NodeConfigs } = require('../common/constants');
+const { BlockchainConsts, NodeConfigs } = require('../common/constants');
 const ip = require('ip');
 const extIp = require('ext-ip')();
 const CommonUtil = require('../common/common-util');
@@ -76,7 +76,7 @@ function sendGetRequest(endpoint, method, params) {
     endpoint,
     {
       method,
-      params: Object.assign(params, { protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION }),
+      params: Object.assign(params, { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }),
       jsonrpc: '2.0',
       id: 0
     }

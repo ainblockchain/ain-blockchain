@@ -3,7 +3,6 @@ const logger = new (require('../logger'))('TRANSACTION');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const {
-  BlockchainConfigs,
   NodeConfigs,
   WriteDbOperations,
 } = require('../common/constants');

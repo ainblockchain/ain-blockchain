@@ -21,7 +21,7 @@ class CommonUtil {
   }
 
   static signTransaction(txBody, privateKey, chainId) {
-    const { BlockchainConfigs } = require('../common/constants');
+    const { BlockchainConsts } = require('../common/constants');
     if (!privateKey) {
       return null;
     }
@@ -36,7 +36,7 @@ class CommonUtil {
       signedTx: {
         tx_body: txBody,
         signature: sig,
-        protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+        protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
       }
     };
   }
@@ -610,14 +610,14 @@ class CommonUtil {
    * @returns
    */
   static getTotalGasCost(gasPrice, gasAmount) {
-    const { BlockchainConfigs } = require('./constants');
+    const { BlockchainConsts } = require('./constants');
     if (!CommonUtil.isNumber(gasPrice)) {
       gasPrice = 0; // Default gas price = 0 microain
     }
     if (!CommonUtil.isNumber(gasAmount)) {
       gasAmount = 0; // Default gas amount = 0
     }
-    return gasPrice * BlockchainConfigs.MICRO_AIN * gasAmount;
+    return gasPrice * BlockchainConsts.MICRO_AIN * gasAmount;
   }
 
   static getServiceGasCostTotalFromTxList(txList, resList) {
