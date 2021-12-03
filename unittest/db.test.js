@@ -3,7 +3,7 @@ const rimraf = require('rimraf');
 const _ = require("lodash");
 const ainUtil = require('@ainblockchain/ain-util');
 const {
-  BlockchainConfigs,
+  BlockchainConsts,
   PredefinedDbPaths,
   StateInfoProperties,
   StateVersions,
@@ -27,14 +27,14 @@ describe("DB initialization", () => {
   let node;
 
   beforeEach(() => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node, 0, true);
   })
 
   afterEach(() => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
   });
 
   describe("Sharding path", () => {
@@ -99,7 +99,7 @@ describe("DB operations", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -246,7 +246,7 @@ describe("DB operations", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
   });
 
   describe("Read operations", () => {
@@ -2698,7 +2698,7 @@ describe("DB operations", () => {
     let objectTx;
 
     beforeEach(() => {
-      rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+      rimraf.sync(BlockchainConsts.CHAINS_DIR);
 
       node = new BlockchainNode();
       setNodeForTesting(node);
@@ -2722,7 +2722,7 @@ describe("DB operations", () => {
     });
 
     afterEach(() => {
-      rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+      rimraf.sync(BlockchainConsts.CHAINS_DIR);
     });
 
     describe("executeTransaction", () => {
@@ -2849,7 +2849,7 @@ describe("DB operations", () => {
             [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.TRANSFER, node.account.address, addr],
             valueObj);
         node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
-        const serviceStateBudget = BlockchainParams.resource.state_tree_bytes_limit * BlockchainConfigs.SERVICE_STATE_BUDGET_RATIO;
+        const serviceStateBudget = BlockchainParams.resource.state_tree_bytes_limit * BlockchainConsts.SERVICE_STATE_BUDGET_RATIO;
         expect(node.db.getStateUsageAtPath('/')[StateInfoProperties.TREE_BYTES]).to.be.lessThan(serviceStateBudget);
 
         const expectedGasAmountTotal = {
@@ -2879,7 +2879,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 25);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for services (11322026 > 10000000)");
+        assert.deepEqual(res.error_message.includes("Exceeded state budget limit for services"), true);
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
         assert.deepEqual(res.gas_cost_total, 7.09512);
       });
@@ -3262,7 +3262,7 @@ describe("DB rule config", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
 
     node1 = new BlockchainNode();
     setNodeForTesting(node1, 0);
@@ -3304,7 +3304,7 @@ describe("DB rule config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
   });
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {
@@ -3379,7 +3379,7 @@ describe("DB owner config", () => {
   let node;
 
   beforeEach(() => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -3490,7 +3490,7 @@ describe("DB owner config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
   });
 
   // Known user
@@ -3711,7 +3711,7 @@ describe("DB sharding config", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node, 0, false, false);
@@ -3833,7 +3833,7 @@ describe("DB sharding config", () => {
   })
 
   afterEach(() => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
   });
 
   describe("Sharding path", () => {
@@ -4527,7 +4527,7 @@ describe("State info", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -4556,7 +4556,7 @@ describe("State info", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
   });
 
   describe("Check proof for setValue(), setOwner(), setRule(), and setFunction()", () => {
@@ -4668,7 +4668,7 @@ describe("State info - getStateInfo", () => {
   beforeEach(() => {
     let result;
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -4691,7 +4691,7 @@ describe("State info - getStateInfo", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
   });
 
   describe("No tree structure change", () => {
@@ -4854,7 +4854,7 @@ describe("State version handling", () => {
   let dbValues;
 
   beforeEach(() => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node);
@@ -4886,7 +4886,7 @@ describe("State version handling", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
   });
 
   describe("getRefForReading()", () => {

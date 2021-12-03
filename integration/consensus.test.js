@@ -10,7 +10,7 @@ const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const syncRequest = require('sync-request');
 const {
-  BlockchainConfigs,
+  BlockchainConsts,
   PredefinedDbPaths,
 } = require('../common/constants');
 const {
@@ -123,7 +123,7 @@ describe('Consensus', () => {
   const nodeAddressList = [];
 
   before(async () => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
 
     const promises = [];
     // Start up all servers
@@ -142,7 +142,7 @@ describe('Consensus', () => {
     jsonRpcClient = jayson.client.http(server2 + JSON_RPC_ENDPOINT);
     promises.push(new Promise((resolve) => {
       jsonRpcClient.request(JSON_RPC_GET_LAST_BLOCK,
-          {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}, function(err, response) {
+          {protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION}, function(err, response) {
         if (err) {
           resolve();
           throw err;
@@ -172,7 +172,7 @@ describe('Consensus', () => {
     }
     trackerProc.kill();
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
   });
 
   describe('Validators', () => {
@@ -193,7 +193,7 @@ describe('Consensus', () => {
       const res = await client.request('ain_sendSignedTransaction', {
         tx_body: txBody,
         signature,
-        protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+        protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
       });
       if (!(await waitUntilTxFinalized([server1], _.get(res, 'result.result.tx_hash')))) {
         console.error(`Failed to check finalization of tx.`);
@@ -506,7 +506,7 @@ describe('Consensus', () => {
       const invalidProposal = {
         value: { proposalBlock, proposalTx },
         type: ConsensusMessageTypes.PROPOSE,
-        consensusProtoVer: BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION
+        consensusProtoVer: BlockchainConsts.CONSENSUS_PROTOCOL_VERSION
       };
       syncRequest('POST', server1 + '/broadcast_consensus_msg', {json: invalidProposal});
       return { proposalBlock, proposalTx };

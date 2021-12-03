@@ -8,7 +8,7 @@ const {
   abbrAddr,
   isNodeAlive
 } = require('./util');
-const { BlockchainConfigs } = require('../common/constants');
+const { BlockchainConsts } = require('../common/constants');
 
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 
@@ -149,7 +149,7 @@ class Tracker {
 
   getProtocolInfo() {
     return {
-      currentVersion: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+      currentVersion: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
     };
   }
 }

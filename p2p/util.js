@@ -7,7 +7,7 @@ const logger = new (require('../logger'))('SERVER_UTIL');
 
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const { BlockchainConfigs, NodeConfigs } = require('../common/constants');
+const { BlockchainConsts, NodeConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
 function _isValidMessage(message) {
@@ -89,8 +89,8 @@ function encapsulateMessage(type, dataObj, networkId) {
   const message = {
     type,
     data: dataObj,
-    protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
-    dataProtoVer: BlockchainConfigs.DATA_PROTOCOL_VERSION,
+    protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+    dataProtoVer: BlockchainConsts.DATA_PROTOCOL_VERSION,
     networkId,
     timestamp: Date.now()
   };

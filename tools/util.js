@@ -1,12 +1,12 @@
 const _ = require('lodash');
 const axios = require('axios');
-const { BlockchainConfigs } = require('../common/constants');
+const { BlockchainConsts } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
 // FIXME(minsulee2): this is duplicated function see: ./common/network-util.js
 function signAndSendTx(endpointUrl, txBody, privateKey) {
   console.log('\n*** signAndSendTx():');
-  const { txHash, signedTx } = CommonUtil.signTransaction(txBody, privateKey, BlockchainConfigs.CHAIN_ID);
+  const { txHash, signedTx } = CommonUtil.signTransaction(txBody, privateKey, 0); // TODO(liayoo): get chainId from configs / command line input
   console.log(`signedTx: ${JSON.stringify(signedTx, null, 2)}`);
   console.log(`txHash: ${txHash}`);
   console.log('Sending transaction...');
@@ -37,7 +37,7 @@ async function sendGetTxByHashRequest(endpointUrl, txHash) {
     {
       method: 'ain_getTransactionByHash',
       params: {
-        protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+        protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
         hash: txHash,
       },
       jsonrpc: '2.0',

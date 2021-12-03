@@ -5,7 +5,7 @@ const rimraf = require('rimraf');
 const spawn = require('child_process').spawn;
 const syncRequest = require('sync-request');
 const AfanClient = require('../afan_client');
-const { BlockchainConfigs } = require('../common/constants');
+const { BlockchainConsts } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const {
   waitUntilTxFinalized,
@@ -101,7 +101,7 @@ describe('DApp Test', async () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
     await CommonUtil.sleep(3000);
     server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[0], true);
@@ -119,7 +119,7 @@ describe('DApp Test', async () => {
     server2_proc.kill();
     server3_proc.kill();
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(BlockchainConsts.CHAINS_DIR);
   });
 
   set_value = (ref, value) => {

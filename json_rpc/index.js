@@ -4,7 +4,7 @@ const semver = require('semver');
 const sizeof = require('object-sizeof');
 const _ = require('lodash');
 const {
-  BlockchainConfigs,
+  BlockchainConsts,
   NodeConfigs,
   BlockchainNodeStates,
   BlockchainParamsCategories,
@@ -33,7 +33,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
   const nonTxMethods = {
     ain_getProtocolVersion: function(args, done) {
       const beginTime = Date.now();
-      const result = BlockchainConfigs.CURRENT_PROTOCOL_VERSION;
+      const result = BlockchainConsts.CURRENT_PROTOCOL_VERSION;
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, addProtocolVersion({ result }));
@@ -669,6 +669,6 @@ function extractTransactionHashes(block) {
 }
 
 function addProtocolVersion(result) {
-  result.protoVer = BlockchainConfigs.CURRENT_PROTOCOL_VERSION;
+  result.protoVer = BlockchainConsts.CURRENT_PROTOCOL_VERSION;
   return result;
 }
