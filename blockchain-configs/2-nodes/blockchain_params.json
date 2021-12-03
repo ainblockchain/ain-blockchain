@@ -58,7 +58,7 @@
   },
   "resource": {
     "state_tree_height_limit": 30,
-    "state_tree_bytes_limit": 20000000,
+    "state_tree_bytes_limit": 5000000000,
     "state_label_length_limit": 150,
     "bandwidth_budget_per_block": 10000,
     "min_staking_for_app_tx": 0,
