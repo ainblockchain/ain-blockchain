@@ -51,9 +51,6 @@ class P2pClient {
     this.p2pState = P2pNetworkStates.STARTING;
     this.peerConnectionsInProgress = {};
     this.chainSyncInProgress = null;
-    this.epochMs = node.getBlockchainParam('consensus/epoch_ms');
-    this.networkId = node.getBlockchainParam('network/network_id');
-    this.chainId = node.getBlockchainParam('blockchain/chain_id');
     logger.info(`Now p2p network in STARTING state!`);
     this.startHeartbeat();
   }
@@ -303,7 +300,8 @@ class P2pClient {
   }
 
   broadcastConsensusMessage(consensusMessage) {
-    const payload = encapsulateMessage(MessageTypes.CONSENSUS, { message: consensusMessage }, this.networkId);
+    const networkId = this.server.node.getBlockchainParam('network/network_id');
+    const payload = encapsulateMessage(MessageTypes.CONSENSUS, { message: consensusMessage }, networkId);
     if (!payload) {
       logger.error('The consensus msg cannot be broadcasted because of msg encapsulation failure.');
       return;
@@ -334,12 +332,14 @@ class P2pClient {
       return;
     }
     const lastBlockNumber = this.server.node.bc.lastBlockNumber();
+    const epochMs = this.server.node.getBlockchainParam('consensus/epoch_ms');
+    const networkId = this.server.node.getBlockchainParam('network/network_id');
     if (this.chainSyncInProgress.lastBlockNumber >= lastBlockNumber &&
-        this.chainSyncInProgress.updatedAt > Date.now() - this.epochMs) { // time buffer
+        this.chainSyncInProgress.updatedAt > Date.now() - epochMs) { // time buffer
       logger.info(`[${LOG_HEADER}] Already sent a request with the same/higher lastBlockNumber`);
       return;
     }
-    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber }, this.networkId);
+    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber }, networkId);
     if (!payload) {
       logger.error(`[${LOG_HEADER}] The request chainSegment cannot be sent because of msg encapsulation failure.`);
       return;
@@ -349,7 +349,8 @@ class P2pClient {
   }
 
   broadcastTransaction(transaction) {
-    const payload = encapsulateMessage(MessageTypes.TRANSACTION, { transaction: transaction }, this.networkId);
+    const networkId = this.server.node.getBlockchainParam('network/network_id');
+    const payload = encapsulateMessage(MessageTypes.TRANSACTION, { transaction: transaction }, networkId);
     if (!payload) {
       logger.error('The transaction cannot be broadcasted because of msg encapsulation failure.');
       return;
@@ -374,8 +375,9 @@ class P2pClient {
       logger.error('The signaure is not correctly generated. Discard the message!');
       return false;
     }
+    const networkId = this.server.node.getBlockchainParam('network/network_id');
     const payload = encapsulateMessage(
-        MessageTypes.ADDRESS_REQUEST, { body: body, signature: signature }, this.networkId);
+        MessageTypes.ADDRESS_REQUEST, { body: body, signature: signature }, networkId);
     if (!payload) {
       logger.error('The peerInfo message cannot be sent because of msg encapsulation failure.');
       return false;
@@ -390,10 +392,11 @@ class P2pClient {
     socket.on('message', (message) => {
       const beginTime = Date.now();
       const parsedMessage = JSON.parse(message);
-      const networkId = _.get(parsedMessage, 'networkId');
+      const peerNetworkId = _.get(parsedMessage, 'networkId');
+      const networkId = this.server.node.getBlockchainParam('network/network_id');
       const address = getAddressFromSocket(this.outbound, socket);
-      if (networkId !== this.networkId) {
-        logger.error(`The given network ID(${networkId}) of the node(${address}) is MISSING or ` +
+      if (peerNetworkId !== networkId) {
+        logger.error(`The given network ID(${peerNetworkId}) of the node(${address}) is MISSING or ` +
           `DIFFERENT from mine. Disconnect the connection.`);
         closeSocketSafe(this.outbound, socket);
         const latency = Date.now() - beginTime;
@@ -733,12 +736,13 @@ class P2pClient {
   }
 
   setIntervalForShardProofHashReports() {
+    const epochMs = this.server.node.getBlockchainParam('consensus/epoch_ms');
     if (!this.shardReportInterval && this.server.node.isShardReporter) {
       this.shardReportInterval = setInterval(() => {
         if (this.server.consensus.isRunning()) {
           this.server.reportShardProofHashes();
         }
-      }, this.epochMs);
+      }, epochMs);
     }
   }
 
@@ -758,7 +762,8 @@ class P2pClient {
   }
 
   updateStatusToPeer(socket, address) {
-    const payload = encapsulateMessage(MessageTypes.PEER_INFO_UPDATE, this.getStatus(), this.networkId);
+    const networkId = this.server.node.getBlockchainParam('network/network_id');
+    const payload = encapsulateMessage(MessageTypes.PEER_INFO_UPDATE, this.getStatus(), networkId);
     if (!payload) {
       logger.error('The message cannot be sent because of msg encapsulation failure.');
       return;

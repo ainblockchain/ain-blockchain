@@ -56,10 +56,9 @@ class BlockchainNode {
     this.bp = new BlockPool(this);
     this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
-    this.genesisAddr = this.getBlockchainParam('genesis/genesis_addr');
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
-        this.stateManager, this.genesisAddr);
+        this.stateManager, this.getBlockchainParam('genesis/genesis_addr'));
     this.state = BlockchainNodeStates.STARTING;
     logger.info(`Now node in STARTING state!`);
     if (account === null) {
@@ -193,7 +192,7 @@ class BlockchainNode {
     logger.info(`[${LOG_HEADER}] Initializing DB..`);
     const startingDb = DB.create(
         StateVersions.EMPTY, StateVersions.START, this.bc, true, latestSnapshotBlockNumber,
-        this.stateManager, this.genesisAddr);
+        this.stateManager, this.getBlockchainParam('genesis/genesis_addr'));
     startingDb.initDb(latestSnapshot);
 
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
@@ -231,7 +230,8 @@ class BlockchainNode {
           `[${LOG_HEADER}] Failed to clone state version: ${baseVersion}`);
       return null;
     }
-    return new DB(tempRoot, tempVersion, null, blockNumberSnapshot, this.stateManager, this.genesisAddr);
+    return new DB(tempRoot, tempVersion, null, blockNumberSnapshot, this.stateManager,
+        this.getBlockchainParam('genesis/genesis_addr'));
   }
 
   syncDbAndNonce(newVersion) {
