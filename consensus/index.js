@@ -70,7 +70,6 @@ class Consensus {
     // NOTE(liayoo): epoch increases by 1 every EPOCH_MS,
     // and at each epoch a new proposer is pseudo-randomly selected.
     this.epoch = 1;
-    this.epochMs = node.getBlockchainParam('consensus/epoch_ms');
 
     // Values used for status reporting
     this.validators = {};
@@ -118,7 +117,8 @@ class Consensus {
     const LOG_HEADER = 'startEpochTransition';
     const genesisBlock = this.node.bc.genesisBlock;
     this.startingTime = genesisBlock.timestamp;
-    this.epoch = Math.ceil((Date.now() - this.startingTime) / this.epochMs);
+    const epochMs = this.node.getBlockchainParam('consensus/epoch_ms');
+    this.epoch = Math.ceil((Date.now() - this.startingTime) / epochMs);
     logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.epoch}`);
 
     this.setEpochTransition();
@@ -129,6 +129,7 @@ class Consensus {
     if (this.epochInterval) {
       clearInterval(this.epochInterval);
     }
+    const epochMs = this.node.getBlockchainParam('consensus/epoch_ms');
     this.epochInterval = setInterval(async () => {
       if (this.isInEpochTransition) {
         return;
@@ -148,7 +149,7 @@ class Consensus {
         }
       }
       currentTime -= this.timeAdjustment;
-      const absEpoch = Math.floor((currentTime - this.startingTime) / this.epochMs);
+      const absEpoch = Math.floor((currentTime - this.startingTime) / epochMs);
       if (this.epoch + 1 < absEpoch) {
         logger.debug(`[${LOG_HEADER}] Epoch is too low: ${this.epoch} / ${absEpoch}`);
       } else if (this.epoch + 1 > absEpoch) {
@@ -163,7 +164,7 @@ class Consensus {
         this.tryPropose();
       }
       this.isInEpochTransition = false;
-    }, this.epochMs);
+    }, epochMs);
   }
 
   stop() {
