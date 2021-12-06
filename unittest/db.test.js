@@ -1503,62 +1503,62 @@ describe("DB operations", () => {
       it("when writing with invalid path", () => {
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/.", 12345), {
           "code": 102,
-          "error_message": "Invalid path: /apps/test/new/unchartered/nested/.",
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/.",
           "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/$", 12345), {
           "code": 102,
-          "error_message": "Invalid path: /apps/test/new/unchartered/nested/$",
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/$",
           "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/a*", 12345), {
           "code": 102,
-          "error_message": "Invalid path: /apps/test/new/unchartered/nested/a*",
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/a*",
           "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/*a", 12345), {
           "code": 102,
-          "error_message": "Invalid path: /apps/test/new/unchartered/nested/*a",
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/*a",
           "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/#", 12345), {
           "code": 102,
-          "error_message": "Invalid path: /apps/test/new/unchartered/nested/#",
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/#",
           "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/{", 12345), {
           "code": 102,
-          "error_message": "Invalid path: /apps/test/new/unchartered/nested/{",
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/{",
           "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/}", 12345), {
           "code": 102,
-          "error_message": "Invalid path: /apps/test/new/unchartered/nested/}",
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/}",
           "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/[", 12345), {
           "code": 102,
-          "error_message": "Invalid path: /apps/test/new/unchartered/nested/[",
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/[",
           "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/]", 12345), {
           "code": 102,
-          "error_message": "Invalid path: /apps/test/new/unchartered/nested/]",
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/]",
           "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/\x00", 12345), {
           "code": 102,
-          "error_message": "Invalid path: /apps/test/new/unchartered/nested/\x00",
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/\x00",
           "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/\x1F", 12345), {
           "code": 102,
-          "error_message": "Invalid path: /apps/test/new/unchartered/nested/\x1F",
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/\x1F",
           "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/\x7F", 12345), {
           "code": 102,
-          "error_message": "Invalid path: /apps/test/new/unchartered/nested/\x7F",
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/\x7F",
           "bandwidth_gas_amount": 1
         });
       })
@@ -1790,7 +1790,7 @@ describe("DB operations", () => {
               }
             }), {
           "code": 402,
-          "error_message": "Invalid path: /apps/test/test_function/some/path/.",
+          "error_message": "Invalid function path: /apps/test/test_function/some/path/.",
           "bandwidth_gas_amount": 1
         });
       })
@@ -1876,7 +1876,7 @@ describe("DB operations", () => {
               }
             }), {
           "code": 502,
-          "error_message": "Invalid path: /apps/test/test_rule/some/path/.",
+          "error_message": "Invalid rule path: /apps/test/test_rule/some/path/.",
           "bandwidth_gas_amount": 1
         });
       })
@@ -2009,7 +2009,7 @@ describe("DB operations", () => {
           }
         }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
           "code": 602,
-          "error_message": "Invalid path: /apps/test/test_owner/some/path/.",
+          "error_message": "Invalid owner path: /apps/test/test_owner/some/path/.",
           "bandwidth_gas_amount": 1
         });
       })
