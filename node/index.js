@@ -454,36 +454,42 @@ class BlockchainNode {
     }
     if (!this.tp.hasRoomForNewTransaction()) {
       return CommonUtil.logAndReturnTxResult(
-          logger, TxResultCode.TX_POOL_NOT_ENOUGH_ROOM,
+          logger,
+          TxResultCode.TX_POOL_NOT_ENOUGH_ROOM,
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${this.tp.getPoolSize()}).`);
     }
     if (this.tp.isNotEligibleTransaction(tx)) {
       return CommonUtil.logAndReturnTxResult(
-          logger, TxResultCode.TX_ALREADY_RECEIVED,
+          logger,
+          TxResultCode.TX_ALREADY_RECEIVED,
           `[${LOG_HEADER}] Already received transaction: ${JSON.stringify(tx, null, 2)}`);
     }
     if (this.state !== BlockchainNodeStates.SERVING) {
       return CommonUtil.logAndReturnTxResult(
-          logger, TxResultCode.BLOCKCHAIN_NODE_NOT_SERVING,
+          logger,
+          TxResultCode.BLOCKCHAIN_NODE_NOT_SERVING,
           `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
     const executableTx = Transaction.toExecutable(tx);
     if (!Transaction.isExecutable(executableTx)) {
       return CommonUtil.logAndReturnTxResult(
-          logger, TxResultCode.TX_INVALID,
+          logger,
+          TxResultCode.TX_INVALID,
           `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
     }
     if (!BlockchainConfigs.LIGHTWEIGHT) {
       if (!Transaction.verifyTransaction(executableTx)) {
         return CommonUtil.logAndReturnTxResult(
-            logger, TxResultCode.TX_INVALID_SIGNATURE,
+            logger,
+            TxResultCode.TX_INVALID_SIGNATURE,
             `[${LOG_HEADER}] Invalid signature`);
       }
     }
     if (!this.tp.hasPerAccountRoomForNewTransaction(executableTx.address)) {
       const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
       return CommonUtil.logAndReturnTxResult(
-          logger, TxResultCode.TX_POOL_NOT_ENOUGH_ROOM_FOR_ACCOUNT,
+          logger,
+          TxResultCode.TX_POOL_NOT_ENOUGH_ROOM_FOR_ACCOUNT,
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
           `for account: ${executableTx.address}`);
     }
