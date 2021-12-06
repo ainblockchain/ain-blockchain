@@ -21,6 +21,7 @@ const {
   TrafficEventTypes,
   WriteDbOperations,
 } = require('../common/constants');
+const { TxResultCode } = require('../common/result-code');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
 const CommonUtil = require('../common/common-util');
@@ -453,33 +454,36 @@ class BlockchainNode {
     }
     if (!this.tp.hasRoomForNewTransaction()) {
       return CommonUtil.logAndReturnTxResult(
-          logger, 3,
+          logger, TxResultCode.TX_POOL_NOT_ENOUGH_ROOM,
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${this.tp.getPoolSize()}).`);
     }
     if (this.tp.isNotEligibleTransaction(tx)) {
       return CommonUtil.logAndReturnTxResult(
-          logger, 1,
+          logger, TxResultCode.TX_ALREADY_RECEIVED,
           `[${LOG_HEADER}] Already received transaction: ${JSON.stringify(tx, null, 2)}`);
     }
     if (this.state !== BlockchainNodeStates.SERVING) {
       return CommonUtil.logAndReturnTxResult(
-          logger, 2, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
+          logger, TxResultCode.BLOCKCHAIN_NODE_NOT_SERVING,
+          `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
     const executableTx = Transaction.toExecutable(tx);
     if (!Transaction.isExecutable(executableTx)) {
       return CommonUtil.logAndReturnTxResult(
-          logger, 5,
+          logger, TxResultCode.TX_INVALID,
           `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
     }
     if (!BlockchainConfigs.LIGHTWEIGHT) {
       if (!Transaction.verifyTransaction(executableTx)) {
-        return CommonUtil.logAndReturnTxResult(logger, 6, `[${LOG_HEADER}] Invalid signature`);
+        return CommonUtil.logAndReturnTxResult(
+            logger, TxResultCode.TX_INVALID_SIGNATURE,
+            `[${LOG_HEADER}] Invalid signature`);
       }
     }
     if (!this.tp.hasPerAccountRoomForNewTransaction(executableTx.address)) {
       const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
       return CommonUtil.logAndReturnTxResult(
-          logger, 4,
+          logger, TxResultCode.TX_POOL_NOT_ENOUGH_ROOM_FOR_ACCOUNT,
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
           `for account: ${executableTx.address}`);
     }
