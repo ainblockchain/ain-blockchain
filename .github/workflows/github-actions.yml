@@ -14,15 +14,19 @@ on:
     types: [opened, synchronize, reopened, closed]
 jobs:
   build_and_test:
-    if: ${{ github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'edited') }}
-    runs-on: macos-latest
+    if: ${{ github.event_name == 'pull_request' }} # && (github.event.action == 'opened' || github.event.action == 'edited') }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node-version: [ '12.x', '14.x', '16.x' ]
+    runs-on: ${{ matrix.os }}
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       # Setup node environment for testing
       - uses: actions/setup-node@v2
         with:
-          node-version: '12.x'
+          node-version: ${{ matrix.node-version }}
           registry-url: 'https://registry.npmjs.org'
       - name: yarn install
         run: yarn install
