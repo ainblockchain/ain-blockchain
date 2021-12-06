@@ -704,9 +704,11 @@ function isAppDependentServiceType(type) {
 
 function getBlockchainConfig(filename) {
   let config = null;
-  const configPath = path.resolve(__dirname, '..', process.env.BLOCKCHAIN_CONFIGS_DIR, filename);
-  if (fs.existsSync(configPath)) {
-    config = JSON.parse(fs.readFileSync(configPath));
+  if (process.env.BLOCKCHAIN_CONFIGS_DIR) {
+    const configPath = path.resolve(__dirname, '..', process.env.BLOCKCHAIN_CONFIGS_DIR, filename);
+    if (fs.existsSync(configPath)) {
+      config = JSON.parse(fs.readFileSync(configPath));
+    }
   }
   if (!config) {
     const defaultConfigPath = path.resolve(__dirname, '..', 'blockchain-configs/base', filename);

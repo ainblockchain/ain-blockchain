@@ -5,7 +5,8 @@ printf "\n[[[[[ start_servers_afan_local.sh ]]]]]\n\n"
 # PARENT CHAIN **
 # parent tracker
 printf "\nStarting parent tracker..\n"
-HOSTING_ENV=local \
+  PORT=8080 \
+  P2P_PORT=5000 \
   CONSOLE_LOG=true \
   BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
   node ./tracker-server/index.js &
@@ -14,8 +15,9 @@ sleep 5
 # parent node 0
 printf "\nStarting parent node 0..\n"
 ACCOUNT_INDEX=0 \
+  PORT=8081 \
+  P2P_PORT=5001 \
   PEER_CANDIDATE_JSON_RPC_URL='' \
-  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -29,7 +31,8 @@ sleep 5
 # parent node 1
 printf "\nStarting parent node 1..\n"
 ACCOUNT_INDEX=1 \
-  HOSTING_ENV=local \
+  PORT=8082 \
+  P2P_PORT=5002 \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -43,7 +46,8 @@ sleep 5
 # parent node 2
 printf "\nStarting parent node 2..\n"
 ACCOUNT_INDEX=2 \
-  HOSTING_ENV=local \
+  PORT=8083 \
+  P2P_PORT=5003 \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -61,7 +65,6 @@ printf "\nStarting afan child tracker..\n"
 BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9000 \
   P2P_PORT=6000 \
-  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
   node ./tracker-server/index.js &
@@ -74,7 +77,6 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   P2P_PORT=6001 \
   ACCOUNT_INDEX=0 \
   PEER_CANDIDATE_JSON_RPC_URL='' \
-  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -103,7 +105,6 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9002 \
   P2P_PORT=6002 \
   ACCOUNT_INDEX=1 \
-  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
@@ -120,7 +121,6 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9003 \
   P2P_PORT=6003 \
   ACCOUNT_INDEX=2 \
-  HOSTING_ENV=local \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
   ENABLE_JSON_RPC_TX_API=true \
