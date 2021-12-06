@@ -14,7 +14,8 @@ const { combine, timestamp, label, printf, colorize } = winston.format;
 
 const logDir = path.join(BlockchainConsts.LOGS_DIR, String(NodeConfigs.PORT));
 // TODO(liayoo): Deprecate ACCOUNT_INDEX.
-const prefix = NodeConfigs.ACCOUNT_INDEX || NodeConfigs.ACCOUNT_INJECTION_OPTION ? `node-${NodeConfigs.PORT}` : `tracker-${NodeConfigs.PORT}`;
+const prefix = NodeConfigs.ACCOUNT_INDEX !== null || NodeConfigs.ACCOUNT_INJECTION_OPTION ?
+    `node-${NodeConfigs.PORT}` : `tracker-${NodeConfigs.PORT}`;
 const logFormat = printf(({level, message, label, timestamp}) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
 });
