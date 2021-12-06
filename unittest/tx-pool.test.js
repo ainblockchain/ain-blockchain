@@ -642,7 +642,6 @@ describe('TransactionPool', () => {
         }));
         node.tp.addTransaction(newTransactions[node.account.address][i]);
       }
-      console.log(node.tp.transactions[node.account.address]);
       node.tp.cleanUpForNewBlock(block);
       assert.deepEqual(newTransactions, node.tp.transactions);
     });

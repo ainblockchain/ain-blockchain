@@ -968,28 +968,48 @@ describe('Blockchain Node', () => {
     });
 
     describe('ain_checkProtocolVersion api', () => {
-      it('checks protocol versions correctly', () => {
-        return new Promise((resolve, reject) => {
-          const client = jayson.client.http(server1 + '/json-rpc');
-          let promises = [];
-          promises.push(client.request('ain_checkProtocolVersion', {}));
-          promises.push(client.request('ain_checkProtocolVersion', {protoVer: 'a.b.c'}));
-          promises.push(client.request('ain_checkProtocolVersion', {protoVer: 0}));
-          promises.push(client.request('ain_checkProtocolVersion', {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}));
-          promises.push(client.request('ain_checkProtocolVersion', {protoVer: '0.0.1'}));
-          Promise.all(promises).then(res => {
-            expect(res[0].result.code).to.equal(1);
-            expect(res[0].result.message).to.equal("Protocol version not specified.");
-            expect(res[1].result.code).to.equal(2);
-            expect(res[1].result.message).to.equal("Invalid protocol version.");
-            expect(res[2].result.code).to.equal(3);
-            expect(res[2].result.message).to.equal("Incompatible protocol version.");
-            expect(res[3].result.code).to.equal(0);
-            expect(res[3].result.result).to.equal("Success");
-            expect(res[4].result.code).to.equal(3);
-            expect(res[4].result.message).to.equal("Incompatible protocol version.");
-            resolve();
-          })
+      it('returns success code', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_checkProtocolVersion', { protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION })
+        .then(res => {
+          expect(res.result.code).to.equal(0);
+          expect(res.result.result).to.equal("Success");
+        });
+      });
+
+      it('returns version not specified code', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_checkProtocolVersion', {})
+        .then(res => {
+          expect(res.result.code).to.equal(1);
+          expect(res.result.message).to.equal("Protocol version not specified.");
+        });
+      });
+
+      it('returns invalid version code', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_checkProtocolVersion', { protoVer: 'a.b.c' })
+        .then(res => {
+          expect(res.result.code).to.equal(2);
+          expect(res.result.message).to.equal("Invalid protocol version.");
+        });
+      });
+
+      it('returns incompatible version code for ill-formatted version', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_checkProtocolVersion', { protoVer: 0 })
+        .then(res => {
+          expect(res.result.code).to.equal(3);
+          expect(res.result.message).to.equal("Incompatible protocol version.");
+        });
+      });
+
+      it('returns incompatible version code for low version', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_checkProtocolVersion', { protoVer: '0.0.1' })
+        .then(res => {
+          expect(res.result.code).to.equal(3);
+          expect(res.result.message).to.equal("Incompatible protocol version.");
         });
       });
     })
