@@ -391,9 +391,8 @@ class P2pServer {
       try {
         const parsedMessage = JSON.parse(message);
         const peerNetworkId = _.get(parsedMessage, 'networkId');
-        const networkId = this.server.node.getBlockchainParam('network/network_id');
         const address = getAddressFromSocket(this.inbound, socket);
-        if (peerNetworkId !== networkId) {
+        if (peerNetworkId !== BlockchainConsts.NETWORK_ID) {
           logger.error(`The given network ID(${peerNetworkId}) of the node(${address}) is MISSING or ` +
             `DIFFERENT from mine. Disconnect the connection.`);
           closeSocketSafe(this.inbound, socket);
@@ -481,9 +480,8 @@ class P2pServer {
                 trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
                 return;
               }
-              const networkId = this.node.getBlockchainParam('network/network_id');
               const payload = encapsulateMessage(
-                  MessageTypes.ADDRESS_RESPONSE, { body: body, signature: signature }, networkId);
+                  MessageTypes.ADDRESS_RESPONSE, { body: body, signature: signature });
               if (!payload) {
                 logger.error('The address cannot be sent because of msg encapsulation failure.');
                 const latency = Date.now() - beginTime;
@@ -651,9 +649,8 @@ class P2pServer {
   }
 
   sendChainSegment(socket, chainSegment, number, catchUpInfo) {
-    const networkId = this.node.getBlockchainParam('network/network_id');
     const payload = encapsulateMessage(
-        MessageTypes.CHAIN_SEGMENT_RESPONSE, { chainSegment, number, catchUpInfo }, networkId);
+        MessageTypes.CHAIN_SEGMENT_RESPONSE, { chainSegment, number, catchUpInfo });
     if (!payload) {
       logger.error('The chain segment cannot be sent because of msg encapsulation failure.');
       return;
@@ -739,17 +736,16 @@ class P2pServer {
     if (shardingAppConfig !== null && _.get(shardingAppConfig, `admin.${shardOwner}`) !== true) {
       throw Error(`Shard owner (${shardOwner}) doesn't have the permission to create a shard (${appName})`);
     }
-    const chainId = this.node.getBlockchainParam('blockchain/chain_id');
     if (shardingAppConfig === null) {
       // Create app first.
       const shardAppCreateTxBody = P2pServer.buildShardAppCreateTxBody(appName);
       await sendTxAndWaitForFinalization(
-          parentChainEndpoint, shardAppCreateTxBody, shardReporterPrivateKey, chainId);
+          parentChainEndpoint, shardAppCreateTxBody, shardReporterPrivateKey);
     }
     logger.info(`[${LOG_HEADER}] shard app created`);
     const shardInitTxBody = P2pServer.buildShardingSetupTxBody();
     await sendTxAndWaitForFinalization(
-        parentChainEndpoint, shardInitTxBody, shardReporterPrivateKey, chainId);
+        parentChainEndpoint, shardInitTxBody, shardReporterPrivateKey);
     logger.info(`[${LOG_HEADER}] shard set up success`);
   }
 
@@ -806,8 +802,7 @@ class P2pServer {
         };
         // TODO(liayoo): save the blockNumber - txHash mapping at /sharding/reports of
         // the child state.
-        const chainId = this.node.getBlockchainParam('blockchain/chain_id');
-        await signAndSendTx(parentChainEndpoint, tx, this.node.account.private_key, chainId);
+        await signAndSendTx(parentChainEndpoint, tx, this.node.account.private_key);
       }
     } catch (err) {
       logger.error(`Failed to report state proof hashes: ${err} ${err.stack}`);

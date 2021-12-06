@@ -77,7 +77,7 @@ function verifySignedMessage(message, address) {
   }
 }
 
-function encapsulateMessage(type, dataObj, networkId) {
+function encapsulateMessage(type, dataObj) {
   if (!type || !CommonUtil.isString(type)) {
     logger.error('Type must be specified.');
     return null;
@@ -91,7 +91,7 @@ function encapsulateMessage(type, dataObj, networkId) {
     data: dataObj,
     protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
     dataProtoVer: BlockchainConsts.DATA_PROTOCOL_VERSION,
-    networkId,
+    networkId: BlockchainConsts.NETWORK_ID,
     timestamp: Date.now()
   };
   return message;

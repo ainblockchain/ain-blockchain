@@ -484,7 +484,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
 
     net_getNetworkId: function (args, done) {
       const beginTime = Date.now();
-      const result = p2pServer.node.getBlockchainParam('network/network_id');
+      const result = BlockchainConsts.NETWORK_ID;
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, addProtocolVersion({ result }));
@@ -492,7 +492,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
 
     net_getChainId: function (args, done) {
       const beginTime = Date.now();
-      const result = p2pServer.node.getBlockchainParam('blockchain/chain_id');
+      const result = BlockchainConsts.CHAIN_ID;
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, addProtocolVersion({ result }));

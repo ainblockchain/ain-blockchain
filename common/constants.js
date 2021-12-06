@@ -24,7 +24,7 @@ const DevFlags = {
   enableTrafficMonitoring: true,
 };
 
-// ** Node configs, set for individual node by env vars **
+// ** Node configs, set for individual nodes by env vars **
 const NodeConfigs = {};
 NodeConfigs.DEBUG = CommonUtil.convertEnvVarInputToBool(process.env.DEBUG);
 NodeConfigs.CONSOLE_LOG = CommonUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
@@ -97,6 +97,10 @@ overwriteNodeConfigs();
 const BlockchainConsts = {};
 // *** Genesis ***
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
+BlockchainConsts.CHAIN_ID = BlockchainParams.blockchain.chain_id;
+BlockchainConsts.EPOCH_MS = BlockchainParams.consensus.epoch_ms;
+BlockchainConsts.GENESIS_ADDR = BlockchainParams.genesis.genesis_addr;
+BlockchainConsts.NETWORK_ID = BlockchainParams.network.network_id;
 // TODO(liayoo): Use on-chain value instead of GenesisToken
 const GenesisToken = BlockchainParams.token;
 // TODO(liayoo): Deprecate GenesisAccounts

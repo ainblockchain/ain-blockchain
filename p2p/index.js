@@ -300,8 +300,7 @@ class P2pClient {
   }
 
   broadcastConsensusMessage(consensusMessage) {
-    const networkId = this.server.node.getBlockchainParam('network/network_id');
-    const payload = encapsulateMessage(MessageTypes.CONSENSUS, { message: consensusMessage }, networkId);
+    const payload = encapsulateMessage(MessageTypes.CONSENSUS, { message: consensusMessage });
     if (!payload) {
       logger.error('The consensus msg cannot be broadcasted because of msg encapsulation failure.');
       return;
@@ -332,14 +331,12 @@ class P2pClient {
       return;
     }
     const lastBlockNumber = this.server.node.bc.lastBlockNumber();
-    const epochMs = this.server.node.getBlockchainParam('consensus/epoch_ms');
-    const networkId = this.server.node.getBlockchainParam('network/network_id');
     if (this.chainSyncInProgress.lastBlockNumber >= lastBlockNumber &&
-        this.chainSyncInProgress.updatedAt > Date.now() - epochMs) { // time buffer
+        this.chainSyncInProgress.updatedAt > Date.now() - BlockchainConsts.EPOCH_MS) { // time buffer
       logger.info(`[${LOG_HEADER}] Already sent a request with the same/higher lastBlockNumber`);
       return;
     }
-    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber }, networkId);
+    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
     if (!payload) {
       logger.error(`[${LOG_HEADER}] The request chainSegment cannot be sent because of msg encapsulation failure.`);
       return;
@@ -349,8 +346,7 @@ class P2pClient {
   }
 
   broadcastTransaction(transaction) {
-    const networkId = this.server.node.getBlockchainParam('network/network_id');
-    const payload = encapsulateMessage(MessageTypes.TRANSACTION, { transaction: transaction }, networkId);
+    const payload = encapsulateMessage(MessageTypes.TRANSACTION, { transaction: transaction });
     if (!payload) {
       logger.error('The transaction cannot be broadcasted because of msg encapsulation failure.');
       return;
@@ -375,9 +371,7 @@ class P2pClient {
       logger.error('The signaure is not correctly generated. Discard the message!');
       return false;
     }
-    const networkId = this.server.node.getBlockchainParam('network/network_id');
-    const payload = encapsulateMessage(
-        MessageTypes.ADDRESS_REQUEST, { body: body, signature: signature }, networkId);
+    const payload = encapsulateMessage(MessageTypes.ADDRESS_REQUEST, { body: body, signature: signature });
     if (!payload) {
       logger.error('The peerInfo message cannot be sent because of msg encapsulation failure.');
       return false;
@@ -393,9 +387,8 @@ class P2pClient {
       const beginTime = Date.now();
       const parsedMessage = JSON.parse(message);
       const peerNetworkId = _.get(parsedMessage, 'networkId');
-      const networkId = this.server.node.getBlockchainParam('network/network_id');
       const address = getAddressFromSocket(this.outbound, socket);
-      if (peerNetworkId !== networkId) {
+      if (peerNetworkId !== BlockchainConsts.NETWORK_ID) {
         logger.error(`The given network ID(${peerNetworkId}) of the node(${address}) is MISSING or ` +
           `DIFFERENT from mine. Disconnect the connection.`);
         closeSocketSafe(this.outbound, socket);
@@ -736,13 +729,12 @@ class P2pClient {
   }
 
   setIntervalForShardProofHashReports() {
-    const epochMs = this.server.node.getBlockchainParam('consensus/epoch_ms');
     if (!this.shardReportInterval && this.server.node.isShardReporter) {
       this.shardReportInterval = setInterval(() => {
         if (this.server.consensus.isRunning()) {
           this.server.reportShardProofHashes();
         }
-      }, epochMs);
+      }, BlockchainConsts.EPOCH_MS);
     }
   }
 
@@ -762,8 +754,7 @@ class P2pClient {
   }
 
   updateStatusToPeer(socket, address) {
-    const networkId = this.server.node.getBlockchainParam('network/network_id');
-    const payload = encapsulateMessage(MessageTypes.PEER_INFO_UPDATE, this.getStatus(), networkId);
+    const payload = encapsulateMessage(MessageTypes.PEER_INFO_UPDATE, this.getStatus());
     if (!payload) {
       logger.error('The message cannot be sent because of msg encapsulation failure.');
       return;
