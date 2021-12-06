@@ -1,5 +1,6 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
+const { FunctionResultCode } = require('../common/result-code');
 
 // NOTE(platfowner): To keep the blockchain deterministic as much as possible over time,
 //                   we keep util functions here self-contained as much as possible.
@@ -242,7 +243,6 @@ class RuleUtil {
 
   validateCheckoutHistoryData(networkName, chainId, tokenId, userAddr, checkoutId, newData, getValue) {
     const PathUtil = require('../common/path-util');
-    const { FunctionResultCode } = require('../common/constants');
     const request = getValue(
         PathUtil.getCheckoutRequestPath(networkName, chainId, tokenId, userAddr, checkoutId));
     if (!request || !this.isDict(request) || !this.isDict(newData)) {
@@ -266,7 +266,6 @@ class RuleUtil {
 
   validateCheckinHistoryData(networkName, chainId, tokenId, userAddr, checkinId, newData, getValue) {
     const PathUtil = require('../common/path-util');
-    const { FunctionResultCode } = require('../common/constants');
     const request = getValue(
         PathUtil.getCheckinRequestPath(networkName, chainId, tokenId, userAddr, checkinId));
     if (!request || !this.isDict(request) || !this.isDict(newData)) {

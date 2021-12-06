@@ -8,7 +8,6 @@ const {
   BlockchainConfigs,
   PredefinedDbPaths,
   FunctionTypes,
-  FunctionResultCode,
   NativeFunctionIds,
   WriteDbOperations,
   TokenBridgeProperties,
@@ -16,6 +15,7 @@ const {
   buildOwnerPermissions,
   buildRulePermission,
 } = require('../common/constants');
+const { FunctionResultCode } = require('../common/result-code');
 const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');

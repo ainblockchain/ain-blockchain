@@ -2,6 +2,7 @@ const stringify = require('fast-json-stable-stringify');
 const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
+const { FunctionResultCode } = require('../common/result-code');
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 
@@ -449,8 +450,6 @@ class CommonUtil {
   // TODO(platfowner): Consider some code (e.g. IN_LOCKUP_PERIOD, INSUFFICIENT_BALANCE) no failure
   // so that their transactions are not reverted.
   static isFailedFuncResultCode(code) {
-    const { FunctionResultCode } = require('../common/constants');
-
     return code !== FunctionResultCode.SUCCESS;
   }
 
