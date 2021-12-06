@@ -26,54 +26,8 @@ const DevFlags = {
 
 // ** Node configs, set for individual nodes by env vars **
 const NodeConfigs = {};
-NodeConfigs.DEBUG = CommonUtil.convertEnvVarInputToBool(process.env.DEBUG);
-NodeConfigs.CONSOLE_LOG = CommonUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
-NodeConfigs.HOSTING_ENV = process.env.HOSTING_ENV || 'gcp';
-NodeConfigs.ENABLE_DEV_CLIENT_SET_API =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_SET_API);
-NodeConfigs.ENABLE_JSON_RPC_TX_API =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_JSON_RPC_TX_API, true);
-NodeConfigs.ENABLE_TX_SIG_VERIF_WORKAROUND =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
-NodeConfigs.ENABLE_GAS_FEE_WORKAROUND =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
-NodeConfigs.ENABLE_REST_FUNCTION_CALL =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_REST_FUNCTION_CALL);
-NodeConfigs.ENABLE_EXPRESS_RATE_LIMIT =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_EXPRESS_RATE_LIMIT, true);
-NodeConfigs.ENABLE_EVENT_HANDLER =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_EVENT_HANDLER);
-NodeConfigs.ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
-NodeConfigs.PORT = process.env.PORT || getPortNumber(8080, 8080);
-NodeConfigs.P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
-NodeConfigs.EVENT_HANDLER_PORT = process.env.EVENT_HANDLER_PORT || getPortNumber(6000, 6000);
-NodeConfigs.LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
-NodeConfigs.SYNC_MODE = process.env.SYNC_MODE || 'full';
-NodeConfigs.ACCOUNT_INJECTION_OPTION = process.env.ACCOUNT_INJECTION_OPTION || null;
-NodeConfigs.KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
-NodeConfigs.ENABLE_STATUS_REPORT_TO_TRACKER =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_STATUS_REPORT_TO_TRACKER, true);
-NodeConfigs.REQUEST_BODY_SIZE_LIMIT = process.env.REQUEST_BODY_SIZE_LIMIT || '100mb';
-// NOTE(liayoo): CORS_WHITELIST env var is a comma-separated list of cors-allowed domains.
-// Note that if it includes '*', it will be set to allow all domains.
-NodeConfigs.CORS_WHITELIST = CommonUtil.getCorsWhitelist(process.env.CORS_WHITELIST) || [
-  'https://ainetwork\\.ai',
-  'https://ainize\\.ai',
-  'https://afan\\.ai',
-  '\\.ainetwork\\.ai$',
-  '\\.ainize\\.ai$',
-  '\\.afan\\.ai$',
-  'http://localhost:3000',
-];
-NodeConfigs.BLOCKCHAIN_DATA_DIR = process.env.BLOCKCHAIN_DATA_DIR || path.resolve(__dirname, '../ain_blockchain_data');
-if (!fs.existsSync(NodeConfigs.BLOCKCHAIN_DATA_DIR)) {
-  fs.mkdirSync(NodeConfigs.BLOCKCHAIN_DATA_DIR, { recursive: true });
-}
-const BASE_BLOCKCHAIN_CONFIGS_DIR = 'blockchain-configs/base';
-NodeConfigs.CUSTOM_BLOCKCHAIN_CONFIGS_DIR = process.env.BLOCKCHAIN_CONFIGS_DIR || null;
-NodeConfigs.GENESIS_BLOCK_DIR = path.resolve(__dirname, '..',
-    process.env.BLOCKCHAIN_CONFIGS_DIR || BASE_BLOCKCHAIN_CONFIGS_DIR);
-
+NodeConfigs.BLOCKCHAIN_CONFIGS_DIR = process.env.BLOCKCHAIN_CONFIGS_DIR || 'blockchain-configs/base';
+NodeConfigs.GENESIS_BLOCK_DIR = path.resolve(__dirname, '..', NodeConfigs.BLOCKCHAIN_CONFIGS_DIR);
 /**
  * Overwriting node_params.json with environment variables.
  * These parameters are defined in node_params.json, but if specified as environment variables,
@@ -81,17 +35,26 @@ NodeConfigs.GENESIS_BLOCK_DIR = path.resolve(__dirname, '..',
  * (priority: env var > ${BLOCKCHAIN_CONFIGS_DIR}/node_params.json > ./genesis-configs/base/node_params.json)
  */
 const NodeParams = getBlockchainConfig('node_params.json');
-function overwriteNodeConfigs() {
+function setNodeConfigs() {
   for (const [param, valFromNodeParams] of Object.entries(NodeParams)) {
     const valFromEnvVar = process.env[param];
     if (valFromEnvVar !== undefined) {
-      NodeConfigs[param] = CommonUtil.isIntegerString(valFromEnvVar) ? Number(valFromEnvVar) : valFromEnvVar;
+      if (CommonUtil.isBool(valFromNodeParams)) {
+        NodeConfigs[param] = CommonUtil.convertEnvVarInputToBool(valFromEnvVar);
+      } else if (CommonUtil.isIntegerString(valFromEnvVar)) {
+        NodeConfigs[param] = Number(valFromEnvVar);
+      } else {
+        NodeConfigs[param] = valFromEnvVar;
+      }
     } else {
       NodeConfigs[param] = valFromNodeParams;
     }
   }
+  if (!fs.existsSync(NodeConfigs.BLOCKCHAIN_DATA_DIR)) {
+    fs.mkdirSync(NodeConfigs.BLOCKCHAIN_DATA_DIR, { recursive: true });
+  }
 }
-overwriteNodeConfigs();
+setNodeConfigs();
 
 // ** Blockchain configs **
 const BlockchainConsts = {};
@@ -739,32 +702,18 @@ function isAppDependentServiceType(type) {
   return APP_DEPENDENT_SERVICE_TYPES.includes(type);
 }
 
-/**
- * Port number helper.
- * @param {number} defaultValue
- * @param {number} baseValue
- */
-function getPortNumber(defaultValue, baseValue) {
-  if (NodeConfigs.HOSTING_ENV === 'local') {
-    return Number(baseValue) + (NodeConfigs.ACCOUNT_INDEX !== null ? Number(NodeConfigs.ACCOUNT_INDEX) + 1 : 0);
-  }
-  return defaultValue;
-}
-
 function getBlockchainConfig(filename) {
   let config = null;
-  if (NodeConfigs.CUSTOM_BLOCKCHAIN_CONFIGS_DIR) {
-    const configPath = path.resolve(__dirname, '..', NodeConfigs.CUSTOM_BLOCKCHAIN_CONFIGS_DIR, filename);
-    if (fs.existsSync(configPath)) {
-      config = JSON.parse(fs.readFileSync(configPath));
-    }
+  const configPath = path.resolve(__dirname, '..', process.env.BLOCKCHAIN_CONFIGS_DIR, filename);
+  if (fs.existsSync(configPath)) {
+    config = JSON.parse(fs.readFileSync(configPath));
   }
   if (!config) {
-    const configPath = path.resolve(__dirname, '..', BASE_BLOCKCHAIN_CONFIGS_DIR, filename);
-    if (fs.existsSync(configPath)) {
-      config = JSON.parse(fs.readFileSync(configPath));
+    const defaultConfigPath = path.resolve(__dirname, '..', 'blockchain-configs/base', filename);
+    if (fs.existsSync(defaultConfigPath)) {
+      config = JSON.parse(fs.readFileSync(defaultConfigPath));
     } else {
-      throw Error(`Missing blockchain config file: ${configPath}`);
+      throw Error(`Missing blockchain config file: ${defaultConfigPath}`);
     }
   }
   return config;
