@@ -117,8 +117,7 @@ class Consensus {
     const LOG_HEADER = 'startEpochTransition';
     const genesisBlock = this.node.bc.genesisBlock;
     this.startingTime = genesisBlock.timestamp;
-    const epochMs = this.node.getBlockchainParam('consensus/epoch_ms');
-    this.epoch = Math.ceil((Date.now() - this.startingTime) / epochMs);
+    this.epoch = Math.ceil((Date.now() - this.startingTime) / BlockchainConsts.EPOCH_MS);
     logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.epoch}`);
 
     this.setEpochTransition();
@@ -129,7 +128,6 @@ class Consensus {
     if (this.epochInterval) {
       clearInterval(this.epochInterval);
     }
-    const epochMs = this.node.getBlockchainParam('consensus/epoch_ms');
     this.epochInterval = setInterval(async () => {
       if (this.isInEpochTransition) {
         return;
@@ -149,7 +147,7 @@ class Consensus {
         }
       }
       currentTime -= this.timeAdjustment;
-      const absEpoch = Math.floor((currentTime - this.startingTime) / epochMs);
+      const absEpoch = Math.floor((currentTime - this.startingTime) / BlockchainConsts.EPOCH_MS);
       if (this.epoch + 1 < absEpoch) {
         logger.debug(`[${LOG_HEADER}] Epoch is too low: ${this.epoch} / ${absEpoch}`);
       } else if (this.epoch + 1 > absEpoch) {
@@ -164,7 +162,7 @@ class Consensus {
         this.tryPropose();
       }
       this.isInEpochTransition = false;
-    }, epochMs);
+    }, BlockchainConsts.EPOCH_MS);
   }
 
   stop() {

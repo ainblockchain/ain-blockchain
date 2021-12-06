@@ -32,8 +32,8 @@ async function _waitUntilTxFinalize(endpoint, txHash) {
   }
 }
 
-async function sendTxAndWaitForFinalization(endpoint, tx, privateKey, chainId) {
-  const res = await signAndSendTx(endpoint, tx, privateKey, chainId);
+async function sendTxAndWaitForFinalization(endpoint, tx, privateKey) {
+  const res = await signAndSendTx(endpoint, tx, privateKey);
   if (_.get(res, 'errMsg', false) || !_.get(res, 'success', false)) {
     throw Error(`Failed to sign and send tx: ${res.errMsg}`);
   }
@@ -63,8 +63,8 @@ async function sendSignedTx(endpoint, params) {
 }
 
 // FIXME(minsulee2): this is duplicated function see: ./tools/util.js
-async function signAndSendTx(endpoint, tx, privateKey, chainId) {
-  const { txHash, signedTx } = CommonUtil.signTransaction(tx, privateKey, chainId);
+async function signAndSendTx(endpoint, tx, privateKey) {
+  const { txHash, signedTx } = CommonUtil.signTransaction(tx, privateKey, BlockchainConsts.CHAIN_ID);
   const result = await sendSignedTx(endpoint, signedTx);
   return Object.assign(result, { txHash });
 }

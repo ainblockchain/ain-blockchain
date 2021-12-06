@@ -48,7 +48,7 @@ const RuleUtil = require('./rule-util');
 const PathUtil = require('../common/path-util');
 
 class DB {
-  constructor(stateRoot, stateVersion, bc, blockNumberSnapshot, stateManager, genesisAddr) {
+  constructor(stateRoot, stateVersion, bc, blockNumberSnapshot, stateManager) {
     this.shardingPath = null;
     this.isRootBlockchain = null;  // Is this the database of the root blockchain?
     this.stateRoot = stateRoot;
@@ -60,7 +60,6 @@ class DB {
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
     this.stateManager = stateManager;
-    this.genesisAddr = genesisAddr;
     this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: [] };
     this.updateRestFunctionsUrlWhitelistCache();
   }
@@ -296,7 +295,7 @@ class DB {
     this.deleteBackupStateVersion();
   }
 
-  static create(baseVersion, newVersion, bc, finalizeVersion, blockNumberSnapshot, stateManager, genesisAddr) {
+  static create(baseVersion, newVersion, bc, finalizeVersion, blockNumberSnapshot, stateManager) {
     const LOG_HEADER = 'create';
 
     logger.debug(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
@@ -310,7 +309,7 @@ class DB {
     if (finalizeVersion) {
       stateManager.finalizeVersion(newVersion);
     }
-    return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager, genesisAddr);
+    return new DB(newRoot, newVersion, bc, blockNumberSnapshot, stateManager);
   }
 
   takeStateSnapshot() {
@@ -558,7 +557,7 @@ class DB {
   isConsensusAppAdmin(address) {
     const admins = this.getValue(PathUtil.getManageAppConfigAdminPath('consensus'));
     if (admins === null) {
-      return this.genesisAddr === address;
+      return BlockchainConsts.GENESIS_ADDR === address;
     }
     return admins[address] === true;
   }
