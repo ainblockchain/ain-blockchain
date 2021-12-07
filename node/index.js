@@ -459,7 +459,7 @@ class BlockchainNode {
       txBody.gas_price = 0;
     }
     return Transaction.fromTxBody(
-        txBody, this.account.private_key, this.getBlockchainParam('genesis/chain_id', 0));
+        txBody, this.account.private_key, this.getBlockchainParam('genesis/chain_id'));
   }
 
   /**

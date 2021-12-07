@@ -152,7 +152,7 @@ class P2pServer {
 
   getBlockStatus() {
     const timestamp = this.node.bc.lastBlockTimestamp();
-    const genesisTimestamp = this.node.getBlockchainParam('genesis/genesis_timestamp', 0);
+    const genesisTimestamp = this.node.getBlockchainParam('genesis/genesis_timestamp');
     const elapsedTimeMs = (timestamp === genesisTimestamp) ? 0 : Date.now() - timestamp;
     return {
       number: this.node.bc.lastBlockNumber(),
@@ -392,7 +392,7 @@ class P2pServer {
         const parsedMessage = JSON.parse(message);
         const peerNetworkId = _.get(parsedMessage, 'networkId');
         const address = getAddressFromSocket(this.inbound, socket);
-        if (peerNetworkId !== this.node.getBlockchainParam('genesis/network_id', 0)) {
+        if (peerNetworkId !== this.node.getBlockchainParam('genesis/network_id')) {
           logger.error(`The given network ID(${peerNetworkId}) of the node(${address}) is MISSING or ` +
             `DIFFERENT from mine. Disconnect the connection.`);
           closeSocketSafe(this.inbound, socket);
