@@ -20,6 +20,7 @@ const {
 const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
+const DB = require('./index');
 
 /**
  * Built-in functions with function paths.
@@ -198,9 +199,11 @@ class Functions {
               failCount++;
               return true;
             }));
+            const restFunctionCallGasAmount = DB.getBlockchainParam(
+                'resource/rest_function_call_gas_amount', blockNumber, this.db.stateRoot);
             funcResults[functionEntry.function_id] = {
               code: FunctionResultCode.SUCCESS,
-              bandwidth_gas_amount: BlockchainConsts.REST_FUNCTION_CALL_GAS_AMOUNT,
+              bandwidth_gas_amount: restFunctionCallGasAmount,
             };
             triggerCount++;
           }
@@ -520,7 +523,8 @@ class Functions {
     }
     const toBalance = this.db.getValue(toBalancePath);
     if (toBalance === null) {
-      extraGasAmount = BlockchainConsts.ACCOUNT_REGISTRATION_GAS_AMOUNT;
+      extraGasAmount = DB.getBlockchainParam(
+          'resource/account_registration_gas_amount', context.blockNumber, this.db.stateRoot);
     }
     const decResult = this.decValueOrLog(fromBalancePath, value, context);
     if (CommonUtil.isFailedTx(decResult)) {

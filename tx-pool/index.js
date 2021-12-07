@@ -185,9 +185,15 @@ class TransactionPool {
   getBandwidthBudgets(blockNumber, stateVersion) {
     const bandwidthBudgetPerBlock = this.node.getBlockchainParam(
         'resource/bandwidth_budget_per_block', blockNumber, stateVersion);
-    const serviceBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.SERVICE_BANDWIDTH_BUDGET_RATIO;
-    const appsBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.APPS_BANDWIDTH_BUDGET_RATIO;
-    const freeBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * BlockchainConsts.FREE_BANDWIDTH_BUDGET_RATIO;
+    const serviceBandwidthBudgetRatio = this.node.getBlockchainParam(
+        'resource/service_bandwidth_budget_ratio', blockNumber, stateVersion);
+    const appsBandwidthBudgetRatio = this.node.getBlockchainParam(
+        'resource/apps_bandwidth_budget_ratio', blockNumber, stateVersion);
+    const freeBandwidthBudgetRatio = this.node.getBlockchainParam(
+        'resource/free_bandwidth_budget_ratio', blockNumber, stateVersion);
+    const serviceBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * serviceBandwidthBudgetRatio;
+    const appsBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * appsBandwidthBudgetRatio;
+    const freeBandwidthBudgetPerBlock = bandwidthBudgetPerBlock * freeBandwidthBudgetRatio;
     return {
       serviceBandwidthBudgetPerBlock,
       appsBandwidthBudgetPerBlock,
