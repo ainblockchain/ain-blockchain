@@ -190,10 +190,8 @@ function getGenesisValues() {
     getDevelopersValue()
   );
   CommonUtil.setJsObject(values, [PredefinedDbPaths.BLOCKCHAIN_PARAMS], {
-    [PredefinedDbPaths.BLOCKCHAIN_PARAMS_BLOCKCHAIN]: BlockchainParams.blockchain,
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_CONSENSUS]: BlockchainParams.consensus,
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_GENESIS]: BlockchainParams.genesis,
-    [PredefinedDbPaths.BLOCKCHAIN_PARAMS_NETWORK]: BlockchainParams.network,
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_RESOURCE]: BlockchainParams.resource,
   });
   return values;
@@ -296,7 +294,7 @@ function buildDbSetupTx() {
       op_list: opList,
     }
   };
-  const tx = Transaction.fromTxBody(txBody, GenesisAccounts.owner.private_key);
+  const tx = Transaction.fromTxBody(txBody, GenesisAccounts.owner.private_key, BlockchainParams.genesis.chain_id);
   if (!tx) {
     console.error(`Failed to build DB setup tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
     process.exit(0);
@@ -343,7 +341,7 @@ function buildAccountsSetupTx() {
       op_list: transferOps
     }
   };
-  const tx = Transaction.fromTxBody(txBody, GenesisAccounts.owner.private_key);
+  const tx = Transaction.fromTxBody(txBody, GenesisAccounts.owner.private_key, BlockchainParams.genesis.chain_id);
   if (!tx) {
     console.error(`Failed to build account setup tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
     process.exit(0);
@@ -371,7 +369,7 @@ function buildConsensusAppTx() {
       }
     }
   }
-  const tx = Transaction.fromTxBody(txBody, GenesisAccounts.owner.private_key);
+  const tx = Transaction.fromTxBody(txBody, GenesisAccounts.owner.private_key, BlockchainParams.genesis.chain_id);
   if (!tx) {
     console.error(`Failed to build consensus app tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
     process.exit(0);
@@ -399,7 +397,7 @@ function buildGenesisStakingTxs() {
         value: info[PredefinedDbPaths.CONSENSUS_STAKE]
       }
     };
-    const tx = Transaction.fromTxBody(txBody, privateKey);
+    const tx = Transaction.fromTxBody(txBody, privateKey, BlockchainParams.genesis.chain_id);
     if (!tx) {
       console.error(`Failed to build genesis staking txs with tx body: ${JSON.stringify(txBody, null, 2)}`);
       process.exit(0);
@@ -419,7 +417,8 @@ function getGenesisBlockTxs() {
 
 function executeGenesisTxsAndGetData(genesisTxs) {
   const tempGenesisDb = new DB(
-      new StateNode(StateVersions.EMPTY), StateVersions.EMPTY, null, -1, null, GenesisAccounts.owner.address);
+      new StateNode(BlockchainParams.genesis.hash_delimiter, StateVersions.EMPTY),
+      StateVersions.EMPTY, null, -1, null, GenesisAccounts.owner.address);
   tempGenesisDb.initDb();
   const resList = [];
   for (const tx of genesisTxs) {
@@ -432,7 +431,8 @@ function executeGenesisTxsAndGetData(genesisTxs) {
     }
     resList.push(res);
   }
-  const { gasAmountTotal, gasCostTotal } = CommonUtil.getServiceGasCostTotalFromTxList(genesisTxs, resList);
+  const { gasAmountTotal, gasCostTotal } = CommonUtil.getServiceGasCostTotalFromTxList(
+      genesisTxs, resList, BlockchainParams.resource.gas_price_unit);
   return {
     stateProofHash: tempGenesisDb.getProofHash('/'),
     gasAmountTotal,
@@ -494,7 +494,6 @@ function usage() {
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox node tools/genesis-file/createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging node tools/genesis-file/createGenesisBlock.js');
 
-  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/token-bridge node tools/genesis-file/createGenesisBlock.js');
   process.exit(0);
 }
 
