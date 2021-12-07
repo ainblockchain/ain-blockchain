@@ -63,7 +63,7 @@ const TxResultCode = {
 /**
  * List of failed tx precheck code.
  */
-const FailedTxPrecheckCodeList = [
+const FailedTxPrecheckCodeSet = new Set([
   TxResultCode.TX_NOT_EXECUTABLE,
   TxResultCode.TX_NO_TX_BODY,
   TxResultCode.TX_NON_NUMERIC_NONCE,
@@ -77,7 +77,7 @@ const FailedTxPrecheckCodeList = [
   TxResultCode.BILLING_INVALID_BILLING_ACCOUNT,
   TxResultCode.BILLING_BALANCE_TOO_LOW,
   TxResultCode.BILLING_APP_STAKE_TOO_LOW,
-];
+]);
 
 /**
  * Function result code.
@@ -205,7 +205,7 @@ module.exports = {
   DevClientResultCode,
   JsonRpcResultCode,
   TxResultCode,
-  FailedTxPrecheckCodeList,
+  FailedTxPrecheckCodeSet,
   FunctionResultCode,
   ConsensusErrorCode,
   ConsensusErrorCodeSetToVoteAgainst,
