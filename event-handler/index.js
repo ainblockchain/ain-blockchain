@@ -35,9 +35,8 @@ class EventHandler {
       const eventFilter = this.eventFilters[eventFilterId];
       const eventFilterBlockNumber = _.get(eventFilter, 'config.block_number', -1);
       if (eventFilterBlockNumber === -1) {
-        continue;
-      }
-      if (eventFilterBlockNumber === blockNumber) {
+        this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
+      } else if (eventFilterBlockNumber === blockNumber) {
         this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
       }
     }
