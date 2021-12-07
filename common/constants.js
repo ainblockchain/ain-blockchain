@@ -117,8 +117,6 @@ BlockchainConfigs.KEYS_ROOT_DIR = path.resolve(BlockchainConfigs.BLOCKCHAIN_DATA
 BlockchainConfigs.HASH_DELIMITER = '#';
 BlockchainConfigs.VARIABLE_LABEL_PREFIX = '$';
 BlockchainConfigs.STATE_INFO_PREFIX = '#';
-BlockchainConfigs.TX_NONCE_ERROR_CODE = 900;
-BlockchainConfigs.TX_TIMESTAMP_ERROR_CODE = 901;
 BlockchainConfigs.MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
 BlockchainConfigs.MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
 BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_RATIO = 0.5;

@@ -1388,7 +1388,7 @@ class DB {
     }
     if (nonce === -2 && timestamp <= accountTimestamp) {
       return CommonUtil.returnTxResult(
-          TxResultCode.TX_INVALID_TIMESTAMP_FOR_ACCOUNT
+          TxResultCode.TX_INVALID_TIMESTAMP_FOR_ACCOUNT,
           `Invalid timestamp: ${timestamp} <= ${accountTimestamp}`);
     }
     return true;
