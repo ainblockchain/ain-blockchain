@@ -2097,7 +2097,7 @@ describe('Native Function', () => {
           ref: transferPathToLowerCase + '/102/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        expect(bodyToLowerCase.code).to.equals(1);
+        expect(bodyToLowerCase.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(bodyToLowerCase, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2108,7 +2108,7 @@ describe('Native Function', () => {
           ref: transferPathFromUpperCase + '/103/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        expect(bodyFromUpperCase.code).to.equals(1);
+        expect(bodyFromUpperCase.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(bodyFromUpperCase, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2119,7 +2119,7 @@ describe('Native Function', () => {
           ref: transferPathToUpperCase + '/104/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        expect(bodyToUpperCase.code).to.equals(1);
+        expect(bodyToUpperCase.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(bodyToUpperCase, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
