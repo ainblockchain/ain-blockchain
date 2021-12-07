@@ -2,7 +2,10 @@ const stringify = require('fast-json-stable-stringify');
 const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
-const { FunctionResultCode } = require('../common/result-code');
+const {
+  FailedTxPrecheckCodeList,
+  FunctionResultCode,
+} = require('../common/result-code');
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 
@@ -386,8 +389,7 @@ class CommonUtil {
    * after executeOperation().
    */
   static txPrecheckFailed(result) {
-    const precheckFailureCode = [21, 22, 3, 15, 33, 16, 17, 34, 35];
-    return precheckFailureCode.includes(result.code);
+    return FailedTxPrecheckCodeList.includes(result.code);
   }
 
   /**

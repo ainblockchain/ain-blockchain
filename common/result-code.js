@@ -61,6 +61,25 @@ const TxResultCode = {
 };
 
 /**
+ * List of failed tx precheck code.
+ */
+const FailedTxPrecheckCodeList = [
+  TxResultCode.TX_NOT_EXECUTABLE,
+  TxResultCode.TX_NO_TX_BODY,
+  TxResultCode.TX_NON_NUMERIC_NONCE,
+  TxResultCode.TX_NON_NUMERIC_TIMESTAMP,
+  TxResultCode.TX_INVALID_NONCE_FOR_ACCOUNT,
+  TxResultCode.TX_INVALID_TIMESTAMP_FOR_ACCOUNT,
+  TxResultCode.DB_FAILED_TO_BACKUP_DB,
+  TxResultCode.BILLING_INVALID_PARAM,
+  TxResultCode.BILLING_NO_ACCOUNT_PERMISSION,
+  TxResultCode.BILLING_MULTI_APP_DEPENDENCY,
+  TxResultCode.BILLING_INVALID_BILLING_ACCOUNT,
+  TxResultCode.BILLING_BALANCE_TOO_LOW,
+  TxResultCode.BILLING_APP_STAKE_TOO_LOW,
+];
+
+/**
  * Function result code.
  *
  * @enum {number}
@@ -128,5 +147,6 @@ module.exports = {
   DevClientResultCode,
   JsonRpcResultCode,
   TxResultCode,
+  FailedTxPrecheckCodeList,
   FunctionResultCode,
 };
