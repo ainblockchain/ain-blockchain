@@ -51,7 +51,7 @@ class EventHandler {
     if (!clientFilterId) {
       throw Error(`Can't get client filter ID from node filter ID (nodeFilterId: ${nodeFilterId})`);
     }
-    return `${clientFilterId}`;
+    return clientFilterId;
   }
 
   clientFilterIdToNodeFilterId(clientFilterId, channelId) {
