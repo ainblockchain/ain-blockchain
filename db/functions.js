@@ -5,7 +5,6 @@ const _ = require('lodash');
 const matchUrl = require('match-url-wildcard');
 const {
   DevFlags,
-  BlockchainConsts,
   NodeConfigs,
   PredefinedDbPaths,
   FunctionTypes,
@@ -20,7 +19,6 @@ const {
 const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
-const DB = require('./index');
 
 /**
  * Built-in functions with function paths.
@@ -91,7 +89,8 @@ class Functions {
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
   triggerFunctions(
-      parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime) {
+      parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
+      accountRegistrationGasAmount, restFunctionCallGasAmount) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
@@ -147,11 +146,12 @@ class Functions {
                     timestamp,
                     executedAt,
                     transaction,
-                    blockNumber, 
+                    blockNumber,
                     blockTime,
                     auth: newAuth,
                     opResultList: [],
                     otherGasAmount: 0,
+                    accountRegistrationGasAmount,
                   });
               funcResults[functionEntry.function_id] = result;
               if (DevFlags.enableRichFunctionLogging) {
@@ -187,7 +187,7 @@ class Functions {
               function: functionEntry,
               transaction,
             }, {
-              timeout: BlockchainConsts.REST_FUNCTION_CALL_TIMEOUT_MS
+              timeout: NodeConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
             }).catch((error) => {
               if (DevFlags.enableRichFunctionLogging) {
                 logger.error(
@@ -199,8 +199,6 @@ class Functions {
               failCount++;
               return true;
             }));
-            const restFunctionCallGasAmount = DB.getBlockchainParam(
-                'resource/rest_function_call_gas_amount', blockNumber, this.db.stateRoot);
             funcResults[functionEntry.function_id] = {
               code: FunctionResultCode.SUCCESS,
               bandwidth_gas_amount: restFunctionCallGasAmount,
@@ -523,8 +521,7 @@ class Functions {
     }
     const toBalance = this.db.getValue(toBalancePath);
     if (toBalance === null) {
-      extraGasAmount = DB.getBlockchainParam(
-          'resource/account_registration_gas_amount', context.blockNumber, this.db.stateRoot);
+      extraGasAmount = context.accountRegistrationGasAmount;
     }
     const decResult = this.decValueOrLog(fromBalancePath, value, context);
     if (CommonUtil.isFailedTx(decResult)) {

@@ -609,23 +609,22 @@ class CommonUtil {
    * @param {Object} gasAmount gas amount
    * @returns
    */
-  static getTotalGasCost(gasPrice, gasAmount) {
-    const { BlockchainConsts } = require('./constants');
+  static getTotalGasCost(gasPrice, gasAmount, gasPriceUnit) {
     if (!CommonUtil.isNumber(gasPrice)) {
       gasPrice = 0; // Default gas price = 0 microain
     }
     if (!CommonUtil.isNumber(gasAmount)) {
       gasAmount = 0; // Default gas amount = 0
     }
-    return gasPrice * BlockchainConsts.MICRO_AIN * gasAmount;
+    return gasPrice * gasPriceUnit * gasAmount;
   }
 
-  static getServiceGasCostTotalFromTxList(txList, resList) {
+  static getServiceGasCostTotalFromTxList(txList, resList, gasPriceUnit) {
     return resList.reduce((acc, cur, index) => {
       const tx = txList[index];
       return CommonUtil.mergeNumericJsObjects(acc, {
         gasAmountTotal: cur.gas_amount_charged,
-        gasCostTotal: CommonUtil.getTotalGasCost(tx.tx_body.gas_price, cur.gas_amount_charged)
+        gasCostTotal: CommonUtil.getTotalGasCost(tx.tx_body.gas_price, cur.gas_amount_charged, gasPriceUnit)
       });
     }, { gasAmountTotal: 0, gasCostTotal: 0 });
   }

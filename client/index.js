@@ -703,7 +703,7 @@ app.get('/get_consensus_status', (req, res) => {
 
 app.get('/get_network_id', (req, res) => {
   const beginTime = Date.now();
-  const result = BlockchainConsts.NETWORK_ID;
+  const result = p2pServer.node.getBlockchainParam('genesis/network_id', 0);
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -714,7 +714,7 @@ app.get('/get_network_id', (req, res) => {
 
 app.get('/get_chain_id', (req, res) => {
   const beginTime = Date.now();
-  const result = BlockchainConsts.CHAIN_ID;
+  const result = p2pServer.node.getBlockchainParam('genesis/chain_id', 0);
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)

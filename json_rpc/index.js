@@ -2,7 +2,6 @@
 
 const semver = require('semver');
 const sizeof = require('object-sizeof');
-const _ = require('lodash');
 const {
   BlockchainConsts,
   NodeConfigs,
@@ -484,7 +483,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
 
     net_getNetworkId: function (args, done) {
       const beginTime = Date.now();
-      const result = BlockchainConsts.NETWORK_ID;
+      const result = p2pServer.node.getBlockchainParam('genesis/network_id', 0);
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, addProtocolVersion({ result }));
@@ -492,7 +491,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
 
     net_getChainId: function (args, done) {
       const beginTime = Date.now();
-      const result = BlockchainConsts.CHAIN_ID;
+      const result = p2pServer.node.getBlockchainParam('genesis/chain_id', 0);
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, addProtocolVersion({ result }));

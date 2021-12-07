@@ -11,7 +11,8 @@ const RadixNode = require('./radix-node');
  * it uses a radix tree internally.
  */
 class RadixTree {
-  constructor(version = null, parentStateNode = null) {
+  constructor(hashDelimiter, version = null, parentStateNode = null) {
+    this.hashDelimiter = hashDelimiter;
     this.version = version;
     this.nextSerial = 0;
     this.root = this._newRadixNode(parentStateNode);
@@ -19,7 +20,7 @@ class RadixTree {
   }
 
   clone(version, parentStateNode) {
-    const clonedTree = new RadixTree(version);
+    const clonedTree = new RadixTree(this.hashDelimiter, version);
     clonedTree.setNextSerial(this.getNextSerial());
     clonedTree.setRoot(this.root.clone(version, parentStateNode));
     clonedTree.setNumChildStateNodes(this.getNumChildStateNodes());
@@ -27,7 +28,7 @@ class RadixTree {
   }
 
   _newRadixNode(parentStateNode = null) {
-    return new RadixNode(this.getVersion(), this.getAndIncNextSerial(), parentStateNode);
+    return new RadixNode(this.hashDelimiter, this.getVersion(), this.getAndIncNextSerial(), parentStateNode);
   }
 
   static _toRadixLabel(stateLabel) {
@@ -473,10 +474,10 @@ class RadixTree {
   /**
    * Constructs a radix tree from the given snapshot object.
    */
-  static fromRadixSnapshot(obj) {
-    const root = RadixNode.fromRadixSnapshot(obj);
+  static fromRadixSnapshot(obj, hashDelimiter) {
+    const root = RadixNode.fromRadixSnapshot(obj, hashDelimiter);
     const version = root.getVersion();
-    const tree = new RadixTree(version);
+    const tree = new RadixTree(hashDelimiter, version);
     tree.setRoot(root);
     tree.setNextSerial(obj[StateInfoProperties.NEXT_SERIAL]);
     // NOTE(platfowner): Need to recompute and set numChildStateNodes.

@@ -5,13 +5,13 @@ const path = require('path');
 const zlib = require('zlib');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const { BlockchainConsts } = require('./constants');
+const { BlockchainConsts, NodeConfigs } = require('./constants');
 const CommonUtil = require('./common-util');
 const JSON_GZIP_FILE_EXTENSION = 'json.gz';
 
 class FileUtil {
   static getBlockDirPath(chainPath, blockNumber) {
-    const n2bPrefix = Math.floor(blockNumber / BlockchainConsts.CHAINS_N2B_MAX_NUM_FILES).toString();
+    const n2bPrefix = Math.floor(blockNumber / NodeConfigs.CHAINS_N2B_MAX_NUM_FILES).toString();
     return path.join(chainPath, BlockchainConsts.CHAINS_N2B_DIR_NAME, n2bPrefix);
   }
 
@@ -30,7 +30,7 @@ class FileUtil {
   }
 
   static getH2nDirPath(chainPath, blockHash) {
-    const h2nPrefix = blockHash.substring(0, BlockchainConsts.CHAINS_H2N_HASH_PREFIX_LENGTH);
+    const h2nPrefix = blockHash.substring(0, NodeConfigs.CHAINS_H2N_HASH_PREFIX_LENGTH);
     return path.join(chainPath, BlockchainConsts.CHAINS_H2N_DIR_NAME, h2nPrefix);
   }
 
@@ -247,7 +247,7 @@ class FileUtil {
       const blockDirPath = FileUtil.getBlockDirPath(chainPath, blockNumber);
       numFiles = FileUtil.getNumFiles(blockDirPath);
       numBlockFiles += numFiles;
-      blockNumber += BlockchainConsts.CHAINS_N2B_MAX_NUM_FILES;
+      blockNumber += NodeConfigs.CHAINS_N2B_MAX_NUM_FILES;
     } while (numFiles > 0);
     return numBlockFiles;
   }
