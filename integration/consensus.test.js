@@ -359,19 +359,19 @@ describe('Consensus', () => {
         console.error(`Failed to check finalization of tx.`);
       }
       assert.deepEqual(claimTx.result, {
-        "gas_amount_total":{
-          "bandwidth":{
-            "service":1
+        "gas_amount_total": {
+          "bandwidth": {
+            "service": 1
           },
-          "state":{
-            "service":0
+          "state": {
+            "service": 0
           }
         },
-        "gas_cost_total":0,
-        "error_message":"No write permission on: /gas_fee/claim/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/0",
-        "code":103,
-        "bandwidth_gas_amount":1,
-        "gas_amount_charged":1
+        "gas_cost_total": 0,
+        "error_message": "No write permission on: /gas_fee/claim/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/0",
+        "code": 10103,
+        "bandwidth_gas_amount": 1,
+        "gas_amount_charged": 1
       });
     });
 
