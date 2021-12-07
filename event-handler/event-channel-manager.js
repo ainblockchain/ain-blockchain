@@ -28,7 +28,9 @@ class EventChannelManager {
     this.wsServer = new ws.Server({
       port: BlockchainConfigs.EVENT_HANDLER_PORT,
     });
-    this.wsServer.on('connection', this.handleConnection);
+    this.wsServer.on('connection', (ws) => {
+      this.handleConnection(ws);
+    });
   }
 
   handleConnection(webSocket) {
