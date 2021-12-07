@@ -107,24 +107,9 @@ BlockchainConsts.HASH_DELIMITER = '#';
 BlockchainConsts.VARIABLE_LABEL_PREFIX = '$';
 BlockchainConsts.STATE_INFO_PREFIX = '#';
 BlockchainConsts.KEYS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'keys');
-// *** Error Codes ***
-BlockchainConsts.TX_NONCE_ERROR_CODE = 900;
-BlockchainConsts.TX_TIMESTAMP_ERROR_CODE = 901;
 // *** Token Denominations ***
 BlockchainConsts.MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
 BlockchainConsts.MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
-// *** State Budgets ***
-BlockchainConsts.SERVICE_BANDWIDTH_BUDGET_RATIO = 0.5;
-BlockchainConsts.APPS_BANDWIDTH_BUDGET_RATIO = 0.45;
-BlockchainConsts.FREE_BANDWIDTH_BUDGET_RATIO = 0.05;
-BlockchainConsts.SERVICE_STATE_BUDGET_RATIO = 0.5;
-BlockchainConsts.APPS_STATE_BUDGET_RATIO = 0.45;
-BlockchainConsts.FREE_STATE_BUDGET_RATIO = 0.05;
-BlockchainConsts.MAX_STATE_TREE_SIZE_PER_BYTE = 0.01;
-BlockchainConsts.STATE_GAS_COEFFICIENT = 1;
-BlockchainConsts.UNIT_WRITE_GAS_AMOUNT = 1;
-BlockchainConsts.ACCOUNT_REGISTRATION_GAS_AMOUNT = 2000;
-BlockchainConsts.REST_FUNCTION_CALL_GAS_AMOUNT = 100;
 // *** Traffic ***
 BlockchainConsts.TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
 BlockchainConsts.TRAFFIC_DB_MAX_INTERVALS = 60;  // 1 hour

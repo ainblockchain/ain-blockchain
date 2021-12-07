@@ -8,7 +8,7 @@ const rimraf = require("rimraf")
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const { BlockchainConsts } = require('../common/constants');
+const { BlockchainConsts, BlockchainParams } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const {
   waitUntilTxFinalized,
@@ -549,7 +549,7 @@ describe('HE Protocol', () => {
           "code": 0,
           "func_results": {
             "call_he_worker": {  // Function triggering was done
-              "bandwidth_gas_amount": BlockchainConsts.REST_FUNCTION_CALL_GAS_AMOUNT,
+              "bandwidth_gas_amount": BlockchainParams.resource.rest_function_call_gas_amount,
               "code": 0
             }
           },
@@ -557,7 +557,7 @@ describe('HE Protocol', () => {
           "gas_amount_total": {
             "bandwidth": {
               "app": {
-                "he_health_care": 1 + BlockchainConsts.REST_FUNCTION_CALL_GAS_AMOUNT
+                "he_health_care": 1 + BlockchainParams.resource.rest_function_call_gas_amount
               },
               "service": 0
             },

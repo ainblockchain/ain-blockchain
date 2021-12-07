@@ -2849,7 +2849,7 @@ describe("DB operations", () => {
             [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.TRANSFER, node.account.address, addr],
             valueObj);
         node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
-        const serviceStateBudget = BlockchainParams.resource.state_tree_bytes_limit * BlockchainConsts.SERVICE_STATE_BUDGET_RATIO;
+        const serviceStateBudget = BlockchainParams.resource.state_tree_bytes_limit * BlockchainParams.resource.service_state_budget_ratio;
         expect(node.db.getStateUsageAtPath('/')[StateInfoProperties.TREE_BYTES]).to.be.lessThan(serviceStateBudget);
 
         const expectedGasAmountTotal = {
