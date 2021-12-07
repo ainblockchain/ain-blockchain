@@ -46,7 +46,7 @@ class EventHandler {
     // TODO(cshcomcom): Implement
   }
 
-  convertNodeFilterIdClientFilterIdTo(nodeFilterId) {
+  nodeFilterIdToClientFilterId(nodeFilterId) {
     const [channelId, clientFilterId] = nodeFilterId.split(':');
     if (!clientFilterId) {
       throw Error(`Can't get client filter ID from node filter ID (nodeFilterId: ${nodeFilterId})`);
@@ -54,12 +54,12 @@ class EventHandler {
     return `${clientFilterId}`;
   }
 
-  convertClientFilterIdToNodeFilterId(clientFilterId, channelId) {
+  clientFilterIdToNodeFilterId(clientFilterId, channelId) {
     return `${channelId}:${clientFilterId}`;
   }
 
   createAndRegisterEventFilter(clientFilterId, channelId, eventType, config) {
-    const eventFilterId = this.convertClientFilterIdToNodeFilterId(clientFilterId, channelId);
+    const eventFilterId = this.clientFilterIdToNodeFilterId(clientFilterId, channelId);
     if (this.eventFilters[eventFilterId]) {
       throw Error(`Event filter ID ${eventFilterId} is already in use`);
     }
