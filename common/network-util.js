@@ -66,7 +66,7 @@ async function sendSignedTx(endpoint, params) {
 // FIXME(minsulee2): this is duplicated function see: ./tools/util.js
 async function signAndSendTx(endpoint, tx, privateKey) {
   const { txHash, signedTx } = CommonUtil.signTransaction(
-      tx, privateKey, DB.getBlockchainParam('genesis/chain_id', 0));
+      tx, privateKey, DB.getBlockchainParam('genesis/chain_id'));
   const result = await sendSignedTx(endpoint, signedTx);
   return Object.assign(result, { txHash });
 }

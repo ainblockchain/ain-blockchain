@@ -331,7 +331,7 @@ class P2pClient {
       return;
     }
     const lastBlockNumber = this.server.node.bc.lastBlockNumber();
-    const epochMs = this.server.node.getBlockchainParam('genesis/epoch_ms', 0);
+    const epochMs = this.server.node.getBlockchainParam('genesis/epoch_ms');
     if (this.chainSyncInProgress.lastBlockNumber >= lastBlockNumber &&
         this.chainSyncInProgress.updatedAt > Date.now() - epochMs) { // time buffer
       logger.info(`[${LOG_HEADER}] Already sent a request with the same/higher lastBlockNumber`);
@@ -389,7 +389,7 @@ class P2pClient {
       const parsedMessage = JSON.parse(message);
       const peerNetworkId = _.get(parsedMessage, 'networkId');
       const address = getAddressFromSocket(this.outbound, socket);
-      if (peerNetworkId !== this.server.node.getBlockchainParam('genesis/network_id', 0)) {
+      if (peerNetworkId !== this.server.node.getBlockchainParam('genesis/network_id')) {
         logger.error(`The given network ID(${peerNetworkId}) of the node(${address}) is MISSING or ` +
           `DIFFERENT from mine. Disconnect the connection.`);
         closeSocketSafe(this.outbound, socket);
@@ -731,7 +731,7 @@ class P2pClient {
 
   setIntervalForShardProofHashReports() {
     if (!this.shardReportInterval && this.server.node.isShardReporter) {
-      const epochMs = this.server.node.getBlockchainParam('genesis/epoch_ms', 0);
+      const epochMs = this.server.node.getBlockchainParam('genesis/epoch_ms');
       this.shardReportInterval = setInterval(() => {
         if (this.server.consensus.isRunning()) {
           this.server.reportShardProofHashes();

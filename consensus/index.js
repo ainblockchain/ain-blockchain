@@ -117,7 +117,7 @@ class Consensus {
     const LOG_HEADER = 'startEpochTransition';
     const genesisBlock = this.node.bc.genesisBlock;
     this.startingTime = genesisBlock.timestamp;
-    const epochMs = this.node.getBlockchainParam('genesis/epoch_ms', 0);
+    const epochMs = this.node.getBlockchainParam('genesis/epoch_ms');
     this.epoch = Math.ceil((Date.now() - this.startingTime) / epochMs);
     logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.epoch}`);
 
@@ -129,7 +129,7 @@ class Consensus {
     if (this.epochInterval) {
       clearInterval(this.epochInterval);
     }
-    const epochMs = this.node.getBlockchainParam('genesis/epoch_ms', 0);
+    const epochMs = this.node.getBlockchainParam('genesis/epoch_ms');
     this.epochInterval = setInterval(async () => {
       if (this.isInEpochTransition) {
         return;
