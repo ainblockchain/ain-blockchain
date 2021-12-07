@@ -502,5 +502,3 @@ try {
 } catch (e) {
   console.log(e);
 }
-
-// TODO: update GENESIS_TIMESTAMP in blockchain_params.json
