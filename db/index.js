@@ -540,7 +540,7 @@ class DB {
     };
   }
 
-  static getBlockchainParam(paramName, blockNumber, stateRoot = null) {
+  static getBlockchainParam(paramName, blockNumber = 0, stateRoot = null) {
     const LOG_HEADER = 'getBlockchainParam';
     const split = paramName.split('/');
     if (split.length !== 2) {

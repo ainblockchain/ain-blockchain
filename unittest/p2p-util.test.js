@@ -82,29 +82,29 @@ describe("P2P Util", () => {
     const wrongData5 = false;
 
     it("cannot encapsulate messages with wrong types", () => {
-      expect(util.encapsulateMessage(wrongType1, mockDataObj, BlockchainParams.network.network_id)).to.equal(null);
-      expect(util.encapsulateMessage(wrongType2, mockDataObj, BlockchainParams.network.network_id)).to.equal(null);
-      expect(util.encapsulateMessage(wrongType3, mockDataObj, BlockchainParams.network.network_id)).to.equal(null);
-      expect(util.encapsulateMessage(wrongType4, mockDataObj, BlockchainParams.network.network_id)).to.equal(null);
-      expect(util.encapsulateMessage(wrongType5, mockDataObj, BlockchainParams.network.network_id)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType1, mockDataObj)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType2, mockDataObj)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType3, mockDataObj)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType4, mockDataObj)).to.equal(null);
+      expect(util.encapsulateMessage(wrongType5, mockDataObj)).to.equal(null);
     });
 
     it("cannot encapsulate messages with wrong data", () => {
-      expect(util.encapsulateMessage(mockType, wrongData1, BlockchainParams.network.network_id)).to.equal(null);
-      expect(util.encapsulateMessage(mockType, wrongData2, BlockchainParams.network.network_id)).to.equal(null);
-      expect(util.encapsulateMessage(mockType, wrongData3, BlockchainParams.network.network_id)).to.equal(null);
-      expect(util.encapsulateMessage(mockType, wrongData4, BlockchainParams.network.network_id)).to.equal(null);
-      expect(util.encapsulateMessage(mockType, wrongData5, BlockchainParams.network.network_id)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData1)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData2)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData3)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData4)).to.equal(null);
+      expect(util.encapsulateMessage(mockType, wrongData5)).to.equal(null);
     });
 
     it("encapsulates the message successfully", () => {
-      const encapsulatedMessage = util.encapsulateMessage(mockType, mockDataObj, BlockchainParams.network.network_id);
+      const encapsulatedMessage = util.encapsulateMessage(mockType, mockDataObj);
       assert.deepEqual(encapsulatedMessage, {
         type: mockType,
         data: mockDataObj,
         protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
         dataProtoVer: BlockchainConsts.DATA_PROTOCOL_VERSION,
-        networkId: BlockchainParams.network.network_id,
+        networkId: BlockchainParams.genesis.network_id,
         timestamp: encapsulatedMessage.timestamp
       });
     });

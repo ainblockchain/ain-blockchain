@@ -60,7 +60,7 @@ class StateNode {
     const cloned = StateNode._create(this.hashDelimiter, versionToSet, this.label, this.isLeaf,
         this.value, this.proofHash, this.treeHeight, this.treeSize, this.treeBytes);
     if (!this.getIsLeaf()) {
-      cloned.setRadixTree(this.radixTree.clone(this.hashDelimiter, versionToSet, cloned));
+      cloned.setRadixTree(this.radixTree.clone(versionToSet, cloned));
     }
     return cloned;
   }

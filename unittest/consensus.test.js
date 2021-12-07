@@ -2,7 +2,7 @@ const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const {
-  BlockchainConsts,
+  NodeConfigs,
   PredefinedDbPaths,
   BlockchainParams,
 } = require('../common/constants');
@@ -13,7 +13,7 @@ describe("Consensus", () => {
   let node1, node2;
 
   beforeEach(() => {
-    rimraf.sync(BlockchainConsts.CHAINS_DIR);
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node1 = new BlockchainNode();
     setNodeForTesting(node1, 0);
@@ -22,7 +22,7 @@ describe("Consensus", () => {
   });
 
   afterEach(() => {
-    rimraf.sync(BlockchainConsts.CHAINS_DIR);
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
   });
 
   it("Non-staked nodes cannot vote", () => {
