@@ -240,14 +240,8 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
     printf "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH\n"
 fi
 
-export DEBUG=false
-export CONSOLE_LOG=false 
-export ENABLE_DEV_CLIENT_SET_API=false 
-export ENABLE_TX_SIG_VERIF_WORKAROUND=false
-export ENABLE_GAS_FEE_WORKAROUND=true
-export LIGHTWEIGHT=false
 export STAKE=100000
-export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
+printf "STAKE=$STAKE\n"
 # NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
 export CORS_WHITELIST='*'
 printf "CORS_WHITELIST=$CORS_WHITELIST\n"

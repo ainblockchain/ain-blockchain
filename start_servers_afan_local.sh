@@ -5,10 +5,9 @@ printf "\n[[[[[ start_servers_afan_local.sh ]]]]]\n\n"
 # PARENT CHAIN **
 # parent tracker
 printf "\nStarting parent tracker..\n"
-  PORT=8080 \
+PORT=8080 \
   P2P_PORT=5000 \
   CONSOLE_LOG=true \
-  BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -20,11 +19,9 @@ ACCOUNT_INDEX=0 \
   PEER_CANDIDATE_JSON_RPC_URL='' \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
-  ENABLE_JSON_RPC_TX_API=true \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
-  BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -35,11 +32,9 @@ ACCOUNT_INDEX=1 \
   P2P_PORT=5002 \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
-  ENABLE_JSON_RPC_TX_API=true \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
-  BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -50,11 +45,9 @@ ACCOUNT_INDEX=2 \
   P2P_PORT=5003 \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
-  ENABLE_JSON_RPC_TX_API=true \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
-  BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 15
@@ -66,7 +59,6 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PORT=9000 \
   P2P_PORT=6000 \
   CONSOLE_LOG=true \
-  BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
   node ./tracker-server/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -79,11 +71,9 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   PEER_CANDIDATE_JSON_RPC_URL='' \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
-  ENABLE_JSON_RPC_TX_API=true \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
-  BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -107,11 +97,9 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   ACCOUNT_INDEX=1 \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
-  ENABLE_JSON_RPC_TX_API=true \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
-  BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 5
@@ -123,11 +111,9 @@ BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard \
   ACCOUNT_INDEX=2 \
   CONSOLE_LOG=true \
   ENABLE_DEV_CLIENT_SET_API=true \
-  ENABLE_JSON_RPC_TX_API=true \
   ENABLE_REST_FUNCTION_CALL=true \
   ENABLE_TX_SIG_VERIF_WORKAROUND=true \
   ENABLE_GAS_FEE_WORKAROUND=true \
-  BLOCKCHAIN_DATA_DIR=~/ain_blockchain_data \
   node ./client/index.js &
 printf "\nDone\n\n"
 sleep 15
