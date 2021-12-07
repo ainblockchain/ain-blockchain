@@ -4038,7 +4038,7 @@ describe('Native Function', () => {
                 fee_rate: checkoutFeeRate,
               },
               response: {
-                status: 1,
+                status: 20001,
                 tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c',
                 error_message: 'Ethereum tx failed'
               }
@@ -4694,7 +4694,7 @@ describe('Native Function', () => {
                 sender: ethAddress
               },
               response: {
-                status: 1,
+                status: 20001,
                 tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c',
                 error_message: 'Ethereum tx failed'
               }
@@ -4803,7 +4803,7 @@ describe('Native Function', () => {
           ref: `${checkinRequestBasePath}/${serviceUser}/1`,
           value: null
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }

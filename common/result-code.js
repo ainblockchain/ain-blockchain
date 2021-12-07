@@ -61,7 +61,7 @@ const TxResultCode = {
 };
 
 /**
- * List of failed tx precheck code.
+ * Set of failed tx precheck code.
  */
 const FailedTxPrecheckCodeSet = new Set([
   TxResultCode.TX_NOT_EXECUTABLE,
@@ -107,6 +107,14 @@ const FunctionResultCode = {
 };
 
 /**
+ * Set of normal function result code.
+ */
+const NormalFunctionResultCodeSet = new Set([
+  FunctionResultCode.SUCCESS,
+  FunctionResultCode.FAILURE,
+]);
+
+/**
  * JSON RPC API result code.
  *
  * @enum {number}
@@ -143,6 +151,11 @@ const DevClientResultCode = {
   FAILURE: 40001,
 };
 
+/**
+ * Consensus error code.
+ *
+ * @enum {number}
+ */
 const ConsensusErrorCode = {
   PARSING_PROPOSAL_BLOCK_FAILURE: 90001,
   NOT_EXTENDING_LNC_ERROR: 90002,
@@ -176,6 +189,9 @@ const ConsensusErrorCode = {
   ADDING_TO_BLOCK_POOL_FAILURE: 90400,
 }
 
+/**
+ * Set of consensus error code that a validator node should vote against.
+ */
 const ConsensusErrorCodeSetToVoteAgainst = new Set([
   ConsensusErrorCode.ADDING_TO_BLOCK_POOL_FAILURE,
   ConsensusErrorCode.INVALID_EPOCH,
@@ -207,6 +223,7 @@ module.exports = {
   TxResultCode,
   FailedTxPrecheckCodeSet,
   FunctionResultCode,
+  NormalFunctionResultCodeSet,
   ConsensusErrorCode,
   ConsensusErrorCodeSetToVoteAgainst,
 };

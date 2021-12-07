@@ -1,6 +1,8 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
-const { FunctionResultCode } = require('../common/result-code');
+const {
+  NormalFunctionResultCodeSet,
+} = require('../common/result-code');
 
 // NOTE(platfowner): To keep the blockchain deterministic as much as possible over time,
 //                   we keep util functions here self-contained as much as possible.
@@ -252,8 +254,7 @@ class RuleUtil {
       return false;
     }
     return this.isDict(newData.response) && this.isValidHash(newData.response.tx_hash) &&
-        (newData.response.status === FunctionResultCode.SUCCESS ||
-        newData.response.status === FunctionResultCode.FAILURE);
+        NormalFunctionResultCodeSet.has(newData.response.status);
   }
 
   validateCheckinRequestData(networkName, chainId, tokenId, newData, getValue) {
@@ -275,8 +276,7 @@ class RuleUtil {
       return false;
     }
     return this.isDict(newData.response) && this.isValidHash(newData.response.tx_hash) &&
-        (newData.response.status === FunctionResultCode.SUCCESS ||
-        newData.response.status === FunctionResultCode.FAILURE);
+        NormalFunctionResultCodeSet.has(newData.response.status);
   }
 
   validateClaimRewardData(userAddr, newData, getValue) {
