@@ -3,7 +3,6 @@ const logger = new (require('../logger'))('DATABASE');
 const _ = require('lodash');
 const {
   DevFlags,
-  BlockchainConsts,
   NodeConfigs,
   ReadDbOperations,
   WriteDbOperations,
@@ -125,8 +124,9 @@ class DB {
    */
   resetDbWithSnapshot(snapshot) {
     const LOG_HEADER = 'resetDbWithSnapshot';
+    const hashDelimiter = DB.getBlockchainParam('genesis/hash_delimiter', 0);
     const newRoot =
-        StateNode.fromRadixSnapshot(snapshot[BlockchainSnapshotProperties.RADIX_SNAPSHOT]);
+        StateNode.fromRadixSnapshot(snapshot[BlockchainSnapshotProperties.RADIX_SNAPSHOT], hashDelimiter);
     updateStateInfoForStateTree(newRoot);
     const rootProofHash = snapshot[BlockchainSnapshotProperties.ROOT_PROOF_HASH];
     // Checks the state proof hash
@@ -408,6 +408,7 @@ class DB {
   // - Reference from root_b: child_1b -> child_2 -> child_3 (not affected)
   //
   static getRefForWritingToStateRoot(stateRoot, fullPath) {
+    const hashDelimiter = DB.getBlockchainParam('genesis/hash_delimiter', 0);
     let node = stateRoot;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
@@ -423,7 +424,7 @@ class DB {
           node = child;
         }
       } else {
-        const newChild = new StateNode(this.stateVersion);
+        const newChild = new StateNode(hashDelimiter, this.stateVersion);
         node.setChild(label, newChild);
         node = newChild;
       }
@@ -436,7 +437,9 @@ class DB {
   }
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
-    const tree = StateNode.fromStateSnapshot(stateObj, stateVersion);
+    const stateInfoPrefix = DB.getBlockchainParam('genesis/state_info_prefix', 0);
+    const hashDelimiter = DB.getBlockchainParam('genesis/hash_delimiter', 0);
+    const tree = StateNode.fromStateSnapshot(stateObj, hashDelimiter, stateVersion, stateInfoPrefix);
     if (!NodeConfigs.LIGHTWEIGHT) {
       updateStateInfoForStateTree(tree);
     }
@@ -537,7 +540,7 @@ class DB {
     };
   }
 
-  static getBlockchainParam(paramName, blockNumber, stateRoot) {
+  static getBlockchainParam(paramName, blockNumber, stateRoot = null) {
     const LOG_HEADER = 'getBlockchainParam';
     const split = paramName.split('/');
     if (split.length !== 2) {
@@ -557,7 +560,7 @@ class DB {
   isConsensusAppAdmin(address) {
     const admins = this.getValue(PathUtil.getManageAppConfigAdminPath('consensus'));
     if (admins === null) {
-      return BlockchainConsts.GENESIS_ADDR === address;
+      return address === DB.getBlockchainParam('genesis/genesis_addr', 0);
     }
     return admins[address] === true;
   }
@@ -780,8 +783,13 @@ class DB {
       if (blockTime === null) {
         blockTime = this.lastBlockTimestamp();
       }
+      const accountRegistrationGasAmount = DB.getBlockchainParam(
+          'resource/account_registration_gas_amount', blockNumber, this.stateRoot);
+      const restFunctionCallGasAmount = DB.getBlockchainParam(
+          'resource/rest_function_call_gas_amount', blockNumber, this.stateRoot);
       const { func_results } = this.func.triggerFunctions(
-          localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime);
+          localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime,
+          accountRegistrationGasAmount, restFunctionCallGasAmount);
       funcResults = func_results;
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
         return CommonUtil.returnTxResult(
@@ -835,6 +843,7 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
+    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix', 0);
     const isValidObj = isValidJsObjectForStates(func, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -846,7 +855,7 @@ class DB {
       return CommonUtil.returnTxResult(
           402, `Invalid path: ${isValidPath.invalidPath}`, unitWriteGasLimit);
     }
-    const isValidFunction = isValidFunctionTree(parsedPath, func);
+    const isValidFunction = isValidFunctionTree(parsedPath, func, variableLabelPrefix);
     if (!isValidFunction.isValid) {
       return CommonUtil.returnTxResult(
           405, `Invalid function tree: ${isValidFunction.invalidPath}`, unitWriteGasLimit);
@@ -882,6 +891,7 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
+    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix', 0);
     const isValidObj = isValidJsObjectForStates(rule, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -893,7 +903,7 @@ class DB {
       return CommonUtil.returnTxResult(
           502, `Invalid path: ${isValidPath.invalidPath}`, unitWriteGasLimit);
     }
-    const isValidRule = isValidRuleTree(parsedPath, rule);
+    const isValidRule = isValidRuleTree(parsedPath, rule, variableLabelPrefix);
     if (!isValidRule.isValid) {
       return CommonUtil.returnTxResult(
           504, `Invalid rule tree: ${isValidRule.invalidPath}`, unitWriteGasLimit);
@@ -920,6 +930,7 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
+    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix', 0);
     const isValidObj = isValidJsObjectForStates(owner, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -931,7 +942,7 @@ class DB {
       return CommonUtil.returnTxResult(
           602, `Invalid path: ${isValidPath.invalidPath}`, unitWriteGasLimit);
     }
-    const isValidOwner = isValidOwnerTree(parsedPath, owner);
+    const isValidOwner = isValidOwnerTree(parsedPath, owner, variableLabelPrefix);
     if (!isValidOwner.isValid) {
       return CommonUtil.returnTxResult(
           604, `Invalid owner tree: ${isValidOwner.invalidPath}`, unitWriteGasLimit);
@@ -1288,6 +1299,7 @@ class DB {
   }
 
   collectFee(auth, timestamp, tx, blockNumber, executionResult) {
+    const gasPriceUnit = DB.getBlockchainParam('resource/gas_price_unit', blockNumber, this.stateRoot);
     const gasPrice = tx.tx_body.gas_price;
     // Use only the service gas amount total
     const serviceBandwidthGasAmount = _.get(tx, 'extra.gas.bandwidth.service', 0);
@@ -1297,7 +1309,7 @@ class DB {
     if (gasAmountChargedByTransfer <= 0 || gasPrice === 0) { // No fees to collect
       executionResult.gas_amount_charged = gasAmountChargedByTransfer;
       executionResult.gas_cost_total =
-          CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer);
+          CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit);
       return;
     }
     const billing = tx.tx_body.billing;
@@ -1310,7 +1322,7 @@ class DB {
       }
     }
     let balance = this.getBalance(billedTo);
-    const gasCost = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer);
+    const gasCost = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit);
     if (balance < gasCost) {
       Object.assign(executionResult, {
         code: 36,
@@ -1322,7 +1334,7 @@ class DB {
     }
     executionResult.gas_amount_charged = gasAmountChargedByTransfer;
     executionResult.gas_cost_total =
-        CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged);
+        CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged, gasPriceUnit);
     if (executionResult.gas_cost_total <= 0) return;
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(blockNumber, billedTo, tx.hash);
     const gasFeeCollectRes = this.setValue(
@@ -1657,9 +1669,10 @@ class DB {
   }
 
   static getVariableLabel(node) {
+    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix', 0);
     if (!node.getIsLeaf()) {
       for (const label of node.getChildLabels()) {
-        if (label.startsWith(BlockchainConsts.VARIABLE_LABEL_PREFIX)) {
+        if (label.startsWith(variableLabelPrefix)) {
           // It's assumed that there is at most one variable (i.e., with '$') child node.
           return label;
         }

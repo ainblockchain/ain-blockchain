@@ -4,7 +4,6 @@ const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const {
   NodeConfigs,
-  BlockchainConsts,
   WriteDbOperations,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
@@ -45,14 +44,14 @@ class Transaction {
     return new Transaction(txBody, signature, hash, address, skipVerif, createdAt);
   }
 
-  static fromTxBody(txBody, privateKey) {
+  static fromTxBody(txBody, privateKey, chainId) {
     if (!Transaction.isValidTxBody(txBody)) {
       return null;
     }
     // A devel method for bypassing the transaction verification.
     let signature = '';
     if (!txBody.address) {
-      const signed = CommonUtil.signTransaction(txBody, privateKey, BlockchainConsts.CHAIN_ID);
+      const signed = CommonUtil.signTransaction(txBody, privateKey, chainId);
       const sig = _.get(signed, 'signedTx.signature', null);
       if (!sig) {
         return null;

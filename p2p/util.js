@@ -1,3 +1,5 @@
+// TODO(liayoo): Make the functions in this file static.
+
 /**
  * This file contains utility functions for shard reporters to communicate with
  * the parent_chain_poc through API calls. In the future, these should be refactored
@@ -9,6 +11,7 @@ const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const { BlockchainConsts, NodeConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
+const DB = require('../db');
 
 function _isValidMessage(message) {
   const body = _.get(message, 'data.body');
@@ -91,7 +94,7 @@ function encapsulateMessage(type, dataObj) {
     data: dataObj,
     protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
     dataProtoVer: BlockchainConsts.DATA_PROTOCOL_VERSION,
-    networkId: BlockchainConsts.NETWORK_ID,
+    networkId: DB.getBlockchainParam('genesis/network_id', 0),
     timestamp: Date.now()
   };
   return message;

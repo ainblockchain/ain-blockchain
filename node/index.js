@@ -7,8 +7,8 @@ const sizeof = require('object-sizeof');
 const path = require('path');
 const {
   DevFlags,
-  BlockchainConsts,
   NodeConfigs,
+  BlockchainParams,
   BlockchainNodeStates,
   PredefinedDbPaths,
   BlockchainSnapshotProperties,
@@ -37,9 +37,9 @@ const PathUtil = require('../common/path-util');
 
 class BlockchainNode {
   constructor(account = null, eventHandler = null, trafficStatsManager = null) {
-    this.keysDir = path.resolve(BlockchainConsts.KEYS_ROOT_DIR, `${NodeConfigs.PORT}`);
+    this.keysDir = path.resolve(NodeConfigs.KEYS_ROOT_DIR, `${NodeConfigs.PORT}`);
     FileUtil.createDir(this.keysDir);
-    this.snapshotDir = path.resolve(BlockchainConsts.SNAPSHOTS_ROOT_DIR, `${NodeConfigs.PORT}`);
+    this.snapshotDir = path.resolve(NodeConfigs.SNAPSHOTS_ROOT_DIR, `${NodeConfigs.PORT}`);
     FileUtil.createSnapshotDir(this.snapshotDir);
 
     this.account = account;
@@ -54,7 +54,7 @@ class BlockchainNode {
     this.bc = new Blockchain(String(NodeConfigs.PORT));
     this.tp = new TransactionPool(this);
     this.bp = new BlockPool(this);
-    this.stateManager = new StateManager();
+    this.stateManager = new StateManager(BlockchainParams.genesis.hash_delimiter);
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
@@ -283,12 +283,12 @@ class BlockchainNode {
   }
 
   updateSnapshots(blockNumber) {
-    if (blockNumber % BlockchainConsts.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
+    if (blockNumber % NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
           this.snapshotDir,
-          blockNumber - BlockchainConsts.MAX_NUM_SNAPSHOTS * BlockchainConsts.SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
+          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
   }
 
@@ -403,7 +403,7 @@ class BlockchainNode {
     return DB.getBlockchainParam(
       paramName,
       blockNumber !== null ? blockNumber : this.bc.lastBlockNumber(),
-      stateVersion ? this.stateManager.getRoot(stateVersion) : this.stateManager.getFinalRoot()
+      stateVersion !== null ? this.stateManager.getRoot(stateVersion) : this.stateManager.getFinalRoot()
     );
   }
 
@@ -458,7 +458,8 @@ class BlockchainNode {
     if (txBody.gas_price === undefined) {
       txBody.gas_price = 0;
     }
-    return Transaction.fromTxBody(txBody, this.account.private_key, BlockchainConsts.CHAIN_ID);
+    return Transaction.fromTxBody(
+        txBody, this.account.private_key, this.getBlockchainParam('genesis/chain_id', 0));
   }
 
   /**

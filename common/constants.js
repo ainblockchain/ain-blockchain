@@ -24,9 +24,47 @@ const DevFlags = {
   enableTrafficMonitoring: true,
 };
 
+// ** Blockchain configs **
+const BlockchainConsts = {
+  // *** Genesis ***
+  BASE_BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/base',
+  // *** Protocol Versions ***
+  CURRENT_PROTOCOL_VERSION: require('../package.json').version,
+  PROTOCOL_VERSIONS: path.resolve(__dirname, '../client/protocol_versions.json'),
+  DATA_PROTOCOL_VERSION: '1.0.0',
+  CONSENSUS_PROTOCOL_VERSION: '1.0.0',
+  // *** Directories & Files ***
+  CHAINS_N2B_DIR_NAME: 'n2b', // Number-to-block directory name.
+  CHAINS_H2N_DIR_NAME: 'h2n', // Hash-to-number directory name.
+  SNAPSHOTS_N2S_DIR_NAME: 'n2s', // Number-to-snapshot directory name.
+  DEBUG_SNAPSHOT_FILE_PREFIX: 'debug_', // Prefix for debug snapshot files.
+};
+if (!semver.valid(BlockchainConsts.CURRENT_PROTOCOL_VERSION)) {
+  throw Error('Wrong version format is specified in package.json');
+}
+if (!fs.existsSync(BlockchainConsts.PROTOCOL_VERSIONS)) {
+  throw Error('Missing protocol versions file: ' + BlockchainConsts.PROTOCOL_VERSIONS);
+} else {
+  BlockchainConsts.PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(BlockchainConsts.PROTOCOL_VERSIONS));
+}
+if (!semver.valid(BlockchainConsts.DATA_PROTOCOL_VERSION)) {
+  throw Error('Wrong data version format is specified for DATA_PROTOCOL_VERSION');
+}
+if (!semver.valid(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION)) {
+  throw Error('Wrong data version format is specified for CONSENSUS_PROTOCOL_VERSION');
+}
+
+// ** Blockchain Params **
+const BlockchainParams = getBlockchainConfig('blockchain_params.json');
+// TODO(liayoo): Deprecate GenesisAccounts
+const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
+// TODO(liayoo): Use on-chain value instead of GenesisToken & GenesisSharding
+const GenesisToken = BlockchainParams.token;
+const GenesisSharding = BlockchainParams.sharding;
+
 // ** Node configs, set for individual nodes by env vars **
 const NodeConfigs = {};
-NodeConfigs.BLOCKCHAIN_CONFIGS_DIR = process.env.BLOCKCHAIN_CONFIGS_DIR || 'blockchain-configs/base';
+NodeConfigs.BLOCKCHAIN_CONFIGS_DIR = process.env.BLOCKCHAIN_CONFIGS_DIR || BlockchainConsts.BASE_BLOCKCHAIN_CONFIGS_DIR;
 NodeConfigs.GENESIS_BLOCK_DIR = path.resolve(__dirname, '..', NodeConfigs.BLOCKCHAIN_CONFIGS_DIR);
 /**
  * Overwriting node_params.json with environment variables.
@@ -53,68 +91,12 @@ function setNodeConfigs() {
   if (!fs.existsSync(NodeConfigs.BLOCKCHAIN_DATA_DIR)) {
     fs.mkdirSync(NodeConfigs.BLOCKCHAIN_DATA_DIR, { recursive: true });
   }
+  NodeConfigs.LOGS_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'logs');
+  NodeConfigs.CHAINS_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'chains');
+  NodeConfigs.SNAPSHOTS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'snapshots');
+  NodeConfigs.KEYS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'keys');
 }
 setNodeConfigs();
-
-// ** Blockchain configs **
-const BlockchainConsts = {};
-// *** Genesis ***
-const BlockchainParams = getBlockchainConfig('blockchain_params.json');
-BlockchainConsts.CHAIN_ID = BlockchainParams.blockchain.chain_id;
-BlockchainConsts.EPOCH_MS = BlockchainParams.consensus.epoch_ms;
-BlockchainConsts.GENESIS_ADDR = BlockchainParams.genesis.genesis_addr;
-BlockchainConsts.NETWORK_ID = BlockchainParams.network.network_id;
-// TODO(liayoo): Use on-chain value instead of GenesisToken
-const GenesisToken = BlockchainParams.token;
-// TODO(liayoo): Deprecate GenesisAccounts
-const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
-// TODO(liayoo): Use on-chain value instead of GenesisSharding
-const GenesisSharding = BlockchainParams.sharding;
-// *** Protocol Versions ***
-BlockchainConsts.CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-if (!semver.valid(BlockchainConsts.CURRENT_PROTOCOL_VERSION)) {
-  throw Error('Wrong version format is specified in package.json');
-}
-BlockchainConsts.PROTOCOL_VERSIONS = path.resolve(__dirname, '../client/protocol_versions.json');
-if (!fs.existsSync(BlockchainConsts.PROTOCOL_VERSIONS)) {
-  throw Error('Missing protocol versions file: ' + BlockchainConsts.PROTOCOL_VERSIONS);
-}
-BlockchainConsts.PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(BlockchainConsts.PROTOCOL_VERSIONS));
-BlockchainConsts.DATA_PROTOCOL_VERSION = '1.0.0';
-if (!semver.valid(BlockchainConsts.DATA_PROTOCOL_VERSION)) {
-  throw Error('Wrong data version format is specified for DATA_PROTOCOL_VERSION');
-}
-BlockchainConsts.CONSENSUS_PROTOCOL_VERSION = '1.0.0';
-if (!semver.valid(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION)) {
-  throw Error('Wrong data version format is specified for CONSENSUS_PROTOCOL_VERSION');
-}
-// *** Directories & Files ***
-BlockchainConsts.LOGS_DIR = path.resolve(__dirname, '../logs');
-BlockchainConsts.CHAINS_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'chains');
-BlockchainConsts.CHAINS_N2B_DIR_NAME = 'n2b'; // Number-to-block directory name.
-BlockchainConsts.CHAINS_H2N_DIR_NAME = 'h2n'; // Hash-to-number directory name.
-BlockchainConsts.CHAINS_N2B_MAX_NUM_FILES = 100000;
-BlockchainConsts.CHAINS_H2N_HASH_PREFIX_LENGTH = 5;
-BlockchainConsts.CHAIN_SEGMENT_LENGTH = 20;
-BlockchainConsts.SNAPSHOTS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'snapshots');
-BlockchainConsts.ON_MEMORY_CHAIN_LENGTH = 10;
-BlockchainConsts.SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
-BlockchainConsts.DEBUG_SNAPSHOT_FILE_PREFIX = 'debug_'; // Prefix for debug snapshot files.
-// NOTE(platfowner): Should have a value bigger than ON_MEMORY_CHAIN_LENGTH.
-BlockchainConsts.SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
-BlockchainConsts.MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
-BlockchainConsts.HASH_DELIMITER = '#';
-BlockchainConsts.VARIABLE_LABEL_PREFIX = '$';
-BlockchainConsts.STATE_INFO_PREFIX = '#';
-BlockchainConsts.KEYS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'keys');
-// *** Token Denominations ***
-BlockchainConsts.MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
-BlockchainConsts.MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
-// *** Traffic ***
-BlockchainConsts.TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
-BlockchainConsts.TRAFFIC_DB_MAX_INTERVALS = 60;  // 1 hour
-// *** Functions ***
-BlockchainConsts.REST_FUNCTION_CALL_TIMEOUT_MS = 10000; // 10 sec
 
 // ** Enums **
 /**
@@ -173,10 +155,8 @@ const PredefinedDbPaths = {
   DOT_SHARD: '.shard',
   // Blockchain Params
   BLOCKCHAIN_PARAMS: 'blockchain_params',
-  BLOCKCHAIN_PARAMS_BLOCKCHAIN: 'blockchain',
   BLOCKCHAIN_PARAMS_CONSENSUS: 'consensus',
   BLOCKCHAIN_PARAMS_GENESIS: 'genesis',
-  BLOCKCHAIN_PARAMS_NETWORK: 'network',
   BLOCKCHAIN_PARAMS_RESOURCE: 'resource',
   BLOCKCHAIN_PARAMS_MAX_FUNCTION_URLS_PER_DEVELOPER: 'max_function_urls_per_developer',
   // Consensus
@@ -696,7 +676,8 @@ function getBlockchainConfig(filename) {
     }
   }
   if (!config) {
-    const defaultConfigPath = path.resolve(__dirname, '..', 'blockchain-configs/base', filename);
+    const defaultConfigPath = path.resolve(
+        __dirname, '..', BlockchainConsts.BASE_BLOCKCHAIN_CONFIGS_DIR, filename);
     if (fs.existsSync(defaultConfigPath)) {
       config = JSON.parse(fs.readFileSync(defaultConfigPath));
     } else {
@@ -724,7 +705,7 @@ function buildRulePermission(rule) {
 }
 
 const trafficStatsManager = new TrafficStatsManager(
-    BlockchainConsts.TRAFFIC_DB_INTERVAL_MS, BlockchainConsts.TRAFFIC_DB_MAX_INTERVALS, DevFlags.enableTrafficMonitoring);
+    NodeConfigs.TRAFFIC_DB_INTERVAL_MS, NodeConfigs.TRAFFIC_DB_MAX_INTERVALS, DevFlags.enableTrafficMonitoring);
 
 module.exports = {
   DevFlags,

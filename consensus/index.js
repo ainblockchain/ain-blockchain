@@ -117,7 +117,8 @@ class Consensus {
     const LOG_HEADER = 'startEpochTransition';
     const genesisBlock = this.node.bc.genesisBlock;
     this.startingTime = genesisBlock.timestamp;
-    this.epoch = Math.ceil((Date.now() - this.startingTime) / BlockchainConsts.EPOCH_MS);
+    const epochMs = this.node.getBlockchainParam('genesis/epoch_ms', 0);
+    this.epoch = Math.ceil((Date.now() - this.startingTime) / epochMs);
     logger.info(`[${LOG_HEADER}] Epoch initialized to ${this.epoch}`);
 
     this.setEpochTransition();
@@ -128,6 +129,7 @@ class Consensus {
     if (this.epochInterval) {
       clearInterval(this.epochInterval);
     }
+    const epochMs = this.node.getBlockchainParam('genesis/epoch_ms', 0);
     this.epochInterval = setInterval(async () => {
       if (this.isInEpochTransition) {
         return;
@@ -147,7 +149,7 @@ class Consensus {
         }
       }
       currentTime -= this.timeAdjustment;
-      const absEpoch = Math.floor((currentTime - this.startingTime) / BlockchainConsts.EPOCH_MS);
+      const absEpoch = Math.floor((currentTime - this.startingTime) / epochMs);
       if (this.epoch + 1 < absEpoch) {
         logger.debug(`[${LOG_HEADER}] Epoch is too low: ${this.epoch} / ${absEpoch}`);
       } else if (this.epoch + 1 > absEpoch) {
@@ -162,7 +164,7 @@ class Consensus {
         this.tryPropose();
       }
       this.isInEpochTransition = false;
-    }, BlockchainConsts.EPOCH_MS);
+    }, epochMs);
   }
 
   stop() {
@@ -326,8 +328,9 @@ class Consensus {
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
     this.node.tp.removeInvalidTxsFromPool(invalidTransactions);
+    const gasPriceUnit = this.node.getBlockchainParam('resource/gas_price_unit', blockNumber, tempDb.stateRoot);
     const { gasAmountTotal, gasCostTotal } =
-        CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList);
+        CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit);
     const receipts = CommonUtil.txResultsToReceipts(resList);
     return { transactions, receipts, gasAmountTotal, gasCostTotal };
   }
@@ -654,7 +657,8 @@ class Consensus {
     }
   }
 
-  static validateAndExecuteTransactions(transactions, receipts, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, db) {
+  static validateAndExecuteTransactions(
+      transactions, receipts, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, db, node) {
     const txsRes = db.executeTransactionList(transactions, number === 0, true, number, blockTime);
     if (!txsRes) {
       throw new ConsensusError({
@@ -670,8 +674,9 @@ class Consensus {
         level: 'error'
       });
     }
+    const gasPriceUnit = node.getBlockchainParam('resource/gas_price_unit', number, db.stateRoot);
     const { gasAmountTotal, gasCostTotal } =
-        CommonUtil.getServiceGasCostTotalFromTxList(transactions, txsRes);
+        CommonUtil.getServiceGasCostTotalFromTxList(transactions, txsRes, gasPriceUnit);
     if (gasAmountTotal !== expectedGasAmountTotal) {
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_GAS_AMOUNT_TOTAL,
@@ -777,13 +782,13 @@ class Consensus {
 
     try {
       Consensus.validateBlockNumberAndHashes(block, prevBlock, node.bc.genesisBlockHash);
-      Consensus.validateValidators(validators, number - 1, baseVersion, node);
+      Consensus.validateValidators(validators, number, baseVersion, node);
       Consensus.validateProposer(number, prevBlockLastVotesHash, epoch, validators, proposer);
       Consensus.validateAndExecuteLastVotes(last_votes, last_hash, number, timestamp, db, node.bp);
       Consensus.validateAndExecuteOffensesAndEvidence(
           evidence, validators, prevBlockMajority, timestamp, proposalTx, db);
       Consensus.validateAndExecuteTransactions(
-          transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db);
+          transactions, receipts, number, timestamp, gas_amount_total, gas_cost_total, db, node);
       Consensus.validateStateProofHash(state_proof_hash, number, db, node, takeSnapshot);
       Consensus.executeProposalTx(proposalTx, number, timestamp, db, node);
       Consensus.addBlockToBlockPool(block, proposalTx, db, node.bp);

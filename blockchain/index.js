@@ -6,7 +6,6 @@ const { Block } = require('./block');
 const FileUtil = require('../common/file-util');
 const {
   NodeConfigs,
-  BlockchainConsts,
   BlockchainSnapshotProperties,
 } = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
@@ -16,7 +15,7 @@ class Blockchain {
   constructor(basePath) {
     // Finalized chain
     this.chain = [];
-    this.blockchainPath = path.resolve(BlockchainConsts.CHAINS_DIR, basePath);
+    this.blockchainPath = path.resolve(NodeConfigs.CHAINS_DIR, basePath);
     this.setGenesisBlock();
 
     // Mapping of a block number to the finalized block's info
@@ -111,8 +110,9 @@ class Blockchain {
     if (number === undefined || number === null) return null;
     const blockNumber = CommonUtil.toNumberOrNaN(number);
     if (!CommonUtil.isNumber(blockNumber)) return null;
+    if (blockNumber === 0) return this.genesisBlock;
     const blockPath = FileUtil.getBlockPath(this.blockchainPath, blockNumber);
-    if (!blockPath || blockNumber > this.lastBlockNumber() - BlockchainConsts.ON_MEMORY_CHAIN_LENGTH) {
+    if (!blockPath || blockNumber > this.lastBlockNumber() - NodeConfigs.ON_MEMORY_CHAIN_LENGTH) {
       return this.chain.find((block) => block.number === blockNumber);
     } else {
       return Block.parse(FileUtil.readCompressedJson(blockPath));
@@ -164,7 +164,7 @@ class Blockchain {
     logger.info(`[${LOG_HEADER}] Successfully added block ${block.number} to chain.`);
 
     // Keep up to latest ON_MEMORY_CHAIN_LENGTH blocks
-    while (this.chain.length > BlockchainConsts.ON_MEMORY_CHAIN_LENGTH) {
+    while (this.chain.length > NodeConfigs.ON_MEMORY_CHAIN_LENGTH) {
       this.chain.shift();
     }
   }
@@ -306,8 +306,8 @@ class Blockchain {
     if (!Number.isInteger(to) || to < 0) {
       to = this.lastBlockNumber() + 1;
     }
-    if (to - from > BlockchainConsts.CHAIN_SEGMENT_LENGTH) { // NOTE: To prevent large query.
-      to = from + BlockchainConsts.CHAIN_SEGMENT_LENGTH;
+    if (to - from > NodeConfigs.CHAIN_SEGMENT_LENGTH) { // NOTE: To prevent large query.
+      to = from + NodeConfigs.CHAIN_SEGMENT_LENGTH;
     }
     const blockPaths = FileUtil.getBlockPathList(this.blockchainPath, from, to - from);
     blockPaths.forEach((blockPath) => {

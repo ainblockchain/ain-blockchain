@@ -4,7 +4,6 @@ const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
-  BlockchainConsts,
   NodeConfigs,
   StateInfoProperties,
 } = require('../common/constants');
@@ -17,7 +16,8 @@ const {
  * Implements Radix Node, which is used as a component of RadixTree.
  */
 class RadixNode {
-  constructor(version = null, serial = null, parentStateNode = null) {
+  constructor(hashDelimiter, version = null, serial = null, parentStateNode = null) {
+    this.hashDelimiter = hashDelimiter;
     this.version = version;
     this.serial = serial;
     this.parentStateNode = parentStateNode;
@@ -48,8 +48,8 @@ class RadixNode {
   }
 
   static _create(
-      version, serial, parentStateNode, childStateNode, labelRadix, labelSuffix, proofHash, treeHeight, treeSize, treeBytes) {
-    const node = new RadixNode(version, serial, parentStateNode);
+      hashDelimiter, version, serial, parentStateNode, childStateNode, labelRadix, labelSuffix, proofHash, treeHeight, treeSize, treeBytes) {
+    const node = new RadixNode(hashDelimiter, version, serial, parentStateNode);
     if (childStateNode) {
       node.setChildStateNode(childStateNode);
     }
@@ -63,7 +63,7 @@ class RadixNode {
   }
 
   clone(version, parentStateNode = null) {
-    const cloned = RadixNode._create(version, this.getSerial(), parentStateNode,
+    const cloned = RadixNode._create(this.hashDelimiter, version, this.getSerial(), parentStateNode,
         this.getChildStateNode(), this.getLabelRadix(), this.getLabelSuffix(), this.getProofHash(),
         this.getTreeHeight(), this.getTreeSize(), this.getTreeBytes());
     for (const child of this.getChildNodes()) {
@@ -415,13 +415,13 @@ class RadixNode {
         treeBytes: sizeof(childStateNodeLabel) + childStateNode.getTreeBytes(),
       };
     }
-    treeInfo.preimage += BlockchainConsts.HASH_DELIMITER;
+    treeInfo.preimage += this.hashDelimiter;
     if (this.numChildren() === 0) {
-      treeInfo.preimage += BlockchainConsts.HASH_DELIMITER;
+      treeInfo.preimage += this.hashDelimiter;
     } else {
       treeInfo = this.getChildNodes().reduce((acc, child) => {
         const accPreimage = NodeConfigs.LIGHTWEIGHT ? '' : acc.preimage +
-            `${BlockchainConsts.HASH_DELIMITER}${child.getLabel()}${BlockchainConsts.HASH_DELIMITER}${child.getProofHash()}`;
+            `${this.hashDelimiter}${child.getLabel()}${this.hashDelimiter}${child.getProofHash()}`;
         const accTreeHeight = Math.max(acc.treeHeight, child.getTreeHeight());
         const accTreeSize = acc.treeSize + child.getTreeSize();
         const accTreeBytes = acc.treeBytes + child.getTreeBytes();
@@ -505,9 +505,9 @@ class RadixNode {
       }
       preimage += childStateNode.getProofHash();
     }
-    preimage += BlockchainConsts.HASH_DELIMITER;
+    preimage += this.hashDelimiter;
     if (this.numChildren() === 0) {
-      preimage += BlockchainConsts.HASH_DELIMITER;
+      preimage += this.hashDelimiter;
     } else {
       for (const child of this.getChildNodes()) {
         const label = child.getLabel();
@@ -516,7 +516,7 @@ class RadixNode {
         if (childRadixVerif.isVerified !== true) {
           return childRadixVerif;
         }
-        preimage += `${BlockchainConsts.HASH_DELIMITER}${child.getLabel()}${BlockchainConsts.HASH_DELIMITER}${child.getProofHash()}`;
+        preimage += `${this.hashDelimiter}${child.getLabel()}${this.hashDelimiter}${child.getProofHash()}`;
       }
     }
     const proofHashComputed = CommonUtil.hashString(preimage);
@@ -590,7 +590,7 @@ class RadixNode {
     return numAffectedNodes;
   }
 
-  static getChildStateNodeFromRadixSnapshot(obj) {
+  static getChildStateNodeFromRadixSnapshot(obj, hashDelimiter) {
     const StateNode = require('./state-node');
     let childStateLabel = null;
     let childStateObj = null;
@@ -603,7 +603,7 @@ class RadixNode {
     if (childStateLabel === null) {
       return null;
     }
-    const childStateNode = StateNode.fromRadixSnapshot(childStateObj);
+    const childStateNode = StateNode.fromRadixSnapshot(childStateObj, hashDelimiter);
     childStateNode.setLabel(childStateLabel);
     const version = obj[`${StateInfoProperties.VERSION}:${childStateLabel}`];
     if (version) {
@@ -616,11 +616,11 @@ class RadixNode {
   /**
    * Constructs a sub-tree from the given snspshot object.
    */
-  static fromRadixSnapshot(obj) {
+  static fromRadixSnapshot(obj, hashDelimiter) {
     const version = obj[StateInfoProperties.VERSION];
     const serial = obj[StateInfoProperties.SERIAL];
-    const curNode = new RadixNode(version, serial);
-    const childStateNode = RadixNode.getChildStateNodeFromRadixSnapshot(obj);
+    const curNode = new RadixNode(this.hashDelimiter, version, serial);
+    const childStateNode = RadixNode.getChildStateNodeFromRadixSnapshot(obj, hashDelimiter);
     if (childStateNode !== null) {
       curNode.setChildStateNode(childStateNode);
     }
@@ -631,7 +631,7 @@ class RadixNode {
         if (CommonUtil.isEmpty(childLabel)) {
           return null;
         }
-        const childNode = RadixNode.fromRadixSnapshot(childObj);
+        const childNode = RadixNode.fromRadixSnapshot(childObj, hashDelimiter);
         const childLabelRadix = childLabel.charAt(0);
         const childLabelSuffix = childLabel.slice(1);
         curNode.setChild(childLabelRadix, childLabelSuffix, childNode);

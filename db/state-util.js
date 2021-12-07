@@ -5,7 +5,6 @@ const _ = require('lodash');
 const espree = require('espree');
 const CommonUtil = require('../common/common-util');
 const {
-  BlockchainConsts,
   PredefinedDbPaths,
   FunctionProperties,
   FunctionTypes,
@@ -219,8 +218,8 @@ function makeWriteRuleCodeSnippet(ruleString) {
   return WRITE_RULE_CODE_SNIPPET_PREFIX + ruleString;
 }
 
-function getVariableLabels(parsedRulePath) {
-  return parsedRulePath.filter((label) => _.startsWith(label, BlockchainConsts.VARIABLE_LABEL_PREFIX));
+function getVariableLabels(parsedRulePath, variableLabelPrefix) {
+  return parsedRulePath.filter((label) => _.startsWith(label, variableLabelPrefix));
 }
 
 /**
@@ -243,14 +242,14 @@ function getPuncTokens(tokenList) {
   return tokenList.filter((token) => token.type === 'Punctuator').map((token) => token.value);
 }
 
-function isValidWriteRule(parsedRulePath, ruleString) {
+function isValidWriteRule(parsedRulePath, ruleString, variableLabelPrefix) {
   const LOG_HEADER = 'isValidWriteRule';
 
   if (ruleString !== null && !CommonUtil.isBool(ruleString) && !CommonUtil.isString(ruleString)) {
     return false;
   }
   if (CommonUtil.isString(ruleString)) {
-    const variableLabelList = getVariableLabels(parsedRulePath);
+    const variableLabelList = getVariableLabels(parsedRulePath, variableLabelPrefix);
     const idTokenWhitelistSet = new Set([
       ...WRITE_RULE_ID_TOKEN_WHITELIST_BASE,
       ...variableLabelList,
@@ -316,7 +315,7 @@ function isValidStateRule(stateRule) {
  */
 // NOTE(platfowner): Should have the same parameters as isValidFunctionConfig() and
 // isValidOwnerConfig() to be used with isValidConfigTreeRecursive().
-function isValidRuleConfig(configPath, ruleConfigObj) {
+function isValidRuleConfig(configPath, ruleConfigObj, variableLabelPrefix) {
   if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
@@ -331,7 +330,8 @@ function isValidRuleConfig(configPath, ruleConfigObj) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
   const writeRule = sanitized[RuleProperties.WRITE];
-  if (sanitized.hasOwnProperty(RuleProperties.WRITE) && !isValidWriteRule(configPath, writeRule)) {
+  if (sanitized.hasOwnProperty(RuleProperties.WRITE) &&
+      !isValidWriteRule(configPath, writeRule, variableLabelPrefix)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
   }
   const stateRule = sanitized[RuleProperties.STATE];
@@ -513,7 +513,8 @@ function isValidOwnerConfig(configPath, ownerConfigObj) {
  * @param {*} configLabel config label
  * @param {*} stateConfigValidator state config validator function
  */
-function isValidConfigTreeRecursive(treePath, stateTreeObj, subtreePath, configLabel, stateConfigValidator) {
+function isValidConfigTreeRecursive(
+    treePath, stateTreeObj, subtreePath, configLabel, stateConfigValidator, variableLabelPrefix) {
   if (!CommonUtil.isDict(stateTreeObj) || CommonUtil.isEmpty(stateTreeObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath(subtreePath) };
   }
@@ -522,7 +523,7 @@ function isValidConfigTreeRecursive(treePath, stateTreeObj, subtreePath, configL
     subtreePath.push(label);
     const subtree = stateTreeObj[label];
     if (label === configLabel) {
-      const isValidConfig = stateConfigValidator([...treePath, ...subtreePath], subtree);
+      const isValidConfig = stateConfigValidator([...treePath, ...subtreePath], subtree, variableLabelPrefix);
       if (!isValidConfig.isValid) {
         return {
           isValid: false,
@@ -530,8 +531,8 @@ function isValidConfigTreeRecursive(treePath, stateTreeObj, subtreePath, configL
         };
       }
     } else {
-      const isValidSubtree =
-          isValidConfigTreeRecursive(treePath, subtree, subtreePath, configLabel, stateConfigValidator);
+      const isValidSubtree = isValidConfigTreeRecursive(
+          treePath, subtree, subtreePath, configLabel, stateConfigValidator, variableLabelPrefix);
       if (!isValidSubtree.isValid) {
         return isValidSubtree;
       }
@@ -545,37 +546,37 @@ function isValidConfigTreeRecursive(treePath, stateTreeObj, subtreePath, configL
 /**
  * Checks the validity of the given rule tree.
  */
-function isValidRuleTree(treePath, ruleTreeObj) {
+function isValidRuleTree(treePath, ruleTreeObj, variableLabelPrefix) {
   if (ruleTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      treePath, ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig);
+      treePath, ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig, variableLabelPrefix);
 }
 
 /**
  * Checks the validity of the given function tree.
  */
-function isValidFunctionTree(treePath, functionTreeObj) {
+function isValidFunctionTree(treePath, functionTreeObj, variableLabelPrefix) {
   if (functionTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      treePath, functionTreeObj, [], PredefinedDbPaths.DOT_FUNCTION, isValidFunctionConfig);
+      treePath, functionTreeObj, [], PredefinedDbPaths.DOT_FUNCTION, isValidFunctionConfig, variableLabelPrefix);
 }
 
 /**
  * Checks the validity of the given owner tree.
  */
-function isValidOwnerTree(treePath, ownerTreeObj) {
+function isValidOwnerTree(treePath, ownerTreeObj, variableLabelPrefix) {
   if (ownerTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      treePath, ownerTreeObj, [], PredefinedDbPaths.DOT_OWNER, isValidOwnerConfig);
+      treePath, ownerTreeObj, [], PredefinedDbPaths.DOT_OWNER, isValidOwnerConfig, variableLabelPrefix);
 }
 
 /**
@@ -915,15 +916,15 @@ function getProofHashFromStateRoot(root, fullPath) {
  * @param {Object} childStatePh proof hash of child state node. null if not available.
  * @param {Object} subProofList proof list of child radix nodes
  */
-function getProofHashOfRadixNode(childStatePh, subProofList) {
+function getProofHashOfRadixNode(hashDelimiter, childStatePh, subProofList) {
   let preimage = childStatePh !== null ? childStatePh : '';
-  preimage += BlockchainConsts.HASH_DELIMITER;
+  preimage += hashDelimiter;
   if (subProofList.length === 0) {
-    preimage += BlockchainConsts.HASH_DELIMITER;
+    preimage += hashDelimiter;
   } else {
     for (const subProof of subProofList) {
       const radixLabel = subProof.label.slice(StateInfoProperties.RADIX_LABEL_PREFIX.length);
-      preimage += `${BlockchainConsts.HASH_DELIMITER}${radixLabel}${BlockchainConsts.HASH_DELIMITER}${subProof.proofHash}`;
+      preimage += `${hashDelimiter}${radixLabel}${hashDelimiter}${subProof.proofHash}`;
     }
   }
   return CommonUtil.hashString(preimage);
@@ -934,7 +935,7 @@ function getProofHashOfRadixNode(childStatePh, subProofList) {
  * 
  * @param {Object} proof state proof
  */
-function verifyStateProof(proof, curLabels = []) {
+function verifyStateProof(hashDelimiter, proof, curLabels = []) {
   const curPath = CommonUtil.formatPath(curLabels);
   let childStatePh = null;
   let curProofHash = null;
@@ -948,7 +949,7 @@ function verifyStateProof(proof, curLabels = []) {
   for (const [label, value] of sortedProof) {
     let childProofHash = null;
     if (CommonUtil.isDict(value)) {
-      const subVerif = verifyStateProof(value, [...curLabels, label]);
+      const subVerif = verifyStateProof(hashDelimiter, value, [...curLabels, label]);
       if (childIsVerified === true && subVerif.isVerified !== true) {
         childIsVerified = false;
         childMismatchedPath = subVerif.mismatchedPath;
@@ -987,7 +988,7 @@ function verifyStateProof(proof, curLabels = []) {
       mismatchedProofHashComputed,
     };
   }
-  const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
+  const computedProofHash = getProofHashOfRadixNode(hashDelimiter, childStatePh, subProofList);
   const isVerified = childIsVerified && computedProofHash === curProofHash;
   const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
   const mismatchedProofHash = childIsVerified ? (isVerified ? null : curProofHash) : childMismatchedProofHash;

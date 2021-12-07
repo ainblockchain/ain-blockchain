@@ -20,15 +20,11 @@
       }
     }
   },
-  "blockchain": {
-    "chain_id": 0
-  },
   "consensus": {
     "min_stake_for_proposer": 10000000,
     "max_stake_for_proposer": 10000000,
     "min_num_validators": 5,
     "max_num_validators": 15,
-    "epoch_ms": 3000,
     "genesis_proposer_whitelist": {
       "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true,
       "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": true,
@@ -62,10 +58,13 @@
   "genesis": {
     "genesis_addr": "0xAAAf6f50A0304F12119D218b94bea8082642515B",
     "genesis_timestamp": 1571819318272,
-    "num_genesis_accounts": 10
-  },
-  "network": {
-    "network_id": 0
+    "num_genesis_accounts": 10,
+    "epoch_ms": 3000,
+    "chain_id": 0,
+    "network_id": 0,
+    "hash_delimiter": "#",
+    "variable_label_prefix": "$",
+    "state_info_prefix": "#"
   },
   "resource": {
     "state_tree_height_limit": 30,
@@ -80,6 +79,7 @@
     "unit_write_gas_amount": 1,
     "account_registration_gas_amount": 2000,
     "rest_function_call_gas_amount": 100,
+    "gas_price_unit": 0.000001,
     "service_bandwidth_budget_ratio": 0.5,
     "apps_bandwidth_budget_ratio": 0.45,
     "free_bandwidth_budget_ratio": 0.05,

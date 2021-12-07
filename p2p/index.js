@@ -331,8 +331,9 @@ class P2pClient {
       return;
     }
     const lastBlockNumber = this.server.node.bc.lastBlockNumber();
+    const epochMs = this.server.node.getBlockchainParam('genesis/epoch_ms', 0);
     if (this.chainSyncInProgress.lastBlockNumber >= lastBlockNumber &&
-        this.chainSyncInProgress.updatedAt > Date.now() - BlockchainConsts.EPOCH_MS) { // time buffer
+        this.chainSyncInProgress.updatedAt > Date.now() - epochMs) { // time buffer
       logger.info(`[${LOG_HEADER}] Already sent a request with the same/higher lastBlockNumber`);
       return;
     }
@@ -352,7 +353,7 @@ class P2pClient {
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach(node => {
+    Object.values(this.outbound).forEach((node) => {
       node.socket.send(stringPayload);
     });
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
@@ -388,7 +389,7 @@ class P2pClient {
       const parsedMessage = JSON.parse(message);
       const peerNetworkId = _.get(parsedMessage, 'networkId');
       const address = getAddressFromSocket(this.outbound, socket);
-      if (peerNetworkId !== BlockchainConsts.NETWORK_ID) {
+      if (peerNetworkId !== this.server.node.getBlockchainParam('genesis/network_id', 0)) {
         logger.error(`The given network ID(${peerNetworkId}) of the node(${address}) is MISSING or ` +
           `DIFFERENT from mine. Disconnect the connection.`);
         closeSocketSafe(this.outbound, socket);
@@ -723,18 +724,19 @@ class P2pClient {
   }
 
   disconnectFromPeers() {
-    Object.values(this.outbound).forEach(node => {
+    Object.values(this.outbound).forEach((node) => {
       node.socket.close();
     });
   }
 
   setIntervalForShardProofHashReports() {
     if (!this.shardReportInterval && this.server.node.isShardReporter) {
+      const epochMs = this.server.node.getBlockchainParam('genesis/epoch_ms', 0);
       this.shardReportInterval = setInterval(() => {
         if (this.server.consensus.isRunning()) {
           this.server.reportShardProofHashes();
         }
-      }, BlockchainConsts.EPOCH_MS);
+      }, epochMs);
     }
   }
 
