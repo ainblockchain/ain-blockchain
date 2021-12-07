@@ -3,7 +3,7 @@ const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const {
-  FailedTxPrecheckCodeList,
+  FailedTxPrecheckCodeSet,
   FunctionResultCode,
 } = require('../common/result-code');
 const RuleUtil = require('../db/rule-util');
@@ -389,7 +389,7 @@ class CommonUtil {
    * after executeOperation().
    */
   static txPrecheckFailed(result) {
-    return FailedTxPrecheckCodeList.includes(result.code);
+    return FailedTxPrecheckCodeSet.has(result.code);
   }
 
   /**
