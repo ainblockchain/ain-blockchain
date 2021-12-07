@@ -486,7 +486,7 @@ describe('Blockchain Cluster', () => {
       const body = parseOrLog(syncRequest('POST', server2 + SET_VALUE_ENDPOINT, { json: {
         ref: 'restricted/path', value: 'anything' 
       }}).body.toString('utf-8'));
-      expect(body.code).to.equals(1);
+      expect(body.code).to.equals(40001);
     });
 
     // FIXME(liayoo): This test case is flaky.
