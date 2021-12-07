@@ -46,20 +46,20 @@ class EventHandler {
     // TODO(cshcomcom): Implement
   }
 
-  nodeFilterIdToClientFilterId(nodeFilterId) {
-    const [channelId, clientFilterId] = nodeFilterId.split(':');
+  getClientFilterIdFromGlobalFilterId(globalFilterId) {
+    const [channelId, clientFilterId] = globalFilterId.split(':');
     if (!clientFilterId) {
-      throw Error(`Can't get client filter ID from node filter ID (nodeFilterId: ${nodeFilterId})`);
+      throw Error(`Can't get client filter ID from global filter ID (nodeFilterId: ${globalFilterId})`);
     }
     return clientFilterId;
   }
 
-  clientFilterIdToNodeFilterId(clientFilterId, channelId) {
+  getGlobalFilterId(channelId, clientFilterId) {
     return `${channelId}:${clientFilterId}`;
   }
 
   createAndRegisterEventFilter(clientFilterId, channelId, eventType, config) {
-    const eventFilterId = this.clientFilterIdToNodeFilterId(clientFilterId, channelId);
+    const eventFilterId = this.getGlobalFilterId(clientFilterId, channelId);
     if (this.eventFilters[eventFilterId]) {
       throw Error(`Event filter ID ${eventFilterId} is already in use`);
     }
