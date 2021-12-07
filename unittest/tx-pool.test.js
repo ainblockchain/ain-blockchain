@@ -49,8 +49,8 @@ describe('TransactionPool', () => {
 
     it('add a pending transaction', () => {
       node.tp.addTransaction(txToAdd);
-      expect(node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash))
-          .to.equal(txToAdd);
+      const addedTx = node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash);
+      assert.deepEqual(addedTx, txToAdd);
       const txInfo = node.getTransactionByHash(txToAdd.hash);
       expect(txInfo.state).to.equal(TransactionStates.PENDING);
     });
@@ -58,8 +58,8 @@ describe('TransactionPool', () => {
     it('add an executed transaction', () => {
       node.tp.addTransaction(txToAdd, true);
 
-      expect(node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash))
-          .to.equal(txToAdd);
+      const addedTx = node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash);
+      assert.deepEqual(addedTx, txToAdd);
       const txInfo = node.getTransactionByHash(txToAdd.hash);
       expect(txInfo.state).to.equal(TransactionStates.EXECUTED);
     });
