@@ -5,6 +5,7 @@ const _ = require('lodash');
 const {
   FailedTxPrecheckCodeSet,
   FunctionResultCode,
+  TxResultCode,
 } = require('../common/result-code');
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
@@ -424,7 +425,7 @@ class CommonUtil {
   }
 
   static isFailedTxResultCode(code) {
-    return code !== 0;
+    return code !== TxResultCode.SUCCESS;
   }
 
   /**
