@@ -62,6 +62,8 @@ const TxResultCode = {
 
 /**
  * Set of failed tx precheck code.
+ * The transactions don't pass the precheck with the code in this set are not charged nor
+ * included in blocks.
  */
 const FailedTxPrecheckCodeSet = new Set([
   TxResultCode.TX_NOT_EXECUTABLE,
@@ -119,7 +121,7 @@ const NormalFunctionResultCodeSet = new Set([
  *
  * @enum {number}
  */
-const JsonRpcResultCode = {
+const JsonRpcApiResultCode = {
   // Common code
   SUCCESS: 0,
   // ain_checkProtocolVersion
@@ -145,7 +147,7 @@ const JsonRpcResultCode = {
  *
  * @enum {number}
  */
-const DevClientResultCode = {
+const DevClientApiResultCode = {
   // Common code
   SUCCESS: 0,
   FAILURE: 40001,
@@ -218,8 +220,8 @@ const ConsensusErrorCodeSetToVoteAgainst = new Set([
 ]);
 
 module.exports = {
-  DevClientResultCode,
-  JsonRpcResultCode,
+  DevClientApiResultCode,
+  JsonRpcApiResultCode,
   TxResultCode,
   FailedTxPrecheckCodeSet,
   FunctionResultCode,
