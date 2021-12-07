@@ -113,7 +113,7 @@ class EventChannelManager {
       return;
     }
     const eventObj = event.toObject();
-    const clientFilterId = this.eventHandler.nodeFilterIdToClientFilterId(eventFilterId);
+    const clientFilterId = this.eventHandler.getClientFilterIdFromGlobalFilterId(eventFilterId);
     Object.assign(eventObj, { filter_id: clientFilterId });
     this.transmitEvent(channel, eventObj);
   }
