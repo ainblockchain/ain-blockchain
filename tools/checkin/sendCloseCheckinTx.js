@@ -1,6 +1,6 @@
 const path = require('path');
 const { signAndSendTx, confirmTransaction } = require('../util');
-const { FunctionResultCode } = require('../../common/constants');
+const { FunctionResultCode } = require('../../common/result-code');
 let config = {};
 
 function buildCloseCheckinTxBody(fromAddr, tokenAmount, checkinId, failed = false) {
