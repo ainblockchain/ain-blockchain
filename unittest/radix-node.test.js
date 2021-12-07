@@ -1,16 +1,17 @@
 const RadixNode = require('../db/radix-node');
 const CommonUtil = require('../common/common-util');
 const StateNode = require('../db/state-node');
-const { BlockchainConsts } = require('../common/constants');
+const { BlockchainParams } = require('../common/constants');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 
 describe("radix-node", () => {
   let node;
+  const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
 
   beforeEach(() => {
-    node = new RadixNode();
+    node = new RadixNode(hashDelimiter);
   });
 
   describe("initialization / reset", () => {
@@ -30,36 +31,36 @@ describe("radix-node", () => {
 
     it("construct with version", () => {
       const version = 'ver';
-      const node2 = new RadixNode(version);
+      const node2 = new RadixNode(hashDelimiter, version);
       expect(node2.version).to.equal(version);
       expect(node2.parentStateNode).to.equal(null);
     });
 
     it("construct with serial", () => {
       const serial = 10;
-      const node2 = new RadixNode(null, serial);
+      const node2 = new RadixNode(hashDelimiter, null, serial);
       expect(node2.version).to.equal(null);
       expect(node2.serial).to.equal(serial);
       expect(node2.parentStateNode).to.equal(null);
     });
 
     it("construct with parent state node", () => {
-      const parentStateNode = new StateNode();
-      const node2 = new RadixNode(null, null, parentStateNode);
+      const parentStateNode = new StateNode(hashDelimiter);
+      const node2 = new RadixNode(hashDelimiter, null, null, parentStateNode);
       expect(node2.version).to.equal(null);
       expect(node2.parentStateNode).to.equal(parentStateNode);
     });
 
     it("reset", () => {
       const version = 'ver';
-      const parentStateNode = new StateNode();
-      const childStateNode = new StateNode();
+      const parentStateNode = new StateNode(hashDelimiter);
+      const childStateNode = new StateNode(hashDelimiter);
       const labelRadix = '0';
       const labelSuffix = '0000';
-      const parent = new RadixNode();
+      const parent = new RadixNode(hashDelimiter);
       const childLabelRadix = '1';
       const childLabelSuffix = '1111';
-      const child = new RadixNode();
+      const child = new RadixNode(hashDelimiter);
       const proofHash = 'proofHash';
       const treeHeight = 1;
       const treeSize = 10;
@@ -113,11 +114,11 @@ describe("radix-node", () => {
     let child2;
 
     beforeEach(() => {
-      parentStateNode = new StateNode();
-      childStateNode = new StateNode();
-      parent = new RadixNode();
-      child1 = new RadixNode();
-      child2 = new RadixNode();
+      parentStateNode = new StateNode(hashDelimiter);
+      childStateNode = new StateNode(hashDelimiter);
+      parent = new RadixNode(hashDelimiter);
+      child1 = new RadixNode(hashDelimiter);
+      child2 = new RadixNode(hashDelimiter);
 
       node.setVersion(version);
       node.setSerial(serial);
@@ -161,7 +162,7 @@ describe("radix-node", () => {
     });
 
     it("clone with parent state node", () => {
-      const parentStateNode2 = new StateNode();
+      const parentStateNode2 = new StateNode(hashDelimiter);
       const cloned = node.clone(null, parentStateNode2);
       expect(cloned.getVersion()).to.equal(null);
       expect(cloned.getSerial()).to.equal(serial);
@@ -193,7 +194,7 @@ describe("radix-node", () => {
 
   describe("parentStateNode", () => {
     it("get / set / has / reset", () => {
-      const parentStateNode = new StateNode();
+      const parentStateNode = new StateNode(hashDelimiter);
       expect(node.getParentStateNode()).to.equal(null);
       expect(node.hasParentStateNode()).to.equal(false);
       node.setParentStateNode(parentStateNode);
@@ -207,7 +208,7 @@ describe("radix-node", () => {
 
   describe("childStateNode", () => {
     it("get / set / has / reset", () => {
-      const childStateNode = new StateNode();
+      const childStateNode = new StateNode(hashDelimiter);
       expect(node.getChildStateNode()).to.equal(null);
       expect(node.hasChildStateNode()).to.equal(false);
       node.setChildStateNode(childStateNode);
@@ -260,8 +261,8 @@ describe("radix-node", () => {
 
   describe("parent", () => {
     it("get / add / has / delete", () => {
-      const parent1 = new RadixNode();
-      const parent2 = new RadixNode();
+      const parent1 = new RadixNode(hashDelimiter);
+      const parent2 = new RadixNode(hashDelimiter);
       expect(node.numParents()).to.equal(0);
       assert.deepEqual(node.getParentNodes(), []);
       expect(node.numParents()).to.equal(0);
@@ -298,7 +299,7 @@ describe("radix-node", () => {
     it("set / delete with a child with invalid labels", () => {
       const labelRadix = '0';
       const labelSuffix = 'ffff';
-      const child = new RadixNode();
+      const child = new RadixNode(hashDelimiter);
 
       // setChild() with invalid label radix
       expect(node.setChild(undefined, labelSuffix, child)).to.equal(false);
@@ -324,11 +325,11 @@ describe("radix-node", () => {
     it("get / set / has / delete with valid labels", () => {
       const labelRadix1 = '0';
       const labelSuffix1 = '0000';
-      const child1 = new RadixNode();
+      const child1 = new RadixNode(hashDelimiter);
 
       const labelRadix2 = '1';
       const labelSuffix2 = '1111';
-      const child2 = new RadixNode();
+      const child2 = new RadixNode(hashDelimiter);
 
       expect(node.hasChild(labelRadix1)).to.equal(false);
       expect(node.hasChild(labelRadix2)).to.equal(false);
@@ -428,15 +429,15 @@ describe("radix-node", () => {
     it("getChildLabelRadices / getChildNodes", () => {
       const labelRadix1 = '0';
       const labelSuffix1 = '0000';
-      const child1 = new RadixNode();
+      const child1 = new RadixNode(hashDelimiter);
 
       const labelRadix2 = '1';
       const labelSuffix2 = '1111';
-      const child2 = new RadixNode();
+      const child2 = new RadixNode(hashDelimiter);
 
       const labelRadix3 = '2';
       const labelSuffix3 = '2222';
-      const child3 = new RadixNode();
+      const child3 = new RadixNode(hashDelimiter);
 
       // setChild() with child3 first!
       node.setChild(labelRadix3, labelSuffix3, child3);
@@ -453,8 +454,8 @@ describe("radix-node", () => {
     it("set existing child", () => {
       const labelRadix = '0';
       const labelSuffix = '0000';
-      const child1 = new RadixNode();
-      const child2 = new RadixNode();
+      const child1 = new RadixNode(hashDelimiter);
+      const child2 = new RadixNode(hashDelimiter);
 
       expect(node.hasChild(labelRadix)).to.equal(false);
       expect(node.getChild(labelRadix)).to.equal(null);
@@ -484,8 +485,8 @@ describe("radix-node", () => {
     it("overwrite existing child", () => {
       const labelRadix = '0';
       const labelSuffix = '0000';
-      const child1 = new RadixNode();
-      const child2 = new RadixNode();
+      const child1 = new RadixNode(hashDelimiter);
+      const child2 = new RadixNode(hashDelimiter);
 
       expect(node.hasChild(labelRadix)).to.equal(false);
       expect(node.getChild(labelRadix)).to.equal(null);
@@ -561,34 +562,34 @@ describe("radix-node", () => {
     const stateNodePH22 = 'ph22_state';
 
     beforeEach(() => {
-      child1 = new RadixNode();
-      child2 = new RadixNode();
-      child11 = new RadixNode();
-      child12 = new RadixNode();
-      child21 = new RadixNode();
-      child22 = new RadixNode();
+      child1 = new RadixNode(hashDelimiter);
+      child2 = new RadixNode(hashDelimiter);
+      child11 = new RadixNode(hashDelimiter);
+      child12 = new RadixNode(hashDelimiter);
+      child21 = new RadixNode(hashDelimiter);
+      child22 = new RadixNode(hashDelimiter);
 
-      stateNode = new StateNode();
+      stateNode = new StateNode(hashDelimiter);
       stateNode.setProofHash(stateNodePH);
       node.setChildStateNode(stateNode);
 
-      stateNode1 = new StateNode();
+      stateNode1 = new StateNode(hashDelimiter);
       stateNode1.setProofHash(stateNodePH1);
       child1.setChildStateNode(stateNode1);
 
-      stateNode11 = new StateNode();
+      stateNode11 = new StateNode(hashDelimiter);
       stateNode11.setProofHash(stateNodePH11);
       child11.setChildStateNode(stateNode11);
 
-      stateNode12 = new StateNode();
+      stateNode12 = new StateNode(hashDelimiter);
       stateNode12.setProofHash(stateNodePH12);
       child12.setChildStateNode(stateNode12);
 
-      stateNode21 = new StateNode();
+      stateNode21 = new StateNode(hashDelimiter);
       stateNode21.setProofHash(stateNodePH21);
       child21.setChildStateNode(stateNode21);
 
-      stateNode22 = new StateNode();
+      stateNode22 = new StateNode(hashDelimiter);
       stateNode22.setProofHash(stateNodePH22);
       child22.setChildStateNode(stateNode22);
     })
@@ -697,10 +698,10 @@ describe("radix-node", () => {
 
       // With stateNode
       node.setChildStateNode(stateNode);
-      const treeInfo = node.buildRadixInfo();
-      const preimage1 = `${stateNodePH}${BlockchainConsts.HASH_DELIMITER}${BlockchainConsts.HASH_DELIMITER}` +
-          `${labelRadix1}${labelSuffix1}${BlockchainConsts.HASH_DELIMITER}${childPH1}` +
-          `${BlockchainConsts.HASH_DELIMITER}${labelRadix2}${labelSuffix2}${BlockchainConsts.HASH_DELIMITER}${childPH2}`;
+      const treeInfo = node.buildRadixInfo(hashDelimiter);
+      const preimage1 = `${stateNodePH}${hashDelimiter}${hashDelimiter}` +
+          `${labelRadix1}${labelSuffix1}${hashDelimiter}${childPH1}` +
+          `${hashDelimiter}${labelRadix2}${labelSuffix2}${hashDelimiter}${childPH2}`;
       const proofHash1 = CommonUtil.hashString(preimage1);
       expect(treeInfo.proofHash).to.equal(proofHash1)
 
@@ -711,10 +712,10 @@ describe("radix-node", () => {
 
       // Without stateNode
       node.resetChildStateNode();
-      const treeInfo2 = node.buildRadixInfo();
-      const preimage2 = `${BlockchainConsts.HASH_DELIMITER}${BlockchainConsts.HASH_DELIMITER}` +
-          `${labelRadix1}${labelSuffix1}${BlockchainConsts.HASH_DELIMITER}${childPH1}` +
-          `${BlockchainConsts.HASH_DELIMITER}${labelRadix2}${labelSuffix2}${BlockchainConsts.HASH_DELIMITER}${childPH2}`;
+      const treeInfo2 = node.buildRadixInfo(hashDelimiter);
+      const preimage2 = `${hashDelimiter}${hashDelimiter}` +
+          `${labelRadix1}${labelSuffix1}${hashDelimiter}${childPH1}` +
+          `${hashDelimiter}${labelRadix2}${labelSuffix2}${hashDelimiter}${childPH2}`;
       const proofHash2 = CommonUtil.hashString(preimage2);
       expect(treeInfo2.proofHash).to.equal(proofHash2)
     });
@@ -776,7 +777,7 @@ describe("radix-node", () => {
       // Check radix info
       node.resetProofHash();
       expect(node.verifyRadixInfo()).to.equal(false);
-      node.updateRadixInfo();
+      node.updateRadixInfo(hashDelimiter);
       expect(node.verifyRadixInfo()).to.equal(true);
     });
 
@@ -1167,14 +1168,14 @@ describe("radix-node", () => {
     let child22;
 
     beforeEach(() => {
-      parentStateNode1 = new StateNode();
+      parentStateNode1 = new StateNode(hashDelimiter);
       parentStateNode1.setVersion('ver1_state_p');
-      parentStateNode21 = new StateNode();
+      parentStateNode21 = new StateNode(hashDelimiter);
       parentStateNode21.setVersion('ver21_state_p');
-      parentStateNode22 = new StateNode();
+      parentStateNode22 = new StateNode(hashDelimiter);
       parentStateNode22.setVersion('ver22_state_p');
 
-      stateNode = new StateNode();
+      stateNode = new StateNode(hashDelimiter);
       stateNode.setVersion('ver_state');
       stateNode.setProofHash('ph_state');
       stateNode.setValue('value');
@@ -1182,7 +1183,7 @@ describe("radix-node", () => {
       stateNode.setTreeSize(10);
       stateNode.setTreeBytes(100);
 
-      childStateNode1 = new StateNode();
+      childStateNode1 = new StateNode(hashDelimiter);
       childStateNode1.setVersion('ver1_state');
       childStateNode1.setProofHash('ph1_state');
       childStateNode1.setValue('value1');
@@ -1190,7 +1191,7 @@ describe("radix-node", () => {
       childStateNode1.setTreeSize(20);
       childStateNode1.setTreeBytes(200);
 
-      childStateNode2 = new StateNode();
+      childStateNode2 = new StateNode(hashDelimiter);
       childStateNode2.setVersion('ver2_state');
       childStateNode2.setProofHash('ph2_state');
       childStateNode2.setValue('value2');
@@ -1198,7 +1199,7 @@ describe("radix-node", () => {
       childStateNode2.setTreeSize(30);
       childStateNode2.setTreeBytes(300);
 
-      childStateNode21 = new StateNode();
+      childStateNode21 = new StateNode(hashDelimiter);
       childStateNode21.setVersion('ver21_state');
       childStateNode21.setProofHash('ph21_state');
       childStateNode21.setValue('value21');
@@ -1206,7 +1207,7 @@ describe("radix-node", () => {
       childStateNode21.setTreeSize(40);
       childStateNode21.setTreeBytes(400);
 
-      childStateNode22 = new StateNode();
+      childStateNode22 = new StateNode(hashDelimiter);
       childStateNode22.setVersion('ver22_state');
       childStateNode22.setProofHash('ph22_state');
       childStateNode22.setValue('value22');
@@ -1214,25 +1215,25 @@ describe("radix-node", () => {
       childStateNode22.setTreeSize(50);
       childStateNode22.setTreeBytes(500);
 
-      parent1 = new RadixNode(version1, null, parentStateNode1 );
-      parent2 = new RadixNode(version21);
-      parent21 = new RadixNode(version21, null, parentStateNode21);
-      parent22 = new RadixNode(version22, null, parentStateNode22);
+      parent1 = new RadixNode(hashDelimiter, version1, null, parentStateNode1 );
+      parent2 = new RadixNode(hashDelimiter, version21);
+      parent21 = new RadixNode(hashDelimiter, version21, null, parentStateNode21);
+      parent22 = new RadixNode(hashDelimiter, version22, null, parentStateNode22);
 
       node.setVersion(version);
       node.setSerial(0);
       node.setChildStateNode(stateNode);
 
-      child1 = new RadixNode(version1, 3);
+      child1 = new RadixNode(hashDelimiter, version1, 3);
       child1.setChildStateNode(childStateNode1);
 
-      child2 = new RadixNode(version2, 4);
+      child2 = new RadixNode(hashDelimiter, version2, 4);
       child2.setChildStateNode(childStateNode2);
 
-      child21 = new RadixNode(version21, 2);
+      child21 = new RadixNode(hashDelimiter, version21, 2);
       child21.setChildStateNode(childStateNode21);
 
-      child22 = new RadixNode(version22, 1);
+      child22 = new RadixNode(hashDelimiter, version22, 1);
       child22.setChildStateNode(childStateNode22);
 
       parent1.setChild('0', '000', node);
@@ -1306,12 +1307,12 @@ describe("radix-node", () => {
       const versionAnother = 'ver_another';
       const versionYetAnother = 'ver_yet_another';
 
-      const stateNodeAnother = new StateNode();
+      const stateNodeAnother = new StateNode(hashDelimiter);
       stateNodeAnother.setLabel('0000');
-      const childStateNodeAnother1 = new StateNode();
+      const childStateNodeAnother1 = new StateNode(hashDelimiter);
       childStateNodeAnother1.setLabel('1001');
 
-      const childAnother1 = new RadixNode();
+      const childAnother1 = new RadixNode(hashDelimiter);
       childAnother1.setVersion(versionAnother);
       childAnother1.setChildStateNode(childStateNodeAnother1);
 
@@ -1322,7 +1323,7 @@ describe("radix-node", () => {
       nodeAnother.setChild('1', '001', childAnother1);
 
       // Let's make childStateNodeAnother1 has 2 parent radix nodes.
-      const childYetAnother1 = new RadixNode();
+      const childYetAnother1 = new RadixNode(hashDelimiter);
       childYetAnother1.setVersion(versionYetAnother);
       childYetAnother1.setChildStateNode(childStateNodeAnother1);
 
@@ -1528,7 +1529,7 @@ describe("radix-node", () => {
       });
 
       // fromRadixSnapshot()
-      const nodeRebuilt = RadixNode.fromRadixSnapshot(snapshot);
+      const nodeRebuilt = RadixNode.fromRadixSnapshot(snapshot, hashDelimiter);
       assert.deepEqual(nodeRebuilt.toRadixSnapshot(), {
         "#radix:1001": {
           "#serial": 3,

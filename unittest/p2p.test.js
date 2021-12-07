@@ -25,7 +25,7 @@ describe("P2P", () => {
   let p2pServer;
 
   before(async () => {
-    rimraf.sync(BlockchainConsts.CHAINS_DIR);
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node, 0, true, true);
@@ -37,7 +37,7 @@ describe("P2P", () => {
   after(() => {
     p2pClient.stop();
 
-    rimraf.sync(BlockchainConsts.CHAINS_DIR);
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
   });
 
   describe("Server Status", () => {
