@@ -51,9 +51,6 @@ describe('TransactionPool', () => {
 
     it('add a pending transaction', () => {
       node.tp.addTransaction(txToAdd);
-      // const added = node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash);
-      // delete added.extra;
-      // expect(added).to.equal(txToAdd);
       const addedTx = node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash);
       assert.deepEqual(addedTx, txToAdd);
       const txInfo = node.getTransactionByHash(txToAdd.hash);
@@ -62,9 +59,6 @@ describe('TransactionPool', () => {
 
     it('add an executed transaction', () => {
       node.tp.addTransaction(txToAdd, true);
-      // const added = node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash);
-      // delete added.extra;
-      // expect(added).to.equal(txToAdd);
       const addedTx = node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash);
       assert.deepEqual(addedTx, txToAdd);
       const txInfo = node.getTransactionByHash(txToAdd.hash);

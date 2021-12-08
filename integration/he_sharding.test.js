@@ -11,7 +11,7 @@ const { parseOrLog } = require('../unittest/test-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const { BlockchainConsts } = require('../common/constants');
+const { NodeConfigs } = require('../common/constants');
 const {
   ConsensusStates
 } = require('../consensus/constants');
@@ -30,7 +30,7 @@ const ENV_VARIABLES = [
   {
     // For parent chain poc node
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/1-node', ACCOUNT_INDEX: 0,
-    PEER_CANDIDATE_JSON_RPC_URL: '', ENABLE_EXPRESS_RATE_LIMIT: false,
+    PEER_CANDIDATE_JSON_RPC_URL: '', ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8081, P2P_PORT: 5001,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
@@ -110,7 +110,7 @@ describe('HE Sharding', async () => {
       tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(BlockchainConsts.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
 
     parent_tracker_proc =
         startServer(TRACKER_SERVER, 'parent tracker server', { CONSOLE_LOG: false }, true);
@@ -164,7 +164,7 @@ describe('HE Sharding', async () => {
     server2_proc.kill()
     server3_proc.kill()
 
-    rimraf.sync(BlockchainConsts.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
   });
 
   describe('Parent chain initialization', () => {

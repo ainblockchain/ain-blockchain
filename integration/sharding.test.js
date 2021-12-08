@@ -13,6 +13,7 @@ const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
+  NodeConfigs,
   BlockchainConsts,
   PredefinedDbPaths,
   WriteDbOperations,
@@ -40,7 +41,7 @@ const ENV_VARIABLES = [
   {
     // For parent chain poc node
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/1-node', ENABLE_EXPRESS_RATE_LIMIT: false,
-    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '',
+    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', PORT: 8081, P2P_PORT: 5001,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
@@ -205,7 +206,7 @@ describe('Sharding', async () => {
       tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(BlockchainConsts.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
 
     parent_tracker_proc =
         startServer(TRACKER_SERVER, 'parent tracker server', { CONSOLE_LOG: false }, true);
@@ -261,7 +262,7 @@ describe('Sharding', async () => {
     server2_proc.kill()
     server3_proc.kill()
 
-    rimraf.sync(BlockchainConsts.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
   });
 
   describe('Parent chain initialization', () => {

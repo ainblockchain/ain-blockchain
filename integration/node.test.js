@@ -20,29 +20,27 @@ const DB = require('../db');
 const {
   parseOrLog,
   setUpApp,
-  waitForNewBlocks,
   waitUntilNetworkIsReady,
   waitUntilTxFinalized,
-  getLastBlockNumber,
   getBlockByNumber,
 } = require('../unittest/test-util');
 
 const ENV_VARIABLES = [
   {
     ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '',
-    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8081, P2P_PORT: 5001,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
     ACCOUNT_INDEX: 1,
-    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8082, P2P_PORT: 5002,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
     ACCOUNT_INDEX: 2,
-    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8083, P2P_PORT: 5003,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ENABLE_EXPRESS_RATE_LIMIT: false,
   },
@@ -197,9 +195,10 @@ async function cleanUp() {
 
 describe('Blockchain Node', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc;
+  const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
 
   before(async () => {
-    rimraf.sync(BlockchainConsts.CHAINS_DIR);
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
     await CommonUtil.sleep(3000);
@@ -232,7 +231,7 @@ describe('Blockchain Node', () => {
     server2_proc.kill()
     server3_proc.kill()
 
-    rimraf.sync(BlockchainConsts.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
   });
 
   describe('Get API', async () => {
@@ -604,7 +603,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['#state_ph']).to.not.equal(null);
-        const verifResult = verifyStateProof(body.result);
+        const verifResult = verifyStateProof(hashDelimiter, body.result);
         _.set(verifResult, 'curProofHash', 'erased');
         assert.deepEqual(verifResult, {
           "curProofHash": "erased",
@@ -899,7 +898,7 @@ describe('Blockchain Node', () => {
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
         .then(res => {
           expect(res.result.result['#state_ph']).to.not.equal(null);
-          const verifResult = verifyStateProof(res.result.result);
+          const verifResult = verifyStateProof(hashDelimiter, res.result.result);
           _.set(verifResult, 'curProofHash', 'erased');
           assert.deepEqual(verifResult, {
             "curProofHash": "erased",
@@ -3613,7 +3612,7 @@ describe('Blockchain Node', () => {
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
-        gasPrice * BlockchainConsts.MICRO_AIN * txRes.result.gas_amount_charged
+        gasPrice * BlockchainParams.resource.gas_price_unit * txRes.result.gas_amount_charged
       );
     });
 
@@ -3665,7 +3664,7 @@ describe('Blockchain Node', () => {
           'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       assert.deepEqual(
         billingAccountBalanceAfter,
-        billingAccountBalanceBefore - (gasPrice * BlockchainConsts.MICRO_AIN * txRes.result.gas_amount_charged)
+        billingAccountBalanceBefore - (gasPrice * BlockchainParams.resource.gas_price_unit * txRes.result.gas_amount_charged)
       );
     });
 
@@ -3691,7 +3690,7 @@ describe('Blockchain Node', () => {
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
-        gasPrice * BlockchainConsts.MICRO_AIN * txRes.result.gas_amount_charged
+        gasPrice * BlockchainParams.resource.gas_price_unit * txRes.result.gas_amount_charged
       );
     });
 
@@ -3715,7 +3714,7 @@ describe('Blockchain Node', () => {
           'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       assert.deepEqual(
         billingAccountBalanceAfter,
-        billingAccountBalanceBefore - (gasPrice * BlockchainConsts.MICRO_AIN * txRes.result.gas_amount_charged)
+        billingAccountBalanceBefore - (gasPrice * BlockchainParams.resource.gas_price_unit * txRes.result.gas_amount_charged)
       );
     });
 
@@ -3751,7 +3750,7 @@ describe('Blockchain Node', () => {
       ).body.toString('utf-8')).result;
       assert.deepEqual(
         gasFeeCollected,
-        gasPrice * BlockchainConsts.MICRO_AIN * txRes.result.gas_amount_charged
+        gasPrice * BlockchainParams.resource.gas_price_unit * txRes.result.gas_amount_charged
       );
     });
 
@@ -3785,7 +3784,7 @@ describe('Blockchain Node', () => {
           'GET', server2 + billingAccountBalancePathA).body.toString('utf-8')).result;
       assert.deepEqual(
         billingAccountBalanceAfter,
-        billingAccountBalanceBefore - (gasPrice * BlockchainConsts.MICRO_AIN * txRes.result.gas_amount_charged)
+        billingAccountBalanceBefore - (gasPrice * BlockchainParams.resource.gas_price_unit * txRes.result.gas_amount_charged)
       );
     });
 
