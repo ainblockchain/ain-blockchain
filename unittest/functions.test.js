@@ -5,7 +5,7 @@ const chai = require('chai');
 const assert = chai.assert;
 const nock = require('nock');
 const _ = require('lodash');
-const { BlockchainConfigs } = require('../common/constants')
+const { NodeConfigs, BlockchainParams } = require('../common/constants')
 const BlockchainNode = require('../node')
 const {
   setNodeForTesting,
@@ -17,9 +17,11 @@ describe("Functions", () => {
   describe("triggerFunctions", () => {
     let node;
     let functions;
+    const accountRegistrationGasAmount = BlockchainParams.resource.account_registration_gas_amount;
+    const restFunctionCallGasAmount = BlockchainParams.resource.rest_function_call_gas_amount;
 
     before(() => {
-      rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+      rimraf.sync(NodeConfigs.CHAINS_DIR);
 
       node = new BlockchainNode();
       setNodeForTesting(node);
@@ -27,7 +29,7 @@ describe("Functions", () => {
     })
 
     after(() => {
-      rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+      rimraf.sync(NodeConfigs.CHAINS_DIR);
     });
 
     describe("Function triggering", () => {
@@ -138,8 +140,8 @@ describe("Functions", () => {
         }
         const { func_results, promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRest),
-            null, null, null, null, transaction);
-        if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+        if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
           assert.deepEqual(func_results, {
             "0x11111": {
               "code": 0,
@@ -150,7 +152,7 @@ describe("Functions", () => {
           assert.deepEqual(func_results, {});
         }
         return promise_results.then((resp) => {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
               func_count: 1,
               trigger_count: 1,
@@ -209,9 +211,9 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestMulti),
-            null, null, null, null, transaction);
+            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
         return promise_results.then((resp) => {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
               func_count: 2,
               trigger_count: 2,
@@ -294,9 +296,9 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestWithoutListener),
-            null, null, null, null, transaction);
+            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
         return promise_results.then((resp) => {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
               func_count: 1,
               trigger_count: 1,
@@ -331,7 +333,7 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestNotWhitelisted),
-            null, null, null, null, transaction);
+            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -370,9 +372,9 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestNewlyWhitelisted),
-            null, null, null, null, transaction);
+            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
         return promise_results.then((resp) => {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
               func_count: 1,
               trigger_count: 1,
@@ -409,7 +411,7 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRestNewlyWhitelisted),
-            null, null, null, null, transaction);
+            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -438,7 +440,7 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathNull),
-            null, null, null, null, transaction);
+            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -496,7 +498,7 @@ describe("Functions", () => {
         const { func_results, promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathTransfer), 10, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
-            tx);
+            tx, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
         assert.deepEqual(func_results, {
           "_transfer": {
             "op_results": {
@@ -544,7 +546,7 @@ describe("Functions", () => {
         const { func_results, promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathTransfer), 10, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
-            tx);
+            tx, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
         assert.deepEqual(func_results, {
           "_transfer": {
             "op_results": {
@@ -595,8 +597,8 @@ describe("Functions", () => {
         }
         const { func_results, promise_results } = functions.triggerFunctions(
             CommonUtil.parsePath(refPathRest),
-            null, null, null, null, transaction);
-        if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+        if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
           assert.deepEqual(func_results, {
             "0x11111": {
               "code": 0,
@@ -607,7 +609,7 @@ describe("Functions", () => {
           assert.deepEqual(func_results, {});
         }
         return promise_results.then((resp) => {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL) {
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
               func_count: 1,
               trigger_count: 1,

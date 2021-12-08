@@ -8,7 +8,7 @@ const rimraf = require("rimraf")
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const { BlockchainConfigs } = require('../common/constants');
+const { NodeConfigs, BlockchainParams } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const {
   waitUntilTxFinalized,
@@ -20,19 +20,22 @@ const {
 
 const ENV_VARIABLES = [
   {
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', DEBUG: false, CONSOLE_LOG: false,
+    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8081, P2P_PORT: 5001,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
+    ENABLE_REST_FUNCTION_CALL: true,
   },
   {
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
+    ACCOUNT_INDEX: 1,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8082, P2P_PORT: 5002,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
+    ENABLE_REST_FUNCTION_CALL: true,
   },
   {
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
+    ACCOUNT_INDEX: 2,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8083, P2P_PORT: 5003,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
+    ENABLE_REST_FUNCTION_CALL: true,
   },
 ];
 
@@ -61,7 +64,7 @@ describe('HE Protocol', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
     await CommonUtil.sleep(3000);
@@ -94,7 +97,7 @@ describe('HE Protocol', () => {
     server2_proc.kill()
     server3_proc.kill()
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
   });
 
   describe('Health care app', () => {
@@ -546,7 +549,7 @@ describe('HE Protocol', () => {
           "code": 0,
           "func_results": {
             "call_he_worker": {  // Function triggering was done
-              "bandwidth_gas_amount": BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT,
+              "bandwidth_gas_amount": BlockchainParams.resource.rest_function_call_gas_amount,
               "code": 0
             }
           },
@@ -554,7 +557,7 @@ describe('HE Protocol', () => {
           "gas_amount_total": {
             "bandwidth": {
               "app": {
-                "he_health_care": 1 + BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT
+                "he_health_care": 1 + BlockchainParams.resource.rest_function_call_gas_amount
               },
               "service": 0
             },

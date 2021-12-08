@@ -4,7 +4,7 @@ const ws = require('ws');
 const { getIpAddress } = require('../common/network-util');
 const {
   BlockchainEventMessageTypes,
-  BlockchainConfigs,
+  NodeConfigs,
 } = require('../common/constants');
 
 class EventChannelManager {
@@ -16,17 +16,17 @@ class EventChannelManager {
   }
 
   async getNetworkInfo() {
-    const ipAddr = await getIpAddress(BlockchainConfigs.HOSTING_ENV === 'comcom' || BlockchainConfigs.HOSTING_ENV === 'local');
-    const eventHandlerUrl = new URL(`ws://${ipAddr}:${BlockchainConfigs.EVENT_HANDLER_PORT}`);
+    const ipAddr = await getIpAddress(NodeConfigs.HOSTING_ENV === 'comcom' || NodeConfigs.HOSTING_ENV === 'local');
+    const eventHandlerUrl = new URL(`ws://${ipAddr}:${NodeConfigs.EVENT_HANDLER_PORT}`);
     return {
       url: eventHandlerUrl.toString(),
-      port: BlockchainConfigs.EVENT_HANDLER_PORT,
+      port: NodeConfigs.EVENT_HANDLER_PORT,
     }
   }
 
   startListening() {
     this.wsServer = new ws.Server({
-      port: BlockchainConfigs.EVENT_HANDLER_PORT,
+      port: NodeConfigs.EVENT_HANDLER_PORT,
     });
     this.wsServer.on('connection', this.handleConnection);
   }

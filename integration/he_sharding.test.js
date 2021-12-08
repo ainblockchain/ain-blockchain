@@ -11,7 +11,7 @@ const { parseOrLog } = require('../unittest/test-util');
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const { BlockchainConfigs } = require('../common/constants');
+const { NodeConfigs } = require('../common/constants');
 const {
   ConsensusStates
 } = require('../consensus/constants');
@@ -29,32 +29,31 @@ const {
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/unit-tests', ACCOUNT_INDEX: 0,
-    PEER_CANDIDATE_JSON_RPC_URL: '', DEBUG: true, ENABLE_EXPRESS_RATE_LIMIT: false,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/1-node', ACCOUNT_INDEX: 0,
+    PEER_CANDIDATE_JSON_RPC_URL: '', ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8081, P2P_PORT: 5001,
     CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     // For shard chain tracker
     PORT: 9090, P2P_PORT: 6000,
-    CONSOLE_LOG: false
   },
   {
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard',
     PORT: 9091, P2P_PORT: 6001, ENABLE_EXPRESS_RATE_LIMIT: false,
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '',
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '',
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard',
     PORT: 9092, P2P_PORT: 6002,
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 1, ENABLE_EXPRESS_RATE_LIMIT: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    ACCOUNT_INDEX: 1, ENABLE_EXPRESS_RATE_LIMIT: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard',
     PORT: 9093, P2P_PORT: 6003,
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 2, ENABLE_EXPRESS_RATE_LIMIT: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    ACCOUNT_INDEX: 2, ENABLE_EXPRESS_RATE_LIMIT: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
 ];
 
@@ -111,7 +110,7 @@ describe('HE Sharding', async () => {
       tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
 
     parent_tracker_proc =
         startServer(TRACKER_SERVER, 'parent tracker server', { CONSOLE_LOG: false }, true);
@@ -165,7 +164,7 @@ describe('HE Sharding', async () => {
     server2_proc.kill()
     server3_proc.kill()
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
   });
 
   describe('Parent chain initialization', () => {

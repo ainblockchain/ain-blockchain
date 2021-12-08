@@ -11,7 +11,8 @@ const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
-  BlockchainConfigs,
+  BlockchainConsts,
+  NodeConfigs,
   GenesisToken,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
@@ -27,19 +28,22 @@ const DB = require('../db');
 
 const ENV_VARIABLES = [
   {
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', DEBUG: false, CONSOLE_LOG: false,
+    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8081, P2P_PORT: 5001,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
+    ENABLE_REST_FUNCTION_CALL: true,
   },
   {
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 1, DEBUG: false, CONSOLE_LOG: false,
+    ACCOUNT_INDEX: 1,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8082, P2P_PORT: 5002,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
+    ENABLE_REST_FUNCTION_CALL: true,
   },
   {
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 2, DEBUG: false, CONSOLE_LOG: false,
+    ACCOUNT_INDEX: 2,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8083, P2P_PORT: 5003,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
-    MAX_BLOCK_NUMBERS_FOR_RECEIPTS: 100, ENABLE_REST_FUNCTION_CALL: true,
+    ENABLE_REST_FUNCTION_CALL: true,
   },
 ];
 
@@ -68,7 +72,7 @@ describe('Native Function', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
 
     tracker_proc = startServer(TRACKER_SERVER, 'tracker server', { CONSOLE_LOG: false }, true);
     await CommonUtil.sleep(3000);
@@ -101,7 +105,7 @@ describe('Native Function', () => {
     server2_proc.kill()
     server3_proc.kill()
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
   });
 
   describe('Function triggering', () => {
@@ -909,7 +913,7 @@ describe('Native Function', () => {
         const res = await client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         });
         if (!(await waitUntilTxFinalized([server2], _.get(res, 'result.result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
@@ -3906,7 +3910,7 @@ describe('Native Function', () => {
         const res = await client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         });
         const txHash = _.get(res, 'result.result.tx_hash');
         if (!(await waitUntilTxFinalized(serverList, txHash))) {
@@ -4052,7 +4056,7 @@ describe('Native Function', () => {
         const res = await client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         });
         const txHash = _.get(res, 'result.result.tx_hash');
         if (!(await waitUntilTxFinalized(serverList, txHash))) {
@@ -4536,7 +4540,7 @@ describe('Native Function', () => {
         const res = await client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         });
         const txHash = _.get(res, 'result.result.tx_hash');
         if (!(await waitUntilTxFinalized(serverList, txHash))) {
@@ -4708,7 +4712,7 @@ describe('Native Function', () => {
         const res = await client.request('ain_sendSignedTransaction', {
           tx_body: txBody,
           signature,
-          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         });
         const txHash = _.get(res, 'result.result.tx_hash');
         if (!(await waitUntilTxFinalized(serverList, txHash))) {

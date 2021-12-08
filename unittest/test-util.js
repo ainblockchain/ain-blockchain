@@ -5,8 +5,9 @@ const syncRequest = require('sync-request');
 const { Block } = require('../blockchain/block');
 const DB = require('../db');
 const {
-  BlockchainConfigs,
+  BlockchainConsts,
   StateVersions,
+  BlockchainParams,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 
@@ -79,7 +80,7 @@ function addBlock(node, txs, votes, validators) {
   const lastBlock = node.bc.lastBlock();
   const finalDb = DB.create(
       node.stateManager.getFinalVersion(), `${StateVersions.FINAL}:${lastBlock.number + 1}`,
-      node.bc, true, lastBlock.number, node.stateManager);
+      node.bc, true, lastBlock.number, node.stateManager, BlockchainParams.genesis.genesis_addr);
   finalDb.executeTransactionList(votes, true);
   finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1);
   finalDb.removeOldReceipts();
@@ -175,7 +176,7 @@ async function waitUntilNodeSyncs(server) {
     try {
       isSyncing = parseOrLog(syncRequest('POST', server + '/json-rpc',
           {json: {jsonrpc: '2.0', method: 'net_syncing', id: 0,
-                  params: {protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION}}})
+                  params: {protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION}}})
           .body.toString('utf-8')).result.result;
     } catch (e) {
       // server may not be ready yet

@@ -1,0 +1,97 @@
+{
+  "_description": "Blockchain params for a 3-nodes network. Mostly used for integration tests.",
+  "token": {
+    "name": "AI Network",
+    "symbol": "AIN",
+    "total_supply": 700000000,
+    "bridge": {
+      "ETH": {
+        "3": {
+          "0xB16c0C80a81f73204d454426fC413CAe455525A7": {
+            "token_pool": "0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
+            "min_checkout_per_request": 10000,
+            "max_checkout_per_request": 100000,
+            "max_checkout_per_day": 1000000,
+            "checkout_fee_rate": 0.001,
+            "token_exchange_rate": 1,
+            "token_exchange_scheme": "FIXED"
+          }
+        }
+      }
+    }
+  },
+  "consensus": {
+    "min_stake_for_proposer": 10000000,
+    "max_stake_for_proposer": 10000000,
+    "min_num_validators": 3,
+    "max_num_validators": 3,
+    "genesis_proposer_whitelist": {
+      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true,
+      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": true,
+      "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": true
+    },
+    "genesis_validators": {
+      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": {
+        "stake": 10000000,
+        "proposal_right": true
+      }
+    }
+  },
+  "genesis": {
+    "genesis_addr": "0xAAAf6f50A0304F12119D218b94bea8082642515B",
+    "genesis_timestamp": 1571819318272,
+    "num_genesis_accounts": 10,
+    "epoch_ms": 3000,
+    "chain_id": 0,
+    "network_id": 0,
+    "hash_delimiter": "#",
+    "variable_label_prefix": "$",
+    "state_info_prefix": "#"
+  },
+  "resource": {
+    "state_tree_height_limit": 30,
+    "state_tree_bytes_limit": 5000000000,
+    "state_label_length_limit": 150,
+    "bandwidth_budget_per_block": 10000,
+    "service_state_budget_ratio": 0.5,
+    "apps_state_budget_ratio": 0.45,
+    "free_state_budget_ratio": 0.05,
+    "max_state_tree_size_per_byte": 0.01,
+    "state_gas_coefficient": 1,
+    "unit_write_gas_amount": 1,
+    "account_registration_gas_amount": 2000,
+    "rest_function_call_gas_amount": 100,
+    "gas_price_unit": 0.000001,
+    "service_bandwidth_budget_ratio": 0.5,
+    "apps_bandwidth_budget_ratio": 0.45,
+    "free_bandwidth_budget_ratio": 0.05,
+    "min_staking_for_app_tx": 0,
+    "min_balance_for_service_tx": 0,
+    "max_function_urls_per_developer": 3,
+    "default_developers_url_whitelist": {
+      "0": "https://*.ainetwork.ai",
+      "1": "https://*.ainize.ai",
+      "2": "https://*.afan.ai",
+      "3": "http://localhost:3000"
+    },
+    "tx_bytes_limit": 10000,
+    "batch_tx_list_size_limit": 50
+  },
+  "sharding": {
+    "shard_owner": "",
+    "shard_reporter": "",
+    "sharding_protocol": "NONE",
+    "sharding_path": "/",
+    "parent_chain_poc": "",
+    "reporting_period": 0,
+    "max_shard_report": 100
+  }
+}

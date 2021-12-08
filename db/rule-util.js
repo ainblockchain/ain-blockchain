@@ -198,23 +198,27 @@ class RuleUtil {
     return getValue(PathUtil.getConsensusStakingAccountBalancePath(address)) || 0;
   }
 
-  getMinStakeAmount() {
-    const { BlockchainConfigs } = require('../common/constants');
-    return BlockchainConfigs.MIN_STAKE_PER_VALIDATOR;
+  getMinStakeAmount(getValue) {
+    const PathUtil = require('../common/path-util');
+    return getValue(
+        PathUtil.getSingleBlockchainParamPath('consensus', 'min_stake_for_proposer'));
   }
 
-  getMaxStakeAmount() {
-    const { BlockchainConfigs } = require('../common/constants');
-    return BlockchainConfigs.MAX_STAKE_PER_VALIDATOR;
+  getMaxStakeAmount(getValue) {
+    const PathUtil = require('../common/path-util');
+    return getValue(
+        PathUtil.getSingleBlockchainParamPath('consensus', 'max_stake_for_proposer'));
   }
 
-  getMinNumValidators() {
-    const { BlockchainConfigs } = require('../common/constants');
-    return BlockchainConfigs.MIN_NUM_VALIDATORS;
+  getMinNumValidators(getValue) {
+    const PathUtil = require('../common/path-util');
+    return getValue(
+        PathUtil.getSingleBlockchainParamPath('consensus', 'min_num_validators'));
   }
 
-  getConsensusWhitelistSize() {
-    this.length(this.values(getValue(PathUtil.getConsensusWhitelistPath())).filter((x) => x === true));
+  getConsensusProposerWhitelistSize(getValue) {
+    const PathUtil = require('../common/path-util');
+    this.length(this.values(getValue(PathUtil.getConsensusProposerWhitelistPath())).filter((x) => x === true));
   }
 
   getTokenBridgeConfig(networkName, chainId, tokenId, getValue) {
@@ -339,7 +343,7 @@ class RuleUtil {
     if (newData !== null && !this.isValidUrlWhitelistItem(newData)) {
       return false;
     }
-    const maxUrlsPerDeveloper = getValue(PathUtil.getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath());
+    const maxUrlsPerDeveloper = getValue(PathUtil.getBlockchainParamsMaxUrlsPerDeveloperPath());
     const existingUrls = getValue(PathUtil.getDevelopersRestFunctionsUrlWhitelistUserPath(userAddr)) || {};
     return data !== null || newData === null ||
         Object.keys(existingUrls).length < maxUrlsPerDeveloper;

@@ -1,5 +1,6 @@
 const CommonUtil = require('../common/common-util');
 const chai = require('chai');
+const { BlockchainParams } = require('../common/constants');
 const expect = chai.expect;
 const assert = chai.assert;
 
@@ -1169,22 +1170,23 @@ describe("CommonUtil", () => {
   })
 
   describe("getTotalGasCost", () => {
+    const gasPriceUnit = BlockchainParams.resource.gas_price_unit;
     it("when abnormal input", () => {
-      assert.deepEqual(CommonUtil.getTotalGasCost(1, null), 0);
-      assert.deepEqual(CommonUtil.getTotalGasCost(1, undefined), 0);
-      assert.deepEqual(CommonUtil.getTotalGasCost(1, {}), 0);
-      assert.deepEqual(CommonUtil.getTotalGasCost(1, { gas: 'gas' }), 0);
-      assert.deepEqual(CommonUtil.getTotalGasCost(1, { gas: {} }), 0);
-      assert.deepEqual(CommonUtil.getTotalGasCost(1, true), 0);
-      assert.deepEqual(CommonUtil.getTotalGasCost(1, 'result'), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, null, gasPriceUnit), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, undefined, gasPriceUnit), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, {}, gasPriceUnit), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, { gas: 'gas' }, gasPriceUnit), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, { gas: {} }, gasPriceUnit), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, true, gasPriceUnit), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, 'result', gasPriceUnit), 0);
     })
 
     it("when normal input", () => {
-      assert.deepEqual(CommonUtil.getTotalGasCost(1, 0), 0);
-      assert.deepEqual(CommonUtil.getTotalGasCost(1, 1), 0.000001);
-      assert.deepEqual(CommonUtil.getTotalGasCost(0, 1), 0);
-      assert.deepEqual(CommonUtil.getTotalGasCost(1000000, 1), 1);
-      assert.deepEqual(CommonUtil.getTotalGasCost(undefined, 1), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, 0, gasPriceUnit), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1, 1, gasPriceUnit), 0.000001);
+      assert.deepEqual(CommonUtil.getTotalGasCost(0, 1, gasPriceUnit), 0);
+      assert.deepEqual(CommonUtil.getTotalGasCost(1000000, 1, gasPriceUnit), 1);
+      assert.deepEqual(CommonUtil.getTotalGasCost(undefined, 1, gasPriceUnit), 0);
     })
   })
 

@@ -4,7 +4,7 @@ const zlib = require('zlib');
 const _ = require('lodash');
 const moment = require('moment');
 const {
-  BlockchainConfigs,
+  NodeConfigs,
   PredefinedDbPaths,
   OwnerProperties,
   RuleProperties,
@@ -17,6 +17,7 @@ const {
   StateVersions,
   getBlockchainConfig,
   buildOwnerPermissions,
+  BlockchainParams,
 } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
 const FileUtil = require('../../common/file-util');
@@ -65,7 +66,59 @@ function getShardingRule() {
   };
 }
 
-function getWhitelistOwner() {
+function getTokenOwner() {
+  const genesisTokenOwner = {};
+  for (const networkName of Object.keys(GenesisToken.bridge)) {
+    for (const chainId of Object.keys(GenesisToken.bridge[networkName])) {
+      for (const tokenId of Object.keys(GenesisToken.bridge[networkName][chainId])) {
+        CommonUtil.setJsObject(
+          genesisTokenOwner,
+          [networkName, chainId, tokenId],
+          {
+            [PredefinedDbPaths.DOT_OWNER]: {
+              [OwnerProperties.OWNERS]: {
+                [GenesisAccounts.owner.address]: buildOwnerPermissions(true, true, true, true)
+              }
+            }
+          }
+        );
+      }
+    }
+  }
+  return {
+    [PredefinedDbPaths.TOKEN_BRIDGE]: {
+      [PredefinedDbPaths.DOT_OWNER]: {
+        [OwnerProperties.OWNERS]: {
+          [GenesisAccounts.owner.address]: buildOwnerPermissions(true, true, true, true),
+          [OwnerProperties.ANYONE]: buildOwnerPermissions(true, false, false, false)
+        }
+      },
+      ...genesisTokenOwner
+    }
+  };
+}
+
+function getTokenRule() {
+  const rules = {};
+  for (const networkName of Object.keys(GenesisToken.bridge)) {
+    for (const chainId of Object.keys(GenesisToken.bridge[networkName])) {
+      for (const tokenId of Object.keys(GenesisToken.bridge[networkName][chainId])) {
+        CommonUtil.setJsObject(
+          rules,
+          [networkName, chainId, tokenId],
+          {
+            [PredefinedDbPaths.DOT_RULE]: {
+              [RuleProperties.WRITE]: `util.isAppAdmin('consensus', auth.addr, getValue) === true`
+            }
+          }
+        );
+      }
+    }
+  }
+  return rules;
+}
+
+function getConsensusProposerWhitelistOwner() {
   return {
     [PredefinedDbPaths.DOT_OWNER]: {
       [OwnerProperties.OWNERS]: {
@@ -78,41 +131,13 @@ function getWhitelistOwner() {
 
 function getDevelopersValue() {
   const ownerAddress = GenesisAccounts.owner.address;
-  const maxFunctionUrlsPerDeveloper = BlockchainConfigs.MAX_FUNCTION_URLS_PER_DEVELOPER;
-  const defaultFunctionUrlWhitelist = {};
-  BlockchainConfigs.DEFAULT_DEVELOPERS_URL_WHITELIST.forEach((url, index) => {
-    defaultFunctionUrlWhitelist[index] = url;
-  })
   return {
     [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS]: {
-      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_PARAMS]: {
-        [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER]: maxFunctionUrlsPerDeveloper
-      },
       [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST]: {
         [ownerAddress]: true
       },
       [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST]: {
-        [ownerAddress]: defaultFunctionUrlWhitelist
-      }
-    }
-  };
-}
-
-function getDevelopersRule() {
-  const ownerAddress = GenesisAccounts.owner.address;
-  return {
-    [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS]: {
-      [PredefinedDbPaths.DOT_RULE]: {
-        [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}'`
-      },
-      [PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST]: {
-        '$user_addr': {
-          '$key': {
-            [PredefinedDbPaths.DOT_RULE]: {
-              [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}' || (auth.addr === $user_addr && util.validateRestFunctionsUrlWhitelistData(auth.addr, data, newData, getValue) === true)`
-            }
-          }
-        }
+        [ownerAddress]: BlockchainParams.resource.default_developers_url_whitelist
       }
     }
   };
@@ -125,6 +150,16 @@ function getDevelopersOwner() {
         [OwnerProperties.OWNERS]: {
           [GenesisAccounts.owner.address]: buildOwnerPermissions(true, true, true, true)
         }
+      }
+    }
+  };
+}
+
+function getBlockchainParamsOwner() {
+  return {
+    [PredefinedDbPaths.DOT_OWNER]: {
+      [OwnerProperties.OWNERS]: {
+        [GenesisAccounts.owner.address]: buildOwnerPermissions(true, true, true, true)
       }
     }
   };
@@ -146,14 +181,19 @@ function getGenesisValues() {
   );
   CommonUtil.setJsObject(
     values,
-    [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST],
-    BlockchainConfigs.GENESIS_WHITELIST
+    [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST],
+    BlockchainParams.consensus.genesis_proposer_whitelist
   );
   CommonUtil.setJsObject(
     values,
     [PredefinedDbPaths.DEVELOPERS],
     getDevelopersValue()
   );
+  CommonUtil.setJsObject(values, [PredefinedDbPaths.BLOCKCHAIN_PARAMS], {
+    [PredefinedDbPaths.BLOCKCHAIN_PARAMS_CONSENSUS]: BlockchainParams.consensus,
+    [PredefinedDbPaths.BLOCKCHAIN_PARAMS_GENESIS]: BlockchainParams.genesis,
+    [PredefinedDbPaths.BLOCKCHAIN_PARAMS_RESOURCE]: BlockchainParams.resource,
+  });
   return values;
 }
 
@@ -168,8 +208,8 @@ function getGenesisRules() {
   }
   CommonUtil.setJsObject(
     rules,
-    [PredefinedDbPaths.DEVELOPERS],
-    getDevelopersRule()
+    [PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE],
+    getTokenRule()
   );
   return rules;
 }
@@ -190,13 +230,23 @@ function getGenesisOwners() {
   }
   CommonUtil.setJsObject(
     owners,
-    [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST],
-    getWhitelistOwner()
+    [PredefinedDbPaths.TOKEN],
+    getTokenOwner()
+  );
+  CommonUtil.setJsObject(
+    owners,
+    [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST],
+    getConsensusProposerWhitelistOwner()
   );
   CommonUtil.setJsObject(
     owners,
     [PredefinedDbPaths.DEVELOPERS],
     getDevelopersOwner()
+  );
+  CommonUtil.setJsObject(
+    owners,
+    [PredefinedDbPaths.BLOCKCHAIN_PARAMS],
+    getBlockchainParamsOwner()
   );
   return owners;
 }
@@ -237,14 +287,14 @@ function buildDbSetupTx() {
   // Transaction
   const txBody = {
     nonce: -1,
-    timestamp: BlockchainConfigs.GENESIS_TIMESTAMP,
+    timestamp: BlockchainParams.genesis.genesis_timestamp,
     gas_price: 1,
     operation: {
       type: 'SET',
       op_list: opList,
     }
   };
-  const tx = Transaction.fromTxBody(txBody, GenesisAccounts.owner.private_key);
+  const tx = Transaction.fromTxBody(txBody, GenesisAccounts.owner.private_key, BlockchainParams.genesis.chain_id);
   if (!tx) {
     console.error(`Failed to build DB setup tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
     process.exit(0);
@@ -259,13 +309,13 @@ function buildAccountsSetupTx() {
     console.error(`Invalid genesis accounts: ${JSON.stringify(otherAccounts, null, 2)}`);
     process.exit(0);
   }
-  if (!CommonUtil.isNumber(BlockchainConfigs.NUM_GENESIS_ACCOUNTS) ||
-      BlockchainConfigs.NUM_GENESIS_ACCOUNTS <= 0 ||
-      BlockchainConfigs.NUM_GENESIS_ACCOUNTS > otherAccounts.length) {
-    console.error(`Invalid NUM_GENESIS_ACCOUNTS value: ${BlockchainConfigs.NUM_GENESIS_ACCOUNTS}`);
+  if (!CommonUtil.isNumber(BlockchainParams.genesis.num_genesis_accounts) ||
+      BlockchainParams.genesis.num_genesis_accounts <= 0 ||
+      BlockchainParams.genesis.num_genesis_accounts > otherAccounts.length) {
+    console.error(`Invalid NUM_GENESIS_ACCOUNTS value: ${BlockchainParams.genesis.num_genesis_accounts}`);
     process.exit(0);
   }
-  for (let i = 0; i < BlockchainConfigs.NUM_GENESIS_ACCOUNTS; i++) {
+  for (let i = 0; i < BlockchainParams.genesis.num_genesis_accounts; i++) {
     const accountAddress = otherAccounts[i].address;
     const accountBalance = otherAccounts[i].balance;
     if (!CommonUtil.isNumber(accountBalance) || accountBalance <= 0) {
@@ -284,14 +334,14 @@ function buildAccountsSetupTx() {
   // Transaction
   const txBody = {
     nonce: -1,
-    timestamp: BlockchainConfigs.GENESIS_TIMESTAMP,
+    timestamp: BlockchainParams.genesis.genesis_timestamp,
     gas_price: 1,
     operation: {
       type: 'SET',
       op_list: transferOps
     }
   };
-  const tx = Transaction.fromTxBody(txBody, GenesisAccounts.owner.private_key);
+  const tx = Transaction.fromTxBody(txBody, GenesisAccounts.owner.private_key, BlockchainParams.genesis.chain_id);
   if (!tx) {
     console.error(`Failed to build account setup tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
     process.exit(0);
@@ -302,11 +352,11 @@ function buildAccountsSetupTx() {
 function buildConsensusAppTx() {
   const txBody = {
     nonce: -1,
-    timestamp: BlockchainConfigs.GENESIS_TIMESTAMP,
+    timestamp: BlockchainParams.genesis.genesis_timestamp,
     gas_price: 1,
     operation: {
       type: 'SET_VALUE',
-      ref: PathUtil.getCreateAppRecordPath(PredefinedDbPaths.CONSENSUS, BlockchainConfigs.GENESIS_TIMESTAMP),
+      ref: PathUtil.getCreateAppRecordPath(PredefinedDbPaths.CONSENSUS, BlockchainParams.genesis.genesis_timestamp),
       value: {
         [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
           [GenesisAccounts.owner.address]: true
@@ -319,7 +369,7 @@ function buildConsensusAppTx() {
       }
     }
   }
-  const tx = Transaction.fromTxBody(txBody, GenesisAccounts.owner.private_key);
+  const tx = Transaction.fromTxBody(txBody, GenesisAccounts.owner.private_key, BlockchainParams.genesis.chain_id);
   if (!tx) {
     console.error(`Failed to build consensus app tx with tx body: ${JSON.stringify(txBody, null, 2)}`);
     process.exit(0);
@@ -329,7 +379,7 @@ function buildConsensusAppTx() {
 
 function buildGenesisStakingTxs() {
   const txs = [];
-  Object.entries(BlockchainConfigs.GENESIS_VALIDATORS).forEach(([address, info], index) => {
+  Object.entries(BlockchainParams.consensus.genesis_validators).forEach(([address, info], index) => {
     const privateKey = _.get(GenesisAccounts,
         `${AccountProperties.OTHERS}.${index}.${AccountProperties.PRIVATE_KEY}`);
     if (!privateKey) {
@@ -338,15 +388,16 @@ function buildGenesisStakingTxs() {
     }
     const txBody = {
       nonce: -1,
-      timestamp: BlockchainConfigs.GENESIS_TIMESTAMP,
+      timestamp: BlockchainParams.genesis.genesis_timestamp,
       gas_price: 1,
       operation: {
         type: 'SET_VALUE',
-        ref: PathUtil.getStakingStakeRecordValuePath(PredefinedDbPaths.CONSENSUS, address, 0, BlockchainConfigs.GENESIS_TIMESTAMP),
+        ref: PathUtil.getStakingStakeRecordValuePath(
+            PredefinedDbPaths.CONSENSUS, address, 0, BlockchainParams.genesis.genesis_timestamp),
         value: info[PredefinedDbPaths.CONSENSUS_STAKE]
       }
     };
-    const tx = Transaction.fromTxBody(txBody, privateKey);
+    const tx = Transaction.fromTxBody(txBody, privateKey, BlockchainParams.genesis.chain_id);
     if (!tx) {
       console.error(`Failed to build genesis staking txs with tx body: ${JSON.stringify(txBody, null, 2)}`);
       process.exit(0);
@@ -366,11 +417,13 @@ function getGenesisBlockTxs() {
 
 function executeGenesisTxsAndGetData(genesisTxs) {
   const tempGenesisDb = new DB(
-      new StateNode(StateVersions.EMPTY), StateVersions.EMPTY, null, -1, null);
+      new StateNode(BlockchainParams.genesis.hash_delimiter, StateVersions.EMPTY),
+      StateVersions.EMPTY, null, -1, null, GenesisAccounts.owner.address);
   tempGenesisDb.initDb();
   const resList = [];
   for (const tx of genesisTxs) {
-    const res = tempGenesisDb.executeTransaction(Transaction.toExecutable(tx), true, false, 0, BlockchainConfigs.GENESIS_TIMESTAMP);
+    const res = tempGenesisDb.executeTransaction(
+        Transaction.toExecutable(tx), true, false, 0, BlockchainParams.genesis.genesis_timestamp);
     if (CommonUtil.isFailedTx(res)) {
       console.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
           `\nRESULT: ${JSON.stringify(res)}`)
@@ -378,7 +431,8 @@ function executeGenesisTxsAndGetData(genesisTxs) {
     }
     resList.push(res);
   }
-  const { gasAmountTotal, gasCostTotal } = CommonUtil.getServiceGasCostTotalFromTxList(genesisTxs, resList);
+  const { gasAmountTotal, gasCostTotal } = CommonUtil.getServiceGasCostTotalFromTxList(
+      genesisTxs, resList, BlockchainParams.resource.gas_price_unit);
   return {
     stateProofHash: tempGenesisDb.getProofHash('/'),
     gasAmountTotal,
@@ -397,7 +451,8 @@ function createGenesisBlock() {
   const proposer = GenesisAccounts.owner.address;
   const { stateProofHash, gasAmountTotal, gasCostTotal, receipts } = executeGenesisTxsAndGetData(transactions);
   return new Block(lastHash, lastVotes, evidence, transactions, receipts, number, epoch,
-    BlockchainConfigs.GENESIS_TIMESTAMP, stateProofHash, proposer, BlockchainConfigs.GENESIS_VALIDATORS, gasAmountTotal, gasCostTotal);
+      BlockchainParams.genesis.genesis_timestamp, stateProofHash, proposer,
+      BlockchainParams.consensus.genesis_validators, gasAmountTotal, gasCostTotal);
 }
 
 function writeCompressedBlock(dirPath, block) {
@@ -418,16 +473,27 @@ function processArguments() {
 
   GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
   const genesisBlock = createGenesisBlock();
-  writeCompressedBlock(BlockchainConfigs.GENESIS_BLOCK_DIR, genesisBlock);
+  writeCompressedBlock(NodeConfigs.GENESIS_BLOCK_DIR, genesisBlock);
 }
 
 function usage() {
   console.log('\nUsage:\n  node createGenesisBlock.js\n');
   console.log('Optional environment variables:');
   console.log('  BLOCKCHAIN_CONFIGS_DIR     The path to the directory containing blockchain config files.');
-  console.log('  MIN_NUM_VALIDATORS      The minimum number of validators.');
-  console.log('\nExample:');
-  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/base node createGenesisBlock.js');
+  console.log('\nExamples:');
+  console.log('  node createGenesisBlock.js'); // Same as BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/base
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node node createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/2-nodes node createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/3-nodes node createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard node createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/he-shard node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging node tools/genesis-file/createGenesisBlock.js');
+
   process.exit(0);
 }
 
