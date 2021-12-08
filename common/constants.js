@@ -511,33 +511,6 @@ const WriteDbOperations = {
 };
 
 /**
- * Function result code.
- *
- * @enum {number}
- */
-const FunctionResultCode = {
-  SUCCESS: 0,
-  FAILURE: 1,  // Normal failure
-  INTERNAL_ERROR: 2,  // Something went wrong but don't know why
-  // Transfer
-  INSUFFICIENT_BALANCE: 100,
-  // Staking
-  IN_LOCKUP_PERIOD: 200,
-  // Create app
-  INVALID_SERVICE_NAME: 300,
-  // Check-in & Check-out
-  INVALID_ACCOUNT_NAME: 400,
-  INVALID_CHECKOUT_AMOUNT: 401,
-  INVALID_RECIPIENT: 402,
-  INVALID_TOKEN_BRIDGE_CONFIG: 403,
-  INVALID_SENDER: 405,
-  UNPROCESSED_REQUEST_EXISTS: 406,
-  INVALID_CHECKIN_AMOUNT: 407,
-  // Claim reward
-  INVALID_AMOUNT: 500,
-};
-
-/**
  * Transaction states.
  *
  * @enum {string}
@@ -722,7 +695,6 @@ module.exports = {
   RuleProperties,
   FunctionProperties,
   FunctionTypes,
-  FunctionResultCode,
   StateInfoProperties,
   BlockchainSnapshotProperties,
   NativeFunctionIds,

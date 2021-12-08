@@ -4,8 +4,8 @@ const {
   WriteDbOperations,
   PredefinedDbPaths,
 } = require('../common/constants');
+const { ConsensusErrorCodeSetToVoteAgainst } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
-const { ConsensusErrorCodesToVoteAgainst } = require('./constants');
 const Transaction = require('../tx-pool/transaction');
 
 class ConsensusUtil {
@@ -107,7 +107,7 @@ class ConsensusUtil {
   }
 
   static isVoteAgainstBlockError(errorCode) {
-    return ConsensusErrorCodesToVoteAgainst.has(errorCode);
+    return ConsensusErrorCodeSetToVoteAgainst.has(errorCode);
   }
 
   static getInvalidBlockHashesFromBlock(block) {

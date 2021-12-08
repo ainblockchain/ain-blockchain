@@ -2,6 +2,11 @@ const stringify = require('fast-json-stable-stringify');
 const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
+const {
+  FailedTxPrecheckCodeSet,
+  FunctionResultCode,
+  TxResultCode,
+} = require('../common/result-code');
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 
@@ -385,8 +390,7 @@ class CommonUtil {
    * after executeOperation().
    */
   static txPrecheckFailed(result) {
-    const precheckFailureCode = [21, 22, 3, 15, 33, 16, 17, 34, 35];
-    return precheckFailureCode.includes(result.code);
+    return FailedTxPrecheckCodeSet.has(result.code);
   }
 
   /**
@@ -421,7 +425,7 @@ class CommonUtil {
   }
 
   static isFailedTxResultCode(code) {
-    return code !== 0;
+    return code !== TxResultCode.SUCCESS;
   }
 
   /**
@@ -449,8 +453,6 @@ class CommonUtil {
   // TODO(platfowner): Consider some code (e.g. IN_LOCKUP_PERIOD, INSUFFICIENT_BALANCE) no failure
   // so that their transactions are not reverted.
   static isFailedFuncResultCode(code) {
-    const { FunctionResultCode } = require('../common/constants');
-
     return code !== FunctionResultCode.SUCCESS;
   }
 

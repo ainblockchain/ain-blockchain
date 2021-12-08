@@ -10,6 +10,7 @@ const {
   TrafficEventTypes,
   trafficStatsManager,
 } = require('../common/constants');
+const { JsonRpcApiResultCode } = require('../common/result-code');
 const Transaction = require('../tx-pool/transaction');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
@@ -44,20 +45,32 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
       if (version === undefined) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-        done(null, addProtocolVersion({ code: 1, message: 'Protocol version not specified.' }));
+        done(null, addProtocolVersion({
+          code: JsonRpcApiResultCode.PROTO_VERSION_NOT_SPECIFIED,
+          message: 'Protocol version not specified.'
+        }));
       } else if (!semver.valid(coercedVer)) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-        done(null, addProtocolVersion({ code: 1, message: 'Invalid protocol version.' }));
+        done(null, addProtocolVersion({
+          code: JsonRpcApiResultCode.PROTO_VERSION_INVALID,
+          message: 'Invalid protocol version.'
+        }));
       } else if (semver.lt(coercedVer, minProtocolVersion) ||
                 (maxProtocolVersion && semver.gt(coercedVer, maxProtocolVersion))) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-        done(null, addProtocolVersion({ code: 1, message: 'Incompatible protocol version.' }));
+        done(null, addProtocolVersion({
+          code: JsonRpcApiResultCode.PROTO_VERSION_INCOMPATIBLE,
+          message: 'Incompatible protocol version.'
+        }));
       } else {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-        done(null, addProtocolVersion({ code: 0, result: 'Success' }));
+        done(null, addProtocolVersion({
+          code: JsonRpcApiResultCode.SUCCESS,
+          result: 'Success'
+        }));
       }
     },
 
@@ -281,7 +294,10 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
         default:
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-          done(null, addProtocolVersion({ code: 1, message: 'Invalid get request type' }));
+          done(null, addProtocolVersion({
+            code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
+            message: 'Invalid get operation'
+          }));
       }
     },
 
@@ -532,7 +548,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
         done(null, addProtocolVersion({
           result: {
-            code: 1,
+            code: JsonRpcApiResultCode.TX_EXCEEDS_SIZE_LIMIT,
             message: `Transaction size exceeds its limit: ${txBytesLimit} bytes.`
           }
         }));
@@ -541,7 +557,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
         done(null, addProtocolVersion({
           result: {
-            code: 2,
+            code: JsonRpcApiResultCode.TX_MISSING_PROPERTIES,
             message: `Missing properties.`
           }
         }));
@@ -552,7 +568,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
           done(null, addProtocolVersion({
             result: {
-              code: 3,
+              code: JsonRpcApiResultCode.TX_INVALID_FORMAT,
               message: `Invalid transaction format.`
             }
           }));
@@ -573,7 +589,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
         done(null, addProtocolVersion({
           result: {
-            code: 1,
+            code: JsonRpcApiResultCode.BATCH_INVALID_FORMAT,
             message: `Invalid batch transaction format.`
           }
         }));
@@ -582,7 +598,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
         trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
         done(null, addProtocolVersion({
           result: {
-            code: 2,
+            code: JsonRpcApiResultCode.BATCH_TX_LIST_EXCEEDS_SIZE_LIMIT,
             message: `Batch transaction list size exceeds its limit: ${batchTxListSizeLimit}.`
           }
         }));
@@ -596,7 +612,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
             trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
             done(null, addProtocolVersion({
               result: {
-                code: 3,
+                code: JsonRpcApiResultCode.BATCH_TX_EXCEEDS_SIZE_LIMIT,
                 message: `Transaction[${i}]'s size exceededs its limit: ${txBytesLimit} bytes.`
               }
             }));
@@ -606,7 +622,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
             trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
             done(null, addProtocolVersion({
               result: {
-                code: 4,
+                code: JsonRpcApiResultCode.BATCH_TX_MISSING_PROPERTIES,
                 message: `Missing properties of transaction[${i}].`
               }
             }));
@@ -618,7 +634,7 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
             trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
             done(null, addProtocolVersion({
               result: {
-                code: 5,
+                code: JsonRpcApiResultCode.BATCH_TX_INVALID_FORMAT,
                 message: `Invalid format of transaction[${i}].`
               }
             }));
