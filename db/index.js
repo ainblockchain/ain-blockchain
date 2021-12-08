@@ -125,7 +125,7 @@ class DB {
    */
   resetDbWithSnapshot(snapshot) {
     const LOG_HEADER = 'resetDbWithSnapshot';
-    const hashDelimiter = DB.getBlockchainParam('genesis/hash_delimiter', 0);
+    const hashDelimiter = DB.getBlockchainParam('genesis/hash_delimiter');
     const newRoot =
         StateNode.fromRadixSnapshot(snapshot[BlockchainSnapshotProperties.RADIX_SNAPSHOT], hashDelimiter);
     updateStateInfoForStateTree(newRoot);
@@ -409,7 +409,7 @@ class DB {
   // - Reference from root_b: child_1b -> child_2 -> child_3 (not affected)
   //
   static getRefForWritingToStateRoot(stateRoot, fullPath) {
-    const hashDelimiter = DB.getBlockchainParam('genesis/hash_delimiter', 0);
+    const hashDelimiter = DB.getBlockchainParam('genesis/hash_delimiter');
     let node = stateRoot;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
@@ -438,8 +438,8 @@ class DB {
   }
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
-    const stateInfoPrefix = DB.getBlockchainParam('genesis/state_info_prefix', 0);
-    const hashDelimiter = DB.getBlockchainParam('genesis/hash_delimiter', 0);
+    const stateInfoPrefix = DB.getBlockchainParam('genesis/state_info_prefix');
+    const hashDelimiter = DB.getBlockchainParam('genesis/hash_delimiter');
     const tree = StateNode.fromStateSnapshot(stateObj, hashDelimiter, stateVersion, stateInfoPrefix);
     if (!NodeConfigs.LIGHTWEIGHT) {
       updateStateInfoForStateTree(tree);
@@ -561,7 +561,7 @@ class DB {
   isConsensusAppAdmin(address) {
     const admins = this.getValue(PathUtil.getManageAppConfigAdminPath('consensus'));
     if (admins === null) {
-      return address === DB.getBlockchainParam('genesis/genesis_addr', 0);
+      return address === DB.getBlockchainParam('genesis/genesis_addr');
     }
     return admins[address] === true;
   }
@@ -869,7 +869,7 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
-    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix', 0);
+    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix');
     const isValidObj = isValidJsObjectForStates(func, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -933,7 +933,7 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
-    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix', 0);
+    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix');
     const isValidObj = isValidJsObjectForStates(rule, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -986,7 +986,7 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
-    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix', 0);
+    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix');
     const isValidObj = isValidJsObjectForStates(owner, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -1768,7 +1768,7 @@ class DB {
   }
 
   static getVariableLabel(node) {
-    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix', 0);
+    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix');
     if (!node.getIsLeaf()) {
       for (const label of node.getChildLabels()) {
         if (label.startsWith(variableLabelPrefix)) {
