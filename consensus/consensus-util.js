@@ -1,12 +1,13 @@
 const _get = require('lodash/get');
 const {
-  BlockchainConfigs,
+  NodeConfigs,
   WriteDbOperations,
   PredefinedDbPaths,
 } = require('../common/constants');
 const { ConsensusErrorCodeSetToVoteAgainst } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
+const DB = require('../db');
 
 class ConsensusUtil {
   static isValidConsensusTx(tx) {
@@ -14,8 +15,9 @@ class ConsensusUtil {
     if (!Transaction.isExecutable(executableTx)) {
       return false;
     }
-    if (!BlockchainConfigs.LIGHTWEIGHT) {
-      if (!Transaction.verifyTransaction(executableTx)) {
+    if (!NodeConfigs.LIGHTWEIGHT) {
+      const chainId = DB.getBlockchainParam('genesis/chain_id');
+      if (!Transaction.verifyTransaction(executableTx, chainId)) {
         return false;
       }
     }

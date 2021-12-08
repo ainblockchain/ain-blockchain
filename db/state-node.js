@@ -4,13 +4,14 @@ const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
-  BlockchainConfigs,
+  NodeConfigs,
   StateInfoProperties,
 } = require('../common/constants');
 const RadixTree = require('./radix-tree');
 
 class StateNode {
-  constructor(version = null) {
+  constructor(hashDelimiter, version = null) {
+    this.hashDelimiter = hashDelimiter;
     this.version = version;
     this.label = null;
     this.isLeaf = true;
@@ -19,7 +20,7 @@ class StateNode {
     this.parentRadixNodeSet = new Set();
     this.parentSet = new Set();
     // Used for internal nodes only.
-    this.radixTree = new RadixTree(version, this);
+    this.radixTree = new RadixTree(hashDelimiter, version, this);
     this.proofHash = null;
     this.treeHeight = 0;
     this.treeSize = 0;
@@ -41,8 +42,8 @@ class StateNode {
   }
 
   static _create(
-      version, label, isLeaf, value, proofHash, treeHeight, treeSize, treeBytes) {
-    const node = new StateNode(version);
+      hashDelimiter, version, label, isLeaf, value, proofHash, treeHeight, treeSize, treeBytes) {
+    const node = new StateNode(hashDelimiter, version);
     node.setLabel(label);
     node.setIsLeaf(isLeaf);
     node.setValue(value);
@@ -56,8 +57,8 @@ class StateNode {
   clone(version) {
     // For easy testing
     const versionToSet = version ? version : this.version;
-    const cloned = StateNode._create(versionToSet, this.label, this.isLeaf, this.value,
-        this.proofHash, this.treeHeight, this.treeSize, this.treeBytes);
+    const cloned = StateNode._create(this.hashDelimiter, versionToSet, this.label, this.isLeaf,
+        this.value, this.proofHash, this.treeHeight, this.treeSize, this.treeBytes);
     if (!this.getIsLeaf()) {
       cloned.setRadixTree(this.radixTree.clone(versionToSet, cloned));
     }
@@ -75,11 +76,11 @@ class StateNode {
   /**
    * Constructs a sub-tree from the given snapshot object.
    */
-  static fromRadixSnapshot(obj) {
-    const curNode = new StateNode();
+  static fromRadixSnapshot(obj, hashDelimiter) {
+    const curNode = new StateNode(hashDelimiter);
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
-        const radixTree = RadixTree.fromRadixSnapshot(obj);
+        const radixTree = RadixTree.fromRadixSnapshot(obj, hashDelimiter);
         curNode.setRadixTree(radixTree);
         curNode.setIsLeaf(false);
         curNode.setVersion(radixTree.getVersion());
@@ -103,17 +104,17 @@ class StateNode {
   /**
    * Constructs a sub-tree from the given js object.
    */
-  static fromStateSnapshot(obj, version) {
-    const curNode = new StateNode(version);
+  static fromStateSnapshot(obj, hashDelimiter, version, stateInfoPrefix) {
+    const curNode = new StateNode(hashDelimiter, version);
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
         for (const key in obj) {
-          if (_.startsWith(key, BlockchainConfigs.STATE_INFO_PREFIX)) {
+          if (_.startsWith(key, stateInfoPrefix)) {
             // Skip state properties.
             continue;
           }
           const childObj = obj[key];
-          curNode.setChild(key, StateNode.fromStateSnapshot(childObj, version));
+          curNode.setChild(key, StateNode.fromStateSnapshot(childObj, hashDelimiter, version, stateInfoPrefix));
         }
       }
     } else {
@@ -425,7 +426,7 @@ class StateNode {
   buildStateInfo(updatedChildLabel = null, shouldRebuildRadixInfo = true) {
     const nodeBytes = this.computeNodeBytes();
     if (this.getIsLeaf()) {
-      const proofHash = BlockchainConfigs.LIGHTWEIGHT ?
+      const proofHash = NodeConfigs.LIGHTWEIGHT ?
           '' : CommonUtil.hashString(CommonUtil.toString(this.getValue()));
       return {
         proofHash,

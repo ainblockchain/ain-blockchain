@@ -3,7 +3,7 @@ const util = require('../p2p/util');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
-const { BlockchainConfigs } = require('../common/constants');
+const { BlockchainConsts, BlockchainParams } = require('../common/constants');
 
 describe("P2P Util", () => {
   const mockAddress = '0x012345678abcdef';
@@ -102,9 +102,9 @@ describe("P2P Util", () => {
       assert.deepEqual(encapsulatedMessage, {
         type: mockType,
         data: mockDataObj,
-        protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
-        dataProtoVer: BlockchainConfigs.DATA_PROTOCOL_VERSION,
-        networkId: BlockchainConfigs.NETWORK_ID,
+        protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+        dataProtoVer: BlockchainConsts.DATA_PROTOCOL_VERSION,
+        networkId: BlockchainParams.genesis.network_id,
         timestamp: encapsulatedMessage.timestamp
       });
     });

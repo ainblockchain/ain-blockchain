@@ -208,15 +208,6 @@ else
   export ENABLE_REST_FUNCTION_CALL=false
 fi
 
-export DEBUG=false
-export CONSOLE_LOG=false
-export ENABLE_DEV_CLIENT_SET_API=false
-export ENABLE_TX_SIG_VERIF_WORKAROUND=false
-export ENABLE_GAS_FEE_WORKAROUND=true
-export LIGHTWEIGHT=false
-export STAKE=100000
-export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
-
 # 2. Get currently used directory & new directory
 printf "\n#### [Step 2] Get currently used directory & new directory ####\n\n"
 
@@ -305,6 +296,8 @@ MAX_OLD_SPACE_SIZE_MB=11000
 # NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
 export CORS_WHITELIST='*'
 printf "CORS_WHITELIST=$CORS_WHITELIST\n"
+export STAKE=100000
+printf "STAKE=$STAKE\n"
 
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
 printf "START_CMD=$START_CMD\n"

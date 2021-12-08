@@ -7,7 +7,8 @@ const sizeof = require('object-sizeof');
 const path = require('path');
 const {
   DevFlags,
-  BlockchainConfigs,
+  NodeConfigs,
+  BlockchainParams,
   BlockchainNodeStates,
   PredefinedDbPaths,
   BlockchainSnapshotProperties,
@@ -33,12 +34,13 @@ const Transaction = require('../tx-pool/transaction');
 const Consensus = require('../consensus');
 const BlockPool = require('../block-pool');
 const ConsensusUtil = require('../consensus/consensus-util');
+const PathUtil = require('../common/path-util');
 
 class BlockchainNode {
   constructor(account = null, eventHandler = null, trafficStatsManager = null) {
-    this.keysDir = path.resolve(BlockchainConfigs.KEYS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
+    this.keysDir = path.resolve(NodeConfigs.KEYS_ROOT_DIR, `${NodeConfigs.PORT}`);
     FileUtil.createDir(this.keysDir);
-    this.snapshotDir = path.resolve(BlockchainConfigs.SNAPSHOTS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
+    this.snapshotDir = path.resolve(NodeConfigs.SNAPSHOTS_ROOT_DIR, `${NodeConfigs.PORT}`);
     FileUtil.createSnapshotDir(this.snapshotDir);
 
     this.account = account;
@@ -50,10 +52,10 @@ class BlockchainNode {
 
     this.eh = eventHandler;
     this.tsm = trafficStatsManager;
-    this.bc = new Blockchain(String(BlockchainConfigs.PORT));
+    this.bc = new Blockchain(String(NodeConfigs.PORT));
     this.tp = new TransactionPool(this);
     this.bp = new BlockPool(this);
-    this.stateManager = new StateManager();
+    this.stateManager = new StateManager(BlockchainParams.genesis.hash_delimiter);
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
@@ -72,9 +74,9 @@ class BlockchainNode {
 
   initAccount() {
     const LOG_HEADER = 'initAccount';
-    if (BlockchainConfigs.ACCOUNT_INDEX !== null) { // TODO(liayoo): Deprecate ACCOUNT_INDEX.
-      this.setAccountAndInitShardSetting(GenesisAccounts.others[BlockchainConfigs.ACCOUNT_INDEX]);
-    } else if (BlockchainConfigs.ACCOUNT_INJECTION_OPTION !== null) {
+    if (NodeConfigs.ACCOUNT_INDEX !== null) { // TODO(liayoo): Deprecate ACCOUNT_INDEX.
+      this.setAccountAndInitShardSetting(GenesisAccounts.others[NodeConfigs.ACCOUNT_INDEX]);
+    } else if (NodeConfigs.ACCOUNT_INJECTION_OPTION !== null) {
       // Create a bootstrap account & wait for the account injection
       this.bootstrapAccount = ainUtil.createAccount();
     } else {
@@ -101,7 +103,7 @@ class BlockchainNode {
     try {
       const password = await ainUtil.decryptWithPrivateKey(
           this.bootstrapAccount.private_key, encryptedPassword);
-      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(BlockchainConfigs.KEYSTORE_FILE_PATH, password);
+      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(NodeConfigs.KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
         this.setAccountAndInitShardSetting(accountFromKeystore)
         return true;
@@ -155,7 +157,7 @@ class BlockchainNode {
   }
 
   static getNodeUrl(ipAddr) {
-    return `http://${ipAddr}:${BlockchainConfigs.PORT}`;
+    return `http://${ipAddr}:${NodeConfigs.PORT}`;
   }
 
   initNode(isFirstNode) {
@@ -166,7 +168,7 @@ class BlockchainNode {
     let latestSnapshotBlockNumber = -1;
 
     // 1. Get the latest snapshot if in the "fast" sync mode.
-    if (BlockchainConfigs.SYNC_MODE === SyncModeOptions.FAST) {
+    if (NodeConfigs.SYNC_MODE === SyncModeOptions.FAST) {
       logger.info(`[${LOG_HEADER}] Initializing node in 'fast' mode..`);
       const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
       latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
@@ -282,12 +284,12 @@ class BlockchainNode {
   }
 
   updateSnapshots(blockNumber) {
-    if (blockNumber % BlockchainConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
+    if (blockNumber % NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
           this.snapshotDir,
-          blockNumber - BlockchainConfigs.MAX_NUM_SNAPSHOTS * BlockchainConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
+          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
   }
 
@@ -388,13 +390,30 @@ class BlockchainNode {
   getTxPoolSizeUtilization(address) {
     const result = {};
     if (address) { // Per account
-      result.limit = BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
+      result.limit = NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
       result.used = this.tp.getPerAccountPoolSize(address);
     } else { // Total
-      result.limit = BlockchainConfigs.TX_POOL_SIZE_LIMIT;
+      result.limit = NodeConfigs.TX_POOL_SIZE_LIMIT;
       result.used = this.tp.getPoolSize();
     }
     return result;
+  }
+
+  // TODO(liayoo): Rename lastBlockNumber to finalBlockNumber.
+  getBlockchainParam(paramName, blockNumber = null, stateVersion = null) {
+    return DB.getBlockchainParam(
+      paramName,
+      blockNumber !== null ? blockNumber : this.bc.lastBlockNumber(),
+      stateVersion !== null ? this.stateManager.getRoot(stateVersion) : this.stateManager.getFinalRoot()
+    );
+  }
+
+  getAllBlockchainParamsFromState() {
+    const params = DB.getValueFromStateRoot(
+        this.stateManager.getFinalRoot(), PathUtil.getBlockchainParamsRootPath()) || {};
+    const token = DB.getValueFromStateRoot(this.stateManager.getFinalRoot(), PredefinedDbPaths.TOKEN) || {};
+    const sharding = DB.getValueFromStateRoot(this.stateManager.getFinalRoot(), PredefinedDbPaths.SHARDING) || {};
+    return Object.assign(params, { token }, { sharding });
   }
 
   /**
@@ -440,7 +459,8 @@ class BlockchainNode {
     if (txBody.gas_price === undefined) {
       txBody.gas_price = 0;
     }
-    return Transaction.fromTxBody(txBody, this.account.private_key);
+    return Transaction.fromTxBody(
+        txBody, this.account.private_key, this.getBlockchainParam('genesis/chain_id'));
   }
 
   /**
@@ -477,8 +497,9 @@ class BlockchainNode {
           TxResultCode.TX_INVALID,
           `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
     }
-    if (!BlockchainConfigs.LIGHTWEIGHT) {
-      if (!Transaction.verifyTransaction(executableTx)) {
+    if (!NodeConfigs.LIGHTWEIGHT) {
+      const chainId = this.getBlockchainParam('genesis/chain_id');
+      if (!Transaction.verifyTransaction(executableTx, chainId)) {
         return CommonUtil.logAndReturnTxResult(
             logger,
             TxResultCode.TX_INVALID_SIGNATURE,
@@ -517,7 +538,7 @@ class BlockchainNode {
     const LOG_HEADER = 'loadAndExecuteChainOnDb';
 
     const numBlockFiles = this.bc.getNumBlockFiles();
-    const fromBlockNumber = BlockchainConfigs.SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
+    const fromBlockNumber = NodeConfigs.SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
     let nextBlock = null;
     let proposalTx = null;
     for (let number = fromBlockNumber; number < numBlockFiles; number++) {
@@ -532,7 +553,7 @@ class BlockchainNode {
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
       try {
-        if (latestSnapshotBlockNumber === number && BlockchainConfigs.SYNC_MODE === SyncModeOptions.FAST) {
+        if (latestSnapshotBlockNumber === number && NodeConfigs.SYNC_MODE === SyncModeOptions.FAST) {
           // TODO(liayoo): Deal with the case where block corresponding to the latestSnapshot doesn't exist.
           if (!this.bp.addSeenBlock(block, proposalTx)) {
             return false;

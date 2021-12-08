@@ -13,7 +13,8 @@ const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
 const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
-  BlockchainConfigs,
+  NodeConfigs,
+  BlockchainConsts,
   PredefinedDbPaths,
   WriteDbOperations,
   RuleProperties,
@@ -39,32 +40,31 @@ const {
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/unit-tests', ENABLE_EXPRESS_RATE_LIMIT: false,
-    MIN_NUM_VALIDATORS: 1, ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', DEBUG: true,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/1-node', ENABLE_EXPRESS_RATE_LIMIT: false,
+    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '', PORT: 8081, P2P_PORT: 5001,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     // For shard chain tracker
     PORT: 9000, P2P_PORT: 6000,
-    CONSOLE_LOG: false
   },
   {
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/afan-shard',
     PORT: 9001, P2P_PORT: 6001, PEER_CANDIDATE_JSON_RPC_URL: '',
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 0, ENABLE_EXPRESS_RATE_LIMIT: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    ACCOUNT_INDEX: 0, ENABLE_EXPRESS_RATE_LIMIT: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/afan-shard',
     PORT: 9002, P2P_PORT: 6002,
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 1, ENABLE_EXPRESS_RATE_LIMIT: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    ACCOUNT_INDEX: 1, ENABLE_EXPRESS_RATE_LIMIT: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/afan-shard',
     PORT: 9003, P2P_PORT: 6003,
-    MIN_NUM_VALIDATORS: 3, ACCOUNT_INDEX: 2, ENABLE_EXPRESS_RATE_LIMIT: false,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    ACCOUNT_INDEX: 2, ENABLE_EXPRESS_RATE_LIMIT: false,
+    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
   },
 ];
 
@@ -206,7 +206,7 @@ describe('Sharding', async () => {
       tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
 
     parent_tracker_proc =
         startServer(TRACKER_SERVER, 'parent tracker server', { CONSOLE_LOG: false }, true);
@@ -262,7 +262,7 @@ describe('Sharding', async () => {
     server2_proc.kill()
     server3_proc.kill()
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR)
+    rimraf.sync(NodeConfigs.CHAINS_DIR)
   });
 
   describe('Parent chain initialization', () => {
@@ -807,7 +807,7 @@ describe('Sharding', async () => {
           const ref = "/apps/test/test_rule/some/path";
           const value = "value";
           const address = "abcd";
-          const request = { ref, value, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+          const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: true});
@@ -818,7 +818,7 @@ describe('Sharding', async () => {
           const value = "value";
           const address = "abcd";
           const is_global = true;
-          const request = { ref, value, address, is_global, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+          const request = { ref, value, address, is_global, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(body, {code: 0, result: true});
@@ -830,7 +830,7 @@ describe('Sharding', async () => {
           const ref = "/apps/test/test_owner/some/path";
           const address = "abcd";
           const permission = "write_owner";
-          const request = { ref, permission, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+          const request = { ref, permission, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           const body = parseOrLog(syncRequest('POST', server1 + '/eval_owner', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(body, {
@@ -845,7 +845,7 @@ describe('Sharding', async () => {
           const permission = "write_owner";
           const is_global = true;
           const request =
-              { ref, permission, address, is_global, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+              { ref, permission, address, is_global, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           const body = parseOrLog(syncRequest('POST', server1 + '/eval_owner', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(body, {
@@ -1010,7 +1010,7 @@ describe('Sharding', async () => {
           const expected = 100;
           const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
           return jsonRpcClient.request('ain_get', {
-            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
             type: 'GET_VALUE',
             ref: "/apps/test/test_value/some/path"
           })
@@ -1023,7 +1023,7 @@ describe('Sharding', async () => {
           const expected = 100;
           const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
           return jsonRpcClient.request('ain_get', {
-            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
             type: 'GET_VALUE',
             ref: "/apps/test/test_value/some/path",
             is_global: false,
@@ -1037,7 +1037,7 @@ describe('Sharding', async () => {
           const expected = 100;
           const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
           return jsonRpcClient.request('ain_get', {
-            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
             type: 'GET_VALUE',
             ref: "/apps/afan/apps/test/test_value/some/path",
             is_global: true,
@@ -1051,7 +1051,7 @@ describe('Sharding', async () => {
       describe('ain_matchFunction api', () => {
         it('ain_matchFunction with is_global = false', () => {
           const ref = "/apps/test/test_function/some/path";
-          const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+          const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
@@ -1077,7 +1077,7 @@ describe('Sharding', async () => {
 
         it('ain_matchFunction with is_global = true', () => {
           const ref = "/apps/afan/apps/test/test_function/some/path";
-          const request = { ref, is_global: true, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+          const request = { ref, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchFunction', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
@@ -1105,7 +1105,7 @@ describe('Sharding', async () => {
       describe('ain_matchRule api', () => {
         it('ain_matchRule with is_global = false', () => {
           const ref = "/apps/test/test_rule/some/path";
-          const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+          const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
@@ -1140,7 +1140,7 @@ describe('Sharding', async () => {
 
         it('ain_matchRule with is_global = true', () => {
           const ref = "/apps/afan/apps/test/test_rule/some/path";
-          const request = { ref, is_global: true, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+          const request = { ref, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchRule', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
@@ -1177,7 +1177,7 @@ describe('Sharding', async () => {
       describe('ain_matchOwner api', () => {
         it('ain_matchOwner with is_global = false', () => {
           const ref = "/apps/test/test_owner/some/path";
-          const request = { ref, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+          const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
@@ -1203,7 +1203,7 @@ describe('Sharding', async () => {
 
         it('ain_matchOwner with is_global = true', () => {
           const ref = "/apps/afan/apps/test/test_owner/some/path";
-          const request = { ref, is_global: true, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+          const request = { ref, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_matchOwner', request)
           .then(res => {
             assert.deepEqual(res.result.result, {
@@ -1233,7 +1233,7 @@ describe('Sharding', async () => {
           const ref = "/apps/test/test_rule/some/path";
           const value = "value";
           const address = "abcd";
-          const request = { ref, value, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+          const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
           .then(res => {
             expect(res.result.result).to.equal(true);
@@ -1245,7 +1245,7 @@ describe('Sharding', async () => {
           const value = "value";
           const address = "abcd";
           const request =
-              { ref, value, address, is_global: true, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+              { ref, value, address, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
           .then(res => {
             expect(res.result.result).to.equal(true);
@@ -1258,7 +1258,7 @@ describe('Sharding', async () => {
           const ref = "/apps/test/test_owner/some/path";
           const address = "abcd";
           const permission = "write_owner";
-          const request = { ref, permission, address, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+          const request = { ref, permission, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
           .then(res => {
             assert.deepEqual(res.result.result, true);
@@ -1270,7 +1270,7 @@ describe('Sharding', async () => {
           const address = "abcd";
           const permission = "write_owner";
           const request =
-              { ref, permission, address, is_global: true, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION };
+              { ref, permission, address, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
           .then(res => {
             assert.deepEqual(res.result.result, true);
@@ -1725,12 +1725,12 @@ describe('Sharding', async () => {
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
           return client.request('ain_sendSignedTransaction',
-              { tx_body: txBody, signature, protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION })
+              { tx_body: txBody, signature, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               const result = _.get(res, 'result.result', null);
               expect(result).to.not.equal(null);
               assert.deepEqual(res.result, {
-                protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+                protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
                 result: {
                   result: {
                     code: 0,
@@ -1773,12 +1773,12 @@ describe('Sharding', async () => {
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
           return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
-              protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION })
+              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               const result = _.get(res, 'result.result', null);
               expect(result).to.not.equal(null);
               assert.deepEqual(res.result, {
-                protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+                protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
                 result: {
                   result: {
                     code: 0,
@@ -1821,12 +1821,12 @@ describe('Sharding', async () => {
           const signature =
               ainUtil.ecSignTransaction(txBody, Buffer.from(account.private_key, 'hex'));
           return client.request('ain_sendSignedTransaction', { tx_body: txBody, signature,
-              protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION })
+              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
             .then((res) => {
               const result = _.get(res, 'result.result', null);
               expect(result).to.not.equal(null);
               assert.deepEqual(res.result, {
-                protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+                protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
                 result: {
                   result: {
                     code: 0,
@@ -1877,12 +1877,12 @@ describe('Sharding', async () => {
               }
             ],
             signature,
-            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
             expect(CommonUtil.isArray(resultList)).to.equal(true);
             assert.deepEqual(res.result, {
-              protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
               result: [
                 {
                   result: {
@@ -1934,7 +1934,7 @@ describe('Sharding', async () => {
               }
             ],
             signature,
-            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
             expect(CommonUtil.isArray(resultList)).to.equal(true);
@@ -1942,7 +1942,7 @@ describe('Sharding', async () => {
               const result = resultList[i];
             }
             assert.deepEqual(res.result, {
-              protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
               result: [
                 {
                   result: {
@@ -1994,7 +1994,7 @@ describe('Sharding', async () => {
               }
             ],
             signature,
-            protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+            protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
           }).then((res) => {
             const resultList = _.get(res, 'result.result', null);
             expect(CommonUtil.isArray(resultList)).to.equal(true);
@@ -2002,7 +2002,7 @@ describe('Sharding', async () => {
               const result = resultList[i];
             }
             assert.deepEqual(res.result, {
-              protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+              protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
               result: [
                 {
                   result: {

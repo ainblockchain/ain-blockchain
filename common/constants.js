@@ -25,132 +25,78 @@ const DevFlags = {
 };
 
 // ** Blockchain configs **
-const BlockchainConfigs = {};
-BlockchainConfigs.BASE_BLOCKCHAIN_CONFIGS_DIR = 'blockchain-configs/base';
-BlockchainConfigs.CUSTOM_BLOCKCHAIN_CONFIGS_DIR = process.env.BLOCKCHAIN_CONFIGS_DIR ?
-    process.env.BLOCKCHAIN_CONFIGS_DIR : null;
-BlockchainConfigs.GENESIS_BLOCK_DIR =
-    path.resolve(__dirname, '..', process.env.BLOCKCHAIN_CONFIGS_DIR || BlockchainConfigs.BASE_BLOCKCHAIN_CONFIGS_DIR);
-const BlockchainParams = getBlockchainConfig('blockchain_params.json');
-const GenesisToken = BlockchainParams.token;
-// TODO(liayoo): Deprecate GenesisAccounts
-const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
-const GenesisSharding = BlockchainParams.sharding;
-
-BlockchainConfigs.DEBUG = CommonUtil.convertEnvVarInputToBool(process.env.DEBUG);
-BlockchainConfigs.CONSOLE_LOG = CommonUtil.convertEnvVarInputToBool(process.env.CONSOLE_LOG);
-BlockchainConfigs.ENABLE_DEV_CLIENT_SET_API =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_DEV_CLIENT_SET_API);
-BlockchainConfigs.ENABLE_JSON_RPC_TX_API =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_JSON_RPC_TX_API, true);
-BlockchainConfigs.ENABLE_TX_SIG_VERIF_WORKAROUND =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_TX_SIG_VERIF_WORKAROUND);
-BlockchainConfigs.ENABLE_GAS_FEE_WORKAROUND =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_GAS_FEE_WORKAROUND, true);
-BlockchainConfigs.ENABLE_REST_FUNCTION_CALL =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_REST_FUNCTION_CALL);
-BlockchainConfigs.ENABLE_EXPRESS_RATE_LIMIT =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_EXPRESS_RATE_LIMIT, true);
-BlockchainConfigs.ENABLE_EVENT_HANDLER =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_EVENT_HANDLER);
-BlockchainConfigs.ACCOUNT_INDEX = process.env.ACCOUNT_INDEX || null;
-BlockchainConfigs.PORT = process.env.PORT || getPortNumber(8080, 8080);
-BlockchainConfigs.P2P_PORT = process.env.P2P_PORT || getPortNumber(5000, 5000);
-BlockchainConfigs.EVENT_HANDLER_PORT = process.env.EVENT_HANDLER_PORT || getPortNumber(6000, 6000);
-BlockchainConfigs.LIGHTWEIGHT = CommonUtil.convertEnvVarInputToBool(process.env.LIGHTWEIGHT);
-BlockchainConfigs.SYNC_MODE = process.env.SYNC_MODE || 'full';
-BlockchainConfigs.MAX_BLOCK_NUMBERS_FOR_RECEIPTS = process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS ?
-    Number(process.env.MAX_BLOCK_NUMBERS_FOR_RECEIPTS) : 1000;
-BlockchainConfigs.ACCOUNT_INJECTION_OPTION = process.env.ACCOUNT_INJECTION_OPTION || null;
-BlockchainConfigs.KEYSTORE_FILE_PATH = process.env.KEYSTORE_FILE_PATH || null;
-BlockchainConfigs.ENABLE_STATUS_REPORT_TO_TRACKER =
-    CommonUtil.convertEnvVarInputToBool(process.env.ENABLE_STATUS_REPORT_TO_TRACKER, true);
-BlockchainConfigs.DEFAULT_CORS_WHITELIST = [
-  'https://ainetwork\\.ai',
-  'https://ainize\\.ai',
-  'https://afan\\.ai',
-  '\\.ainetwork\\.ai$',
-  '\\.ainize\\.ai$',
-  '\\.afan\\.ai$',
-  'http://localhost:3000',
-];
-// NOTE(liayoo): CORS_WHITELIST env var is a comma-separated list of cors-allowed domains.
-// Note that if it includes '*', it will be set to allow all domains.
-BlockchainConfigs.CORS_WHITELIST = CommonUtil.getCorsWhitelist(process.env.CORS_WHITELIST) || BlockchainConfigs.DEFAULT_CORS_WHITELIST;
-
-BlockchainConfigs.CURRENT_PROTOCOL_VERSION = require('../package.json').version;
-if (!semver.valid(BlockchainConfigs.CURRENT_PROTOCOL_VERSION)) {
+const BlockchainConsts = {
+  // *** Genesis ***
+  BASE_BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/base',
+  // *** Protocol Versions ***
+  CURRENT_PROTOCOL_VERSION: require('../package.json').version,
+  PROTOCOL_VERSIONS: path.resolve(__dirname, '../client/protocol_versions.json'),
+  DATA_PROTOCOL_VERSION: '1.0.0',
+  CONSENSUS_PROTOCOL_VERSION: '1.0.0',
+  // *** Directories & Files ***
+  CHAINS_N2B_DIR_NAME: 'n2b', // Number-to-block directory name.
+  CHAINS_H2N_DIR_NAME: 'h2n', // Hash-to-number directory name.
+  SNAPSHOTS_N2S_DIR_NAME: 'n2s', // Number-to-snapshot directory name.
+  DEBUG_SNAPSHOT_FILE_PREFIX: 'debug_', // Prefix for debug snapshot files.
+};
+if (!semver.valid(BlockchainConsts.CURRENT_PROTOCOL_VERSION)) {
   throw Error('Wrong version format is specified in package.json');
 }
-BlockchainConfigs.PROTOCOL_VERSIONS = path.resolve(__dirname, '../client/protocol_versions.json');
-if (!fs.existsSync(BlockchainConfigs.PROTOCOL_VERSIONS)) {
-  throw Error('Missing protocol versions file: ' + BlockchainConfigs.PROTOCOL_VERSIONS);
+if (!fs.existsSync(BlockchainConsts.PROTOCOL_VERSIONS)) {
+  throw Error('Missing protocol versions file: ' + BlockchainConsts.PROTOCOL_VERSIONS);
+} else {
+  BlockchainConsts.PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(BlockchainConsts.PROTOCOL_VERSIONS));
 }
-BlockchainConfigs.PROTOCOL_VERSION_MAP = JSON.parse(fs.readFileSync(BlockchainConfigs.PROTOCOL_VERSIONS));
-BlockchainConfigs.DATA_PROTOCOL_VERSION = "1.0.0";
-if (!semver.valid(BlockchainConfigs.DATA_PROTOCOL_VERSION)) {
+if (!semver.valid(BlockchainConsts.DATA_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for DATA_PROTOCOL_VERSION');
 }
-BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION = "1.0.0";
-if (!semver.valid(BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION)) {
+if (!semver.valid(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for CONSENSUS_PROTOCOL_VERSION');
 }
-BlockchainConfigs.LOGS_DIR = path.resolve(__dirname, '../logs');
-BlockchainConfigs.BLOCKCHAIN_DATA_DIR = process.env.BLOCKCHAIN_DATA_DIR || path.resolve(__dirname, '../ain_blockchain_data');
-if (!fs.existsSync(BlockchainConfigs.BLOCKCHAIN_DATA_DIR)) {
-  fs.mkdirSync(BlockchainConfigs.BLOCKCHAIN_DATA_DIR, { recursive: true });
+
+// ** Blockchain Params **
+const BlockchainParams = getBlockchainConfig('blockchain_params.json');
+// TODO(liayoo): Deprecate GenesisAccounts
+const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
+// TODO(liayoo): Use on-chain value instead of GenesisToken & GenesisSharding
+const GenesisToken = BlockchainParams.token;
+const GenesisSharding = BlockchainParams.sharding;
+
+// ** Node configs, set for individual nodes by env vars **
+const NodeConfigs = {};
+NodeConfigs.BLOCKCHAIN_CONFIGS_DIR = process.env.BLOCKCHAIN_CONFIGS_DIR || BlockchainConsts.BASE_BLOCKCHAIN_CONFIGS_DIR;
+NodeConfigs.GENESIS_BLOCK_DIR = path.resolve(__dirname, '..', NodeConfigs.BLOCKCHAIN_CONFIGS_DIR);
+/**
+ * Overwriting node_params.json with environment variables.
+ * These parameters are defined in node_params.json, but if specified as environment variables,
+ * the env vars take precedence.
+ * (priority: env var > ${BLOCKCHAIN_CONFIGS_DIR}/node_params.json > ./genesis-configs/base/node_params.json)
+ */
+const NodeParams = getBlockchainConfig('node_params.json');
+function setNodeConfigs() {
+  for (const [param, valFromNodeParams] of Object.entries(NodeParams)) {
+    const valFromEnvVar = process.env[param];
+    if (valFromEnvVar !== undefined) {
+      if (CommonUtil.isBool(valFromNodeParams)) {
+        NodeConfigs[param] = CommonUtil.convertEnvVarInputToBool(valFromEnvVar);
+      } else if (CommonUtil.isIntegerString(valFromEnvVar)) {
+        NodeConfigs[param] = Number(valFromEnvVar);
+      } else {
+        NodeConfigs[param] = valFromEnvVar;
+      }
+    } else {
+      NodeConfigs[param] = valFromNodeParams;
+    }
+  }
+  if (!fs.existsSync(NodeConfigs.BLOCKCHAIN_DATA_DIR)) {
+    fs.mkdirSync(NodeConfigs.BLOCKCHAIN_DATA_DIR, { recursive: true });
+  }
+  NodeConfigs.LOGS_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'logs');
+  NodeConfigs.CHAINS_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'chains');
+  NodeConfigs.SNAPSHOTS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'snapshots');
+  NodeConfigs.KEYS_ROOT_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'keys');
 }
-BlockchainConfigs.CHAINS_DIR = path.resolve(BlockchainConfigs.BLOCKCHAIN_DATA_DIR, 'chains');
-BlockchainConfigs.CHAINS_N2B_DIR_NAME = 'n2b'; // Number-to-block directory name.
-BlockchainConfigs.CHAINS_H2N_DIR_NAME = 'h2n'; // Hash-to-number directory name.
-BlockchainConfigs.CHAINS_N2B_MAX_NUM_FILES = 100000;
-BlockchainConfigs.CHAINS_H2N_HASH_PREFIX_LENGTH = 5;
-BlockchainConfigs.CHAIN_SEGMENT_LENGTH = 20;
-BlockchainConfigs.ON_MEMORY_CHAIN_LENGTH = 10;
-BlockchainConfigs.SNAPSHOTS_ROOT_DIR = path.resolve(BlockchainConfigs.BLOCKCHAIN_DATA_DIR, 'snapshots');
-BlockchainConfigs.SNAPSHOTS_N2S_DIR_NAME = 'n2s'; // Number-to-snapshot directory name.
-BlockchainConfigs.DEBUG_SNAPSHOT_FILE_PREFIX = 'debug_'; // Prefix for debug snapshot files.
-// NOTE(platfowner): Should have a value bigger than ON_MEMORY_CHAIN_LENGTH.
-BlockchainConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER = 1000; // How often the snapshot is generated.
-BlockchainConfigs.MAX_NUM_SNAPSHOTS = 10; // Maximum number of snapshots to be kept.
-BlockchainConfigs.KEYS_ROOT_DIR = path.resolve(BlockchainConfigs.BLOCKCHAIN_DATA_DIR, 'keys');
-BlockchainConfigs.HASH_DELIMITER = '#';
-BlockchainConfigs.VARIABLE_LABEL_PREFIX = '$';
-BlockchainConfigs.STATE_INFO_PREFIX = '#';
-BlockchainConfigs.MILLI_AIN = 10**-3; // 1,000 milliain = 1 ain
-BlockchainConfigs.MICRO_AIN = 10**-6; // 1,000,000 microain = 1 ain
-BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_RATIO = 0.5;
-BlockchainConfigs.APPS_BANDWIDTH_BUDGET_RATIO = 0.45;
-BlockchainConfigs.FREE_BANDWIDTH_BUDGET_RATIO = 0.05;
-BlockchainConfigs.SERVICE_STATE_BUDGET_RATIO = 0.5;
-BlockchainConfigs.APPS_STATE_BUDGET_RATIO = 0.45;
-BlockchainConfigs.FREE_STATE_BUDGET_RATIO = 0.05;
-const bandwidthBudgetPerBlock = BlockchainParams.resource.BANDWIDTH_BUDGET_PER_BLOCK;
-const stateTreeBytesLimit = process.env.STATE_TREE_BYTES_LIMIT ?
-    process.env.STATE_TREE_BYTES_LIMIT : BlockchainParams.resource.STATE_TREE_BYTES_LIMIT; // = Total state budget
-BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * BlockchainConfigs.SERVICE_BANDWIDTH_BUDGET_RATIO;
-BlockchainConfigs.APPS_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * BlockchainConfigs.APPS_BANDWIDTH_BUDGET_RATIO;
-BlockchainConfigs.FREE_BANDWIDTH_BUDGET_PER_BLOCK = bandwidthBudgetPerBlock * BlockchainConfigs.FREE_BANDWIDTH_BUDGET_RATIO;
-BlockchainConfigs.SERVICE_STATE_BUDGET = stateTreeBytesLimit * BlockchainConfigs.SERVICE_STATE_BUDGET_RATIO;
-BlockchainConfigs.APPS_STATE_BUDGET = stateTreeBytesLimit * BlockchainConfigs.APPS_STATE_BUDGET_RATIO;
-BlockchainConfigs.FREE_STATE_BUDGET = stateTreeBytesLimit * BlockchainConfigs.FREE_STATE_BUDGET_RATIO;
-BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE = 0.01;
-BlockchainConfigs.TREE_SIZE_BUDGET = stateTreeBytesLimit * BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE;
-BlockchainConfigs.SERVICE_TREE_SIZE_BUDGET = BlockchainConfigs.SERVICE_STATE_BUDGET * BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE;
-BlockchainConfigs.APPS_TREE_SIZE_BUDGET = BlockchainConfigs.APPS_STATE_BUDGET * BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE;
-BlockchainConfigs.FREE_TREE_SIZE_BUDGET = BlockchainConfigs.FREE_STATE_BUDGET * BlockchainConfigs.MAX_STATE_TREE_SIZE_PER_BYTE;
-BlockchainConfigs.STATE_GAS_COEFFICIENT = 1;
-BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT = 1;
-BlockchainConfigs.ACCOUNT_REGISTRATION_GAS_AMOUNT = 2000;
-BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT = 100;
-BlockchainConfigs.TRAFFIC_DB_INTERVAL_MS = 60000;  // 1 min
-BlockchainConfigs.TRAFFIC_DB_MAX_INTERVALS = 60;  // 1 hour
-BlockchainConfigs.DEFAULT_DEVELOPERS_URL_WHITELIST = [
-  'https://*.ainetwork.ai',
-  'https://*.ainize.ai',
-  'https://*.afan.ai',
-  'http://localhost:3000'
-];
+setNodeConfigs();
 
 // ** Enums **
 /**
@@ -207,6 +153,12 @@ const PredefinedDbPaths = {
   DOT_FUNCTION: '.function',
   DOT_OWNER: '.owner',
   DOT_SHARD: '.shard',
+  // Blockchain Params
+  BLOCKCHAIN_PARAMS: 'blockchain_params',
+  BLOCKCHAIN_PARAMS_CONSENSUS: 'consensus',
+  BLOCKCHAIN_PARAMS_GENESIS: 'genesis',
+  BLOCKCHAIN_PARAMS_RESOURCE: 'resource',
+  BLOCKCHAIN_PARAMS_MAX_FUNCTION_URLS_PER_DEVELOPER: 'max_function_urls_per_developer',
   // Consensus
   CONSENSUS: 'consensus',
   CONSENSUS_BLOCK_HASH: 'block_hash',
@@ -225,12 +177,11 @@ const PredefinedDbPaths = {
   CONSENSUS_VALIDATORS: 'validators',
   CONSENSUS_VOTE: 'vote',
   CONSENSUS_VOTE_NONCE: 'vote_nonce',
-  CONSENSUS_WHITELIST: 'whitelist',
+  CONSENSUS_PROPOSER_WHITELIST: 'proposer_whitelist',
   // Developers
   DEVELOPERS: 'developers',
   DEVELOPERS_REST_FUNCTIONS: 'rest_functions',
   DEVELOPERS_REST_FUNCTIONS_PARAMS: 'params',
-  DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER: 'max_urls_per_developer',
   DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST: 'user_whitelist',
   DEVELOPERS_REST_FUNCTIONS_URL_WHITELIST: 'url_whitelist',
   // Receipts
@@ -492,6 +443,7 @@ function isNativeFunctionId(fid) {
  */
 const ShardingProperties = {
   LATEST_BLOCK_NUMBER: 'latest_block_number',
+  MAX_SHARD_REPORT: 'max_shard_report',
   PARENT_CHAIN_POC: 'parent_chain_poc',
   PROOF_HASH: 'proof_hash',
   PROOF_HASH_MAP: 'proof_hash_map',
@@ -688,90 +640,21 @@ function isAppDependentServiceType(type) {
   return APP_DEPENDENT_SERVICE_TYPES.includes(type);
 }
 
-/**
- * Overwriting environment variables.
- * These parameters are defined in blockchain_params.json, but if specified as environment variables,
- * the env vars take precedence.
- * (priority: base params < blockchain_params.json in BLOCKCHAIN_CONFIGS_DIR < env var)
- */
-const OVERWRITING_BLOCKCHAIN_PARAMS =
-    ['TRACKER_UPDATE_JSON_RPC_URL', 'PEER_CANDIDATE_JSON_RPC_URL', 'HOSTING_ENV'];
-const OVERWRITING_CONSENSUS_PARAMS = ['MIN_NUM_VALIDATORS', 'MAX_NUM_VALIDATORS', 'EPOCH_MS'];
-const OVERWRITING_NETWORK_PARAMS =
-    ['TARGET_NUM_OUTBOUND_CONNECTION', 'MAX_NUM_INBOUND_CONNECTION', 'REQUEST_BODY_SIZE_LIMIT'];
-
-function overwriteBlockchainParams(overwritingParams, type) {
-  for (const key of overwritingParams) {
-    const env = process.env[key];
-    if (env !== undefined) {
-      if (CommonUtil.isIntegerString(env)) {
-        BlockchainParams[type][key] = Number(env);
-      } else {
-        BlockchainParams[type][key] = env;
-      }
-    }
-  }
-
-  if (type === 'consensus') {
-    const whitelist = BlockchainParams.consensus.GENESIS_WHITELIST;
-    const validators = BlockchainParams.consensus.GENESIS_VALIDATORS;
-    // NOTE(liayoo): Modify genesis whitelist & validators iff MIN_NUM_VALIDATORS < current number of GENESIS_VALIDATORS.
-    // This is mainly to support local testing & integration/unit tests with smaller number of validators.
-    const addresses = Object.keys(validators);
-    for (let i = BlockchainParams.consensus.MIN_NUM_VALIDATORS; i < addresses.length; i++) {
-      const addr = addresses[i];
-      delete whitelist[addr];
-      delete validators[addr];
-    }
-    BlockchainParams.consensus.GENESIS_WHITELIST = whitelist;
-    BlockchainParams.consensus.GENESIS_VALIDATORS = validators;
-  }
-}
-
-overwriteBlockchainParams(OVERWRITING_BLOCKCHAIN_PARAMS, 'blockchain');
-overwriteBlockchainParams(OVERWRITING_CONSENSUS_PARAMS, 'consensus');
-// NOTE(minsulee2, liayoo, platfowner): As we discussed, the initial values for the OUTBOUND
-// and INBOUND are fixed as 3 and 6.
-overwriteBlockchainParams(OVERWRITING_NETWORK_PARAMS, 'network');
-
-function setBlockchainConfigs(params) {
-  for (const key in params) {
-    BlockchainConfigs[key] = params[key];
-  }
-}
-
-setBlockchainConfigs(BlockchainParams.blockchain);
-setBlockchainConfigs(BlockchainParams.genesis);
-setBlockchainConfigs(BlockchainParams.consensus);
-setBlockchainConfigs(BlockchainParams.resource);
-setBlockchainConfigs(BlockchainParams.network);
-
-/**
- * Port number helper.
- * @param {number} defaultValue
- * @param {number} baseValue
- */
-function getPortNumber(defaultValue, baseValue) {
-  if (BlockchainParams.blockchain.HOSTING_ENV === 'local') {
-    return Number(baseValue) + (BlockchainConfigs.ACCOUNT_INDEX !== null ? Number(BlockchainConfigs.ACCOUNT_INDEX) + 1 : 0);
-  }
-  return defaultValue;
-}
-
 function getBlockchainConfig(filename) {
   let config = null;
-  if (BlockchainConfigs.CUSTOM_BLOCKCHAIN_CONFIGS_DIR) {
-    const configPath = path.resolve(__dirname, '..', BlockchainConfigs.CUSTOM_BLOCKCHAIN_CONFIGS_DIR, filename);
+  if (process.env.BLOCKCHAIN_CONFIGS_DIR) {
+    const configPath = path.resolve(__dirname, '..', process.env.BLOCKCHAIN_CONFIGS_DIR, filename);
     if (fs.existsSync(configPath)) {
       config = JSON.parse(fs.readFileSync(configPath));
     }
   }
   if (!config) {
-    const configPath = path.resolve(__dirname, '..', BlockchainConfigs.BASE_BLOCKCHAIN_CONFIGS_DIR, filename);
-    if (fs.existsSync(configPath)) {
-      config = JSON.parse(fs.readFileSync(configPath));
+    const defaultConfigPath = path.resolve(
+        __dirname, '..', BlockchainConsts.BASE_BLOCKCHAIN_CONFIGS_DIR, filename);
+    if (fs.existsSync(defaultConfigPath)) {
+      config = JSON.parse(fs.readFileSync(defaultConfigPath));
     } else {
-      throw Error(`Missing blockchain config file: ${configPath}`);
+      throw Error(`Missing blockchain config file: ${defaultConfigPath}`);
     }
   }
   return config;
@@ -795,11 +678,12 @@ function buildRulePermission(rule) {
 }
 
 const trafficStatsManager = new TrafficStatsManager(
-    BlockchainConfigs.TRAFFIC_DB_INTERVAL_MS, BlockchainConfigs.TRAFFIC_DB_MAX_INTERVALS, DevFlags.enableTrafficMonitoring);
+    NodeConfigs.TRAFFIC_DB_INTERVAL_MS, NodeConfigs.TRAFFIC_DB_MAX_INTERVALS, DevFlags.enableTrafficMonitoring);
 
 module.exports = {
   DevFlags,
-  BlockchainConfigs,
+  BlockchainConsts,
+  NodeConfigs,
   MessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,

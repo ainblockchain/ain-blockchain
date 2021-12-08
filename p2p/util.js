@@ -1,3 +1,5 @@
+// TODO(liayoo): Make the functions in this file static.
+
 /**
  * This file contains utility functions for shard reporters to communicate with
  * the parent_chain_poc through API calls. In the future, these should be refactored
@@ -7,8 +9,9 @@ const logger = new (require('../logger'))('SERVER_UTIL');
 
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const { BlockchainConfigs } = require('../common/constants');
+const { BlockchainConsts, NodeConfigs } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
+const DB = require('../db');
 
 function _isValidMessage(message) {
   const body = _.get(message, 'data.body');
@@ -57,7 +60,8 @@ function signMessage(messageBody, privateKey) {
     logger.error('The private key is not optional but mandatory or worng private key is typed.');
     return null;
   }
-  return ainUtil.ecSignMessage(JSON.stringify(messageBody), privateKeyBuffer);
+  const chainId = DB.getBlockchainParam('genesis/chain_id');
+  return ainUtil.ecSignMessage(JSON.stringify(messageBody), privateKeyBuffer, chainId);
 }
 
 function getAddressFromMessage(message) {
@@ -73,7 +77,8 @@ function verifySignedMessage(message, address) {
   if (!_isValidMessage(message)) {
     return null;
   } else {
-    return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address);
+    const chainId = DB.getBlockchainParam('genesis/chain_id');
+    return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address, chainId);
   }
 }
 
@@ -87,11 +92,11 @@ function encapsulateMessage(type, dataObj) {
     return null;
   }
   const message = {
-    type: type,
+    type,
     data: dataObj,
-    protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
-    dataProtoVer: BlockchainConfigs.DATA_PROTOCOL_VERSION,
-    networkId: BlockchainConfigs.NETWORK_ID,
+    protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+    dataProtoVer: BlockchainConsts.DATA_PROTOCOL_VERSION,
+    networkId: DB.getBlockchainParam('genesis/network_id'),
     timestamp: Date.now()
   };
   return message;
@@ -102,19 +107,11 @@ function checkTimestamp(timestamp) {
     return false;
   } else {
     const now = Date.now();
-    if (now - timestamp > BlockchainConfigs.P2P_MESSAGE_TIMEOUT_MS) {
+    if (now - timestamp > NodeConfigs.P2P_MESSAGE_TIMEOUT_MS) {
       return false;
     } else {
       return true;
     }
-  }
-}
-
-function isValidNetworkId(networkId) {
-  if (networkId !== BlockchainConfigs.NETWORK_ID) {
-    return false;
-  } else {
-    return true;
   }
 }
 
@@ -127,5 +124,4 @@ module.exports = {
   closeSocketSafe,
   checkTimestamp,
   encapsulateMessage,
-  isValidNetworkId
 };

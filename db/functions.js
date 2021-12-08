@@ -5,7 +5,7 @@ const _ = require('lodash');
 const matchUrl = require('match-url-wildcard');
 const {
   DevFlags,
-  BlockchainConfigs,
+  NodeConfigs,
   PredefinedDbPaths,
   FunctionTypes,
   NativeFunctionIds,
@@ -89,7 +89,8 @@ class Functions {
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
   triggerFunctions(
-      parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime) {
+      parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
+      accountRegistrationGasAmount, restFunctionCallGasAmount) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
@@ -145,11 +146,12 @@ class Functions {
                     timestamp,
                     executedAt,
                     transaction,
-                    blockNumber, 
+                    blockNumber,
                     blockTime,
                     auth: newAuth,
                     opResultList: [],
                     otherGasAmount: 0,
+                    accountRegistrationGasAmount,
                   });
               funcResults[functionEntry.function_id] = result;
               if (DevFlags.enableRichFunctionLogging) {
@@ -173,7 +175,7 @@ class Functions {
             }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
             matchUrl(functionEntry.function_url, this.db.getRestFunctionsUrlWhitelist())) {
             if (DevFlags.enableRichFunctionLogging) {
               logger.info(
@@ -185,7 +187,7 @@ class Functions {
               function: functionEntry,
               transaction,
             }, {
-              timeout: BlockchainConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
+              timeout: NodeConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
             }).catch((error) => {
               if (DevFlags.enableRichFunctionLogging) {
                 logger.error(
@@ -199,7 +201,7 @@ class Functions {
             }));
             funcResults[functionEntry.function_id] = {
               code: FunctionResultCode.SUCCESS,
-              bandwidth_gas_amount: BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT,
+              bandwidth_gas_amount: restFunctionCallGasAmount,
             };
             triggerCount++;
           }
@@ -390,7 +392,8 @@ class Functions {
 
   setOwnerOrLog(ownerPath, owner, context) {
     const auth = context.auth;
-    const result = this.db.setOwner(ownerPath, owner, auth);
+    const blockNumber = context.blockNumber;
+    const result = this.db.setOwner(ownerPath, owner, auth, blockNumber);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setOwner on '${ownerPath}' with error: ${JSON.stringify(result)}`);
@@ -401,7 +404,8 @@ class Functions {
 
   setRuleOrLog(rulePath, rule, context) {
     const auth = context.auth;
-    const result = this.db.setRule(rulePath, rule, auth);
+    const blockNumber = context.blockNumber;
+    const result = this.db.setRule(rulePath, rule, auth, blockNumber);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setRule on '${rulePath}' with error: ${JSON.stringify(result)}`);
@@ -517,7 +521,7 @@ class Functions {
     }
     const toBalance = this.db.getValue(toBalancePath);
     if (toBalance === null) {
-      extraGasAmount = BlockchainConfigs.ACCOUNT_REGISTRATION_GAS_AMOUNT;
+      extraGasAmount = context.accountRegistrationGasAmount;
     }
     const decResult = this.decValueOrLog(fromBalancePath, value, context);
     if (CommonUtil.isFailedTx(decResult)) {

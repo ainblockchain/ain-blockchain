@@ -4,9 +4,10 @@ const BlockchainNode = require('../node');
 const VersionUtil = require('../common/version-util');
 const P2pClient = require('../p2p');
 const {
-  BlockchainConfigs,
-  BlockchainParams,
-  P2pNetworkStates
+  BlockchainConsts,
+  NodeConfigs,
+  P2pNetworkStates,
+  BlockchainParams
 } = require('../common/constants');
 const { setNodeForTesting } = require('./test-util');
 const { getIpAddress } = require('../common/network-util');
@@ -14,8 +15,8 @@ const { getIpAddress } = require('../common/network-util');
 const expect = chai.expect;
 const assert = chai.assert;
 
-const { min, max } = VersionUtil.matchVersions(BlockchainConfigs.PROTOCOL_VERSION_MAP, BlockchainConfigs.CURRENT_PROTOCOL_VERSION);
-const minProtocolVersion = min === undefined ? BlockchainConfigs.CURRENT_PROTOCOL_VERSION : min;
+const { min, max } = VersionUtil.matchVersions(BlockchainConsts.PROTOCOL_VERSION_MAP, BlockchainConsts.CURRENT_PROTOCOL_VERSION);
+const minProtocolVersion = min === undefined ? BlockchainConsts.CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 
 describe("P2P", () => {
@@ -24,7 +25,7 @@ describe("P2P", () => {
   let p2pServer;
 
   before(async () => {
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
     setNodeForTesting(node, 0, true, true);
@@ -36,7 +37,7 @@ describe("P2P", () => {
   after(() => {
     p2pClient.stop();
 
-    rimraf.sync(BlockchainConfigs.CHAINS_DIR);
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
   });
 
   describe("Server Status", () => {
@@ -73,10 +74,10 @@ describe("P2P", () => {
     describe("buildUrls", () => {
       it("builds both internal and external ip addresses", () => {
         const intIp = p2pServer.getInternalIp();
-        const actualP2pUrl = new URL(`ws://${intIp}:${BlockchainConfigs.P2P_PORT}`);
+        const actualP2pUrl = new URL(`ws://${intIp}:${NodeConfigs.P2P_PORT}`);
         const stringP2pUrl = actualP2pUrl.toString();
         actualP2pUrl.protocol = 'http:';
-        actualP2pUrl.port = BlockchainConfigs.PORT;
+        actualP2pUrl.port = NodeConfigs.PORT;
         const actualClientApiUrl = actualP2pUrl.toString();
         actualP2pUrl.pathname = 'json-rpc';
         const actualJsonRpcUrl = actualP2pUrl.toString();
@@ -105,15 +106,15 @@ describe("P2P", () => {
           ip: extIp,
           p2p: {
             url: urls.p2pUrl,
-            port: BlockchainConfigs.P2P_PORT,
+            port: NodeConfigs.P2P_PORT,
           },
           clientApi: {
             url: urls.clientApiUrl,
-            port: BlockchainConfigs.PORT,
+            port: NodeConfigs.PORT,
           },
           jsonRpc: {
             url: urls.jsonRpcUrl,
-            port: BlockchainConfigs.PORT,
+            port: NodeConfigs.PORT,
           }
         }
         assert.deepEqual(expected, p2pServer.initUrls());
@@ -147,9 +148,9 @@ describe("P2P", () => {
         assert.deepEqual(p2pServer.getProtocolInfo(), {
           COMPATIBLE_MAX_PROTOCOL_VERSION: maxProtocolVersion,
           COMPATIBLE_MIN_PROTOCOL_VERSION: minProtocolVersion,
-          CONSENSUS_PROTOCOL_VERSION: BlockchainConfigs.CONSENSUS_PROTOCOL_VERSION,
-          CURRENT_PROTOCOL_VERSION: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
-          DATA_PROTOCOL_VERSION: BlockchainConfigs.DATA_PROTOCOL_VERSION
+          CONSENSUS_PROTOCOL_VERSION: BlockchainConsts.CONSENSUS_PROTOCOL_VERSION,
+          CURRENT_PROTOCOL_VERSION: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          DATA_PROTOCOL_VERSION: BlockchainConsts.DATA_PROTOCOL_VERSION
         });
       });
     });
@@ -181,7 +182,7 @@ describe("P2P", () => {
         const actual = p2pServer.getBlockStatus();
         delete actual.elapsedTimeMs;
         assert.deepEqual(actual, {
-          number: 0, epoch: 0, timestamp: BlockchainConfigs.GENESIS_TIMESTAMP
+          number: 0, epoch: 0, timestamp: BlockchainParams.genesis.genesis_timestamp
         });
       });
     });
@@ -329,8 +330,8 @@ describe("P2P", () => {
       it("shows initial values of connection status", () => {
         assert.deepEqual(p2pClient.getConnectionStatus(), {
           p2pState: P2pNetworkStates.STARTING,
-          maxInbound: BlockchainConfigs.MAX_NUM_INBOUND_CONNECTION,
-          targetOutBound: BlockchainConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
+          maxInbound: NodeConfigs.MAX_NUM_INBOUND_CONNECTION,
+          targetOutBound: NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
           numInbound: 0,
           numOutbound: 0,
           incomingPeers: [],
