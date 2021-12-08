@@ -92,8 +92,8 @@ function addBlock(node, txs, votes, validators) {
 }
 
 async function waitUntilTxFinalized(servers, txHash) {
-  const MAX_ITERATION = 100;
-  const SLEEP_TIME_MS = 1000;
+  const MAX_ITERATION = 200;
+  const SLEEP_TIME_MS = 500;
   let iterCount = 0;
   const unchecked = new Set(servers);
   while (true) {
