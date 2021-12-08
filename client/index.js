@@ -20,6 +20,7 @@ const {
   trafficStatsManager,
   NodeConfigs,
 } = require('../common/constants');
+const { DevClientApiResultCode } = require('../common/result-code');
 
 const MAX_BLOCKS = 20;
 
@@ -113,7 +114,10 @@ app.get('/get_value', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -124,7 +128,10 @@ app.get('/get_function', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -135,7 +142,10 @@ app.get('/get_rule', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -146,7 +156,10 @@ app.get('/get_owner', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -160,7 +173,10 @@ app.get('/get_state_proof', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -174,7 +190,10 @@ app.get('/get_proof_hash', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -188,7 +207,10 @@ app.get('/get_state_info', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -202,7 +224,10 @@ app.get('/get_state_usage', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -213,7 +238,10 @@ app.get('/match_function', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -224,7 +252,10 @@ app.get('/match_rule', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -235,7 +266,10 @@ app.get('/match_owner', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -256,7 +290,10 @@ app.post('/eval_rule', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -276,7 +313,10 @@ app.post('/eval_owner', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -287,7 +327,10 @@ app.post('/get', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -300,7 +343,11 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
       .end();
   });
 
@@ -312,7 +359,11 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
       .end();
   });
 
@@ -324,7 +375,11 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
       .end();
   });
 
@@ -336,7 +391,11 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
       .end();
   });
 
@@ -348,7 +407,11 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
       .end();
   });
 
@@ -360,7 +423,11 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
       .end();
   });
 
@@ -373,7 +440,11 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({ code: CommonUtil.isFailedTx(result.result) ? 1 : 0, result })
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
       .end();
   });
 
@@ -384,7 +455,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({ code: 0, result })
+      .send({ code: DevClientApiResultCode.SUCCESS, result })
       .end();
   });
 
@@ -394,7 +465,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({ code: 0, result: node.createTransaction(req.body) })
+      .send({ code: DevClientApiResultCode.SUCCESS, result: node.createTransaction(req.body) })
       .end();
   })
 
@@ -405,7 +476,7 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
     trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
     res.status(200)
       .set('Content-Type', 'application/json')
-      .send({ code: 0, result: true })
+      .send({ code: DevClientApiResultCode.SUCCESS, result: true })
       .end();
   });
 }
@@ -417,7 +488,7 @@ app.get('/status', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -428,7 +499,7 @@ app.get('/node_status', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -439,7 +510,7 @@ app.get('/connection_status', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 })
 
@@ -450,7 +521,7 @@ app.get('/client_status', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 })
 
@@ -463,7 +534,7 @@ app.get('/blocks', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -474,7 +545,7 @@ app.get('/last_block', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -485,7 +556,7 @@ app.get('/last_block_number', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -496,7 +567,7 @@ app.get('/tx_pool', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -507,7 +578,7 @@ app.get('/tx_tracker', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -518,7 +589,7 @@ app.get('/committed_nonce_tracker', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -529,7 +600,7 @@ app.get('/pending_nonce_tracker', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -540,7 +611,7 @@ app.get('/protocol_versions', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -551,7 +622,7 @@ app.get('/state_versions', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -563,7 +634,7 @@ app.get('/get_final_state_snapshot', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -575,7 +646,7 @@ app.get('/get_final_radix_snapshot', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -587,7 +658,7 @@ app.get('/tx_pool_size_util', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result: txPoolSizeUtil })
+    .send({ code: DevClientApiResultCode.SUCCESS, result: txPoolSizeUtil })
     .end();
 });
 
@@ -598,7 +669,7 @@ app.get('/get_transaction', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result: transactionInfo })
+    .send({ code: DevClientApiResultCode.SUCCESS, result: transactionInfo })
     .end();
 });
 
@@ -609,7 +680,7 @@ app.get('/get_block_by_hash', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result: block })
+    .send({ code: DevClientApiResultCode.SUCCESS, result: block })
     .end();
 });
 
@@ -620,7 +691,7 @@ app.get('/get_block_by_number', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result: block })
+    .send({ code: DevClientApiResultCode.SUCCESS, result: block })
     .end();
 });
 
@@ -631,7 +702,7 @@ app.get('/get_block_info_by_number', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result: blockInfo })
+    .send({ code: DevClientApiResultCode.SUCCESS, result: blockInfo })
     .end();
 });
 
@@ -642,7 +713,7 @@ app.get('/get_address', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -653,7 +724,7 @@ app.get('/get_nonce', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -664,7 +735,7 @@ app.get('/get_timestamp', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -675,7 +746,10 @@ app.get('/get_sharding', (req, res, next) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: result !== null ? 0 : 1, result })
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
     .end();
 });
 
@@ -686,7 +760,7 @@ app.get('/get_raw_consensus_status', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -697,7 +771,7 @@ app.get('/get_consensus_status', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -708,7 +782,7 @@ app.get('/get_network_id', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -719,7 +793,7 @@ app.get('/get_chain_id', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 
@@ -730,7 +804,7 @@ app.get('/get_config', (req, res) => {
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
     .set('Content-Type', 'application/json')
-    .send({ code: 0, result })
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
     .end();
 });
 

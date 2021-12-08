@@ -17,12 +17,12 @@ const {
   PredefinedDbPaths,
   StateVersions,
 } = require('../common/constants');
+const { ConsensusErrorCode } = require('../common/result-code');
 const {
   ConsensusMessageTypes,
   ConsensusConsts,
   ConsensusStates,
   ValidatorOffenseTypes,
-  ConsensusErrorCode,
 } = require('./constants');
 const CommonUtil = require('../common/common-util');
 const ConsensusUtil = require('./consensus-util');
@@ -800,7 +800,7 @@ class Consensus {
 
   /**
    * Performs various checks on the proposalBlock and proposalTx. Throws ConsensusError if a check
-   * fails. If the ConsensusError's code is one of the `ConsensusErrorCodesToVoteAgainst`,
+   * fails. If the ConsensusError's code is one of the `ConsensusErrorCodeSetToVoteAgainst`,
    * the node will try to vote against the block.
    * @param {Block} proposalBlock
    * @param {Transaction} proposalTx

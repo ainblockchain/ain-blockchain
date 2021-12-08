@@ -491,7 +491,7 @@ describe('Native Function', () => {
             nonce: -1,
           }}).body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 403,
+            "code": 10403,
             "error_message": "Trying to write owner-only function: _transfer",
             "bandwidth_gas_amount": 1,
             "gas_amount_charged": 0,
@@ -528,17 +528,17 @@ describe('Native Function', () => {
             nonce: -1,
           }}).body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 105,
+            "code": 10105,
             "error_message": "Triggered function call failed",
             "func_results": {
               "_saveLastTx": {
-                "code": 1,
+                "code": 20001,
                 "bandwidth_gas_amount": 0,
                 "op_results": {
                   "0": {
                     "path": "/apps/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value",
                     "result": {
-                      "code": 103,
+                      "code": 10103,
                       "error_message": "No write permission on: /apps/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value",
                       "bandwidth_gas_amount": 1,
                     }
@@ -561,7 +561,7 @@ describe('Native Function', () => {
             },
             "gas_cost_total": 0,
           });
-          assert.deepEqual(body.code, 1);
+          assert.deepEqual(body.code, 40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -635,17 +635,17 @@ describe('Native Function', () => {
             nonce: -1,
           }}).body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 105,
+            "code": 10105,
             "error_message": "Triggered function call failed",
             "func_results": {
               "_saveLastTx": {
-                "code": 1,
+                "code": 20001,
                 "bandwidth_gas_amount": 0,
                 "op_results": {
                   "0": {
                     "path": "/apps/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value",
                     "result": {
-                      "code": 103,
+                      "code": 10103,
                       "error_message": "No write permission on: /apps/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value",
                       "bandwidth_gas_amount": 1,
                     }
@@ -668,7 +668,7 @@ describe('Native Function', () => {
             },
             "gas_cost_total": 0,
           });
-          assert.deepEqual(body.code, 1);
+          assert.deepEqual(body.code, 40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -742,17 +742,17 @@ describe('Native Function', () => {
             nonce: -1,
           }}).body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 105,
+            "code": 10105,
             "error_message": "Triggered function call failed",
             "func_results": {
               "_setOwnerConfig": {
-                "code": 1,
+                "code": 20001,
                 "bandwidth_gas_amount": 0,
                 "op_results": {
                   "0": {
                     "path": "/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value",
                     "result": {
-                      "code": 603,
+                      "code": 10603,
                       "error_message": "No write_owner or branch_owner permission on: /apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value",
                       "bandwidth_gas_amount": 1,
                     }
@@ -775,7 +775,7 @@ describe('Native Function', () => {
             },
             "gas_cost_total": 0,
           });
-          assert.deepEqual(body.code, 1);
+          assert.deepEqual(body.code, 40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -863,7 +863,7 @@ describe('Native Function', () => {
           },
           "gas_cost_total": 0,
           "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
-          "code": 103,
+          "code": 10103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
         });
@@ -890,7 +890,7 @@ describe('Native Function', () => {
           },
           "gas_cost_total": 0,
           "error_message": "No write permission on: /developers/rest_functions/user_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
-          "code": 103,
+          "code": 10103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
         });
@@ -981,7 +981,7 @@ describe('Native Function', () => {
           },
           "gas_cost_total": 0,
           "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
-          "code": 103,
+          "code": 10103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
         });
@@ -1039,7 +1039,7 @@ describe('Native Function', () => {
           },
           "gas_cost_total": 0,
           "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/3",
-          "code": 103,
+          "code": 10103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
         });
@@ -1118,7 +1118,7 @@ describe('Native Function', () => {
           },
           "gas_cost_total": 0,
           "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0xAAAf6f50A0304F12119D218b94bea8082642515B/0",
-          "code": 103,
+          "code": 10103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
         });
@@ -1285,7 +1285,7 @@ describe('Native Function', () => {
             nonce: -1,
             timestamp,
           }}).body.toString('utf-8'));
-          assert.deepEqual(body.code, 1);  // Should fail.
+          assert.deepEqual(body.code, 40001);  // Should fail.
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -1464,7 +1464,7 @@ describe('Native Function', () => {
             nonce: -1,
             timestamp,
           }}).body.toString('utf-8'));
-          assert.deepEqual(body.code, 1);  // Should fail.
+          assert.deepEqual(body.code, 40001);  // Should fail.
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -1562,11 +1562,11 @@ describe('Native Function', () => {
         }}).body.toString('utf-8')).result;
         assert.deepEqual(createAppRes, {
           "result": {
-            "code": 105,
+            "code": 10105,
             "error_message": "Triggered function call failed",
             "func_results": {
               "_createApp": {
-                "code": 300,
+                "code": 20301,
                 "bandwidth_gas_amount": 0
               }
             },
@@ -2026,7 +2026,7 @@ describe('Native Function', () => {
           ref: transferPath + '/2/value',
           value: fromBeforeBalance + 1
         }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
+        expect(body.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2047,7 +2047,7 @@ describe('Native Function', () => {
           ref: transferPath + '/3/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
+        expect(body.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2064,7 +2064,7 @@ describe('Native Function', () => {
           ref: transferPath + '/1/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
+        expect(body.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2076,7 +2076,7 @@ describe('Native Function', () => {
           ref: transferPathSameAddrs + '/4/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
+        expect(body.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2089,7 +2089,7 @@ describe('Native Function', () => {
           ref: transferPathFromLowerCase + '/101/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        expect(bodyFromLowerCase.code).to.equals(1);
+        expect(bodyFromLowerCase.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(bodyFromLowerCase, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2100,7 +2100,7 @@ describe('Native Function', () => {
           ref: transferPathToLowerCase + '/102/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        expect(bodyToLowerCase.code).to.equals(1);
+        expect(bodyToLowerCase.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(bodyToLowerCase, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2111,7 +2111,7 @@ describe('Native Function', () => {
           ref: transferPathFromUpperCase + '/103/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        expect(bodyFromUpperCase.code).to.equals(1);
+        expect(bodyFromUpperCase.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(bodyFromUpperCase, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2122,7 +2122,7 @@ describe('Native Function', () => {
           ref: transferPathToUpperCase + '/104/value',
           value: transferAmount
         }}).body.toString('utf-8'));
-        expect(bodyToUpperCase.code).to.equals(1);
+        expect(bodyToUpperCase.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(bodyToUpperCase, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2203,10 +2203,10 @@ describe('Native Function', () => {
           timestamp: 1234567890000,
         }}).body.toString('utf-8'));
         assert.deepEqual(body, {
-          "code": 1,
+          "code": 40001,
           "result": {
             "result": {
-              "code": 103,
+              "code": 10103,
               "error_message": "No write permission on: /transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/invalid_service_type|test_service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1/value",
               "bandwidth_gas_amount": 1,
               "gas_amount_charged": 1,
@@ -2347,7 +2347,7 @@ describe('Native Function', () => {
             ref: stakePath + '/2/value',
             value: beforeBalance + 1
           }}).body.toString('utf-8'));
-          expect(body.code).to.equals(1);
+          expect(body.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -2366,7 +2366,7 @@ describe('Native Function', () => {
             ref: `${stakePath}/3/value`,
             value: stakeAmount
           }}).body.toString('utf-8'));
-          expect(body.code).to.equals(1);
+          expect(body.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -2383,7 +2383,7 @@ describe('Native Function', () => {
             ref: stakePath + '/1/value',
             value: stakeAmount
           }}).body.toString('utf-8'));
-          expect(body.code).to.equals(1);
+          expect(body.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -2396,7 +2396,7 @@ describe('Native Function', () => {
             ref: stakePathLowerCase + '/101/value',
             value: stakeAmount
           }}).body.toString('utf-8'));
-          expect(bodyLowerCase.code).to.equals(1);
+          expect(bodyLowerCase.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(bodyLowerCase, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -2407,7 +2407,7 @@ describe('Native Function', () => {
             ref: stakePathUpperCase + '/102/value',
             value: stakeAmount
           }}).body.toString('utf-8'));
-          expect(bodyUpperCase.code).to.equals(1);
+          expect(bodyUpperCase.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(bodyUpperCase, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -2425,7 +2425,7 @@ describe('Native Function', () => {
             ref: `${unstakePath}/1/value`,
             value: stakeAmount
           }}).body.toString('utf-8'));
-          expect(body.code).to.equals(1);
+          expect(body.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -2450,7 +2450,7 @@ describe('Native Function', () => {
             ref: `${unstakePath}/1/value`,
             value: beforeStakingAccountBalance + 1
           }}).body.toString('utf-8'));
-          expect(body.code).to.equals(1);
+          expect(body.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -2587,7 +2587,7 @@ describe('Native Function', () => {
                 amount: 100
               }
             }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
+        expect(body.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2601,7 +2601,7 @@ describe('Native Function', () => {
             amount: 0
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
+        expect(body.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2615,7 +2615,7 @@ describe('Native Function', () => {
             amount: 'test'
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
+        expect(body.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2631,7 +2631,7 @@ describe('Native Function', () => {
             amount: adminBalance + 1
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
+        expect(body.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2722,7 +2722,7 @@ describe('Native Function', () => {
                 target: serviceAdmin
               }
             }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
+        expect(body.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2740,7 +2740,7 @@ describe('Native Function', () => {
             target: serviceAdmin
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
+        expect(body.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2758,7 +2758,7 @@ describe('Native Function', () => {
             target: 'INVALID_TARGET'
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equals(1);
+        expect(body.code).to.equals(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -3007,7 +3007,7 @@ describe('Native Function', () => {
               }
             }
           }}).body.toString('utf-8'));
-          expect(body.code).to.equals(1);
+          expect(body.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -3024,7 +3024,7 @@ describe('Native Function', () => {
               amount: userBalanceBefore
             }
           }}).body.toString('utf-8'));
-          expect(body.code).to.equals(1);
+          expect(body.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -3113,7 +3113,7 @@ describe('Native Function', () => {
               ratio: 1
             }
           }}).body.toString('utf-8'));
-          expect(body.code).to.equals(1);
+          expect(body.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -3128,7 +3128,7 @@ describe('Native Function', () => {
               ratio: -1
             }
           }}).body.toString('utf-8'));
-          expect(body.code).to.equals(1);
+          expect(body.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -3143,7 +3143,7 @@ describe('Native Function', () => {
               ratio: 1.1
             }
           }}).body.toString('utf-8'));
-          expect(body.code).to.equals(1);
+          expect(body.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -3306,7 +3306,7 @@ describe('Native Function', () => {
               amount: paymentBalanceBefore
             }
           }}).body.toString('utf-8'));
-          expect(body.code).to.equals(1);
+          expect(body.code).to.equals(40001);
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
@@ -3560,7 +3560,7 @@ describe('Native Function', () => {
             fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -3590,7 +3590,7 @@ describe('Native Function', () => {
             fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -3621,7 +3621,7 @@ describe('Native Function', () => {
             fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -3652,7 +3652,7 @@ describe('Native Function', () => {
             fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -3683,7 +3683,7 @@ describe('Native Function', () => {
             fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -3713,7 +3713,7 @@ describe('Native Function', () => {
             fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -3743,7 +3743,7 @@ describe('Native Function', () => {
             fee_rate: checkoutFeeRate,
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -3875,7 +3875,7 @@ describe('Native Function', () => {
             }
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -4041,7 +4041,7 @@ describe('Native Function', () => {
                 fee_rate: checkoutFeeRate,
               },
               response: {
-                status: 1,
+                status: 20001,
                 tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c',
                 error_message: 'Ethereum tx failed'
               }
@@ -4219,7 +4219,7 @@ describe('Native Function', () => {
             sender: ethAddress
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -4249,7 +4249,7 @@ describe('Native Function', () => {
             sender: ethAddress
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -4279,7 +4279,7 @@ describe('Native Function', () => {
             sender: ethAddress
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -4309,7 +4309,7 @@ describe('Native Function', () => {
             sender: ethAddress
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -4338,7 +4338,7 @@ describe('Native Function', () => {
             sender: ethAddress.toLowerCase()
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -4442,7 +4442,7 @@ describe('Native Function', () => {
             sender: ethAddress
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -4471,7 +4471,7 @@ describe('Native Function', () => {
             sender: ethAddress
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -4500,7 +4500,7 @@ describe('Native Function', () => {
             }
           }
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -4697,7 +4697,7 @@ describe('Native Function', () => {
                 sender: ethAddress
               },
               response: {
-                status: 1,
+                status: 20001,
                 tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c',
                 error_message: 'Ethereum tx failed'
               }
@@ -4806,7 +4806,7 @@ describe('Native Function', () => {
           ref: `${checkinRequestBasePath}/${serviceUser}/1`,
           value: null
         }}).body.toString('utf-8'));
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }

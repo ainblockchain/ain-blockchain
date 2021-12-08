@@ -971,28 +971,48 @@ describe('Blockchain Node', () => {
     });
 
     describe('ain_checkProtocolVersion api', () => {
-      it('checks protocol versions correctly', () => {
-        return new Promise((resolve, reject) => {
-          const client = jayson.client.http(server1 + '/json-rpc');
-          let promises = [];
-          promises.push(client.request('ain_checkProtocolVersion', {}));
-          promises.push(client.request('ain_checkProtocolVersion', {protoVer: 'a.b.c'}));
-          promises.push(client.request('ain_checkProtocolVersion', {protoVer: 0}));
-          promises.push(client.request('ain_checkProtocolVersion', {protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION}));
-          promises.push(client.request('ain_checkProtocolVersion', {protoVer: '0.0.1'}));
-          Promise.all(promises).then(res => {
-            expect(res[0].result.code).to.equal(1);
-            expect(res[0].result.message).to.equal("Protocol version not specified.");
-            expect(res[1].result.code).to.equal(1);
-            expect(res[1].result.message).to.equal("Invalid protocol version.");
-            expect(res[2].result.code).to.equal(1);
-            expect(res[2].result.message).to.equal("Incompatible protocol version.");
-            expect(res[3].result.code).to.equal(0);
-            expect(res[3].result.result).to.equal("Success");
-            expect(res[4].result.code).to.equal(1);
-            expect(res[4].result.message).to.equal("Incompatible protocol version.");
-            resolve();
-          })
+      it('returns success code', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_checkProtocolVersion', { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
+        .then(res => {
+          expect(res.result.code).to.equal(0);
+          expect(res.result.result).to.equal("Success");
+        });
+      });
+
+      it('returns version not specified code', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_checkProtocolVersion', {})
+        .then(res => {
+          expect(res.result.code).to.equal(30101);
+          expect(res.result.message).to.equal("Protocol version not specified.");
+        });
+      });
+
+      it('returns invalid version code', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_checkProtocolVersion', { protoVer: 'a.b.c' })
+        .then(res => {
+          expect(res.result.code).to.equal(30102);
+          expect(res.result.message).to.equal("Invalid protocol version.");
+        });
+      });
+
+      it('returns incompatible version code for ill-formatted version', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_checkProtocolVersion', { protoVer: 0 })
+        .then(res => {
+          expect(res.result.code).to.equal(30103);
+          expect(res.result.message).to.equal("Incompatible protocol version.");
+        });
+      });
+
+      it('returns incompatible version code for low version', () => {
+        const client = jayson.client.http(server1 + '/json-rpc');
+        return client.request('ain_checkProtocolVersion', { protoVer: '0.0.1' })
+        .then(res => {
+          expect(res.result.code).to.equal(30103);
+          expect(res.result.message).to.equal("Incompatible protocol version.");
         });
       });
     })
@@ -1126,7 +1146,7 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
-          "code": 103,
+          "code": 10103,
           "error_message": "No write permission on: /apps/some/wrong/path",
           "gas_amount_charged": 0,
           "gas_amount_total": {
@@ -1142,7 +1162,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -1192,7 +1212,7 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
-          "code": 103,
+          "code": 10103,
           "error_message": "No write permission on: /apps/some/wrong/path2",
           "gas_amount_charged": 0,
           "gas_amount_total": {
@@ -1208,7 +1228,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -1258,7 +1278,7 @@ describe('Blockchain Node', () => {
           .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
-          "code": 103,
+          "code": 10103,
           "error_message": "No write permission on: /apps/some/wrong/path3",
           "gas_amount_charged": 0,
           "gas_amount_total": {
@@ -1274,7 +1294,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -1364,7 +1384,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
-          "code": 404,
+          "code": 10404,
           "error_message": "No write_function permission on: /apps/some/wrong/path",
           "gas_amount_charged": 0,
           "gas_amount_total": {
@@ -1380,7 +1400,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -1452,7 +1472,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
-          "code": 503,
+          "code": 10503,
           "error_message": "No write_rule permission on: /apps/some/wrong/path",
           "gas_amount_charged": 0,
           "gas_amount_total": {
@@ -1468,7 +1488,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -1568,7 +1588,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
-          "code": 603,
+          "code": 10603,
           "error_message": "No write_owner or branch_owner permission on: /apps/some/wrong/path",
           "gas_amount_charged": 0,
           "gas_amount_total": {
@@ -1584,7 +1604,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -1798,7 +1818,7 @@ describe('Blockchain Node', () => {
               "bandwidth_gas_amount": 1
             },
             "3": {
-              "code": 103,
+              "code": 10103,
               "error_message": "No write permission on: /apps/some/wrong/path",
               "bandwidth_gas_amount": 1
             }
@@ -1818,7 +1838,7 @@ describe('Blockchain Node', () => {
           },
           "gas_cost_total": 0
         });
-        expect(body.code).to.equal(1);
+        expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
@@ -2453,7 +2473,7 @@ describe('Blockchain Node', () => {
             "tx_hash": "erased",
             "result": {
               "error_message": "No write permission on: /apps/some/wrong/path",
-              "code": 103,
+              "code": 10103,
               "bandwidth_gas_amount": 1,
               "gas_amount_charged": 0,
               "gas_amount_total": {
@@ -2777,7 +2797,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
-              code: 1,
+              code: 30301,
               message: `Transaction size exceeds its limit: ${BlockchainParams.resource.tx_bytes_limit} bytes.`,
             },
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -2805,7 +2825,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
-              code: 2,
+              code: 30302,
               message: `Missing properties.`,
             },
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -2833,7 +2853,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
-              code: 3,
+              code: 30303,
               message: `Invalid transaction format.`,
             },
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -2861,7 +2881,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result.result.result, {
             "error_message": "[executeTransactionAndAddToPool] Invalid signature",
-            "code": 6,
+            "code": 10703,
             "bandwidth_gas_amount": 0
           });
         })
@@ -3092,7 +3112,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
-              code: 1,
+              code: 30401,
               message: `Invalid batch transaction format.`
             },
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
@@ -3163,7 +3183,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
-              code: 2,
+              code: 30402,
               message: `Batch transaction list size exceeds its limit: ${BlockchainParams.resource.batch_tx_list_size_limit}.`
             },
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
@@ -3239,7 +3259,7 @@ describe('Blockchain Node', () => {
         assert.deepEqual(resultList2, [
           {
             "result": {
-              "code": 4,
+              "code": 10705,
               "error_message": "[executeTransactionAndAddToPool] Tx pool does NOT have enough room (100) for account: 0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
               "bandwidth_gas_amount": 0
             },
@@ -3283,7 +3303,7 @@ describe('Blockchain Node', () => {
           expect(CommonUtil.isArray(resultList)).to.equal(false);
           assert.deepEqual(res.result, {
             result: {
-              code: 3,
+              code: 30403,
               message: `Transaction[1]'s size exceededs its limit: ${BlockchainParams.resource.tx_bytes_limit} bytes.`,
             },
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
@@ -3321,7 +3341,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
-              code: 4,
+              code: 30404,
               message: `Missing properties of transaction[1].`,
             },
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
@@ -3361,7 +3381,7 @@ describe('Blockchain Node', () => {
         }).then((res) => {
           assert.deepEqual(res.result, {
             result: {
-              code: 5,
+              code: 30405,
               message: `Invalid format of transaction[1].`
             },
             protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
@@ -3430,7 +3450,7 @@ describe('Blockchain Node', () => {
               "tx_hash": "erased",
               "result": {
                 "error_message": "[executeTransactionAndAddToPool] Invalid signature",
-                "code": 6,
+                "code": 10703,
                 "bandwidth_gas_amount": 0
               }
             },
@@ -3607,7 +3627,7 @@ describe('Blockchain Node', () => {
           timestamp: Date.now(),
         }
       }).body.toString('utf-8'));
-      assert.deepEqual(txResBody, {code: 1, result: { tx_hash: null, result: false }});
+      assert.deepEqual(txResBody, {code: 40001, result: { tx_hash: null, result: false }});
     });
 
     it('app-dependent service tx: not a billing account user', async () => {
@@ -3620,8 +3640,8 @@ describe('Blockchain Node', () => {
           timestamp: Date.now(),
         }
       }).body.toString('utf-8'));
-      expect(txResBody.code).to.equals(1);
-      expect(txResBody.result.result.code).to.equals(33);
+      expect(txResBody.code).to.equals(40001);
+      expect(txResBody.result.result.code).to.equals(10802);
       expect(txResBody.result.result.error_message).to.equals("[precheckTxBillingParams] User doesn't have permission to the billing account");
     });
 
@@ -3826,7 +3846,7 @@ describe('Blockchain Node', () => {
       assert.deepEqual(txResBody.result.result, {
         "bandwidth_gas_amount": 0,
         "error_message": "[precheckTxBillingParams] Multiple app-dependent service operations for a billing account",
-        "code": 16
+        "code": 10803
       });
     });
   });
@@ -3871,7 +3891,7 @@ describe('Blockchain Node', () => {
       }
       const body = parseOrLog(syncRequest(
         'POST', server1 + '/set_value', {json: failingTx}).body.toString('utf-8'));
-      assert.deepEqual(body.result.result.code, 103);
+      assert.deepEqual(body.result.result.code, 10103);
       assert.deepEqual(body.result.result.bandwidth_gas_amount, 1);
       assert.deepEqual(body.result.result.gas_amount_total, {
         "bandwidth": {
