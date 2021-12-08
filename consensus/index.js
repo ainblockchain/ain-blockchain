@@ -67,7 +67,7 @@ class Consensus {
     this.timeAdjustment = 0;
     this.isInEpochTransition = false;
     this.proposer = null;
-    // NOTE(liayoo): epoch increases by 1 every EPOCH_MS,
+    // NOTE(liayoo): epoch increases by 1 every epoch_ms,
     // and at each epoch a new proposer is pseudo-randomly selected.
     this.epoch = 1;
 
@@ -328,7 +328,7 @@ class Consensus {
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
     this.node.tp.removeInvalidTxsFromPool(invalidTransactions);
-    const gasPriceUnit = this.node.getBlockchainParam('resource/gas_price_unit', blockNumber, tempDb.stateRoot);
+    const gasPriceUnit = this.node.getBlockchainParam('resource/gas_price_unit', blockNumber, tempDb.stateVersion);
     const { gasAmountTotal, gasCostTotal } =
         CommonUtil.getServiceGasCostTotalFromTxList(transactions, resList, gasPriceUnit);
     const receipts = CommonUtil.txResultsToReceipts(resList);
@@ -674,7 +674,7 @@ class Consensus {
         level: 'error'
       });
     }
-    const gasPriceUnit = node.getBlockchainParam('resource/gas_price_unit', number, db.stateRoot);
+    const gasPriceUnit = node.getBlockchainParam('resource/gas_price_unit', number, db.stateVersion);
     const { gasAmountTotal, gasCostTotal } =
         CommonUtil.getServiceGasCostTotalFromTxList(transactions, txsRes, gasPriceUnit);
     if (gasAmountTotal !== expectedGasAmountTotal) {
