@@ -10,12 +10,12 @@ const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const syncRequest = require('sync-request');
 const {
+  NodeConfigs,
   BlockchainConsts,
   PredefinedDbPaths,
 } = require('../common/constants');
 const {
   ConsensusMessageTypes,
-  ConsensusConsts,
   ValidatorOffenseTypes,
 } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
@@ -39,26 +39,27 @@ const ENV_VARIABLES = [
     ACCOUNT_INDEX: 0, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
     ENABLE_EXPRESS_RATE_LIMIT: false, PEER_CANDIDATE_JSON_RPC_URL: '',
+    PORT: 8081, P2P_PORT: 5001,
   },
   {
     ACCOUNT_INDEX: 1, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    ENABLE_EXPRESS_RATE_LIMIT: false,
+    ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8082, P2P_PORT: 5002,
   },
   {
     ACCOUNT_INDEX: 2, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    ENABLE_EXPRESS_RATE_LIMIT: false,
+    ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8083, P2P_PORT: 5003,
   },
   {
     ACCOUNT_INDEX: 3, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    ENABLE_EXPRESS_RATE_LIMIT: false,
+    ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8084, P2P_PORT: 5004,
   },
   {
     ACCOUNT_INDEX: 4, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
-    ENABLE_EXPRESS_RATE_LIMIT: false,
+    ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8085, P2P_PORT: 5005,
   },
 ];
 
@@ -123,7 +124,7 @@ describe('Consensus', () => {
   const nodeAddressList = [];
 
   before(async () => {
-    rimraf.sync(BlockchainConsts.CHAINS_DIR);
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     const promises = [];
     // Start up all servers
@@ -172,7 +173,7 @@ describe('Consensus', () => {
     }
     trackerProc.kill();
 
-    rimraf.sync(BlockchainConsts.CHAINS_DIR);
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
   });
 
   describe('Validators', () => {
@@ -201,7 +202,7 @@ describe('Consensus', () => {
       expect(res.result.result.result.code).to.be.equal(0);
     })
 
-    it('Number of validators cannot exceed MAX_NUM_VALIDATORS', async () => {
+    it('Number of validators cannot exceed max_num_validators', async () => {
       // 1. server4 stakes 100000
       const server4StakeRes = parseOrLog(syncRequest('POST', server4 + '/set_value', {json: {
         ref: `/staking/consensus/${server4Addr}/0/stake/${Date.now()}/value`,
@@ -262,7 +263,7 @@ describe('Consensus', () => {
       assert.deepEqual(votes[server5Addr][PredefinedDbPaths.CONSENSUS_STAKE], 100000);
     });
 
-    it('When more than MAX_NUM_VALIDATORS validators exist, validatators with bigger stakes get prioritized', async () => {
+    it('When more than max_num_validators validators exist, validatators with bigger stakes get prioritized', async () => {
       // 1. server4 stakes 10 more AIN
       const server4StakeRes = parseOrLog(syncRequest('POST', server4 + '/set_value', {json: {
         ref: `/staking/consensus/${server4Addr}/0/stake/${Date.now()}/value`,

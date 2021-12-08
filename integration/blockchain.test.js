@@ -12,7 +12,7 @@ const expect = chai.expect;
 const syncRequest = require('sync-request');
 const ainUtil = require('@ainblockchain/ain-util');
 const stringify = require('fast-json-stable-stringify');
-const { BlockchainConsts } = require('../common/constants');
+const { BlockchainConsts, NodeConfigs } = require('../common/constants');
 const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
@@ -29,16 +29,16 @@ const { Block } = require('../blockchain/block');
 
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
+    ACCOUNT_INDEX: 0, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8081, P2P_PORT: 5001,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
     PEER_CANDIDATE_JSON_RPC_URL: '',
   },
   {
-    ACCOUNT_INDEX: 1, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
+    ACCOUNT_INDEX: 1, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8082, P2P_PORT: 5002,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    ACCOUNT_INDEX: 2, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
+    ACCOUNT_INDEX: 2, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8083, P2P_PORT: 5003,
     ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
 ];
@@ -218,7 +218,7 @@ describe('Blockchain Cluster', () => {
   const nodeAddressList = [];
 
   before(async () => {
-    rimraf.sync(BlockchainConsts.CHAINS_DIR);
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     const promises = [];
     // Start up all servers
@@ -271,7 +271,7 @@ describe('Blockchain Cluster', () => {
     }
     trackerProc.kill();
 
-    rimraf.sync(BlockchainConsts.CHAINS_DIR);
+    rimraf.sync(NodeConfigs.CHAINS_DIR);
   });
 
   describe(`Synchronization`, () => {
