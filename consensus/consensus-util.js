@@ -7,6 +7,7 @@ const {
 const { ConsensusErrorCodeSetToVoteAgainst } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
+const DB = require('../db');
 
 class ConsensusUtil {
   static isValidConsensusTx(tx) {
@@ -15,7 +16,8 @@ class ConsensusUtil {
       return false;
     }
     if (!NodeConfigs.LIGHTWEIGHT) {
-      if (!Transaction.verifyTransaction(executableTx)) {
+      const chainId = DB.getBlockchainParam('genesis/chain_id');
+      if (!Transaction.verifyTransaction(executableTx, chainId)) {
         return false;
       }
     }

@@ -60,7 +60,8 @@ function signMessage(messageBody, privateKey) {
     logger.error('The private key is not optional but mandatory or worng private key is typed.');
     return null;
   }
-  return ainUtil.ecSignMessage(JSON.stringify(messageBody), privateKeyBuffer);
+  const chainId = DB.getBlockchainParam('genesis/chain_id');
+  return ainUtil.ecSignMessage(JSON.stringify(messageBody), privateKeyBuffer, chainId);
 }
 
 function getAddressFromMessage(message) {
@@ -76,7 +77,8 @@ function verifySignedMessage(message, address) {
   if (!_isValidMessage(message)) {
     return null;
   } else {
-    return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address);
+    const chainId = DB.getBlockchainParam('genesis/chain_id');
+    return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address, chainId);
   }
 }
 
@@ -94,7 +96,7 @@ function encapsulateMessage(type, dataObj) {
     data: dataObj,
     protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
     dataProtoVer: BlockchainConsts.DATA_PROTOCOL_VERSION,
-    networkId: DB.getBlockchainParam('genesis/network_id', 0),
+    networkId: DB.getBlockchainParam('genesis/network_id'),
     timestamp: Date.now()
   };
   return message;
