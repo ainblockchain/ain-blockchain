@@ -5,7 +5,12 @@ const shuffleSeed = require('shuffle-seed');
 const CommonUtil = require('../common/common-util');
 const {Block} = require('../blockchain/block');
 const BlockchainNode = require('../node');
-const {setNodeForTesting, getTransaction, txsToDummyReceipts} = require('./test-util');
+const {
+  setNodeForTesting,
+  getTransaction,
+  txsToDummyReceipts,
+  eraseTxCreatedAt,
+} = require('./test-util');
 const TransactionPool = require('../tx-pool');
 const {
   BlockchainConfigs,
@@ -50,7 +55,7 @@ describe('TransactionPool', () => {
     it('add a pending transaction', () => {
       node.tp.addTransaction(txToAdd);
       const addedTx = node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash);
-      assert.deepEqual(addedTx, txToAdd);
+      assert.deepEqual(eraseTxCreatedAt(addedTx), eraseTxCreatedAt(txToAdd));
       const txInfo = node.getTransactionByHash(txToAdd.hash);
       expect(txInfo.state).to.equal(TransactionStates.PENDING);
     });
@@ -59,7 +64,7 @@ describe('TransactionPool', () => {
       node.tp.addTransaction(txToAdd, true);
 
       const addedTx = node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash);
-      assert.deepEqual(addedTx, txToAdd);
+      assert.deepEqual(eraseTxCreatedAt(addedTx), eraseTxCreatedAt(txToAdd));
       const txInfo = node.getTransactionByHash(txToAdd.hash);
       expect(txInfo.state).to.equal(TransactionStates.EXECUTED);
     });
