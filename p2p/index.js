@@ -127,7 +127,7 @@ class P2pClient {
       blockchainParams: this.server.node.getAllBlockchainParamsFromState(),
       env: process.env,
       devFlags: DevFlags,
-      BlockchainConsts,
+      blockchainConsts: BlockchainConsts,
       nodeConfigs: NodeConfigs,
     };
   }
