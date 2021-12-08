@@ -33,11 +33,10 @@ class EventHandler {
 
     for (const eventFilterId of this.eventTypeToEventFilterIds[BlockchainEventTypes.BLOCK_FINALIZED]) {
       const eventFilter = this.eventFilters[eventFilterId];
-      const eventFilterBlockNumber = _.get(eventFilter, 'config.block_number', -1);
-      if (eventFilterBlockNumber === -1) {
-        continue;
-      }
-      if (eventFilterBlockNumber === blockNumber) {
+      const eventFilterBlockNumber = _.get(eventFilter, 'config.block_number', null);
+      if (eventFilterBlockNumber === null) {
+        this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
+      } else if (eventFilterBlockNumber === blockNumber) {
         this.eventChannelManager.transmitEventByEventFilterId(eventFilterId, blockchainEvent);
       }
     }
@@ -47,8 +46,20 @@ class EventHandler {
     // TODO(cshcomcom): Implement
   }
 
+  getClientFilterIdFromGlobalFilterId(globalFilterId) {
+    const [channelId, clientFilterId] = globalFilterId.split(':');
+    if (!clientFilterId) {
+      throw Error(`Can't get client filter ID from global filter ID (nodeFilterId: ${globalFilterId})`);
+    }
+    return clientFilterId;
+  }
+
+  getGlobalFilterId(channelId, clientFilterId) {
+    return `${channelId}:${clientFilterId}`;
+  }
+
   createAndRegisterEventFilter(clientFilterId, channelId, eventType, config) {
-    const eventFilterId = `${channelId}:${clientFilterId}`;
+    const eventFilterId = this.getGlobalFilterId(clientFilterId, channelId);
     if (this.eventFilters[eventFilterId]) {
       throw Error(`Event filter ID ${eventFilterId} is already in use`);
     }

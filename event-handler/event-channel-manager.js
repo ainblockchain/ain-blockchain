@@ -28,7 +28,9 @@ class EventChannelManager {
     this.wsServer = new ws.Server({
       port: NodeConfigs.EVENT_HANDLER_PORT,
     });
-    this.wsServer.on('connection', this.handleConnection);
+    this.wsServer.on('connection', (ws) => {
+      this.handleConnection(ws);
+    });
   }
 
   handleConnection(webSocket) {
@@ -111,7 +113,8 @@ class EventChannelManager {
       return;
     }
     const eventObj = event.toObject();
-    Object.assign(eventObj, { filter_id: eventFilterId });
+    const clientFilterId = this.eventHandler.getClientFilterIdFromGlobalFilterId(eventFilterId);
+    Object.assign(eventObj, { filter_id: clientFilterId });
     this.transmitEvent(channel, eventObj);
   }
 
