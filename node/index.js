@@ -498,7 +498,8 @@ class BlockchainNode {
           `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
     }
     if (!NodeConfigs.LIGHTWEIGHT) {
-      if (!Transaction.verifyTransaction(executableTx)) {
+      const chainId = this.getBlockchainParam('genesis/chain_id');
+      if (!Transaction.verifyTransaction(executableTx, chainId)) {
         return CommonUtil.logAndReturnTxResult(
             logger,
             TxResultCode.TX_INVALID_SIGNATURE,

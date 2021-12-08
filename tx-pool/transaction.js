@@ -180,7 +180,7 @@ class Transaction {
     return sanitized;
   }
 
-  static verifyTransaction(tx) {
+  static verifyTransaction(tx, chainId) {
     if (!tx || !Transaction.isValidTxBody(tx.tx_body)) {
       logger.info(`Invalid transaction body: ${JSON.stringify(tx, null, 2)}`);
       return false;
@@ -190,7 +190,7 @@ class Transaction {
       logger.info('Skip verifying signature for transaction: ' + JSON.stringify(tx, null, 2));
       return true;
     }
-    return ainUtil.ecVerifySig(tx.tx_body, tx.signature, tx.address);
+    return ainUtil.ecVerifySig(tx.tx_body, tx.signature, tx.address, chainId);
   }
 
   static isValidTxBody(txBody) {
