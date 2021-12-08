@@ -30,8 +30,6 @@ const {
   sendGetRequest
 } = require('../common/network-util');
 
-// NOTE(minsulee2): consider updating TRACKER_UPDATE_INTERVAL_MS to 2.5 minutes.
-
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.server = new P2pServer(
@@ -173,6 +171,7 @@ class P2pClient {
     }
   }
 
+  // TODO(minsulee2): Update TRACKER_UPDATE_INTERVAL_MS to a longer value (e.g. 1 min) for mainnet.
   setIntervalForTrackerUpdate() {
     this.updateNodeInfoToTracker();
     this.intervalTrackerUpdate = setInterval(() => {
