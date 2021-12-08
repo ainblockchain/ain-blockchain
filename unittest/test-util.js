@@ -240,11 +240,18 @@ function eraseStateGas(result) {
   return erased;
 }
 
+function eraseTxCreatedAt(tx) {
+  const erased = JSON.parse(JSON.stringify(tx));
+  _.set(erased, 'extra.created_at', 'erased');
+  return erased;
+}
+
 module.exports = {
   GET_OPTIONS_INCLUDE_ALL,
   readConfigFile,
   setNodeForTesting,
   getTransaction,
+  txsToDummyReceipts,
   addBlock,
   waitUntilTxFinalized,
   waitForNewBlocks,
@@ -257,5 +264,5 @@ module.exports = {
   getLastBlockNumber,
   getBlockByNumber,
   eraseStateGas,
-  txsToDummyReceipts,
+  eraseTxCreatedAt,
 };
