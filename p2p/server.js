@@ -99,11 +99,35 @@ class P2pServer {
     // Set the number of maximum clients.
     this.wsServer.setMaxListeners(NodeConfigs.MAX_NUM_INBOUND_CONNECTION);
     this.wsServer.on('connection', (socket) => {
-      this.setServerSidePeerEventHandlers(socket);
+      const socketAddressInfo = socket._socket.address();
+      const webSocketUrl = this.getWebSocketUrl(socketAddressInfo);
+      if (NodeConfigs.PEER_WHITE_LIST.includes(webSocketUrl)) {
+        this.setServerSidePeerEventHandlers(socket);
+      } else {
+        logger.error(`This peer(${webSocketUrl}) is not on the PEER_WHITE_LIST.`);
+        closeSocketSafe(this.inbound, socket);
+      }
     });
     logger.info(`Listening to peer-to-peer connections on: ${NodeConfigs.P2P_PORT}\n`);
     await this.setUpIpAddresses();
     this.urls = this.initUrls();
+  }
+
+  getWebSocketUrl(socketAddressInfo) {
+    const port = socketAddressInfo.port;
+    const ipv4Address = this.getIpv4Address(socketAddressInfo);
+    const websocketUrl = CommonUtil.isValidPrivateUrl(ipv4Address) ?
+        `ws://localhost:${port}` : `${ipv4Address}:${port}`;
+    return websocketUrl;
+  }
+
+  getIpv4Address(socketAddressInfo) {
+    return socketAddressInfo.family === 'IPv6' ?
+        this.convertIpv6ToIpv4(socketAddressInfo.address) : socketAddressInfo.address;
+  }
+
+  convertIpv6ToIpv4(address) {
+    return address.replace('::ffff:', '');
   }
 
   getNodeAddress() {
@@ -374,13 +398,10 @@ class P2pServer {
   /**
    * Returns true if the socket ip address is the same as the given p2p url ip address,
    * false otherwise.
-   * @param {string} socketIpAddress is socket._socket.remoteAddress
+   * @param {string} ipv4Address is ipv4 socket._socket.remoteAddress
    * @param {string} url is peerInfo.networkStatus.urls.p2p.url
    */
-  checkIpAddressFromPeerInfo(socketIpAddress, url) {
-    // NOTE(minsulee2): Remove ::ffff: to make ipv4 ip address.
-    const ipv4Address =
-        socketIpAddress.substr(0, 7) === '::ffff:' ? socketIpAddress.substr(7) : socketIpAddress;
+  checkIpAddressFromPeerInfo(ipv4Address, url) {
     return url.includes(ipv4Address);
   }
 
@@ -491,7 +512,9 @@ class P2pServer {
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
                 const p2pUrl = _.get(peerInfo, 'networkStatus.urls.p2p.url');
-                if (this.checkIpAddressFromPeerInfo(socket._socket.remoteAddress, p2pUrl)) {
+                const socketAddressInfo = socket._socket.address();
+                const ipv4Address = this.getIpv4Address(socketAddressInfo);
+                if (this.checkIpAddressFromPeerInfo(ipv4Address, p2pUrl)) {
                   this.client.connectToPeer(p2pUrl);
                 } else {
                   closeSocketSafe(this.inbound, socket);
