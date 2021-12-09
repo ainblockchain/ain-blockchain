@@ -59,7 +59,7 @@ class EventHandler {
   }
 
   createAndRegisterEventFilter(clientFilterId, channelId, eventType, config) {
-    const eventFilterId = this.getGlobalFilterId(clientFilterId, channelId);
+    const eventFilterId = this.getGlobalFilterId(channelId, clientFilterId);
     if (this.eventFilters[eventFilterId]) {
       throw Error(`Event filter ID ${eventFilterId} is already in use`);
     }
