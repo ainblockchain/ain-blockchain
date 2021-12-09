@@ -1,37 +1,37 @@
 const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
+const expect = chai.expect;
 const spawn = require('child_process').spawn;
 const rimraf = require('rimraf');
 const jayson = require('jayson/promise');
-const ainUtil = require('@ainblockchain/ain-util');
-const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
-const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
-const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const syncRequest = require('sync-request');
+const ainUtil = require('@ainblockchain/ain-util');
 const {
   NodeConfigs,
   BlockchainConsts,
   PredefinedDbPaths,
-} = require('../common/constants');
+} = require('../../common/constants');
 const {
   ConsensusMessageTypes,
   ValidatorOffenseTypes,
-} = require('../consensus/constants');
-const CommonUtil = require('../common/common-util');
-const PathUtil = require('../common/path-util');
+} = require('../../consensus/constants');
+const CommonUtil = require('../../common/common-util');
+const PathUtil = require('../../common/path-util');
 const {
   waitUntilTxFinalized,
   waitUntilNetworkIsReady,
   waitForNewBlocks,
   parseOrLog,
   getLastBlock,
-} = require('../unittest/test-util');
-const { Block } = require('../blockchain/block');
-const Functions = require('../db/functions');
-const ConsensusUtil = require('../consensus/consensus-util');
-const { expect } = require('chai');
+} = require('../test-util');
+const { Block } = require('../../blockchain/block');
+const Functions = require('../../db/functions');
+const ConsensusUtil = require('../../consensus/consensus-util');
 
+const PROJECT_ROOT = require('path').dirname(__filename) + '/../../';
+const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
+const APP_SERVER = PROJECT_ROOT + 'client/index.js';
 const MAX_ITERATION = 200;
 const MAX_NUM_VALIDATORS = 4;
 const ENV_VARIABLES = [

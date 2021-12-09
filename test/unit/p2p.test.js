@@ -1,16 +1,16 @@
+const P2pClient = require('../../p2p');
 const rimraf = require("rimraf")
 const chai = require('chai');
-const BlockchainNode = require('../node');
-const VersionUtil = require('../common/version-util');
-const P2pClient = require('../p2p');
+const BlockchainNode = require('../../node');
+const VersionUtil = require('../../common/version-util');
 const {
   BlockchainConsts,
   NodeConfigs,
   P2pNetworkStates,
   BlockchainParams
-} = require('../common/constants');
-const { setNodeForTesting } = require('./test-util');
-const { getIpAddress } = require('../common/network-util');
+} = require('../../common/constants');
+const { getIpAddress } = require('../../common/network-util');
+const { setNodeForTesting } = require('../test-util');
 
 const expect = chai.expect;
 const assert = chai.assert;
@@ -19,7 +19,7 @@ const { min, max } = VersionUtil.matchVersions(BlockchainConsts.PROTOCOL_VERSION
 const minProtocolVersion = min === undefined ? BlockchainConsts.CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 
-describe("P2P", () => {
+describe("P2p", () => {
   let node;
   let p2pClient;
   let p2pServer;
