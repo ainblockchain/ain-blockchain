@@ -30,17 +30,6 @@ const {
   sendGetRequest
 } = require('../common/network-util');
 
-// NOTE(minsulee2): consider updating TRACKER_UPDATE_INTERVAL_MS to 2.5 minutes.
-const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
-const PEER_CANDIDATES_CONNECTION_INTERVAL_MS = 20 * 1000;  // 20 seconds
-const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
-const WAIT_FOR_ADDRESS_TIMEOUT_MS = 10 * 1000; // 10 seconds
-const TRAFFIC_STATS_PERIOD_SECS_LIST = {
-  '1m': 60,  // 1 minutes
-  '5m': 300,  // 5 minutes
-  '1h': 3600,  // 1 hour
-};
-
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.server = new P2pServer(
@@ -88,7 +77,8 @@ class P2pClient {
 
   getTrafficStats() {
     const stats = {};
-    for (const [periodName, periodSecs] of Object.entries(TRAFFIC_STATS_PERIOD_SECS_LIST)) {
+    for (const [periodName, periodSecs] of
+        Object.entries(NodeConfigs.TRAFFIC_STATS_PERIOD_SECS_LIST)) {
       stats[periodName] = trafficStatsManager.getEventStats(periodSecs)
     }
     return stats;
@@ -181,11 +171,12 @@ class P2pClient {
     }
   }
 
+  // TODO(minsulee2): Update TRACKER_UPDATE_INTERVAL_MS to a longer value (e.g. 1 min) for mainnet.
   setIntervalForTrackerUpdate() {
     this.updateNodeInfoToTracker();
     this.intervalTrackerUpdate = setInterval(() => {
       this.updateNodeInfoToTracker();
-    }, TRACKER_UPDATE_INTERVAL_MS);
+    }, NodeConfigs.TRACKER_UPDATE_INTERVAL_MS);
   }
 
   clearIntervalForTrackerUpdate() {
@@ -259,7 +250,7 @@ class P2pClient {
         await this.connectWithPeerCandidateUrl(nextPeerCandidate);
         this.isConnectingToPeerCandidates = false;
       }
-    }, PEER_CANDIDATES_CONNECTION_INTERVAL_MS);
+    }, NodeConfigs.PEER_CANDIDATES_CONNECTION_INTERVAL_MS);
   }
 
   clearIntervalForPeerCandidateConnection() {
@@ -588,7 +579,7 @@ class P2pClient {
           this.removePeerConnection(socket.url);
           closeSocketSafe(this.outbound, socket);
         }
-    }, WAIT_FOR_ADDRESS_TIMEOUT_MS);
+    }, NodeConfigs.P2P_WAIT_FOR_ADDRESS_TIMEOUT_MS);
   }
 
   /**
@@ -781,7 +772,7 @@ class P2pClient {
           this.updateStatusToPeer(socket, node.peerInfo.address);
         }
       });
-    }, HEARTBEAT_INTERVAL_MS);
+    }, NodeConfigs.P2P_HEARTBEAT_INTERVAL_MS);
   }
 
   stopHeartbeat() {
