@@ -1,5 +1,4 @@
-const TrafficDatabase = require('../traffic/traffic-database');
-
+const TrafficDatabase = require('../../traffic/traffic-database');
 const { expect, assert } = require('chai');
 
 describe("traffic-database", () => {

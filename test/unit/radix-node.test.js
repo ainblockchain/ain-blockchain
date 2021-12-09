@@ -1,10 +1,10 @@
-const RadixNode = require('../db/radix-node');
-const CommonUtil = require('../common/common-util');
-const StateNode = require('../db/state-node');
-const { BlockchainParams } = require('../common/constants');
+const RadixNode = require('../../db/radix-node');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
+const CommonUtil = require('../../common/common-util');
+const StateNode = require('../../db/state-node');
+const { BlockchainParams } = require('../../common/constants');
 
 describe("radix-node", () => {
   let node;

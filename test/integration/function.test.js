@@ -7,15 +7,12 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
-const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
-const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
-const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const {
   BlockchainConsts,
   NodeConfigs,
   GenesisToken,
-} = require('../common/constants');
-const CommonUtil = require('../common/common-util');
+} = require('../../common/constants');
+const CommonUtil = require('../../common/common-util');
 const {
   parseOrLog,
   setUpApp,
@@ -23,9 +20,11 @@ const {
   waitUntilTxFinalized,
   getBlockByNumber,
   eraseStateGas,
-} = require('../unittest/test-util');
-const DB = require('../db');
+} = require('../test-util');
 
+const PROJECT_ROOT = require('path').dirname(__filename) + "/../../"
+const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
+const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const ENV_VARIABLES = [
   {
     ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '',

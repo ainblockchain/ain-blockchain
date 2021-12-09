@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const {
   hasEnabledShardConfig,
   isWritablePathWithSharding,
@@ -28,13 +27,14 @@ const {
   getStateProofFromStateRoot,
   getProofHashFromStateRoot,
   verifyStateProof,
-} = require('../db/state-util');
-const { BlockchainParams } = require('../common/constants');
-const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
-const StateNode = require('../db/state-node');
+} = require('../../db/state-util');
+const _ = require('lodash');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
+const { BlockchainParams } = require('../../common/constants');
+const StateNode = require('../../db/state-node');
+const { GET_OPTIONS_INCLUDE_ALL } = require('../test-util');
 const stateLabelLengthLimit = BlockchainParams.resource.state_label_length_limit;
 const variableLabelPrefix = BlockchainParams.genesis.variable_label_prefix;
 const hashDelimiter = BlockchainParams.genesis.hash_delimiter;

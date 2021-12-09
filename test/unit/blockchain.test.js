@@ -2,11 +2,11 @@ const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
 const assert = chai.assert;
-const { NodeConfigs } = require('../common/constants');
-const Transaction = require('../tx-pool/transaction');
-const { Block } = require('../blockchain/block');
-const BlockchainNode = require('../node');
-const { setNodeForTesting, getTransaction, txsToDummyReceipts  } = require('./test-util');
+const { NodeConfigs } = require('../../common/constants');
+const Transaction = require('../../tx-pool/transaction');
+const { Block } = require('../../blockchain/block');
+const BlockchainNode = require('../../node');
+const { setNodeForTesting, getTransaction, txsToDummyReceipts  } = require('../test-util');
 
 describe('Blockchain', () => {
   let node1, node2;

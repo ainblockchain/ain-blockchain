@@ -1,17 +1,17 @@
-const StateNode = require('../db/state-node');
+const StateNode = require('../../db/state-node');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 
-const CommonUtil = require('../common/common-util');
-const RadixNode = require('../db/radix-node');
-const RadixTree = require('../db/radix-tree');
-const { GET_OPTIONS_INCLUDE_ALL } = require('./test-util');
+const CommonUtil = require('../../common/common-util');
+const RadixNode = require('../../db/radix-node');
+const RadixTree = require('../../db/radix-tree');
 const {
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
-} = require('../db/state-util');
-const { BlockchainParams } = require('../common/constants');
+} = require('../../db/state-util');
+const { BlockchainParams } = require('../../common/constants');
+const { GET_OPTIONS_INCLUDE_ALL } = require('../test-util');
 
 describe("state-node", () => {
   let node;

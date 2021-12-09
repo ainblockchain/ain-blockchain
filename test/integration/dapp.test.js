@@ -4,19 +4,19 @@ const assert = chai.assert;
 const rimraf = require('rimraf');
 const spawn = require('child_process').spawn;
 const syncRequest = require('sync-request');
-const AfanClient = require('../afan_client');
-const { NodeConfigs } = require('../common/constants');
-const CommonUtil = require('../common/common-util');
+const AfanClient = require('../../afan_client');
+const { NodeConfigs } = require('../../common/constants');
+const CommonUtil = require('../../common/common-util');
 const {
   waitUntilTxFinalized,
   waitUntilNetworkIsReady,
   parseOrLog,
   setUpApp
-} = require('../unittest/test-util');
-const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
+} = require('../test-util');
+
+const PROJECT_ROOT = require('path').dirname(__filename) + '/../../';
 const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
 const APP_SERVER = PROJECT_ROOT + 'client/index.js';
-
 const ENV_VARIABLES = [
   {
     ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '',
@@ -97,7 +97,7 @@ async function cleanUp() {
   }
 }
 
-describe('DApp Test', async () => {
+describe('DApp Test', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc;
 
   before(async () => {
