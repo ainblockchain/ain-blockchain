@@ -38,13 +38,7 @@
   "PEER_CANDIDATE_JSON_RPC_URL": "http://localhost:8081/json-rpc",
   "PEER_CANDIDATES_CONNECTION_INTERVAL_MS": 20000,
   "PEER_WHITE_LIST": [
-    "ws://localhost:5001",
-    "ws://localhost:5002",
-    "ws://localhost:5003",
-    "ws://localhost:5004",
-    "ws://localhost:5005",
-    "ws://localhost:5006",
-    "ws://localhost:5007"
+    "localhost"
   ],
   "PORT": 8080,
   "REST_FUNCTION_CALL_TIMEOUT_MS": 10000,

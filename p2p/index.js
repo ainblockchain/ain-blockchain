@@ -3,6 +3,7 @@ const logger = new (require('../logger'))('P2P_CLIENT');
 const _ = require('lodash');
 const P2pServer = require('./server');
 const Websocket = require('ws');
+const url = require('url');
 const { ConsensusStates } = require('../consensus/constants');
 const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
@@ -634,9 +635,19 @@ class P2pClient {
       }
     });
     const newPeerP2pUrlList = _.get(peerCandidateInfo, 'newPeerP2pUrlList', []);
-    const newPeerP2pUrlListWithoutMyUrl = newPeerP2pUrlList.filter((url) => {
-      return url !== myP2pUrl;
+    const newPeerP2pUrlListWithoutMyUrl = newPeerP2pUrlList.filter((p2pUrl) => {
+      // Only connect to white listed peers.
+      if (NodeConfigs.PEER_WHITE_LIST !== '' && NodeConfigs.PEER_WHITE_LIST.length > 0) {
+        const url = new URL(p2pUrl);
+        const hostname = url.hostname;
+        const sanitizedUrl = CommonUtil.isValidPrivateUrl(hostname) ? 'localhost' : hostname;
+        return NodeConfigs.PEER_WHITE_LIST.includes(sanitizedUrl) && url !== myP2pUrl;
+      } else {
+        return url !== myP2pUrl;
+      }
     });
+    console.log(newPeerP2pUrlList)
+    console.log(newPeerP2pUrlListWithoutMyUrl)
     const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
     const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.urls.p2p.url');
     if (peerCandidateP2pUrl !== myP2pUrl && isAvailableForConnection && !this.outbound[peerCandidateP2pUrl]) {
@@ -708,7 +719,7 @@ class P2pClient {
       if (address) {
         logger.debug(`Node ${address}(${url}) is already a managed peer.`);
       } else {
-        logger.info(`Connecting to peer ${address}(${url})`);
+        logger.info(`Connecting to peer(${url})`);
         this.connectToPeer(url);
       }
     });

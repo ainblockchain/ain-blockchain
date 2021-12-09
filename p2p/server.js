@@ -55,8 +55,7 @@ const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC]
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
 const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
 
-// A peer-to-peer network server that broadcasts changes in the database.
-// TODO(minsulee2): Sign messages to tracker or peer.
+// A peer-to-peer network server that broadcasts changes in the database
 class P2pServer {
   constructor (p2pClient, node, minProtocolVersion, maxProtocolVersion) {
     this.wsServer = null;
@@ -99,12 +98,15 @@ class P2pServer {
     // Set the number of maximum clients.
     this.wsServer.setMaxListeners(NodeConfigs.MAX_NUM_INBOUND_CONNECTION);
     this.wsServer.on('connection', (socket) => {
-      const socketAddressInfo = socket._socket.address();
-      const webSocketUrl = this.getWebSocketUrl(socketAddressInfo);
-      if (NodeConfigs.PEER_WHITE_LIST.includes(webSocketUrl)) {
+      const socketInfo = socket._socket.address();
+      const address = this.getIpv4Address(socketInfo.family, socket._socket.remoteAddress);
+      const sanitizedAddress = CommonUtil.isValidPrivateUrl(address) ? 'localhost' : address;
+      if (NodeConfigs.PEER_WHITE_LIST !== '' &&
+          NodeConfigs.PEER_WHITE_LIST.length > 0 &&
+          NodeConfigs.PEER_WHITE_LIST.includes(sanitizedAddress)) {
         this.setServerSidePeerEventHandlers(socket);
       } else {
-        logger.error(`This peer(${webSocketUrl}) is not on the PEER_WHITE_LIST.`);
+        logger.error(`This peer(${sanitizedAddress}) is not on the PEER_WHITE_LIST.`);
         closeSocketSafe(this.inbound, socket);
       }
     });
@@ -113,17 +115,8 @@ class P2pServer {
     this.urls = this.initUrls();
   }
 
-  getWebSocketUrl(socketAddressInfo) {
-    const port = socketAddressInfo.port;
-    const ipv4Address = this.getIpv4Address(socketAddressInfo);
-    const websocketUrl = CommonUtil.isValidPrivateUrl(ipv4Address) ?
-        `ws://localhost:${port}` : `${ipv4Address}:${port}`;
-    return websocketUrl;
-  }
-
-  getIpv4Address(socketAddressInfo) {
-    return socketAddressInfo.family === 'IPv6' ?
-        this.convertIpv6ToIpv4(socketAddressInfo.address) : socketAddressInfo.address;
+  getIpv4Address(family, address) {
+    return family === 'IPv6' ? this.convertIpv6ToIpv4(address) : address;
   }
 
   convertIpv6ToIpv4(address) {
@@ -512,8 +505,7 @@ class P2pServer {
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
                 const p2pUrl = _.get(peerInfo, 'networkStatus.urls.p2p.url');
-                const socketAddressInfo = socket._socket.address();
-                const ipv4Address = this.getIpv4Address(socketAddressInfo);
+                const ipv4Address = this.convertIpv6ToIpv4(socket._socket.remoteAddress);
                 if (this.checkIpAddressFromPeerInfo(ipv4Address, p2pUrl)) {
                   this.client.connectToPeer(p2pUrl);
                 } else {
