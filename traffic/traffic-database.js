@@ -22,31 +22,30 @@ class TrafficDatabase {
       // Does nothing.
       return;
     }
-    let queueIndexDelta = intervalCount - this.lastIntervalCount;
-    if (queueIndexDelta <= 0) {
+    let queueIndexDeltaOrg = intervalCount - this.lastIntervalCount;
+    if (queueIndexDeltaOrg <= 0) {
       // Does nothing.
       return;
     }
-    if (queueIndexDelta > this.maxIntervals) {
-      // Multiple rounds are compressed to 1 round.
-      queueIndexDelta = this.maxIntervals + queueIndexDelta % this.maxIntervals;
-    }
+    // Multiple rounds are compressed to 1 round.
+    const queueIndexDeltaComp = queueIndexDeltaOrg > this.maxIntervals ?
+        this.maxIntervals + queueIndexDeltaOrg % this.maxIntervals : queueIndexDeltaOrg;
     const oldQueueIndex = this.lastQueueIndex;
-    for (let i = 0; i < queueIndexDelta; i++) {
+    for (let i = 0; i < queueIndexDeltaComp; i++) {
       this.lastQueueIndex = (oldQueueIndex + i) % this.maxIntervals;
-      if (queueIndexDelta < this.maxIntervals) {
-        // Flush current count / metric.
-        this.countCircularQueue[this.lastQueueIndex] = this.curCount;
-        this.metricCircularQueue[this.lastQueueIndex] = this.curMetric;
-      } else {
+      if (queueIndexDeltaOrg > this.maxIntervals) {
         // Reset count / metric.
         this.countCircularQueue[this.lastQueueIndex] = 0;
         this.metricCircularQueue[this.lastQueueIndex] = 0;
+      } else {
+        // Flush current count / metric.
+        this.countCircularQueue[this.lastQueueIndex] = this.curCount;
+        this.metricCircularQueue[this.lastQueueIndex] = this.curMetric;
       }
       this.curCount = 0;
       this.curMetric = 0;
     }
-    this.lastQueueIndex = (oldQueueIndex + queueIndexDelta) % this.maxIntervals;
+    this.lastQueueIndex = (oldQueueIndex + queueIndexDeltaComp) % this.maxIntervals;
     this.lastIntervalCount = intervalCount;
   }
 
