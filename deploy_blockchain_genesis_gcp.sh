@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|spring|summer] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic] [--restart|--reset]\n"
+    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|spring|summer] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic] [--restart|--reset] [--kill-only]\n"
     printf "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --setup --keystore\n"
     printf "\n"
     exit
@@ -62,6 +62,8 @@ function parse_options() {
             exit
         fi
         RESET_RESTART_OPTION="$option"
+    elif [[ $option = '--kill-only' ]]; then
+        KILL_ONLY_OPTION="$option"
     else
         printf "Invalid options: $option\n"
         exit
@@ -72,6 +74,7 @@ function parse_options() {
 SETUP_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
 RESET_RESTART_OPTION=""
+KILL_ONLY_OPTION=""
 
 ARG_INDEX=4
 while [ $ARG_INDEX -le $# ]
@@ -82,7 +85,7 @@ done
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "RESET_RESTART_OPTION=$RESET_RESTART_OPTION\n"
-
+printf "KILL_ONLY_OPTION=$KILL_ONLY_OPTION\n"
 
 # Get confirmation.
 printf "\n"
@@ -184,6 +187,11 @@ if [[ $NUM_SHARDS -gt 0 ]]; then
             gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_1_ZONE
             gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
         done
+fi
+
+# If --kill-only, do not proceed any further
+if [[ $KILL_ONLY_OPTION != "" ]]; then
+    exit
 fi
 
 # deploy files to GCP instances
