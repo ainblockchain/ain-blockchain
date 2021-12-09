@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 6 ]]; then
-    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--restart|--reset] [--kill-only]\n"
+    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--restart|--reset] [--kill-only|--skip-kill]\n"
     printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia 7 99 --setup\n"
     printf "\n"
     exit
@@ -37,7 +37,17 @@ function parse_options() {
         fi
         RESET_RESTART_OPTION="$option"
     elif [[ $option = '--kill-only' ]]; then
-        KILL_ONLY_OPTION="$option"
+        if [[ "$KILL_OPTION" ]]; then
+            printf "You cannot use both --skip-kill and --kill-only\n"
+            exit
+        fi
+        KILL_OPTION="$option"
+    elif [[ $option = '--skip-kill' ]]; then
+        if [[ "$KILL_OPTION" ]]; then
+            printf "You cannot use both --skip-kill and --kill-only\n"
+            exit
+        fi
+        KILL_OPTION="$option"
     else
         printf "Invalid options: $option\n"
         exit
@@ -47,7 +57,7 @@ function parse_options() {
 # Parse options.
 SETUP_OPTION=""
 RESET_RESTART_OPTION=""
-KILL_ONLY_OPTION=""
+KILL_OPTION=""
 
 ARG_INDEX=4
 while [ $ARG_INDEX -le $# ]
@@ -57,7 +67,7 @@ do
 done
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "RESET_RESTART_OPTION=$RESET_RESTART_OPTION\n"
-printf "KILL_ONLY_OPTION=$KILL_ONLY_OPTION\n"
+printf "KILL_OPTION=$KILL_OPTION\n"
 
 
 # Get confirmation.
@@ -286,29 +296,33 @@ spinner() {
     sleep .1
 }
 
-# kill any processes still alive
-printf "\nKilling all blockchain nodes...\n"
-index=$START_NODE_IDX
-while [ $index -le $END_NODE_IDX ]
-do
-    NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
-    NODE_ZONE=NODE_${index}_ZONE
+if [[ $KILL_OPTION = "--skip-kill" ]]; then
+    printf "\nSkipping process kill...\n"
+else
+    # kill any processes still alive
+    printf "\nKilling all blockchain nodes...\n"
+    index=$START_NODE_IDX
+    while [ $index -le $END_NODE_IDX ]
+    do
+        NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
+        NODE_ZONE=NODE_${index}_ZONE
 
-    KILL_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command 'sudo killall node' --project $PROJECT_ID --zone ${!NODE_ZONE}"
-    # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
-    # printf "KILL_NODE_CMD=$KILL_NODE_CMD\n"
-    if [[ $index < "$(($NUM_NODES - 1))" ]]; then
-        eval $KILL_NODE_CMD &> /dev/null &
-    else
-        eval $KILL_NODE_CMD &> /dev/null
-    fi
-    ((index++))
-    spinner
-done
-printf "Kill all processes done.\n\n";
+        KILL_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command 'sudo killall node' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+        # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
+        # printf "KILL_NODE_CMD=$KILL_NODE_CMD\n"
+        if [[ $index < "$(($NUM_NODES - 1))" ]]; then
+            eval $KILL_NODE_CMD &> /dev/null &
+        else
+            eval $KILL_NODE_CMD &> /dev/null
+        fi
+        ((index++))
+        spinner
+    done
+    printf "Kill all processes done.\n\n";
+fi
 
 # If --kill-only, do not proceed any further
-if [[ $KILL_ONLY_OPTION != "" ]]; then
+if [[ $KILL_OPTION = "--kill-only" ]]; then
     exit
 fi
 
