@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 6 ]]; then
-    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--restart|--reset]\n"
+    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--restart|--reset] [--kill-only]\n"
     printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia 7 99 --setup\n"
     printf "\n"
     exit
@@ -36,6 +36,8 @@ function parse_options() {
             exit
         fi
         RESET_RESTART_OPTION="$option"
+    elif [[ $option = '--kill-only' ]]; then
+        KILL_ONLY_OPTION="$option"
     else
         printf "Invalid options: $option\n"
         exit
@@ -45,6 +47,7 @@ function parse_options() {
 # Parse options.
 SETUP_OPTION=""
 RESET_RESTART_OPTION=""
+KILL_ONLY_OPTION=""
 
 ARG_INDEX=4
 while [ $ARG_INDEX -le $# ]
@@ -54,6 +57,7 @@ do
 done
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "RESET_RESTART_OPTION=$RESET_RESTART_OPTION\n"
+printf "KILL_ONLY_OPTION=$KILL_ONLY_OPTION\n"
 
 
 # Get confirmation.
@@ -302,6 +306,11 @@ do
     spinner
 done
 printf "Kill all processes done.\n\n";
+
+# If --kill-only, do not proceed any further
+if [[ $KILL_ONLY_OPTION != "" ]]; then
+    exit
+fi
 
 # deploy files to GCP instances
 if [[ $RESET_RESTART_OPTION = "" ]]; then
