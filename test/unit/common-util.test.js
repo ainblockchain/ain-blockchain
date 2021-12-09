@@ -1,8 +1,8 @@
-const CommonUtil = require('../common/common-util');
+const CommonUtil = require('../../common/common-util');
 const chai = require('chai');
-const { BlockchainParams } = require('../common/constants');
 const expect = chai.expect;
 const assert = chai.assert;
+const { BlockchainParams } = require('../../common/constants');
 
 describe("CommonUtil", () => {
   describe("numberOfZero", () => {
