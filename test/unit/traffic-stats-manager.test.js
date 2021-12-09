@@ -1,5 +1,4 @@
-const TrafficStatsManager = require('../traffic/traffic-stats-manager');
-
+const TrafficStatsManager = require('../../traffic/traffic-stats-manager');
 const { expect, assert } = require('chai');
 
 describe("traffic-stats-manager", () => {

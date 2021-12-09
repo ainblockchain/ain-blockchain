@@ -3,15 +3,11 @@ const chai = require('chai');
 const assert = chai.assert;
 const expect = chai.expect;
 const spawn = require("child_process").spawn;
-const ainUtil = require('@ainblockchain/ain-util');
 const syncRequest = require('sync-request');
 const jayson = require('jayson/promise');
 const rimraf = require("rimraf")
 const _ = require('lodash');
-const { parseOrLog } = require('../unittest/test-util');
-const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
-const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
-const APP_SERVER = PROJECT_ROOT + "client/index.js"
+const ainUtil = require('@ainblockchain/ain-util');
 const {
   NodeConfigs,
   BlockchainConsts,
@@ -22,12 +18,13 @@ const {
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
-} = require('../common/constants');
+} = require('../../common/constants');
 const {
   ConsensusStates
-} = require('../consensus/constants');
-const CommonUtil = require('../common/common-util');
+} = require('../../consensus/constants');
+const CommonUtil = require('../../common/common-util');
 const {
+  parseOrLog,
   readConfigFile,
   waitForNewBlocks,
   waitForNewShardingReports,
@@ -35,8 +32,11 @@ const {
   waitUntilTxFinalized,
   waitUntilNetworkIsReady,
   setUpApp,
-} = require('../unittest/test-util');
+} = require('../test-util');
 
+const PROJECT_ROOT = require('path').dirname(__filename) + "/../../"
+const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
+const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
@@ -193,11 +193,11 @@ async function cleanUp() {
   }
 }
 
-describe('Sharding', async () => {
+describe('Sharding', () => {
   const token =
-      readConfigFile(path.resolve(__dirname, '../blockchain-configs/afan-shard', 'blockchain_params.json')).token;
+      readConfigFile(path.resolve(__dirname, '../../blockchain-configs/afan-shard', 'blockchain_params.json')).token;
   const sharding =
-      readConfigFile(path.resolve(__dirname, '../blockchain-configs/afan-shard', 'blockchain_params.json')).sharding;
+      readConfigFile(path.resolve(__dirname, '../../blockchain-configs/afan-shard', 'blockchain_params.json')).sharding;
   const shardOwnerAddr = sharding.shard_owner;
   const shardReporterAddr = sharding.shard_reporter;
   let parentServerAddr = '';

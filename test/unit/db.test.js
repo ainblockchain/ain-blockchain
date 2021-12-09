@@ -1,6 +1,9 @@
-const BlockchainNode = require('../node')
+const BlockchainNode = require('../../node')
 const rimraf = require('rimraf');
 const _ = require("lodash");
+const chai = require('chai');
+const expect = chai.expect;
+const assert = chai.assert;
 const ainUtil = require('@ainblockchain/ain-util');
 const {
   NodeConfigs,
@@ -10,18 +13,15 @@ const {
   GenesisToken,
   GenesisSharding,
   BlockchainParams,
-} = require('../common/constants')
+} = require('../../common/constants')
 const {
   verifyStateProof,
-} = require('../db/state-util');
-const Transaction = require('../tx-pool/transaction');
-const CommonUtil = require('../common/common-util');
+} = require('../../db/state-util');
+const Transaction = require('../../tx-pool/transaction');
+const CommonUtil = require('../../common/common-util');
 const {
   setNodeForTesting,
-} = require('./test-util');
-const chai = require('chai');
-const expect = chai.expect;
-const assert = chai.assert;
+} = require('../test-util');
 const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
 
 describe("DB initialization", () => {

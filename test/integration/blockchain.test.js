@@ -1,22 +1,17 @@
 const _ = require('lodash');
 const chai = require('chai');
 const assert = chai.assert;
+const expect = chai.expect;
 const spawn = require('child_process').spawn;
 const rimraf = require('rimraf');
 const jayson = require('jayson/promise');
-const PROJECT_ROOT = require('path').dirname(__filename) + '/../';
-const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
-const APP_SERVER = PROJECT_ROOT + 'client/index.js';
-const expect = chai.expect;
-// eslint-disable-next-line no-unused-vars
 const syncRequest = require('sync-request');
 const ainUtil = require('@ainblockchain/ain-util');
 const stringify = require('fast-json-stable-stringify');
-const { BlockchainConsts, NodeConfigs } = require('../common/constants');
-const { ConsensusConsts } = require('../consensus/constants');
-const CommonUtil = require('../common/common-util');
-const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
-const MAX_CHAIN_LENGTH_DIFF = 5;
+// eslint-disable-next-line no-unused-vars
+const { BlockchainConsts, NodeConfigs } = require('../../common/constants');
+const { ConsensusConsts } = require('../../consensus/constants');
+const CommonUtil = require('../../common/common-util');
 const {
   waitUntilTxFinalized,
   waitForNewBlocks,
@@ -24,9 +19,14 @@ const {
   waitUntilNodeSyncs,
   parseOrLog,
   setUpApp
-} = require('../unittest/test-util');
-const { Block } = require('../blockchain/block');
+} = require('../test-util');
+const { Block } = require('../../blockchain/block');
 
+const PROJECT_ROOT = require('path').dirname(__filename) + '/../../';
+const TRACKER_SERVER = PROJECT_ROOT + 'tracker-server/index.js';
+const APP_SERVER = PROJECT_ROOT + 'client/index.js';
+const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
+const MAX_CHAIN_LENGTH_DIFF = 5;
 const ENV_VARIABLES = [
   {
     ACCOUNT_INDEX: 0, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8081, P2P_PORT: 5001,
