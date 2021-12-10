@@ -98,25 +98,11 @@ class P2pServer {
     // Set the number of maximum clients.
     this.wsServer.setMaxListeners(NodeConfigs.MAX_NUM_INBOUND_CONNECTION);
     this.wsServer.on('connection', (socket) => {
-      const socketInfo = socket._socket.address();
-      const address = this.getIpv4Address(socketInfo.family, socket._socket.remoteAddress);
-      const sanitizedAddress = CommonUtil.isValidPrivateUrl(address) ? 'localhost' : address;
-      if (NodeConfigs.PEER_WHITE_LIST !== '' &&
-          NodeConfigs.PEER_WHITE_LIST.length > 0 &&
-          NodeConfigs.PEER_WHITE_LIST.includes(sanitizedAddress)) {
         this.setServerSidePeerEventHandlers(socket);
-      } else {
-        logger.error(`This peer(${sanitizedAddress}) is not on the PEER_WHITE_LIST.`);
-        closeSocketSafe(this.inbound, socket);
-      }
     });
     logger.info(`Listening to peer-to-peer connections on: ${NodeConfigs.P2P_PORT}\n`);
     await this.setUpIpAddresses();
     this.urls = this.initUrls();
-  }
-
-  getIpv4Address(family, address) {
-    return family === 'IPv6' ? this.convertIpv6ToIpv4(address) : address;
   }
 
   convertIpv6ToIpv4(address) {
@@ -463,6 +449,12 @@ class P2pServer {
               return;
             } else {
               const addressFromSig = getAddressFromMessage(parsedMessage);
+              if (NodeConfigs.PEER_WHITE_LIST !== '' &&
+                  !NodeConfigs.PEER_WHITE_LIST.includes(addressFromSig)) {
+                logger.error(`This peer(${sanitizedAddress}) is not on the PEER_WHITE_LIST.`);
+                closeSocketSafe(this.inbound, socket);
+                return;
+              }
               if (addressFromSig !== address) {
                 logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
                 closeSocketSafe(this.inbound, socket);
@@ -658,6 +650,7 @@ class P2pServer {
     });
 
     socket.on('error', (error) => {
+      const address = getAddressFromSocket(this.inbound, socket);
       logger.error(`Error in communication with peer ${address}: ` +
           `${JSON.stringify(error, null, 2)}`);
     });
