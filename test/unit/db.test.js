@@ -250,20 +250,20 @@ describe("DB operations", () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
   });
 
-  describe("Read operations", () => {
-    describe("getValue", () => {
-      it("when retrieving high value near top of database", () => {
+  describe("Value operations", () => {
+    describe("getValue:", () => {
+      it("getValue to retrieve high value near top of database", () => {
         assert.deepEqual(node.db.getValue("/apps/test"), dbValues)
       })
 
-      it("when retrieving high value near top of database with is_final", () => {
+      it("getValue to retrieve high value near top of database with is_final", () => {
         const backupFinalVersion = node.db.stateManager.getFinalVersion();
         node.db.stateManager.finalizeVersion(StateVersions.EMPTY);
         assert.deepEqual(node.db.getValue("/apps/test", { isFinal: true }), null)
         node.db.stateManager.finalizeVersion(backupFinalVersion);
       })
 
-      it('when retrieving value near top of database with is_shallow', () => {
+      it('getValue to retrieve value near top of database with is_shallow', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { isShallow: true }), {
           'ai': {
             "#state_ph": "0x4c6895fec04b40d425d1542b7cfb2f78b0e8cd2dc4d35d0106100f1ecc168cec"
@@ -283,7 +283,7 @@ describe("DB operations", () => {
         })
       });
 
-      it('when retrieving value with include_tree_info', () => {
+      it('getValue to retrieve value with include_tree_info', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { includeTreeInfo: true }), {
           "#num_parents": 1,
           "#tree_bytes": 3708,
@@ -402,7 +402,7 @@ describe("DB operations", () => {
         })
       });
 
-      it('when retrieving value with include_proof', () => {
+      it('getValue to retrieve value with include_proof', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { includeProof: true }), {
           "#state_ph": "0x147ecaf6c56166b504cce1cbe690bc1d14c8e2f68c7937416eac32aaf97ecf2c",
           "ai": {
@@ -458,7 +458,7 @@ describe("DB operations", () => {
         });
       });
 
-      it('when retrieving value with include_version', () => {
+      it('getValue to retrieve value with include_version', () => {
         assert.deepEqual(node.db.getValue('/apps/test', { includeVersion: true }), {
           "#version": "NODE:0",
           "ai": {
@@ -514,30 +514,282 @@ describe("DB operations", () => {
         });
       });
 
-      it("when retrieving shallow nested value", () => {
+      it("getValue to retrieve shallow nested value", () => {
         assert.deepEqual(node.db.getValue("/apps/test/ai/comcom"), dbValues["ai"]["comcom"])
       })
 
-      it("when retrieving deeply nested value", () => {
+      it("getValue to retrieve deeply nested value", () => {
         assert.deepEqual(node.db.getValue("/apps/test/nested/far/down"), dbValues["nested"]["far"]["down"])
       })
 
-      it("by failing when value is not present", () => {
+      it("getValue to fail with value not present", () => {
         expect(node.db.getValue("/apps/test/nested/far/down/to/nowhere")).to.equal(null)
       })
 
-      it("by failing when value is not present with is_shallow", () => {
+      it("getValue to fail with value not present with is_shallow", () => {
         expect(node.db.getValue("/apps/test/nested/far/down/to/nowhere", true, false)).to.equal(null)
       })
     })
 
-    describe("getFunction", () => {
-      it("when retrieving non-existing function config", () => {
+    describe("setValue:", () => {
+      it("setValue to overwrite nested value", () => {
+        const newValue = {"new": 12345}
+        expect(node.db.setValue("/apps/test/nested/far/down", newValue).code).to.equal(0)
+        assert.deepEqual(node.db.getValue("/apps/test/nested/far/down"), newValue)
+      })
+
+      it("setValue to create new path in database", () => {
+        const newValue = 12345
+        expect(node.db.setValue("/apps/test/new/unchartered/nested/path", newValue).code).to.equal(0)
+        expect(node.db.getValue("/apps/test/new/unchartered/nested/path")).to.equal(newValue)
+      })
+
+      it("setValue to write invalid object", () => {
+        assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {array: []}), {
+          "code": 10101,
+          "error_message": "Invalid object for states: /array",
+          "bandwidth_gas_amount": 1
+        });
+        expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
+
+        assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {'.': 'x'}), {
+          "code": 10101,
+          "error_message": "Invalid object for states: /.",
+          "bandwidth_gas_amount": 1
+        });
+        expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
+
+        assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {'$': 'x'}), {
+          "code": 10101,
+          "error_message": "Invalid object for states: /$",
+          "bandwidth_gas_amount": 1
+        });
+        expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
+
+        assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {'*a': 'x'}), {
+          "code": 10101,
+          "error_message": "Invalid object for states: /*a",
+          "bandwidth_gas_amount": 1
+        });
+        expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
+
+        assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {'a*': 'x'}), {
+          "code": 10101,
+          "error_message": "Invalid object for states: /a*",
+          "bandwidth_gas_amount": 1
+        });
+        expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
+      })
+
+      it("setValue to write with invalid path", () => {
+        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/.", 12345), {
+          "code": 10102,
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/.",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/$", 12345), {
+          "code": 10102,
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/$",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/a*", 12345), {
+          "code": 10102,
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/a*",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/*a", 12345), {
+          "code": 10102,
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/*a",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/#", 12345), {
+          "code": 10102,
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/#",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/{", 12345), {
+          "code": 10102,
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/{",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/}", 12345), {
+          "code": 10102,
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/}",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/[", 12345), {
+          "code": 10102,
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/[",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/]", 12345), {
+          "code": 10102,
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/]",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/\x00", 12345), {
+          "code": 10102,
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/\x00",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/\x1F", 12345), {
+          "code": 10102,
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/\x1F",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/\x7F", 12345), {
+          "code": 10102,
+          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/\x7F",
+          "bandwidth_gas_amount": 1
+        });
+      })
+
+      it("setValue to write with non-writable path with sharding", () => {
+        assert.deepEqual(node.db.setValue("/apps/test/shards/enabled_shard", 20), {
+          "code": 10104,
+          "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.setValue("/apps/test/shards/enabled_shard/path", 20), {
+          "code": 10104,
+          "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
+          "bandwidth_gas_amount": 1
+        });
+      })
+
+      it("setValue to write with writable path with sharding", () => {
+        expect(node.db.setValue("/apps/test/shards/disabled_shard", 20).code).to.equal(0);
+        expect(node.db.getValue("/apps/test/shards/disabled_shard")).to.equal(20)
+        expect(node.db.setValue("/apps/test/shards/disabled_shard/path", 20).code).to.equal(0);
+        expect(node.db.getValue("/apps/test/shards/disabled_shard/path")).to.equal(20)
+      })
+
+      it("setValue to write more than gc_max_siblings in state rule config", () => {
+        // Set state rule
+        expect(node.db.setRule("/apps/test/test_rule/some/path/more/than/max/$sibling", {
+          ".rule": {
+            "state": {
+              "gc_max_siblings": 1
+            }
+          }
+        }).code).to.equal(0);
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path/more/than/max/$sibling"), {
+          ".rule": {
+            "state": {
+              "gc_max_siblings": 1
+            }
+          }
+        });
+        // Set 1st child
+        expect(node.db.setValue("/apps/test/test_rule/some/path/more/than/max/child1", 1, { addr: 'abcd' },
+            null, { extra: { executed_at: 1234567890000 }}).code).to.equal(0);
+        assert.deepEqual(node.db.getValue("/apps/test/test_rule/some/path/more/than/max"), { "child1": 1 });
+        // Set 2nd child
+        expect(node.db.setValue("/apps/test/test_rule/some/path/more/than/max/child2", 2, { addr: 'abcd' },
+            null, { extra: { executed_at: 1234567890000 }}).code).to.equal(0);
+        // 1st child removed
+        assert.deepEqual(node.db.getValue("/apps/test/test_rule/some/path/more/than/max"), { "child2": 2 });
+      })
+
+      it("setValue to write value with more than max_children keys", () => {
+        expect(node.db.setRule("/apps/test/test_rule/some/path/more/than/max", {
+          ".rule": {
+            "state": {
+              "max_children": 1
+            }
+          }
+        }).code).to.equal(0);
+        assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/path/more/than/max", {
+            child1: 1,
+            child2: 2
+          }, { addr: 'abcd' },
+          null, { extra: { executed_at: 1234567890000 }}), {
+          error_message: 'No state permission on: /apps/test/test_rule/some/path/more/than/max',
+          code: 10106,
+          bandwidth_gas_amount: 1
+        });
+      })
+    })
+
+    describe("incValue:", () => {
+      it("incValue to increase value successfully", () => {
+        expect(node.db.incValue("/apps/test/increment/value", 10).code).to.equal(0)
+        expect(node.db.getValue("/apps/test/increment/value")).to.equal(30)
+      })
+
+      it("incValue to return error code and leaving value unchanged if delta is not numerical", () => {
+        expect(node.db.incValue("/apps/test/increment/value", '10').code).to.equal(10201)
+        expect(node.db.getValue("/apps/test/increment/value")).to.equal(20)
+      })
+
+      it("incValue to return error code and leaving value unchanged if path is not numerical", () => {
+        expect(node.db.incValue("/apps/test/ai/foo", 10).code).to.equal(10201)
+        expect(node.db.getValue("/apps/test/ai/foo")).to.equal("bar")
+      })
+
+      it("incValue to create and increase given path from 0 if not currently in database", () => {
+        node.db.incValue("/apps/test/completely/new/path/test", 100);
+        expect(node.db.getValue("/apps/test/completely/new/path/test")).to.equal(100)
+      })
+
+      it("incValue to return error code with non-writable path with sharding", () => {
+        assert.deepEqual(node.db.incValue("/apps/test/shards/enabled_shard/path", 5), {
+          "code": 10104,
+          "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
+          "bandwidth_gas_amount": 1
+        });
+      })
+
+      it("incValue to increase with writable path with sharding", () => {
+        expect(node.db.incValue("/apps/test/shards/disabled_shard/path", 5).code).to.equal(0);
+        expect(node.db.getValue("/apps/test/shards/disabled_shard/path")).to.equal(15)
+      })
+    })
+
+    describe("decValue:", () => {
+      it("decValue to decrease value successfully", () => {
+        expect(node.db.decValue("/apps/test/decrement/value", 10).code).to.equal(0)
+        expect(node.db.getValue("/apps/test/decrement/value")).to.equal(10)
+      })
+
+      it("decValue to return error code and leaving value unchanged if delta is not numerical", () => {
+        expect(node.db.decValue("/apps/test/decrement/value", '10').code).to.equal(10301)
+        expect(node.db.getValue("/apps/test/decrement/value")).to.equal(20)
+      })
+
+      it("decValue to return error code and leaving value unchanged if path is not numerical", () => {
+        expect(node.db.decValue("/apps/test/ai/foo", 10).code).to.equal(10301)
+        expect(node.db.getValue("/apps/test/ai/foo")).to.equal("bar")
+      })
+
+      it("decValue to create and decrease given path from 0 if not currently in database", () => {
+        node.db.decValue("/apps/test/completely/new/path/test", 100);
+        expect(node.db.getValue("/apps/test/completely/new/path/test")).to.equal(-100)
+      })
+
+      it("decValue to return error code with non-writable path with sharding", () => {
+        assert.deepEqual(node.db.decValue("/apps/test/shards/enabled_shard/path", 5), {
+          "code": 10104,
+          "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
+          "bandwidth_gas_amount": 1
+        });
+      })
+
+      it("decValue to decrease with writable path with sharding", () => {
+        expect(node.db.decValue("/apps/test/shards/disabled_shard/path", 5).code).to.equal(0);
+        expect(node.db.getValue("/apps/test/shards/disabled_shard/path")).to.equal(5)
+      })
+    })
+  });
+
+  describe("Function operations", () => {
+    describe("getFunction:", () => {
+      it("getFunction to retrieve non-existing function config", () => {
         expect(node.db.getFunction("/apps/test/test_function/other/function/path")).to.equal(null);
         expect(node.db.getFunction("/apps/test/test_function/some/other_path")).to.equal(null);
       })
 
-      it("when retrieving existing function config", () => {
+      it("getFunction to retrieve existing function config", () => {
         assert.deepEqual(node.db.getFunction("/apps/test/test_function/some/path"), {
           ".function": {
             "fid": {
@@ -560,7 +812,7 @@ describe("DB operations", () => {
         });
       })
 
-      it("when retrieving existing function config with is_shallow", () => {
+      it("getFunction to retrieve existing function config with is_shallow", () => {
         assert.deepEqual(node.db.getFunction('/apps/test/test_function', { isShallow: true }), {
           some: {
             "#state_ph": "0x637e4fb9edc3f569e3a4bced647d706bf33742bca14b1aae3ca01fd5b44120d5"
@@ -569,93 +821,8 @@ describe("DB operations", () => {
       })
     })
 
-    describe("getRule", () => {
-      it("when retrieving non-existing rule config", () => {
-        expect(node.db.getRule("/test/test_rule/other/rule/path")).to.equal(null);
-        expect(node.db.getRule("/test/test_rule/some/other_path")).to.equal(null);
-      })
-
-      it("when retrieving existing rule config", () => {
-        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
-          ".rule": {
-            "write": "auth.addr === 'abcd'"
-          },
-          "deeper": {
-            "path": {
-              ".rule": {
-                "write": "auth.addr === 'ijkl'"
-              }
-            }
-          }
-        });
-      })
-
-      it('when retrieving existing rule config with is_shallow', () => {
-        assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isShallow: true }), {
-          some: {
-            "#state_ph": "0x65d1d444e7f35a54ae9c196d83fda0ffbf93f91341a2470b83d0d512419aaf28"
-          },
-        });
-      });
-    })
-
-    describe("getOwner", () => {
-      it("when retrieving non-existing owner config", () => {
-        expect(node.db.getOwner("/apps/test/test_owner/other/owner/path")).to.equal(null)
-      })
-
-      it("when retrieving existing owner config", () => {
-        assert.deepEqual(node.db.getOwner("/apps/test/test_owner/some/path"), {
-          ".owner": {
-            "owners": {
-              "*": {
-                "branch_owner": false,
-                "write_function": true,
-                "write_owner": false,
-                "write_rule": true,
-              },
-              "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
-                "branch_owner": true,
-                "write_function": false,
-                "write_owner": true,
-                "write_rule": false,
-              }
-            }
-          },
-          "deeper": {
-            "path": {
-              ".owner": {
-                "owners": {
-                  "*": {
-                    "branch_owner": false,
-                    "write_function": true,
-                    "write_owner": false,
-                    "write_rule": true,
-                  },
-                  "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
-                    "branch_owner": true,
-                    "write_function": false,
-                    "write_owner": true,
-                    "write_rule": false,
-                  }
-                }
-              }
-            }
-          }
-        });
-      })
-
-      it("when retrieving existing owner config with is_shallow", () => {
-        assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isShallow: true }), {
-          some: {
-            "#state_ph": "0x5086ccf28e98a15e4d1de16b1f78e3b429e3049baeb39ea22041d75dd16f5800"
-          },
-        })
-      })
-    })
-
-    describe("matchFunction", () => {
-      it("when matching existing variable path function", () => {
+    describe("matchFunction:", () => {
+      it("matchFunction to match existing variable path function", () => {
         assert.deepEqual(node.db.matchFunction("/apps/test/test_function/some/var_path"), {
           "matched_path": {
             "target_path": "/apps/test/test_function/some/$var_path",
@@ -678,7 +845,7 @@ describe("DB operations", () => {
         });
       })
 
-      it("when matching existing non-variable path function", () => {
+      it("matchFunction to match existing non-variable path function", () => {
         assert.deepEqual(node.db.matchFunction("/apps/test/test_function/some/path"), {
           "matched_path": {
             "target_path": "/apps/test/test_function/some/path",
@@ -728,7 +895,7 @@ describe("DB operations", () => {
         });
       })
 
-      it("when NOT matching existing closest non-variable path function", () => {
+      it("matchFunction NOT to match existing closest non-variable path function", () => {
         assert.deepEqual(node.db.matchFunction("/apps/test/test_function/some/path/deeper"), {
           "matched_path": {
             "target_path": "/apps/test/test_function/some/path/deeper",
@@ -755,8 +922,136 @@ describe("DB operations", () => {
       })
     })
 
-    describe("matchRule", () => {
-      it("when matching existing variable path rule", () => {
+    describe("setFunction:", () => {
+      it("setFunction to overwrite existing function config with simple path", () => {
+        const functionConfig = {
+          ".function": {
+            "fid": {
+              "function_url": "http://echo-bot.ainetwork.ai/trigger",
+              "function_id": "fid",
+              "function_type": "REST",
+            }
+          }
+        };
+        expect(node.db.setFunction("/apps/test/test_function/some/path", functionConfig).code)
+            .to.equal(0);
+        assert.deepEqual(node.db.getFunction("/apps/test/test_function/some/path"), {
+          ".function": {
+            "fid": {
+              "function_url": "http://echo-bot.ainetwork.ai/trigger",  // modified
+              "function_id": "fid",
+              "function_type": "REST",
+            }
+          },
+          "deeper": {
+            "path": {
+              ".function": {
+                "fid_deeper": {
+                  "function_url": "https://events.ainetwork.ai/trigger",
+                  "function_id": "fid_deeper",
+                  "function_type": "REST",
+                }
+              }
+            }
+          }
+        })
+      })
+
+      it("setFunction to write with variable path", () => {
+        const functionConfig = {
+          ".function": {
+            "fid_other": {
+              "function_url": "http://echo-bot.ainetwork.ai/trigger",
+              "function_id": "fid_other",
+              "function_type": "REST",
+            }
+          }
+        };
+        expect(node.db.setFunction("/apps/test/test_function/some/$variable/path", functionConfig).code)
+            .to.equal(0);
+        assert.deepEqual(
+            node.db.getFunction("/apps/test/test_function/some/$variable/path"), functionConfig)
+      })
+
+      it("setFunction to write invalid object", () => {
+        assert.deepEqual(node.db.setFunction("/apps/test/test_function/some/path2", {array: []}), {
+          "code": 10401,
+          "error_message": "Invalid object for states: /array",
+          "bandwidth_gas_amount": 1
+        });
+        expect(node.db.getFunction("/apps/test/new2/unchartered/nested/path2")).to.equal(null)
+
+        assert.deepEqual(node.db.setFunction("/apps/test/test_function/some/path2", {'.': 'x'}), {
+          "code": 10401,
+          "error_message": "Invalid object for states: /.",
+          "bandwidth_gas_amount": 1
+        });
+        expect(node.db.getFunction("/apps/test/new2/unchartered/nested/path2")).to.equal(null)
+      })
+
+      it("setFunction to write invalid function tree", () => {
+        const functionTreeBefore = node.db.getOwner("/apps/test/test_function/some/path");
+        assert.deepEqual(node.db.setFunction(
+            "/apps/test/test_function/some/path", { ".function": null }), {
+          "code": 10405,
+          "error_message": "Invalid function tree: /.function",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.getOwner("/apps/test/test_function/some/path"), functionTreeBefore);
+      })
+
+      it("setFunction to write with invalid path", () => {
+        assert.deepEqual(node.db.setFunction(
+            "/apps/test/test_function/some/path/.", {
+              ".function": {
+                "fid": {
+                  "function_url": "http://echo-bot.ainetwork.ai/trigger",
+                  "function_id": "fid",
+                  "function_type": "REST",
+                }
+              }
+            }), {
+          "code": 10402,
+          "error_message": "Invalid function path: /apps/test/test_function/some/path/.",
+          "bandwidth_gas_amount": 1
+        });
+      })
+    })
+  });
+
+  describe("Rule operations", () => {
+    describe("getRule:", () => {
+      it("getRule to retrieve non-existing rule config", () => {
+        expect(node.db.getRule("/test/test_rule/other/rule/path")).to.equal(null);
+        expect(node.db.getRule("/test/test_rule/some/other_path")).to.equal(null);
+      })
+
+      it("getRule to retrieve existing rule config", () => {
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
+          ".rule": {
+            "write": "auth.addr === 'abcd'"
+          },
+          "deeper": {
+            "path": {
+              ".rule": {
+                "write": "auth.addr === 'ijkl'"
+              }
+            }
+          }
+        });
+      })
+
+      it('getRule to retrieve existing rule config with is_shallow', () => {
+        assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isShallow: true }), {
+          some: {
+            "#state_ph": "0x65d1d444e7f35a54ae9c196d83fda0ffbf93f91341a2470b83d0d512419aaf28"
+          },
+        });
+      });
+    })
+
+    describe("matchRule:", () => {
+      it("matchRule to match existing variable path rule", () => {
         assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/var_path"), {
           "write": {
             "matched_path": {
@@ -790,7 +1085,7 @@ describe("DB operations", () => {
         });
       })
 
-      it("when matching existing non-variable path rule", () => {
+      it("matchRule to match existing non-variable path rule", () => {
         assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/path"), {
           "write": {
             "matched_path": {
@@ -854,7 +1149,7 @@ describe("DB operations", () => {
         });
       })
 
-      it("when matching existing closest non-variable path rule", () => {
+      it("matchRule to match existing closest non-variable path rule", () => {
         assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/path/deeper"), {
           "write": {
             "matched_path": {
@@ -892,8 +1187,224 @@ describe("DB operations", () => {
       })
     })
 
-    describe("matchOwner", () => {
-      it("when matching existing owner with matching address", () => {
+    describe("evalRule:", () => {
+      it("evalRule to evaluate existing variable path rule", () => {
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, Date.now()))
+                .to.equal(false);
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, Date.now()))
+                .to.equal(true);
+      })
+
+      it("evalRule to evaluate existing non-variable path rule", () => {
+        expect(node.db.evalRule("/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, Date.now()))
+            .to.equal(true);
+        expect(node.db.evalRule("/apps/test/test_rule/some/path", 'value', { addr: 'other' }, Date.now()))
+            .to.equal(false);
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/path/deeper/path", 'value', { addr: 'ijkl' }, Date.now()))
+                .to.equal(true);
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/path/deeper/path", 'value', { addr: 'other' }, Date.now()))
+                .to.equal(false);
+      })
+
+      it("evalRule to evaluate existing closest rule", () => {
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/path/deeper", 'value', { addr: 'abcd' }, Date.now()))
+                .to.equal(true);
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/path/deeper", 'value', { addr: 'other' }, Date.now()))
+                .to.equal(false);
+      })
+    })
+
+    describe("setRule:", () => {
+      it("setRule to overwrite existing rule config with simple path", () => {
+        const ruleConfig = {
+          ".rule": {
+            "write": "auth.addr === 'xyz'"
+          }
+        };
+        expect(node.db.setRule("/apps/test/test_rule/some/path", ruleConfig).code).to.equal(0);
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleConfig);
+      })
+
+      it("setRule to write with variable path", () => {
+        const ruleConfig = {
+          ".rule": {
+            "write": "auth.addr === 'xyz'"
+          }
+        };
+        expect(node.db.setRule("/apps/test/test_rule/some/$variable/path", ruleConfig).code)
+            .to.equal(0)
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/$variable/path"), ruleConfig)
+      })
+
+      it("setRule to write invalid object", () => {
+        assert.deepEqual(node.db.setRule("/apps/test/test_rule/some/path2", {array: []}), {
+          "code": 10501,
+          "error_message": "Invalid object for states: /array",
+          "bandwidth_gas_amount": 1
+        });
+        expect(node.db.getRule("/apps/test/test_rule/some/path2")).to.equal(null)
+
+        assert.deepEqual(node.db.setRule("/apps/test/test_rule/some/path2", {'.': 'x'}), {
+          "code": 10501,
+          "error_message": "Invalid object for states: /.",
+          "bandwidth_gas_amount": 1
+        });
+        expect(node.db.getRule("/apps/test/test_rule/some/path2")).to.equal(null)
+      })
+
+      it("setRule to write invalid rule tree", () => {
+        const ruleTreeBefore = node.db.getRule("/apps/test/test_rule/some/path");
+        assert.deepEqual(node.db.setRule(
+            "/apps/test/test_rule/some/path",
+            {
+              ".rule": {
+                "write": {
+                  "a": true
+                }
+              }
+            }), {
+          "code": 10504,
+          "error_message": "Invalid rule tree: /.rule/write",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleTreeBefore);
+      })
+
+      it("setRule to write invalid write rule with not-allowed top-level tokens", () => {
+        const ruleTreeBefore = node.db.getRule("/apps/test/test_rule/some/path");
+        assert.deepEqual(node.db.setRule(
+            "/apps/test/test_rule/some/path",
+            {
+              ".rule": {
+                "write": "invalid_top_level_token"
+              }
+            }), {
+          "code": 10504,
+          "error_message": "Invalid rule tree: /.rule/write",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleTreeBefore);
+      })
+
+      it("setRule to write with invalid path", () => {
+        assert.deepEqual(node.db.setRule("/apps/test/test_rule/some/path/.",
+            {
+              ".rule": {
+                "write": "auth.addr === 'xyz'"
+              }
+            }), {
+          "code": 10502,
+          "error_message": "Invalid rule path: /apps/test/test_rule/some/path/.",
+          "bandwidth_gas_amount": 1
+        });
+      })
+
+      it("setRule to write state rule", () => {
+        const ruleConfig = {
+          ".rule": {
+            "state": {
+              "max_children": 1
+            }
+          }
+        };
+        expect(node.db.setRule("/apps/test/test_rule/some/path", ruleConfig).code).to.equal(0);
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
+          ".rule": {
+            "state": {
+              "max_children": 1
+            },
+            "write": "auth.addr === 'abcd'"
+          }
+        });
+      })
+
+      it("setRule to write both state and write rules", () => {
+        const ruleConfig = {
+          ".rule": {
+            "state": {
+              "max_children": 1
+            },
+            "write": "auth.addr === 'ijkl'"
+          }
+        };
+        expect(node.db.setRule("/apps/test/test_rule/some/path", ruleConfig).code).to.equal(0);
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
+          ".rule": {
+            "state": {
+              "max_children": 1
+            },
+            "write": "auth.addr === 'ijkl'" // updated
+          }
+        });
+      })
+    })
+
+  });
+
+  describe("Owner operations", () => {
+    describe("getOwner:", () => {
+      it("getOwner to retrieve non-existing owner config", () => {
+        expect(node.db.getOwner("/apps/test/test_owner/other/owner/path")).to.equal(null)
+      })
+
+      it("getOwner to retrieve existing owner config", () => {
+        assert.deepEqual(node.db.getOwner("/apps/test/test_owner/some/path"), {
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": false,
+                "write_function": true,
+                "write_owner": false,
+                "write_rule": true,
+              },
+              "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": true,
+                "write_rule": false,
+              }
+            }
+          },
+          "deeper": {
+            "path": {
+              ".owner": {
+                "owners": {
+                  "*": {
+                    "branch_owner": false,
+                    "write_function": true,
+                    "write_owner": false,
+                    "write_rule": true,
+                  },
+                  "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
+                    "branch_owner": true,
+                    "write_function": false,
+                    "write_owner": true,
+                    "write_rule": false,
+                  }
+                }
+              }
+            }
+          }
+        });
+      })
+
+      it("getOwner to retrieve existing owner config with is_shallow", () => {
+        assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isShallow: true }), {
+          some: {
+            "#state_ph": "0x5086ccf28e98a15e4d1de16b1f78e3b429e3049baeb39ea22041d75dd16f5800"
+          },
+        })
+      })
+    })
+
+    describe("matchOwner:", () => {
+      it("matchOwner to match existing owner with matching address", () => {
         assert.deepEqual(node.db.matchOwner("/apps/test/test_owner/some/path", 'write_owner', 'abcd'), {
           "matched_path": {
             "target_path": "/apps/test/test_owner/some/path"
@@ -944,7 +1455,7 @@ describe("DB operations", () => {
         });
       })
 
-      it("when matching existing owner without matching address", () => {
+      it("matchOwner to match existing owner without matching address", () => {
         assert.deepEqual(node.db.matchOwner("/apps/test/test_owner/some/path", 'write_owner', 'other'), {
           "matched_path": {
             "target_path": "/apps/test/test_owner/some/path"
@@ -995,7 +1506,7 @@ describe("DB operations", () => {
         });
       })
 
-      it("when matching closest owner", () => {
+      it("matchOwner to match closest owner", () => {
         assert.deepEqual(node.db.matchOwner("/apps/test/test_owner/some/path/deeper", 'write_owner', 'abcd'), {
           "matched_path": {
             "target_path": "/apps/test/test_owner/some/path/deeper"
@@ -1023,41 +1534,8 @@ describe("DB operations", () => {
       })
     })
 
-    describe("evalRule", () => {
-      it("when evaluating existing variable path rule", () => {
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, Date.now()))
-                .to.equal(false);
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, Date.now()))
-                .to.equal(true);
-      })
-
-      it("when evaluating existing non-variable path rule", () => {
-        expect(node.db.evalRule("/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, Date.now()))
-            .to.equal(true);
-        expect(node.db.evalRule("/apps/test/test_rule/some/path", 'value', { addr: 'other' }, Date.now()))
-            .to.equal(false);
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/path/deeper/path", 'value', { addr: 'ijkl' }, Date.now()))
-                .to.equal(true);
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/path/deeper/path", 'value', { addr: 'other' }, Date.now()))
-                .to.equal(false);
-      })
-
-      it("when evaluating existing closest rule", () => {
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/path/deeper", 'value', { addr: 'abcd' }, Date.now()))
-                .to.equal(true);
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/path/deeper", 'value', { addr: 'other' }, Date.now()))
-                .to.equal(false);
-      })
-    })
-
-    describe("evalOwner", () => {
-      it("when evaluating existing owner with matching address", () => {
+    describe("evalOwner:", () => {
+      it("evalOwner to evaluate existing owner with matching address", () => {
         expect(node.db.evalOwner(
             "/apps/test/test_owner/some/path", 'write_owner',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }))
@@ -1074,7 +1552,7 @@ describe("DB operations", () => {
                 .to.equal(false);
       })
 
-      it("when evaluating existing owner without matching address", () => {
+      it("evalOwner to evaluate existing owner without matching address", () => {
         expect(node.db.evalOwner("/apps/test/test_owner/some/path", 'write_owner', { addr: 'other' }))
             .to.equal(false);
         expect(node.db.evalOwner("/apps/test/test_owner/some/path", 'write_rule', { addr: 'other' }))
@@ -1087,7 +1565,7 @@ describe("DB operations", () => {
                 .to.equal(true);
       })
 
-      it("when evaluating closest owner", () => {
+      it("evalOwner to evaluate closest owner", () => {
         expect(node.db.evalOwner(
             "/apps/test/test_owner/some/path/deeper", 'write_owner',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }))
@@ -1105,8 +1583,104 @@ describe("DB operations", () => {
       })
     })
 
-    describe("get", () => {
-      it("when retrieving non-existing value or function or rule or owner", () => {
+    describe("setOwner:", () => {
+      it("setOwner to overwrite existing owner config", () => {
+        const ownerTree = {
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          },
+          "deeper": {
+            ".owner": {  // deeper owner
+              "owners": {
+                "*": {
+                  "branch_owner": true,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": true,
+                }
+              }
+            }
+          }
+        };
+        assert.deepEqual(node.db.setOwner(
+            "/apps/test/test_owner/some/path", ownerTree,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
+          "code": 0,
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.getOwner("/apps/test/test_owner/some/path"), ownerTree)
+      })
+
+      it("setOwner to write invalid object", () => {
+        assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path2", {array: []}), {
+          "code": 10601,
+          "error_message": "Invalid object for states: /array",
+          "bandwidth_gas_amount": 1
+        });
+        expect(node.db.getOwner("/apps/test/test_owner/some/path2")).to.equal(null)
+
+        assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path2", {'.': 'x'}), {
+          "code": 10601,
+          "error_message": "Invalid object for states: /.",
+          "bandwidth_gas_amount": 1
+        });
+        expect(node.db.getOwner("/apps/test/test_owner/some/path2")).to.equal(null)
+      })
+
+      it("setOwner to write invalid owner tree", () => {
+        const ownerTreeBefore = node.db.getOwner("/apps/test/test_owner/some/path");
+        assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path", {
+          ".owner": "invalid owners config"
+        }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
+          "code": 10604,
+          "error_message": "Invalid owner tree: /.owner",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.getOwner("/apps/test/test_owner/some/path"), ownerTreeBefore);
+
+        assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path", {
+          ".owner": {
+            "owners": "invalid owners config"
+          }
+        }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
+          "code": 10604,
+          "error_message": "Invalid owner tree: /.owner/owners",
+          "bandwidth_gas_amount": 1
+        });
+        assert.deepEqual(node.db.getOwner("/apps/test/test_owner/some/path"), ownerTreeBefore);
+      })
+
+      it("setOwner to write with invalid path", () => {
+        assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path/.", {
+          ".owner": {
+            "owners": {
+              "*": {
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          }
+        }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
+          "code": 10602,
+          "error_message": "Invalid owner path: /apps/test/test_owner/some/path/.",
+          "bandwidth_gas_amount": 1
+        });
+      })
+    })
+  });
+
+  describe("Composite operations", () => {
+    describe("get:", () => {
+      it("get to retrieve non-existing value or function or rule or owner", () => {
         assert.deepEqual(node.db.get([
           {
             // Default type: GET_VALUE
@@ -1241,7 +1815,7 @@ describe("DB operations", () => {
         ]);
       })
 
-      it("when retrieving existing value or function or rule or owner", () => {
+      it("get to retrieve existing value or function or rule or owner", () => {
         assert.deepEqual(node.db.get([
           {
             // Default type: GET_VALUE
@@ -1449,575 +2023,11 @@ describe("DB operations", () => {
         ]);
       })
     })
-  })
+  });
 
-  describe("Write operations", () => {
-    describe("setValue", () => {
-      it("when overwriting nested value", () => {
-        const newValue = {"new": 12345}
-        expect(node.db.setValue("/apps/test/nested/far/down", newValue).code).to.equal(0)
-        assert.deepEqual(node.db.getValue("/apps/test/nested/far/down"), newValue)
-      })
 
-      it("when creating new path in database", () => {
-        const newValue = 12345
-        expect(node.db.setValue("/apps/test/new/unchartered/nested/path", newValue).code).to.equal(0)
-        expect(node.db.getValue("/apps/test/new/unchartered/nested/path")).to.equal(newValue)
-      })
-
-      it("when writing invalid object", () => {
-        assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {array: []}), {
-          "code": 10101,
-          "error_message": "Invalid object for states: /array",
-          "bandwidth_gas_amount": 1
-        });
-        expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
-
-        assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {'.': 'x'}), {
-          "code": 10101,
-          "error_message": "Invalid object for states: /.",
-          "bandwidth_gas_amount": 1
-        });
-        expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
-
-        assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {'$': 'x'}), {
-          "code": 10101,
-          "error_message": "Invalid object for states: /$",
-          "bandwidth_gas_amount": 1
-        });
-        expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
-
-        assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {'*a': 'x'}), {
-          "code": 10101,
-          "error_message": "Invalid object for states: /*a",
-          "bandwidth_gas_amount": 1
-        });
-        expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
-
-        assert.deepEqual(node.db.setValue("/apps/test/unchartered/nested/path2", {'a*': 'x'}), {
-          "code": 10101,
-          "error_message": "Invalid object for states: /a*",
-          "bandwidth_gas_amount": 1
-        });
-        expect(node.db.getValue("/apps/test/unchartered/nested/path2")).to.equal(null)
-      })
-
-      it("when writing with invalid path", () => {
-        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/.", 12345), {
-          "code": 10102,
-          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/.",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/$", 12345), {
-          "code": 10102,
-          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/$",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/a*", 12345), {
-          "code": 10102,
-          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/a*",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/*a", 12345), {
-          "code": 10102,
-          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/*a",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/#", 12345), {
-          "code": 10102,
-          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/#",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/{", 12345), {
-          "code": 10102,
-          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/{",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/}", 12345), {
-          "code": 10102,
-          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/}",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/[", 12345), {
-          "code": 10102,
-          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/[",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/]", 12345), {
-          "code": 10102,
-          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/]",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/\x00", 12345), {
-          "code": 10102,
-          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/\x00",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/\x1F", 12345), {
-          "code": 10102,
-          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/\x1F",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.setValue("/apps/test/new/unchartered/nested/\x7F", 12345), {
-          "code": 10102,
-          "error_message": "Invalid value path: /apps/test/new/unchartered/nested/\x7F",
-          "bandwidth_gas_amount": 1
-        });
-      })
-
-      it("when writing with non-writable path with sharding", () => {
-        assert.deepEqual(node.db.setValue("/apps/test/shards/enabled_shard", 20), {
-          "code": 10104,
-          "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.setValue("/apps/test/shards/enabled_shard/path", 20), {
-          "code": 10104,
-          "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
-          "bandwidth_gas_amount": 1
-        });
-      })
-
-      it("when writing with writable path with sharding", () => {
-        expect(node.db.setValue("/apps/test/shards/disabled_shard", 20).code).to.equal(0);
-        expect(node.db.getValue("/apps/test/shards/disabled_shard")).to.equal(20)
-        expect(node.db.setValue("/apps/test/shards/disabled_shard/path", 20).code).to.equal(0);
-        expect(node.db.getValue("/apps/test/shards/disabled_shard/path")).to.equal(20)
-      })
-
-      it("when writing more than gc_max_siblings in state rule config", () => {
-        // Set state rule
-        expect(node.db.setRule("/apps/test/test_rule/some/path/more/than/max/$sibling", {
-          ".rule": {
-            "state": {
-              "gc_max_siblings": 1
-            }
-          }
-        }).code).to.equal(0);
-        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path/more/than/max/$sibling"), {
-          ".rule": {
-            "state": {
-              "gc_max_siblings": 1
-            }
-          }
-        });
-        // Set 1st child
-        expect(node.db.setValue("/apps/test/test_rule/some/path/more/than/max/child1", 1, { addr: 'abcd' },
-            null, { extra: { executed_at: 1234567890000 }}).code).to.equal(0);
-        assert.deepEqual(node.db.getValue("/apps/test/test_rule/some/path/more/than/max"), { "child1": 1 });
-        // Set 2nd child
-        expect(node.db.setValue("/apps/test/test_rule/some/path/more/than/max/child2", 2, { addr: 'abcd' },
-            null, { extra: { executed_at: 1234567890000 }}).code).to.equal(0);
-        // 1st child removed
-        assert.deepEqual(node.db.getValue("/apps/test/test_rule/some/path/more/than/max"), { "child2": 2 });
-      })
-
-      it("when writing value with more than max_children keys", () => {
-        expect(node.db.setRule("/apps/test/test_rule/some/path/more/than/max", {
-          ".rule": {
-            "state": {
-              "max_children": 1
-            }
-          }
-        }).code).to.equal(0);
-        assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/path/more/than/max", {
-            child1: 1,
-            child2: 2
-          }, { addr: 'abcd' },
-          null, { extra: { executed_at: 1234567890000 }}), {
-          error_message: 'No state permission on: /apps/test/test_rule/some/path/more/than/max',
-          code: 10106,
-          bandwidth_gas_amount: 1
-        });
-      })
-    })
-
-    describe("incValue", () => {
-      it("when increasing value successfully", () => {
-        expect(node.db.incValue("/apps/test/increment/value", 10).code).to.equal(0)
-        expect(node.db.getValue("/apps/test/increment/value")).to.equal(30)
-      })
-
-      it("returning error code and leaving value unchanged if delta is not numerical", () => {
-        expect(node.db.incValue("/apps/test/increment/value", '10').code).to.equal(10201)
-        expect(node.db.getValue("/apps/test/increment/value")).to.equal(20)
-      })
-
-      it("returning error code and leaving value unchanged if path is not numerical", () => {
-        expect(node.db.incValue("/apps/test/ai/foo", 10).code).to.equal(10201)
-        expect(node.db.getValue("/apps/test/ai/foo")).to.equal("bar")
-      })
-
-      it("creating and increasing given path from 0 if not currently in database", () => {
-        node.db.incValue("/apps/test/completely/new/path/test", 100);
-        expect(node.db.getValue("/apps/test/completely/new/path/test")).to.equal(100)
-      })
-
-      it("returning error code with non-writable path with sharding", () => {
-        assert.deepEqual(node.db.incValue("/apps/test/shards/enabled_shard/path", 5), {
-          "code": 10104,
-          "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
-          "bandwidth_gas_amount": 1
-        });
-      })
-
-      it("when increasing with writable path with sharding", () => {
-        expect(node.db.incValue("/apps/test/shards/disabled_shard/path", 5).code).to.equal(0);
-        expect(node.db.getValue("/apps/test/shards/disabled_shard/path")).to.equal(15)
-      })
-    })
-
-    describe("decValue", () => {
-      it("when decreasing value successfully", () => {
-        expect(node.db.decValue("/apps/test/decrement/value", 10).code).to.equal(0)
-        expect(node.db.getValue("/apps/test/decrement/value")).to.equal(10)
-      })
-
-      it("returning error code and leaving value unchanged if delta is not numerical", () => {
-        expect(node.db.decValue("/apps/test/decrement/value", '10').code).to.equal(10301)
-        expect(node.db.getValue("/apps/test/decrement/value")).to.equal(20)
-      })
-
-      it("returning error code and leaving value unchanged if path is not numerical", () => {
-        expect(node.db.decValue("/apps/test/ai/foo", 10).code).to.equal(10301)
-        expect(node.db.getValue("/apps/test/ai/foo")).to.equal("bar")
-      })
-
-      it("creating and decreasing given path from 0 if not currently in database", () => {
-        node.db.decValue("/apps/test/completely/new/path/test", 100);
-        expect(node.db.getValue("/apps/test/completely/new/path/test")).to.equal(-100)
-      })
-
-      it("returning error code with non-writable path with sharding", () => {
-        assert.deepEqual(node.db.decValue("/apps/test/shards/enabled_shard/path", 5), {
-          "code": 10104,
-          "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
-          "bandwidth_gas_amount": 1
-        });
-      })
-
-      it("when increasing with writable path with sharding", () => {
-        expect(node.db.decValue("/apps/test/shards/disabled_shard/path", 5).code).to.equal(0);
-        expect(node.db.getValue("/apps/test/shards/disabled_shard/path")).to.equal(5)
-      })
-    })
-
-    describe("setFunction", () => {
-      it("when overwriting existing function config with simple path", () => {
-        const functionConfig = {
-          ".function": {
-            "fid": {
-              "function_url": "http://echo-bot.ainetwork.ai/trigger",
-              "function_id": "fid",
-              "function_type": "REST",
-            }
-          }
-        };
-        expect(node.db.setFunction("/apps/test/test_function/some/path", functionConfig).code)
-            .to.equal(0);
-        assert.deepEqual(node.db.getFunction("/apps/test/test_function/some/path"), {
-          ".function": {
-            "fid": {
-              "function_url": "http://echo-bot.ainetwork.ai/trigger",  // modified
-              "function_id": "fid",
-              "function_type": "REST",
-            }
-          },
-          "deeper": {
-            "path": {
-              ".function": {
-                "fid_deeper": {
-                  "function_url": "https://events.ainetwork.ai/trigger",
-                  "function_id": "fid_deeper",
-                  "function_type": "REST",
-                }
-              }
-            }
-          }
-        })
-      })
-
-      it("when writing with variable path", () => {
-        const functionConfig = {
-          ".function": {
-            "fid_other": {
-              "function_url": "http://echo-bot.ainetwork.ai/trigger",
-              "function_id": "fid_other",
-              "function_type": "REST",
-            }
-          }
-        };
-        expect(node.db.setFunction("/apps/test/test_function/some/$variable/path", functionConfig).code)
-            .to.equal(0);
-        assert.deepEqual(
-            node.db.getFunction("/apps/test/test_function/some/$variable/path"), functionConfig)
-      })
-
-      it("when writing invalid object", () => {
-        assert.deepEqual(node.db.setFunction("/apps/test/test_function/some/path2", {array: []}), {
-          "code": 10401,
-          "error_message": "Invalid object for states: /array",
-          "bandwidth_gas_amount": 1
-        });
-        expect(node.db.getFunction("/apps/test/new2/unchartered/nested/path2")).to.equal(null)
-
-        assert.deepEqual(node.db.setFunction("/apps/test/test_function/some/path2", {'.': 'x'}), {
-          "code": 10401,
-          "error_message": "Invalid object for states: /.",
-          "bandwidth_gas_amount": 1
-        });
-        expect(node.db.getFunction("/apps/test/new2/unchartered/nested/path2")).to.equal(null)
-      })
-
-      it("when writing invalid function tree", () => {
-        const functionTreeBefore = node.db.getOwner("/apps/test/test_function/some/path");
-        assert.deepEqual(node.db.setFunction(
-            "/apps/test/test_function/some/path", { ".function": null }), {
-          "code": 10405,
-          "error_message": "Invalid function tree: /.function",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.getOwner("/apps/test/test_function/some/path"), functionTreeBefore);
-      })
-
-      it("when writing with invalid path", () => {
-        assert.deepEqual(node.db.setFunction(
-            "/apps/test/test_function/some/path/.", {
-              ".function": {
-                "fid": {
-                  "function_url": "http://echo-bot.ainetwork.ai/trigger",
-                  "function_id": "fid",
-                  "function_type": "REST",
-                }
-              }
-            }), {
-          "code": 10402,
-          "error_message": "Invalid function path: /apps/test/test_function/some/path/.",
-          "bandwidth_gas_amount": 1
-        });
-      })
-    })
-
-    describe("setRule", () => {
-      it("when overwriting existing rule config with simple path", () => {
-        const ruleConfig = {
-          ".rule": {
-            "write": "auth.addr === 'xyz'"
-          }
-        };
-        expect(node.db.setRule("/apps/test/test_rule/some/path", ruleConfig).code).to.equal(0);
-        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleConfig);
-      })
-
-      it("when writing with variable path", () => {
-        const ruleConfig = {
-          ".rule": {
-            "write": "auth.addr === 'xyz'"
-          }
-        };
-        expect(node.db.setRule("/apps/test/test_rule/some/$variable/path", ruleConfig).code)
-            .to.equal(0)
-        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/$variable/path"), ruleConfig)
-      })
-
-      it("when writing invalid object", () => {
-        assert.deepEqual(node.db.setRule("/apps/test/test_rule/some/path2", {array: []}), {
-          "code": 10501,
-          "error_message": "Invalid object for states: /array",
-          "bandwidth_gas_amount": 1
-        });
-        expect(node.db.getRule("/apps/test/test_rule/some/path2")).to.equal(null)
-
-        assert.deepEqual(node.db.setRule("/apps/test/test_rule/some/path2", {'.': 'x'}), {
-          "code": 10501,
-          "error_message": "Invalid object for states: /.",
-          "bandwidth_gas_amount": 1
-        });
-        expect(node.db.getRule("/apps/test/test_rule/some/path2")).to.equal(null)
-      })
-
-      it("when writing invalid rule tree", () => {
-        const ruleTreeBefore = node.db.getRule("/apps/test/test_rule/some/path");
-        assert.deepEqual(node.db.setRule(
-            "/apps/test/test_rule/some/path",
-            {
-              ".rule": {
-                "write": {
-                  "a": true
-                }
-              }
-            }), {
-          "code": 10504,
-          "error_message": "Invalid rule tree: /.rule/write",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleTreeBefore);
-      })
-
-      it("when writing invalid write rule with not-allowed top-level tokens", () => {
-        const ruleTreeBefore = node.db.getRule("/apps/test/test_rule/some/path");
-        assert.deepEqual(node.db.setRule(
-            "/apps/test/test_rule/some/path",
-            {
-              ".rule": {
-                "write": "invalid_top_level_token"
-              }
-            }), {
-          "code": 10504,
-          "error_message": "Invalid rule tree: /.rule/write",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), ruleTreeBefore);
-      })
-
-      it("when writing with invalid path", () => {
-        assert.deepEqual(node.db.setRule("/apps/test/test_rule/some/path/.",
-            {
-              ".rule": {
-                "write": "auth.addr === 'xyz'"
-              }
-            }), {
-          "code": 10502,
-          "error_message": "Invalid rule path: /apps/test/test_rule/some/path/.",
-          "bandwidth_gas_amount": 1
-        });
-      })
-
-      it("when writing state rule", () => {
-        const ruleConfig = {
-          ".rule": {
-            "state": {
-              "max_children": 1
-            }
-          }
-        };
-        expect(node.db.setRule("/apps/test/test_rule/some/path", ruleConfig).code).to.equal(0);
-        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
-          ".rule": {
-            "state": {
-              "max_children": 1
-            },
-            "write": "auth.addr === 'abcd'"
-          }
-        });
-      })
-
-      it("when writing both state and write rules", () => {
-        const ruleConfig = {
-          ".rule": {
-            "state": {
-              "max_children": 1
-            },
-            "write": "auth.addr === 'ijkl'"
-          }
-        };
-        expect(node.db.setRule("/apps/test/test_rule/some/path", ruleConfig).code).to.equal(0);
-        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
-          ".rule": {
-            "state": {
-              "max_children": 1
-            },
-            "write": "auth.addr === 'ijkl'" // updated
-          }
-        });
-      })
-    })
-
-    describe("setOwner", () => {
-      it("when overwriting existing owner config", () => {
-        const ownerTree = {
-          ".owner": {
-            "owners": {
-              "*": {
-                "branch_owner": true,
-                "write_function": true,
-                "write_owner": true,
-                "write_rule": true,
-              }
-            }
-          },
-          "deeper": {
-            ".owner": {  // deeper owner
-              "owners": {
-                "*": {
-                  "branch_owner": true,
-                  "write_function": true,
-                  "write_owner": true,
-                  "write_rule": true,
-                }
-              }
-            }
-          }
-        };
-        assert.deepEqual(node.db.setOwner(
-            "/apps/test/test_owner/some/path", ownerTree,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
-          "code": 0,
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.getOwner("/apps/test/test_owner/some/path"), ownerTree)
-      })
-
-      it("when writing invalid object", () => {
-        assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path2", {array: []}), {
-          "code": 10601,
-          "error_message": "Invalid object for states: /array",
-          "bandwidth_gas_amount": 1
-        });
-        expect(node.db.getOwner("/apps/test/test_owner/some/path2")).to.equal(null)
-
-        assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path2", {'.': 'x'}), {
-          "code": 10601,
-          "error_message": "Invalid object for states: /.",
-          "bandwidth_gas_amount": 1
-        });
-        expect(node.db.getOwner("/apps/test/test_owner/some/path2")).to.equal(null)
-      })
-
-      it("when writing invalid owner tree", () => {
-        const ownerTreeBefore = node.db.getOwner("/apps/test/test_owner/some/path");
-        assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path", {
-          ".owner": "invalid owners config"
-        }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
-          "code": 10604,
-          "error_message": "Invalid owner tree: /.owner",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.getOwner("/apps/test/test_owner/some/path"), ownerTreeBefore);
-
-        assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path", {
-          ".owner": {
-            "owners": "invalid owners config"
-          }
-        }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
-          "code": 10604,
-          "error_message": "Invalid owner tree: /.owner/owners",
-          "bandwidth_gas_amount": 1
-        });
-        assert.deepEqual(node.db.getOwner("/apps/test/test_owner/some/path"), ownerTreeBefore);
-      })
-
-      it("when writing with invalid path", () => {
-        assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path/.", {
-          ".owner": {
-            "owners": {
-              "*": {
-                "branch_owner": true,
-                "write_function": true,
-                "write_owner": true,
-                "write_rule": true,
-              }
-            }
-          }
-        }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
-          "code": 10602,
-          "error_message": "Invalid owner path: /apps/test/test_owner/some/path/.",
-          "bandwidth_gas_amount": 1
-        });
-      })
-    })
-
-    describe("executeSingleSetOperation", () => {
+  describe("Execute operations", () => {
+    describe("executeSingleSetOperation:", () => {
       it("when successful", () => {
         assert.deepEqual(node.db.executeSingleSetOperation({
           // Default type: SET_VALUE
@@ -2257,7 +2267,7 @@ describe("DB operations", () => {
       })
     })
 
-    describe("executeMultiSetOperation", () => {
+    describe("executeMultiSetOperation:", () => {
       it("when all operations applied successfully", () => {
         assert.deepEqual(node.db.executeMultiSetOperation([
           {
@@ -2726,7 +2736,7 @@ describe("DB operations", () => {
       rimraf.sync(NodeConfigs.CHAINS_DIR);
     });
 
-    describe("executeTransaction", () => {
+    describe("executeTransaction:", () => {
       it("returns code 0 for executable transaction", () => {
         expect(executableTx.extra).to.not.equal(undefined);
         expect(executableTx.extra.executed_at).to.equal(null);
@@ -3858,186 +3868,194 @@ describe("DB sharding config", () => {
     const incDelta = 5;
     const decDelta = 3;
 
-    it("getValue with isGlobal = false", () => {
-      expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(value);
-      expect(node.db.getValue("/apps/test_sharding/afan/test/some/path/to/value")).to.equal(null);
+    describe("getValue:", () => {
+      it("getValue with isGlobal = false", () => {
+        expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(value);
+        expect(node.db.getValue("/apps/test_sharding/afan/test/some/path/to/value")).to.equal(null);
+      })
+
+      it("getValue with isGlobal = true", () => {
+        expect(node.db.getValue("/apps/test/apps/test/test_sharding/some/path/to/value", { isShallow: false, isGlobal: true })).to.equal(null);
+        expect(node.db.getValue("/apps/afan/apps/test/test_sharding/some/path/to/value", { isShallow: false, isGlobal: true }))
+            .to.equal(value);
+      })
+
+      it("getValue with isGlobal = true and non-existing path", () => {
+        expect(node.db.getValue("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
+      })
     })
 
-    it("getValue with isGlobal = true", () => {
-      expect(node.db.getValue("/apps/test/apps/test/test_sharding/some/path/to/value", { isShallow: false, isGlobal: true })).to.equal(null);
-      expect(node.db.getValue("/apps/afan/apps/test/test_sharding/some/path/to/value", { isShallow: false, isGlobal: true }))
-          .to.equal(value);
-    })
 
-    it("getValue with isGlobal = true and non-existing path", () => {
-      expect(node.db.getValue("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
-    })
+    describe("setValue:", () => {
+      it("setValue with isGlobal = false", () => {
+        expect(node.db.setValue(
+            "/apps/test/test_sharding/some/path/to/value", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}).code)
+                .to.equal(0);
+        expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(newValue);
+      })
 
-    it("setValue with isGlobal = false", () => {
-      expect(node.db.setValue(
-          "/apps/test/test_sharding/some/path/to/value", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}).code)
-              .to.equal(0);
-      expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(newValue);
-    })
+      it("setValue with isGlobal = true", () => {
+        expect(node.db.setValue(
+            "/apps/afan/apps/test/test_sharding/some/path/to/value", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
+                .to.equal(0);
+        expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(newValue);
+      })
 
-    it("setValue with isGlobal = true", () => {
-      expect(node.db.setValue(
-          "/apps/afan/apps/test/test_sharding/some/path/to/value", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-              .to.equal(0);
-      expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(newValue);
-    })
+      it("setValue with isGlobal = true and non-existing path", () => {
+        expect(node.db.setValue(
+            "/apps/some/non-existing/path", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
+                .to.equal(0);
+      })
 
-    it("setValue with isGlobal = true and non-existing path", () => {
-      expect(node.db.setValue(
-          "/apps/some/non-existing/path", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-              .to.equal(0);
-    })
+      it("setValue with isGlobal = false and non-writable path with sharding", () => {
+        assert.deepEqual(node.db.setValue("/apps/test/test_sharding/shards/enabled_shard/path", 20), {
+          "code": 10104,
+          "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
+          "bandwidth_gas_amount": 1
+        });
+      })
 
-    it("setValue with isGlobal = false and non-writable path with sharding", () => {
-      assert.deepEqual(node.db.setValue("/apps/test/test_sharding/shards/enabled_shard/path", 20), {
-        "code": 10104,
-        "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
-        "bandwidth_gas_amount": 1
-      });
-    })
+      it("setValue with isGlobal = true and non-writable path with sharding", () => {
+        expect(node.db.setValue(
+            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 20, '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', null, null,
+            100, 1234567890000, { isGlobal: true }).code)
+                .to.equal(0);
+        expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
+            .to.equal(10);  // value unchanged
+      })
 
-    it("setValue with isGlobal = true and non-writable path with sharding", () => {
-      expect(node.db.setValue(
-          "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 20, '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', null, null,
-          100, 1234567890000, { isGlobal: true }).code)
-              .to.equal(0);
-      expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
-          .to.equal(10);  // value unchanged
-    })
+      it("setValue with isGlobal = false and writable path with sharding", () => {
+        expect(node.db.setValue("/apps/test/test_sharding/shards/disabled_shard/path", 20).code)
+            .to.equal(0);
+        expect(node.db.getValue("/apps/test/test_sharding/shards/disabled_shard/path")).to.equal(20);
+      })
 
-    it("setValue with isGlobal = false and writable path with sharding", () => {
-      expect(node.db.setValue("/apps/test/test_sharding/shards/disabled_shard/path", 20).code)
-          .to.equal(0);
-      expect(node.db.getValue("/apps/test/test_sharding/shards/disabled_shard/path")).to.equal(20);
-    })
+      it("setValue with isGlobal = true and writable path with sharding", () => {
+        expect(node.db.setValue(
+            "apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 20, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
+                .to.equal(0);
+        expect(node.db.getValue("apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
+            .to.equal(20);  // value changed
+      })
+    });
 
-    it("setValue with isGlobal = true and writable path with sharding", () => {
-      expect(node.db.setValue(
-          "apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 20, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-              .to.equal(0);
-      expect(node.db.getValue("apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
-          .to.equal(20);  // value changed
-    })
+    describe("incValue:", () => {
+      it("incValue with isGlobal = false", () => {
+        expect(node.db.incValue(
+            "/apps/test/test_sharding/some/path/to/number", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}).code)
+                .to.equal(0);
+        expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
+      })
 
-    it("incValue with isGlobal = false", () => {
-      expect(node.db.incValue(
-          "/apps/test/test_sharding/some/path/to/number", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}).code)
-              .to.equal(0);
-      expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
-    })
+      it("incValue with isGlobal = true", () => {
+        expect(node.db.incValue(
+            "/apps/afan/apps/test/test_sharding/some/path/to/number", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
+                .to.equal(0);
+        expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
+      })
 
-    it("incValue with isGlobal = true", () => {
-      expect(node.db.incValue(
-          "/apps/afan/apps/test/test_sharding/some/path/to/number", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-              .to.equal(0);
-      expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
-    })
+      it("incValue with isGlobal = true and non-existing path", () => {
+        expect(node.db.incValue(
+            "/apps/some/non-existing/path", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 100, 1234567890000, { isGlobal: true }).code)
+                .to.equal(0);
+      })
 
-    it("incValue with isGlobal = true and non-existing path", () => {
-      expect(node.db.incValue(
-          "/apps/some/non-existing/path", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 100, 1234567890000, { isGlobal: true }).code)
-              .to.equal(0);
-    })
+      it("incValue with isGlobal = false and non-writable path with sharding", () => {
+        assert.deepEqual(node.db.incValue("/apps/test/test_sharding/shards/enabled_shard/path", 5), {
+          "code": 10104,
+          "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
+          "bandwidth_gas_amount": 1
+        });
+      })
 
-    it("setValue with isGlobal = false and non-writable path with sharding", () => {
-      assert.deepEqual(node.db.incValue("/apps/test/test_sharding/shards/enabled_shard/path", 5), {
-        "code": 10104,
-        "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
-        "bandwidth_gas_amount": 1
-      });
-    })
+      it("incValue with isGlobal = true and non-writable path with sharding", () => {
+        expect(node.db.incValue(
+            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, null, 100, 1234567890000, { isGlobal: true }).code)
+                .to.equal(0);
+        expect(node.db.getValue("apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
+            .to.equal(10);  // value unchanged
+      })
 
-    it("setValue with isGlobal = true and non-writable path with sharding", () => {
-      expect(node.db.incValue(
-          "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, null, 100, 1234567890000, { isGlobal: true }).code)
-              .to.equal(0);
-      expect(node.db.getValue("apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
-          .to.equal(10);  // value unchanged
-    })
+      it("incValue with isGlobal = false and writable path with sharding", () => {
+        expect(node.db.incValue("/apps/test/test_sharding/shards/disabled_shard/path", 5).code).to.equal(0);
+        expect(node.db.getValue("/apps/test/test_sharding/shards/disabled_shard/path"))
+            .to.equal(15);  // value changed
+      })
 
-    it("setValue with isGlobal = false and writable path with sharding", () => {
-      expect(node.db.incValue("/apps/test/test_sharding/shards/disabled_shard/path", 5).code).to.equal(0);
-      expect(node.db.getValue("/apps/test/test_sharding/shards/disabled_shard/path"))
-          .to.equal(15);  // value changed
-    })
+      it("incValue with isGlobal = true and writable path with sharding", () => {
+        expect(node.db.incValue(
+            "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
+                .to.equal(0);
+        expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
+            .to.equal(15);  // value changed
+      })
+    });
 
-    it("setValue with isGlobal = true and writable path with sharding", () => {
-      expect(node.db.incValue(
-          "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-              .to.equal(0);
-      expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
-          .to.equal(15);  // value changed
-    })
+    describe("decValue:", () => {
+      it("decValue with isGlobal = false", () => {
+        expect(node.db.decValue(
+            "/apps/test/test_sharding/some/path/to/number", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}).code)
+                .to.equal(0);
+        expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
+      })
 
-    it("decValue with isGlobal = false", () => {
-      expect(node.db.decValue(
-          "/apps/test/test_sharding/some/path/to/number", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}).code)
-              .to.equal(0);
-      expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
-    })
+      it("decValue with isGlobal = true", () => {
+        expect(node.db.decValue(
+            "/apps/afan/apps/test/test_sharding/some/path/to/number", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
+                .to.equal(0);
+        expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
+      })
 
-    it("decValue with isGlobal = true", () => {
-      expect(node.db.decValue(
-          "/apps/afan/apps/test/test_sharding/some/path/to/number", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-              .to.equal(0);
-      expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
-    })
+      it("decValue with isGlobal = true and non-existing path", () => {
+        expect(node.db.decValue(
+            "/apps/some/non-existing/path", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 100, 1234567890000, { isGlobal: true }).code)
+                .to.equal(0);
+      })
 
-    it("decValue with isGlobal = true and non-existing path", () => {
-      expect(node.db.decValue(
-          "/apps/some/non-existing/path", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 100, 1234567890000, { isGlobal: true }).code)
-              .to.equal(0);
-    })
+      it("decValue with isGlobal = false and non-writable path with sharding", () => {
+        assert.deepEqual(node.db.decValue("/apps/test/test_sharding/shards/enabled_shard/path", 5), {
+          "code": 10104,
+          "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
+          "bandwidth_gas_amount": 1
+        });
+      })
 
-    it("setValue with isGlobal = false and non-writable path with sharding", () => {
-      assert.deepEqual(node.db.decValue("/apps/test/test_sharding/shards/enabled_shard/path", 5), {
-        "code": 10104,
-        "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
-        "bandwidth_gas_amount": 1
-      });
-    })
+      it("decValue with isGlobal = true and non-writable path with sharding", () => {
+        expect(node.db.decValue(
+            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, null, 100, 1234567890000, { isGlobal: true }).code)
+                .to.equal(0);
+        expect(node.db.getValue(
+            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
+                .to.equal(10);  // value unchanged
+      })
 
-    it("setValue with isGlobal = true and non-writable path with sharding", () => {
-      expect(node.db.decValue(
-          "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, null, 100, 1234567890000, { isGlobal: true }).code)
-              .to.equal(0);
-      expect(node.db.getValue(
-          "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
-              .to.equal(10);  // value unchanged
-    })
+      it("decValue with isGlobal = false and writable path with sharding", () => {
+        expect(node.db.decValue("/apps/test/test_sharding/shards/disabled_shard/path", 5).code)
+            .to.equal(0);
+        expect(node.db.getValue("/apps/test/test_sharding/shards/disabled_shard/path"))
+            .to.equal(5);  // value changed
+      })
 
-    it("setValue with isGlobal = false and writable path with sharding", () => {
-      expect(node.db.decValue("/apps/test/test_sharding/shards/disabled_shard/path", 5).code)
-          .to.equal(0);
-      expect(node.db.getValue("/apps/test/test_sharding/shards/disabled_shard/path"))
+      it("decValue with isGlobal = true and writable path with sharding", () => {
+        expect(node.db.decValue(
+            "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
+                .to.equal(0);
+        expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
           .to.equal(5);  // value changed
-    })
-
-    it("setValue with isGlobal = true and writable path with sharding", () => {
-      expect(node.db.decValue(
-          "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-          null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-              .to.equal(0);
-      expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
-        .to.equal(5);  // value changed
-    })
-
+      })
+    });
   })
 
   describe("Function operations", () => {
@@ -4087,110 +4105,116 @@ describe("DB sharding config", () => {
       }
     };
 
-    it("getFunction with isGlobal = false", () => {
-      assert.deepEqual(node.db.getFunction("/apps/test/test_sharding/some/path/to"), func);
-      expect(node.db.getFunction("apps/afan/test/test_sharding/some/path/to")).to.equal(null);
-    })
+    describe("getFunction:", () => {
+      it("getFunction with isGlobal = false", () => {
+        assert.deepEqual(node.db.getFunction("/apps/test/test_sharding/some/path/to"), func);
+        expect(node.db.getFunction("apps/afan/test/test_sharding/some/path/to")).to.equal(null);
+      })
 
-    it("getFunction with isGlobal = true", () => {
-      expect(node.db.getFunction("/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true })).to.equal(null);
-      assert.deepEqual(
-          node.db.getFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), func);
-    })
+      it("getFunction with isGlobal = true", () => {
+        expect(node.db.getFunction("/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true })).to.equal(null);
+        assert.deepEqual(
+            node.db.getFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), func);
+      })
 
-    it("getFunction with isGlobal = true and non-existing path", () => {
-      expect(node.db.getFunction("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
-    })
+      it("getFunction with isGlobal = true and non-existing path", () => {
+        expect(node.db.getFunction("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
+      })
+    });
 
-    it("setFunction with isGlobal = false", () => {
-      expect(node.db.setFunction(
-          "/apps/test/test_sharding/some/path/to", funcChange, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
-              .to.equal(0);
-      assert.deepEqual(node.db.getFunction("/apps/test/test_sharding/some/path/to"), newFunc);
-    })
+    describe("setFunction:", () => {
+      it("setFunction with isGlobal = false", () => {
+        expect(node.db.setFunction(
+            "/apps/test/test_sharding/some/path/to", funcChange, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
+                .to.equal(0);
+        assert.deepEqual(node.db.getFunction("/apps/test/test_sharding/some/path/to"), newFunc);
+      })
 
-    it("setFunction with isGlobal = true", () => {
-      expect(node.db.setFunction(
-          "/apps/afan/apps/test/test_sharding/some/path/to", funcChange,
-          { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
-              .to.equal(0);
-      assert.deepEqual(
-          node.db.getFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newFunc);
-    })
+      it("setFunction with isGlobal = true", () => {
+        expect(node.db.setFunction(
+            "/apps/afan/apps/test/test_sharding/some/path/to", funcChange,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
+                .to.equal(0);
+        assert.deepEqual(
+            node.db.getFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newFunc);
+      })
 
-    it("setFunction with isGlobal = true and non-existing path", () => {
-      expect(node.db.setFunction(
-          "/apps/some/non-existing/path", funcChange, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
-              .to.equal(0);
-    })
+      it("setFunction with isGlobal = true and non-existing path", () => {
+        expect(node.db.setFunction(
+            "/apps/some/non-existing/path", funcChange, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
+                .to.equal(0);
+      })
+    });
 
-    it("matchFunction with isGlobal = false", () => {
-      assert.deepEqual(node.db.matchFunction("/apps/test/test_sharding/some/path/to"), {
-        "matched_path": {
-          "target_path": "/apps/test/test_sharding/some/path/to",
-          "ref_path": "/apps/test/test_sharding/some/path/to",
-          "path_vars": {},
-        },
-        "matched_config": {
-          "config": {
-            "fid": {
-              "function_type": "REST",
-              "function_id": "fid",
-              "function_url": "https://events.ainetwork.ai/trigger",
-            }
+    describe("matchFunction:", () => {
+      it("matchFunction with isGlobal = false", () => {
+        assert.deepEqual(node.db.matchFunction("/apps/test/test_sharding/some/path/to"), {
+          "matched_path": {
+            "target_path": "/apps/test/test_sharding/some/path/to",
+            "ref_path": "/apps/test/test_sharding/some/path/to",
+            "path_vars": {},
           },
-          "path": "/apps/test/test_sharding/some/path/to"
-        },
-        "subtree_configs": [
-          {
+          "matched_config": {
             "config": {
-              "fid_deeper": {
+              "fid": {
                 "function_type": "REST",
-                "function_id": "fid_deeper",
+                "function_id": "fid",
                 "function_url": "https://events.ainetwork.ai/trigger",
-              },
+              }
             },
-            "path": "/deeper",
-          }
-        ]
-      });
-    })
-
-    it("matchFunction with isGlobal = true", () => {
-      assert.deepEqual(node.db.matchFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
-        "matched_path": {
-          "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
-          "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
-          "path_vars": {},
-        },
-        "matched_config": {
-          "config": {
-            "fid": {
-              "function_type": "REST",
-              "function_id": "fid",
-              "function_url": "https://events.ainetwork.ai/trigger",
-            }
+            "path": "/apps/test/test_sharding/some/path/to"
           },
-          "path": "/apps/afan/apps/test/test_sharding/some/path/to"
-        },
-        "subtree_configs": [
-          {
-            "config": {
-              "fid_deeper": {
-                "function_type": "REST",
-                "function_id": "fid_deeper",
-                "function_url": "https://events.ainetwork.ai/trigger",
+          "subtree_configs": [
+            {
+              "config": {
+                "fid_deeper": {
+                  "function_type": "REST",
+                  "function_id": "fid_deeper",
+                  "function_url": "https://events.ainetwork.ai/trigger",
+                },
               },
-            },
-            "path": "/deeper",
-          }
-        ]
-      });
-    })
+              "path": "/deeper",
+            }
+          ]
+        });
+      })
 
-    it("matchFunction with isGlobal = true and non-existing path", () => {
-      expect(node.db.matchFunction("/apps/some/non-existing/path", { isGlobal: true })).to.equal(null);
-    })
+      it("matchFunction with isGlobal = true", () => {
+        assert.deepEqual(node.db.matchFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
+          "matched_path": {
+            "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
+            "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
+            "path_vars": {},
+          },
+          "matched_config": {
+            "config": {
+              "fid": {
+                "function_type": "REST",
+                "function_id": "fid",
+                "function_url": "https://events.ainetwork.ai/trigger",
+              }
+            },
+            "path": "/apps/afan/apps/test/test_sharding/some/path/to"
+          },
+          "subtree_configs": [
+            {
+              "config": {
+                "fid_deeper": {
+                  "function_type": "REST",
+                  "function_id": "fid_deeper",
+                  "function_url": "https://events.ainetwork.ai/trigger",
+                },
+              },
+              "path": "/deeper",
+            }
+          ]
+        });
+      })
+
+      it("matchFunction with isGlobal = true and non-existing path", () => {
+        expect(node.db.matchFunction("/apps/some/non-existing/path", { isGlobal: true })).to.equal(null);
+      })
+    });
   })
 
   describe("Rule operations", () => {
@@ -4211,136 +4235,144 @@ describe("DB sharding config", () => {
     };
     const newValue = "that";
 
-    it("getRule with isGlobal = false", () => {
-      assert.deepEqual(node.db.getRule("/apps/test/test_sharding/some/path/to"), rule);
-      expect(node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to")).to.equal(null);
-    })
+    describe("getRule:", () => {
+      it("getRule with isGlobal = false", () => {
+        assert.deepEqual(node.db.getRule("/apps/test/test_sharding/some/path/to"), rule);
+        expect(node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to")).to.equal(null);
+      })
 
-    it("getRule with isGlobal = true", () => {
-      expect(node.db.getRule("/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true })).to.equal(null);
-      assert.deepEqual(
-          node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), rule);
-    })
+      it("getRule with isGlobal = true", () => {
+        expect(node.db.getRule("/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true })).to.equal(null);
+        assert.deepEqual(
+            node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), rule);
+      })
 
-    it("getRule with isGlobal = true and non-existing path", () => {
-      expect(node.db.getRule("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
-    })
+      it("getRule with isGlobal = true and non-existing path", () => {
+        expect(node.db.getRule("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
+      })
+    });
 
-    it("setRule with isGlobal = false", () => {
-      expect(node.db.setRule(
-          "/apps/test/test_sharding/some/path/to", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
-              .to.equal(0);
-      assert.deepEqual(node.db.getRule("/apps/test/test_sharding/some/path/to"), newRule);
-    })
+    describe("setRule:", () => {
+      it("setRule with isGlobal = false", () => {
+        expect(node.db.setRule(
+            "/apps/test/test_sharding/some/path/to", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
+                .to.equal(0);
+        assert.deepEqual(node.db.getRule("/apps/test/test_sharding/some/path/to"), newRule);
+      })
 
-    it("setRule with isGlobal = true", () => {
-      expect(node.db.setRule(
-          "/apps/afan/apps/test/test_sharding/some/path/to", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
-              .to.equal(0);
-      assert.deepEqual(
-          node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newRule);
-    })
+      it("setRule with isGlobal = true", () => {
+        expect(node.db.setRule(
+            "/apps/afan/apps/test/test_sharding/some/path/to", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
+                .to.equal(0);
+        assert.deepEqual(
+            node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newRule);
+      })
 
-    it("setRule with isGlobal = true and non-existing path", () => {
-      expect(node.db.setRule("/apps/some/non-existing/path", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
-          .to.equal(0);
-    })
+      it("setRule with isGlobal = true and non-existing path", () => {
+        expect(node.db.setRule("/apps/some/non-existing/path", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
+            .to.equal(0);
+      })
+    });
 
-    it("matchRule with isGlobal = false", () => {
-      assert.deepEqual(node.db.matchRule("/apps/test/test_sharding/some/path/to"), {
-        "write": {
-          "matched_path": {
-            "target_path": "/apps/test/test_sharding/some/path/to",
-            "ref_path": "/apps/test/test_sharding/some/path/to",
-            "path_vars": {},
-          },
-          "matched_config": {
-            "config": {
-              "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
+    describe("matchRule:", () => {
+      it("matchRule with isGlobal = false", () => {
+        assert.deepEqual(node.db.matchRule("/apps/test/test_sharding/some/path/to"), {
+          "write": {
+            "matched_path": {
+              "target_path": "/apps/test/test_sharding/some/path/to",
+              "ref_path": "/apps/test/test_sharding/some/path/to",
+              "path_vars": {},
             },
-            "path": "/apps/test/test_sharding/some/path/to"
-          },
-          "subtree_configs": [
-            {
+            "matched_config": {
               "config": {
-                "write": "auth.addr === 'def'"
+                "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
               },
-              "path": "/deeper",
-            }
-          ]
-        },
-        "state": {
-          "matched_path": {
-            "target_path": "/apps/test/test_sharding/some/path/to",
-            "ref_path": "/apps/test/test_sharding/some/path/to",
-            "path_vars": {}
-          },
-          "matched_config": {
-            "path": "/",
-            "config": null
-          }
-        }
-      });
-    })
-
-    it("matchRule with isGlobal = true", () => {
-      assert.deepEqual(node.db.matchRule("/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
-        "write": {
-          "matched_path": {
-            "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
-            "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
-            "path_vars": {},
-          },
-          "matched_config": {
-            "config": {
-              "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
+              "path": "/apps/test/test_sharding/some/path/to"
             },
-            "path": "/apps/afan/apps/test/test_sharding/some/path/to"
+            "subtree_configs": [
+              {
+                "config": {
+                  "write": "auth.addr === 'def'"
+                },
+                "path": "/deeper",
+              }
+            ]
           },
-          "subtree_configs": [
-            {
-              "config": {
-                "write": "auth.addr === 'def'"
-              },
-              "path": "/deeper",
+          "state": {
+            "matched_path": {
+              "target_path": "/apps/test/test_sharding/some/path/to",
+              "ref_path": "/apps/test/test_sharding/some/path/to",
+              "path_vars": {}
+            },
+            "matched_config": {
+              "path": "/",
+              "config": null
             }
-          ]
-        },
-        "state": {
-          "matched_config": {
-            "config": null,
-            "path": "/apps/afan"
-          },
-          "matched_path": {
-            "path_vars": {},
-            "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
-            "target_path": "/apps/afan/apps/test/test_sharding/some/path/to"
           }
-        }
+        });
+      })
+
+      it("matchRule with isGlobal = true", () => {
+        assert.deepEqual(node.db.matchRule("/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
+          "write": {
+            "matched_path": {
+              "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
+              "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
+              "path_vars": {},
+            },
+            "matched_config": {
+              "config": {
+                "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
+              },
+              "path": "/apps/afan/apps/test/test_sharding/some/path/to"
+            },
+            "subtree_configs": [
+              {
+                "config": {
+                  "write": "auth.addr === 'def'"
+                },
+                "path": "/deeper",
+              }
+            ]
+          },
+          "state": {
+            "matched_config": {
+              "config": null,
+              "path": "/apps/afan"
+            },
+            "matched_path": {
+              "path_vars": {},
+              "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
+              "target_path": "/apps/afan/apps/test/test_sharding/some/path/to"
+            }
+          }
+        });
+      })
+
+      it("matchRule with isGlobal = true and non-existing path", () => {
+        expect(node.db.matchRule("/apps/some/non-existing/path", { isGlobal: true })).to.equal(null);
+      })
       });
-    })
 
-    it("matchRule with isGlobal = true and non-existing path", () => {
-      expect(node.db.matchRule("/apps/some/non-existing/path", { isGlobal: true })).to.equal(null);
-    })
+      describe("evalRule:", () => {
+      it("evalRule with isGlobal = false", () => {
+        expect(node.db.evalRule("/apps/test/test_sharding/some/path/to", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }))
+            .to.equal(true);
+      })
 
-    it("evalRule with isGlobal = false", () => {
-      expect(node.db.evalRule("/apps/test/test_sharding/some/path/to", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }))
-          .to.equal(true);
-    })
+      it("evalRule with isGlobal = true", () => {
+        expect(node.db.evalRule(
+            "/apps/afan/apps/test/test_sharding/some/path/to", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" },
+            null, { isGlobal: true }))
+                .to.equal(true);
+      })
 
-    it("evalRule with isGlobal = true", () => {
-      expect(node.db.evalRule(
-          "/apps/afan/apps/test/test_sharding/some/path/to", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" },
-          null, { isGlobal: true }))
-              .to.equal(true);
-    })
-
-    it("evalRule with isGlobal = true and non-existing path", () => {
-      expect(node.db.evalRule(
-          "/apps/some/non-existing/path", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true }))
-              .to.equal(null);
-    })
+      it("evalRule with isGlobal = true and non-existing path", () => {
+        expect(node.db.evalRule(
+            "/apps/some/non-existing/path", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true }))
+                .to.equal(null);
+      })
+    });
   })
 
   describe("Owner operations", () => {
@@ -4406,119 +4438,127 @@ describe("DB sharding config", () => {
       }
     };
 
-    it("getOwner with isGlobal = false", () => {
-      assert.deepEqual(node.db.getOwner("/apps/test/test_sharding/some/path/to"), owner);
-      expect(node.db.getOwner("/apps/afan/apps/test/test_sharding/some/path/to")).to.equal(null);
-    })
+    describe("getOwner:", () => {
+      it("getOwner with isGlobal = false", () => {
+        assert.deepEqual(node.db.getOwner("/apps/test/test_sharding/some/path/to"), owner);
+        expect(node.db.getOwner("/apps/afan/apps/test/test_sharding/some/path/to")).to.equal(null);
+      })
 
-    it("getOwner with isGlobal = true", () => {
-      expect(node.db.getOwner("/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true })).to.equal(null);
-      assert.deepEqual(
-          node.db.getOwner("apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), owner);
-    })
+      it("getOwner with isGlobal = true", () => {
+        expect(node.db.getOwner("/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true })).to.equal(null);
+        assert.deepEqual(
+            node.db.getOwner("apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), owner);
+      })
 
-    it("getOwner with isGlobal = true and non-existing path", () => {
-      expect(node.db.getOwner("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
-    })
+      it("getOwner with isGlobal = true and non-existing path", () => {
+        expect(node.db.getOwner("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
+      })
+    });
 
-    it("setOwner with isGlobal = false", () => {
-      expect(node.db.setOwner(
-          "/apps/test/test_sharding/some/path/to", ownerChange,
-          { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
-              .to.equal(0);
-      assert.deepEqual(node.db.getOwner("/apps/test/test_sharding/some/path/to"), newOwner);
-    })
+    describe("setOwner:", () => {
+      it("setOwner with isGlobal = false", () => {
+        expect(node.db.setOwner(
+            "/apps/test/test_sharding/some/path/to", ownerChange,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
+                .to.equal(0);
+        assert.deepEqual(node.db.getOwner("/apps/test/test_sharding/some/path/to"), newOwner);
+      })
 
-    it("setOwner with isGlobal = true", () => {
-      expect(node.db.setOwner(
-          "/apps/afan/apps/test/test_sharding/some/path/to", ownerChange,
-          { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
-              .to.equal(0);
-      assert.deepEqual(
-          node.db.getOwner("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newOwner);
-    })
+      it("setOwner with isGlobal = true", () => {
+        expect(node.db.setOwner(
+            "/apps/afan/apps/test/test_sharding/some/path/to", ownerChange,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
+                .to.equal(0);
+        assert.deepEqual(
+            node.db.getOwner("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newOwner);
+      })
 
-    it("setOwner with isGlobal = true and non-existing path", () => {
-      expect(node.db.setOwner(
-          "/apps/some/non-existing/path", ownerChange,
-          { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code).to.equal(0);
-    })
+      it("setOwner with isGlobal = true and non-existing path", () => {
+        expect(node.db.setOwner(
+            "/apps/some/non-existing/path", ownerChange,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code).to.equal(0);
+      })
+    });
 
-    it("matchOwner with isGlobal = false", () => {
-      assert.deepEqual(node.db.matchOwner("/apps/test/test_sharding/some/path/to"), {
-        "matched_path": {
-          "target_path": "/apps/test/test_sharding/some/path/to",
-        },
-        "matched_config": {
-          "config": {
-            "owners": {
-              "*": {
-                "branch_owner": true,
-                "write_function": true,
-                "write_owner": true,
-                "write_rule": true,
-              },
-              "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
-                "branch_owner": true,
-                "write_function": true,
-                "write_owner": true,
-                "write_rule": true,
-              }
-            }
+    describe("matchOwner:", () => {
+      it("matchOwner with isGlobal = false", () => {
+        assert.deepEqual(node.db.matchOwner("/apps/test/test_sharding/some/path/to"), {
+          "matched_path": {
+            "target_path": "/apps/test/test_sharding/some/path/to",
           },
-          "path": "/apps/test/test_sharding/some/path/to"
-        }
-      });
-    })
-
-    it("matchOwner with isGlobal = true", () => {
-      assert.deepEqual(node.db.matchOwner("/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
-        "matched_path": {
-          "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
-        },
-        "matched_config": {
-          "config": {
-            "owners": {
-              "*": {
-                "branch_owner": true,
-                "write_function": true,
-                "write_owner": true,
-                "write_rule": true,
-              },
-              "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
-                "branch_owner": true,
-                "write_function": true,
-                "write_owner": true,
-                "write_rule": true,
+          "matched_config": {
+            "config": {
+              "owners": {
+                "*": {
+                  "branch_owner": true,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": true,
+                },
+                "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+                  "branch_owner": true,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": true,
+                }
               }
-            }
+            },
+            "path": "/apps/test/test_sharding/some/path/to"
+          }
+        });
+      })
+
+      it("matchOwner with isGlobal = true", () => {
+        assert.deepEqual(node.db.matchOwner("/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
+          "matched_path": {
+            "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
           },
-          "path": "/apps/afan/apps/test/test_sharding/some/path/to"
-        }
-      });
-    })
+          "matched_config": {
+            "config": {
+              "owners": {
+                "*": {
+                  "branch_owner": true,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": true,
+                },
+                "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+                  "branch_owner": true,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": true,
+                }
+              }
+            },
+            "path": "/apps/afan/apps/test/test_sharding/some/path/to"
+          }
+        });
+      })
 
-    it("matchOwner with isGlobal = true and non-existing path", () => {
-      expect(node.db.matchOwner("/apps/some/non-existing/path", { isGlobal: true })).to.equal(null);
-    })
+      it("matchOwner with isGlobal = true and non-existing path", () => {
+        expect(node.db.matchOwner("/apps/some/non-existing/path", { isGlobal: true })).to.equal(null);
+      })
+    });
 
-    it("evalOwner with isGlobal = false", () => {
-      expect(node.db.evalOwner(
-          "/apps/test/test_sharding/some/path/to", "write_rule",
-          { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" })).to.equal(true);
-    })
+    describe("evalOwner:", () => {
+      it("evalOwner with isGlobal = false", () => {
+        expect(node.db.evalOwner(
+            "/apps/test/test_sharding/some/path/to", "write_rule",
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" })).to.equal(true);
+      })
 
-    it("evalOwner with isGlobal = true", () => {
-      expect(node.db.evalOwner(
-          "/apps/afan/apps/test/test_sharding/some/path/to", "write_rule",
-          { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })).to.equal(true);
-    })
+      it("evalOwner with isGlobal = true", () => {
+        expect(node.db.evalOwner(
+            "/apps/afan/apps/test/test_sharding/some/path/to", "write_rule",
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })).to.equal(true);
+      })
 
-    it("evalOwner with isGlobal = true and non-existing path", () => {
-      expect(node.db.evalOwner(
-          "/apps/some/non-existing/path", "write_rule",
-          { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })).to.equal(null);
-    })
+      it("evalOwner with isGlobal = true and non-existing path", () => {
+        expect(node.db.evalOwner(
+            "/apps/some/non-existing/path", "write_rule",
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })).to.equal(null);
+      })
+    });
   })
 })
 
@@ -4560,7 +4600,7 @@ describe("State info", () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
   });
 
-  describe("Check proof for setValue(), setOwner(), setRule(), and setFunction()", () => {
+  describe("Check proof for setValue, setOwner, setRule, and setFunction", () => {
     it("checks state info of under $root_path/test", () => {
       const valuesNode = node.db.getRefForReading(['values', 'apps', 'test']);
       const ownersNode = node.db.getRefForReading(['owners', 'apps', 'test']);
@@ -4890,7 +4930,7 @@ describe("State version handling", () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
   });
 
-  describe("getRefForReading()", () => {
+  describe("getRefForReading", () => {
     it("the nodes on the path are not affected", () => {
       expect(node.db.deleteBackupStateVersion()).to.equal(true);
       const child2 = node.db.stateRoot.getChild('values').getChild('apps').getChild('test').getChild('child_2');
@@ -4910,7 +4950,7 @@ describe("State version handling", () => {
     });
   });
 
-  describe("getRefForWriting()", () => {
+  describe("getRefForWriting", () => {
     it("the nodes of single access path are not cloned", () => {
       // First referencing to make the number of access paths = 1.
       expect(node.db.getRefForWriting(['values', 'apps', 'test', 'child_2', 'child_21', 'child_212']))
@@ -5013,7 +5053,7 @@ describe("State version handling", () => {
     });
   });
 
-  describe("backupDb() / restoreDb()", () => {
+  describe("backupDb / restoreDb", () => {
     it("backuped states are restored", () => {
       assert.deepEqual(node.db.getValue('/apps/test'), dbValues);
 
