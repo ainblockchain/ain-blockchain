@@ -451,7 +451,7 @@ class P2pServer {
               const addressFromSig = getAddressFromMessage(parsedMessage);
               if (NodeConfigs.PEER_WHITE_LIST !== '' &&
                   !NodeConfigs.PEER_WHITE_LIST.includes(addressFromSig)) {
-                logger.error(`This peer(${sanitizedAddress}) is not on the PEER_WHITE_LIST.`);
+                logger.error(`This peer(${addressFromSig}) is not on the PEER_WHITE_LIST.`);
                 closeSocketSafe(this.inbound, socket);
                 return;
               }

@@ -189,7 +189,8 @@ class P2pClient {
    * Returns either true or false and also set p2pState.
    */
   updateP2pState() {
-    if (Object.keys(this.outbound).length < NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION) {
+    if (Object.keys(this.outbound).length + Object.keys(this.peerConnectionsInProgress).length <
+        NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION) {
       this.p2pState = P2pNetworkStates.EXPANDING;
     } else {
       this.p2pState = P2pNetworkStates.STEADY;
