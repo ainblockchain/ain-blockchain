@@ -1,6 +1,5 @@
 const path = require('path');
 const { signAndSendTx, confirmTransaction } = require('../util');
-const { FunctionResultCode } = require('../../common/result-code');
 let config = {};
 
 function buildCloseCheckoutTxBody(fromAddr, tokenAmount, checkoutId, failed = false) {
@@ -8,10 +7,10 @@ function buildCloseCheckoutTxBody(fromAddr, tokenAmount, checkoutId, failed = fa
     tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c'
   };
   if (failed) {
-    response.status = FunctionResultCode.FAILURE;
+    response.status = false;
     response.error_message = 'Ethereum tx failed..'
   } else {
-    response.status = FunctionResultCode.SUCCESS;
+    response.status = true;
   }
   return {
     operation: {
@@ -20,7 +19,8 @@ function buildCloseCheckoutTxBody(fromAddr, tokenAmount, checkoutId, failed = fa
       value: {
         request: {
           amount: tokenAmount,
-          recipient: config.recipientAddr
+          recipient: config.recipientAddr,
+          fee_rate: 0.001,
         },
         response
       },
