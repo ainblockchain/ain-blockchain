@@ -1,21 +1,34 @@
 const path = require('path');
+const ainUtil = require('@ainblockchain/ain-util');
+const stringify = require('fast-json-stable-stringify');
 const { signAndSendTx, confirmTransaction } = require('../util');
 let config = {};
 
 function buildOpenCheckinTxBody(fromAddr, tokenAmount, checkinId) {
   // NOTE(liayoo): `sender` is the address on `networkName` that will send `tokenId` tokens to the pool.
   // For example, with the Eth token bridge, it will be an Ethereum address that will send ETH to the pool.
+  const ref = `/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkinId}`;
+  const timestamp = Date.now();
+  const body = {
+    ref,
+    amount: tokenAmount,
+    sender: config.senderAddr,
+    timestamp,
+    nonce: -1,
+  };
+  const senderProof = ainUtil.ecSignMessage(stringify(body), Buffer.from(config.senderPrivateKey, 'hex'), 3);
   return {
     operation: {
       type: 'SET_VALUE',
-      ref: `/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkinId}`,
+      ref,
       value: {
         amount: tokenAmount,
-        sender: config.senderAddr
+        sender: config.senderAddr,
+        sender_proof: senderProof,
       },
       is_global: true,
     },
-    timestamp: Date.now(),
+    timestamp,
     nonce: -1
   }
 }
