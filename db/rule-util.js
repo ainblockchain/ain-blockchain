@@ -1,8 +1,5 @@
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
-const {
-  NormalFunctionResultCodeSet,
-} = require('../common/result-code');
 
 // NOTE(platfowner): To keep the blockchain deterministic as much as possible over time,
 //                   we keep util functions here self-contained as much as possible.
@@ -231,8 +228,9 @@ class RuleUtil {
     return getValue(PathUtil.getTokenBridgeTokenPoolPath(networkName, chainId, tokenId));
   }
 
-  validateCheckoutRequestData(networkName, chainId, tokenId, newData, getValue) {
+  validateCheckoutRequestData(networkName, chainId, tokenId, userAddr, checkoutId, newData, getValue) {
     const { TokenBridgeProperties } = require('../common/constants');
+    const PathUtil = require('../common/path-util');
     if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
         !this.isString(newData.recipient) || !this.isNumber(newData.fee_rate)) {
       return false;
@@ -242,6 +240,9 @@ class RuleUtil {
       return false;
     }
     if (tokenBridgeConfig[TokenBridgeProperties.CHECKOUT_FEE_RATE] !== newData.fee_rate) {
+      return false;
+    }
+    if (getValue(PathUtil.getCheckoutHistoryPath(networkName, chainId, tokenId, userAddr, checkoutId))) {
       return false;
     }
     return true;
@@ -261,11 +262,13 @@ class RuleUtil {
         this.isBool(newData.response.status);
   }
 
-  validateCheckinRequestData(networkName, chainId, tokenId, newData, getValue) {
+  validateCheckinRequestData(networkName, chainId, tokenId, userAddr, checkinId, newData, getValue) {
+    const PathUtil = require('../common/path-util');
     if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
         !this.isString(newData.sender) || !this.isString(newData.sender_proof)) {
       return false;
     }
+    if (getValue(PathUtil.getCheckinHistoryPath(networkName, chainId, tokenId, userAddr, checkinId))) {
       return false;
     }
     return this.isDict(this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue));
