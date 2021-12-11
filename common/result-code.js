@@ -110,14 +110,6 @@ const FunctionResultCode = {
 };
 
 /**
- * Set of normal function result code.
- */
-const NormalFunctionResultCodeSet = new Set([
-  FunctionResultCode.SUCCESS,
-  FunctionResultCode.FAILURE,
-]);
-
-/**
  * JSON RPC API result code.
  *
  * @enum {number}
@@ -226,7 +218,6 @@ module.exports = {
   TxResultCode,
   FailedTxPrecheckCodeSet,
   FunctionResultCode,
-  NormalFunctionResultCodeSet,
   ConsensusErrorCode,
   ConsensusErrorCodeSetToVoteAgainst,
 };

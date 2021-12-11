@@ -1086,7 +1086,7 @@ class Functions {
     const {
       [TokenBridgeProperties.TOKEN_POOL]: tokenPool
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
-    if (response.status === FunctionResultCode.SUCCESS) {
+    if (response.status === true) {
       // Increase complete amounts
       const updateStatsResultCode = this.updateStatsForCompleteCheckin(user, request.amount, context);
       if (updateStatsResultCode !== true) {
@@ -1241,7 +1241,7 @@ class Functions {
     const user = context.params.user_addr;
     const checkoutId = context.params.checkout_id;
     const { request, response } = value;
-    if (response.status === FunctionResultCode.SUCCESS) {
+    if (response.status === true) {
       // Increase complete amounts
       const updateStatsResultCode = this.updateStatsForCompleteCheckout(request.amount, context.blockTime, context);
       if (updateStatsResultCode !== true) {
