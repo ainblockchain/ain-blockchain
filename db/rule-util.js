@@ -258,7 +258,7 @@ class RuleUtil {
       return false;
     }
     return this.isDict(newData.response) && this.isValidHash(newData.response.tx_hash) &&
-        NormalFunctionResultCodeSet.has(newData.response.status);
+        this.isBool(newData.response.status);
   }
 
   validateCheckinRequestData(networkName, chainId, tokenId, newData, getValue) {
@@ -282,7 +282,7 @@ class RuleUtil {
       return false;
     }
     return this.isDict(newData.response) && this.isValidHash(newData.response.tx_hash) &&
-        NormalFunctionResultCodeSet.has(newData.response.status);
+        this.isBool(newData.response.status);
   }
 
   validateClaimRewardData(userAddr, newData, getValue) {
