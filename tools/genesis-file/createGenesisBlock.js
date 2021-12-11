@@ -12,8 +12,6 @@ const {
   TokenProperties,
   ShardingProperties,
   ShardingProtocols,
-  GenesisSharding,
-  GenesisToken,
   StateVersions,
   getBlockchainConfig,
   buildOwnerPermissions,
@@ -68,9 +66,9 @@ function getShardingRule() {
 
 function getTokenOwner() {
   const genesisTokenOwner = {};
-  for (const networkName of Object.keys(GenesisToken.bridge)) {
-    for (const chainId of Object.keys(GenesisToken.bridge[networkName])) {
-      for (const tokenId of Object.keys(GenesisToken.bridge[networkName][chainId])) {
+  for (const networkName of Object.keys(BlockchainParams.token.bridge)) {
+    for (const chainId of Object.keys(BlockchainParams.token.bridge[networkName])) {
+      for (const tokenId of Object.keys(BlockchainParams.token.bridge[networkName][chainId])) {
         CommonUtil.setJsObject(
           genesisTokenOwner,
           [networkName, chainId, tokenId],
@@ -100,9 +98,9 @@ function getTokenOwner() {
 
 function getTokenRule() {
   const rules = {};
-  for (const networkName of Object.keys(GenesisToken.bridge)) {
-    for (const chainId of Object.keys(GenesisToken.bridge[networkName])) {
-      for (const tokenId of Object.keys(GenesisToken.bridge[networkName][chainId])) {
+  for (const networkName of Object.keys(BlockchainParams.token.bridge)) {
+    for (const chainId of Object.keys(BlockchainParams.token.bridge[networkName])) {
+      for (const tokenId of Object.keys(BlockchainParams.token.bridge[networkName][chainId])) {
         CommonUtil.setJsObject(
           rules,
           [networkName, chainId, tokenId],
@@ -168,16 +166,16 @@ function getBlockchainParamsOwner() {
 function getGenesisValues() {
   const values = {};
   const ownerAddress = GenesisAccounts.owner.address;
-  CommonUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], GenesisToken);
+  CommonUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], BlockchainParams.token);
   CommonUtil.setJsObject(
     values,
     [PredefinedDbPaths.ACCOUNTS, ownerAddress, PredefinedDbPaths.BALANCE],
-    GenesisToken[TokenProperties.TOTAL_SUPPLY]
+    BlockchainParams.token[TokenProperties.TOTAL_SUPPLY]
   );
   CommonUtil.setJsObject(
     values,
     [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
-    GenesisSharding
+    BlockchainParams.sharding
   );
   CommonUtil.setJsObject(
     values,
@@ -199,7 +197,7 @@ function getGenesisValues() {
 
 function getGenesisRules() {
   const rules = getBlockchainConfig('genesis_rules.json');
-  if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
+  if (BlockchainParams.sharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     CommonUtil.setJsObject(
       rules,
       [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
@@ -221,7 +219,7 @@ function getGenesisOwners() {
     [],
     getRootOwner()
   );
-  if (GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
+  if (BlockchainParams.sharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
     CommonUtil.setJsObject(
       owners,
       [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],

@@ -15,7 +15,6 @@ const {
   ShardingProperties,
   ShardingProtocols,
   GenesisAccounts,
-  GenesisSharding,
   TransactionStates,
   StateVersions,
   SyncModeOptions,
@@ -133,11 +132,12 @@ class BlockchainNode {
   }
 
   initShardSetting() {
-    this.isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
+    const shardingProtocol = this.getBlockchainParam('sharding/sharding_protocol');
+    const shardReporter = this.getBlockchainParam('sharding/shard_reporter');
+    this.isShardChain = shardingProtocol !== ShardingProtocols.NONE;
     this.isShardReporter =
         this.isShardChain &&
-        CommonUtil.areSameAddrs(
-            GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
+        CommonUtil.areSameAddrs(shardReporter, this.account.address);
   }
 
   // For testing purpose only.
@@ -412,7 +412,9 @@ class BlockchainNode {
     const params = DB.getValueFromStateRoot(
         this.stateManager.getFinalRoot(), PathUtil.getBlockchainParamsRootPath()) || {};
     const token = DB.getValueFromStateRoot(this.stateManager.getFinalRoot(), PredefinedDbPaths.TOKEN) || {};
-    const sharding = DB.getValueFromStateRoot(this.stateManager.getFinalRoot(), PredefinedDbPaths.SHARDING) || {};
+    const sharding = DB.getValueFromStateRoot(
+        this.stateManager.getFinalRoot(),
+        CommonUtil.formatPath([PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG])) || {};
     return Object.assign(params, { token }, { sharding });
   }
 
