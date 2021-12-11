@@ -12,7 +12,6 @@ const {
   StateInfoProperties,
   BlockchainSnapshotProperties,
   ShardingProperties,
-  GenesisSharding,
   StateVersions,
   buildOwnerPermissions,
   BlockchainParams,
@@ -55,7 +54,7 @@ class DB {
     this.stateVersion = stateVersion;
     this.backupStateRoot = null;
     this.backupStateVersion = null;
-    this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
+    this.setShardingPath(BlockchainParams.sharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this);
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
@@ -554,6 +553,13 @@ class DB {
     // have the genesis block and the params in the state.
     if (blockNumber <= 0) {
       return BlockchainParams[category][name];
+    }
+    if (category === 'sharding') {
+      return DB.getValueFromStateRoot(
+          stateRoot, CommonUtil.formatPath([category, PredefinedDbPaths.SHARDING_CONFIG, name]));
+    }
+    if (category === 'token') {
+      return DB.getValueFromStateRoot(stateRoot, CommonUtil.formatPath([category, name]));
     }
     return DB.getValueFromStateRoot(stateRoot, PathUtil.getSingleBlockchainParamPath(category, name));
   }

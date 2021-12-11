@@ -10,8 +10,6 @@ const {
   PredefinedDbPaths,
   StateInfoProperties,
   StateVersions,
-  GenesisToken,
-  GenesisSharding,
   BlockchainParams,
 } = require('../../common/constants')
 const {
@@ -40,24 +38,23 @@ describe("DB initialization", () => {
 
   describe("Sharding path", () => {
     it("getShardingPath", () => {
-      expect(node.db.getShardingPath()).to.equal(GenesisSharding.sharding_path);
+      expect(node.db.getShardingPath()).to.equal(BlockchainParams.sharding.sharding_path);
     })
 
     it("isRootBlockchain", () => {
-      expect(node.db.isRootBlockchain).to.equal(GenesisSharding.sharding_protocol === 'NONE');
+      expect(node.db.isRootBlockchain).to.equal(BlockchainParams.sharding.sharding_protocol === 'NONE');
     })
   })
 
   describe("Token", () => {
     it("loading token properly on initialization", () => {
-      assert.deepEqual(node.db.getValue(`/token`), GenesisToken);
+      assert.deepEqual(node.db.getValue(`/token`), BlockchainParams.token);
     })
   })
 
   describe("Balances", () => {
     it("loading balances properly on initialization", () => {
-      const expected =
-          GenesisToken.total_supply - 5 * 11000000 - 5 * 1000000;
+      const expected = BlockchainParams.token.total_supply - 5 * 11000000 - 5 * 1000000;
       const dbPath = `/accounts/${BlockchainParams.genesis.genesis_addr}/balance`;
       expect(node.db.getValue(dbPath)).to.equal(expected);
     })
@@ -65,7 +62,7 @@ describe("DB initialization", () => {
 
   describe("Sharding", () => {
     it("loading sharding properly on initialization", () => {
-      assert.deepEqual(node.db.getValue(`/sharding/config`), GenesisSharding);
+      assert.deepEqual(node.db.getValue(`/sharding/config`), BlockchainParams.sharding);
     })
   })
 

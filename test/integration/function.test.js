@@ -10,7 +10,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const {
   BlockchainConsts,
   NodeConfigs,
-  GenesisToken,
+  BlockchainParams,
 } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
 const {
@@ -3535,7 +3535,7 @@ describe('Native Function', () => {
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkoutRequestBasePath = `/checkout/requests/${networkName}/${chainId}/${tokenId}`;
       const checkoutHistoryBasePath = `/checkout/history/${networkName}/${chainId}/${tokenId}`;
-      const tokenBridgeConfig = GenesisToken.bridge[networkName][chainId][tokenId];
+      const tokenBridgeConfig = BlockchainParams.token.bridge[networkName][chainId][tokenId];
       const {
         token_pool: tokenPoolAddr,
         min_checkout_per_request: minCheckoutPerRequest,
@@ -4190,7 +4190,7 @@ describe('Native Function', () => {
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkinRequestBasePath = `/checkin/requests/${networkName}/${chainId}/${tokenId}`;
       const checkinHistoryBasePath = `/checkin/history/${networkName}/${chainId}/${tokenId}`;
-      const tokenPoolAddr = GenesisToken.bridge[networkName][chainId][tokenId].token_pool;
+      const tokenPoolAddr = BlockchainParams.token.bridge[networkName][chainId][tokenId].token_pool;
       const checkinAmount = 100;
       const ethAddress = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // sender
 

@@ -58,9 +58,6 @@ if (!semver.valid(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION)) {
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
 // TODO(liayoo): Deprecate GenesisAccounts
 const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
-// TODO(liayoo): Use on-chain value instead of GenesisToken & GenesisSharding
-const GenesisToken = BlockchainParams.token;
-const GenesisSharding = BlockchainParams.sharding;
 
 // ** Node configs, set for individual nodes by env vars **
 const NodeConfigs = {};
@@ -706,9 +703,7 @@ module.exports = {
   WriteDbOperations,
   TransactionStates,
   StateVersions,
-  GenesisToken,
   GenesisAccounts,
-  GenesisSharding,
   getBlockchainConfig,
   SyncModeOptions,
   TrafficEventTypes,
