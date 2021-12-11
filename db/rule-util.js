@@ -263,7 +263,9 @@ class RuleUtil {
 
   validateCheckinRequestData(networkName, chainId, tokenId, newData, getValue) {
     if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
-        !this.isString(newData.sender)) {
+        !this.isString(newData.sender) || !this.isString(newData.sender_proof)) {
+      return false;
+    }
       return false;
     }
     return this.isDict(this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue));
