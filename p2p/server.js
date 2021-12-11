@@ -721,7 +721,6 @@ class P2pServer {
   async setUpDbForSharding() {
     const LOG_HEADER = 'setUpDbForSharding';
     const shardingConfig = this.node.getAllBlockchainParamsFromState().sharding;
-    logger.error(`shardingConfig = ${JSON.stringify(shardingConfig, null, 2)}`)
     const parentChainEndpoint = shardingConfig.parent_chain_poc + '/json-rpc';
     const shardOwner = shardingConfig.shard_owner;
     const shardReporter = shardingConfig.shard_reporter;
