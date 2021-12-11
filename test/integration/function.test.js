@@ -7,10 +7,12 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
+const stringify = require('fast-json-stable-stringify');
 const {
   BlockchainConsts,
   NodeConfigs,
   GenesisToken,
+  BlockchainParams,
 } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
 const {
@@ -3871,7 +3873,7 @@ describe('Native Function', () => {
               fee_rate: checkoutFeeRate,
             },
             response: {
-              status: 0
+              status: true
             }
           }
         }}).body.toString('utf-8'));
@@ -3896,7 +3898,7 @@ describe('Native Function', () => {
                 fee_rate: checkoutFeeRate,
               },
               response: {
-                status: 0,
+                status: true,
                 tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c'
               }
             }
@@ -4041,7 +4043,7 @@ describe('Native Function', () => {
                 fee_rate: checkoutFeeRate,
               },
               response: {
-                status: 20001,
+                status: false,
                 tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c',
                 error_message: 'Ethereum tx failed'
               }
@@ -4192,7 +4194,8 @@ describe('Native Function', () => {
       const checkinHistoryBasePath = `/checkin/history/${networkName}/${chainId}/${tokenId}`;
       const tokenPoolAddr = GenesisToken.bridge[networkName][chainId][tokenId].token_pool;
       const checkinAmount = 100;
-      const ethAddress = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // sender
+      const sender = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // eth address
+      const senderPrivateKey = Buffer.from('ee0b1315d446e5318eb6eb4e9d071cd12ef42d2956d546f9acbdc3b75c469640', 'hex');
 
       before(async () => {
         // Send some AIN to tokenPoolAddr
@@ -4212,12 +4215,25 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const ref = `${checkinRequestBasePath}/${serviceUser}/0`;
+        const timestamp = Date.now();
+        const senderProofBody = {
+          ref,
+          amount: 0,
+          sender,
+          timestamp,
+          nonce: -1,
+        };
+        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkinRequestBasePath}/${serviceUser}/0`,
+          ref,
           value: {
             amount: 0,
-            sender: ethAddress
-          }
+            sender,
+            sender_proof: senderProof,
+          },
+          timestamp,
+          nonce: -1,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -4242,12 +4258,24 @@ describe('Native Function', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const ref = `/checkin/requests/AIN/${chainId}/${tokenId}/${serviceUser}/0`;
+        const timestamp = Date.now();
+        const senderProofBody = {
+          ref,
+          amount: checkinAmount,
+          sender,
+          timestamp,
+          nonce: -1,
+        };
+        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
             amount: checkinAmount,
-            sender: ethAddress
-          }
+            sender,
+            sender_proof: senderProof,
+          },
+          timestamp,
+          nonce: -1,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -4272,11 +4300,21 @@ describe('Native Function', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const ref = `/checkin/requests/${networkName}/1/${tokenId}/${serviceUser}/0`;
+        const timestamp = Date.now();
+        const senderProofBody = {
+          ref,
+          amount: checkinAmount,
+          sender,
+          timestamp,
+          nonce: -1,
+        };
+        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
             amount: checkinAmount,
-            sender: ethAddress
+            sender,
+            sender_proof: senderProof,
           }
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
@@ -4302,12 +4340,24 @@ describe('Native Function', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const ref = `/checkin/requests/${networkName}/${chainId}/0xINVALID_TOKEN_ID/${serviceUser}/0`;
+        const timestamp = Date.now();
+        const senderProofBody = {
+          ref,
+          amount: checkinAmount,
+          sender,
+          timestamp,
+          nonce: -1,
+        };
+        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
             amount: checkinAmount,
-            sender: ethAddress
-          }
+            sender,
+            sender_proof: senderProof,
+          },
+          timestamp,
+          nonce: -1,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -4331,12 +4381,25 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const ref = `${checkinRequestBasePath}/${serviceUser}/0`;
+        const timestamp = Date.now();
+        const senderProofBody = {
+          ref,
+          amount: checkinAmount,
+          sender: sender.toLowerCase(),
+          timestamp,
+          nonce: -1,
+        };
+        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkinRequestBasePath}/${serviceUser}/0`,
+          ref,
           value: {
             amount: checkinAmount,
-            sender: ethAddress.toLowerCase()
-          }
+            sender: sender.toLowerCase(),
+            sender_proof: senderProof,
+          },
+          timestamp,
+          nonce: -1,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -4360,13 +4423,25 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const ref = `${checkinRequestBasePath}/${serviceUser}/0`;
+        const timestamp = 1628255843548;
+        const senderProofBody = {
+          ref,
+          amount: checkinAmount,
+          sender,
+          timestamp,
+          nonce: -1,
+        };
+        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkinRequestBasePath}/${serviceUser}/0`,
+          ref,
           value: {
             amount: checkinAmount,
-            sender: ethAddress
+            sender,
+            sender_proof: senderProof,
           },
-          timestamp: 1628255843548
+          timestamp,
+          nonce: -1,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -4418,7 +4493,7 @@ describe('Native Function', () => {
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
             .body.toString('utf-8')).result;
         const senderPendingAmount = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${ethAddress}`)
+            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${sender}`)
             .body.toString('utf-8')).result;
         const tokenPoolPendingAmount = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkin/stats/pending/token_pool/${tokenPoolAddr}`)
@@ -4435,12 +4510,25 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const ref = `${checkinRequestBasePath}/${serviceUser}/1`;
+        const timestamp = Date.now();
+        const senderProofBody = {
+          ref,
+          amount: checkinAmount,
+          sender,
+          timestamp,
+          nonce: -1,
+        };
+        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkinRequestBasePath}/${serviceUser}/1`,
+          ref,
           value: {
             amount: checkinAmount,
-            sender: ethAddress
-          }
+            sender,
+            sender_proof: senderProof,
+          },
+          timestamp,
+          nonce: -1,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -4464,12 +4552,26 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const ref = `${checkinRequestBasePath}/${serviceUser}/1`;
+        const amount = beforeTokenPoolBalance - checkinAmount + 1;
+        const timestamp = Date.now();
+        const senderProofBody = {
+          ref,
+          amount,
+          sender,
+          timestamp,
+          nonce: -1,
+        };
+        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkinRequestBasePath}/${serviceUser}/1`,
+          ref,
           value: {
-            amount: beforeTokenPoolBalance - checkinAmount + 1,
-            sender: ethAddress
-          }
+            amount,
+            sender,
+            sender_proof: senderProof,
+          },
+          timestamp,
+          nonce: -1,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -4488,15 +4590,14 @@ describe('Native Function', () => {
       });
 
       it('cannot close checkin with a non-authorized address', async () => {
+        const request = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `${checkinHistoryBasePath}/${serviceUser}/0`,
           value: {
-            request: {
-              amount: checkinAmount,
-              sender: ethAddress
-            },
+            request,
             response: {
-              status: 0
+              status: true
             }
           }
         }}).body.toString('utf-8'));
@@ -4516,17 +4617,16 @@ describe('Native Function', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const timestamp = Date.now();
+        const request = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
         const txBody = {
           operation: {
             type: 'SET_VALUE',
             ref: `${checkinHistoryBasePath}/${serviceUser}/0`,
             value: {
-              request: {
-                amount: checkinAmount,
-                sender: ethAddress
-              },
+              request,
               response: {
-                status: 0,
+                status: true,
                 tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c'
               }
             }
@@ -4647,7 +4747,7 @@ describe('Native Function', () => {
         const afterTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const senderPendingAmount = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${ethAddress}`)
+            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${sender}`)
             .body.toString('utf-8')).result;
         const tokenPoolPendingAmount = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkin/stats/pending/token_pool/${tokenPoolAddr}`)
@@ -4674,12 +4774,26 @@ describe('Native Function', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
             .body.toString('utf-8')).result || 0;
+        const ref = `${checkinRequestBasePath}/${serviceUser}/1`;
+        const timestamp = Date.now();
+        const senderProofBody = {
+          ref,
+          amount: checkinAmount,
+          sender,
+          timestamp,
+          nonce: -1,
+        };
+        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
+        const request = {
+          amount: checkinAmount,
+          sender,
+          sender_proof: senderProof,
+        };
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: `${checkinRequestBasePath}/${serviceUser}/1`,
-          value: {
-            amount: checkinAmount,
-            sender: ethAddress
-          }
+          value: request,
+          timestamp,
+          nonce: -1,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -4692,12 +4806,9 @@ describe('Native Function', () => {
             type: 'SET_VALUE',
             ref: `${checkinHistoryBasePath}/${serviceUser}/1`,
             value: {
-              request: {
-                amount: checkinAmount,
-                sender: ethAddress
-              },
+              request,
               response: {
-                status: 20001,
+                status: false,
                 tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c',
                 error_message: 'Ethereum tx failed'
               }
@@ -4777,7 +4888,7 @@ describe('Native Function', () => {
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
             .body.toString('utf-8')).result || 0;
         const senderPendingAmount = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${ethAddress}`)
+            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${sender}`)
             .body.toString('utf-8')).result;
         const tokenPoolPendingAmount = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkin/stats/pending/token_pool/${tokenPoolAddr}`)
@@ -4830,12 +4941,25 @@ describe('Native Function', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
             .body.toString('utf-8')).result || 0;
-        const requestBody = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkinRequestBasePath}/${serviceUser}/1`,
-          value: {
+        const ref = `${checkinRequestBasePath}/${serviceUser}/2`;
+        const timestamp = Date.now();
+        const senderProofBody = {
+          ref,
           amount: checkinAmount,
-          sender: ethAddress
-          }
+          sender,
+          timestamp,
+          nonce: -1,
+        };
+        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
+        const requestBody = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref,
+          value: {
+            amount: checkinAmount,
+            sender,
+            sender_proof: senderProof,
+          },
+          timestamp,
+          nonce: -1,
         }}).body.toString('utf-8'));
         expect(requestBody.code).to.equal(0);
         if (!(await waitUntilTxFinalized(serverList, _.get(requestBody, 'result.tx_hash')))) {
@@ -4848,7 +4972,7 @@ describe('Native Function', () => {
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const afterRequestSenderPendingAmount = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${ethAddress}`)
+            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${sender}`)
             .body.toString('utf-8')).result;
         const afterRequestTokenPoolPendingAmount = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkin/stats/pending/token_pool/${tokenPoolAddr}`)
@@ -4866,8 +4990,7 @@ describe('Native Function', () => {
             server2 + `/get_value?ref=/checkin/stats/complete/total`)
             .body.toString('utf-8')).result;
         const cancelBody = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkinRequestBasePath}/${serviceUser}/1`,
-          value: null
+          ref, value: null
         }}).body.toString('utf-8'));
         expect(cancelBody.code).to.equal(0);
         if (!(await waitUntilTxFinalized(serverList, _.get(cancelBody, 'result.tx_hash')))) {
@@ -4879,7 +5002,7 @@ describe('Native Function', () => {
         const afterCancelTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const afterCancelSenderPendingAmount = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${ethAddress}`)
+            server2 + `/get_value?ref=/checkin/stats/pending/${networkName}/${chainId}/${tokenId}/${sender}`)
             .body.toString('utf-8')).result;
         const afterCancelTokenPoolPendingAmount = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/checkin/stats/pending/token_pool/${tokenPoolAddr}`)
