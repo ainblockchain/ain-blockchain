@@ -281,8 +281,14 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         KEYSTORE_FILENAME="keystore_node_2.json"
     elif [[ $NODE_INDEX = 3 ]]; then
         KEYSTORE_FILENAME="keystore_node_3.json"
-    else
+    elif [[ $NODE_INDEX = 4 ]]; then
         KEYSTORE_FILENAME="keystore_node_4.json"
+    elif [[ $NODE_INDEX = 5 ]]; then
+        KEYSTORE_FILENAME="keystore_node_5.json"
+    elif [[ $NODE_INDEX = 6 ]]; then
+        KEYSTORE_FILENAME="keystore_node_6.json"
+    else
+        PEER_WHITE_LIST=''
     fi
     printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
     sudo mkdir -p $BLOCKCHAIN_DATA_DIR/keys/8080
