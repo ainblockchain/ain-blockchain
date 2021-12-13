@@ -329,23 +329,26 @@ class DB {
 
   // For testing purpose only.
   setOwnersForTesting(ownersPath, owners) {
-    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT, ...CommonUtil.parsePath(ownersPath)], owners);
+    this.writeDatabase(
+        [PredefinedDbPaths.OWNERS_ROOT, ...CommonUtil.parsePath(ownersPath)], owners);
   }
 
   // For testing purpose only.
   setRulesForTesting(rulesPath, rules) {
-    this.writeDatabase([PredefinedDbPaths.RULES_ROOT, ...CommonUtil.parsePath(rulesPath)], rules);
+    this.writeDatabase(
+        [PredefinedDbPaths.RULES_ROOT, ...CommonUtil.parsePath(rulesPath)], rules);
   }
 
   // For testing purpose only.
   setFunctionsForTesting(functionsPath, functions) {
-    this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT,
-      ...CommonUtil.parsePath(functionsPath)], functions);
+    this.writeDatabase(
+        [PredefinedDbPaths.FUNCTIONS_ROOT, ...CommonUtil.parsePath(functionsPath)], functions);
   }
 
   // For testing purpose only.
   setValuesForTesting(valuesPath, values) {
-    this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...CommonUtil.parsePath(valuesPath)], values);
+    this.writeDatabase(
+        [PredefinedDbPaths.VALUES_ROOT, ...CommonUtil.parsePath(valuesPath)], values);
   }
 
   // For testing purpose only.
@@ -1967,7 +1970,7 @@ class DB {
       matchedValuePath: [],
       matchedRulePath: [],
       pathVars: {},
-      matchedRuleNode: curRuleNode,
+      matchedRuleNode: null,
       closestConfigNode: hasRuleConfigWithProp(curRuleNode, ruleProp) ? curRuleNode : null,
       closestConfigDepth: hasRuleConfigWithProp(curRuleNode, ruleProp) ? depth : 0,
     };
@@ -2020,7 +2023,8 @@ class DB {
     const matchedWriteRule = this.matchRulePath(parsedValuePath, RuleProperties.WRITE);
     const matchedStateRule = this.matchRulePath(parsedValuePath, RuleProperties.STATE);
     // Only write rules matched for the subtree
-    const subtreeRules = this.getSubtreeRules(matchedWriteRule.matchedRuleNode, RuleProperties.WRITE);
+    const subtreeRules = matchedWriteRule.matchedRuleNode ?
+        this.getSubtreeRules(matchedWriteRule.matchedRuleNode, RuleProperties.WRITE) : [];
     return {
       write: {
         matchedValuePath: matchedWriteRule.matchedValuePath,
