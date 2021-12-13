@@ -1,6 +1,7 @@
 /* eslint new-cap: "off" */
 const winston = require('winston');
 const { getWinstonLevels, getWinstonColors, getWinstonTransports } = require('./winston-util');
+const { NodeConfigs } = require('../common/constants');
 
 const winstonLogger = new winston.createLogger({
   levels: getWinstonLevels(),
@@ -30,7 +31,7 @@ class Logger {
   }
 
   debug(text) {
-    if (!isFinished) {
+    if (!isFinished && NodeConfigs.DEBUG) {
       winstonLogger.debug(`[${this.prefix}] ${text}`)
     }
   }

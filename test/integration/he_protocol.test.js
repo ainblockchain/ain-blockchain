@@ -5,19 +5,19 @@ const _ = require("lodash");
 const spawn = require("child_process").spawn;
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
-const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
-const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
-const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const { NodeConfigs, BlockchainParams } = require('../common/constants');
-const CommonUtil = require('../common/common-util');
+const { NodeConfigs, BlockchainParams } = require('../../common/constants');
+const CommonUtil = require('../../common/common-util');
 const {
   waitUntilTxFinalized,
   waitUntilNetworkIsReady,
   parseOrLog,
   setUpApp,
   eraseStateGas,
-} = require('../unittest/test-util');
+} = require('../test-util');
 
+const PROJECT_ROOT = require('path').dirname(__filename) + "/../../"
+const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
+const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const ENV_VARIABLES = [
   {
     ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '',

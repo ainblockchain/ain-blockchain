@@ -1,3 +1,4 @@
+const Transaction = require('../../tx-pool/transaction');
 const rimraf = require('rimraf');
 const chai = require('chai');
 const assert = chai.assert;
@@ -5,11 +6,10 @@ const expect = chai.expect;
 const {
   NodeConfigs,
   PredefinedDbPaths,
-} = require('../common/constants');
-const Transaction = require('../tx-pool/transaction');
-const BlockchainNode = require('../node/');
-const { setNodeForTesting, getTransaction } = require('./test-util');
-const CommonUtil = require('../common/common-util');
+} = require('../../common/constants');
+const BlockchainNode = require('../../node/');
+const CommonUtil = require('../../common/common-util');
+const { setNodeForTesting, getTransaction } = require('../test-util');
 
 describe('Transaction', () => {
   let node;

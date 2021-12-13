@@ -1,8 +1,8 @@
-const EventHandler = require('../event-handler');
+const EventHandler = require('../../event-handler');
 const chai = require('chai');
 const { expect, assert } = chai;
-const { getIpAddress } = require('../common/network-util');
-const { NodeConfigs, BlockchainEventTypes } = require('../common/constants');
+const { getIpAddress } = require('../../common/network-util');
+const { NodeConfigs, BlockchainEventTypes } = require('../../common/constants');
 
 // TODO(cshcomcom): Add integration test
 describe('EventHandler Test', () => {

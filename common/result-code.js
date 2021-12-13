@@ -104,17 +104,10 @@ const FunctionResultCode = {
   INVALID_SENDER: 20405,
   UNPROCESSED_REQUEST_EXISTS: 20406,
   INVALID_CHECKIN_AMOUNT: 20407,
+  INVALID_SENDER_PROOF: 20408,
   // Claim reward
   INVALID_AMOUNT: 20501,
 };
-
-/**
- * Set of normal function result code.
- */
-const NormalFunctionResultCodeSet = new Set([
-  FunctionResultCode.SUCCESS,
-  FunctionResultCode.FAILURE,
-]);
 
 /**
  * JSON RPC API result code.
@@ -225,7 +218,6 @@ module.exports = {
   TxResultCode,
   FailedTxPrecheckCodeSet,
   FunctionResultCode,
-  NormalFunctionResultCodeSet,
   ConsensusErrorCode,
   ConsensusErrorCodeSetToVoteAgainst,
 };
