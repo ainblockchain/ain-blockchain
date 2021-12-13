@@ -3,6 +3,8 @@ const logger = new (require('../logger'))('FUNCTIONS');
 const axios = require('axios');
 const _ = require('lodash');
 const matchUrl = require('match-url-wildcard');
+const Accounts = require('web3-eth-accounts');
+const stringify = require('fast-json-stable-stringify');
 const {
   DevFlags,
   NodeConfigs,
@@ -964,6 +966,25 @@ class Functions {
     return FunctionResultCode.INVALID_SENDER;
   }
 
+  validateCheckinSenderProof(ref, amount, sender, senderProof, tx) {
+    try {
+      const body = {
+        ref,
+        amount,
+        sender,
+        timestamp: _.get(tx, 'tx_body.timestamp'),
+        nonce: _.get(tx, 'tx_body.nonce'),
+      };
+      const ethAccounts = new Accounts();
+      if (ethAccounts.recover(ethAccounts.hashMessage(stringify(body)), senderProof) !== sender) {
+        return FunctionResultCode.INVALID_SENDER_PROOF;
+      }
+      return true;
+    } catch (e) {
+      return FunctionResultCode.INVALID_SENDER_PROOF;
+    }
+  }
+
   validateCheckinAmount(networkName, chainId, tokenId, sender, amount, tokenPool) {
     // NOTE(liayoo): pending amounts do NOT include the request's amount yet.
     const pendingSender = this.db.getValue(
@@ -982,7 +1003,7 @@ class Functions {
 
   _openCheckin(value, context) {
     if (value === null) {
-      // NOTE(liayoo): It's not a SET_VALUE for a request, but for a cancellation. A request should 
+      // NOTE(liayoo): It's not a SET_VALUE for a request, but for a cancellation. A request should
       // only happen if the value is NOT null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
@@ -990,8 +1011,10 @@ class Functions {
     const chainId = context.params.chain_id;
     const tokenId = context.params.token_id;
     // NOTE(liayoo): `sender` is the address on `networkName` that will send `tokenId` tokens to the pool.
-    // For example, with the Eth token bridge, it will be an Ethereum address that will send ETH to the pool.
-    const { amount, sender } = value;
+    //    For example, with the Eth token bridge, it will be an Ethereum address that will send ETH to the pool.
+    // NOTE(liayoo): `sender_proof` is a signature of the stringified { ref, amount, sender, timestamp, nonce },
+    //    signed with the sender key.
+    const { amount, sender, sender_proof: senderProof } = value;
     const {
       [TokenBridgeProperties.TOKEN_POOL]: tokenPool,
       [TokenBridgeProperties.MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
@@ -1010,6 +1033,11 @@ class Functions {
     const senderValidated = this.validateCheckinSender(sender, networkName);
     if (senderValidated !== true) {
       return this.returnFuncResult(context, senderValidated);
+    }
+    const senderProofValidated = this.validateCheckinSenderProof(
+        CommonUtil.formatPath(context.valuePath), amount, sender, senderProof, context.transaction);
+    if (senderProofValidated !== true) {
+      return this.returnFuncResult(context, senderProofValidated);
     }
     const amountValidated = this.validateCheckinAmount(
         networkName, chainId, tokenId, sender, amount, tokenPool);
@@ -1061,7 +1089,7 @@ class Functions {
     const {
       [TokenBridgeProperties.TOKEN_POOL]: tokenPool
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
-    if (response.status === FunctionResultCode.SUCCESS) {
+    if (response.status === true) {
       // Increase complete amounts
       const updateStatsResultCode = this.updateStatsForCompleteCheckin(user, request.amount, context);
       if (updateStatsResultCode !== true) {
@@ -1216,7 +1244,7 @@ class Functions {
     const user = context.params.user_addr;
     const checkoutId = context.params.checkout_id;
     const { request, response } = value;
-    if (response.status === FunctionResultCode.SUCCESS) {
+    if (response.status === true) {
       // Increase complete amounts
       const updateStatsResultCode = this.updateStatsForCompleteCheckout(request.amount, context.blockTime, context);
       if (updateStatsResultCode !== true) {
