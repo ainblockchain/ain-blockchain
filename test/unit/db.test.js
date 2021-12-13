@@ -98,8 +98,6 @@ describe("DB operations", () => {
   let node, dbValues, dbFuncs, dbRules, dbOwners;
 
   beforeEach(() => {
-    let result;
-
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
@@ -137,8 +135,7 @@ describe("DB operations", () => {
         }
       }
     };
-    result = node.db.setValue("/apps/test", dbValues);
-    assert.deepEqual(result.code, 0);
+    node.db.setValuesForTesting("/apps/test", dbValues);
 
     dbFuncs = {
       "some": {
@@ -173,8 +170,7 @@ describe("DB operations", () => {
         },
       }
     };
-    result = node.db.setFunction("/apps/test/test_function", dbFuncs);
-    assert.deepEqual(result.code, 0);
+    node.db.setFunctionsForTesting("/apps/test/test_function", dbFuncs);
 
     dbRules = {
       "some": {
@@ -194,11 +190,10 @@ describe("DB operations", () => {
               }
             }
           }
-        }
+        },
       }
     };
-    result = node.db.setRule("/apps/test/test_rule", dbRules);
-    assert.deepEqual(result.code, 0);
+    node.db.setRulesForTesting("/apps/test/test_rule", dbRules);
 
     dbOwners = {
       "some": {
@@ -242,8 +237,7 @@ describe("DB operations", () => {
         }
       }
     };
-    result = node.db.setOwner("/apps/test/test_owner", dbOwners);
-    assert.deepEqual(result.code, 0);
+    node.db.setOwnersForTesting("/apps/test/test_owner", dbOwners);
   });
 
   afterEach(() => {
@@ -3035,8 +3029,7 @@ describe("DB operations", () => {
           "terminal_2": null,
         }
       };
-      const valueResult = node.db.setValue("/apps/test/empty_values/node_0", emptyValues);
-      assert.deepEqual(valueResult.code, 0);
+      node.db.setValuesForTesting("/apps/test/empty_values/node_0", emptyValues);
 
       emptyRules = {
         "node_1a": {
@@ -3058,8 +3051,7 @@ describe("DB operations", () => {
           }
         }
       };
-      const ruleResult = node.db.setRule("/apps/test/empty_rules/node_0", emptyRules);
-      assert.deepEqual(ruleResult.code, 0);
+      node.db.setRulesForTesting("/apps/test/empty_rules/node_0", emptyRules);
 
       emptyOwners = {
         "node_1a": {
@@ -3095,19 +3087,15 @@ describe("DB operations", () => {
           }
         }
       };
-      const ownerResult = node.db.setOwner("/apps/test/empty_owners/node_0", emptyOwners);
-      assert.deepEqual(ownerResult.code, 0);
+      node.db.setOwnersForTesting("/apps/test/empty_owners/node_0", emptyOwners);
     });
 
     afterEach(() => {
-      const valueResult = node.db.setValue("/apps/test/empty_values/node_0", null);
-      assert.deepEqual(valueResult.code, 0);
+      node.db.setValuesForTesting("/apps/test/empty_values/node_0", null);
 
-      const ruleResult = node.db.setRule("/apps/test/empty_rules/node_0", null);
-      assert.deepEqual(ruleResult.code, 0);
+      node.db.setRulesForTesting("/apps/test/empty_rules/node_0", null);
 
-      const ownerResult = node.db.setRule("/apps/test/empty_owners/node_0", null);
-      assert.deepEqual(ownerResult.code, 0);
+      node.db.setOwnersForTesting("/apps/test/empty_owners/node_0", null);
     });
 
     it("when setValue() with non-empty value", () => {
@@ -3264,8 +3252,6 @@ describe("DB rule config", () => {
   let node1, node2, dbValues;
 
   beforeEach(() => {
-    let result;
-
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node1 = new BlockchainNode();
@@ -3301,10 +3287,8 @@ describe("DB rule config", () => {
     dbValues["second_users"][node2.account.address][node2.account.address] = "i can write";
     dbValues["second_users"][node1.account.address]["something_else"] = "i can write";
 
-    result = node1.db.setValue("/apps/test", dbValues);
-    assert.deepEqual(result.code, 0);
-    result = node2.db.setValue("/apps/test", dbValues);
-    assert.deepEqual(result.code, 0);
+    node1.db.setValuesForTesting("/apps/test", dbValues);
+    node2.db.setValuesForTesting("/apps/test", dbValues);
   })
 
   afterEach(() => {
@@ -3387,110 +3371,105 @@ describe("DB owner config", () => {
 
     node = new BlockchainNode();
     setNodeForTesting(node);
-    assert.deepEqual(node.db.setOwner("/apps/test/test_owner/mixed/true/true/true",
-      {
-        ".owner": {
-          "owners": {
-            "*": {
-              "branch_owner": false,
-              "write_owner": false,
-              "write_rule": false,
-              "write_function": false
-            },
-            "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
-              "branch_owner": false,
-              "write_owner": false,
-              "write_rule": false,
-              "write_function": false
-            },
-            "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
-              "branch_owner": true,
-              "write_owner": true,
-              "write_rule": true,
-              "write_function": true
-            }
+    result = node.db.setOwnersForTesting("/apps/test/test_owner/mixed/true/true/true", {
+      ".owner": {
+        "owners": {
+          "*": {
+            "branch_owner": false,
+            "write_owner": false,
+            "write_rule": false,
+            "write_function": false
+          },
+          "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+            "branch_owner": false,
+            "write_owner": false,
+            "write_rule": false,
+            "write_function": false
+          },
+          "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
+            "branch_owner": true,
+            "write_owner": true,
+            "write_rule": true,
+            "write_function": true
           }
         }
       }
-    ).code, 0);
-    assert.deepEqual(node.db.setOwner("/apps/test/test_owner/mixed/false/true/true",
-      {
-        ".owner": {
-          "owners": {
-            "*": {
-              "branch_owner": true,
-              "write_owner": false,
-              "write_rule": false,
-              "write_function": false
-            },
-            "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
-              "branch_owner": true,
-              "write_owner": false,
-              "write_rule": false,
-              "write_function": false
-            },
-            "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
-              "branch_owner": false,
-              "write_owner": true,
-              "write_rule": true,
-              "write_function": true
-            }
+    });
+
+    node.db.setOwnersForTesting("/apps/test/test_owner/mixed/false/true/true", {
+      ".owner": {
+        "owners": {
+          "*": {
+            "branch_owner": true,
+            "write_owner": false,
+            "write_rule": false,
+            "write_function": false
+          },
+          "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+            "branch_owner": true,
+            "write_owner": false,
+            "write_rule": false,
+            "write_function": false
+          },
+          "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
+            "branch_owner": false,
+            "write_owner": true,
+            "write_rule": true,
+            "write_function": true
           }
         }
       }
-    ).code, 0);
-    assert.deepEqual(node.db.setOwner("/apps/test/test_owner/mixed/true/false/true",
-      {
-        ".owner": {
-          "owners": {
-            "*": {
-              "branch_owner": false,
-              "write_owner": true,
-              "write_rule": false,
-              "write_function": false
-            },
-            "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
-              "branch_owner": false,
-              "write_owner": true,
-              "write_rule": false,
-              "write_function": false
-            },
-            "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
-              "branch_owner": true,
-              "write_owner": false,
-              "write_rule": true,
-              "write_function": true
-            }
+    });
+
+    node.db.setOwnersForTesting("/apps/test/test_owner/mixed/true/false/true", {
+      ".owner": {
+        "owners": {
+          "*": {
+            "branch_owner": false,
+            "write_owner": true,
+            "write_rule": false,
+            "write_function": false
+          },
+          "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+            "branch_owner": false,
+            "write_owner": true,
+            "write_rule": false,
+            "write_function": false
+          },
+          "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
+            "branch_owner": true,
+            "write_owner": false,
+            "write_rule": true,
+            "write_function": true
           }
         }
       }
-    ).code, 0);
-    assert.deepEqual(node.db.setOwner("/apps/test/test_owner/mixed/true/true/false",
-      {
-        ".owner": {
-          "owners": {
-            "*": {
-              "branch_owner": false,
-              "write_owner": false,
-              "write_rule": true,
-              "write_function": true
-            },
-            "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
-              "branch_owner": false,
-              "write_owner": false,
-              "write_rule": true,
-              "write_function": true
-            },
-            "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
-              "branch_owner": true,
-              "write_owner": true,
-              "write_rule": false,
-              "write_function": false
-            }
+    });
+
+    node.db.setOwnersForTesting("/apps/test/test_owner/mixed/true/true/false", {
+      ".owner": {
+        "owners": {
+          "*": {
+            "branch_owner": false,
+            "write_owner": false,
+            "write_rule": true,
+            "write_function": true
+          },
+          "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+            "branch_owner": false,
+            "write_owner": false,
+            "write_rule": true,
+            "write_function": true
+          },
+          "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
+            "branch_owner": true,
+            "write_owner": true,
+            "write_rule": false,
+            "write_function": false
           }
         }
       }
-    ).code, 0);
+    });
   })
 
   afterEach(() => {
@@ -3713,8 +3692,6 @@ describe("DB sharding config", () => {
   let node;
 
   beforeEach(() => {
-    let result;
-
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
@@ -3744,8 +3721,7 @@ describe("DB sharding config", () => {
         }
       }
     };
-    result = node.db.setValue("/apps/test/test_sharding", dbValues);
-    assert.deepEqual(result.code, 0);
+    node.db.setValuesForTesting("/apps/test/test_sharding", dbValues);
 
     dbFuncs = {
       "some": {
@@ -3771,8 +3747,7 @@ describe("DB sharding config", () => {
         }
       }
     };
-    result = node.db.setFunction("/apps/test/test_sharding", dbFuncs);
-    assert.deepEqual(result.code, 0);
+    node.db.setFunctionsForTesting("/apps/test/test_sharding", dbFuncs);
 
     dbRules = {
       "some": {
@@ -3793,8 +3768,7 @@ describe("DB sharding config", () => {
         }
       }
     };
-    result = node.db.setRule("/apps/test/test_sharding", dbRules);
-    assert.deepEqual(result.code, 0);
+    node.db.setRulesForTesting("/apps/test/test_sharding", dbRules);
 
     dbOwners = {
       "some": {
@@ -3832,8 +3806,7 @@ describe("DB sharding config", () => {
         }
       }
     };
-    result = node.db.setOwner("/apps/test/test_sharding", dbOwners);
-    assert.deepEqual(result.code, 0);
+    node.db.setOwnersForTesting("/apps/test/test_sharding", dbOwners);
   })
 
   afterEach(() => {
@@ -4559,8 +4532,6 @@ describe("State info", () => {
   let node, valuesObject;
 
   beforeEach(() => {
-    let result;
-
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
@@ -4585,8 +4556,7 @@ describe("State info", () => {
         child3: false
       }
     };
-    result = node.db.setValue("/apps/test", valuesObject);
-    assert.deepEqual(result.code, 0);
+    node.db.setValuesForTesting("/apps/test", valuesObject);
   });
 
   afterEach(() => {
@@ -4700,8 +4670,6 @@ describe("State info - getStateInfo", () => {
   let node, valuesObject;
 
   beforeEach(() => {
-    let result;
-
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
@@ -4720,8 +4688,7 @@ describe("State info - getStateInfo", () => {
         label22: 'value12',
       }
     };
-    result = node.db.setValue("/apps/test", valuesObject);
-    assert.deepEqual(result.code, 0);
+    node.db.setValuesForTesting("/apps/test", valuesObject);
   });
 
   afterEach(() => {
@@ -4915,8 +4882,7 @@ describe("State version handling", () => {
         }
       }
     };
-    result = node.db.setValue("/apps/test", dbValues);
-    assert.deepEqual(result.code, 0);
+    node.db.setValuesForTesting("/apps/test", dbValues);
   });
 
   afterEach(() => {
