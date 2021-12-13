@@ -471,11 +471,13 @@ class BlockPool {
   }
 
   cleanUpForBlockHash(blockHash) {
-    if (_get(this.hashToBlockInfo[blockHash], 'block')) {
-      this.node.tp.cleanUpConsensusTxsForBlock(this.hashToBlockInfo[blockHash].block);
+    const block = _get(this.hashToBlockInfo[blockHash], 'block');
+    const invalidBlock = _get(this.hashToInvalidBlockInfo[blockHash], 'block');
+    if (block) {
+      this.node.tp.cleanUpConsensusTxsForBlock(block);
     }
-    if (_get(this.hashToInvalidBlockInfo[blockHash], 'block')) {
-      this.node.tp.cleanUpConsensusTxsForBlock(this.hashToInvalidBlockInfo[blockHash].block);
+    if (invalidBlock) {
+      this.node.tp.cleanUpConsensusTxsForBlock(invalidBlock);
     }
     delete this.hashToBlockInfo[blockHash];
     delete this.hashToInvalidBlockInfo[blockHash];
