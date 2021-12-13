@@ -435,6 +435,9 @@ class BlockPool {
       logger.info(`[${LOG_HEADER}] Current block is unavailable`);
       return;
     }
+    if (currentBlockInfo.notarized) {
+      return;
+    }
     if (currentBlockInfo.block.number === 0) {
       this.hashToBlockInfo[currentBlockInfo.block.hash].notarized = true;
       this.updateLongestNotarizedChains(this.hashToBlockInfo[currentBlockInfo.block.hash]);
