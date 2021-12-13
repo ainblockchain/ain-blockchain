@@ -496,7 +496,7 @@ class BlockPool {
         for (const blockHash of blockHashList) {
           if (this.hashToInvalidBlockInfo[blockHash]) {
             if (recordedInvalidBlocks.has(blockHash) ||
-                blockNumber < targetNumber - ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES) {
+                blockNumber < targetNumber - ConsensusConsts.MAX_INVALID_BLOCKS_ON_MEM) {
               this.cleanUpForBlockHash(blockHash);
               this.numberToBlockSet[blockNumber].delete(blockHash);
             }
