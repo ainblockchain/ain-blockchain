@@ -1724,26 +1724,28 @@ class DB {
         this.addPathToValue(newValue, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
     let evalWriteRuleRes = false;
     let evalStateRuleRes = false;
-    try {
-      evalWriteRuleRes = !!this.evalWriteRuleConfig(
-        matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
-      if (!evalWriteRuleRes) {
-        logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${evalWriteRuleRes}, ` +
-            `matched: ${JSON.stringify(matchedWriteRules, null, 2)}, data: ${JSON.stringify(data)}, ` +
+    if (!matchedWriteRules.subtreeRules || matchedWriteRules.subtreeRules.length === 0) {
+      try {
+        evalWriteRuleRes = !!this.evalWriteRuleConfig(
+          matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
+        if (!evalWriteRuleRes) {
+          logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${evalWriteRuleRes}, ` +
+              `matched: ${JSON.stringify(matchedWriteRules, null, 2)}, data: ${JSON.stringify(data)}, ` +
+              `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
+              `timestamp: ${timestamp}\n`);
+        }
+        evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
+        if (!evalStateRuleRes) {
+          logger.debug(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
+              `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
+              `newValue: ${JSON.stringify(newValue)}\n`);
+        }
+      } catch (err) {
+        logger.error(`[${LOG_HEADER}] Failed to eval rule.\n` +
+            `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
             `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
-            `timestamp: ${timestamp}\n`);
+            `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
       }
-      evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
-      if (!evalStateRuleRes) {
-        logger.debug(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
-            `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
-            `newValue: ${JSON.stringify(newValue)}\n`);
-      }
-    } catch (err) {
-      logger.error(`[${LOG_HEADER}] Failed to eval rule.\n` +
-          `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
-          `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
-          `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
     }
     return { writePermission: evalWriteRuleRes, statePermission: evalStateRuleRes, matched };
   }
