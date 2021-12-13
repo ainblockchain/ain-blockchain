@@ -21,8 +21,14 @@ class ConsensusUtil {
         return false;
       }
     }
+    const nonce = _get(tx, 'tx_body.nonce');
+    if (nonce !== -1) {
+      return false;
+    }
     const op = _get(tx, 'tx_body.operation');
-    if (!op) return false;
+    if (!op) {
+      return false;
+    }
     const consensusTxPrefix = CommonUtil.formatPath(
         [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER]);
     if (op.type === WriteDbOperations.SET_VALUE) { // vote tx
