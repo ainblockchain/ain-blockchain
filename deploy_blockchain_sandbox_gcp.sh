@@ -377,7 +377,7 @@ if [[ $RESET_RESTART_OPTION = "--reset" ]]; then
     # restart after removing chains, snapshots, and log files
     CHAINS_DIR=/home/ain_blockchain_data/chains
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_node_genesis_gcp.sh"
+    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_genesis_gcp.sh"
     KEEP_CODE_OPTION="--keep-code"
 elif [[ $RESET_RESTART_OPTION = "--restart" ]]; then
     # restart
