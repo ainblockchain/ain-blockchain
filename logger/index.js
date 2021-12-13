@@ -33,19 +33,31 @@ class Logger {
 
   error(text) {
     if (!isFinished) {
-      logger.error(`[${this.prefix}] ${text}`);
+      try {
+        logger.error(`[${this.prefix}] ${text}`);
+      } catch (e) {
+        console.error(e);
+      }
     }
   }
 
   info(text) {
     if (!isFinished) {
-      logger.info(`[${this.prefix}] ${text}`);
+      try {
+        logger.info(`[${this.prefix}] ${text}`);
+      } catch (e) {
+        console.log(e);
+      }
     }
   }
 
   debug(text) {
     if (!isFinished && NodeConfigs.DEBUG) {
-      logger.debug(`[${this.prefix}] ${text}`);
+      try {
+        logger.debug(`[${this.prefix}] ${text}`);
+      } catch (e) {
+        console.debug(e);
+      }
     }
   }
 
