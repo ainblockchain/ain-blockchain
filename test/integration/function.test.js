@@ -7,6 +7,7 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
+const Accounts = require('web3-eth-accounts');
 const stringify = require('fast-json-stable-stringify');
 const {
   BlockchainConsts,
@@ -4195,7 +4196,8 @@ describe('Native Function', () => {
       const tokenPoolAddr = GenesisToken.bridge[networkName][chainId][tokenId].token_pool;
       const checkinAmount = 100;
       const sender = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // eth address
-      const senderPrivateKey = Buffer.from('ee0b1315d446e5318eb6eb4e9d071cd12ef42d2956d546f9acbdc3b75c469640', 'hex');
+      const senderPrivateKey = '0xee0b1315d446e5318eb6eb4e9d071cd12ef42d2956d546f9acbdc3b75c469640';
+      const ethAccounts = new Accounts();
 
       before(async () => {
         // Send some AIN to tokenPoolAddr
@@ -4224,7 +4226,7 @@ describe('Native Function', () => {
           timestamp,
           nonce: -1,
         };
-        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
+        const senderProof = ethAccounts.sign(ethAccounts.hashMessage(stringify(senderProofBody)), senderPrivateKey).signature;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
@@ -4266,7 +4268,7 @@ describe('Native Function', () => {
           timestamp,
           nonce: -1,
         };
-        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
+        const senderProof = ethAccounts.sign(ethAccounts.hashMessage(stringify(senderProofBody)), senderPrivateKey).signature;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
@@ -4308,7 +4310,7 @@ describe('Native Function', () => {
           timestamp,
           nonce: -1,
         };
-        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
+        const senderProof = ethAccounts.sign(ethAccounts.hashMessage(stringify(senderProofBody)), senderPrivateKey).signature;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
@@ -4348,7 +4350,7 @@ describe('Native Function', () => {
           timestamp,
           nonce: -1,
         };
-        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
+        const senderProof = ethAccounts.sign(ethAccounts.hashMessage(stringify(senderProofBody)), senderPrivateKey).signature;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
@@ -4390,7 +4392,7 @@ describe('Native Function', () => {
           timestamp,
           nonce: -1,
         };
-        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
+        const senderProof = ethAccounts.sign(ethAccounts.hashMessage(stringify(senderProofBody)), senderPrivateKey).signature;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
@@ -4432,7 +4434,7 @@ describe('Native Function', () => {
           timestamp,
           nonce: -1,
         };
-        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
+        const senderProof = ethAccounts.sign(ethAccounts.hashMessage(stringify(senderProofBody)), senderPrivateKey).signature;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
@@ -4519,7 +4521,7 @@ describe('Native Function', () => {
           timestamp,
           nonce: -1,
         };
-        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
+        const senderProof = ethAccounts.sign(ethAccounts.hashMessage(stringify(senderProofBody)), senderPrivateKey).signature;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
@@ -4562,7 +4564,7 @@ describe('Native Function', () => {
           timestamp,
           nonce: -1,
         };
-        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
+        const senderProof = ethAccounts.sign(ethAccounts.hashMessage(stringify(senderProofBody)), senderPrivateKey).signature;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
@@ -4783,7 +4785,7 @@ describe('Native Function', () => {
           timestamp,
           nonce: -1,
         };
-        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
+        const senderProof = ethAccounts.sign(ethAccounts.hashMessage(stringify(senderProofBody)), senderPrivateKey).signature;
         const request = {
           amount: checkinAmount,
           sender,
@@ -4950,7 +4952,7 @@ describe('Native Function', () => {
           timestamp,
           nonce: -1,
         };
-        const senderProof = ainUtil.ecSignMessage(stringify(senderProofBody), senderPrivateKey, chainId);
+        const senderProof = ethAccounts.sign(ethAccounts.hashMessage(stringify(senderProofBody)), senderPrivateKey).signature;
         const requestBody = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {

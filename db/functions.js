@@ -3,7 +3,7 @@ const logger = new (require('../logger'))('FUNCTIONS');
 const axios = require('axios');
 const _ = require('lodash');
 const matchUrl = require('match-url-wildcard');
-const ainUtil = require('@ainblockchain/ain-util');
+const Accounts = require('web3-eth-accounts');
 const stringify = require('fast-json-stable-stringify');
 const {
   DevFlags,
@@ -966,7 +966,7 @@ class Functions {
     return FunctionResultCode.INVALID_SENDER;
   }
 
-  validateCheckinSenderProof(ref, amount, sender, senderProof, chainId, tx) {
+  validateCheckinSenderProof(ref, amount, sender, senderProof, tx) {
     try {
       const body = {
         ref,
@@ -975,7 +975,8 @@ class Functions {
         timestamp: _.get(tx, 'tx_body.timestamp'),
         nonce: _.get(tx, 'tx_body.nonce'),
       };
-      if (!ainUtil.ecVerifySig(stringify(body), senderProof, sender, chainId) === true) {
+      const ethAccounts = new Accounts();
+      if (ethAccounts.recover(ethAccounts.hashMessage(stringify(body)), senderProof) !== sender) {
         return FunctionResultCode.INVALID_SENDER_PROOF;
       }
       return true;
@@ -1032,7 +1033,7 @@ class Functions {
       return this.returnFuncResult(context, senderValidated);
     }
     const senderProofValidated = this.validateCheckinSenderProof(
-        CommonUtil.formatPath(context.valuePath), amount, sender, senderProof, chainId, context.transaction);
+        CommonUtil.formatPath(context.valuePath), amount, sender, senderProof, context.transaction);
     if (senderProofValidated !== true) {
       return this.returnFuncResult(context, senderProofValidated);
     }
