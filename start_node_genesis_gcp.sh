@@ -230,6 +230,8 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         KEYSTORE_FILENAME="keystore_node_5.json"
     elif [[ $NODE_INDEX = 6 ]]; then
         KEYSTORE_FILENAME="keystore_node_6.json"
+    else
+        PEER_WHITE_LIST=''
     fi
     printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
     if [[ $KEEP_CODE_OPTION = "" ]]; then
