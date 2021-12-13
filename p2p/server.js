@@ -37,6 +37,7 @@ const {
   signAndSendTx,
   sendTxAndWaitForFinalization,
   getIpAddress,
+  convertIpv6ToIpv4
 } = require('../common/network-util');
 const {
   getAddressFromSocket,
@@ -103,10 +104,6 @@ class P2pServer {
     logger.info(`Listening to peer-to-peer connections on: ${NodeConfigs.P2P_PORT}\n`);
     await this.setUpIpAddresses();
     this.urls = this.initUrls();
-  }
-
-  convertIpv6ToIpv4(address) {
-    return address.replace('::ffff:', '');
   }
 
   getNodeAddress() {
@@ -497,7 +494,7 @@ class P2pServer {
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
                 const p2pUrl = _.get(peerInfo, 'networkStatus.urls.p2p.url');
-                const ipv4Address = this.convertIpv6ToIpv4(socket._socket.remoteAddress);
+                const ipv4Address = convertIpv6ToIpv4(socket._socket.remoteAddress);
                 if (this.checkIpAddressFromPeerInfo(ipv4Address, p2pUrl)) {
                   this.client.connectToPeer(p2pUrl);
                 } else {
