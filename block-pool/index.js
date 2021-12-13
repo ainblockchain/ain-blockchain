@@ -468,6 +468,12 @@ class BlockPool {
   }
 
   cleanUpForBlockHash(blockHash) {
+    if (_get(this.hashToBlockInfo[blockHash], 'block')) {
+      this.node.tp.cleanUpConsensusTxsForBlock(this.hashToBlockInfo[blockHash].block);
+    }
+    if (_get(this.hashToInvalidBlockInfo[blockHash], 'block')) {
+      this.node.tp.cleanUpConsensusTxsForBlock(this.hashToInvalidBlockInfo[blockHash].block);
+    }
     delete this.hashToBlockInfo[blockHash];
     delete this.hashToInvalidBlockInfo[blockHash];
     delete this.hashToNextBlockSet[blockHash];
