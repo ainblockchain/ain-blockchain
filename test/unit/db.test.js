@@ -7,7 +7,6 @@ const assert = chai.assert;
 const ainUtil = require('@ainblockchain/ain-util');
 const {
   NodeConfigs,
-  PredefinedDbPaths,
   StateInfoProperties,
   StateVersions,
   GenesisToken,
@@ -182,15 +181,22 @@ describe("DB operations", () => {
         "path": {
           ".rule": {
             "write": "auth.addr === 'abcd'",
-          },
-          "deeper": {
-            "path": {
-              ".rule": {
-                "write": "auth.addr === 'ijkl'"
+          }
+        },
+        "upper": {
+          "path": {
+            ".rule": {
+              "write": "auth.addr === 'abcd'",
+            },
+            "deeper": {
+              "path": {
+                ".rule": {
+                  "write": "auth.addr === 'ijkl'"
+                }
               }
             }
           }
-        },
+        }
       }
     };
     node.db.setRulesForTesting("/apps/test/test_rule", dbRules);
@@ -638,6 +644,15 @@ describe("DB operations", () => {
         });
       })
 
+      it("setValue to write with a rule and subtree rules", () => {
+        // For details, see test case 'evalRule to evaluate a rule with subtree rules'.
+        assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/upper/path", 'some value'), {
+          "bandwidth_gas_amount": 1,
+          "code": 10103,
+          "error_message": "No write permission on: /apps/test/test_rule/some/upper/path",
+        });
+      })
+
       it("setValue to write with non-writable path with sharding", () => {
         assert.deepEqual(node.db.setValue("/apps/test/shards/enabled_shard", 20), {
           "code": 10104,
@@ -1021,7 +1036,7 @@ describe("DB operations", () => {
       })
 
       it("getRule to retrieve existing rule config", () => {
-        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path"), {
+        assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/upper/path"), {
           ".rule": {
             "write": "auth.addr === 'abcd'"
           },
@@ -1037,15 +1052,15 @@ describe("DB operations", () => {
 
       it('getRule to retrieve existing rule config with is_shallow', () => {
         assert.deepEqual(node.db.getRule('/apps/test/test_rule', { isShallow: true }), {
-          some: {
-            "#state_ph": "0x65d1d444e7f35a54ae9c196d83fda0ffbf93f91341a2470b83d0d512419aaf28"
+          "some": {
+            "#state_ph": "0x2be40be7d05dfe5a88319f6aa0f1a7eb61691f8f5fae8c7c993f10892cd29038"
           },
         });
       });
     })
 
     describe("matchRule:", () => {
-      it("matchRule to match existing variable path rule", () => {
+      it("matchRule to match a variable path rule", () => {
         assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/var_path"), {
           "write": {
             "matched_path": {
@@ -1079,7 +1094,7 @@ describe("DB operations", () => {
         });
       })
 
-      it("matchRule to match existing non-variable path rule", () => {
+      it("matchRule to match a non-variable path rule", () => {
         assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/path"), {
           "write": {
             "matched_path": {
@@ -1093,14 +1108,7 @@ describe("DB operations", () => {
               },
               "path": "/apps/test/test_rule/some/path"
             },
-            "subtree_configs": [
-              {
-                "config": {
-                  "write": "auth.addr === 'ijkl'"
-                },
-                "path": "/deeper/path"
-              }
-            ]
+            "subtree_configs": []
           },
           "state": {
             "matched_path": {
@@ -1114,25 +1122,25 @@ describe("DB operations", () => {
             }
           }
         });
-        assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/path/deeper/path"), {
+        assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/upper/path/deeper/path"), {
           "write": {
             "matched_path": {
-              "target_path": "/apps/test/test_rule/some/path/deeper/path",
-              "ref_path": "/apps/test/test_rule/some/path/deeper/path",
+              "target_path": "/apps/test/test_rule/some/upper/path/deeper/path",
+              "ref_path": "/apps/test/test_rule/some/upper/path/deeper/path",
               "path_vars": {},
             },
             "matched_config": {
               "config": {
                 "write": "auth.addr === 'ijkl'"
               },
-              "path": "/apps/test/test_rule/some/path/deeper/path"
+              "path": "/apps/test/test_rule/some/upper/path/deeper/path"
             },
             "subtree_configs": []
           },
           "state": {
             "matched_path": {
-              "target_path": "/apps/test/test_rule/some/path/deeper/path",
-              "ref_path": "/apps/test/test_rule/some/path/deeper/path",
+              "target_path": "/apps/test/test_rule/some/upper/path/deeper/path",
+              "ref_path": "/apps/test/test_rule/some/upper/path/deeper/path",
               "path_vars": {}
             },
             "matched_config": {
@@ -1143,12 +1151,48 @@ describe("DB operations", () => {
         });
       })
 
-      it("matchRule to match existing closest non-variable path rule", () => {
-        assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/path/deeper"), {
+      it("matchRule to match a closest variable path rule", () => {
+        assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/var_path/subpath"), {
           "write": {
             "matched_path": {
-              "target_path": "/apps/test/test_rule/some/path/deeper",
-              "ref_path": "/apps/test/test_rule/some/path/deeper",
+              "target_path": "/apps/test/test_rule/some/$var_path",
+              "ref_path": "/apps/test/test_rule/some/var_path",
+              "path_vars": {
+                "$var_path": "var_path"
+              }
+            },
+            "matched_config": {
+              "config": {
+                "write": "auth.addr !== 'abcd'"
+
+              },
+              "path": "/apps/test/test_rule/some/$var_path"
+
+            },
+            "subtree_configs": []
+          },
+          "state": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/$var_path",
+              "ref_path": "/apps/test/test_rule/some/var_path",
+              "path_vars": {
+                "$var_path": "var_path"
+              }
+            },
+            "matched_config": {
+              "path": "/",
+              "config": null
+            }
+          }
+        });
+      })
+
+      it("matchRule to match a closest non-variable path rule", () => {
+        assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/path/subpath"), {
+          "write": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/path",
+              "ref_path": "/apps/test/test_rule/some/path",
               "path_vars": {},
             },
             "matched_config": {
@@ -1157,19 +1201,79 @@ describe("DB operations", () => {
               },
               "path": "/apps/test/test_rule/some/path"
             },
+            "subtree_configs": []
+          },
+          "state": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/path",
+              "ref_path": "/apps/test/test_rule/some/path",
+              "path_vars": {}
+            },
+            "matched_config": {
+              "path": "/",
+              "config": null
+            }
+          }
+        });
+      })
+
+      it("matchRule to match a rule without subtree rules", () => {
+        assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/upper/path/subpath"), {
+          "write": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/upper/path",
+              "ref_path": "/apps/test/test_rule/some/upper/path",
+              "path_vars": {},
+            },
+            "matched_config": {
+              "config": {
+                "write": "auth.addr === 'abcd'"
+              },
+              "path": "/apps/test/test_rule/some/upper/path"
+            },
+            "subtree_configs": []
+          },
+          "state": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/upper/path",
+              "ref_path": "/apps/test/test_rule/some/upper/path",
+              "path_vars": {}
+            },
+            "matched_config": {
+              "path": "/",
+              "config": null
+            }
+          }
+        });
+      })
+
+      it("matchRule to match a rule with subtree rules", () => {
+        assert.deepEqual(node.db.matchRule("/apps/test/test_rule/some/upper/path"), {
+          "write": {
+            "matched_path": {
+              "target_path": "/apps/test/test_rule/some/upper/path",
+              "ref_path": "/apps/test/test_rule/some/upper/path",
+              "path_vars": {},
+            },
+            "matched_config": {
+              "config": {
+                "write": "auth.addr === 'abcd'"
+              },
+              "path": "/apps/test/test_rule/some/upper/path"
+            },
             "subtree_configs": [
               {
                 "config": {
                   "write": "auth.addr === 'ijkl'"
                 },
-                "path": "/path"
+                "path": "/deeper/path"
               }
             ]
           },
           "state": {
             "matched_path": {
-              "target_path": "/apps/test/test_rule/some/path/deeper",
-              "ref_path": "/apps/test/test_rule/some/path/deeper",
+              "target_path": "/apps/test/test_rule/some/upper/path",
+              "ref_path": "/apps/test/test_rule/some/upper/path",
               "path_vars": {}
             },
             "matched_config": {
@@ -1182,7 +1286,7 @@ describe("DB operations", () => {
     })
 
     describe("evalRule:", () => {
-      it("evalRule to evaluate existing variable path rule", () => {
+      it("evalRule to evaluate a variable path rule", () => {
         expect(node.db.evalRule(
             "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, Date.now()))
                 .to.equal(false);
@@ -1191,26 +1295,52 @@ describe("DB operations", () => {
                 .to.equal(true);
       })
 
-      it("evalRule to evaluate existing non-variable path rule", () => {
-        expect(node.db.evalRule("/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, Date.now()))
+      it("evalRule to evaluate a non-variable path rule", () => {
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, Date.now()))
             .to.equal(true);
-        expect(node.db.evalRule("/apps/test/test_rule/some/path", 'value', { addr: 'other' }, Date.now()))
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/path", 'value', { addr: 'other' }, Date.now()))
             .to.equal(false);
         expect(node.db.evalRule(
-            "/apps/test/test_rule/some/path/deeper/path", 'value', { addr: 'ijkl' }, Date.now()))
-                .to.equal(true);
+            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'ijkl' }, Date.now()))
+            .to.equal(true);
         expect(node.db.evalRule(
-            "/apps/test/test_rule/some/path/deeper/path", 'value', { addr: 'other' }, Date.now()))
-                .to.equal(false);
+            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'other' }, Date.now()))
+            .to.equal(false);
       })
 
-      it("evalRule to evaluate existing closest rule", () => {
+      it("evalRule to evaluate a closest variable path rule", () => {
         expect(node.db.evalRule(
-            "/apps/test/test_rule/some/path/deeper", 'value', { addr: 'abcd' }, Date.now()))
-                .to.equal(true);
+            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'abcd' }, Date.now()))
+            .to.equal(false);
         expect(node.db.evalRule(
-            "/apps/test/test_rule/some/path/deeper", 'value', { addr: 'other' }, Date.now()))
-                .to.equal(false);
+            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'other' }, Date.now()))
+            .to.equal(true);
+      })
+
+      it("evalRule to evaluate a closest non-variable rule", () => {
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'abcd' }, Date.now()))
+            .to.equal(true);
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'other' }, Date.now()))
+            .to.equal(false);
+      })
+
+      it("evalRule to evaluate a rule without subtree rules", () => {
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'abcd' }, Date.now()))
+            .to.equal(true);
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'other' }, Date.now()))
+            .to.equal(false);
+      })
+
+      it("evalRule to evaluate a rule with subtree rules", () => {
+        expect(node.db.evalRule(
+            "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, Date.now()))
+            .to.equal(false);
       })
     })
 
@@ -1698,7 +1828,7 @@ describe("DB operations", () => {
           },
           {
             type: "MATCH_RULE",
-            ref: "/apps/test/test_rule/some/path/deeper",
+            ref: "/apps/test/test_rule/some/path/subpath",
           },
           {
             type: "MATCH_OWNER",
@@ -1706,7 +1836,7 @@ describe("DB operations", () => {
           },
           {
             type: "EVAL_RULE",
-            ref: "/apps/rule/other/path",
+            ref: "/apps/test/test_rule/some/path/subpath",
             value: "value",
             address: "abcd",
             timestamp: Date.now(),
@@ -1749,8 +1879,8 @@ describe("DB operations", () => {
           {
             "write": {
                 "matched_path": {
-                "target_path": "/apps/test/test_rule/some/path/deeper",
-                "ref_path": "/apps/test/test_rule/some/path/deeper",
+                "target_path": "/apps/test/test_rule/some/path",
+                "ref_path": "/apps/test/test_rule/some/path",
                 "path_vars": {},
               },
               "matched_config": {
@@ -1759,14 +1889,7 @@ describe("DB operations", () => {
                 },
                 "path": "/apps/test/test_rule/some/path"
               },
-              "subtree_configs": [
-                {
-                  "config": {
-                    "write": "auth.addr === 'ijkl'"
-                  },
-                  "path": "/path"
-                }
-              ]
+              "subtree_configs": []
             },
             "state": {
               "matched_config": {
@@ -1775,8 +1898,8 @@ describe("DB operations", () => {
               },
               "matched_path": {
                 "path_vars": {},
-                "ref_path": "/apps/test/test_rule/some/path/deeper",
-                "target_path": "/apps/test/test_rule/some/path/deeper"
+                "ref_path": "/apps/test/test_rule/some/path",
+                "target_path": "/apps/test/test_rule/some/path"
               }
             }
           },
@@ -1804,7 +1927,7 @@ describe("DB operations", () => {
               "path": "/apps/test/test_owner/some/path"
             }
           },
-          false,
+          true,
           false
         ]);
       })
@@ -1859,13 +1982,6 @@ describe("DB operations", () => {
             ".rule": {
               "write": "auth.addr === 'abcd'"
             },
-            "deeper": {
-              "path": {
-                ".rule": {
-                  "write": "auth.addr === 'ijkl'"
-                }
-              }
-            }
           },
           {
             ".function": {
@@ -1967,14 +2083,7 @@ describe("DB operations", () => {
                 },
                 "path": "/apps/test/test_rule/some/path"
               },
-              "subtree_configs": [
-                {
-                  "config": {
-                    "write": "auth.addr === 'ijkl'"
-                  },
-                  "path": "/deeper/path"
-                }
-              ]
+              "subtree_configs": []
             },
             "state": {
               "matched_config": {
@@ -4322,21 +4431,22 @@ describe("DB sharding config", () => {
 
       describe("evalRule with isGlobal:", () => {
       it("evalRule with isGlobal = false", () => {
-        expect(node.db.evalRule("/apps/test/test_sharding/some/path/to", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }))
+        expect(node.db.evalRule(
+            "/apps/test/test_sharding/some/path/to/subpath", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }))
             .to.equal(true);
       })
 
       it("evalRule with isGlobal = true", () => {
         expect(node.db.evalRule(
-            "/apps/afan/apps/test/test_sharding/some/path/to", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" },
+            "/apps/afan/apps/test/test_sharding/some/path/to/subpath", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" },
             null, { isGlobal: true }))
-                .to.equal(true);
+            .to.equal(true);
       })
 
       it("evalRule with isGlobal = true and non-existing path", () => {
         expect(node.db.evalRule(
             "/apps/some/non-existing/path", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true }))
-                .to.equal(null);
+            .to.equal(null);
       })
     });
   })
