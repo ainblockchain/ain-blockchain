@@ -53,7 +53,6 @@ const getWinstonConsoleTransport = () => {
         timestamp(),
         logFormat
     ),
-    silent: !NodeConfigs.CONSOLE_LOG
   });
 };
 
