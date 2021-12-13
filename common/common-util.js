@@ -280,6 +280,9 @@ class CommonUtil {
     if (!path) {
       return [];
     }
+    if (!CommonUtil.isString(path)) {
+      return [];
+    }
     return path.split('/').filter((node) => {
       return !!node;
     });

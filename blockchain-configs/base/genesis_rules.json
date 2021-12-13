@@ -42,7 +42,7 @@
             "$user_addr": {
               "$checkin_id": {
                 ".rule": {
-                  "write": "((auth.fid === '_closeCheckin' || auth.addr === $user_addr) && data !== null && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckinRequestData($network_name, $chain_id, $token_id, newData, getValue))"
+                  "write": "((auth.fid === '_closeCheckin' || auth.addr === $user_addr) && data !== null && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckinRequestData($network_name, $chain_id, $token_id, auth.addr, $checkin_id, newData, getValue))"
                 }
               }
             }
@@ -87,7 +87,7 @@
             "$user_addr": {
               "$checkout_id": {
                 ".rule": {
-                  "write": "(auth.fid === '_closeCheckout' && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckoutRequestData($network_name, $chain_id, $token_id, newData, getValue))"
+                  "write": "(auth.fid === '_closeCheckout' && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckoutRequestData($network_name, $chain_id, $token_id, auth.addr, $checkout_id, newData, getValue))"
                 }
               }
             }
