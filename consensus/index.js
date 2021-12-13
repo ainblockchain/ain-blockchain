@@ -67,6 +67,7 @@ class Consensus {
     this.timeAdjustment = 0;
     this.isInEpochTransition = false;
     this.proposer = null;
+    this.stakeTx = null;
     // NOTE(liayoo): epoch increases by 1 every epoch_ms,
     // and at each epoch a new proposer is pseudo-randomly selected.
     this.epoch = 1;
@@ -100,7 +101,9 @@ class Consensus {
       } else if (targetStake > 0 && currentStake < targetStake) {
         const stakeAmount = targetStake - currentStake;
         const stakeTx = this.stake(stakeAmount);
-        this.server.executeAndBroadcastTransaction(stakeTx);
+        if (!this.server.executeAndBroadcastTransaction(stakeTx)) {
+          this.stakeTx = stakeTx;
+        }
       }
       this.setState(ConsensusStates.RUNNING);
       this.startEpochTransition();
