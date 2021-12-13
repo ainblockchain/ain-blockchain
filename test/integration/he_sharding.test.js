@@ -7,16 +7,13 @@ const ainUtil = require('@ainblockchain/ain-util');
 const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const _ = require('lodash');
-const { parseOrLog } = require('../unittest/test-util');
-const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
-const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
-const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const { NodeConfigs } = require('../common/constants');
+const { NodeConfigs } = require('../../common/constants');
 const {
   ConsensusStates
-} = require('../consensus/constants');
-const CommonUtil = require('../common/common-util');
+} = require('../../consensus/constants');
+const CommonUtil = require('../../common/common-util');
 const {
+  parseOrLog,
   readConfigFile,
   waitForNewBlocks,
   waitForNewShardingReports,
@@ -24,8 +21,11 @@ const {
   waitUntilTxFinalized,
   waitUntilNetworkIsReady,
   setUpApp,
-} = require('../unittest/test-util');
+} = require('../test-util');
 
+const PROJECT_ROOT = require('path').dirname(__filename) + "/../../"
+const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
+const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
@@ -92,19 +92,19 @@ async function waitUntilShardReporterStarts() {
   }
 }
 
-describe('HE Sharding', async () => {
+describe('HE Sharding', () => {
   const appName = 'he_health_care';
   const token =
-      readConfigFile(path.resolve(__dirname, '../blockchain-configs/he-shard', 'blockchain_params.json')).token;
+      readConfigFile(path.resolve(__dirname, '../../blockchain-configs/he-shard', 'blockchain_params.json')).token;
   const parentAccounts =
-      readConfigFile(path.resolve(__dirname, '../blockchain-configs/base', 'genesis_accounts.json'));
+      readConfigFile(path.resolve(__dirname, '../../blockchain-configs/base', 'genesis_accounts.json'));
   const parentServerAddr = parentAccounts.others[0].address;
   const accounts =
-      readConfigFile(path.resolve(__dirname, '../blockchain-configs/he-shard', 'genesis_accounts.json'));
+      readConfigFile(path.resolve(__dirname, '../../blockchain-configs/he-shard', 'genesis_accounts.json'));
   const shardOwnerAddr = accounts.owner.address;
   const shardReporterAddr = accounts.others[0].address;
   const sharding =
-      readConfigFile(path.resolve(__dirname, '../blockchain-configs/he-shard', 'blockchain_params.json')).sharding;
+      readConfigFile(path.resolve(__dirname, '../../blockchain-configs/he-shard', 'blockchain_params.json')).sharding;
 
   let parent_tracker_proc, parent_server_proc,
       tracker_proc, server1_proc, server2_proc, server3_proc;

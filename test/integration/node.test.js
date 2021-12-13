@@ -7,24 +7,24 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
-const PROJECT_ROOT = require('path').dirname(__filename) + "/../"
-const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
-const APP_SERVER = PROJECT_ROOT + "client/index.js"
-const { BlockchainConsts, BlockchainParams, NodeConfigs } = require('../common/constants');
-const CommonUtil = require('../common/common-util');
-const PathUtil = require('../common/path-util');
+const { BlockchainConsts, BlockchainParams, NodeConfigs } = require('../../common/constants');
+const CommonUtil = require('../../common/common-util');
+const PathUtil = require('../../common/path-util');
 const {
   verifyStateProof,
-} = require('../db/state-util');
-const DB = require('../db');
+} = require('../../db/state-util');
+const DB = require('../../db');
 const {
   parseOrLog,
   setUpApp,
   waitUntilNetworkIsReady,
   waitUntilTxFinalized,
   getBlockByNumber,
-} = require('../unittest/test-util');
+} = require('../test-util');
 
+const PROJECT_ROOT = require('path').dirname(__filename) + "/../../"
+const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
+const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const ENV_VARIABLES = [
   {
     ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '',

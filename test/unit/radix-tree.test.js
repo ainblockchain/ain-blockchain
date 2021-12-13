@@ -1,10 +1,10 @@
-const RadixTree = require('../db/radix-tree');
-const RadixNode = require('../db/radix-node');
-const StateNode = require('../db/state-node');
-const { BlockchainParams } = require('../common/constants');
+const RadixTree = require('../../db/radix-tree');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
+const RadixNode = require('../../db/radix-node');
+const StateNode = require('../../db/state-node');
+const { BlockchainParams } = require('../../common/constants');
 
 describe("radix-tree", () => {
   const hashDelimiter = BlockchainParams.genesis.hash_delimiter;

@@ -1,3 +1,4 @@
+const BlockPool = require('../../block-pool');
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
@@ -6,11 +7,10 @@ const {
   NodeConfigs,
   PredefinedDbPaths,
   BlockchainParams,
-} = require('../common/constants');
-const BlockPool = require('../block-pool');
-const BlockchainNode = require('../node');
-const { Block } = require('../blockchain/block');
-const { setNodeForTesting, getTransaction } = require('./test-util')
+} = require('../../common/constants');
+const BlockchainNode = require('../../node');
+const { Block } = require('../../blockchain/block');
+const { setNodeForTesting, getTransaction } = require('../test-util')
 
 describe("BlockPool", () => {
   let node1;

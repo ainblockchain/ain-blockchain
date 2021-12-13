@@ -1,3 +1,4 @@
+const BlockchainNode = require('../../node');
 const chai = require('chai');
 const expect = chai.expect;
 const rimraf = require('rimraf');
@@ -5,9 +6,8 @@ const {
   NodeConfigs,
   PredefinedDbPaths,
   BlockchainParams,
-} = require('../common/constants');
-const BlockchainNode = require('../node');
-const { setNodeForTesting, getTransaction, addBlock } = require('./test-util')
+} = require('../../common/constants');
+const { setNodeForTesting, getTransaction, addBlock } = require('../test-util')
 
 describe("Consensus", () => {
   let node1, node2;

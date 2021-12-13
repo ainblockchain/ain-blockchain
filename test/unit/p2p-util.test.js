@@ -1,9 +1,9 @@
+const util = require('../../p2p/util');
 const Websocket = require('ws');
-const util = require('../p2p/util');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
-const { BlockchainConsts, BlockchainParams } = require('../common/constants');
+const { BlockchainConsts, BlockchainParams } = require('../../common/constants');
 
 describe("P2P Util", () => {
   const mockAddress = '0x012345678abcdef';

@@ -1,21 +1,21 @@
+const TransactionPool = require('../../tx-pool');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
 const shuffleSeed = require('shuffle-seed');
-const CommonUtil = require('../common/common-util');
-const {Block} = require('../blockchain/block');
-const BlockchainNode = require('../node');
+const CommonUtil = require('../../common/common-util');
+const {Block} = require('../../blockchain/block');
+const BlockchainNode = require('../../node');
+const {
+  TransactionStates,
+  BlockchainParams,
+} = require('../../common/constants');
 const {
   setNodeForTesting,
   getTransaction,
   txsToDummyReceipts,
   eraseTxCreatedAt,
-} = require('./test-util');
-const TransactionPool = require('../tx-pool');
-const {
-  TransactionStates,
-  BlockchainParams,
-} = require('../common/constants');
+} = require('../test-util');
 
 describe('TransactionPool', () => {
   let node, transaction, bandwidthBudgets;

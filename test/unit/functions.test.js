@@ -1,17 +1,16 @@
-const Functions = require('../db/functions');
-const Transaction = require('../tx-pool/transaction');
+const Functions = require('../../db/functions');
 const rimraf = require('rimraf');
 const chai = require('chai');
 const assert = chai.assert;
 const nock = require('nock');
 const _ = require('lodash');
-const { NodeConfigs, BlockchainParams } = require('../common/constants')
-const BlockchainNode = require('../node')
+const Transaction = require('../../tx-pool/transaction');
+const { NodeConfigs, BlockchainParams } = require('../../common/constants')
+const BlockchainNode = require('../../node')
+const CommonUtil = require('../../common/common-util');
 const {
   setNodeForTesting,
-} = require('./test-util');
-const CommonUtil = require('../common/common-util');
-const { expect } = require('chai');
+} = require('../test-util');
 
 describe("Functions", () => {
   describe("triggerFunctions", () => {
