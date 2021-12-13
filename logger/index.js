@@ -1,15 +1,28 @@
 /* eslint new-cap: "off" */
-const winston = require('winston');
-const { getWinstonLevels, getWinstonColors, getWinstonTransports } = require('./winston-util');
-const { NodeConfigs } = require('../common/constants');
+const { NodeConfigs, DevFlags } = require('../common/constants');
 
-const winstonLogger = new winston.createLogger({
-  levels: getWinstonLevels(),
-  transports: getWinstonTransports(),
-  exitOnError: false
-});
+let logger = null;
+if (DevFlags.enableWinstonLogger) {
+  const winston = require('winston');
+  const { getWinstonLevels, getWinstonColors, getWinstonTransports } = require('./winston-util');
 
-winston.addColors(getWinstonColors());
+  logger = new winston.createLogger({
+    levels: getWinstonLevels(),
+    transports: getWinstonTransports(),
+    exitOnError: false
+  });
+  winston.addColors(getWinstonColors());
+} else {
+  const bunyan = require('bunyan');
+  const { getBunyanTransports } = require('./bunyan-util');
+
+  const configsDir = NodeConfigs.BLOCKCHAIN_CONFIGS_DIR.split('/');
+  logger = bunyan.createLogger({
+    name: configsDir[configsDir.length - 1],
+    streams: getBunyanTransports(),
+  });
+}
+
 
 global.isFinished = false;
 
@@ -20,19 +33,19 @@ class Logger {
 
   error(text) {
     if (!isFinished) {
-      winstonLogger.error(`[${this.prefix}] ${text}`)
+      logger.error(`[${this.prefix}] ${text}`);
     }
   }
 
   info(text) {
     if (!isFinished) {
-      winstonLogger.info(`[${this.prefix}] ${text}`)
+      logger.info(`[${this.prefix}] ${text}`);
     }
   }
 
   debug(text) {
     if (!isFinished && NodeConfigs.DEBUG) {
-      winstonLogger.debug(`[${this.prefix}] ${text}`)
+      logger.debug(`[${this.prefix}] ${text}`);
     }
   }
 

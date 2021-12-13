@@ -94,14 +94,17 @@ const getWinstonDailyErrorFileTransport = () => {
 };
 
 const getWinstonTransports = () => {
-  const transports = NodeConfigs.LIGHTWEIGHT ? [getWinstonDailyErrorFileTransport()]
-      : [
-        getWinstonConsoleTransport(),
-        getWinstonDailyCombinedFileTransport(),
-        getWinstonDailyErrorFileTransport(),
-      ];
+  if (NodeConfigs.LIGHTWEIGHT) {
+    return [getWinstonDailyErrorFileTransport()];
+  }
+  const transports = [
+    getWinstonDailyCombinedFileTransport(),
+    getWinstonDailyErrorFileTransport(),
+  ];
+  if (NodeConfigs.CONSOLE_LOG) {
+    transports.push(getWinstonConsoleTransport());
+  }
   if (NodeConfigs.HOSTING_ENV === 'gcp') {
-    // Add Stackdriver Logging
     transports.push(new LoggingWinston);
   }
   return transports;
