@@ -1074,6 +1074,9 @@ class Consensus {
       chain.unshift(currBlock);
       // previous block of currBlock
       currBlock = _.get(this.node.bp.hashToBlockInfo[currBlock.last_hash], 'block');
+      if (!currBlock) {
+        currBlock = this.node.bc.getBlockByHash(blockHash);
+      }
       blockHash = currBlock ? currBlock.hash : '';
     }
     if (!currBlock || blockHash === '') {
