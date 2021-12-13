@@ -1011,7 +1011,9 @@ class Functions {
     const chainId = context.params.chain_id;
     const tokenId = context.params.token_id;
     // NOTE(liayoo): `sender` is the address on `networkName` that will send `tokenId` tokens to the pool.
-    // For example, with the Eth token bridge, it will be an Ethereum address that will send ETH to the pool.
+    //    For example, with the Eth token bridge, it will be an Ethereum address that will send ETH to the pool.
+    // NOTE(liayoo): `sender_proof` is a signature of the stringified { ref, amount, sender, timestamp, nonce },
+    //    signed with the sender key.
     const { amount, sender, sender_proof: senderProof } = value;
     const {
       [TokenBridgeProperties.TOKEN_POOL]: tokenPool,
