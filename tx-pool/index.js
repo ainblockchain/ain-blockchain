@@ -449,8 +449,11 @@ class TransactionPool {
     }
   }
 
-  cleanUpConsensusTxsForBlock(block) {
+  cleanUpConsensusTxsForBlock(block, additionalVotes = []) {
     const consensusTxs = new Set(block.last_votes.map((tx) => tx.hash));
+    if (!CommonUtil.isEmpty(additionalVotes)) {
+      additionalVotes.map((tx) => tx.hash).forEach((hash) => consensusTxs.add(hash));
+    }
     this.addEvidenceTxsToTxHashSet(consensusTxs, block.evidence);
     this.updateTxPoolWithTxHashSet(consensusTxs, {}, {});
   }
