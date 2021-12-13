@@ -118,9 +118,7 @@ describe("Consensus", () => {
     const addr = node2.account.address;
     // Bypass whitelist rule check (need owner's private key)
     const tempDb = node1.createTempDb(node1.db.stateVersion, 'CONSENSUS_UNIT_TEST', lastBlock.number);
-    tempDb.writeDatabase(
-        [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST, addr],
-        true);
+    tempDb.setValuesForTesting(`/consensus/proposer_whitelist/${addr}`, true);
     node1.cloneAndFinalizeVersion(tempDb.stateVersion, -1); // Bypass already existing final state version
     
     // Staking less than min_stake_for_proposer

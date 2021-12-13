@@ -2713,10 +2713,7 @@ describe("DB operations", () => {
 
       node = new BlockchainNode();
       setNodeForTesting(node);
-      node.db.writeDatabase(
-        [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.STAKING, 'test', PredefinedDbPaths.STAKING_BALANCE_TOTAL],
-        1
-      );
+      node.db.setValuesForTesting(`/staking/test/balance_total`, 1);
 
       txBody = {
         operation: {
@@ -2853,12 +2850,8 @@ describe("DB operations", () => {
         }
         const tempDb = node.createTempDb(node.db.stateVersion, 'CONSENSUS_UNIT_TEST',
             node.bc.lastBlockNumber(), BlockchainParams.genesis.genesis_addr);
-        tempDb.writeDatabase(
-          [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.ACCOUNTS, node.account.address, PredefinedDbPaths.BALANCE],
-          1000000000);
-        tempDb.writeDatabase(
-            [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.TRANSFER, node.account.address, addr],
-            valueObj);
+        tempDb.setValuesForTesting(`/accounts/${node.account.address}/balance`, 1000000000);
+        tempDb.setValuesForTesting(`/transfer/${node.account.address}/${addr}`, valueObj);
         node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
         const serviceStateBudget = BlockchainParams.resource.state_tree_bytes_limit * BlockchainParams.resource.service_state_budget_ratio;
         expect(node.db.getStateUsageAtPath('/')[StateInfoProperties.TREE_BYTES]).to.be.lessThan(serviceStateBudget);
