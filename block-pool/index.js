@@ -473,11 +473,12 @@ class BlockPool {
   cleanUpForBlockHash(blockHash) {
     const block = _get(this.hashToBlockInfo[blockHash], 'block');
     const invalidBlock = _get(this.hashToInvalidBlockInfo[blockHash], 'block');
+    const againstVotes = _get(this.hashToInvalidBlockInfo[blockHash], 'votes');
     if (block) {
       this.node.tp.cleanUpConsensusTxsForBlock(block);
     }
     if (invalidBlock) {
-      this.node.tp.cleanUpConsensusTxsForBlock(invalidBlock);
+      this.node.tp.cleanUpConsensusTxsForBlock(invalidBlock, againstVotes);
     }
     delete this.hashToBlockInfo[blockHash];
     delete this.hashToInvalidBlockInfo[blockHash];
