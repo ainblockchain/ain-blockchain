@@ -650,9 +650,9 @@ class P2pClient {
     }
     const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
     Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
-      if (NodeConfigs.PEER_WHITE_LIST !== '') {
+      if (NodeConfigs.PEER_WHITELIST !== '') {
         if (url !== myJsonRpcUrl && !this.peerCandidates[url] && this.isValidJsonRpcUrl(url) &&
-            NodeConfigs.PEER_WHITE_LIST[address]) {
+            NodeConfigs.PEER_WHITELIST.includes(address)) {
           this.peerCandidates[url] = { queriedAt: null };
         }
       } else {
@@ -664,8 +664,8 @@ class P2pClient {
     const newPeerP2pUrlList = _.get(peerCandidateInfo, 'newPeerP2pUrlList', []);
     const newPeerP2pUrlListWithoutMyUrl = Object.entries(newPeerP2pUrlList)
       .filter(([address, p2pUrl]) => {
-        if (NodeConfigs.PEER_WHITE_LIST !== '') {
-          return p2pUrl !== myP2pUrl && NodeConfigs.PEER_WHITE_LIST[address];
+        if (NodeConfigs.PEER_WHITELIST !== '') {
+          return p2pUrl !== myP2pUrl && NodeConfigs.PEER_WHITELIST.includes(address);
         } else {
           return p2pUrl !== myP2pUrl;
         }

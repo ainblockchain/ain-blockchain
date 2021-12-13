@@ -99,7 +99,7 @@ class P2pServer {
     // Set the number of maximum clients.
     this.wsServer.setMaxListeners(NodeConfigs.MAX_NUM_INBOUND_CONNECTION);
     this.wsServer.on('connection', (socket) => {
-        this.setServerSidePeerEventHandlers(socket);
+      this.setServerSidePeerEventHandlers(socket);
     });
     logger.info(`Listening to peer-to-peer connections on: ${NodeConfigs.P2P_PORT}\n`);
     await this.setUpIpAddresses();
@@ -446,9 +446,9 @@ class P2pServer {
               return;
             } else {
               const addressFromSig = getAddressFromMessage(parsedMessage);
-              if (NodeConfigs.PEER_WHITE_LIST !== '' &&
-                  !NodeConfigs.PEER_WHITE_LIST.includes(addressFromSig)) {
-                logger.error(`This peer(${addressFromSig}) is not on the PEER_WHITE_LIST.`);
+              if (NodeConfigs.PEER_WHITELIST !== '' &&
+                  !NodeConfigs.PEER_WHITELIST.includes(addressFromSig)) {
+                logger.error(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
                 closeSocketSafe(this.inbound, socket);
                 return;
               }
