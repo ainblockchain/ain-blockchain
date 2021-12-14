@@ -1743,13 +1743,16 @@ class DB {
         };
       }
       const evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
-      if (!evalStateRuleRes) {
+      if (!evalStateRuleRes.evalResult) {
         logger.debug(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
             `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
             `newValue: ${JSON.stringify(newValue)}\n`);
         return {
           code: TxResultCode.VALUE_PERMISSION_FALSE_STATE_RULE_EVAL,
-          error_message: `False state rule eval [${JSON.stringify(evalStateRuleRes)}] for ${CommonUtil.formatPath(parsedValuePath)}`,
+          error_message: `False eval of state rule [${evalStateRuleRes.ruleString}] ` +
+              `at '${CommonUtil.formatPath(matchedStateRules.closestRule.path)}' ` +
+              `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
+              `with newValue '${JSON.stringify(newValue)}'`,
           matched,
         };
       }
@@ -2130,21 +2133,33 @@ class DB {
   }
 
   evalStateRuleConfig(stateRuleConfig, newValue) {
-    if (!CommonUtil.isDict(stateRuleConfig)) {
-      return true;
-    }
-    if (!CommonUtil.isDict(newValue)) {
-      return true;
+    if (!CommonUtil.isDict(stateRuleConfig) ||
+        !CommonUtil.isDict(newValue)) {
+      return {
+        ruleString: '',
+        evalResult: true,
+      };
     }
     const stateRuleObj = stateRuleConfig[RuleProperties.STATE];
-    if (CommonUtil.isEmpty(stateRuleObj)) {
-      return true;
-    }
-    if (!stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
-      return true;
+    if (CommonUtil.isEmpty(stateRuleObj) ||
+        !stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+      return {
+        ruleString: '',
+        evalResult: true,
+      };
     }
     const maxChildren = stateRuleObj[RuleProperties.MAX_CHILDREN];
-    return Object.keys(newValue).length <= maxChildren;
+    const maxChildrenEvalResult = Object.keys(newValue).length <= maxChildren;
+    if (!maxChildrenEvalResult) {
+      return {
+        ruleString: JSON.stringify(stateRuleObj),
+        evalResult: maxChildrenEvalResult,
+      };
+    }
+    return {
+      ruleString: '',
+      evalResult: true,
+    };
   }
 
   applyStateGarbageCollectionRule(matchedRules, parsedValuePath) {
