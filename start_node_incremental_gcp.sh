@@ -83,7 +83,6 @@ printf "\n#### [Step 1] Configure env vars ####\n\n"
 KEYSTORE_DIR=testnet_dev_staging_keys
 
 export PEER_WHITELIST='*'
-export PEER_WHITELIST=""
 if [[ $SEASON = 'spring' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
