@@ -67,6 +67,7 @@ class Consensus {
     this.timeAdjustment = 0;
     this.isInEpochTransition = false;
     this.proposer = null;
+    this.stakeTx = null;
     // NOTE(liayoo): epoch increases by 1 every epoch_ms,
     // and at each epoch a new proposer is pseudo-randomly selected.
     this.epoch = 1;
@@ -100,7 +101,9 @@ class Consensus {
       } else if (targetStake > 0 && currentStake < targetStake) {
         const stakeAmount = targetStake - currentStake;
         const stakeTx = this.stake(stakeAmount);
-        this.server.executeAndBroadcastTransaction(stakeTx);
+        if (!this.server.executeAndBroadcastTransaction(stakeTx)) {
+          this.stakeTx = stakeTx;
+        }
       }
       this.setState(ConsensusStates.RUNNING);
       this.startEpochTransition();
@@ -705,7 +708,7 @@ class Consensus {
       }
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_STATE_PROOF_HASH,
-        message: `State proof hashes don't match: ${stateProofHash} / ${expectedStateProofHash}`,
+        message: `State proof hashes don't match (${number}): ${stateProofHash} / ${expectedStateProofHash}`,
         level: 'error'
       });
     }
@@ -1071,6 +1074,9 @@ class Consensus {
       chain.unshift(currBlock);
       // previous block of currBlock
       currBlock = _.get(this.node.bp.hashToBlockInfo[currBlock.last_hash], 'block');
+      if (!currBlock) {
+        currBlock = this.node.bc.getBlockByHash(blockHash);
+      }
       blockHash = currBlock ? currBlock.hash : '';
     }
     if (!currBlock || blockHash === '') {

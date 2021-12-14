@@ -435,6 +435,9 @@ class BlockPool {
       logger.info(`[${LOG_HEADER}] Current block is unavailable`);
       return;
     }
+    if (currentBlockInfo.notarized) {
+      return;
+    }
     if (currentBlockInfo.block.number === 0) {
       this.hashToBlockInfo[currentBlockInfo.block.hash].notarized = true;
       this.updateLongestNotarizedChains(this.hashToBlockInfo[currentBlockInfo.block.hash]);
@@ -468,6 +471,15 @@ class BlockPool {
   }
 
   cleanUpForBlockHash(blockHash) {
+    const block = _get(this.hashToBlockInfo[blockHash], 'block');
+    const invalidBlock = _get(this.hashToInvalidBlockInfo[blockHash], 'block');
+    const againstVotes = _get(this.hashToInvalidBlockInfo[blockHash], 'votes');
+    if (block) {
+      this.node.tp.cleanUpConsensusTxsForBlock(block);
+    }
+    if (invalidBlock) {
+      this.node.tp.cleanUpConsensusTxsForBlock(invalidBlock, againstVotes);
+    }
     delete this.hashToBlockInfo[blockHash];
     delete this.hashToInvalidBlockInfo[blockHash];
     delete this.hashToNextBlockSet[blockHash];
@@ -487,7 +499,7 @@ class BlockPool {
         for (const blockHash of blockHashList) {
           if (this.hashToInvalidBlockInfo[blockHash]) {
             if (recordedInvalidBlocks.has(blockHash) ||
-                blockNumber < targetNumber - ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES) {
+                blockNumber < targetNumber - ConsensusConsts.MAX_INVALID_BLOCKS_ON_MEM) {
               this.cleanUpForBlockHash(blockHash);
               this.numberToBlockSet[blockNumber].delete(blockHash);
             }

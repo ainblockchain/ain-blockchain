@@ -625,6 +625,18 @@ describe('TransactionPool', () => {
   });
 
   describe('Transaction pool clean-up', () => {
+    let node2; let node3; let node4; let nodes;
+
+    before(async () => {
+      node2 = new BlockchainNode();
+      setNodeForTesting(node2, 1);
+      node3 = new BlockchainNode();
+      setNodeForTesting(node3, 2);
+      node4 = new BlockchainNode();
+      setNodeForTesting(node4, 3);
+      nodes = [node2, node3, node4];
+    });
+
     it('cleanUpForNewBlock()', () => {
       const number = 1;
       const lastBlock = node.bc.genesisBlock;
@@ -650,6 +662,75 @@ describe('TransactionPool', () => {
       }
       node.tp.cleanUpForNewBlock(block);
       assert.deepEqual(newTransactions, node.tp.transactions);
+    });
+
+    it('cleanUpConsensusTxsForBlock()', async () => {
+      const lastBlock = node.bc.genesisBlock;
+      const transactions = node.tp.getValidTransactions();
+      const lastVotes = [];
+      nodes.forEach((_node) => {
+        const consensusTx = getTransaction(_node, {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `/consensus/number/0/0xblock_hash/vote/0xaddress`,
+            value: {
+              block_hash: '0xblock_hash',
+              stake: 10000000,
+              is_against: false,
+              vote_nonce: 1639315169164
+            },
+          },
+          nonce: -1,
+        });
+        node.tp.addTransaction(consensusTx);
+        lastVotes.push(consensusTx);
+      });
+      const evidenceTx = getTransaction(node, {
+        operation: {
+          type: 'SET_VALUE',
+          ref: `/consensus/number/0/0xblock_hash/vote/0xaddress`,
+          value: {
+            block_hash: '0xblock_hash',
+            stake: 10000000,
+            is_against: true,
+            vote_nonce: 1639315169164
+          },
+        },
+        nonce: -1,
+      });
+      node.tp.addTransaction(evidenceTx);
+      const invalidProposal = getTransaction(node, {
+        operation: {
+          type: 'SET_VALUE',
+          ref: `/consensus/number/0/propose`,
+          value: {
+            number: 0
+          },
+        },
+        nonce: -1,
+      });
+      node.tp.addTransaction(invalidProposal);
+      const evidence = {
+        [node.account.address]: [{
+          transactions: [invalidProposal],
+          block: lastBlock,
+          votes: [evidenceTx],
+          offense_type: 'INVALID_PROPOSAL',
+        }]
+      }
+      for (const tx of [...lastVotes, evidenceTx, invalidProposal]) {
+        expect(node.tp.transactions[tx.address].includes(tx)).to.equal(true);
+      }
+      const receipts = txsToDummyReceipts(transactions);
+      const block = Block.create(
+          lastBlock.hash, lastVotes, evidence, transactions, receipts, 1, lastBlock.epoch + 1, '',
+          node.account.address, {}, 0, 0);
+      node.tp.cleanUpConsensusTxsForBlock(block);
+      for (const tx of [...lastVotes, evidenceTx, invalidProposal]) {
+        if (node.tp.transactions[tx.address]) {
+          expect(node.tp.transactions[tx.address].includes(tx)).to.equal(false);
+        }
+      }
     });
   });
 });

@@ -22,6 +22,8 @@ const DevFlags = {
   enableNtpSync: true,
   // Enables traffic monitoring.
   enableTrafficMonitoring: true,
+  // Enables winston logger. (default = bunyan)
+  enableWinstonLogger: false,
 };
 
 // ** Blockchain configs **
@@ -86,7 +88,11 @@ function setNodeConfigs() {
     }
   }
   if (!fs.existsSync(NodeConfigs.BLOCKCHAIN_DATA_DIR)) {
-    fs.mkdirSync(NodeConfigs.BLOCKCHAIN_DATA_DIR, { recursive: true });
+    try {
+      fs.mkdirSync(NodeConfigs.BLOCKCHAIN_DATA_DIR, { recursive: true });
+    } catch (e) {
+      console.log(e)
+    }
   }
   NodeConfigs.LOGS_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'logs');
   NodeConfigs.CHAINS_DIR = path.resolve(NodeConfigs.BLOCKCHAIN_DATA_DIR, 'chains');
