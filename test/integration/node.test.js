@@ -159,18 +159,8 @@ async function cleanUp() {
     json: {
       op_list: [
         {
-          type: 'SET_VALUE',
-          ref: '/apps/test/test_value',
-          value: null
-        },
-        {
-          type: 'SET_VALUE',
-          ref: '/apps/test/test_state_info',
-          value: null
-        },
-        {
-          type: 'SET_RULE',
-          ref: '/apps/test/test_rule',
+          type: 'SET_OWNER',
+          ref: '/apps/test/test_owner',
           value: null
         },
         {
@@ -179,8 +169,18 @@ async function cleanUp() {
           value: null
         },
         {
-          type: 'SET_OWNER',
-          ref: '/apps/test/test_owner',
+          type: 'SET_RULE',
+          ref: '/apps/test/test_rule',
+          value: null
+        },
+        {
+          type: 'SET_VALUE',
+          ref: '/apps/test/test_value',
+          value: null
+        },
+        {
+          type: 'SET_VALUE',
+          ref: '/apps/test/test_state_info',
           value: null
         },
       ],
