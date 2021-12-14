@@ -656,12 +656,12 @@ describe("DB operations", () => {
 
       it("setValue to write with non-writable path with sharding", () => {
         assert.deepEqual(node.db.setValue("/apps/test/shards/enabled_shard", 20), {
-          "code": 10104,
+          "code": 10103,
           "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
           "bandwidth_gas_amount": 1
         });
         assert.deepEqual(node.db.setValue("/apps/test/shards/enabled_shard/path", 20), {
-          "code": 10104,
+          "code": 10103,
           "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
           "bandwidth_gas_amount": 1
         });
@@ -714,8 +714,8 @@ describe("DB operations", () => {
             child2: 2
           }, { addr: 'abcd' },
           null, { extra: { executed_at: 1234567890000 }}), {
-          error_message: 'No state permission on: /apps/test/test_rule/some/path/more/than/max',
-          code: 10106,
+          error_message: "False state rule eval [false] for /apps/test/test_rule/some/path/more/than/max",
+          code: 12104,
           bandwidth_gas_amount: 1
         });
       })
@@ -744,7 +744,7 @@ describe("DB operations", () => {
 
       it("incValue to return error code with non-writable path with sharding", () => {
         assert.deepEqual(node.db.incValue("/apps/test/shards/enabled_shard/path", 5), {
-          "code": 10104,
+          "code": 10103,
           "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
           "bandwidth_gas_amount": 1
         });
@@ -779,7 +779,7 @@ describe("DB operations", () => {
 
       it("decValue to return error code with non-writable path with sharding", () => {
         assert.deepEqual(node.db.decValue("/apps/test/shards/enabled_shard/path", 5), {
-          "code": 10104,
+          "code": 10103,
           "error_message": "Non-writable path with shard config: /values/apps/test/shards/enabled_shard",
           "bandwidth_gas_amount": 1
         });
@@ -1287,15 +1287,17 @@ describe("DB operations", () => {
     })
 
     describe("evalRule:", () => {
+      const timestamp = 1234567890000;
+
       it("evalRule to evaluate a variable path rule", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, Date.now())), {
-          "code": 10103,
-          "error_message": "No write permission on: /apps/test/test_rule/some/var_path",
+            "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, timestamp)), {
+          "code": 12103,
+          "error_message": "False eval of write rule [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, Date.now())), {
+            "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
@@ -1304,40 +1306,40 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a non-variable path rule", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, Date.now())), {
+            "/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/path", 'value', { addr: 'other' }, Date.now())), {
-          "code": 10103,
-          "error_message": "No write permission on: /apps/test/test_rule/some/path",
+            "/apps/test/test_rule/some/path", 'value', { addr: 'other' }, timestamp)), {
+          "code": 12103,
+          "error_message": "False eval of write rule [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'ijkl' }, Date.now())), {
+            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'ijkl' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'other' }, Date.now())), {
-          "code": 10103,
-          "error_message": "No write permission on: /apps/test/test_rule/some/upper/path/deeper/path",
+            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'other' }, timestamp)), {
+          "code": 12103,
+          "error_message": "False eval of write rule [auth.addr === 'ijkl'] at '/apps/test/test_rule/some/upper/path/deeper/path' for value path '/apps/test/test_rule/some/upper/path/deeper/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
       })
 
       it("evalRule to evaluate a closest variable path rule", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'abcd' }, Date.now())), {
-          "code": 10103,
-          "error_message": "No write permission on: /apps/test/test_rule/some/var_path/subpath",
+            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
+          "code": 12103,
+          "error_message": "False eval of write rule [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path/subpath' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'other' }, Date.now())), {
+            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'other' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
@@ -1346,37 +1348,37 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a closest non-variable rule", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'abcd' }, Date.now())), {
+            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'other' }, Date.now())), {
-          "code": 10103,
-          "error_message": "No write permission on: /apps/test/test_rule/some/path/subpath",
+            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'other' }, timestamp)), {
+          "code": 12103,
+          "error_message": "False eval of write rule [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
       })
 
       it("evalRule to evaluate a rule without subtree rules", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'abcd' }, Date.now())), {
+            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'other' }, Date.now())), {
-          "code": 10103,
-          "error_message": "No write permission on: /apps/test/test_rule/some/upper/path/subpath",
+            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'other' }, timestamp)), {
+          "code": 12103,
+          "error_message": "False eval of write rule [auth.addr === 'abcd'] at '/apps/test/test_rule/some/upper/path' for value path '/apps/test/test_rule/some/upper/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
       })
 
       it("evalRule to evaluate a rule with subtree rules", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, Date.now())), {
+            "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12101,
           "error_message": "Non-empty (1) subtree rules on: /apps/test/test_rule/some/upper/path",
           "matched": "erased",
@@ -1843,6 +1845,8 @@ describe("DB operations", () => {
   });
 
   describe("Composite operations", () => {
+    const timestamp = 1234567890000;
+
     describe("get:", () => {
       it("get to retrieve non-existing value or function or rule or owner", () => {
         assert.deepEqual(node.db.get([
@@ -1879,14 +1883,14 @@ describe("DB operations", () => {
             ref: "/apps/test/test_rule/some/path/subpath",
             value: "value",
             address: "abcd",
-            timestamp: Date.now(),
+            timestamp: timestamp,
           },
           {
             type: "EVAL_OWNER",
             ref: "/apps/owner/other/path",
             permission: "write_rule",
             address: "abcd",
-            timestamp: Date.now(),
+            timestamp: timestamp,
           },
         ]), [
           null,
@@ -2282,6 +2286,8 @@ describe("DB operations", () => {
 
 
   describe("Execute operations", () => {
+    const timestamp = 1234567890000;
+
     describe("executeSingleSetOperation:", () => {
       it("when successful", () => {
         assert.deepEqual(node.db.executeSingleSetOperation({
@@ -2290,7 +2296,7 @@ describe("DB operations", () => {
           value: {
             "new": 12345
           }
-        }, { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }}), {
+        }, { addr: 'abcd' }, null, { extra: { executed_at: timestamp }}), {
           "code": 0,
           "bandwidth_gas_amount": 1
         });
@@ -2314,7 +2320,6 @@ describe("DB operations", () => {
         const valuePath = '/apps/test/test_function_triggering/allowed_path/value';
         const functionResultPath = '/apps/test/test_function_triggering/allowed_path/.last_tx/value';
         const value = 'some value';
-        const timestamp = 1234567890000;
 
         const result = node.db.executeMultiSetOperation([
           {
@@ -2359,7 +2364,7 @@ describe("DB operations", () => {
               }
             }
           },
-        ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }});
+        ], { addr: 'abcd' }, null, { extra: { executed_at: timestamp }});
         expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
@@ -2418,7 +2423,6 @@ describe("DB operations", () => {
         const valuePath = '/apps/test/test_function_triggering/allowed_path/value';
         const functionResultPath = '/apps/test/test_function_triggering/allowed_path/.last_tx/value';
         const value = 'some value';
-        const timestamp = 1234567890000;
 
         const result = node.db.executeMultiSetOperation([
           {
@@ -2463,7 +2467,7 @@ describe("DB operations", () => {
               }
             }
           },
-        ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }});
+        ], { addr: 'abcd' }, null, { extra: { executed_at: timestamp }});
         expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
@@ -2494,8 +2498,8 @@ describe("DB operations", () => {
                           "0": {
                             "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                             "result": {
-                              "code": 10103,
-                              "error_message": "No write permission on: /apps/test/test_function_triggering/allowed_path/.last_tx/value",
+                              "code": 12103,
+                              "error_message": "False eval of write rule [auth.fid !== '_eraseValue'] at '/apps/test/test_function_triggering/allowed_path/.last_tx/value' for value path '/apps/test/test_function_triggering/allowed_path/.last_tx/value' with path vars '{}', data '{\"tx_hash\":\"0xa67134a3d4d525a35681801f6ccaad4ba3e4a7c75a2568aea84cf514c932d39f\"}', newData '\"erased\"', auth '{\"addr\":\"abcd\",\"fid\":\"_eraseValue\",\"fids\":[\"_saveLastTx\",\"_eraseValue\"]}', timestamp '1234567890000'",
                               "bandwidth_gas_amount": 1
                             }
                           }
@@ -2504,7 +2508,7 @@ describe("DB operations", () => {
                         "bandwidth_gas_amount": 0,
                       }
                     },
-                    "code": 10105,
+                    "code": 10104,
                     "error_message": "Triggered function call failed",
                     "bandwidth_gas_amount": 1
                   }
@@ -2514,7 +2518,7 @@ describe("DB operations", () => {
               "bandwidth_gas_amount": 0,
             }
           },
-          "code": 10105,
+          "code": 10104,
           "error_message": "Triggered function call failed",
           "bandwidth_gas_amount": 1,
         });
@@ -2523,6 +2527,8 @@ describe("DB operations", () => {
     })
 
     describe("executeMultiSetOperation:", () => {
+      const timestamp = 1234567890000;
+
       it("when all operations applied successfully", () => {
         assert.deepEqual(node.db.executeMultiSetOperation([
           {
@@ -2592,7 +2598,7 @@ describe("DB operations", () => {
               }
             }
           }
-        ], { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, { extra: { executed_at: 1234567890000 }}), {
+        ], { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, { extra: { executed_at: timestamp }}), {
           "result_list": {
             "0": {
               "code": 0,
@@ -2714,7 +2720,6 @@ describe("DB operations", () => {
         const valuePath = '/apps/test/test_function_triggering/allowed_path/value';
         const functionResultPath = '/apps/test/test_function_triggering/allowed_path/.last_tx/value';
         const value = 'some value';
-        const timestamp = 1234567890000;
 
         const result = node.db.executeMultiSetOperation([
           {
@@ -2759,7 +2764,7 @@ describe("DB operations", () => {
               }
             }
           },
-        ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }});
+        ], { addr: 'abcd' }, null, { extra: { executed_at: timestamp }});
         expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
@@ -2837,7 +2842,6 @@ describe("DB operations", () => {
         const valuePath = '/apps/test/test_function_triggering/allowed_path/value';
         const functionResultPath = '/apps/test/test_function_triggering/allowed_path/.last_tx/value';
         const value = 'some value';
-        const timestamp = 1234567890000;
 
         const result = node.db.executeMultiSetOperation([
           {
@@ -2882,7 +2886,7 @@ describe("DB operations", () => {
               }
             }
           },
-        ], { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }});
+        ], { addr: 'abcd' }, null, { extra: { executed_at: timestamp }});
         expect(CommonUtil.isFailedTx(result)).to.equal(false);
 
         const txBody = {
@@ -2927,8 +2931,8 @@ describe("DB operations", () => {
                               "0": {
                                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                                 "result": {
-                                  "code": 10103,
-                                  "error_message": "No write permission on: /apps/test/test_function_triggering/allowed_path/.last_tx/value",
+                                  "code": 12103,
+                                  "error_message": "False eval of write rule [auth.fid !== '_eraseValue'] at '/apps/test/test_function_triggering/allowed_path/.last_tx/value' for value path '/apps/test/test_function_triggering/allowed_path/.last_tx/value' with path vars '{}', data '{\"tx_hash\":\"0xce0ed4ea7f36c493ad1d73e769c00e30812efa55214309c3dfdc3a8463bd7e7d\"}', newData '\"erased\"', auth '{\"addr\":\"abcd\",\"fid\":\"_eraseValue\",\"fids\":[\"_saveLastTx\",\"_eraseValue\"]}', timestamp '1234567890000'",
                                   "bandwidth_gas_amount": 1,
                                 }
                               }
@@ -2937,7 +2941,7 @@ describe("DB operations", () => {
                             "bandwidth_gas_amount": 0,
                           }
                         },
-                        "code": 10105,
+                        "code": 10104,
                         "error_message": "Triggered function call failed",
                         "bandwidth_gas_amount": 1
                       }
@@ -2947,7 +2951,7 @@ describe("DB operations", () => {
                   "bandwidth_gas_amount": 0,
                 }
               },
-              "code": 10105,
+              "code": 10104,
               "error_message": "Triggered function call failed",
               "bandwidth_gas_amount": 1
             },
@@ -3565,8 +3569,8 @@ describe("DB rule config", () => {
     });
     assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/balance`, -1, null, null)), {
-      "code": 10103,
-      "error_message": "No write permission on: /apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
+      "code": 12103,
+      "error_message": "False eval of write rule [typeof newData === 'number' && newData >= 0] at '/apps/test/users/$uid/balance' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data '50', newData '-1', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
@@ -3586,8 +3590,8 @@ describe("DB rule config", () => {
     });
     assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/info`, "something else", null, null)), {
-      "code": 10103,
-      "error_message": "No write permission on: /apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/info",
+      "code": 12103,
+      "error_message": "False eval of write rule [data !== null] at '/apps/test/users/$uid/info' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/info' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data 'null', newData '\"something else\"', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
@@ -3610,8 +3614,8 @@ describe("DB rule config", () => {
     assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/child/grandson`, "something",
         { addr: node1.account.address }, null)), {
-      "code": 10103,
-      "error_message": "No write permission on: /apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/child/grandson",
+      "code": 12103,
+      "error_message": "False eval of write rule [auth.addr === $uid] at '/apps/test/users/$uid' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/child/grandson' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data 'null', newData '\"something\"', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', timestamp 'null'",
       "matched": "erased",
     });
   })
@@ -3625,8 +3629,8 @@ describe("DB rule config", () => {
     });
     assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/balance_info`, "something", null, null)), {
-      "code": 10103,
-      "error_message": "No write permission on: /apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance_info",
+      "code": 12103,
+      "error_message": "False eval of write rule [getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null] at '/apps/test/users/$uid/balance_info' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance_info' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '\"something\"', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
   })
@@ -3640,8 +3644,8 @@ describe("DB rule config", () => {
     });
     assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/next_counter`, 12, null, null)), {
-      "code": 10103,
-      "error_message": "No write permission on: /apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter",
+      "code": 12103,
+      "error_message": "False eval of write rule [typeof newData === 'number' && newData === data + 1] at '/apps/test/users/$uid/next_counter' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data '10', newData '12', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
   })
@@ -3657,8 +3661,8 @@ describe("DB rule config", () => {
     assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
         `/apps/test/second_users/${node1.account.address}/next_counter`,
         "some other value", null, null)), {
-      "code": 10103,
-      "error_message": "No write permission on: /apps/test/second_users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter",
+      "code": 12103,
+      "error_message": "False eval of write rule [$wcard1 == $wcard2] at '/apps/test/second_users/$wcard1/$wcard2' for value path '/apps/test/second_users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter' with path vars '{\"$wcard2\":\"next_counter\",\"$wcard1\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '\"some other value\"', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
   })
@@ -4194,7 +4198,7 @@ describe("DB sharding config", () => {
 
       it("setValue with isGlobal = false and non-writable path with sharding", () => {
         assert.deepEqual(node.db.setValue("/apps/test/test_sharding/shards/enabled_shard/path", 20), {
-          "code": 10104,
+          "code": 10103,
           "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
           "bandwidth_gas_amount": 1
         });
@@ -4250,7 +4254,7 @@ describe("DB sharding config", () => {
 
       it("incValue with isGlobal = false and non-writable path with sharding", () => {
         assert.deepEqual(node.db.incValue("/apps/test/test_sharding/shards/enabled_shard/path", 5), {
-          "code": 10104,
+          "code": 10103,
           "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
           "bandwidth_gas_amount": 1
         });
@@ -4306,7 +4310,7 @@ describe("DB sharding config", () => {
 
       it("decValue with isGlobal = false and non-writable path with sharding", () => {
         assert.deepEqual(node.db.decValue("/apps/test/test_sharding/shards/enabled_shard/path", 5), {
-          "code": 10104,
+          "code": 10103,
           "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
           "bandwidth_gas_amount": 1
         });

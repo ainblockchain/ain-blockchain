@@ -512,9 +512,10 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
+        body.result.error_message = 'erased';
         assert.deepEqual(eraseEvalRuleResMatched(body.result), {
-          "code": 10103,
-          "error_message": "No write permission on: /apps/test/test_rule/some/path",
+          "code": 12103,
+          "error_message": "erased",
           "matched": "erased",
         });
       })
@@ -944,9 +945,10 @@ describe('Blockchain Node', () => {
         const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
         .then(res => {
+          res.result.result.error_message = 'erased';
           assert.deepEqual(eraseEvalRuleResMatched(res.result.result), {
-            "code": 10103,
-            "error_message": "No write permission on: /apps/test/test_rule/some/path",
+            "code": 12103,
+            "error_message": "erased",
             "matched": "erased",
           });
         })
@@ -1218,10 +1220,11 @@ describe('Blockchain Node', () => {
         const request = {ref: '/apps/some/wrong/path', value: "some other value"};
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
           .body.toString('utf-8'));
+        body.result.result.error_message = 'erased';
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
-          "code": 10103,
-          "error_message": "No write permission on: /apps/some/wrong/path",
+          "code": 12103,
+          "error_message": "erased",
           "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
@@ -1284,10 +1287,11 @@ describe('Blockchain Node', () => {
         const request = {ref: "/apps/some/wrong/path2", value: 10};
         const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
+        body.result.result.error_message = 'erased';
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
-          "code": 10103,
-          "error_message": "No write permission on: /apps/some/wrong/path2",
+          "code": 12103,
+          "error_message": "erased",
           "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
@@ -1350,10 +1354,11 @@ describe('Blockchain Node', () => {
         const request = {ref: "/apps/some/wrong/path3", value: 10};
         const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
+        body.result.result.error_message = 'erased';
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
-          "code": 10103,
-          "error_message": "No write permission on: /apps/some/wrong/path3",
+          "code": 12103,
+          "error_message": "erased",
           "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
@@ -1877,6 +1882,7 @@ describe('Blockchain Node', () => {
         };
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
+        body.result.result.result_list[3].error_message = 'erased';
         assert.deepEqual(_.get(body, 'result.result'), {
           "result_list": {
             "0": {
@@ -1892,8 +1898,8 @@ describe('Blockchain Node', () => {
               "bandwidth_gas_amount": 1
             },
             "3": {
-              "code": 10103,
-              "error_message": "No write permission on: /apps/some/wrong/path",
+              "code": 12103,
+              "error_message": "erased",
               "bandwidth_gas_amount": 1
             }
           },
@@ -2472,6 +2478,9 @@ describe('Blockchain Node', () => {
             console.error(`Failed to check finalization of tx.`);
           }
           result.tx_hash = 'erased';
+          if (result.result.code > 0) {
+            result.result.error_message = 'erased';
+          }
         }
         assert.deepEqual(body.result, [
           {
@@ -2546,8 +2555,8 @@ describe('Blockchain Node', () => {
           {
             "tx_hash": "erased",
             "result": {
-              "error_message": "No write permission on: /apps/some/wrong/path",
-              "code": 10103,
+              "error_message": "erased",
+              "code": 12103,
               "bandwidth_gas_amount": 1,
               "gas_amount_charged": 0,
               "gas_amount_total": {
@@ -3965,7 +3974,7 @@ describe('Blockchain Node', () => {
       }
       const body = parseOrLog(syncRequest(
         'POST', server1 + '/set_value', {json: failingTx}).body.toString('utf-8'));
-      assert.deepEqual(body.result.result.code, 10103);
+      assert.deepEqual(body.result.result.code, 12103);
       assert.deepEqual(body.result.result.bandwidth_gas_amount, 1);
       assert.deepEqual(body.result.result.gas_amount_total, {
         "bandwidth": {

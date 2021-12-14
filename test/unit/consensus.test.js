@@ -50,7 +50,7 @@ describe("Consensus", () => {
         timestamp
       }
     );
-    expect(node1.db.executeTransaction(voteTx).code).to.equal(10103);
+    expect(node1.db.executeTransaction(voteTx).code).to.equal(12103);
   });
 
   it("Staked nodes can vote", () => {
@@ -110,7 +110,7 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(proposeTx).code).to.equal(10103);
+    expect(node1.db.executeTransaction(proposeTx).code).to.equal(12103);
   });
 
   it('Whitelisted validators must stake within min_stake_for_proposer & max_stake_for_proposer to have the producing rights', () => {
@@ -149,7 +149,7 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(proposeWithStakeLessThanMin).code).to.equal(10103); // Fails
+    expect(node1.db.executeTransaction(proposeWithStakeLessThanMin).code).to.equal(12103); // Fails
 
     // Staking min_stake_for_proposer
     const stakeEqualMin = getTransaction(node2, {
@@ -209,6 +209,6 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(proposeWithStakeMoreThanMax).code).to.equal(10103); // Fails
+    expect(node1.db.executeTransaction(proposeWithStakeMoreThanMax).code).to.equal(12103); // Fails
   });
 });

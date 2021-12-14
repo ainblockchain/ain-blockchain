@@ -1715,8 +1715,6 @@ class DB {
         this.addPathToValue(value, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
     const newData =
         this.addPathToValue(newValue, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
-    let evalWriteRuleRes = false;
-    let evalStateRuleRes = false;
     if (matchedWriteRules.subtreeRules && matchedWriteRules.subtreeRules.length > 0) {
       return {
         code: TxResultCode.VALUE_PERMISSION_NON_EMPTY_SUBTREE_RULES,
@@ -1726,27 +1724,32 @@ class DB {
       };
     }
     try {
-      evalWriteRuleRes = !!this.evalWriteRuleConfig(
+      const evalWriteRuleRes = this.evalWriteRuleConfig(
         matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
-      if (!evalWriteRuleRes) {
-        logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${evalWriteRuleRes}, ` +
+      if (!evalWriteRuleRes.evalResult) {
+        logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${JSON.stringify(evalWriteRuleRes, null, 2)}, ` +
             `matched: ${JSON.stringify(matchedWriteRules, null, 2)}, data: ${JSON.stringify(data)}, ` +
             `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
             `timestamp: ${timestamp}\n`);
         return {
-          code: TxResultCode.SET_VALUE_NO_WRITE_PERMISSION,
-          error_message: `No write permission on: ${CommonUtil.formatPath(parsedValuePath)}`,
+          code: TxResultCode.VALUE_PERMISSION_FALSE_WRITE_RULE_EVAL,
+          error_message: `False eval of write rule [${evalWriteRuleRes.ruleString}] ` +
+              `at '${CommonUtil.formatPath(matchedWriteRules.closestRule.path)}' ` +
+              `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
+              `with path vars '${JSON.stringify(matchedWriteRules.pathVars)}', ` +
+              `data '${JSON.stringify(data)}', newData '${JSON.stringify(newData)}', ` +
+              `auth '${JSON.stringify(auth)}', timestamp '${timestamp}'`,
           matched,
         };
       }
-      evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
+      const evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
       if (!evalStateRuleRes) {
         logger.debug(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
             `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
             `newValue: ${JSON.stringify(newValue)}\n`);
         return {
-          code: TxResultCode.SET_VALUE_NO_STATE_PERMISSION,
-          error_message: `No state permission on: ${CommonUtil.formatPath(parsedValuePath)}`,
+          code: TxResultCode.VALUE_PERMISSION_FALSE_STATE_RULE_EVAL,
+          error_message: `False state rule eval [${JSON.stringify(evalStateRuleRes)}] for ${CommonUtil.formatPath(parsedValuePath)}`,
           matched,
         };
       }
@@ -2097,20 +2100,33 @@ class DB {
 
   evalWriteRuleConfig(writeRuleConfig, pathVars, data, newData, auth, timestamp) {
     if (!CommonUtil.isDict(writeRuleConfig)) {
-      return false;
+      return {
+        ruleString: '',
+        evalResult: false,
+      };
     }
-    const writeRuleString = writeRuleConfig[RuleProperties.WRITE];
-    if (typeof writeRuleString === 'boolean') {
-      return writeRuleString;
-    } else if (typeof writeRuleString !== 'string') {
-      return false;
+    const ruleString = writeRuleConfig[RuleProperties.WRITE];
+    if (typeof ruleString === 'boolean') {
+      return {
+        ruleString: String(ruleString),
+        evalResult: ruleString,
+      };
+    } else if (typeof ruleString !== 'string') {
+      return {
+        ruleString: String(ruleString),
+        evalResult: false,
+      };
     }
-    const writeRuleCodeSnippet = makeWriteRuleCodeSnippet(writeRuleString);
+    const writeRuleCodeSnippet = makeWriteRuleCodeSnippet(ruleString);
     const writeRuleEvalFunc = DB.makeWriteRuleEvalFunction(writeRuleCodeSnippet, pathVars);
-    return writeRuleEvalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
+    const evalResult = !!writeRuleEvalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
         this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
         this.evalRule.bind(this), this.evalOwner.bind(this),
         new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
+    return {
+      ruleString,
+      evalResult,
+    };
   }
 
   evalStateRuleConfig(stateRuleConfig, newValue) {
