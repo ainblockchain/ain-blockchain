@@ -409,13 +409,8 @@ class BlockchainNode {
   }
 
   getAllBlockchainParamsFromState() {
-    const params = DB.getValueFromStateRoot(
+    return DB.getValueFromStateRoot(
         this.stateManager.getFinalRoot(), PathUtil.getBlockchainParamsRootPath()) || {};
-    const token = DB.getValueFromStateRoot(this.stateManager.getFinalRoot(), PredefinedDbPaths.TOKEN) || {};
-    const sharding = DB.getValueFromStateRoot(
-        this.stateManager.getFinalRoot(),
-        CommonUtil.formatPath([PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG])) || {};
-    return Object.assign(params, { token }, { sharding });
   }
 
   /**

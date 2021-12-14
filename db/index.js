@@ -350,7 +350,7 @@ class DB {
   // For testing purpose only.
   setShardingForTesting(sharding) {
     this.setValuesForTesting(
-        CommonUtil.formatPath([PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG]),
+        CommonUtil.formatPath([PredefinedDbPaths.BLOCKCHAIN_PARAMS, PredefinedDbPaths.BLOCKCHAIN_PARAMS_SHARDING]),
         sharding);
     this.setShardingPath(sharding[ShardingProperties.SHARDING_PATH]);
   }
@@ -553,13 +553,6 @@ class DB {
     // have the genesis block and the params in the state.
     if (blockNumber <= 0) {
       return BlockchainParams[category][name];
-    }
-    if (category === 'sharding') {
-      return DB.getValueFromStateRoot(
-          stateRoot, CommonUtil.formatPath([category, PredefinedDbPaths.SHARDING_CONFIG, name]));
-    }
-    if (category === 'token') {
-      return DB.getValueFromStateRoot(stateRoot, CommonUtil.formatPath([category, name]));
     }
     return DB.getValueFromStateRoot(stateRoot, PathUtil.getSingleBlockchainParamPath(category, name));
   }

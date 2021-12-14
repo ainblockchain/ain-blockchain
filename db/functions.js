@@ -12,7 +12,6 @@ const {
   FunctionTypes,
   NativeFunctionIds,
   WriteDbOperations,
-  TokenBridgeProperties,
   OwnerProperties,
   buildOwnerPermissions,
   buildRulePermission,
@@ -1016,12 +1015,12 @@ class Functions {
     //    signed with the sender key.
     const { amount, sender, sender_proof: senderProof } = value;
     const {
-      [TokenBridgeProperties.TOKEN_POOL]: tokenPool,
-      [TokenBridgeProperties.MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
-      [TokenBridgeProperties.MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
-      [TokenBridgeProperties.MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
-      [TokenBridgeProperties.TOKEN_EXCH_RATE]: tokenExchangeRate,
-      [TokenBridgeProperties.TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_POOL]: tokenPool,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_EXCH_RATE]: tokenExchangeRate,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
     // Perform checks
     const tokenBridgeValidated = this.validateTokenBridgeConfig(
@@ -1067,7 +1066,7 @@ class Functions {
     const chainId = context.params.chain_id;
     const tokenId = context.params.token_id;
     const {
-      [TokenBridgeProperties.TOKEN_POOL]: tokenPool
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_POOL]: tokenPool
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
     // Decrease pending amounts
     const decPendingResultCode = this.updateStatsForPendingCheckin(
@@ -1087,7 +1086,7 @@ class Functions {
     const checkinId = context.params.checkin_id;
     const { request, response } = value;
     const {
-      [TokenBridgeProperties.TOKEN_POOL]: tokenPool
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_POOL]: tokenPool
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
     if (response.status === true) {
       // Increase complete amounts
@@ -1201,13 +1200,13 @@ class Functions {
       return this.returnFuncResult(context, incPendingResultCode);
     }
     const {
-      [TokenBridgeProperties.TOKEN_POOL]: tokenPool,
-      [TokenBridgeProperties.MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
-      [TokenBridgeProperties.MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
-      [TokenBridgeProperties.MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
-      [TokenBridgeProperties.CHECKOUT_FEE_RATE]: checkoutFeeRate,
-      [TokenBridgeProperties.TOKEN_EXCH_RATE]: tokenExchangeRate,
-      [TokenBridgeProperties.TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_POOL]: tokenPool,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_CHECKOUT_FEE_RATE]: checkoutFeeRate,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_EXCH_RATE]: tokenExchangeRate,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
     // Perform checks
     const tokenBridgeValidated = this.validateTokenBridgeConfig(

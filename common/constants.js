@@ -160,8 +160,28 @@ const PredefinedDbPaths = {
   BLOCKCHAIN_PARAMS: 'blockchain_params',
   BLOCKCHAIN_PARAMS_CONSENSUS: 'consensus',
   BLOCKCHAIN_PARAMS_GENESIS: 'genesis',
-  BLOCKCHAIN_PARAMS_RESOURCE: 'resource',
   BLOCKCHAIN_PARAMS_MAX_FUNCTION_URLS_PER_DEVELOPER: 'max_function_urls_per_developer',
+  BLOCKCHAIN_PARAMS_RESOURCE: 'resource',
+  BLOCKCHAIN_PARAMS_SHARDING: 'sharding',
+  BLOCKCHAIN_PARAMS_SHARDING_MAX_SHARD_REPORT: 'max_shard_report',
+  BLOCKCHAIN_PARAMS_SHARDING_PARENT_CHAIN_POC: 'parent_chain_poc',
+  BLOCKCHAIN_PARAMS_SHARDING_PATH: 'sharding_path',
+  BLOCKCHAIN_PARAMS_SHARDING_PROTOCOL: 'sharding_protocol',
+  BLOCKCHAIN_PARAMS_SHARDING_REPORTING_PERIOD: 'reporting_period',
+  BLOCKCHAIN_PARAMS_SHARDING_SHARD_OWNER: 'shard_owner',
+  BLOCKCHAIN_PARAMS_SHARDING_SHARD_REPORTER: 'shard_reporter',
+  BLOCKCHAIN_PARAMS_TOKEN: 'token',
+  BLOCKCHAIN_PARAMS_TOKEN_BRIDGE: 'bridge',
+  BLOCKCHAIN_PARAMS_TOKEN_CHECKOUT_FEE_RATE: 'checkout_fee_rate',
+  BLOCKCHAIN_PARAMS_TOKEN_EXCH_RATE: 'token_exchange_rate',
+  BLOCKCHAIN_PARAMS_TOKEN_EXCH_SCHEME: 'token_exchange_scheme',
+  BLOCKCHAIN_PARAMS_TOKEN_MAX_CHECKOUT_PER_DAY: 'max_checkout_per_day',
+  BLOCKCHAIN_PARAMS_TOKEN_MAX_CHECKOUT_PER_REQUEST: 'max_checkout_per_request',
+  BLOCKCHAIN_PARAMS_TOKEN_MIN_CHECKOUT_PER_REQUEST: 'min_checkout_per_request',
+  BLOCKCHAIN_PARAMS_TOKEN_NAME: 'name',
+  BLOCKCHAIN_PARAMS_TOKEN_POOL: 'token_pool',
+  BLOCKCHAIN_PARAMS_TOKEN_SYMBOL: 'symbol',
+  BLOCKCHAIN_PARAMS_TOKEN_TOTAL_SUPPLY: 'total_supply',
   // Consensus
   CONSENSUS: 'consensus',
   CONSENSUS_BLOCK_HASH: 'block_hash',
@@ -205,13 +225,6 @@ const PredefinedDbPaths = {
   GAS_FEE_CLAIM: 'claim',
   GAS_FEE_COLLECT: 'collect',
   GAS_FEE_UNCLAIMED: 'unclaimed',
-  // Token
-  TOKEN: 'token',
-  TOKEN_BRIDGE: 'bridge',
-  TOKEN_BRIDGE_TOKEN_POOL: 'token_pool',
-  TOKEN_NAME: 'name',
-  TOKEN_SYMBOL: 'symbol',
-  TOKEN_TOTAL_SUPPLY: 'total_supply',
   // Save last tx
   SAVE_LAST_TX_LAST_TX: '.last_tx',
   // Erase value
@@ -259,10 +272,6 @@ const PredefinedDbPaths = {
   ESCROW_OPEN: 'open',
   ESCROW_RELEASE: 'release',
   ESCROW_RESULT: 'result',
-  // Sharding
-  SHARDING: 'sharding',
-  SHARDING_CONFIG: 'config',
-  SHARDING_SHARD: 'shard',
   // Check-in & Check-out
   CHECKIN: 'checkin',
   CHECKIN_AMOUNT: 'amount',
@@ -281,33 +290,16 @@ const PredefinedDbPaths = {
   CHECKOUT_STATS_COMPLETE: 'complete',
   CHECKOUT_STATS_PENDING: 'pending',
   CHECKOUT_STATS_TOTAL: 'total',
-};
-
-/**
- * Properties of token configs.
- *
- * @enum {string}
- */
-const TokenProperties = {
-  NAME: 'name',
-  SYMBOL: 'symbol',
-  TOTAL_SUPPLY: 'total_supply',
-  BRIDGE: 'bridge',
-};
-
-/**
- * Properties of token bridge configs.
- *
- * @enum {string}
- */
- const TokenBridgeProperties = {
-  TOKEN_POOL: 'token_pool',
-  MIN_CHECKOUT_PER_REQUEST: 'min_checkout_per_request',
-  MAX_CHECKOUT_PER_REQUEST: 'max_checkout_per_request',
-  MAX_CHECKOUT_PER_DAY: 'max_checkout_per_day',
-  CHECKOUT_FEE_RATE: 'checkout_fee_rate',
-  TOKEN_EXCH_RATE: 'token_exchange_rate',
-  TOKEN_EXCH_SCHEME: 'token_exchange_scheme',
+  // Sharding
+  SHARDING: 'sharding',
+  SHARDING_SHARD: 'shard',
+  SHARDING_SHARD_MAX_SHARD_REPORT: 'max_shard_report',
+  SHARDING_SHARD_PARENT_CHAIN_POC: 'parent_chain_poc',
+  SHARDING_SHARD_PATH: 'sharding_path',
+  SHARDING_SHARD_PROTOCOL: 'sharding_protocol',
+  SHARDING_SHARD_REPORTING_PERIOD: 'reporting_period',
+  SHARDING_SHARD_SHARD_OWNER: 'shard_owner',
+  SHARDING_SHARD_SHARD_REPORTER: 'shard_reporter',
 };
 
 /**
@@ -456,8 +448,6 @@ const ShardingProperties = {
   SHARDING_ENABLED: 'sharding_enabled',
   SHARDING_PATH: 'sharding_path',
   SHARDING_PROTOCOL: 'sharding_protocol',
-  TOKEN_EXCH_SCHEME: 'token_exchange_scheme',
-  TOKEN_EXCH_RATE: 'token_exchange_rate',
 };
 
 /**
@@ -691,8 +681,6 @@ module.exports = {
   BlockchainNodeStates,
   P2pNetworkStates,
   PredefinedDbPaths,
-  TokenProperties,
-  TokenBridgeProperties,
   AccountProperties,
   OwnerProperties,
   RuleProperties,
