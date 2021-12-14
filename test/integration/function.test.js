@@ -407,12 +407,7 @@ describe('Native Function', () => {
         json: {
           op_list: [
             {
-              type: 'SET_VALUE',
-              ref: '/apps/test/test_function_triggering',
-              value: null
-            },
-            {
-              type: 'SET_RULE',
+              type: 'SET_OWNER',
               ref: '/apps/test/test_function_triggering',
               value: null
             },
@@ -422,7 +417,12 @@ describe('Native Function', () => {
               value: null
             },
             {
-              type: 'SET_OWNER',
+              type: 'SET_RULE',
+              ref: '/apps/test/test_function_triggering',
+              value: null
+            },
+            {
+              type: 'SET_VALUE',
               ref: '/apps/test/test_function_triggering',
               value: null
             },
@@ -3866,7 +3866,7 @@ describe('Native Function', () => {
 
       it('cannot close checkout with a non-authorized address', async () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkoutHistoryBasePath}/${serviceUser}/0`,
+          ref: `${checkoutHistoryBasePath}/${serviceUser}/0/data`,
           value: {
             request: {
               amount: checkoutAmount,
@@ -3883,7 +3883,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutHistory = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/0/data`).body.toString('utf-8')).result;
         expect(checkoutHistory).to.equal(null);
       });
 
@@ -3891,7 +3891,7 @@ describe('Native Function', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `${checkoutHistoryBasePath}/${serviceUser}/0`,
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/0/data`,
             value: {
               request: {
                 amount: checkoutAmount,
@@ -4036,7 +4036,7 @@ describe('Native Function', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `${checkoutHistoryBasePath}/${serviceUser}/1`,
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/1/data`,
             value: {
               request: {
                 amount: checkoutAmount,

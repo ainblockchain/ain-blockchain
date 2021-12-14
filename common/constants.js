@@ -278,6 +278,7 @@ const PredefinedDbPaths = {
   CHECKIN_TOKEN_POOL: 'token_pool',
   CHECKOUT: 'checkout',
   CHECKOUT_HISTORY: 'history',
+  CHECKOUT_HISTORY_DATA: 'data',
   CHECKOUT_HISTORY_REFUND: 'refund',
   CHECKOUT_REQUESTS: 'requests',
   CHECKOUT_STATS: 'stats',
