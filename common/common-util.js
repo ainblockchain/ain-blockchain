@@ -792,8 +792,8 @@ class CommonUtil {
     return regexpList;
   }
 
-  static convertCommaSeparatedValuesToArray(value) {
-    return value.split(',');
+  static convertCommaSeparatedValuesToArrayOrStr(value) {
+    return value === '*' ? '*' : value.split(',');
   }
 }
 

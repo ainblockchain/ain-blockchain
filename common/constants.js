@@ -82,7 +82,7 @@ function setNodeConfigs() {
       } else if (CommonUtil.isIntegerString(valFromEnvVar)) {
         NodeConfigs[param] = Number(valFromEnvVar);
       } else if (CommonUtil.isArray(valFromNodeParams)) {
-        NodeConfigs[param] = CommonUtil.convertCommaSeparatedValuesToArray(valFromEnvVar);
+        NodeConfigs[param] = CommonUtil.convertCommaSeparatedValuesToArrayOrStr(valFromEnvVar);
       } else {
         NodeConfigs[param] = valFromEnvVar;
       }
