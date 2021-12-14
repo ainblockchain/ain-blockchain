@@ -145,7 +145,7 @@ class P2pClient {
         return incomingPeers.length < maxInbound;
       })
       .map(([address, peer]) => {
-        const p2pUrl = _.get(peer, 'peer.peerInfo.networkStatus.urls.p2p.url');
+        const p2pUrl = _.get(peer, 'peerInfo.networkStatus.urls.p2p.url');
         return [address, p2pUrl];
       });
     return Object.fromEntries(outboundEntries);
