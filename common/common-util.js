@@ -146,6 +146,10 @@ class CommonUtil {
     return ruleUtil.isValidPrivateUrl(url);
   }
 
+  static isWildcard(value) {
+    return value === '*';
+  }
+
   static boolOrFalse(value) {
     return ruleUtil.boolOrFalse(value);
   }
