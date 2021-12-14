@@ -81,6 +81,8 @@ function setNodeConfigs() {
         NodeConfigs[param] = CommonUtil.convertEnvVarInputToBool(valFromEnvVar);
       } else if (CommonUtil.isIntegerString(valFromEnvVar)) {
         NodeConfigs[param] = Number(valFromEnvVar);
+      } else if (CommonUtil.isArray(valFromNodeParams)) {
+        NodeConfigs[param] = CommonUtil.convertCommaSeparatedValuesToArray(valFromEnvVar);
       } else {
         NodeConfigs[param] = valFromEnvVar;
       }
