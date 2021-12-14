@@ -25,6 +25,7 @@ const {
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage,
+  checkPeerWhitelist
 } = require('./util');
 const {
   sendGetRequest
@@ -650,25 +651,15 @@ class P2pClient {
     }
     const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
     Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
-      if (NodeConfigs.PEER_WHITELIST !== '*') {
-        if (url !== myJsonRpcUrl && !this.peerCandidates[url] && this.isValidJsonRpcUrl(url) &&
-            NodeConfigs.PEER_WHITELIST.includes(address)) {
-          this.peerCandidates[url] = { queriedAt: null };
-        }
-      } else {
-        if (url !== myJsonRpcUrl && !this.peerCandidates[url] && this.isValidJsonRpcUrl(url)) {
-          this.peerCandidates[url] = { queriedAt: null };
-        }
+      if (url !== myJsonRpcUrl && !this.peerCandidates[url] && this.isValidJsonRpcUrl(url) &&
+          checkPeerWhitelist(address)) {
+        this.peerCandidates[url] = { queriedAt: null };
       }
     });
     const newPeerP2pUrlList = _.get(peerCandidateInfo, 'newPeerP2pUrlList', []);
     const newPeerP2pUrlListWithoutMyUrl = Object.entries(newPeerP2pUrlList)
       .filter(([address, p2pUrl]) => {
-        if (NodeConfigs.PEER_WHITELIST !== '*') {
-          return p2pUrl !== myP2pUrl && NodeConfigs.PEER_WHITELIST.includes(address);
-        } else {
-          return p2pUrl !== myP2pUrl;
-        }
+        return checkPeerWhitelist(address) && p2pUrl !== myP2pUrl;
       })
       .map(([, p2pUrl]) => p2pUrl);
     const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');

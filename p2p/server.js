@@ -48,6 +48,7 @@ const {
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage,
+  checkPeerWhitelist
 } = require('./util');
 const PathUtil = require('../common/path-util');
 
@@ -446,8 +447,7 @@ class P2pServer {
               return;
             } else {
               const addressFromSig = getAddressFromMessage(parsedMessage);
-              if (NodeConfigs.PEER_WHITELIST !== '*' &&
-                  !NodeConfigs.PEER_WHITELIST.includes(addressFromSig)) {
+              if (checkPeerWhitelist(addressFromSig)) {
                 logger.error(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
                 closeSocketSafe(this.inbound, socket);
                 return;
