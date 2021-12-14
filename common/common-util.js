@@ -792,7 +792,7 @@ class CommonUtil {
     return regexpList;
   }
 
-  static convertCommaSeparatedValuesToArrayOrStr(value) {
+  static getWhitelistFromString(value) {
     return value === '*' ? '*' : value.split(',');
   }
 }
