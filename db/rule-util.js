@@ -229,7 +229,7 @@ class RuleUtil {
   }
 
   validateCheckoutRequestData(networkName, chainId, tokenId, userAddr, checkoutId, newData, getValue) {
-    const { TokenBridgeProperties } = require('../common/constants');
+    const { PredefinedDbPaths } = require('../common/constants');
     const PathUtil = require('../common/path-util');
     if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
         !this.isString(newData.recipient) || !this.isNumber(newData.fee_rate)) {
@@ -239,7 +239,7 @@ class RuleUtil {
     if (!this.isDict(tokenBridgeConfig)) {
       return false;
     }
-    if (tokenBridgeConfig[TokenBridgeProperties.CHECKOUT_FEE_RATE] !== newData.fee_rate) {
+    if (tokenBridgeConfig[PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_CHECKOUT_FEE_RATE] !== newData.fee_rate) {
       return false;
     }
     if (getValue(PathUtil.getCheckoutHistoryPath(networkName, chainId, tokenId, userAddr, checkoutId))) {
