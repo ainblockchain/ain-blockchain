@@ -20,6 +20,7 @@ const {
   waitUntilNetworkIsReady,
   waitUntilTxFinalized,
   getBlockByNumber,
+  eraseEvalRuleResMatched,
 } = require('../test-util');
 
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../../"
@@ -495,7 +496,12 @@ describe('Blockchain Node', () => {
         const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
         const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
             .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: true});
+        assert.deepEqual(body.code, 0);
+        assert.deepEqual(eraseEvalRuleResMatched(body.result), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
       })
 
       it('eval_rule returning false', () => {
@@ -505,7 +511,12 @@ describe('Blockchain Node', () => {
         const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
         const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
             .body.toString('utf-8'));
-        assert.deepEqual(body, {code: 0, result: false});
+        assert.deepEqual(body.code, 0);
+        assert.deepEqual(eraseEvalRuleResMatched(body.result), {
+          "code": 10103,
+          "error_message": "No write permission on: /apps/test/test_rule/some/path",
+          "matched": "erased",
+        });
       })
     })
 
@@ -590,7 +601,63 @@ describe('Blockchain Node', () => {
                 }
               }
             },
-            true,
+            {
+              "code": 0,
+              "error_message": "",
+              "matched": {
+                "state": {
+                  "closestRule": {
+                    "config": null,
+                    "path": [],
+                  },
+                  "matchedRulePath": [
+                    "apps",
+                    "test",
+                    "test_rule",
+                    "some",
+                    "path",
+                  ],
+                  "matchedValuePath": [
+                    "apps",
+                    "test",
+                    "test_rule",
+                    "some",
+                    "path",
+                  ],
+                  "pathVars": {}
+                },
+                "write": {
+                  "closestRule": {
+                    "config": {
+                      "write": "auth.addr === 'abcd'"
+                    },
+                    "path": [
+                      "apps",
+                      "test",
+                      "test_rule",
+                      "some",
+                      "path",
+                    ]
+                  },
+                  "matchedRulePath": [
+                    "apps",
+                    "test",
+                    "test_rule",
+                    "some",
+                    "path",
+                  ],
+                  "matchedValuePath": [
+                    "apps",
+                    "test",
+                    "test_rule",
+                    "some",
+                    "path",
+                  ],
+                  "pathVars": {},
+                  "subtreeRules": []
+                }
+              }
+            },
             true,
           ]
         });
@@ -862,7 +929,11 @@ describe('Blockchain Node', () => {
         const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
         .then(res => {
-          expect(res.result.result).to.equal(true);
+          assert.deepEqual(eraseEvalRuleResMatched(res.result.result), {
+            "code": 0,
+            "error_message": "",
+            "matched": "erased",
+          });
         })
       })
 
@@ -873,7 +944,11 @@ describe('Blockchain Node', () => {
         const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
         .then(res => {
-          expect(res.result.result).to.equal(false);
+          assert.deepEqual(eraseEvalRuleResMatched(res.result.result), {
+            "code": 10103,
+            "error_message": "No write permission on: /apps/test/test_rule/some/path",
+            "matched": "erased",
+          });
         })
       })
     })

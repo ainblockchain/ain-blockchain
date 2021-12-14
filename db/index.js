@@ -616,8 +616,7 @@ class DB {
       // No matched local path.
       return null;
     }
-    const permissions = this.getPermissionForValue(localPath, value, auth, timestamp);
-    return permissions.writePermission && permissions.statePermission;
+    return this.getPermissionForValue(localPath, value, auth, timestamp);
   }
 
   evalOwner(refPath, permission, auth, options) {
@@ -764,16 +763,10 @@ class DB {
           unitWriteGasLimit);
     }
     const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, timestamp);
-    if (!ruleEvalRes.writePermission) {
+    if (ruleEvalRes.code > 0) {
       return CommonUtil.returnTxResult(
-          TxResultCode.SET_VALUE_NO_WRITE_PERMISSION,
-          `No write permission on: ${valuePath}`,
-          unitWriteGasLimit);
-    }
-    if (!ruleEvalRes.statePermission) {
-      return CommonUtil.returnTxResult(
-          TxResultCode.SET_VALUE_NO_STATE_PERMISSION,
-          `No state permission on: ${valuePath}`,
+          ruleEvalRes.code,
+          ruleEvalRes.error_message,
           unitWriteGasLimit);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
@@ -1724,30 +1717,55 @@ class DB {
         this.addPathToValue(newValue, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
     let evalWriteRuleRes = false;
     let evalStateRuleRes = false;
-    if (!matchedWriteRules.subtreeRules || matchedWriteRules.subtreeRules.length === 0) {
-      try {
-        evalWriteRuleRes = !!this.evalWriteRuleConfig(
-          matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
-        if (!evalWriteRuleRes) {
-          logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${evalWriteRuleRes}, ` +
-              `matched: ${JSON.stringify(matchedWriteRules, null, 2)}, data: ${JSON.stringify(data)}, ` +
-              `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
-              `timestamp: ${timestamp}\n`);
-        }
-        evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
-        if (!evalStateRuleRes) {
-          logger.debug(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
-              `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
-              `newValue: ${JSON.stringify(newValue)}\n`);
-        }
-      } catch (err) {
-        logger.error(`[${LOG_HEADER}] Failed to eval rule.\n` +
-            `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
-            `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
-            `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
-      }
+    if (matchedWriteRules.subtreeRules && matchedWriteRules.subtreeRules.length > 0) {
+      return {
+        code: TxResultCode.VALUE_PERMISSION_NON_EMPTY_SUBTREE_RULES,
+        error_message: `Non-empty (${matchedWriteRules.subtreeRules.length}) subtree rules on: ` +
+            `${CommonUtil.formatPath(parsedValuePath)}`,
+        matched,
+      };
     }
-    return { writePermission: evalWriteRuleRes, statePermission: evalStateRuleRes, matched };
+    try {
+      evalWriteRuleRes = !!this.evalWriteRuleConfig(
+        matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
+      if (!evalWriteRuleRes) {
+        logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${evalWriteRuleRes}, ` +
+            `matched: ${JSON.stringify(matchedWriteRules, null, 2)}, data: ${JSON.stringify(data)}, ` +
+            `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
+            `timestamp: ${timestamp}\n`);
+        return {
+          code: TxResultCode.SET_VALUE_NO_WRITE_PERMISSION,
+          error_message: `No write permission on: ${CommonUtil.formatPath(parsedValuePath)}`,
+          matched,
+        };
+      }
+      evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
+      if (!evalStateRuleRes) {
+        logger.debug(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
+            `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
+            `newValue: ${JSON.stringify(newValue)}\n`);
+        return {
+          code: TxResultCode.SET_VALUE_NO_STATE_PERMISSION,
+          error_message: `No state permission on: ${CommonUtil.formatPath(parsedValuePath)}`,
+          matched,
+        };
+      }
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Failed to eval rule.\n` +
+          `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
+          `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
+          `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
+      return {
+        code: TxResultCode.VALUE_PERMISSION_INTERNAL_ERROR,
+        error_message: `Internal error: ${JSON.stringify(err)}`,
+        matched,
+      };
+    }
+    return {
+      code: TxResultCode.SUCCESS,
+      error_message: '',
+      matched,
+    };
   }
 
   getPermissionForRule(parsedRulePath, auth) {

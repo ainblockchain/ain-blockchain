@@ -20,6 +20,7 @@ const Transaction = require('../../tx-pool/transaction');
 const CommonUtil = require('../../common/common-util');
 const {
   setNodeForTesting,
+  eraseEvalRuleResMatched,
 } = require('../test-util');
 const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
 
@@ -648,8 +649,8 @@ describe("DB operations", () => {
         // For details, see test case 'evalRule to evaluate a rule with subtree rules'.
         assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/upper/path", 'some value'), {
           "bandwidth_gas_amount": 1,
-          "code": 10103,
-          "error_message": "No write permission on: /apps/test/test_rule/some/upper/path",
+          "code": 12101,
+          "error_message": "Non-empty (1) subtree rules on: /apps/test/test_rule/some/upper/path",
         });
       })
 
@@ -1287,60 +1288,99 @@ describe("DB operations", () => {
 
     describe("evalRule:", () => {
       it("evalRule to evaluate a variable path rule", () => {
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, Date.now()))
-                .to.equal(false);
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, Date.now()))
-                .to.equal(true);
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, Date.now())), {
+          "code": 10103,
+          "error_message": "No write permission on: /apps/test/test_rule/some/var_path",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, Date.now())), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
       })
 
       it("evalRule to evaluate a non-variable path rule", () => {
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, Date.now()))
-            .to.equal(true);
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/path", 'value', { addr: 'other' }, Date.now()))
-            .to.equal(false);
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'ijkl' }, Date.now()))
-            .to.equal(true);
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'other' }, Date.now()))
-            .to.equal(false);
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, Date.now())), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/path", 'value', { addr: 'other' }, Date.now())), {
+          "code": 10103,
+          "error_message": "No write permission on: /apps/test/test_rule/some/path",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'ijkl' }, Date.now())), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'other' }, Date.now())), {
+          "code": 10103,
+          "error_message": "No write permission on: /apps/test/test_rule/some/upper/path/deeper/path",
+          "matched": "erased",
+        });
       })
 
       it("evalRule to evaluate a closest variable path rule", () => {
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'abcd' }, Date.now()))
-            .to.equal(false);
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'other' }, Date.now()))
-            .to.equal(true);
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'abcd' }, Date.now())), {
+          "code": 10103,
+          "error_message": "No write permission on: /apps/test/test_rule/some/var_path/subpath",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'other' }, Date.now())), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
       })
 
       it("evalRule to evaluate a closest non-variable rule", () => {
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'abcd' }, Date.now()))
-            .to.equal(true);
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'other' }, Date.now()))
-            .to.equal(false);
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'abcd' }, Date.now())), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'other' }, Date.now())), {
+          "code": 10103,
+          "error_message": "No write permission on: /apps/test/test_rule/some/path/subpath",
+          "matched": "erased",
+        });
       })
 
       it("evalRule to evaluate a rule without subtree rules", () => {
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'abcd' }, Date.now()))
-            .to.equal(true);
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'other' }, Date.now()))
-            .to.equal(false);
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'abcd' }, Date.now())), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'other' }, Date.now())), {
+          "code": 10103,
+          "error_message": "No write permission on: /apps/test/test_rule/some/upper/path/subpath",
+          "matched": "erased",
+        });
       })
 
       it("evalRule to evaluate a rule with subtree rules", () => {
-        expect(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, Date.now()))
-            .to.equal(false);
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, Date.now())), {
+          "code": 12101,
+          "error_message": "Non-empty (1) subtree rules on: /apps/test/test_rule/some/upper/path",
+          "matched": "erased",
+        });
       })
     })
 
@@ -1927,7 +1967,63 @@ describe("DB operations", () => {
               "path": "/apps/test/test_owner/some/path"
             }
           },
-          true,
+          {
+            "code": 0,
+            "error_message": "",
+            "matched": {
+              "state": {
+                "closestRule": {
+                  "config": null,
+                  "path": [],
+                },
+                "matchedRulePath": [
+                  "apps",
+                  "test",
+                  "test_rule",
+                  "some",
+                  "path",
+                ],
+                "matchedValuePath": [
+                  "apps",
+                  "test",
+                  "test_rule",
+                  "some",
+                  "path",
+                ],
+                "pathVars": {},
+              },
+              "write": {
+                "closestRule": {
+                  "config": {
+                    "write": "auth.addr === 'abcd'"
+                  },
+                  "path": [
+                    "apps",
+                    "test",
+                    "test_rule",
+                    "some",
+                    "path",
+                  ]
+                },
+                "matchedRulePath": [
+                  "apps",
+                  "test",
+                  "test_rule",
+                  "some",
+                  "path",
+                ],
+                "matchedValuePath": [
+                  "apps",
+                  "test",
+                  "test_rule",
+                  "some",
+                  "path",
+                ],
+                "pathVars": {},
+                "subtreeRules": []
+              }
+            }
+          },
           false
         ]);
       })
@@ -2121,7 +2217,63 @@ describe("DB operations", () => {
               "path": "/apps/test/test_owner/some/path"
             }
           },
-          true,
+          {
+            "code": 0,
+            "error_message": "",
+            "matched": {
+              "state": {
+                "closestRule": {
+                  "config": null,
+                  "path": [],
+                },
+                "matchedRulePath": [
+                  "apps",
+                  "test",
+                  "test_rule",
+                  "some",
+                  "path",
+                ],
+                "matchedValuePath": [
+                  "apps",
+                  "test",
+                  "test_rule",
+                  "some",
+                  "path",
+                ],
+                "pathVars": {}
+              },
+              "write": {
+                "closestRule": {
+                  "config": {
+                    "write": "auth.addr === 'abcd'"
+                  },
+                  "path": [
+                    "apps",
+                    "test",
+                    "test_rule",
+                    "some",
+                    "path",
+                  ]
+                },
+                "matchedRulePath": [
+                  "apps",
+                  "test",
+                  "test_rule",
+                  "some",
+                  "path",
+                ],
+                "matchedValuePath": [
+                  "apps",
+                  "test",
+                  "test_rule",
+                  "some",
+                  "path",
+                ],
+                "pathVars": {},
+                "subtreeRules": []
+              }
+            }
+          },
           true,
         ]);
       })
@@ -3405,70 +3557,125 @@ describe("DB rule config", () => {
   });
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {
-    expect(node2.db.evalRule(`/apps/test/users/${node2.account.address}/balance`, 0, null, null))
-        .to.equal(true)
-    expect(node2.db.evalRule(`/apps/test/users/${node2.account.address}/balance`, -1, null, null))
-        .to.equal(false)
-    expect(node1.db.evalRule(`/apps/test/users/${node1.account.address}/balance`, 1, null, null))
-        .to.equal(true)
+    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+        `/apps/test/users/${node2.account.address}/balance`, 0, null, null)), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+        `/apps/test/users/${node2.account.address}/balance`, -1, null, null)), {
+      "code": 10103,
+      "error_message": "No write permission on: /apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+        `/apps/test/users/${node1.account.address}/balance`, 1, null, null)), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 
   it("only allows certain users to write certain info if data exists", () => {
-    expect(node1.db.evalRule(`/apps/test/users/${node1.account.address}/info`, "something", null, null))
-        .to.equal(true)
-    expect(node2.db.evalRule(
-        `/apps/test/users/${node2.account.address}/info`, "something else", null, null))
-            .to.equal(false)
-    expect(node2.db.evalRule(
+    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+        `/apps/test/users/${node1.account.address}/info`, "something", null, null)), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+        `/apps/test/users/${node2.account.address}/info`, "something else", null, null)), {
+      "code": 10103,
+      "error_message": "No write permission on: /apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/info",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/new_info`, "something",
-        { addr: node2.account.address }, null))
-            .to.equal(true)
+        { addr: node2.account.address }, null)), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 
   it("apply the closest ancestor's rule config if not exists", () => {
-    expect(node1.db.evalRule(
+    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/child/grandson`, "something",
-        { addr: node1.account.address },
-        null))
-            .to.equal(true)
-    expect(node2.db.evalRule(
+        { addr: node1.account.address }, null)), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/child/grandson`, "something",
-        { addr: node1.account.address },
-        null))
-            .to.equal(false)
+        { addr: node1.account.address }, null)), {
+      "code": 10103,
+      "error_message": "No write permission on: /apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/child/grandson",
+      "matched": "erased",
+    });
   })
 
   it("only allows certain users to write certain info if data at other locations exists", () => {
-    expect(node2.db.evalRule(
-        `/apps/test/users/${node2.account.address}/balance_info`, "something", null, null))
-            .to.equal(true)
-    expect(node1.db.evalRule(
-        `/apps/test/users/${node1.account.address}/balance_info`, "something", null, null))
-            .to.equal(false)
+    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+        `/apps/test/users/${node2.account.address}/balance_info`, "something", null, null)), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+        `/apps/test/users/${node1.account.address}/balance_info`, "something", null, null)), {
+      "code": 10103,
+      "error_message": "No write permission on: /apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance_info",
+      "matched": "erased",
+    });
   })
 
   it("validates old data and new data together", () => {
-    expect(node1.db.evalRule(`/apps/test/users/${node1.account.address}/next_counter`, 11, null,  null))
-        .to.equal(true)
-    expect(node1.db.evalRule(`/apps/test/users/${node1.account.address}/next_counter`, 12, null, null))
-        .to.equal(false)
+    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+        `/apps/test/users/${node1.account.address}/next_counter`, 11, null,  null)), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+        `/apps/test/users/${node1.account.address}/next_counter`, 12, null, null)), {
+      "code": 10103,
+      "error_message": "No write permission on: /apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter",
+      "matched": "erased",
+    });
   })
 
   it("can handle nested path variables", () => {
-    expect(node2.db.evalRule(
-        `/apps/test/second_users/${node2.account.address}/${node2.account.address}`, "some value", null,
-        null))
-            .to.equal(true)
-    expect(node1.db.evalRule(
-        `/apps/test/second_users/${node1.account.address}/next_counter`, "some other value", null, null))
-            .to.equal(false)
+    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+        `/apps/test/second_users/${node2.account.address}/${node2.account.address}`,
+        "some value", null, null)), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+        `/apps/test/second_users/${node1.account.address}/next_counter`,
+        "some other value", null, null)), {
+      "code": 10103,
+      "error_message": "No write permission on: /apps/test/second_users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter",
+      "matched": "erased",
+    });
   })
 
   it("duplicated path variables", () => {
-    expect(node1.db.evalRule('/apps/test/no_dup_key/aaa/bbb', "some value", null, null))
-        .to.equal(true)
-    expect(node1.db.evalRule('/apps/test/dup_key/aaa/bbb', "some value", null, null))
-        .to.equal(true)
+    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+        '/apps/test/no_dup_key/aaa/bbb', "some value", null, null)), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+        '/apps/test/dup_key/aaa/bbb', "some value", null, null)), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 })
 
@@ -4427,26 +4634,34 @@ describe("DB sharding config", () => {
       it("matchRule with isGlobal = true and non-existing path", () => {
         expect(node.db.matchRule("/apps/some/non-existing/path", { isGlobal: true })).to.equal(null);
       })
-      });
+    });
 
-      describe("evalRule with isGlobal:", () => {
+    describe("evalRule with isGlobal:", () => {
       it("evalRule with isGlobal = false", () => {
-        expect(node.db.evalRule(
-            "/apps/test/test_sharding/some/path/to/subpath", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }))
-            .to.equal(true);
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/test/test_sharding/some/path/to/subpath", newValue,
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
       })
 
       it("evalRule with isGlobal = true", () => {
-        expect(node.db.evalRule(
-            "/apps/afan/apps/test/test_sharding/some/path/to/subpath", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" },
-            null, { isGlobal: true }))
-            .to.equal(true);
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/afan/apps/test/test_sharding/some/path/to/subpath", newValue,
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
       })
 
       it("evalRule with isGlobal = true and non-existing path", () => {
-        expect(node.db.evalRule(
-            "/apps/some/non-existing/path", newValue, { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true }))
-            .to.equal(null);
+        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+            "/apps/some/non-existing/path", newValue,
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true })),
+            null);
       })
     });
   })
