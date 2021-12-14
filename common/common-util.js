@@ -791,6 +791,10 @@ class CommonUtil {
     }
     return regexpList;
   }
+
+  static convertCommaSeparatedValuesToArray(value) {
+    return value.split(',');
+  }
 }
 
 module.exports = CommonUtil;
