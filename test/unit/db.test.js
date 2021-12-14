@@ -48,7 +48,7 @@ describe("DB initialization", () => {
 
   describe("Token", () => {
     it("loading token properly on initialization", () => {
-      assert.deepEqual(node.db.getValue(`/token`), BlockchainParams.token);
+      assert.deepEqual(node.db.getValue(`/blockchain_params/token`), BlockchainParams.token);
     })
   })
 
@@ -62,7 +62,7 @@ describe("DB initialization", () => {
 
   describe("Sharding", () => {
     it("loading sharding properly on initialization", () => {
-      assert.deepEqual(node.db.getValue(`/sharding/config`), BlockchainParams.sharding);
+      assert.deepEqual(node.db.getValue(`/blockchain_params/sharding`), BlockchainParams.sharding);
     })
   })
 
@@ -4634,7 +4634,7 @@ describe("State info", () => {
     });
 
     it("non-null case", () => {
-      const proof = node.db.getStateProof('/values/token/symbol');
+      const proof = node.db.getStateProof('/values/blockchain_params/token/symbol');
       expect(proof).to.not.equal(null);
       expect(proof['#state_ph']).to.not.equal(null);
       const verifResult = verifyStateProof(hashDelimiter, proof);
@@ -4655,7 +4655,7 @@ describe("State info", () => {
     });
 
     it("non-null case", () => {
-      expect(node.db.getProofHash('/values/token/symbol')).to.not.equal(null);
+      expect(node.db.getProofHash('/values/blockchain_params/token/symbol')).to.not.equal(null);
     });
   });
 });
