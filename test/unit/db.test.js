@@ -714,9 +714,9 @@ describe("DB operations", () => {
             child2: 2
           }, { addr: 'abcd' },
           null, { extra: { executed_at: 1234567890000 }}), {
-          error_message: "False state rule eval [false] for /apps/test/test_rule/some/path/more/than/max",
-          code: 12104,
-          bandwidth_gas_amount: 1
+          "error_message": "False eval of state rule [{\"max_children\":1}] at '/apps/test/test_rule/some/path/more/than/max' for value path '/apps/test/test_rule/some/path/more/than/max' with newValue '{\"child1\":1,\"child2\":2}'",
+          "code": 12104,
+          "bandwidth_gas_amount": 1
         });
       })
     })
