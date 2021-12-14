@@ -7,9 +7,7 @@ const {
   NodeConfigs,
   PredefinedDbPaths,
   OwnerProperties,
-  RuleProperties,
   AccountProperties,
-  TokenProperties,
   ShardingProperties,
   ShardingProtocols,
   StateVersions,
@@ -40,7 +38,7 @@ let GenesisAccounts = {};
   };
 }
 
-function getShardingOwner() {
+function getBlockchainParamsShardingOwner() {
   return {
     [PredefinedDbPaths.DOT_OWNER]: {
       [OwnerProperties.OWNERS]: {
@@ -54,17 +52,7 @@ function getShardingOwner() {
   };
 }
 
-function getShardingRule() {
-  const ownerAddress = GenesisAccounts.owner.address;
-  const reporterAddress = GenesisAccounts.others[0].address;
-  return {
-    [PredefinedDbPaths.DOT_RULE]: {
-      [RuleProperties.WRITE]: `auth.addr === '${ownerAddress}' || auth.addr === '${reporterAddress}'`
-    }
-  };
-}
-
-function getTokenOwner() {
+function getBlockchainParamsTokenOwner() {
   const genesisTokenOwner = {};
   for (const networkName of Object.keys(BlockchainParams.token.bridge)) {
     for (const chainId of Object.keys(BlockchainParams.token.bridge[networkName])) {
@@ -84,7 +72,7 @@ function getTokenOwner() {
     }
   }
   return {
-    [PredefinedDbPaths.TOKEN_BRIDGE]: {
+    [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_BRIDGE]: {
       [PredefinedDbPaths.DOT_OWNER]: {
         [OwnerProperties.OWNERS]: {
           [GenesisAccounts.owner.address]: buildOwnerPermissions(true, true, true, true),
@@ -94,26 +82,6 @@ function getTokenOwner() {
       ...genesisTokenOwner
     }
   };
-}
-
-function getTokenRule() {
-  const rules = {};
-  for (const networkName of Object.keys(BlockchainParams.token.bridge)) {
-    for (const chainId of Object.keys(BlockchainParams.token.bridge[networkName])) {
-      for (const tokenId of Object.keys(BlockchainParams.token.bridge[networkName][chainId])) {
-        CommonUtil.setJsObject(
-          rules,
-          [networkName, chainId, tokenId],
-          {
-            [PredefinedDbPaths.DOT_RULE]: {
-              [RuleProperties.WRITE]: `util.isAppAdmin('consensus', auth.addr, getValue) === true`
-            }
-          }
-        );
-      }
-    }
-  }
-  return rules;
 }
 
 function getConsensusProposerWhitelistOwner() {
@@ -154,28 +122,27 @@ function getDevelopersOwner() {
 }
 
 function getBlockchainParamsOwner() {
-  return {
+  const owners = {
     [PredefinedDbPaths.DOT_OWNER]: {
       [OwnerProperties.OWNERS]: {
         [GenesisAccounts.owner.address]: buildOwnerPermissions(true, true, true, true)
       }
-    }
+    },
+    [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN]: getBlockchainParamsTokenOwner()
   };
+  if (BlockchainParams.sharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
+    CommonUtil.setJsObject(owners, [PredefinedDbPaths.SHARDING], getBlockchainParamsShardingOwner());
+  }
+  return owners;
 }
 
 function getGenesisValues() {
   const values = {};
   const ownerAddress = GenesisAccounts.owner.address;
-  CommonUtil.setJsObject(values, [PredefinedDbPaths.TOKEN], BlockchainParams.token);
   CommonUtil.setJsObject(
     values,
     [PredefinedDbPaths.ACCOUNTS, ownerAddress, PredefinedDbPaths.BALANCE],
-    BlockchainParams.token[TokenProperties.TOTAL_SUPPLY]
-  );
-  CommonUtil.setJsObject(
-    values,
-    [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
-    BlockchainParams.sharding
+    BlockchainParams.token[PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_TOTAL_SUPPLY]
   );
   CommonUtil.setJsObject(
     values,
@@ -188,28 +155,17 @@ function getGenesisValues() {
     getDevelopersValue()
   );
   CommonUtil.setJsObject(values, [PredefinedDbPaths.BLOCKCHAIN_PARAMS], {
+    [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN]: BlockchainParams.token,
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_CONSENSUS]: BlockchainParams.consensus,
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_GENESIS]: BlockchainParams.genesis,
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_RESOURCE]: BlockchainParams.resource,
+    [PredefinedDbPaths.BLOCKCHAIN_PARAMS_SHARDING]: BlockchainParams.sharding,
   });
   return values;
 }
 
 function getGenesisRules() {
-  const rules = getBlockchainConfig('genesis_rules.json');
-  if (BlockchainParams.sharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
-    CommonUtil.setJsObject(
-      rules,
-      [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
-      getShardingRule()
-    );
-  }
-  CommonUtil.setJsObject(
-    rules,
-    [PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE],
-    getTokenRule()
-  );
-  return rules;
+  return getBlockchainConfig('genesis_rules.json');
 }
 
 function getGenesisOwners() {
@@ -218,18 +174,6 @@ function getGenesisOwners() {
     owners,
     [],
     getRootOwner()
-  );
-  if (BlockchainParams.sharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
-    CommonUtil.setJsObject(
-      owners,
-      [PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG],
-      getShardingOwner()
-    );
-  }
-  CommonUtil.setJsObject(
-    owners,
-    [PredefinedDbPaths.TOKEN],
-    getTokenOwner()
   );
   CommonUtil.setJsObject(
     owners,
@@ -348,6 +292,12 @@ function buildAccountsSetupTx() {
 }
 
 function buildConsensusAppTx() {
+  const admins = {
+    [GenesisAccounts.owner.address]: true
+  };
+  if (BlockchainParams.sharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE) {
+    admins[GenesisAccounts.others[0].address] = true;
+  }
   const txBody = {
     nonce: -1,
     timestamp: BlockchainParams.genesis.genesis_timestamp,
@@ -356,9 +306,7 @@ function buildConsensusAppTx() {
       type: 'SET_VALUE',
       ref: PathUtil.getCreateAppRecordPath(PredefinedDbPaths.CONSENSUS, BlockchainParams.genesis.genesis_timestamp),
       value: {
-        [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: {
-          [GenesisAccounts.owner.address]: true
-        },
+        [PredefinedDbPaths.MANAGE_APP_CONFIG_ADMIN]: admins,
         [PredefinedDbPaths.MANAGE_APP_CONFIG_SERVICE]: {
           [PredefinedDbPaths.STAKING]: {
             [PredefinedDbPaths.STAKING_LOCKUP_DURATION]: moment.duration(7, 'days').as('milliseconds')
