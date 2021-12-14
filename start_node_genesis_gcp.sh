@@ -133,7 +133,6 @@ fi
 
 
 KEYSTORE_DIR=testnet_dev_staging_keys
-export PEER_WHITELIST='*'
 if [[ $SEASON = 'spring' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc

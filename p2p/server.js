@@ -447,7 +447,7 @@ class P2pServer {
               return;
             } else {
               const addressFromSig = getAddressFromMessage(parsedMessage);
-              if (checkPeerWhitelist(addressFromSig)) {
+              if (!checkPeerWhitelist(addressFromSig)) {
                 logger.error(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
                 closeSocketSafe(this.inbound, socket);
                 return;
