@@ -255,7 +255,7 @@ describe('HE Sharding', () => {
 
     describe('DB values', () => {
       it('token', () => {
-        const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/token')
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/blockchain_params/token')
           .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: token});
       })
@@ -275,7 +275,7 @@ describe('HE Sharding', () => {
       })
 
       it('sharding', () => {
-        const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/sharding/config')
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/blockchain_params/sharding')
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result.sharding_protocol).to.equal(sharding.sharding_protocol);
@@ -294,16 +294,16 @@ describe('HE Sharding', () => {
 
     describe('DB rules', () => {
       it('sharding', () => {
-        const body = parseOrLog(syncRequest('GET', server3 + '/get_rule?ref=/sharding/config')
+        const body = parseOrLog(syncRequest('GET', server3 + '/get_rule?ref=/blockchain_params')
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        expect(body.result['.rule']['write']).to.have.string(shardOwnerAddr);
+        expect(body.result['.rule']['write']).to.have.string(`util.isAppAdmin('consensus', auth.addr, getValue) === true`);
       })
     })
 
     describe('DB owners', () => {
       it('sharding', () => {
-        const body = parseOrLog(syncRequest('GET', server3 + '/get_owner?ref=/sharding/config')
+        const body = parseOrLog(syncRequest('GET', server3 + '/get_owner?ref=/blockchain_params/sharding')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['.owner'].owners[shardOwnerAddr]).to.not.be.null;
