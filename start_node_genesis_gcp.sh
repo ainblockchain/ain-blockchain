@@ -137,11 +137,13 @@ if [[ $SEASON = 'spring' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
     export PEER_CANDIDATE_JSON_RPC_URL="http://35.221.184.48:8080/json-rpc"
+    export PEER_WHITELIST="0x000AF024FEDb636294867bEff390bCE6ef9C5fc4,0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d,0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211,0x003AD6FdB06684175e7D95EcC36758B014517E4b,0x004A2550661c8a306207C9dabb279d5701fFD66e,0x005A3c55EcE1A593b761D408B6E6BC778E0a638B,0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe"
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ $SEASON = 'summer' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.172.106:8080/json-rpc
     export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.169.78:8080/json-rpc"
+    export PEER_WHITELIST="0x000AF024FEDb636294867bEff390bCE6ef9C5fc4,0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d,0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211,0x003AD6FdB06684175e7D95EcC36758B014517E4b,0x004A2550661c8a306207C9dabb279d5701fFD66e,0x005A3c55EcE1A593b761D408B6E6BC778E0a638B,0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe"
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$SEASON" = "sandbox" ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
@@ -228,12 +230,15 @@ elif [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
         KEYSTORE_FILENAME="keystore_node_4.json"
     elif [[ $NODE_INDEX = 5 ]]; then
         KEYSTORE_FILENAME="keystore_node_5.json"
+        export PEER_WHITELIST='*'
     elif [[ $NODE_INDEX = 6 ]]; then
         KEYSTORE_FILENAME="keystore_node_6.json"
+        export PEER_WHITELIST='*'
     else
-        PEER_WHITELIST=''
+        export PEER_WHITELIST='*'
     fi
     printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
+    printf "PEER_WHITELIST=$PEER_WHITELIST\n"
     if [[ $KEEP_CODE_OPTION = "" ]]; then
         sudo mkdir -p ../ain_blockchain_data/keys/8080
         sudo mv ./$KEYSTORE_DIR/$KEYSTORE_FILENAME ../ain_blockchain_data/keys/8080/
