@@ -9,7 +9,8 @@ function buildOpenCheckoutTxBody(fromAddr, tokenAmount, checkoutId) {
       ref: `/checkout/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkoutId}`,
       value: {
         amount: tokenAmount,
-        recipient: config.recipientAddr
+        recipient: config.recipientAddr,
+        fee_rate: 0.001,
       },
       is_global: true,
     },
