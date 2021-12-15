@@ -1422,7 +1422,6 @@ class DB {
   static trimExecutionResult(executionResult) {
     const trimmed = _.pick(executionResult, [
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
-      PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_AMOUNT_CHARGED,
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_COST_TOTAL,
     ]);
@@ -1432,7 +1431,6 @@ class DB {
           executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST])) {
         trimmed[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST][key] = _.pick(val, [
           PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
-          PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
         ]);
       }
     }
