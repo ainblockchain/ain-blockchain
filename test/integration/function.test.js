@@ -494,7 +494,7 @@ describe('Native Function', () => {
             nonce: -1,
           }}).body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 10403,
+            "code": 10404,
             "error_message": "Trying to write owner-only function: _transfer",
             "bandwidth_gas_amount": 1,
             "gas_amount_charged": 0,

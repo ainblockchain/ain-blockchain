@@ -763,7 +763,7 @@ class DB {
           unitWriteGasLimit);
     }
     const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, timestamp);
-    if (CommonUtil.isFailedFuncResultCode(ruleEvalRes.code)) {
+    if (CommonUtil.isFailedTxResultCode(ruleEvalRes.code)) {
       return CommonUtil.returnTxResult(
           ruleEvalRes.code,
           ruleEvalRes.error_message,
@@ -905,10 +905,11 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    if (!this.getPermissionForFunction(localPath, auth)) {
+    const permCheckRes = this.getPermissionForFunction(localPath, auth);
+    if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
-          TxResultCode.SET_FUNCTION_NO_WRITE_PERMISSION,
-          `No write_function permission on: ${functionPath}`,
+          permCheckRes.code,
+          permCheckRes.error_message,
           unitWriteGasLimit);
     }
     const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
@@ -960,10 +961,11 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    if (!this.getPermissionForRule(localPath, auth)) {
+    const permCheckRes = this.getPermissionForRule(localPath, auth);
+    if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
-          TxResultCode.SET_RULE_NO_WRITE_PERMISSION,
-          `No write_rule permission on: ${rulePath}`,
+          permCheckRes.code,
+          permCheckRes.error_message,
           unitWriteGasLimit);
     }
     const curRule = this.getRule(rulePath, { isShallow: false, isGlobal });
@@ -1013,10 +1015,11 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    if (!this.getPermissionForOwner(localPath, auth)) {
+    const permCheckRes = this.getPermissionForOwner(localPath, auth);
+    if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
-          TxResultCode.SET_OWNER_NO_WRITE_PERMISSION,
-          `No write_owner or branch_owner permission on: ${ownerPath}`,
+          permCheckRes.code,
+          permCheckRes.error_message,
           unitWriteGasLimit);
     }
     const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
