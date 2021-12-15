@@ -21,7 +21,6 @@ const {
   PredefinedDbPaths,
   WriteDbOperations,
   ReadDbOperations,
-  GenesisSharding,
   RuleProperties,
   ShardingProperties,
   FunctionProperties,
@@ -53,9 +52,6 @@ const {
 const PathUtil = require('../common/path-util');
 
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
-const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
-const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
-const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
 
 // A peer-to-peer network server that broadcasts changes in the database
 class P2pServer {
@@ -729,10 +725,13 @@ class P2pServer {
   // TODO(platfowner): Set .shard config for functions, rules, and owners as well.
   async setUpDbForSharding() {
     const LOG_HEADER = 'setUpDbForSharding';
-    const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
+    const shardingConfig = this.node.getAllBlockchainParamsFromState().sharding;
+    const parentChainEndpoint = shardingConfig.parent_chain_poc + '/json-rpc';
+    const shardOwner = shardingConfig.shard_owner;
+    const shardReporter = shardingConfig.shard_reporter;
+    const shardingPath = shardingConfig.sharding_path;
+    const maxShardReport = shardingConfig.max_shard_report;
     const shardReporterPrivateKey = this.node.account.private_key;
-    const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
-    const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
     const appName = _.get(CommonUtil.parsePath(shardingPath), 1, null);
     if (!appName) {
       throw Error(`Invalid appName given for a shard (${shardingPath})`);
@@ -743,12 +742,13 @@ class P2pServer {
     }
     if (shardingAppConfig === null) {
       // Create app first.
-      const shardAppCreateTxBody = P2pServer.buildShardAppCreateTxBody(appName);
+      const shardAppCreateTxBody = P2pServer.buildShardAppCreateTxBody(appName, shardOwner, shardReporter);
       await sendTxAndWaitForFinalization(
           parentChainEndpoint, shardAppCreateTxBody, shardReporterPrivateKey);
     }
     logger.info(`[${LOG_HEADER}] shard app created`);
-    const shardingSetupTxBody = P2pServer.buildShardingSetupTxBody();
+    const shardingSetupTxBody = P2pServer.buildShardingSetupTxBody(
+        shardReporter, shardingPath, maxShardReport, shardingConfig);
     await sendTxAndWaitForFinalization(
         parentChainEndpoint, shardingSetupTxBody, shardReporterPrivateKey);
     logger.info(`[${LOG_HEADER}] shard set up success`);
@@ -757,11 +757,14 @@ class P2pServer {
   async reportShardProofHashes() {
     const lastFinalizedBlock = this.node.bc.lastBlock();
     const lastFinalizedBlockNumber = lastFinalizedBlock ? lastFinalizedBlock.number : -1;
+    const reportingPeriod = this.node.getBlockchainParam('sharding/reporting_period');
     if (lastFinalizedBlockNumber < this.lastReportedBlockNumberSent + reportingPeriod) {
       // Too early.
       return;
     }
-    const lastReportedBlockNumberConfirmed = await P2pServer.getLastReportedBlockNumber();
+    const parentChainEndpoint = this.node.getBlockchainParam('sharding/parent_chain_poc') + '/json-rpc';
+    const shardingPath = this.node.getBlockchainParam('sharding/sharding_path');
+    const lastReportedBlockNumberConfirmed = await P2pServer.getLastReportedBlockNumber(parentChainEndpoint, shardingPath);
     if (lastReportedBlockNumberConfirmed === null) {
       // Try next time.
       return;
@@ -815,7 +818,7 @@ class P2pServer {
     this.isReportingShardProofHash = false;
   }
 
-  static async getLastReportedBlockNumber() {
+  static async getLastReportedBlockNumber(parentChainEndpoint, shardingPath) {
     const resp = await sendGetRequest(
         parentChainEndpoint,
         'ain_get',
@@ -835,9 +838,7 @@ class P2pServer {
     return _.get(resp, 'data.result.result');
   }
 
-  static buildShardAppCreateTxBody(appName) {
-    const shardOwner = GenesisSharding[ShardingProperties.SHARD_OWNER];
-    const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
+  static buildShardAppCreateTxBody(appName, shardOwner, shardReporter) {
     const timestamp = Date.now();
     return {
       operation: {
@@ -856,9 +857,7 @@ class P2pServer {
     }
   }
 
-  static buildShardingSetupTxBody() {
-    const shardReporter = GenesisSharding[ShardingProperties.SHARD_REPORTER];
-    const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
+  static buildShardingSetupTxBody(shardReporter, shardingPath, maxShardReport, shardingConfig) {
     const proofHashRulesLight = `auth.addr === '${shardReporter}'`;
     const latestBlockNumber = `(getValue('${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
         `${ShardingProperties.LATEST_BLOCK_NUMBER}') || 0)`;
@@ -891,7 +890,7 @@ class P2pServer {
               PredefinedDbPaths.SHARDING_SHARD,
               ainUtil.encode(shardingPath)
             ]),
-            value: GenesisSharding
+            value: shardingConfig
           },
           {
             type: WriteDbOperations.SET_FUNCTION,
@@ -920,7 +919,7 @@ class P2pServer {
             value: {
               [PredefinedDbPaths.DOT_RULE]: {
                 [RuleProperties.STATE]: {
-                  [RuleProperties.GC_MAX_SIBLINGS]: GenesisSharding[ShardingProperties.MAX_SHARD_REPORT]
+                  [RuleProperties.GC_MAX_SIBLINGS]: maxShardReport
                 }
               }
             }

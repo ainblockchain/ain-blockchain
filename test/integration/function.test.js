@@ -12,7 +12,6 @@ const stringify = require('fast-json-stable-stringify');
 const {
   BlockchainConsts,
   NodeConfigs,
-  GenesisToken,
   BlockchainParams,
 } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
@@ -3546,7 +3545,7 @@ describe('Native Function', () => {
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkoutRequestBasePath = `/checkout/requests/${networkName}/${chainId}/${tokenId}`;
       const checkoutHistoryBasePath = `/checkout/history/${networkName}/${chainId}/${tokenId}`;
-      const tokenBridgeConfig = GenesisToken.bridge[networkName][chainId][tokenId];
+      const tokenBridgeConfig = BlockchainParams.token.bridge[networkName][chainId][tokenId];
       const {
         token_pool: tokenPoolAddr,
         min_checkout_per_request: minCheckoutPerRequest,
@@ -4201,7 +4200,7 @@ describe('Native Function', () => {
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkinRequestBasePath = `/checkin/requests/${networkName}/${chainId}/${tokenId}`;
       const checkinHistoryBasePath = `/checkin/history/${networkName}/${chainId}/${tokenId}`;
-      const tokenPoolAddr = GenesisToken.bridge[networkName][chainId][tokenId].token_pool;
+      const tokenPoolAddr = BlockchainParams.token.bridge[networkName][chainId][tokenId].token_pool;
       const checkinAmount = 100;
       const sender = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // eth address
       const senderPrivateKey = '0xee0b1315d446e5318eb6eb4e9d071cd12ef42d2956d546f9acbdc3b75c469640';
