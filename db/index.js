@@ -604,8 +604,7 @@ class DB {
       // No matched local path.
       return null;
     }
-    return this.convertOwnerMatch(
-        this.matchOwnerForParsedPath(localPath), isGlobal);
+    return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
   evalRule(valuePath, value, auth, timestamp, options) {
@@ -640,7 +639,7 @@ class DB {
         error_message: `Invalid permission '${permission}' ` +
             `for local path '${CommonUtil.formatPath(localPath)}' ` +
             `with auth '${JSON.stringify(auth)}'`,
-        matched,
+        matched: null,
       };
     }
   }
@@ -1825,7 +1824,7 @@ class DB {
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_FUNCTION,
         error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
-            `for function path '${CommonUtil.formatPath(parsedRulePath)}'`,
+            `for function path '${CommonUtil.formatPath(parsedFuncPath)}'`,
         matched,
       };
     }
@@ -1855,7 +1854,7 @@ class DB {
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_OWNER,
         error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
-            `for owner path '${CommonUtil.formatPath(parsedRulePath)}'`,
+            `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}'`,
         matched,
       };
     }
@@ -2285,6 +2284,7 @@ class DB {
     // Maximum depth reached.
     if (depth === parsedRefPath.length) {
       return {
+        matchedOwnerNode: curOwnerNode,
         matchedDepth: depth,
         closestConfigNode: hasOwnerConfig(curOwnerNode) ? curOwnerNode : null,
         closestConfigDepth: hasOwnerConfig(curOwnerNode) ? depth : 0,
@@ -2303,6 +2303,7 @@ class DB {
     }
     // No match with child nodes.
     return {
+      matchedOwnerNode: null,
       matchedDepth: depth,
       closestConfigNode: hasOwnerConfig(curOwnerNode) ? curOwnerNode : null,
       closestConfigDepth: hasOwnerConfig(curOwnerNode) ? depth : 0,
@@ -2314,10 +2315,36 @@ class DB {
         parsedRefPath, 0, this.stateRoot.getChild(PredefinedDbPaths.OWNERS_ROOT));
   }
 
+  getSubtreeOwnersRecursive(depth, curOwnerNode) {
+    const owners = [];
+    if (depth !== 0 && hasOwnerConfig(curOwnerNode)) {
+      owners.push({
+        path: [],
+        config: getOwnerConfig(curOwnerNode),
+      })
+    }
+    if (curOwnerNode && !curOwnerNode.getIsLeaf()) {
+      // Traverse child nodes.
+      for (const label of curOwnerNode.getChildLabels()) {
+        const nextOwnerNode = curOwnerNode.getChild(label);
+        const subtreeOwners = this.getSubtreeOwnersRecursive(depth + 1, nextOwnerNode);
+        subtreeOwners.forEach((entry) => {
+          entry.path.unshift(label);
+          owners.push(entry);
+        });
+      }
+    }
+    return owners;
+  }
+
+  getSubtreeOwners(ownerNode) {
+    return this.getSubtreeOwnersRecursive(0, ownerNode);
+  }
+
   matchOwnerForParsedPath(parsedRefPath) {
     const matched = this.matchOwnerPath(parsedRefPath);
-    // TODO(platfowner): Implement this.
-    const subtreeOwners = [];
+    const subtreeOwners = matched.matchedOwnerNode ?
+        this.getSubtreeOwners(matched.matchedOwnerNode) : [];
     return {
       matchedOwnerPath: parsedRefPath.slice(0, matched.matchedDepth),
       closestOwner: {
@@ -2331,12 +2358,17 @@ class DB {
   convertOwnerMatch(matched, isGlobal) {
     const ownerPath = isGlobal ?
         this.toGlobalPath(matched.matchedOwnerPath) : matched.matchedOwnerPath;
-    return {
+    const converted = {
       matched_path: {
         target_path: CommonUtil.formatPath(ownerPath),
       },
       matched_config: this.convertPathAndConfig(matched.closestOwner, isGlobal),
     };
+    if (matched.subtreeOwners) {
+      converted.subtree_configs = matched.subtreeOwners.map((entry) =>
+          this.convertPathAndConfig(entry, false));
+    }
+    return converted;
   }
 
   getOwnerPermissions(config, auth) {
