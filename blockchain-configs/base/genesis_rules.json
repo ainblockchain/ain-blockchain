@@ -63,11 +63,10 @@
           "$token_id": {
             "$user_addr": {
               "$checkout_id": {
-                ".rule": {
-                  "state": {
-                    "gc_max_siblings": 100
-                  },
-                  "write": "data === null && util.validateCheckoutHistoryData($network_name, $chain_id, $token_id, $user_addr, $checkout_id, newData, getValue) && auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue)"
+                "data": {
+                  ".rule": {
+                    "write": "data === null && util.validateCheckoutHistoryData($network_name, $chain_id, $token_id, $user_addr, $checkout_id, newData, getValue) && auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue)"
+                  }
                 },
                 "refund": {
                   ".rule": {

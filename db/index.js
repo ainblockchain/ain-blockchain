@@ -329,23 +329,26 @@ class DB {
 
   // For testing purpose only.
   setOwnersForTesting(ownersPath, owners) {
-    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT, ...CommonUtil.parsePath(ownersPath)], owners);
+    this.writeDatabase(
+        [PredefinedDbPaths.OWNERS_ROOT, ...CommonUtil.parsePath(ownersPath)], owners);
   }
 
   // For testing purpose only.
   setRulesForTesting(rulesPath, rules) {
-    this.writeDatabase([PredefinedDbPaths.RULES_ROOT, ...CommonUtil.parsePath(rulesPath)], rules);
+    this.writeDatabase(
+        [PredefinedDbPaths.RULES_ROOT, ...CommonUtil.parsePath(rulesPath)], rules);
   }
 
   // For testing purpose only.
   setFunctionsForTesting(functionsPath, functions) {
-    this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT,
-      ...CommonUtil.parsePath(functionsPath)], functions);
+    this.writeDatabase(
+        [PredefinedDbPaths.FUNCTIONS_ROOT, ...CommonUtil.parsePath(functionsPath)], functions);
   }
 
   // For testing purpose only.
   setValuesForTesting(valuesPath, values) {
-    this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...CommonUtil.parsePath(valuesPath)], values);
+    this.writeDatabase(
+        [PredefinedDbPaths.VALUES_ROOT, ...CommonUtil.parsePath(valuesPath)], values);
   }
 
   // For testing purpose only.
@@ -613,8 +616,7 @@ class DB {
       // No matched local path.
       return null;
     }
-    const permissions = this.getPermissionForValue(localPath, value, auth, timestamp);
-    return permissions.writePermission && permissions.statePermission;
+    return this.getPermissionForValue(localPath, value, auth, timestamp);
   }
 
   evalOwner(refPath, permission, auth, options) {
@@ -761,16 +763,10 @@ class DB {
           unitWriteGasLimit);
     }
     const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, timestamp);
-    if (!ruleEvalRes.writePermission) {
+    if (ruleEvalRes.code > 0) {
       return CommonUtil.returnTxResult(
-          TxResultCode.SET_VALUE_NO_WRITE_PERMISSION,
-          `No write permission on: ${valuePath}`,
-          unitWriteGasLimit);
-    }
-    if (!ruleEvalRes.statePermission) {
-      return CommonUtil.returnTxResult(
-          TxResultCode.SET_VALUE_NO_STATE_PERMISSION,
-          `No state permission on: ${valuePath}`,
+          ruleEvalRes.code,
+          ruleEvalRes.error_message,
           unitWriteGasLimit);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
@@ -1301,30 +1297,30 @@ class DB {
   checkStateGasBudgets(op, allAppsStateUsage, serviceStateUsage, result, budgets) {
     if (serviceStateUsage[StateInfoProperties.TREE_BYTES] > budgets.serviceStateBudget) {
       return Object.assign(result, {
-          code: 25,
+          code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_ALL_SERVICES,
           error_message: `Exceeded state budget limit for services ` +
-            `(${serviceStateUsage[StateInfoProperties.TREE_BYTES]} > ${budgets.serviceStateBudget})`
+              `(${serviceStateUsage[StateInfoProperties.TREE_BYTES]} > ${budgets.serviceStateBudget})`
       });
     }
     if (allAppsStateUsage[StateInfoProperties.TREE_BYTES] > budgets.appsStateBudget) {
       return Object.assign(result, {
-          code: 26,
+          code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_ALL_APPS,
           error_message: `Exceeded state budget limit for apps ` +
-            `(${allAppsStateUsage[StateInfoProperties.TREE_BYTES]} > ${budgets.appsStateBudget})`
+              `(${allAppsStateUsage[StateInfoProperties.TREE_BYTES]} > ${budgets.appsStateBudget})`
       });
     }
     if (serviceStateUsage[StateInfoProperties.TREE_SIZE] > budgets.serviceTreeSizeBudget) {
       return Object.assign(result, {
-          code: 27,
+          code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_ALL_SERVICES,
           error_message: `Exceeded state tree size limit for services ` +
-            `(${serviceStateUsage[StateInfoProperties.TREE_SIZE]} > ${budgets.serviceTreeSizeBudget})`
+              `(${serviceStateUsage[StateInfoProperties.TREE_SIZE]} > ${budgets.serviceTreeSizeBudget})`
       });
     }
     if (allAppsStateUsage[StateInfoProperties.TREE_SIZE] > budgets.appsTreeSizeBudget) {
       return Object.assign(result, {
-          code: 28,
+          code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_ALL_APPS,
           error_message: `Exceeded state tree size limit for apps ` +
-            `(${allAppsStateUsage[StateInfoProperties.TREE_SIZE]} > ${budgets.appsTreeSizeBudget})`
+              `(${allAppsStateUsage[StateInfoProperties.TREE_SIZE]} > ${budgets.appsTreeSizeBudget})`
       });
     }
     const stateFreeTierUsage = this.getStateFreeTierUsage();
@@ -1337,16 +1333,16 @@ class DB {
       if (appStake === 0) {
         if (freeTierTreeBytesLimitReached) {
           return Object.assign(result, {
-              code: 29,
+              code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_FREE_TIER,
               error_message: `Exceeded state budget limit for free tier ` +
-                `(${stateFreeTierUsage[StateInfoProperties.TREE_BYTES]} > ${budgets.freeStateBudget})`
+                  `(${stateFreeTierUsage[StateInfoProperties.TREE_BYTES]} > ${budgets.freeStateBudget})`
           });
         }
         if (freeTierTreeSizeLimitReached) {
           return Object.assign(result, {
-            code: 30,
+            code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_FREE_TIER,
             error_message: `Exceeded state tree size limit for free tier ` +
-              `(${stateFreeTierUsage[StateInfoProperties.TREE_SIZE]} > ${budgets.freeTreeSizeBudget})`
+                `(${stateFreeTierUsage[StateInfoProperties.TREE_SIZE]} > ${budgets.freeTreeSizeBudget})`
           });
         }
         // else, we allow apps without stakes
@@ -1355,16 +1351,16 @@ class DB {
         const singleAppTreeSizeBudget = budgets.appsStateBudget * appStake / appStakesTotal;
         if (appStateUsage[StateInfoProperties.TREE_BYTES] > singleAppStateBudget) {
           return Object.assign(result, {
-              code: 31,
+              code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_APP,
               error_message: `Exceeded state budget limit for app ${appName} ` +
-                `(${appStateUsage[StateInfoProperties.TREE_BYTES]} > ${singleAppStateBudget})`
+                  `(${appStateUsage[StateInfoProperties.TREE_BYTES]} > ${singleAppStateBudget})`
           });
         }
         if (appStateUsage[StateInfoProperties.TREE_SIZE] > singleAppTreeSizeBudget) {
           return Object.assign(result, {
-              code: 32,
+              code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_APP,
               error_message: `Exceeded state tree size limit for app ${appName} ` +
-                `(${appStateUsage[StateInfoProperties.TREE_SIZE]} > ${singleAppTreeSizeBudget})`
+                  `(${appStateUsage[StateInfoProperties.TREE_SIZE]} > ${singleAppTreeSizeBudget})`
           });
         }
       }
@@ -1399,7 +1395,7 @@ class DB {
     const gasCost = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit);
     if (balance < gasCost) {
       Object.assign(executionResult, {
-        code: 36,
+        code: TxResultCode.FEE_BALANCE_TOO_LOW,
         error_message: `Failed to collect gas fee: balance too low (${balance} / ${gasCost})`
       });
       this.restoreDb(); // Revert changes made by the tx operations
@@ -1417,7 +1413,7 @@ class DB {
         auth, timestamp, tx, blockNumber, null);
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) { // Should not happend
       Object.assign(executionResult, {
-        code: 18,
+        code: TxResultCode.FEE_FAILED_TO_COLLECT_GAS_FEE,
         error_message: `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`
       });
     }
@@ -1426,7 +1422,6 @@ class DB {
   static trimExecutionResult(executionResult) {
     const trimmed = _.pick(executionResult, [
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
-      PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_AMOUNT_CHARGED,
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_COST_TOTAL,
     ]);
@@ -1436,7 +1431,6 @@ class DB {
           executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST])) {
         trimmed[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST][key] = _.pick(val, [
           PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
-          PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
         ]);
       }
     }
@@ -1683,13 +1677,13 @@ class DB {
         'resource/state_tree_height_limit', blockNumber, this.stateRoot);
     if (treeHeight > stateTreeHeightLimit) {
       return {
-        code: 23,
+        code: TxResultCode.TREE_OUT_OF_TREE_HEIGHT_LIMIT,
         error_message: `Out of tree height limit (${treeHeight} > ${stateTreeHeightLimit})`
       };
     }
     if (treeSize > budgets.treeSizeBudget) {
       return {
-        code: 24,
+        code: TxResultCode.TREE_OUT_OF_TREE_SIZE_LIMIT,
         error_message: `Out of tree size budget (${treeSize} > ${budgets.treeSizeBudget})`
       };
     }
@@ -1707,7 +1701,6 @@ class DB {
     return newValue;
   }
 
-  // TODO(platfowner): Eval subtree rules.
   getPermissionForValue(parsedValuePath, newValue, auth, timestamp) {
     const LOG_HEADER = 'getPermissionForValue';
     // Evaluate write rules and return matched configs
@@ -1719,30 +1712,64 @@ class DB {
         this.addPathToValue(value, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
     const newData =
         this.addPathToValue(newValue, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
-    let evalWriteRuleRes = false;
-    let evalStateRuleRes = false;
+    // NOTE(platfowner): Value write operations with non-empty subtree write rules are not allowed.
+    if (matchedWriteRules.subtreeRules && matchedWriteRules.subtreeRules.length > 0) {
+      return {
+        code: TxResultCode.VALUE_PERMISSION_NON_EMPTY_SUBTREE_RULES,
+        error_message: `Non-empty (${matchedWriteRules.subtreeRules.length}) subtree rules ` +
+            `for value path '${CommonUtil.formatPath(parsedValuePath)}'`,
+        matched,
+      };
+    }
     try {
-      evalWriteRuleRes = !!this.evalWriteRuleConfig(
+      const evalWriteRuleRes = this.evalWriteRuleConfig(
         matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
-      if (!evalWriteRuleRes) {
-        logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${evalWriteRuleRes}, ` +
+      if (!evalWriteRuleRes.evalResult) {
+        logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${JSON.stringify(evalWriteRuleRes, null, 2)}, ` +
             `matched: ${JSON.stringify(matchedWriteRules, null, 2)}, data: ${JSON.stringify(data)}, ` +
             `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
             `timestamp: ${timestamp}\n`);
+        return {
+          code: TxResultCode.VALUE_PERMISSION_FALSE_WRITE_RULE_EVAL,
+          error_message: `Write rule evaluated false: [${evalWriteRuleRes.ruleString}] ` +
+              `at '${CommonUtil.formatPath(matchedWriteRules.closestRule.path)}' ` +
+              `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
+              `with path vars '${JSON.stringify(matchedWriteRules.pathVars)}', ` +
+              `data '${JSON.stringify(data)}', newData '${JSON.stringify(newData)}', ` +
+              `auth '${JSON.stringify(auth)}', timestamp '${timestamp}'`,
+          matched,
+        };
       }
-      evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
-      if (!evalStateRuleRes) {
+      const evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
+      if (!evalStateRuleRes.evalResult) {
         logger.debug(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
             `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
             `newValue: ${JSON.stringify(newValue)}\n`);
+        return {
+          code: TxResultCode.VALUE_PERMISSION_FALSE_STATE_RULE_EVAL,
+          error_message: `State rule evaluated false: [${evalStateRuleRes.ruleString}] ` +
+              `at '${CommonUtil.formatPath(matchedStateRules.closestRule.path)}' ` +
+              `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
+              `with newValue '${JSON.stringify(newValue)}'`,
+          matched,
+        };
       }
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Failed to eval rule.\n` +
           `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
           `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
           `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
+      return {
+        code: TxResultCode.VALUE_PERMISSION_INTERNAL_ERROR,
+        error_message: `Internal error: ${JSON.stringify(err)}`,
+        matched,
+      };
     }
-    return { writePermission: evalWriteRuleRes, statePermission: evalStateRuleRes, matched };
+    return {
+      code: TxResultCode.SUCCESS,
+      error_message: '',
+      matched,
+    };
   }
 
   getPermissionForRule(parsedRulePath, auth) {
@@ -1967,7 +1994,7 @@ class DB {
       matchedValuePath: [],
       matchedRulePath: [],
       pathVars: {},
-      matchedRuleNode: curRuleNode,
+      matchedRuleNode: null,
       closestConfigNode: hasRuleConfigWithProp(curRuleNode, ruleProp) ? curRuleNode : null,
       closestConfigDepth: hasRuleConfigWithProp(curRuleNode, ruleProp) ? depth : 0,
     };
@@ -2020,7 +2047,8 @@ class DB {
     const matchedWriteRule = this.matchRulePath(parsedValuePath, RuleProperties.WRITE);
     const matchedStateRule = this.matchRulePath(parsedValuePath, RuleProperties.STATE);
     // Only write rules matched for the subtree
-    const subtreeRules = this.getSubtreeRules(matchedWriteRule.matchedRuleNode, RuleProperties.WRITE);
+    const subtreeRules = matchedWriteRule.matchedRuleNode ?
+        this.getSubtreeRules(matchedWriteRule.matchedRuleNode, RuleProperties.WRITE) : [];
     return {
       write: {
         matchedValuePath: matchedWriteRule.matchedValuePath,
@@ -2073,38 +2101,63 @@ class DB {
 
   evalWriteRuleConfig(writeRuleConfig, pathVars, data, newData, auth, timestamp) {
     if (!CommonUtil.isDict(writeRuleConfig)) {
-      return false;
+      return {
+        ruleString: '',
+        evalResult: false,
+      };
     }
-    const writeRuleString = writeRuleConfig[RuleProperties.WRITE];
-    if (typeof writeRuleString === 'boolean') {
-      return writeRuleString;
-    } else if (typeof writeRuleString !== 'string') {
-      return false;
+    const ruleString = writeRuleConfig[RuleProperties.WRITE];
+    if (CommonUtil.isBool(ruleString)) {
+      return {
+        ruleString: String(ruleString),
+        evalResult: ruleString,
+      };
+    } else if (!CommonUtil.isString(ruleString)) {
+      return {
+        ruleString: String(ruleString),
+        evalResult: false,
+      };
     }
-    const writeRuleCodeSnippet = makeWriteRuleCodeSnippet(writeRuleString);
+    const writeRuleCodeSnippet = makeWriteRuleCodeSnippet(ruleString);
     const writeRuleEvalFunc = DB.makeWriteRuleEvalFunction(writeRuleCodeSnippet, pathVars);
-    return writeRuleEvalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
+    const evalResult = !!writeRuleEvalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
         this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
         this.evalRule.bind(this), this.evalOwner.bind(this),
         new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
+    return {
+      ruleString,
+      evalResult,
+    };
   }
 
   evalStateRuleConfig(stateRuleConfig, newValue) {
-    if (!CommonUtil.isDict(stateRuleConfig)) {
-      return true;
-    }
-    if (!CommonUtil.isDict(newValue)) {
-      return true;
+    if (!CommonUtil.isDict(stateRuleConfig) ||
+        !CommonUtil.isDict(newValue)) {
+      return {
+        ruleString: '',
+        evalResult: true,
+      };
     }
     const stateRuleObj = stateRuleConfig[RuleProperties.STATE];
-    if (CommonUtil.isEmpty(stateRuleObj)) {
-      return true;
-    }
-    if (!stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
-      return true;
+    if (CommonUtil.isEmpty(stateRuleObj) ||
+        !stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+      return {
+        ruleString: '',
+        evalResult: true,
+      };
     }
     const maxChildren = stateRuleObj[RuleProperties.MAX_CHILDREN];
-    return Object.keys(newValue).length <= maxChildren;
+    const maxChildrenEvalResult = Object.keys(newValue).length <= maxChildren;
+    if (!maxChildrenEvalResult) {
+      return {
+        ruleString: JSON.stringify(stateRuleObj),
+        evalResult: maxChildrenEvalResult,
+      };
+    }
+    return {
+      ruleString: '',
+      evalResult: true,
+    };
   }
 
   applyStateGarbageCollectionRule(matchedRules, parsedValuePath) {

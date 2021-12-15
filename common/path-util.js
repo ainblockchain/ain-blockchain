@@ -231,6 +231,12 @@ class PathUtil {
         tokenId, address, checkoutId]);
   }
 
+  static getCheckoutHistoryDataPath(networkName, chainId, tokenId, address, checkoutId) {
+    return CommonUtil.appendPath(
+        PathUtil.getCheckoutHistoryPath(networkName, chainId, tokenId, address, checkoutId),
+        PredefinedDbPaths.CHECKOUT_HISTORY_DATA);
+  }
+
   static getCheckoutHistoryRefundPath(networkName, chainId, tokenId, address, checkoutId) {
     return CommonUtil.appendPath(
         PathUtil.getCheckoutHistoryPath(networkName, chainId, tokenId, address, checkoutId),
