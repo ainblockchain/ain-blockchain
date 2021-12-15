@@ -2108,12 +2108,12 @@ class DB {
       };
     }
     const ruleString = writeRuleConfig[RuleProperties.WRITE];
-    if (typeof ruleString === 'boolean') {
+    if (CommonUtil.isBool(ruleString)) {
       return {
         ruleString: String(ruleString),
         evalResult: ruleString,
       };
-    } else if (typeof ruleString !== 'string') {
+    } else if (!CommonUtil.isString(ruleString)) {
       return {
         ruleString: String(ruleString),
         evalResult: false,
