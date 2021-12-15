@@ -1804,7 +1804,7 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_RULE,
-        error_message: `Rule permission checked false: [${checkRes.permissionsString}] ` +
+        error_message: `${OwnerProperties.WRITE_RULE} permission evaluated false: [${checkRes.permissionsString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for rule path '${CommonUtil.formatPath(parsedRulePath)}' ` +
             `with permission '${permission}', ` +
@@ -1834,7 +1834,7 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_FUNCTION,
-        error_message: `Function permission checked false: [${checkRes.permissionsString}] ` +
+        error_message: `${OwnerProperties.WRITE_FUNCTION} permission evaluated false: [${checkRes.permissionsString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for function path '${CommonUtil.formatPath(parsedFuncPath)}' ` +
             `with permission '${permission}', ` +
@@ -1865,7 +1865,7 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_OWNER,
-        error_message: `Owner permission checked false: [${checkRes.permissionsString}] ` +
+        error_message: `${permission} permission evaluated false: [${checkRes.permissionsString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}' ` +
             `with permission '${permission}', ` +
@@ -2316,12 +2316,15 @@ class DB {
 
   matchOwnerForParsedPath(parsedRefPath) {
     const matched = this.matchOwnerPath(parsedRefPath);
+    // TODO(platfowner): Implement this.
+    const subtreeOwners = [];
     return {
       matchedOwnerPath: parsedRefPath.slice(0, matched.matchedDepth),
       closestOwner: {
         path: parsedRefPath.slice(0, matched.closestConfigDepth),
         config: getOwnerConfig(matched.closestConfigNode),
       },
+      subtreeOwners,
     }
   }
 

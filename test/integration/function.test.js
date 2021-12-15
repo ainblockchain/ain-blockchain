@@ -757,8 +757,8 @@ describe('Native Function', () => {
                   "0": {
                     "path": "/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value",
                     "result": {
-                      "code": 10603,
-                      "error_message": "No write_owner or branch_owner permission on: /apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value",
+                      "code": 12502,
+                      "error_message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_function\":false,\"write_owner\":false,\"write_rule\":false}] at '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid' for owner path '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value' with permission 'branch_owner', auth '{\"addr\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\",\"fid\":\"_setOwnerConfig\",\"fids\":[\"_setOwnerConfig\"]}'",
                       "bandwidth_gas_amount": 1,
                     }
                   }

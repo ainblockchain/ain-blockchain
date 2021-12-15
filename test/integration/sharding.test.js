@@ -32,7 +32,7 @@ const {
   waitUntilTxFinalized,
   waitUntilNetworkIsReady,
   setUpApp,
-  eraseEvalRuleResMatched,
+  eraseEvalResMatched,
 } = require('../test-util');
 
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../../"
@@ -812,7 +812,7 @@ describe('Sharding', () => {
           const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
-          assert.deepEqual(eraseEvalRuleResMatched(body.result), {
+          assert.deepEqual(eraseEvalResMatched(body.result), {
             "code": 0,
             "error_message": "",
             "matched": "erased",
@@ -828,7 +828,7 @@ describe('Sharding', () => {
           const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(body.code, 0);
-          assert.deepEqual(eraseEvalRuleResMatched(body.result), {
+          assert.deepEqual(eraseEvalResMatched(body.result), {
             "code": 0,
             "error_message": "",
             "matched": "erased",
@@ -845,8 +845,40 @@ describe('Sharding', () => {
           const body = parseOrLog(syncRequest('POST', server1 + '/eval_owner', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(body, {
-            code: 0,
-            result: true,
+            "code": 0,
+            "result": {
+              "code": 0,
+              "error_message": "",
+              "matched": {
+                "closestOwner": {
+                  "config": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": false,
+                        "write_function": true,
+                        "write_owner": true,
+                        "write_rule": false,
+                      }
+                    }
+                  },
+                  "path": [
+                    "apps",
+                    "test",
+                    "test_owner",
+                    "some",
+                    "path",
+                  ]
+                },
+                "matchedOwnerPath": [
+                  "apps",
+                  "test",
+                  "test_owner",
+                  "some",
+                  "path",
+                ],
+                "subtreeOwners": []
+              }
+            }
           });
         })
 
@@ -860,8 +892,40 @@ describe('Sharding', () => {
           const body = parseOrLog(syncRequest('POST', server1 + '/eval_owner', {json: request})
               .body.toString('utf-8'));
           assert.deepEqual(body, {
-            code: 0,
-            result: true,
+            "code": 0,
+            "result": {
+              "code": 0,
+              "error_message": "",
+              "matched": {
+                "closestOwner": {
+                  "config": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": false,
+                        "write_function": true,
+                        "write_owner": true,
+                        "write_rule": false,
+                      }
+                    }
+                  },
+                  "path": [
+                    "apps",
+                    "test",
+                    "test_owner",
+                    "some",
+                    "path",
+                  ]
+                },
+                "matchedOwnerPath": [
+                  "apps",
+                  "test",
+                  "test_owner",
+                  "some",
+                  "path",
+                ],
+                "subtreeOwners": []
+              }
+            }
           });
         })
       })
@@ -989,7 +1053,39 @@ describe('Sharding', () => {
                   }
                 }
               },
-              true,
+              {
+                "code": 0,
+                "error_message": "",
+                "matched": {
+                  "closestOwner": {
+                    "config": {
+                      "owners": {
+                        "*": {
+                          "branch_owner": false,
+                          "write_function": true,
+                          "write_owner": true,
+                          "write_rule": false,
+                        }
+                      }
+                    },
+                    "path": [
+                      "apps",
+                      "test",
+                      "test_owner",
+                      "some",
+                      "path",
+                    ]
+                  },
+                  "matchedOwnerPath": [
+                    "apps",
+                    "test",
+                    "test_owner",
+                    "some",
+                    "path",
+                  ],
+                  "subtreeOwners": []
+                }
+              }
             ]
           });
         })
@@ -1122,7 +1218,39 @@ describe('Sharding', () => {
                   }
                 }
               },
-              true,
+              {
+                "code": 0,
+                "error_message": "",
+                "matched": {
+                  "closestOwner": {
+                    "config": {
+                      "owners": {
+                        "*": {
+                          "branch_owner": false,
+                          "write_function": true,
+                          "write_owner": true,
+                          "write_rule": false,
+                        }
+                      }
+                    },
+                    "path": [
+                      "apps",
+                      "test",
+                      "test_owner",
+                      "some",
+                      "path",
+                    ]
+                  },
+                  "matchedOwnerPath": [
+                    "apps",
+                    "test",
+                    "test_owner",
+                    "some",
+                    "path",
+                  ],
+                  "subtreeOwners": []
+                }
+              }
             ]
           });
         })
@@ -1359,7 +1487,7 @@ describe('Sharding', () => {
           const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
           .then(res => {
-            assert.deepEqual(eraseEvalRuleResMatched(res.result.result), {
+            assert.deepEqual(eraseEvalResMatched(res.result.result), {
               "code": 0,
               "error_message": "",
               "matched": "erased",
@@ -1375,7 +1503,7 @@ describe('Sharding', () => {
               { ref, value, address, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
           .then(res => {
-            assert.deepEqual(eraseEvalRuleResMatched(res.result.result), {
+            assert.deepEqual(eraseEvalResMatched(res.result.result), {
               "code": 0,
               "error_message": "",
               "matched": "erased",
@@ -1392,7 +1520,39 @@ describe('Sharding', () => {
           const request = { ref, permission, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
           .then(res => {
-            assert.deepEqual(res.result.result, true);
+            assert.deepEqual(res.result.result, {
+              "code": 0,
+              "error_message": "",
+              "matched": {
+                "closestOwner": {
+                  "config": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": false,
+                        "write_function": true,
+                        "write_owner": true,
+                        "write_rule": false,
+                      }
+                    }
+                  },
+                  "path": [
+                    "apps",
+                    "test",
+                    "test_owner",
+                    "some",
+                    "path",
+                  ]
+                },
+                "matchedOwnerPath": [
+                  "apps",
+                  "test",
+                  "test_owner",
+                  "some",
+                  "path",
+                ],
+                "subtreeOwners": []
+              }
+            });
           })
         })
 
@@ -1404,7 +1564,39 @@ describe('Sharding', () => {
               { ref, permission, address, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
           .then(res => {
-            assert.deepEqual(res.result.result, true);
+            assert.deepEqual(res.result.result, {
+              "code": 0,
+              "error_message": "",
+              "matched": {
+                "closestOwner": {
+                  "config": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": false,
+                        "write_function": true,
+                        "write_owner": true,
+                        "write_rule": false,
+                      }
+                    }
+                  },
+                  "path": [
+                    "apps",
+                    "test",
+                    "test_owner",
+                    "some",
+                    "path",
+                  ]
+                },
+                "matchedOwnerPath": [
+                  "apps",
+                  "test",
+                  "test_owner",
+                  "some",
+                  "path",
+                ],
+                "subtreeOwners": []
+              }
+            });
           })
         })
       })

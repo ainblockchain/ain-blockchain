@@ -20,7 +20,7 @@ const Transaction = require('../../tx-pool/transaction');
 const CommonUtil = require('../../common/common-util');
 const {
   setNodeForTesting,
-  eraseEvalRuleResMatched,
+  eraseEvalResMatched,
 } = require('../test-util');
 const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
 
@@ -1290,13 +1290,13 @@ describe("DB operations", () => {
       const timestamp = 1234567890000;
 
       it("evalRule to evaluate a variable path rule", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12103,
           "error_message": "Write rule evaluated false: [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, timestamp)), {
           "code": 0,
           "error_message": "",
@@ -1305,25 +1305,25 @@ describe("DB operations", () => {
       })
 
       it("evalRule to evaluate a non-variable path rule", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/path", 'value', { addr: 'other' }, timestamp)), {
           "code": 12103,
           "error_message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'ijkl' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'other' }, timestamp)), {
           "code": 12103,
           "error_message": "Write rule evaluated false: [auth.addr === 'ijkl'] at '/apps/test/test_rule/some/upper/path/deeper/path' for value path '/apps/test/test_rule/some/upper/path/deeper/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
@@ -1332,13 +1332,13 @@ describe("DB operations", () => {
       })
 
       it("evalRule to evaluate a closest variable path rule", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12103,
           "error_message": "Write rule evaluated false: [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path/subpath' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'other' }, timestamp)), {
           "code": 0,
           "error_message": "",
@@ -1347,13 +1347,13 @@ describe("DB operations", () => {
       })
 
       it("evalRule to evaluate a closest non-variable rule", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'other' }, timestamp)), {
           "code": 12103,
           "error_message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
@@ -1362,13 +1362,13 @@ describe("DB operations", () => {
       })
 
       it("evalRule to evaluate a rule without subtree rules", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'other' }, timestamp)), {
           "code": 12103,
           "error_message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/upper/path' for value path '/apps/test/test_rule/some/upper/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
@@ -1377,7 +1377,7 @@ describe("DB operations", () => {
       })
 
       it("evalRule to evaluate a rule with subtree rules", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12101,
           "error_message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'",
@@ -1702,50 +1702,89 @@ describe("DB operations", () => {
 
     describe("evalOwner:", () => {
       it("evalOwner to evaluate existing owner with matching address", () => {
-        expect(node.db.evalOwner(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/path", 'write_owner',
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }))
-                .to.equal(true);
-        expect(node.db.evalOwner("/apps/test/test_owner/some/path", 'write_rule', { addr: '' }))
-            .to.equal(false);
-        expect(node.db.evalOwner(
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/path", 'write_rule',{ addr: '' })), {
+          "code": 12302,
+          "error_message": "write_rule permission evaluated false: [null] at '/apps/test/test_owner/some/path' for rule path '/apps/test/test_owner/some/path' with permission 'write_rule', auth '{\"addr\":\"\"}'",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/path/deeper/path", 'write_owner',
-            { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-                .to.equal(true);
-        expect(node.db.evalOwner(
+            { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/path/deeper/path", 'write_rule',
-            { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-                .to.equal(false);
+            { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+          "code": 12302,
+          "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_function\":false,\"write_owner\":true,\"write_rule\":false}] at '/apps/test/test_owner/some/path/deeper/path' for rule path '/apps/test/test_owner/some/path/deeper/path' with permission 'write_rule', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+          "matched": "erased",
+        });
       })
 
       it("evalOwner to evaluate existing owner without matching address", () => {
-        expect(node.db.evalOwner("/apps/test/test_owner/some/path", 'write_owner', { addr: 'other' }))
-            .to.equal(false);
-        expect(node.db.evalOwner("/apps/test/test_owner/some/path", 'write_rule', { addr: 'other' }))
-            .to.equal(true);
-        expect(node.db.evalOwner(
-            "/apps/test/test_owner/some/path/deeper/path", 'write_owner', { addr: 'other' }))
-                .to.equal(false);
-        expect(node.db.evalOwner(
-            "/apps/test/test_owner/some/path/deeper/path", 'write_rule', { addr: 'other' }))
-                .to.equal(true);
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/path", 'write_owner', { addr: 'other' })), {
+          "code": 12502,
+          "error_message": "write_owner permission evaluated false: [{\"branch_owner\":false,\"write_function\":true,\"write_owner\":false,\"write_rule\":true}] at '/apps/test/test_owner/some/path' for owner path '/apps/test/test_owner/some/path' with permission 'write_owner', auth '{\"addr\":\"other\"}'",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/path", 'write_rule', { addr: 'other' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/path/deeper/path", 'write_owner', { addr: 'other' })), {
+          "code": 12502,
+          "error_message": "write_owner permission evaluated false: [{\"branch_owner\":false,\"write_function\":true,\"write_owner\":false,\"write_rule\":true}] at '/apps/test/test_owner/some/path/deeper/path' for owner path '/apps/test/test_owner/some/path/deeper/path' with permission 'write_owner', auth '{\"addr\":\"other\"}'",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/path/deeper/path", 'write_rule', { addr: 'other' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
       })
 
       it("evalOwner to evaluate closest owner", () => {
-        expect(node.db.evalOwner(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/path/deeper", 'write_owner',
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }))
-                .to.equal(true);
-        expect(node.db.evalOwner(
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/path/deeper", 'write_rule',
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }))
-                .to.equal(false);
-        expect(node.db.evalOwner(
-            "/apps/test/test_owner/some/path/deeper", 'write_owner', { addr: 'other' }))
-                .to.equal(false);
-        expect(node.db.evalOwner(
-            "/apps/test/test_owner/some/path/deeper", 'write_rule', { addr: 'other' }))
-                .to.equal(true);
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
+          "code": 12302,
+          "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_function\":false,\"write_owner\":true,\"write_rule\":false}] at '/apps/test/test_owner/some/path' for rule path '/apps/test/test_owner/some/path/deeper' with permission 'write_rule', auth '{\"addr\":\"0x09A0d53FDf1c36A131938eb379b98910e55EEfe1\"}'",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/path/deeper", 'write_owner', { addr: 'other' })), {
+          "code": 12502,
+          "error_message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_function\":true,\"write_owner\":false,\"write_rule\":true}] at '/apps/test/test_owner/some/path' for owner path '/apps/test/test_owner/some/path/deeper' with permission 'branch_owner', auth '{\"addr\":\"other\"}'",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/path/deeper", 'write_rule', { addr: 'other' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
       })
     })
 
@@ -2028,7 +2067,31 @@ describe("DB operations", () => {
               }
             }
           },
-          false
+          {
+            "code": 12302,
+            "error_message": "write_rule permission evaluated false: [null] at '/apps' for rule path '/apps/owner/other/path' with permission 'write_rule', auth '{\"addr\":\"abcd\"}'",
+            "matched": {
+              "closestOwner": {
+                "config": {
+                  "owners": {
+                    "fid:_createApp": {
+                      "branch_owner": true,
+                      "write_function": false,
+                      "write_owner": false,
+                      "write_rule": true,
+                    }
+                  }
+                },
+                "path": [
+                  "apps"
+                ]
+              },
+              "matchedOwnerPath": [
+                "apps"
+              ],
+              "subtreeOwners": []
+            }
+          }
         ]);
       })
 
@@ -2278,7 +2341,45 @@ describe("DB operations", () => {
               }
             }
           },
-          true,
+          {
+            "code": 0,
+            "error_message": "",
+            "matched": {
+              "closestOwner": {
+                "config": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": false,
+                      "write_function": true,
+                      "write_owner": false,
+                      "write_rule": true,
+                    },
+                    "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+                      "branch_owner": true,
+                      "write_function": false,
+                      "write_owner": true,
+                      "write_rule": false,
+                    }
+                  }
+                },
+                "path": [
+                  "apps",
+                  "test",
+                  "test_owner",
+                  "some",
+                  "path",
+                ]
+              },
+              "matchedOwnerPath": [
+                "apps",
+                "test",
+                "test_owner",
+                "some",
+                "path",
+              ],
+              "subtreeOwners": []
+            }
+          }
         ]);
       })
     })
@@ -3561,19 +3662,19 @@ describe("DB rule config", () => {
   });
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/balance`, 0, null, null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/balance`, -1, null, null)), {
       "code": 12103,
       "error_message": "Write rule evaluated false: [typeof newData === 'number' && newData >= 0] at '/apps/test/users/$uid/balance' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data '50', newData '-1', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/balance`, 1, null, null)), {
       "code": 0,
       "error_message": "",
@@ -3582,19 +3683,19 @@ describe("DB rule config", () => {
   })
 
   it("only allows certain users to write certain info if data exists", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/info`, "something", null, null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/info`, "something else", null, null)), {
       "code": 12103,
       "error_message": "Write rule evaluated false: [data !== null] at '/apps/test/users/$uid/info' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/info' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data 'null', newData '\"something else\"', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/new_info`, "something",
         { addr: node2.account.address }, null)), {
       "code": 0,
@@ -3604,14 +3705,14 @@ describe("DB rule config", () => {
   })
 
   it("apply the closest ancestor's rule config if not exists", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/child/grandson`, "something",
         { addr: node1.account.address }, null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/child/grandson`, "something",
         { addr: node1.account.address }, null)), {
       "code": 12103,
@@ -3621,13 +3722,13 @@ describe("DB rule config", () => {
   })
 
   it("only allows certain users to write certain info if data at other locations exists", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/balance_info`, "something", null, null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/balance_info`, "something", null, null)), {
       "code": 12103,
       "error_message": "Write rule evaluated false: [getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null] at '/apps/test/users/$uid/balance_info' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance_info' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '\"something\"', auth 'null', timestamp 'null'",
@@ -3636,13 +3737,13 @@ describe("DB rule config", () => {
   })
 
   it("validates old data and new data together", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/next_counter`, 11, null,  null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/next_counter`, 12, null, null)), {
       "code": 12103,
       "error_message": "Write rule evaluated false: [typeof newData === 'number' && newData === data + 1] at '/apps/test/users/$uid/next_counter' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data '10', newData '12', auth 'null', timestamp 'null'",
@@ -3651,14 +3752,14 @@ describe("DB rule config", () => {
   })
 
   it("can handle nested path variables", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/second_users/${node2.account.address}/${node2.account.address}`,
         "some value", null, null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/second_users/${node1.account.address}/next_counter`,
         "some other value", null, null)), {
       "code": 12103,
@@ -3668,13 +3769,13 @@ describe("DB rule config", () => {
   })
 
   it("duplicated path variables", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         '/apps/test/no_dup_key/aaa/bbb', "some value", null, null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         '/apps/test/dup_key/aaa/bbb', "some value", null, null)), {
       "code": 0,
       "error_message": "",
@@ -3798,212 +3899,376 @@ describe("DB owner config", () => {
 
   // Known user
   it("branch_owner permission for known user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true/branch', 'branch_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true/branch', 'branch_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 12502,
+      "error_message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_owner\":true,\"write_rule\":true,\"write_function\":true}] at '/apps/test/test_owner/mixed/false/true/true' for owner path '/apps/test/test_owner/mixed/false/true/true/branch' with permission 'branch_owner', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true/branch', 'branch_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false/branch', 'branch_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 
   it("write_owner permission for known user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true', 'write_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true', 'write_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true', 'write_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 12502,
+      "error_message": "write_owner permission evaluated false: [{\"branch_owner\":true,\"write_owner\":false,\"write_rule\":true,\"write_function\":true}] at '/apps/test/test_owner/mixed/true/false/true' for owner path '/apps/test/test_owner/mixed/true/false/true' with permission 'write_owner', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false', 'write_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 
   it("write_rule permission for known user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(false)
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/false' for rule path '/apps/test/test_owner/mixed/true/true/false' with permission 'write_rule', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+      "matched": "erased",
+    });
   })
 
   it("write_rule permission on deeper path for known user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true/deeper_path', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true/deeper_path', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true/deeper_path', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false/deeper_path', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(false)
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/false' for rule path '/apps/test/test_owner/mixed/true/true/false/deeper_path' with permission 'write_rule', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+      "matched": "erased",
+    });
   })
 
   it("write_function permission for known user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(false)
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":true,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/false' for function path '/apps/test/test_owner/mixed/true/true/false' with permission 'write_function', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+      "matched": "erased",
+    });
   })
 
   it("write_function permission on deeper path for known user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true/deeper_path', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true/deeper_path', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true/deeper_path', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false/deeper_path', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(false)
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":true,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/false' for function path '/apps/test/test_owner/mixed/true/true/false/deeper_path' with permission 'write_function', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+      "matched": "erased",
+    });
   })
 
   // Unknown user
   it("branch_owner permission for unknown user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true/branch', 'branch_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12502,
+      "error_message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/true' for owner path '/apps/test/test_owner/mixed/true/true/true/branch' with permission 'branch_owner', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true/branch', 'branch_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true/branch', 'branch_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12502,
+      "error_message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/false/true' for owner path '/apps/test/test_owner/mixed/true/false/true/branch' with permission 'branch_owner', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false/branch', 'branch_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12502,
+      "error_message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":true,\"write_function\":true}] at '/apps/test/test_owner/mixed/true/true/false' for owner path '/apps/test/test_owner/mixed/true/true/false/branch' with permission 'branch_owner', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
   })
 
   it("write_owner permission for unknown user with mixed config", () => {
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/true', 'write_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/false/true/true', 'write_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/false/true', 'write_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(true)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/false', 'write_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/true', 'write_owner',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12502,
+      "error_message": "write_owner permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/true' for owner path '/apps/test/test_owner/mixed/true/true/true' with permission 'write_owner', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/false/true/true', 'write_owner',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12502,
+      "error_message": "write_owner permission evaluated false: [{\"branch_owner\":true,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/false/true/true' for owner path '/apps/test/test_owner/mixed/false/true/true' with permission 'write_owner', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/false/true', 'write_owner',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/false', 'write_owner',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12502,
+      "error_message": "write_owner permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":true,\"write_function\":true}] at '/apps/test/test_owner/mixed/true/true/false' for owner path '/apps/test/test_owner/mixed/true/true/false' with permission 'write_owner', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
   })
 
   it("write_rule permission for unknown user with mixed config", () => {
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/true', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/false/true/true', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/false/true', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/false', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(true)
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/true', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/true' for rule path '/apps/test/test_owner/mixed/true/true/true' with permission 'write_rule', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/false/true/true', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/false/true/true' for rule path '/apps/test/test_owner/mixed/false/true/true' with permission 'write_rule', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/false/true', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":false,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/false/true' for rule path '/apps/test/test_owner/mixed/true/false/true' with permission 'write_rule', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/false', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 
   it("write_rule permission on deeper path for unknown user with mixed config", () => {
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/true/deeper_path', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/false/true/true/deeper_path', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/false/true/deeper_path', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/false/deeper_path', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(true)
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/true/deeper_path', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/true' for rule path '/apps/test/test_owner/mixed/true/true/true/deeper_path' with permission 'write_rule', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/false/true/true/deeper_path', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/false/true/true' for rule path '/apps/test/test_owner/mixed/false/true/true/deeper_path' with permission 'write_rule', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/false/true/deeper_path', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":false,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/false/true' for rule path '/apps/test/test_owner/mixed/true/false/true/deeper_path' with permission 'write_rule', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/false/deeper_path', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 
   it("write_function permission for unknown user with mixed config", () => {
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/true', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })).to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/false/true/true', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })).to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/false/true', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })).to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/false', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })).to.equal(true)
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/true', 'write_function',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/true' for function path '/apps/test/test_owner/mixed/true/true/true' with permission 'write_function', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/false/true/true', 'write_function',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":true,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/false/true/true' for function path '/apps/test/test_owner/mixed/false/true/true' with permission 'write_function', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/false/true', 'write_function',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":false,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/false/true' for function path '/apps/test/test_owner/mixed/true/false/true' with permission 'write_function', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/false', 'write_function',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 
   it("write_function permission on deeper path for unknown user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true/deeper_path', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/true' for function path '/apps/test/test_owner/mixed/true/true/true/deeper_path' with permission 'write_function', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true/deeper_path', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":true,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/false/true/true' for function path '/apps/test/test_owner/mixed/false/true/true/deeper_path' with permission 'write_function', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true/deeper_path', 'write_function',
-         { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":false,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/false/true' for function path '/apps/test/test_owner/mixed/true/false/true/deeper_path' with permission 'write_function', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false/deeper_path', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(true)
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 })
 
@@ -4642,7 +4907,7 @@ describe("DB sharding config", () => {
 
     describe("evalRule with isGlobal:", () => {
       it("evalRule with isGlobal = false", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_sharding/some/path/to/subpath", newValue,
             { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" })), {
           "code": 0,
@@ -4652,7 +4917,7 @@ describe("DB sharding config", () => {
       })
 
       it("evalRule with isGlobal = true", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/afan/apps/test/test_sharding/some/path/to/subpath", newValue,
             { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true })), {
           "code": 0,
@@ -4662,7 +4927,7 @@ describe("DB sharding config", () => {
       })
 
       it("evalRule with isGlobal = true and non-existing path", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/some/non-existing/path", newValue,
             { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true })),
             null);
@@ -4837,21 +5102,30 @@ describe("DB sharding config", () => {
 
     describe("evalOwner with isGlobal:", () => {
       it("evalOwner with isGlobal = false", () => {
-        expect(node.db.evalOwner(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_sharding/some/path/to", "write_rule",
-            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" })).to.equal(true);
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
       })
 
       it("evalOwner with isGlobal = true", () => {
-        expect(node.db.evalOwner(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/afan/apps/test/test_sharding/some/path/to", "write_rule",
-            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })).to.equal(true);
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
       })
 
       it("evalOwner with isGlobal = true and non-existing path", () => {
-        expect(node.db.evalOwner(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/some/non-existing/path", "write_rule",
-            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })).to.equal(null);
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })),
+            null);
       })
     });
   })
