@@ -797,7 +797,7 @@ class CommonUtil {
   }
 
   static getWhitelistFromString(value) {
-    return value === '*' ? '*' : value.split(',');
+    return CommonUtil.isWildcard(value) ? value : value.split(',');
   }
 }
 
