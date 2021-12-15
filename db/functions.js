@@ -1236,6 +1236,8 @@ class Functions {
     }
   }
 
+  // TODO(liayoo): Revive garbage collection state rules (e.g. "gc_max_siblings": 100)
+  // for checkout history.
   _closeCheckout(value, context) {
     const networkName = context.params.network_name;
     const chainId = context.params.chain_id;

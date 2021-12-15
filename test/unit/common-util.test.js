@@ -432,7 +432,7 @@ describe("CommonUtil", () => {
       })).to.equal(true);
 
       expect(CommonUtil.isFailedTx({
-        code: 100,
+        code: 10101,
         error_message: 'some message'
       })).to.equal(true);
     });
