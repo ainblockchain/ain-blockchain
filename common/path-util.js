@@ -46,7 +46,7 @@ class PathUtil {
     return CommonUtil.formatPath([
         PredefinedDbPaths.BLOCKCHAIN_PARAMS, PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN,
         PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_BRIDGE, networkName, chainId, tokenId,
-        PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_BRIDGE_TOKEN_POOL]);
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_POOL]);
   }
 
   static getTransferPath(from, to, key) {
