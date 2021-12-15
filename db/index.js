@@ -1777,6 +1777,14 @@ class DB {
 
   getPermissionForRule(parsedRulePath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedRulePath);
+    if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+      return {
+        code: TxResultCode.RULE_PERMISSION_NON_EMPTY_SUBTREE_OWNERS,
+        error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
+            `for rule path '${CommonUtil.formatPath(parsedRulePath)}'`,
+        matched,
+      };
+    }
     const permission = OwnerProperties.WRITE_RULE;
     const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
     if (!checkRes.checkResult) {
@@ -1799,6 +1807,14 @@ class DB {
 
   getPermissionForFunction(parsedFuncPath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedFuncPath);
+    if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+      return {
+        code: TxResultCode.FUNCTION_PERMISSION_NON_EMPTY_SUBTREE_OWNERS,
+        error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
+            `for function path '${CommonUtil.formatPath(parsedRulePath)}'`,
+        matched,
+      };
+    }
     const permission = OwnerProperties.WRITE_FUNCTION;
     const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
     if (!checkRes.checkResult) {
@@ -1821,6 +1837,14 @@ class DB {
 
   getPermissionForOwner(parsedOwnerPath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
+    if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+      return {
+        code: TxResultCode.OWNER_PERMISSION_NON_EMPTY_SUBTREE_OWNERS,
+        error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
+            `for owner path '${CommonUtil.formatPath(parsedRulePath)}'`,
+        matched,
+      };
+    }
     const permission = matched.closestOwner.path.length === parsedOwnerPath.length ?
         OwnerProperties.WRITE_OWNER : OwnerProperties.BRANCH_OWNER;
     const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
