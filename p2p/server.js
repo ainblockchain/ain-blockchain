@@ -37,6 +37,7 @@ const {
   signAndSendTx,
   sendTxAndWaitForFinalization,
   getIpAddress,
+  convertIpv6ToIpv4
 } = require('../common/network-util');
 const {
   getAddressFromSocket,
@@ -47,6 +48,7 @@ const {
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage,
+  checkPeerWhitelist
 } = require('./util');
 const PathUtil = require('../common/path-util');
 
@@ -55,8 +57,7 @@ const parentChainEndpoint = GenesisSharding[ShardingProperties.PARENT_CHAIN_POC]
 const shardingPath = GenesisSharding[ShardingProperties.SHARDING_PATH];
 const reportingPeriod = GenesisSharding[ShardingProperties.REPORTING_PERIOD];
 
-// A peer-to-peer network server that broadcasts changes in the database.
-// TODO(minsulee2): Sign messages to tracker or peer.
+// A peer-to-peer network server that broadcasts changes in the database
 class P2pServer {
   constructor (p2pClient, node, minProtocolVersion, maxProtocolVersion) {
     this.wsServer = null;
@@ -374,13 +375,10 @@ class P2pServer {
   /**
    * Returns true if the socket ip address is the same as the given p2p url ip address,
    * false otherwise.
-   * @param {string} socketIpAddress is socket._socket.remoteAddress
+   * @param {string} ipv4Address is ipv4 socket._socket.remoteAddress
    * @param {string} url is peerInfo.networkStatus.urls.p2p.url
    */
-  checkIpAddressFromPeerInfo(socketIpAddress, url) {
-    // NOTE(minsulee2): Remove ::ffff: to make ipv4 ip address.
-    const ipv4Address =
-        socketIpAddress.substr(0, 7) === '::ffff:' ? socketIpAddress.substr(7) : socketIpAddress;
+  checkIpAddressFromPeerInfo(ipv4Address, url) {
     return url.includes(ipv4Address);
   }
 
@@ -449,6 +447,11 @@ class P2pServer {
               return;
             } else {
               const addressFromSig = getAddressFromMessage(parsedMessage);
+              if (!checkPeerWhitelist(addressFromSig)) {
+                logger.error(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
+                closeSocketSafe(this.inbound, socket);
+                return;
+              }
               if (addressFromSig !== address) {
                 logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
                 closeSocketSafe(this.inbound, socket);
@@ -491,7 +494,8 @@ class P2pServer {
               socket.send(JSON.stringify(payload));
               if (!this.client.outbound[address]) {
                 const p2pUrl = _.get(peerInfo, 'networkStatus.urls.p2p.url');
-                if (this.checkIpAddressFromPeerInfo(socket._socket.remoteAddress, p2pUrl)) {
+                const ipv4Address = convertIpv6ToIpv4(socket._socket.remoteAddress);
+                if (this.checkIpAddressFromPeerInfo(ipv4Address, p2pUrl)) {
                   this.client.connectToPeer(p2pUrl);
                 } else {
                   closeSocketSafe(this.inbound, socket);
@@ -643,6 +647,7 @@ class P2pServer {
     });
 
     socket.on('error', (error) => {
+      const address = getAddressFromSocket(this.inbound, socket);
       logger.error(`Error in communication with peer ${address}: ` +
           `${JSON.stringify(error, null, 2)}`);
     });
