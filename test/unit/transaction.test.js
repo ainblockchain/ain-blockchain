@@ -29,14 +29,8 @@ describe('Transaction', () => {
 
     node = new BlockchainNode();
     setNodeForTesting(node);
-    node.db.writeDatabase(
-      [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.STAKING, 'app_a', PredefinedDbPaths.STAKING_BALANCE_TOTAL],
-      1
-    );
-    node.db.writeDatabase(
-      [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.STAKING, 'test', PredefinedDbPaths.STAKING_BALANCE_TOTAL],
-      1
-    );
+    node.db.setValuesForTesting(`/staking/app_a/balance_total`, 1);
+    node.db.setValuesForTesting(`/staking/test/balance_total`, 1);
 
     txBody = {
       operation: {

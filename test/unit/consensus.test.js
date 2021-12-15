@@ -50,7 +50,7 @@ describe("Consensus", () => {
         timestamp
       }
     );
-    expect(node1.db.executeTransaction(voteTx).code).to.equal(10103);
+    expect(node1.db.executeTransaction(voteTx).code).to.equal(12103);
   });
 
   it("Staked nodes can vote", () => {
@@ -110,7 +110,7 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(proposeTx).code).to.equal(10103);
+    expect(node1.db.executeTransaction(proposeTx).code).to.equal(12103);
   });
 
   it('Whitelisted validators must stake within min_stake_for_proposer & max_stake_for_proposer to have the producing rights', () => {
@@ -118,9 +118,7 @@ describe("Consensus", () => {
     const addr = node2.account.address;
     // Bypass whitelist rule check (need owner's private key)
     const tempDb = node1.createTempDb(node1.db.stateVersion, 'CONSENSUS_UNIT_TEST', lastBlock.number);
-    tempDb.writeDatabase(
-        [PredefinedDbPaths.VALUES_ROOT, PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST, addr],
-        true);
+    tempDb.setValuesForTesting(`/consensus/proposer_whitelist/${addr}`, true);
     node1.cloneAndFinalizeVersion(tempDb.stateVersion, -1); // Bypass already existing final state version
     
     // Staking less than min_stake_for_proposer
@@ -151,7 +149,7 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(proposeWithStakeLessThanMin).code).to.equal(10103); // Fails
+    expect(node1.db.executeTransaction(proposeWithStakeLessThanMin).code).to.equal(12103); // Fails
 
     // Staking min_stake_for_proposer
     const stakeEqualMin = getTransaction(node2, {
@@ -211,6 +209,6 @@ describe("Consensus", () => {
         gas_price: 1
       }
     );
-    expect(node1.db.executeTransaction(proposeWithStakeMoreThanMax).code).to.equal(10103); // Fails
+    expect(node1.db.executeTransaction(proposeWithStakeMoreThanMax).code).to.equal(12103); // Fails
   });
 });
