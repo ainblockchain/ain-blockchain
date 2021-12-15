@@ -12,7 +12,6 @@ const {
   StateInfoProperties,
   BlockchainSnapshotProperties,
   ShardingProperties,
-  GenesisSharding,
   StateVersions,
   buildOwnerPermissions,
   BlockchainParams,
@@ -55,7 +54,7 @@ class DB {
     this.stateVersion = stateVersion;
     this.backupStateRoot = null;
     this.backupStateVersion = null;
-    this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
+    this.setShardingPath(BlockchainParams.sharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this);
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
@@ -354,7 +353,7 @@ class DB {
   // For testing purpose only.
   setShardingForTesting(sharding) {
     this.setValuesForTesting(
-        CommonUtil.formatPath([PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG]),
+        CommonUtil.formatPath([PredefinedDbPaths.BLOCKCHAIN_PARAMS, PredefinedDbPaths.BLOCKCHAIN_PARAMS_SHARDING]),
         sharding);
     this.setShardingPath(sharding[ShardingProperties.SHARDING_PATH]);
   }

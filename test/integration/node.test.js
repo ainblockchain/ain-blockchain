@@ -667,7 +667,7 @@ describe('Blockchain Node', () => {
 
     describe('/get_state_proof api', () => {
       it('get_state_proof', () => {
-        const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/values/token/symbol')
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_state_proof?ref=/values/blockchain_params/token/symbol')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['#state_ph']).to.not.equal(null);
@@ -685,7 +685,7 @@ describe('Blockchain Node', () => {
 
     describe('/get_proof_hash api', () => {
       it('get_proof_hash', () => {
-        const body = parseOrLog(syncRequest('GET', server1 + '/get_proof_hash?ref=/values/token/symbol')
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_proof_hash?ref=/values/blockchain_params/token/symbol')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result).to.not.equal(null);
@@ -970,7 +970,7 @@ describe('Blockchain Node', () => {
 
     describe('ain_getStateProof api', () => {
       it('returns correct value', () => {
-        const ref = '/values/token/symbol';
+        const ref = '/values/blockchain_params/token/symbol';
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
         .then(res => {
@@ -990,7 +990,7 @@ describe('Blockchain Node', () => {
 
     describe('ain_getProofHash api', () => {
       it('returns correct value', () => {
-        const ref = '/values/token/symbol';
+        const ref = '/values/blockchain_params/token/symbol';
         const request = { ref, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_getProofHash', request)
         .then(res => {
