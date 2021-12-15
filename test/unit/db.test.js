@@ -650,7 +650,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/upper/path", 'some value'), {
           "bandwidth_gas_amount": 1,
           "code": 12101,
-          "error_message": "Non-empty (1) subtree rules on: /apps/test/test_rule/some/upper/path",
+          "error_message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'",
         });
       })
 
@@ -1380,7 +1380,7 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12101,
-          "error_message": "Non-empty (1) subtree rules on: /apps/test/test_rule/some/upper/path",
+          "error_message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'",
           "matched": "erased",
         });
       })
