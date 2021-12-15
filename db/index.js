@@ -627,8 +627,22 @@ class DB {
       // No matched local path.
       return null;
     }
-    const matched = this.matchOwnerForParsedPath(localPath);
-    return this.checkPermission(matched.closestOwner.config, auth, permission);
+    if (permission === OwnerProperties.WRITE_RULE) {
+      return this.getPermissionForRule(localPath, auth);
+    } else if (permission === OwnerProperties.WRITE_FUNCTION) {
+      return this.getPermissionForFunction(localPath, auth);
+    } else if (permission === OwnerProperties.WRITE_OWNER ||
+        permission === OwnerProperties.BRANCH_OWNER) {
+      return this.getPermissionForOwner(localPath, auth);
+    } else {
+      return {
+        code: TxResultCode.EVAL_OWNER_INVALID_PERMISSION,
+        error_message: `Invalid permission '${permission}' ` +
+            `for local path '${CommonUtil.formatPath(localPath)}' ` +
+            `with auth '${JSON.stringify(auth)}'`,
+        matched,
+      };
+    }
   }
 
   // TODO(platfowner): Add tests for op.fid.
@@ -1718,7 +1732,7 @@ class DB {
     // NOTE(platfowner): Value write operations with non-empty subtree write rules are not allowed.
     if (matchedWriteRules.subtreeRules && matchedWriteRules.subtreeRules.length > 0) {
       return {
-        code: TxResultCode.VALUE_PERMISSION_NON_EMPTY_SUBTREE_RULES,
+        code: TxResultCode.EVAL_RULE_NON_EMPTY_SUBTREE_RULES,
         error_message: `Non-empty (${matchedWriteRules.subtreeRules.length}) subtree rules ` +
             `for value path '${CommonUtil.formatPath(parsedValuePath)}'`,
         matched,
@@ -1733,7 +1747,7 @@ class DB {
             `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
             `timestamp: ${timestamp}\n`);
         return {
-          code: TxResultCode.VALUE_PERMISSION_FALSE_WRITE_RULE_EVAL,
+          code: TxResultCode.EVAL_RULE_FALSE_WRITE_RULE_EVAL,
           error_message: `Write rule evaluated false: [${evalWriteRuleRes.ruleString}] ` +
               `at '${CommonUtil.formatPath(matchedWriteRules.closestRule.path)}' ` +
               `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
@@ -1749,7 +1763,7 @@ class DB {
             `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
             `newValue: ${JSON.stringify(newValue)}\n`);
         return {
-          code: TxResultCode.VALUE_PERMISSION_FALSE_STATE_RULE_EVAL,
+          code: TxResultCode.EVAL_RULE_FALSE_STATE_RULE_EVAL,
           error_message: `State rule evaluated false: [${evalStateRuleRes.ruleString}] ` +
               `at '${CommonUtil.formatPath(matchedStateRules.closestRule.path)}' ` +
               `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
@@ -1763,7 +1777,7 @@ class DB {
           `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
           `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
       return {
-        code: TxResultCode.VALUE_PERMISSION_INTERNAL_ERROR,
+        code: TxResultCode.EVAL_RULE_INTERNAL_ERROR,
         error_message: `Internal error: ${JSON.stringify(err)}`,
         matched,
       };
@@ -1779,7 +1793,7 @@ class DB {
     const matched = this.matchOwnerForParsedPath(parsedRulePath);
     if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
       return {
-        code: TxResultCode.RULE_PERMISSION_NON_EMPTY_SUBTREE_OWNERS,
+        code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_RULE,
         error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
             `for rule path '${CommonUtil.formatPath(parsedRulePath)}'`,
         matched,
@@ -1789,7 +1803,7 @@ class DB {
     const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
     if (!checkRes.checkResult) {
       return {
-        code: TxResultCode.RULE_PERMISSION_FALSE_PERMISSION_CHECK,
+        code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_RULE,
         error_message: `Rule permission checked false: [${checkRes.permissionsString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for rule path '${CommonUtil.formatPath(parsedRulePath)}' ` +
@@ -1809,7 +1823,7 @@ class DB {
     const matched = this.matchOwnerForParsedPath(parsedFuncPath);
     if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
       return {
-        code: TxResultCode.FUNCTION_PERMISSION_NON_EMPTY_SUBTREE_OWNERS,
+        code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_FUNCTION,
         error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
             `for function path '${CommonUtil.formatPath(parsedRulePath)}'`,
         matched,
@@ -1819,7 +1833,7 @@ class DB {
     const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
     if (!checkRes.checkResult) {
       return {
-        code: TxResultCode.FUNCTION_PERMISSION_FALSE_PERMISSION_CHECK,
+        code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_FUNCTION,
         error_message: `Function permission checked false: [${checkRes.permissionsString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for function path '${CommonUtil.formatPath(parsedFuncPath)}' ` +
@@ -1839,7 +1853,7 @@ class DB {
     const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
     if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
       return {
-        code: TxResultCode.OWNER_PERMISSION_NON_EMPTY_SUBTREE_OWNERS,
+        code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_OWNER,
         error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
             `for owner path '${CommonUtil.formatPath(parsedRulePath)}'`,
         matched,
@@ -1850,7 +1864,7 @@ class DB {
     const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
     if (!checkRes.checkResult) {
       return {
-        code: TxResultCode.OWNER_PERMISSION_FALSE_PERMISSION_CHECK,
+        code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_OWNER,
         error_message: `Owner permission checked false: [${checkRes.permissionsString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}' ` +
