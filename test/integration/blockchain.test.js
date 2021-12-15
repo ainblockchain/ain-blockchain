@@ -686,59 +686,66 @@ describe('Blockchain Cluster', () => {
       });
     });
   });
-*/
+  */
 
   describe('Protocol versions', () => {
     it('accepts API calls with correct protoVer', () => {
-      return new Promise((resolve, reject) => {
-        jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-          { number: 0, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }, function (err, response) {
-            if (err) throw err;
-            expect(response.result.result.number).to.equal(0);
-            expect(response.result.protoVer).to.equal(BlockchainConsts.CURRENT_PROTOCOL_VERSION);
-            resolve();
+      return jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
+          { number: 0, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION })
+          .then(res => {
+            expect(res.result.result.number).to.equal(0);
+            expect(res.result.protoVer).to.equal(BlockchainConsts.CURRENT_PROTOCOL_VERSION);
           });
-      });
     });
 
-    it('rejects API calls with incorrect protoVer', async () => {
-      return new Promise((resolve, reject) => {
-        let promises = [];
-        promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            { number: 0, protoVer: 'a.b.c' }));
-        promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            { number: 0, protoVer: '0.01.0' }));
-        promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            { number: 0, protoVer: 'v0.1' }));
-        promises.push(jsonRpcClient.request(JSON_RPC_GET_BLOCK_BY_NUMBER,
-            { number: 0, protoVer: '0.1.0' }));
-        Promise.all(promises).then(res => {
-          expect(res[0].code).to.equal(1);
-          expect(res[0].message).to.equal("Invalid protocol version.");
-          expect(res[1].code).to.equal(1);
-          expect(res[1].message).to.equal("Invalid protocol version.");
-          expect(res[2].code).to.equal(1);
-          expect(res[2].message).to.equal("Incompatible protocol version.");
-          expect(res[3].code).to.equal(1);
-          expect(res[3].message).to.equal("Incompatible protocol version.");
-          resolve();
-        })
-      });
+    it('rejects API calls with invalid protoVer - case 1', () => {
+      return jsonRpcClient.request(
+          JSON_RPC_GET_BLOCK_BY_NUMBER,
+          { number: 0, protoVer: 'a.b.c' })
+          .then(res => {
+            expect(res.code).to.equal(40102);
+            expect(res.message).to.equal("Invalid protocol version.");
+          });
+    });
+
+    it('rejects API calls with invalid protoVer - case 2', () => {
+      return jsonRpcClient.request(
+          JSON_RPC_GET_BLOCK_BY_NUMBER,
+          { number: 0, protoVer: '0.01.0' })
+          .then(res => {
+            expect(res.code).to.equal(40102);
+            expect(res.message).to.equal("Invalid protocol version.");
+          });
+    });
+
+    it('rejects API calls with incompatible protoVer - case 1', () => {
+      return jsonRpcClient.request(
+          JSON_RPC_GET_BLOCK_BY_NUMBER,
+          { number: 0, protoVer: 'v0.1' })
+          .then(res => {
+            expect(res.code).to.equal(40103);
+            expect(res.message).to.equal("Incompatible protocol version.");
+          });
+    });
+
+    it('rejects API calls with incompatible protoVer - case 2', () => {
+      return jsonRpcClient.request(
+          JSON_RPC_GET_BLOCK_BY_NUMBER,
+          { number: 0, protoVer: '0.1.0' })
+          .then(res => {
+            expect(res.code).to.equal(40103);
+            expect(res.message).to.equal("Incompatible protocol version.");
+          });
     });
 
     it('rejects API calls with no protoVer', () => {
-      return new Promise((resolve, reject) => {
-        jsonRpcClient.request(
+      return jsonRpcClient.request(
           JSON_RPC_GET_BLOCK_BY_NUMBER,
-          { number: 0 },
-          function (err, response) {
-            if (err) throw err;
-            expect(response.code).to.equal(1);
-            expect(response.message).to.equal("Protocol version not specified.");
-            resolve();
-          }
-        );
-      });
+          { number: 0 })
+          .then(res => {
+            expect(res.code).to.equal(40101);
+            expect(res.message).to.equal("Protocol version not specified.");
+          });
     });
   });
 });

@@ -1,5 +1,6 @@
 const semver = require('semver');
 const { BlockchainConsts } = require('../common/constants');
+const { DevClientApiResultCode } = require('../common/result-code');
 
 class VersionUtil {
   static isValidProtocolVersion(version) {
@@ -48,7 +49,7 @@ class VersionUtil {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({
-          code: 1,
+          code: DevClientApiResultCode.PROTO_VERSION_NOT_SPECIFIED,
           message: 'Protocol version not specified.',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         })
@@ -57,7 +58,7 @@ class VersionUtil {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({
-          code: 1,
+          code: DevClientApiResultCode.INVALID_PROTO_VERSION,
           message: 'Invalid protocol version.',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         })
@@ -67,7 +68,7 @@ class VersionUtil {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({
-          code: 1,
+          code: DevClientApiResultCode.INCOMPATIBLE_PROTO_VERSION,
           message: 'Incompatible protocol version.',
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         })

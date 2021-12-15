@@ -743,9 +743,9 @@ class P2pServer {
           parentChainEndpoint, shardAppCreateTxBody, shardReporterPrivateKey);
     }
     logger.info(`[${LOG_HEADER}] shard app created`);
-    const shardInitTxBody = P2pServer.buildShardingSetupTxBody();
+    const shardingSetupTxBody = P2pServer.buildShardingSetupTxBody();
     await sendTxAndWaitForFinalization(
-        parentChainEndpoint, shardInitTxBody, shardReporterPrivateKey);
+        parentChainEndpoint, shardingSetupTxBody, shardReporterPrivateKey);
     logger.info(`[${LOG_HEADER}] shard set up success`);
   }
 
@@ -863,10 +863,48 @@ class P2pServer {
         `($block_number === String(${latestBlockNumber} + 1) || newData === ${reportedProofHash})`;
 
     const latestBlockNumberRules = `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`;
+    // NOTE(platfowner): Place SET_VALUE operations in front of SET_RULE operations as it doesn't
+    // allow value write operations with non-empty subtree write rules.
     return {
       operation: {
         type: WriteDbOperations.SET,
         op_list: [
+          {
+            type: WriteDbOperations.SET_VALUE,
+            ref: shardingPath,
+            value: {
+              [PredefinedDbPaths.DOT_SHARD]: {
+                [ShardingProperties.SHARDING_ENABLED]: true,
+                [ShardingProperties.LATEST_BLOCK_NUMBER]: -1
+              }
+            }
+          },
+          {
+            type: WriteDbOperations.SET_VALUE,
+            ref: CommonUtil.formatPath([
+              PredefinedDbPaths.SHARDING,
+              PredefinedDbPaths.SHARDING_SHARD,
+              ainUtil.encode(shardingPath)
+            ]),
+            value: GenesisSharding
+          },
+          {
+            type: WriteDbOperations.SET_FUNCTION,
+            ref: CommonUtil.appendPath(
+                shardingPath,
+                PredefinedDbPaths.DOT_SHARD,
+                ShardingProperties.PROOF_HASH_MAP,
+                '$block_number',
+                ShardingProperties.PROOF_HASH),
+            value: {
+              [PredefinedDbPaths.DOT_FUNCTION]: {
+                [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
+                  [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
+                  [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
+                }
+              }
+            }
+          },
           {
             type: WriteDbOperations.SET_RULE,
             ref: CommonUtil.appendPath(
@@ -908,42 +946,6 @@ class P2pServer {
               }
             }
           },
-          {
-            type: WriteDbOperations.SET_FUNCTION,
-            ref: CommonUtil.appendPath(
-                shardingPath,
-                PredefinedDbPaths.DOT_SHARD,
-                ShardingProperties.PROOF_HASH_MAP,
-                '$block_number',
-                ShardingProperties.PROOF_HASH),
-            value: {
-              [PredefinedDbPaths.DOT_FUNCTION]: {
-                [NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT]: {
-                  [FunctionProperties.FUNCTION_TYPE]: FunctionTypes.NATIVE,
-                  [FunctionProperties.FUNCTION_ID]: NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT
-                }
-              }
-            }
-          },
-          {
-            type: WriteDbOperations.SET_VALUE,
-            ref: shardingPath,
-            value: {
-              [PredefinedDbPaths.DOT_SHARD]: {
-                [ShardingProperties.SHARDING_ENABLED]: true,
-                [ShardingProperties.LATEST_BLOCK_NUMBER]: -1
-              }
-            }
-          },
-          {
-            type: WriteDbOperations.SET_VALUE,
-            ref: CommonUtil.formatPath([
-              PredefinedDbPaths.SHARDING,
-              PredefinedDbPaths.SHARDING_SHARD,
-              ainUtil.encode(shardingPath)
-            ]),
-            value: GenesisSharding
-          }
         ]
       },
       timestamp: Date.now(),
