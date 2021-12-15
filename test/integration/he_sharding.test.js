@@ -353,7 +353,7 @@ describe('HE Sharding', () => {
           .body.toString('utf-8')).result;
         console.log(`        --> Shutting down server[0]...`);
         server1_proc.kill();
-        await waitForNewBlocks(server2, sharding.reporting_period);
+        await waitForNewBlocks(server2, sharding.reporting_period * 3);
         console.log(`        --> Restarting server[0]...`);
         server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
         await waitUntilNodeSyncs(server1);
