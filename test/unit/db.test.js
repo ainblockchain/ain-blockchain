@@ -1003,7 +1003,7 @@ describe("DB operations", () => {
         const functionTreeBefore = node.db.getOwner("/apps/test/test_function/some/path");
         assert.deepEqual(node.db.setFunction(
             "/apps/test/test_function/some/path", { ".function": null }), {
-          "code": 10405,
+          "code": 10403,
           "error_message": "Invalid function tree: /.function",
           "bandwidth_gas_amount": 1
         });
@@ -1435,7 +1435,7 @@ describe("DB operations", () => {
                 }
               }
             }), {
-          "code": 10504,
+          "code": 10503,
           "error_message": "Invalid rule tree: /.rule/write",
           "bandwidth_gas_amount": 1
         });
@@ -1451,7 +1451,7 @@ describe("DB operations", () => {
                 "write": "invalid_top_level_token"
               }
             }), {
-          "code": 10504,
+          "code": 10503,
           "error_message": "Invalid rule tree: /.rule/write",
           "bandwidth_gas_amount": 1
         });
@@ -1805,7 +1805,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path", {
           ".owner": "invalid owners config"
         }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
-          "code": 10604,
+          "code": 10603,
           "error_message": "Invalid owner tree: /.owner",
           "bandwidth_gas_amount": 1
         });
@@ -1816,7 +1816,7 @@ describe("DB operations", () => {
             "owners": "invalid owners config"
           }
         }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
-          "code": 10604,
+          "code": 10603,
           "error_message": "Invalid owner tree: /.owner/owners",
           "bandwidth_gas_amount": 1
         });
