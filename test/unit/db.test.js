@@ -714,7 +714,7 @@ describe("DB operations", () => {
             child2: 2
           }, { addr: 'abcd' },
           null, { extra: { executed_at: 1234567890000 }}), {
-          "error_message": "False eval of state rule [{\"max_children\":1}] at '/apps/test/test_rule/some/path/more/than/max' for value path '/apps/test/test_rule/some/path/more/than/max' with newValue '{\"child1\":1,\"child2\":2}'",
+          "error_message": "State rule evaluated false: [{\"max_children\":1}] at '/apps/test/test_rule/some/path/more/than/max' for value path '/apps/test/test_rule/some/path/more/than/max' with newValue '{\"child1\":1,\"child2\":2}'",
           "code": 12104,
           "bandwidth_gas_amount": 1
         });
@@ -1293,7 +1293,7 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12103,
-          "error_message": "False eval of write rule [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
+          "error_message": "Write rule evaluated false: [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
@@ -1314,7 +1314,7 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/path", 'value', { addr: 'other' }, timestamp)), {
           "code": 12103,
-          "error_message": "False eval of write rule [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
+          "error_message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
@@ -1326,7 +1326,7 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'other' }, timestamp)), {
           "code": 12103,
-          "error_message": "False eval of write rule [auth.addr === 'ijkl'] at '/apps/test/test_rule/some/upper/path/deeper/path' for value path '/apps/test/test_rule/some/upper/path/deeper/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
+          "error_message": "Write rule evaluated false: [auth.addr === 'ijkl'] at '/apps/test/test_rule/some/upper/path/deeper/path' for value path '/apps/test/test_rule/some/upper/path/deeper/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
       })
@@ -1335,7 +1335,7 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12103,
-          "error_message": "False eval of write rule [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path/subpath' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
+          "error_message": "Write rule evaluated false: [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path/subpath' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
@@ -1356,7 +1356,7 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'other' }, timestamp)), {
           "code": 12103,
-          "error_message": "False eval of write rule [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
+          "error_message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
       })
@@ -1371,7 +1371,7 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'other' }, timestamp)), {
           "code": 12103,
-          "error_message": "False eval of write rule [auth.addr === 'abcd'] at '/apps/test/test_rule/some/upper/path' for value path '/apps/test/test_rule/some/upper/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
+          "error_message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/upper/path' for value path '/apps/test/test_rule/some/upper/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
       })
@@ -2499,7 +2499,7 @@ describe("DB operations", () => {
                             "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                             "result": {
                               "code": 12103,
-                              "error_message": "False eval of write rule [auth.fid !== '_eraseValue'] at '/apps/test/test_function_triggering/allowed_path/.last_tx/value' for value path '/apps/test/test_function_triggering/allowed_path/.last_tx/value' with path vars '{}', data '{\"tx_hash\":\"0xa67134a3d4d525a35681801f6ccaad4ba3e4a7c75a2568aea84cf514c932d39f\"}', newData '\"erased\"', auth '{\"addr\":\"abcd\",\"fid\":\"_eraseValue\",\"fids\":[\"_saveLastTx\",\"_eraseValue\"]}', timestamp '1234567890000'",
+                              "error_message": "Write rule evaluated false: [auth.fid !== '_eraseValue'] at '/apps/test/test_function_triggering/allowed_path/.last_tx/value' for value path '/apps/test/test_function_triggering/allowed_path/.last_tx/value' with path vars '{}', data '{\"tx_hash\":\"0xa67134a3d4d525a35681801f6ccaad4ba3e4a7c75a2568aea84cf514c932d39f\"}', newData '\"erased\"', auth '{\"addr\":\"abcd\",\"fid\":\"_eraseValue\",\"fids\":[\"_saveLastTx\",\"_eraseValue\"]}', timestamp '1234567890000'",
                               "bandwidth_gas_amount": 1
                             }
                           }
@@ -2932,7 +2932,7 @@ describe("DB operations", () => {
                                 "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                                 "result": {
                                   "code": 12103,
-                                  "error_message": "False eval of write rule [auth.fid !== '_eraseValue'] at '/apps/test/test_function_triggering/allowed_path/.last_tx/value' for value path '/apps/test/test_function_triggering/allowed_path/.last_tx/value' with path vars '{}', data '{\"tx_hash\":\"0xce0ed4ea7f36c493ad1d73e769c00e30812efa55214309c3dfdc3a8463bd7e7d\"}', newData '\"erased\"', auth '{\"addr\":\"abcd\",\"fid\":\"_eraseValue\",\"fids\":[\"_saveLastTx\",\"_eraseValue\"]}', timestamp '1234567890000'",
+                                  "error_message": "Write rule evaluated false: [auth.fid !== '_eraseValue'] at '/apps/test/test_function_triggering/allowed_path/.last_tx/value' for value path '/apps/test/test_function_triggering/allowed_path/.last_tx/value' with path vars '{}', data '{\"tx_hash\":\"0xce0ed4ea7f36c493ad1d73e769c00e30812efa55214309c3dfdc3a8463bd7e7d\"}', newData '\"erased\"', auth '{\"addr\":\"abcd\",\"fid\":\"_eraseValue\",\"fids\":[\"_saveLastTx\",\"_eraseValue\"]}', timestamp '1234567890000'",
                                   "bandwidth_gas_amount": 1,
                                 }
                               }
@@ -3570,7 +3570,7 @@ describe("DB rule config", () => {
     assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/balance`, -1, null, null)), {
       "code": 12103,
-      "error_message": "False eval of write rule [typeof newData === 'number' && newData >= 0] at '/apps/test/users/$uid/balance' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data '50', newData '-1', auth 'null', timestamp 'null'",
+      "error_message": "Write rule evaluated false: [typeof newData === 'number' && newData >= 0] at '/apps/test/users/$uid/balance' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data '50', newData '-1', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
@@ -3591,7 +3591,7 @@ describe("DB rule config", () => {
     assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/info`, "something else", null, null)), {
       "code": 12103,
-      "error_message": "False eval of write rule [data !== null] at '/apps/test/users/$uid/info' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/info' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data 'null', newData '\"something else\"', auth 'null', timestamp 'null'",
+      "error_message": "Write rule evaluated false: [data !== null] at '/apps/test/users/$uid/info' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/info' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data 'null', newData '\"something else\"', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
@@ -3615,7 +3615,7 @@ describe("DB rule config", () => {
         `/apps/test/users/${node2.account.address}/child/grandson`, "something",
         { addr: node1.account.address }, null)), {
       "code": 12103,
-      "error_message": "False eval of write rule [auth.addr === $uid] at '/apps/test/users/$uid' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/child/grandson' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data 'null', newData '\"something\"', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', timestamp 'null'",
+      "error_message": "Write rule evaluated false: [auth.addr === $uid] at '/apps/test/users/$uid' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/child/grandson' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data 'null', newData '\"something\"', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', timestamp 'null'",
       "matched": "erased",
     });
   })
@@ -3630,7 +3630,7 @@ describe("DB rule config", () => {
     assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/balance_info`, "something", null, null)), {
       "code": 12103,
-      "error_message": "False eval of write rule [getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null] at '/apps/test/users/$uid/balance_info' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance_info' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '\"something\"', auth 'null', timestamp 'null'",
+      "error_message": "Write rule evaluated false: [getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null] at '/apps/test/users/$uid/balance_info' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance_info' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '\"something\"', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
   })
@@ -3645,7 +3645,7 @@ describe("DB rule config", () => {
     assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/next_counter`, 12, null, null)), {
       "code": 12103,
-      "error_message": "False eval of write rule [typeof newData === 'number' && newData === data + 1] at '/apps/test/users/$uid/next_counter' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data '10', newData '12', auth 'null', timestamp 'null'",
+      "error_message": "Write rule evaluated false: [typeof newData === 'number' && newData === data + 1] at '/apps/test/users/$uid/next_counter' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data '10', newData '12', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
   })
@@ -3662,7 +3662,7 @@ describe("DB rule config", () => {
         `/apps/test/second_users/${node1.account.address}/next_counter`,
         "some other value", null, null)), {
       "code": 12103,
-      "error_message": "False eval of write rule [$wcard1 == $wcard2] at '/apps/test/second_users/$wcard1/$wcard2' for value path '/apps/test/second_users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter' with path vars '{\"$wcard2\":\"next_counter\",\"$wcard1\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '\"some other value\"', auth 'null', timestamp 'null'",
+      "error_message": "Write rule evaluated false: [$wcard1 == $wcard2] at '/apps/test/second_users/$wcard1/$wcard2' for value path '/apps/test/second_users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter' with path vars '{\"$wcard2\":\"next_counter\",\"$wcard1\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '\"some other value\"', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
   })

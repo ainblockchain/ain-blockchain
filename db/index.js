@@ -1703,7 +1703,6 @@ class DB {
     return newValue;
   }
 
-  // TODO(platfowner): Eval subtree rules.
   getPermissionForValue(parsedValuePath, newValue, auth, timestamp) {
     const LOG_HEADER = 'getPermissionForValue';
     // Evaluate write rules and return matched configs
@@ -1733,7 +1732,7 @@ class DB {
             `timestamp: ${timestamp}\n`);
         return {
           code: TxResultCode.VALUE_PERMISSION_FALSE_WRITE_RULE_EVAL,
-          error_message: `False eval of write rule [${evalWriteRuleRes.ruleString}] ` +
+          error_message: `Write rule evaluated false: [${evalWriteRuleRes.ruleString}] ` +
               `at '${CommonUtil.formatPath(matchedWriteRules.closestRule.path)}' ` +
               `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
               `with path vars '${JSON.stringify(matchedWriteRules.pathVars)}', ` +
@@ -1749,7 +1748,7 @@ class DB {
             `newValue: ${JSON.stringify(newValue)}\n`);
         return {
           code: TxResultCode.VALUE_PERMISSION_FALSE_STATE_RULE_EVAL,
-          error_message: `False eval of state rule [${evalStateRuleRes.ruleString}] ` +
+          error_message: `State rule evaluated false: [${evalStateRuleRes.ruleString}] ` +
               `at '${CommonUtil.formatPath(matchedStateRules.closestRule.path)}' ` +
               `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
               `with newValue '${JSON.stringify(newValue)}'`,
