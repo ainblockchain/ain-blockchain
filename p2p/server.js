@@ -863,6 +863,8 @@ class P2pServer {
         `($block_number === String(${latestBlockNumber} + 1) || newData === ${reportedProofHash})`;
 
     const latestBlockNumberRules = `auth.fid === '${NativeFunctionIds.UPDATE_LATEST_SHARD_REPORT}'`;
+    // NOTE(platfowner): Place SET_VALUE operations in front of SET_RULE operations as it doesn't
+    // allow value write operations with non-empty subtree write rules.
     return {
       operation: {
         type: WriteDbOperations.SET,

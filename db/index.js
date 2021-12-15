@@ -1712,11 +1712,12 @@ class DB {
         this.addPathToValue(value, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
     const newData =
         this.addPathToValue(newValue, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
+    // NOTE(platfowner): Value write operations with non-empty subtree write rules are not allowed.
     if (matchedWriteRules.subtreeRules && matchedWriteRules.subtreeRules.length > 0) {
       return {
         code: TxResultCode.VALUE_PERMISSION_NON_EMPTY_SUBTREE_RULES,
-        error_message: `Non-empty (${matchedWriteRules.subtreeRules.length}) subtree rules on: ` +
-            `${CommonUtil.formatPath(parsedValuePath)}`,
+        error_message: `Non-empty (${matchedWriteRules.subtreeRules.length}) subtree rules ` +
+            `for value path '${CommonUtil.formatPath(parsedValuePath)}'`,
         matched,
       };
     }
