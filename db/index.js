@@ -763,7 +763,7 @@ class DB {
           unitWriteGasLimit);
     }
     const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, timestamp);
-    if (ruleEvalRes.code > 0) {
+    if (CommonUtil.isFailedFuncResultCode(ruleEvalRes.code)) {
       return CommonUtil.returnTxResult(
           ruleEvalRes.code,
           ruleEvalRes.error_message,
@@ -1774,24 +1774,69 @@ class DB {
 
   getPermissionForRule(parsedRulePath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedRulePath);
-    return this.checkPermission(matched.closestOwner.config, auth, OwnerProperties.WRITE_RULE);
+    const permission = OwnerProperties.WRITE_RULE;
+    const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
+    if (!checkRes.checkResult) {
+      return {
+        code: TxResultCode.RULE_PERMISSION_FALSE_PERMISSION_CHECK,
+        error_message: `Rule permission checked false: [${checkRes.permissionsString}] ` +
+            `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
+            `for rule path '${CommonUtil.formatPath(parsedRulePath)}' ` +
+            `with permission '${permission}', ` +
+            `auth '${JSON.stringify(auth)}'`,
+        matched,
+      };
+    }
+    return {
+      code: TxResultCode.SUCCESS,
+      error_message: '',
+      matched,
+    };
   }
 
   getPermissionForFunction(parsedFuncPath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedFuncPath);
-    return this.checkPermission(
-        matched.closestOwner.config, auth, OwnerProperties.WRITE_FUNCTION);
+    const permission = OwnerProperties.WRITE_FUNCTION;
+    const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
+    if (!checkRes.checkResult) {
+      return {
+        code: TxResultCode.FUNCTION_PERMISSION_FALSE_PERMISSION_CHECK,
+        error_message: `Function permission checked false: [${checkRes.permissionsString}] ` +
+            `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
+            `for function path '${CommonUtil.formatPath(parsedFuncPath)}' ` +
+            `with permission '${permission}', ` +
+            `auth '${JSON.stringify(auth)}'`,
+        matched,
+      };
+    }
+    return {
+      code: TxResultCode.SUCCESS,
+      error_message: '',
+      matched,
+    };
   }
 
   getPermissionForOwner(parsedOwnerPath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
-    if (matched.closestOwner.path.length === parsedOwnerPath.length) {
-      return this.checkPermission(
-          matched.closestOwner.config, auth, OwnerProperties.WRITE_OWNER);
-    } else {
-      return this.checkPermission(
-          matched.closestOwner.config, auth, OwnerProperties.BRANCH_OWNER);
+    const permission = matched.closestOwner.path.length === parsedOwnerPath.length ?
+        OwnerProperties.WRITE_OWNER : OwnerProperties.BRANCH_OWNER;
+    const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
+    if (!checkRes.checkResult) {
+      return {
+        code: TxResultCode.OWNER_PERMISSION_FALSE_PERMISSION_CHECK,
+        error_message: `Owner permission checked false: [${checkRes.permissionsString}] ` +
+            `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
+            `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}' ` +
+            `with permission '${permission}', ` +
+            `auth '${JSON.stringify(auth)}'`,
+        matched,
+      };
     }
+    return {
+      code: TxResultCode.SUCCESS,
+      error_message: '',
+      matched,
+    };
   }
 
   static getVariableLabel(node) {
@@ -2142,21 +2187,15 @@ class DB {
     if (CommonUtil.isEmpty(stateRuleObj) ||
         !stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
       return {
-        ruleString: '',
+        ruleString: JSON.stringify(stateRuleObj),
         evalResult: true,
       };
     }
     const maxChildren = stateRuleObj[RuleProperties.MAX_CHILDREN];
     const maxChildrenEvalResult = Object.keys(newValue).length <= maxChildren;
-    if (!maxChildrenEvalResult) {
-      return {
-        ruleString: JSON.stringify(stateRuleObj),
-        evalResult: maxChildrenEvalResult,
-      };
-    }
     return {
-      ruleString: '',
-      evalResult: true,
+      ruleString: JSON.stringify(stateRuleObj),
+      evalResult: maxChildrenEvalResult,
     };
   }
 
@@ -2289,8 +2328,12 @@ class DB {
   }
 
   checkPermission(config, auth, permission) {
-    const permissions = this.getOwnerPermissions(config, auth);
-    return !!(permissions && permissions[permission] === true);
+    const permissionsObj = this.getOwnerPermissions(config, auth);
+    const checkResult = !!(permissionsObj && permissionsObj[permission] === true);
+    return {
+      permissionsString: JSON.stringify(permissionsObj),
+      checkResult,
+    };
   }
 }
 
