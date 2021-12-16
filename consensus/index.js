@@ -1153,27 +1153,34 @@ class Consensus {
       if (stake) {
         if (proposerWhitelist[address] === true) {
           if (stake >= minStakeForProposer && stake <= maxStakeForProposer) {
-            validators[address] = {
-              [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
-              [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
-            };
+            candidates.push({
+              address,
+              stake,
+              expireAt: _.get(stakeInfo, `0.${PredefinedDbPaths.STAKING_EXPIRE_AT}`, 0),
+              proposal_right: true,
+            });
           }
         } else {
           candidates.push({
             address,
             stake,
-            expireAt: _.get(stakeInfo, `0.${PredefinedDbPaths.STAKING_EXPIRE_AT}`, 0)
+            expireAt: _.get(stakeInfo, `0.${PredefinedDbPaths.STAKING_EXPIRE_AT}`, 0),
+            proposal_right: false,
           });
         }
       }
     }
     // NOTE(liayoo): tie-breaking by addresses as a temporary solution.
-    candidates = _.orderBy(candidates, ['stake', 'expireAt', 'address'], ['desc', 'desc', 'asc']);
+    candidates = _.orderBy(
+      candidates,
+      ['proposal_right', 'stake', 'expireAt', 'address'],
+      ['desc', 'desc', 'desc', 'asc']
+    );
     for (const candidate of candidates) {
       if (Object.keys(validators).length < maxNumValidators) {
         validators[candidate.address] = {
           [PredefinedDbPaths.CONSENSUS_STAKE]: candidate.stake,
-          [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: false
+          [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: candidate.proposal_right,
         };
       } else {
         break;
