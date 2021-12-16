@@ -473,15 +473,20 @@ class BlockPool {
   }
 
   cleanUpForBlockHash(blockHash) {
-    const block = _get(this.hashToBlockInfo[blockHash], 'block');
-    const invalidBlock = _get(this.hashToInvalidBlockInfo[blockHash], 'block');
-    const againstVotes = _get(this.hashToInvalidBlockInfo[blockHash], 'votes');
-    if (block) {
-      this.node.tp.cleanUpConsensusTxsForBlock(block);
+    const block = _get(this.hashToBlockInfo[blockHash], 'block', null);
+    const blockProposal = _get(this.hashToBlockInfo[blockHash], 'proposal', null);
+    const blockConsensusTxs = _get(this.hashToBlockInfo[blockHash], 'votes', []);
+    if (blockProposal) {
+      blockConsensusTxs.push(blockProposal);
     }
-    if (invalidBlock) {
-      this.node.tp.cleanUpConsensusTxsForBlock(invalidBlock, againstVotes);
+    const invalidBlock = _get(this.hashToInvalidBlockInfo[blockHash], 'block', null);
+    const invalidBlockProposal = _get(this.hashToInvalidBlockInfo[blockHash], 'proposal', null);
+    const invalidBlockConsensusTxs = _get(this.hashToInvalidBlockInfo[blockHash], 'votes', []);
+    if (invalidBlockProposal) {
+      invalidBlockConsensusTxs.push(invalidBlockProposal);
     }
+    this.node.tp.cleanUpConsensusTxs(block, blockConsensusTxs);
+    this.node.tp.cleanUpConsensusTxs(invalidBlock, invalidBlockConsensusTxs);
     delete this.hashToBlockInfo[blockHash];
     delete this.hashToInvalidBlockInfo[blockHash];
     delete this.hashToNextBlockSet[blockHash];
