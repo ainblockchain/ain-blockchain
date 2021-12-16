@@ -501,12 +501,13 @@ class BlockPool {
   cleanUpAfterFinalization(lastBlock, recordedInvalidBlocks) {
     const targetNumber = lastBlock.number;
     for (const blockNumber of Object.keys(this.numberToBlockSet)) {
-      if (blockNumber < targetNumber) {
+      const number = Number(blockNumber);
+      if (number < targetNumber) {
         const blockHashList = this.numberToBlockSet[blockNumber];
         for (const blockHash of blockHashList) {
           if (this.hashToInvalidBlockInfo[blockHash]) {
             if (recordedInvalidBlocks.has(blockHash) ||
-                blockNumber < targetNumber - ConsensusConsts.MAX_INVALID_BLOCKS_ON_MEM) {
+                number < targetNumber - ConsensusConsts.MAX_INVALID_BLOCKS_ON_MEM) {
               this.cleanUpForBlockHash(blockHash);
               this.numberToBlockSet[blockNumber].delete(blockHash);
             }
@@ -521,7 +522,7 @@ class BlockPool {
       }
     }
     for (const epoch of Object.keys(this.epochToBlock)) {
-      if (epoch < lastBlock.epoch) {
+      if (Number(epoch) < lastBlock.epoch) {
         const blockHash = this.epochToBlock[epoch];
         this.cleanUpForBlockHash(blockHash);
         delete this.epochToBlock[epoch];
