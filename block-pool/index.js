@@ -361,9 +361,11 @@ class BlockPool {
   addSeenVote(voteTx) {
     const LOG_HEADER = 'addSeenVote';
     const blockHash = ConsensusUtil.getBlockHashFromConsensusTx(voteTx);
+    const blockNumber = ConsensusUtil.getBlockNumberFromConsensusTx(voteTx);
     const stake = ConsensusUtil.getStakeFromVoteTx(voteTx);
     logger.debug(`[${LOG_HEADER}] voteTx: ${JSON.stringify(voteTx, null, 2)}, ` +
-        `blockHash: ${blockHash}, stake: ${stake}`);
+        `blockHash: ${blockHash}, blockNumber: ${blockNumber}, stake: ${stake}`);
+    this.addToNumberToBlockSet({ number: blockNumber, hash: blockHash });
     if (ConsensusUtil.isProposalTx(voteTx)) {
       this.addProposal(voteTx, blockHash);
     } else if (ConsensusUtil.isAgainstVoteTx(voteTx)) {
