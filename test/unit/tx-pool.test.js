@@ -664,7 +664,7 @@ describe('TransactionPool', () => {
       assert.deepEqual(newTransactions, node.tp.transactions);
     });
 
-    it('cleanUpConsensusTxsForBlock()', async () => {
+    it('cleanUpConsensusTxs()', async () => {
       const lastBlock = node.bc.genesisBlock;
       const transactions = node.tp.getValidTransactions();
       const lastVotes = [];
@@ -725,7 +725,7 @@ describe('TransactionPool', () => {
       const block = Block.create(
           lastBlock.hash, lastVotes, evidence, transactions, receipts, 1, lastBlock.epoch + 1, '',
           node.account.address, {}, 0, 0);
-      node.tp.cleanUpConsensusTxsForBlock(block);
+      node.tp.cleanUpConsensusTxs(block);
       for (const tx of [...lastVotes, evidenceTx, invalidProposal]) {
         if (node.tp.transactions[tx.address]) {
           expect(node.tp.transactions[tx.address].includes(tx)).to.equal(false);
