@@ -232,16 +232,10 @@ class PathUtil {
         tokenId, address, checkoutId]);
   }
 
-  static getCheckoutHistoryDataPath(networkName, chainId, tokenId, address, checkoutId) {
-    return CommonUtil.appendPath(
-        PathUtil.getCheckoutHistoryPath(networkName, chainId, tokenId, address, checkoutId),
-        PredefinedDbPaths.CHECKOUT_HISTORY_DATA);
-  }
-
-  static getCheckoutHistoryRefundPath(networkName, chainId, tokenId, address, checkoutId) {
-    return CommonUtil.appendPath(
-        PathUtil.getCheckoutHistoryPath(networkName, chainId, tokenId, address, checkoutId),
-        PredefinedDbPaths.CHECKOUT_HISTORY_REFUND);
+  static getCheckoutHistoryRefundsPath(networkName, chainId, tokenId, address, checkoutId) {
+    return CommonUtil.formatPath([
+      PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_REFUNDS, networkName, chainId,
+      tokenId, address, checkoutId]);
   }
 
   static getCheckoutPendingAmountTotalPath() {
