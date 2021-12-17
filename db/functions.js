@@ -1258,7 +1258,7 @@ class Functions {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }
       const setRefundRes = this.setValueOrLog(
-          PathUtil.getCheckoutHistoryRefundsPath(networkName, chainId, tokenId, user, checkoutId),
+          PathUtil.getCheckoutRefundPath(networkName, chainId, tokenId, user, checkoutId),
           PathUtil.getTransferPath(tokenPool, user, context.timestamp), context);
       if (CommonUtil.isFailedTx(setRefundRes)) {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
