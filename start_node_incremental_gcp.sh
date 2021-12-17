@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic|--private-key] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_incremental_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
     printf "\n"
     exit
@@ -16,16 +16,22 @@ function parse_options() {
         FULL_SYNC_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
             exit
         fi
-        ACCOUNT_INJECTION_OPTION="$option"
+        ACCOUNT_INJECTION_OPTION="keystore"
     elif [[ $option = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
             exit
         fi
-        ACCOUNT_INJECTION_OPTION="$option"
+        ACCOUNT_INJECTION_OPTION="mnemonic"
+    elif [[ $option = '--private-key' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            printf "Multiple account injection options given\n"
+            return 1
+        fi
+        ACCOUNT_INJECTION_OPTION="private_key"
     elif [[ $option = '--rest-func' ]]; then
         REST_FUNC_OPTION="$option"
     elif [[ $option = '--json-rpc' ]]; then
@@ -218,6 +224,12 @@ else
   export ENABLE_REST_FUNCTION_CALL=false
 fi
 
+# NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
+if [[ $ACCOUNT_INJECTION_OPTION != "private_key" ]] && [[ "$SHARD_INDEX" -gt 0 ]]; then
+    printf 'Invalid account injection option\n'
+    exit
+fi
+
 # 2. Get currently used directory & new directory
 printf "\n#### [Step 2] Get currently used directory & new directory ####\n\n"
 
@@ -277,12 +289,7 @@ fi
 # 6. Start a new node server
 printf "\n#### [Step 6] Start new node server ####\n\n"
 
-# NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
-if [[ $ACCOUNT_INJECTION_OPTION = "" ]] || [[ "$SHARD_INDEX" -gt 0 ]]; then
-    export ACCOUNT_INDEX="$NODE_INDEX"
-    printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
-    COMMAND_PREFIX=""
-elif [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
+if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
     if [[ $NODE_INDEX = 0 ]]; then
         KEYSTORE_FILENAME="keystore_node_0.json"
     elif [[ $NODE_INDEX = 1 ]]; then
