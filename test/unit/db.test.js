@@ -670,7 +670,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/upper/path", 'some value'), {
           "bandwidth_gas_amount": 1,
           "code": 12101,
-          "error_message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'",
+          "error_message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'': [\"/deeper/path\"]",
         });
       })
 
@@ -1061,7 +1061,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setFunction(
             "/apps/test/test_owner/some/upper/path", functionConfig), {
           "code": 12401,
-          "error_message": "Non-empty (1) subtree owners for function path '/apps/test/test_owner/some/upper/path'",
+          "error_message": "Non-empty (1) subtree owners for function path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
           "bandwidth_gas_amount": 1,
         });
       })
@@ -1419,7 +1419,7 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12101,
-          "error_message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'",
+          "error_message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'': [\"/deeper/path\"]",
           "matched": "erased",
         });
       })
@@ -1558,7 +1558,7 @@ describe("DB operations", () => {
               }
             }), {
           "code": 12301,
-          "error_message": "Non-empty (1) subtree owners for rule path '/apps/test/test_owner/some/upper/path'",
+          "error_message": "Non-empty (1) subtree owners for rule path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
           "bandwidth_gas_amount": 1,
         });
       })
@@ -1943,28 +1943,28 @@ describe("DB operations", () => {
             "/apps/test/test_owner/some/upper/path", 'write_rule',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 12301,
-          "error_message": "Non-empty (1) subtree owners for rule path '/apps/test/test_owner/some/upper/path'",
+          "error_message": "Non-empty (1) subtree owners for rule path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path", 'write_function',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 12401,
-          "error_message": "Non-empty (1) subtree owners for function path '/apps/test/test_owner/some/upper/path'",
+          "error_message": "Non-empty (1) subtree owners for function path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path", 'write_owner',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 12501,
-          "error_message": "Non-empty (1) subtree owners for owner path '/apps/test/test_owner/some/upper/path'",
+          "error_message": "Non-empty (1) subtree owners for owner path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path", 'branch_owner',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 12501,
-          "error_message": "Non-empty (1) subtree owners for owner path '/apps/test/test_owner/some/upper/path'",
+          "error_message": "Non-empty (1) subtree owners for owner path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
           "matched": "erased",
         });
       })
@@ -2080,7 +2080,7 @@ describe("DB operations", () => {
             "/apps/test/test_owner/some/upper/path", ownerTree,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
           "code": 12501,
-          "error_message": "Non-empty (1) subtree owners for owner path '/apps/test/test_owner/some/upper/path'",
+          "error_message": "Non-empty (1) subtree owners for owner path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
           "bandwidth_gas_amount": 1
         });
       })

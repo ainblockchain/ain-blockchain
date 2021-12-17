@@ -773,7 +773,8 @@ describe('Sharding', () => {
                 }
               },
               "path": "/apps/test/test_owner/some/path"
-            }
+            },
+            "subtree_configs": []
           }});
         })
 
@@ -798,7 +799,8 @@ describe('Sharding', () => {
                 }
               },
               "path": "/apps/afan/apps/test/test_owner/some/path"
-            }
+            },
+            "subtree_configs": []
           }});
         })
       })
@@ -1447,7 +1449,8 @@ describe('Sharding', () => {
                   }
                 },
                 "path": "/apps/test/test_owner/some/path"
-              }
+              },
+              "subtree_configs": []
             });
           })
         })
@@ -1473,7 +1476,8 @@ describe('Sharding', () => {
                   }
                 },
                 "path": "/apps/afan/apps/test/test_owner/some/path"
-              }
+              },
+              "subtree_configs": []
             });
           })
         })
