@@ -3544,10 +3544,11 @@ describe('Native Function', () => {
     describe('Checkout: _openCheckout, _closeCheckout', () => {
       const client = jayson.client.http(server1 + '/json-rpc');
       const networkName = 'ETH';
-      const chainId = '3';
+      const chainId = 3;
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkoutRequestBasePath = `/checkout/requests/${networkName}/${chainId}/${tokenId}`;
       const checkoutHistoryBasePath = `/checkout/history/${networkName}/${chainId}/${tokenId}`;
+      const checkoutRefundsBasePath = `/checkout/refunds/${networkName}/${chainId}/${tokenId}`;
       const tokenBridgeConfig = BlockchainParams.token.bridge[networkName][chainId][tokenId];
       const {
         token_pool: tokenPoolAddr,
@@ -3876,7 +3877,7 @@ describe('Native Function', () => {
 
       it('cannot close checkout with a non-authorized address', async () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkoutHistoryBasePath}/${serviceUser}/0/data`,
+          ref: `${checkoutHistoryBasePath}/${serviceUser}/0`,
           value: {
             request: {
               amount: checkoutAmount,
@@ -3893,7 +3894,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutHistory = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/0/data`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
         expect(checkoutHistory).to.equal(null);
       });
 
@@ -3901,7 +3902,7 @@ describe('Native Function', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `${checkoutHistoryBasePath}/${serviceUser}/0/data`,
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/0`,
             value: {
               request: {
                 amount: checkoutAmount,
@@ -4046,7 +4047,7 @@ describe('Native Function', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `${checkoutHistoryBasePath}/${serviceUser}/1/data`,
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/1`,
             value: {
               request: {
                 amount: checkoutAmount,
@@ -4111,7 +4112,7 @@ describe('Native Function', () => {
                   }
                 },
                 "1": {
-                  "path": "/checkout/history/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1/refund",
+                  "path": "/checkout/refunds/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
@@ -4163,7 +4164,7 @@ describe('Native Function', () => {
           "gas_cost_total": 0
         });
         const refund = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/1/refund`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutRefundsBasePath}/${serviceUser}/1`).body.toString('utf-8')).result;
         assert.deepEqual(refund,
             '/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548');
         const refundTransfer = parseOrLog(syncRequest('GET',
@@ -4199,7 +4200,7 @@ describe('Native Function', () => {
     describe('Checkin: _openCheckin, _cancelCheckin, _closeCheckin', () => {
       const client = jayson.client.http(server1 + '/json-rpc');
       const networkName = 'ETH';
-      const chainId = '3';
+      const chainId = 3;
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkinRequestBasePath = `/checkin/requests/${networkName}/${chainId}/${tokenId}`;
       const checkinHistoryBasePath = `/checkin/history/${networkName}/${chainId}/${tokenId}`;
