@@ -66,12 +66,10 @@
           "$token_id": {
             "$user_addr": {
               "$checkout_id": {
-                "data": {
-                  ".function": {
-                    "_closeCheckout": {
-                      "function_type": "NATIVE",
-                      "function_id": "_closeCheckout"
-                    }
+                ".function": {
+                  "_closeCheckout": {
+                    "function_type": "NATIVE",
+                    "function_id": "_closeCheckout"
                   }
                 }
               }
