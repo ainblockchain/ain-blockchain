@@ -80,26 +80,26 @@ printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
 if [[ $SEASON = "staging" ]]; then
-  # for performance test pipeline
-  export ENABLE_EXPRESS_RATE_LIMIT=false
+    # for performance test pipeline
+    export ENABLE_EXPRESS_RATE_LIMIT=false
 else
-  export ENABLE_EXPRESS_RATE_LIMIT=true
+    export ENABLE_EXPRESS_RATE_LIMIT=true
 fi
 if [[ $FULL_SYNC_OPTION = "" ]]; then
-  export SYNC_MODE=fast
+    export SYNC_MODE=fast
 else
-  export SYNC_MODE=full
+    export SYNC_MODE=full
 fi
 export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
 if [[ $JSON_RPC_OPTION ]]; then
-  export ENABLE_JSON_RPC_TX_API=true
+    export ENABLE_JSON_RPC_TX_API=true
 else
-  export ENABLE_JSON_RPC_TX_API=false
+    export ENABLE_JSON_RPC_TX_API=false
 fi
 if [[ $REST_FUNC_OPTION ]]; then
-  export ENABLE_REST_FUNCTION_CALL=true
+    export ENABLE_REST_FUNCTION_CALL=true
 else
-  export ENABLE_REST_FUNCTION_CALL=false
+    export ENABLE_REST_FUNCTION_CALL=false
 fi
 
 printf '\n'
@@ -137,68 +137,83 @@ if [[ $SEASON = 'spring' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
     export PEER_CANDIDATE_JSON_RPC_URL="http://35.221.184.48:8080/json-rpc"
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_WHITELIST="0x000AF024FEDb636294867bEff390bCE6ef9C5fc4,0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d,0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211,0x003AD6FdB06684175e7D95EcC36758B014517E4b,0x004A2550661c8a306207C9dabb279d5701fFD66e,0x005A3c55EcE1A593b761D408B6E6BC778E0a638B,0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe"
+    fi
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ $SEASON = 'summer' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.172.106:8080/json-rpc
     export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.169.78:8080/json-rpc"
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_WHITELIST="0x000AF024FEDb636294867bEff390bCE6ef9C5fc4,0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d,0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211,0x003AD6FdB06684175e7D95EcC36758B014517E4b,0x004A2550661c8a306207C9dabb279d5701fFD66e,0x005A3c55EcE1A593b761D408B6E6BC778E0a638B,0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe"
+    fi
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$SEASON" = "sandbox" ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
     export PEER_CANDIDATE_JSON_RPC_URL="http://130.211.244.169:8080/json-rpc"
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_WHITELIST="0x00ADEc28B6a845a085e03591bE7550dd68673C1C,0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204,0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00,0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A,0x04A456C92A880cd59D7145C457475515a6f6E0f2,0x05A1247A7400f0C2A893611adD1505743552c631,0x06AD9C8F611f1e9d9CACD4738167A51aA2e80a1A"
+    fi
 elif [[ $SEASON = 'staging' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging
     export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.139.219:8080/json-rpc"
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_WHITELIST="0x00ADEc28B6a845a085e03591bE7550dd68673C1C,0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204,0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00,0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A,0x04A456C92A880cd59D7145C457475515a6f6E0f2,0x05A1247A7400f0C2A893611adD1505743552c631,0x06AD9C8F611f1e9d9CACD4738167A51aA2e80a1A"
+    fi
 elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
     if [[ $SHARD_INDEX = 0 ]]; then
-      export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.235.180:8080/json-rpc"
+        export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.235.180:8080/json-rpc"
+        if [[ $NODE_INDEX -lt 5 ]]; then
+            export PEER_WHITELIST="0x00ADEc28B6a845a085e03591bE7550dd68673C1C,0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204,0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00,0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A,0x04A456C92A880cd59D7145C457475515a6f6E0f2,0x05A1247A7400f0C2A893611adD1505743552c631,0x06AD9C8F611f1e9d9CACD4738167A51aA2e80a1A"
+        fi
     elif [[ $SHARD_INDEX = 1 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.187.153.22:8080/json-rpc  # dev-shard-1-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.187.153.22:8080/json-rpc  # dev-shard-1-tracker-ip
     elif [[ $SHARD_INDEX = 2 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.203.104:8080/json-rpc  # dev-shard-2-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.203.104:8080/json-rpc  # dev-shard-2-tracker-ip
     elif [[ $SHARD_INDEX = 3 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.189.174.17:8080/json-rpc  # dev-shard-3-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.189.174.17:8080/json-rpc  # dev-shard-3-tracker-ip
     elif [[ $SHARD_INDEX = 4 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.164.158:8080/json-rpc  # dev-shard-4-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.164.158:8080/json-rpc  # dev-shard-4-tracker-ip
     elif [[ $SHARD_INDEX = 5 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.46.65:8080/json-rpc  # dev-shard-5-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.46.65:8080/json-rpc  # dev-shard-5-tracker-ip
     elif [[ $SHARD_INDEX = 6 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.210.171:8080/json-rpc  # dev-shard-6-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.210.171:8080/json-rpc  # dev-shard-6-tracker-ip
     elif [[ $SHARD_INDEX = 7 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.222.121:8080/json-rpc  # dev-shard-7-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.222.121:8080/json-rpc  # dev-shard-7-tracker-ip
     elif [[ $SHARD_INDEX = 8 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.200.95:8080/json-rpc  # dev-shard-8-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.200.95:8080/json-rpc  # dev-shard-8-tracker-ip
     elif [[ $SHARD_INDEX = 9 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.216.199:8080/json-rpc  # dev-shard-9-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.216.199:8080/json-rpc  # dev-shard-9-tracker-ip
     elif [[ $SHARD_INDEX = 10 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.161.85:8080/json-rpc  # dev-shard-10-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.161.85:8080/json-rpc  # dev-shard-10-tracker-ip
     elif [[ $SHARD_INDEX = 11 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.239.169:8080/json-rpc  # dev-shard-11-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.239.169:8080/json-rpc  # dev-shard-11-tracker-ip
     elif [[ $SHARD_INDEX = 12 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.185.156.22:8080/json-rpc  # dev-shard-12-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.185.156.22:8080/json-rpc  # dev-shard-12-tracker-ip
     elif [[ $SHARD_INDEX = 13 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.247.143:8080/json-rpc  # dev-shard-13-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.247.143:8080/json-rpc  # dev-shard-13-tracker-ip
     elif [[ $SHARD_INDEX = 14 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.226.47:8080/json-rpc  # dev-shard-14-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.226.47:8080/json-rpc  # dev-shard-14-tracker-ip
     elif [[ $SHARD_INDEX = 15 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.61.23:8080/json-rpc  # dev-shard-15-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.61.23:8080/json-rpc  # dev-shard-15-tracker-ip
     elif [[ $SHARD_INDEX = 16 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.66.41:8080/json-rpc  # dev-shard-16-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.66.41:8080/json-rpc  # dev-shard-16-tracker-ip
     elif [[ $SHARD_INDEX = 17 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.143.18:8080/json-rpc  # dev-shard-17-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.143.18:8080/json-rpc  # dev-shard-17-tracker-ip
     elif [[ $SHARD_INDEX = 18 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.58.137:8080/json-rpc  # dev-shard-18-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.58.137:8080/json-rpc  # dev-shard-18-tracker-ip
     elif [[ $SHARD_INDEX = 19 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.249.104:8080/json-rpc  # dev-shard-19-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.249.104:8080/json-rpc  # dev-shard-19-tracker-ip
     elif [[ $SHARD_INDEX = 20 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.201.248.92:8080/json-rpc  # dev-shard-20-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.201.248.92:8080/json-rpc  # dev-shard-20-tracker-ip
     else
-      printf "Invalid shard ID argument: $SHARD_INDEX\n"
-      return 1
+        printf "Invalid shard ID argument: $SHARD_INDEX\n"
+        return 1
     fi
     if [[ $SHARD_INDEX -gt 0 ]]; then
-      export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard
+        export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard
     fi
 else
     printf "Invalid season argument: $SEASON\n"
@@ -210,6 +225,7 @@ printf "TRACKER_UPDATE_JSON_RPC_URL=$TRACKER_UPDATE_JSON_RPC_URL\n"
 printf "BLOCKCHAIN_CONFIGS_DIR=$BLOCKCHAIN_CONFIGS_DIR\n"
 printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 printf "PEER_CANDIDATE_JSON_RPC_URL=$PEER_CANDIDATE_JSON_RPC_URL\n"
+printf "PEER_WHITELIST=$PEER_WHITELIST\n"
 
 # NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
 if [[ $ACCOUNT_INJECTION_OPTION = "" ]] || [[ "$SHARD_INDEX" -gt 0 ]]; then

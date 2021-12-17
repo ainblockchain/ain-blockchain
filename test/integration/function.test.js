@@ -12,7 +12,6 @@ const stringify = require('fast-json-stable-stringify');
 const {
   BlockchainConsts,
   NodeConfigs,
-  GenesisToken,
   BlockchainParams,
 } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
@@ -407,12 +406,7 @@ describe('Native Function', () => {
         json: {
           op_list: [
             {
-              type: 'SET_VALUE',
-              ref: '/apps/test/test_function_triggering',
-              value: null
-            },
-            {
-              type: 'SET_RULE',
+              type: 'SET_OWNER',
               ref: '/apps/test/test_function_triggering',
               value: null
             },
@@ -422,7 +416,12 @@ describe('Native Function', () => {
               value: null
             },
             {
-              type: 'SET_OWNER',
+              type: 'SET_RULE',
+              ref: '/apps/test/test_function_triggering',
+              value: null
+            },
+            {
+              type: 'SET_VALUE',
               ref: '/apps/test/test_function_triggering',
               value: null
             },
@@ -530,8 +529,9 @@ describe('Native Function', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
+          body.result.result.func_results._saveLastTx.op_results['0'].result.error_message = 'erased';
           assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 10105,
+            "code": 10104,
             "error_message": "Triggered function call failed",
             "func_results": {
               "_saveLastTx": {
@@ -541,8 +541,8 @@ describe('Native Function', () => {
                   "0": {
                     "path": "/apps/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value",
                     "result": {
-                      "code": 10103,
-                      "error_message": "No write permission on: /apps/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value",
+                      "code": 12103,
+                      "error_message": "erased",
                       "bandwidth_gas_amount": 1,
                     }
                   }
@@ -637,8 +637,9 @@ describe('Native Function', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
+          body.result.result.func_results._saveLastTx.op_results['0'].result.error_message = 'erased';
           assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 10105,
+            "code": 10104,
             "error_message": "Triggered function call failed",
             "func_results": {
               "_saveLastTx": {
@@ -648,8 +649,8 @@ describe('Native Function', () => {
                   "0": {
                     "path": "/apps/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value",
                     "result": {
-                      "code": 10103,
-                      "error_message": "No write permission on: /apps/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value",
+                      "code": 12103,
+                      "error_message": "erased",
                       "bandwidth_gas_amount": 1,
                     }
                   }
@@ -745,7 +746,7 @@ describe('Native Function', () => {
             nonce: -1,
           }}).body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 10105,
+            "code": 10104,
             "error_message": "Triggered function call failed",
             "func_results": {
               "_setOwnerConfig": {
@@ -855,6 +856,7 @@ describe('Native Function', () => {
         if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
+        body.result.result.error_message = 'erased';
         assert.deepEqual(body.result.result, {
           "gas_amount_total": {
             "bandwidth": {
@@ -865,8 +867,8 @@ describe('Native Function', () => {
             }
           },
           "gas_cost_total": 0,
-          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
-          "code": 10103,
+          "error_message": "erased",
+          "code": 12103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
         });
@@ -882,6 +884,7 @@ describe('Native Function', () => {
         if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
+        body.result.result.error_message = 'erased';
         assert.deepEqual(body.result.result, {
           "gas_amount_total": {
             "bandwidth": {
@@ -892,8 +895,8 @@ describe('Native Function', () => {
             }
           },
           "gas_cost_total": 0,
-          "error_message": "No write permission on: /developers/rest_functions/user_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204",
-          "code": 10103,
+          "error_message": "erased",
+          "code": 12103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
         });
@@ -973,6 +976,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
 
+        body.result.result.error_message = 'erased';
         assert.deepEqual(body.result.result, {
           "gas_amount_total": {
             "bandwidth": {
@@ -983,8 +987,8 @@ describe('Native Function', () => {
             }
           },
           "gas_cost_total": 0,
-          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
-          "code": 10103,
+          "error_message": "erased",
+          "code": 12103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
         });
@@ -1031,6 +1035,7 @@ describe('Native Function', () => {
         if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
+        body.result.result.error_message = 'erased';
         assert.deepEqual(body.result.result, {
           "gas_amount_total": {
             "bandwidth": {
@@ -1041,8 +1046,8 @@ describe('Native Function', () => {
             }
           },
           "gas_cost_total": 0,
-          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/3",
-          "code": 10103,
+          "error_message": "erased",
+          "code": 12103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
         });
@@ -1110,6 +1115,7 @@ describe('Native Function', () => {
         if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
+        body.result.result.error_message = 'erased';
         assert.deepEqual(body.result.result, {
           "gas_amount_total": {
             "bandwidth": {
@@ -1120,8 +1126,8 @@ describe('Native Function', () => {
             }
           },
           "gas_cost_total": 0,
-          "error_message": "No write permission on: /developers/rest_functions/url_whitelist/0xAAAf6f50A0304F12119D218b94bea8082642515B/0",
-          "code": 10103,
+          "error_message": "erased",
+          "code": 12103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
         });
@@ -1565,7 +1571,7 @@ describe('Native Function', () => {
         }}).body.toString('utf-8')).result;
         assert.deepEqual(createAppRes, {
           "result": {
-            "code": 10105,
+            "code": 10104,
             "error_message": "Triggered function call failed",
             "func_results": {
               "_createApp": {
@@ -2205,12 +2211,13 @@ describe('Native Function', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8'));
+        body.result.result.error_message = 'erased';
         assert.deepEqual(body, {
           "code": 40001,
           "result": {
             "result": {
-              "code": 10103,
-              "error_message": "No write permission on: /transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/invalid_service_type|test_service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/1/value",
+              "code": 12103,
+              "error_message": "erased",
               "bandwidth_gas_amount": 1,
               "gas_amount_charged": 1,
               "gas_amount_total": {
@@ -3538,7 +3545,7 @@ describe('Native Function', () => {
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkoutRequestBasePath = `/checkout/requests/${networkName}/${chainId}/${tokenId}`;
       const checkoutHistoryBasePath = `/checkout/history/${networkName}/${chainId}/${tokenId}`;
-      const tokenBridgeConfig = GenesisToken.bridge[networkName][chainId][tokenId];
+      const tokenBridgeConfig = BlockchainParams.token.bridge[networkName][chainId][tokenId];
       const {
         token_pool: tokenPoolAddr,
         min_checkout_per_request: minCheckoutPerRequest,
@@ -3866,7 +3873,7 @@ describe('Native Function', () => {
 
       it('cannot close checkout with a non-authorized address', async () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkoutHistoryBasePath}/${serviceUser}/0`,
+          ref: `${checkoutHistoryBasePath}/${serviceUser}/0/data`,
           value: {
             request: {
               amount: checkoutAmount,
@@ -3883,7 +3890,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutHistory = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/0/data`).body.toString('utf-8')).result;
         expect(checkoutHistory).to.equal(null);
       });
 
@@ -3891,7 +3898,7 @@ describe('Native Function', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `${checkoutHistoryBasePath}/${serviceUser}/0`,
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/0/data`,
             value: {
               request: {
                 amount: checkoutAmount,
@@ -4036,7 +4043,7 @@ describe('Native Function', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `${checkoutHistoryBasePath}/${serviceUser}/1`,
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/1/data`,
             value: {
               request: {
                 amount: checkoutAmount,
@@ -4193,7 +4200,7 @@ describe('Native Function', () => {
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkinRequestBasePath = `/checkin/requests/${networkName}/${chainId}/${tokenId}`;
       const checkinHistoryBasePath = `/checkin/history/${networkName}/${chainId}/${tokenId}`;
-      const tokenPoolAddr = GenesisToken.bridge[networkName][chainId][tokenId].token_pool;
+      const tokenPoolAddr = BlockchainParams.token.bridge[networkName][chainId][tokenId].token_pool;
       const checkinAmount = 100;
       const sender = '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'; // eth address
       const senderPrivateKey = '0xee0b1315d446e5318eb6eb4e9d071cd12ef42d2956d546f9acbdc3b75c469640';

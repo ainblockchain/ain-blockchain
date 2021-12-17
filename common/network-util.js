@@ -117,10 +117,15 @@ function getIpAddress(internal = false) {
   });
 }
 
+function convertIpv6ToIpv4(address) {
+  return address.replace('::ffff:', '');
+}
+
 module.exports = {
   sendTxAndWaitForFinalization,
   sendSignedTx,
   signAndSendTx,
   sendGetRequest,
   getIpAddress,
+  convertIpv6ToIpv4
 };
