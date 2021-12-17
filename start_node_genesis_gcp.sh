@@ -2,7 +2,7 @@
 
 # NOTE(minsulee2): Since exit really exits terminals, those are replaced to return 1.
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
+    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic|--private-key] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
     printf "\n"
     return 1
@@ -17,16 +17,22 @@ function parse_options() {
         FULL_SYNC_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
             return 1
         fi
-        ACCOUNT_INJECTION_OPTION="$option"
+        ACCOUNT_INJECTION_OPTION="keystore"
     elif [[ $option = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
             return 1
         fi
-        ACCOUNT_INJECTION_OPTION="$option"
+        ACCOUNT_INJECTION_OPTION="mnemonic"
+    elif [[ $option = '--private-key' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            printf "Multiple account injection options given\n"
+            return 1
+        fi
+        ACCOUNT_INJECTION_OPTION="private_key"
     elif [[ $option = '--json-rpc' ]]; then
         JSON_RPC_OPTION="$option"
     elif [[ $option = '--rest-func' ]]; then
@@ -78,6 +84,12 @@ printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
+
+# NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
+if [[ $ACCOUNT_INJECTION_OPTION != "private_key" ]] && [[ "$SHARD_INDEX" -gt 0 ]]; then
+    printf 'Invalid account injection option\n'
+    return 1
+fi
 
 if [[ $SEASON = "staging" ]]; then
     # for performance test pipeline
@@ -227,11 +239,7 @@ printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 printf "PEER_CANDIDATE_JSON_RPC_URL=$PEER_CANDIDATE_JSON_RPC_URL\n"
 printf "PEER_WHITELIST=$PEER_WHITELIST\n"
 
-# NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
-if [[ $ACCOUNT_INJECTION_OPTION = "" ]] || [[ "$SHARD_INDEX" -gt 0 ]]; then
-    export ACCOUNT_INDEX="$NODE_INDEX"
-    printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
-elif [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
+if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
     if [[ $NODE_INDEX = 0 ]]; then
         KEYSTORE_FILENAME="keystore_node_0.json"
     elif [[ $NODE_INDEX = 1 ]]; then
