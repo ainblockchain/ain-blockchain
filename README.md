@@ -107,9 +107,9 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-ACCOUNT_INDEX=0 PEER_CANDIDATE_JSON_RPC_URL='' DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
-ACCOUNT_INDEX=1 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
-ACCOUNT_INDEX=2 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore PEER_CANDIDATE_JSON_RPC_URL='' DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
+ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
 Before starting node jobs, remove existing blockchain files and logs if necessary:
@@ -122,7 +122,7 @@ The default minimum size of the validator whitelist is 3. Change MIN_NUM_VALIDAT
 the blockchain-configs/base/genesis.json to change this value. You may also need to modify the GENESIS_WHITELIST and GENESIS_VALIDATORS accordingly.
 The genesis configs directory used is `blockchain-configs/base` by default and it can be altered using `BLOCKCHAIN_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
 ```
-BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDEX=0 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 
 #### On Google Cloud Platform (GCP)
@@ -162,7 +162,7 @@ docker pull ainblockchain/blockchain-database
 ```
 - Run with Docker image
 ```
-docker run -e ACCOUNT_INDEX=0 --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore --network="host" -d ainblockchain/ain-blockchain:latest
 ```
 
 #### Enter Docker container and inspect blockchain files

@@ -137,7 +137,7 @@ class Tracker {
       },
       env: {
         BLOCKCHAIN_CONFIGS_DIR: process.env.BLOCKCHAIN_CONFIGS_DIR,
-        ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
+        ACCOUNT_INJECTION_OPTION: process.env.ACCOUNT_INJECTION_OPTION,
         P2P_PORT: process.env.P2P_PORT,
         PORT: process.env.PORT,
         HOSTING_ENV: process.env.HOSTING_ENV,

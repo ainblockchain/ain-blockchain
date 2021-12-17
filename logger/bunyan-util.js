@@ -9,8 +9,7 @@ const logDir = path.join(NodeConfigs.LOGS_DIR, String(NodeConfigs.PORT));
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir, { recursive: true });
 }
-// TODO(liayoo): Deprecate ACCOUNT_INDEX.
-const prefix = NodeConfigs.ACCOUNT_INDEX !== null || NodeConfigs.ACCOUNT_INJECTION_OPTION ?
+const prefix = NodeConfigs.ACCOUNT_INJECTION_OPTION ?
     `node-${NodeConfigs.PORT}` : `tracker-${NodeConfigs.PORT}`;
 const currentLevel = NodeConfigs.DEBUG ? 'debug' : 'info';
 
