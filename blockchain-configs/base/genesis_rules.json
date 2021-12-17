@@ -63,15 +63,29 @@
           "$token_id": {
             "$user_addr": {
               "$checkout_id": {
-                "data": {
-                  ".rule": {
-                    "write": "data === null && util.validateCheckoutHistoryData($network_name, $chain_id, $token_id, $user_addr, $checkout_id, newData, getValue) && auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue)"
-                  }
-                },
-                "refund": {
-                  ".rule": {
-                    "write": "data === null && util.isString(newData) && (auth.fid === '_closeCheckout' || auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue))"
-                  }
+                ".rule": {
+                  "state": {
+                    "gc_max_siblings": 100
+                  },
+                  "write": "data === null && util.validateCheckoutHistoryData($network_name, $chain_id, $token_id, $user_addr, $checkout_id, newData, getValue) && auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "refunds": {
+      "$network_name": {
+        "$chain_id": {
+          "$token_id": {
+            "$user_addr": {
+              "$checkout_id": {
+                ".rule": {
+                  "state": {
+                    "gc_max_siblings": 100
+                  },
+                  "write": "util.validateCheckoutRefundData($network_name, $chain_id, $token_id, $user_addr, $checkout_id, auth, newData, getValue)"
                 }
               }
             }
