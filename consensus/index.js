@@ -1136,22 +1136,6 @@ class Consensus {
         'consensus/max_stake_for_proposer', blockNumber, stateVersion);
     const maxNumValidators = this.node.getBlockchainParam(
         'consensus/max_num_validators', blockNumber, stateVersion);
-    // Need the block #1 to be finalized to have the stakes reflected in the state.
-    if (this.node.bc.lastBlockNumber() < 1) {
-      const genesisProposerWhitelist = this.node.getBlockchainParam(
-          'consensus/genesis_proposer_whitelist', blockNumber, stateVersion);
-      for (const address of Object.keys(genesisProposerWhitelist)) {
-        const stake = this.getConsensusStakeFromAddr(stateVersion, address);
-        if (stake && stake >= minStakeForProposer && stake <= maxStakeForProposer) {
-          validators[address] = {
-            [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
-            [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
-          };
-        }
-      }
-      logger.debug(`[${LOG_HEADER}] validators: ${JSON.stringify(validators)}`);
-      return validators;
-    }
     const db = this.node.bp.hashToDb.get(blockHash);
     stateVersion = this.node.bc.lastBlock().hash === blockHash ?
         this.node.stateManager.getFinalVersion() : (db ? db.stateVersion : null);
@@ -1169,27 +1153,34 @@ class Consensus {
       if (stake) {
         if (proposerWhitelist[address] === true) {
           if (stake >= minStakeForProposer && stake <= maxStakeForProposer) {
-            validators[address] = {
-              [PredefinedDbPaths.CONSENSUS_STAKE]: stake,
-              [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: true
-            };
+            candidates.push({
+              address,
+              stake,
+              expireAt: _.get(stakeInfo, `0.${PredefinedDbPaths.STAKING_EXPIRE_AT}`, 0),
+              proposal_right: true,
+            });
           }
         } else {
           candidates.push({
             address,
             stake,
-            expireAt: _.get(stakeInfo, `0.${PredefinedDbPaths.STAKING_EXPIRE_AT}`, 0)
+            expireAt: _.get(stakeInfo, `0.${PredefinedDbPaths.STAKING_EXPIRE_AT}`, 0),
+            proposal_right: false,
           });
         }
       }
     }
     // NOTE(liayoo): tie-breaking by addresses as a temporary solution.
-    candidates = _.orderBy(candidates, ['stake', 'expireAt', 'address'], ['desc', 'desc', 'asc']);
+    candidates = _.orderBy(
+      candidates,
+      ['proposal_right', 'stake', 'expireAt', 'address'],
+      ['desc', 'desc', 'desc', 'asc']
+    );
     for (const candidate of candidates) {
       if (Object.keys(validators).length < maxNumValidators) {
         validators[candidate.address] = {
           [PredefinedDbPaths.CONSENSUS_STAKE]: candidate.stake,
-          [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: false
+          [PredefinedDbPaths.CONSENSUS_PROPOSAL_RIGHT]: candidate.proposal_right,
         };
       } else {
         break;

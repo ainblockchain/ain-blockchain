@@ -361,9 +361,11 @@ class BlockPool {
   addSeenVote(voteTx) {
     const LOG_HEADER = 'addSeenVote';
     const blockHash = ConsensusUtil.getBlockHashFromConsensusTx(voteTx);
+    const blockNumber = ConsensusUtil.getBlockNumberFromConsensusTx(voteTx);
     const stake = ConsensusUtil.getStakeFromVoteTx(voteTx);
     logger.debug(`[${LOG_HEADER}] voteTx: ${JSON.stringify(voteTx, null, 2)}, ` +
-        `blockHash: ${blockHash}, stake: ${stake}`);
+        `blockHash: ${blockHash}, blockNumber: ${blockNumber}, stake: ${stake}`);
+    this.addToNumberToBlockSet({ number: blockNumber, hash: blockHash });
     if (ConsensusUtil.isProposalTx(voteTx)) {
       this.addProposal(voteTx, blockHash);
     } else if (ConsensusUtil.isAgainstVoteTx(voteTx)) {
@@ -471,15 +473,20 @@ class BlockPool {
   }
 
   cleanUpForBlockHash(blockHash) {
-    const block = _get(this.hashToBlockInfo[blockHash], 'block');
-    const invalidBlock = _get(this.hashToInvalidBlockInfo[blockHash], 'block');
-    const againstVotes = _get(this.hashToInvalidBlockInfo[blockHash], 'votes');
-    if (block) {
-      this.node.tp.cleanUpConsensusTxsForBlock(block);
+    const block = _get(this.hashToBlockInfo[blockHash], 'block', null);
+    const blockProposal = _get(this.hashToBlockInfo[blockHash], 'proposal', null);
+    const blockConsensusTxs = _get(this.hashToBlockInfo[blockHash], 'votes', []);
+    if (blockProposal) {
+      blockConsensusTxs.push(blockProposal);
     }
-    if (invalidBlock) {
-      this.node.tp.cleanUpConsensusTxsForBlock(invalidBlock, againstVotes);
+    const invalidBlock = _get(this.hashToInvalidBlockInfo[blockHash], 'block', null);
+    const invalidBlockProposal = _get(this.hashToInvalidBlockInfo[blockHash], 'proposal', null);
+    const invalidBlockConsensusTxs = _get(this.hashToInvalidBlockInfo[blockHash], 'votes', []);
+    if (invalidBlockProposal) {
+      invalidBlockConsensusTxs.push(invalidBlockProposal);
     }
+    this.node.tp.cleanUpConsensusTxs(block, blockConsensusTxs);
+    this.node.tp.cleanUpConsensusTxs(invalidBlock, invalidBlockConsensusTxs);
     delete this.hashToBlockInfo[blockHash];
     delete this.hashToInvalidBlockInfo[blockHash];
     delete this.hashToNextBlockSet[blockHash];
@@ -494,12 +501,13 @@ class BlockPool {
   cleanUpAfterFinalization(lastBlock, recordedInvalidBlocks) {
     const targetNumber = lastBlock.number;
     for (const blockNumber of Object.keys(this.numberToBlockSet)) {
-      if (blockNumber < targetNumber) {
+      const number = Number(blockNumber);
+      if (number < targetNumber) {
         const blockHashList = this.numberToBlockSet[blockNumber];
         for (const blockHash of blockHashList) {
           if (this.hashToInvalidBlockInfo[blockHash]) {
             if (recordedInvalidBlocks.has(blockHash) ||
-                blockNumber < targetNumber - ConsensusConsts.MAX_INVALID_BLOCKS_ON_MEM) {
+                number < targetNumber - ConsensusConsts.MAX_INVALID_BLOCKS_ON_MEM) {
               this.cleanUpForBlockHash(blockHash);
               this.numberToBlockSet[blockNumber].delete(blockHash);
             }
@@ -514,7 +522,7 @@ class BlockPool {
       }
     }
     for (const epoch of Object.keys(this.epochToBlock)) {
-      if (epoch < lastBlock.epoch) {
+      if (Number(epoch) < lastBlock.epoch) {
         const blockHash = this.epochToBlock[epoch];
         this.cleanUpForBlockHash(blockHash);
         delete this.epochToBlock[epoch];

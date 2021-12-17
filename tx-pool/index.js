@@ -449,12 +449,15 @@ class TransactionPool {
     }
   }
 
-  cleanUpConsensusTxsForBlock(block, additionalVotes = []) {
-    const consensusTxs = new Set(block.last_votes.map((tx) => tx.hash));
+  cleanUpConsensusTxs(block = null, additionalVotes = []) {
+    const consensusTxs = new Set();
+    if (block) {
+      block.last_votes.map((tx) => tx.hash).forEach((hash) => consensusTxs.add(hash));
+      this.addEvidenceTxsToTxHashSet(consensusTxs, block.evidence);
+    }
     if (!CommonUtil.isEmpty(additionalVotes)) {
       additionalVotes.map((tx) => tx.hash).forEach((hash) => consensusTxs.add(hash));
     }
-    this.addEvidenceTxsToTxHashSet(consensusTxs, block.evidence);
     this.updateTxPoolWithTxHashSet(consensusTxs, {}, {});
   }
 
