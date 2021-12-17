@@ -1236,8 +1236,6 @@ class Functions {
     }
   }
 
-  // TODO(liayoo): Revive garbage collection state rules (e.g. "gc_max_siblings": 100)
-  // for checkout history.
   _closeCheckout(value, context) {
     const networkName = context.params.network_name;
     const chainId = context.params.chain_id;
@@ -1260,7 +1258,7 @@ class Functions {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }
       const setRefundRes = this.setValueOrLog(
-          PathUtil.getCheckoutHistoryRefundPath(networkName, chainId, tokenId, user, checkoutId),
+          PathUtil.getCheckoutHistoryRefundsPath(networkName, chainId, tokenId, user, checkoutId),
           PathUtil.getTransferPath(tokenPool, user, context.timestamp), context);
       if (CommonUtil.isFailedTx(setRefundRes)) {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
