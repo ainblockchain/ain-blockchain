@@ -232,7 +232,7 @@ class PathUtil {
         tokenId, address, checkoutId]);
   }
 
-  static getCheckoutHistoryRefundsPath(networkName, chainId, tokenId, address, checkoutId) {
+  static getCheckoutRefundPath(networkName, chainId, tokenId, address, checkoutId) {
     return CommonUtil.formatPath([
       PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_REFUNDS, networkName, chainId,
       tokenId, address, checkoutId]);
