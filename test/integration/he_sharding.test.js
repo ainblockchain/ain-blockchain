@@ -29,9 +29,10 @@ const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/1-node', ACCOUNT_INDEX: 0,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/1-node', ACCOUNT_INJECTION_OPTION: 'private_key',
+    UNSAFE_PRIVATE_KEY: 'b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96',
     PEER_CANDIDATE_JSON_RPC_URL: '', ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8081, P2P_PORT: 5001,
-    CONSOLE_LOG: false, ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     // For shard chain tracker
@@ -40,28 +41,31 @@ const ENV_VARIABLES = [
   {
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard',
     PORT: 9091, P2P_PORT: 6001, ENABLE_EXPRESS_RATE_LIMIT: false,
-    ACCOUNT_INDEX: 0, PEER_CANDIDATE_JSON_RPC_URL: '',
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    ACCOUNT_INJECTION_OPTION: 'private_key',
+    UNSAFE_PRIVATE_KEY: 'd8f77aa2afe2580a858a8cc97b6056e10f888c6fd07ebb58755d8422b03da816',
+    PEER_CANDIDATE_JSON_RPC_URL: '', ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard',
     PORT: 9092, P2P_PORT: 6002,
-    ACCOUNT_INDEX: 1, ENABLE_EXPRESS_RATE_LIMIT: false,
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    ACCOUNT_INJECTION_OPTION: 'private_key',
+    UNSAFE_PRIVATE_KEY: 'a3409e22bc14a3d0e73697df25617b3f2eaae9b5eade77615a32abc0ad5ee0df',
+    ENABLE_EXPRESS_RATE_LIMIT: false, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard',
     PORT: 9093, P2P_PORT: 6003,
-    ACCOUNT_INDEX: 2, ENABLE_EXPRESS_RATE_LIMIT: false,
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    ACCOUNT_INJECTION_OPTION: 'private_key',
+    UNSAFE_PRIVATE_KEY: 'c4611582dbb5319f08ba0907af6430a79e02b87b112aa4039d43e8765384f568',
+    ENABLE_EXPRESS_RATE_LIMIT: false, ENABLE_GAS_FEE_WORKAROUND: true,
   },
 ];
 
 const parentServer = 'http://localhost:8081';
 const parentServerList = [ parentServer ];
-const server1 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
-const server2 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
-const server3 = 'http://localhost:' + String(9091 + Number(ENV_VARIABLES[4].ACCOUNT_INDEX))
+const server1 = 'http://localhost:9091';
+const server2 = 'http://localhost:9092';
+const server3 = 'http://localhost:9093';
 const shardServerList = [ server1, server2, server3 ];
 
 function startServer(application, serverName, envVars, stdioInherit = false) {
