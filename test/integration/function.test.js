@@ -408,7 +408,12 @@ describe('Native Function', () => {
           op_list: [
             {
               type: 'SET_OWNER',
-              ref: '/apps/test/test_function_triggering',
+              ref: '/apps/test/test_function_triggering/set_owner_allowed_path_with_fid',
+              value: null
+            },
+            {
+              type: 'SET_OWNER',
+              ref: '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid',
               value: null
             },
             {
@@ -842,6 +847,17 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result
           // Should be not null.
           expect(ownerConfig).to.not.equal(null);
+
+          // Clean up
+          const res = parseOrLog(syncRequest('POST', server2 + '/set_owner', {
+            json: {
+              type: 'SET_OWNER',
+              ref: '/apps/test/test_function_triggering/set_owner_allowed_path_with_fid/value',
+              value: null,
+              nonce: -1,
+            }
+          }).body.toString('utf-8')).result;
+          assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
         });
       });
     });

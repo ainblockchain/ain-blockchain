@@ -1730,10 +1730,12 @@ class DB {
         this.addPathToValue(newValue, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
     // NOTE(platfowner): Value write operations with non-empty subtree write rules are not allowed.
     if (matchedWriteRules.subtreeRules && matchedWriteRules.subtreeRules.length > 0) {
+      const subtreeRulePathList = this.getSubtreeConfigPathList(matchedWriteRules.subtreeRules);
       return {
         code: TxResultCode.EVAL_RULE_NON_EMPTY_SUBTREE_RULES,
         error_message: `Non-empty (${matchedWriteRules.subtreeRules.length}) subtree rules ` +
-            `for value path '${CommonUtil.formatPath(parsedValuePath)}'`,
+            `for value path '${CommonUtil.formatPath(parsedValuePath)}'': ` +
+            `${JSON.stringify(subtreeRulePathList)}`,
         matched,
       };
     }
@@ -1791,10 +1793,12 @@ class DB {
   getPermissionForRule(parsedRulePath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedRulePath);
     if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+      const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_RULE,
         error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
-            `for rule path '${CommonUtil.formatPath(parsedRulePath)}'`,
+            `for rule path '${CommonUtil.formatPath(parsedRulePath)}': ` +
+            `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
       };
     }
@@ -1821,10 +1825,12 @@ class DB {
   getPermissionForFunction(parsedFuncPath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedFuncPath);
     if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+      const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_FUNCTION,
         error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
-            `for function path '${CommonUtil.formatPath(parsedFuncPath)}'`,
+            `for function path '${CommonUtil.formatPath(parsedFuncPath)}': ` +
+            `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
       };
     }
@@ -1851,10 +1857,12 @@ class DB {
   getPermissionForOwner(parsedOwnerPath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
     if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+      const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_OWNER,
         error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
-            `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}'`,
+            `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}': ` +
+            `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
       };
     }
@@ -2410,6 +2418,10 @@ class DB {
       permissionsString: JSON.stringify(permissionsObj),
       checkResult,
     };
+  }
+
+  getSubtreeConfigPathList(subtreeConfigs) {
+    return subtreeConfigs.map((config) => CommonUtil.formatPath(config.path));
   }
 }
 

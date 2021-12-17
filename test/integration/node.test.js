@@ -161,7 +161,7 @@ async function cleanUp() {
       op_list: [
         {
           type: 'SET_OWNER',
-          ref: '/apps/test/test_owner',
+          ref: '/apps/test/test_owner/some/path',
           value: null
         },
         {
@@ -483,7 +483,8 @@ describe('Blockchain Node', () => {
               }
             },
             "path": "/apps/test/test_owner/some/path"
-          }
+          },
+          "subtree_configs": []
         }});
       })
     })
@@ -980,7 +981,8 @@ describe('Blockchain Node', () => {
                 }
               },
               "path": "/apps/test/test_owner/some/path"
-            }
+            },
+            "subtree_configs": []
           });
         })
       })
@@ -2821,6 +2823,32 @@ describe('Blockchain Node', () => {
         };
         const res = parseOrLog(syncRequest('POST', server1 + '/set', {json: {
             op_list: [
+              // clean up old owner configs.
+              {
+                type: 'SET_OWNER',
+                ref: '/apps/test/test_owner/other100/path',
+                value: null,
+              },
+              {
+                type: 'SET_OWNER',
+                ref: '/apps/test/test_owner/other200/path',
+                value: null,
+              },
+              {
+                type: 'SET_OWNER',
+                ref: '/apps/test/test_owner/other201/path',
+                value: null,
+              },
+              {
+                type: 'SET_OWNER',
+                ref: '/apps/test/test_owner/other202/path',
+                value: null,
+              },
+              {
+                type: 'SET_OWNER',
+                ref: '/apps/test/test_owner/other203/path',
+                value: null,
+              },
               {
                 type: 'SET_RULE',
                 ref: '/apps/test',
@@ -2830,6 +2858,7 @@ describe('Blockchain Node', () => {
                   }
                 }
               },
+              // set new owner config.
               {
                 type: 'SET_OWNER',
                 ref: '/apps/test',
