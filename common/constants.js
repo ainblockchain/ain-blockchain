@@ -565,6 +565,8 @@ const TrafficEventTypes = {
   BLOCK_LAST_VOTES: 'block_last_votes',
   BLOCK_SIZE: 'block_size',
   BLOCK_TXS: 'block_txs',
+  // Votes
+  VOTE_AFTER_PROPOSE: 'vote_after_propose',
   // Txs
   TX_BYTES: 'tx_bytes',
   TX_GAS_AMOUNT: 'tx_gas_amount',
