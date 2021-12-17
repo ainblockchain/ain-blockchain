@@ -32,6 +32,7 @@ const {
   waitUntilTxFinalized,
   waitUntilNetworkIsReady,
   setUpApp,
+  eraseEvalRuleResMatched,
 } = require('../test-util');
 
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../../"
@@ -165,13 +166,8 @@ async function cleanUp() {
     json: {
       op_list: [
         {
-          type: 'SET_VALUE',
-          ref: '/apps/test/test_value/some/path',
-          value: null
-        },
-        {
-          type: 'SET_RULE',
-          ref: '/apps/test/test_rule/some/path',
+          type: 'SET_OWNER',
+          ref: '/apps/test/test_owner/some/path',
           value: null
         },
         {
@@ -180,8 +176,13 @@ async function cleanUp() {
           value: null
         },
         {
-          type: 'SET_OWNER',
-          ref: '/apps/test/test_owner/some/path',
+          type: 'SET_RULE',
+          ref: '/apps/test/test_rule/some/path',
+          value: null
+        },
+        {
+          type: 'SET_VALUE',
+          ref: '/apps/test/test_value/some/path',
           value: null
         },
       ],
@@ -358,7 +359,7 @@ describe('Sharding', () => {
     
     describe('DB values', () => {
       it('token', () => {
-        const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/token')
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/blockchain_params/token')
           .body.toString('utf-8'));
         assert.deepEqual(body, {code: 0, result: token});
       })
@@ -378,7 +379,7 @@ describe('Sharding', () => {
       })
 
       it('sharding', () => {
-        const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/sharding/config')
+        const body = parseOrLog(syncRequest('GET', server1 + '/get_value?ref=/blockchain_params/sharding')
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result.sharding_protocol).to.equal(sharding.sharding_protocol);
@@ -397,16 +398,16 @@ describe('Sharding', () => {
 
     describe('DB rules', () => {
       it('sharding', () => {
-        const body = parseOrLog(syncRequest('GET', server3 + '/get_rule?ref=/sharding/config')
+        const body = parseOrLog(syncRequest('GET', server3 + '/get_rule?ref=/blockchain_params')
           .body.toString('utf-8'));
         expect(body.code).to.equal(0);
-        expect(body.result['.rule']['write']).to.have.string(shardOwnerAddr);
+        expect(body.result['.rule']['write']).to.have.string(`util.isAppAdmin('consensus', auth.addr, getValue) === true`);
       })
     })
 
     describe('DB owners', () => {
       it('sharding', () => {
-        const body = parseOrLog(syncRequest('GET', server3 + '/get_owner?ref=/sharding/config')
+        const body = parseOrLog(syncRequest('GET', server3 + '/get_owner?ref=/blockchain_params/sharding')
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['.owner'].owners[shardOwnerAddr]).to.not.be.null;
@@ -456,7 +457,7 @@ describe('Sharding', () => {
           .body.toString('utf-8')).result;
         console.log(`        --> Shutting down server[0]...`);
         server1_proc.kill();
-        await waitForNewBlocks(server2, sharding.reporting_period);
+        await waitForNewBlocks(server2, sharding.reporting_period * 3);
         console.log(`        --> Restarting server[0]...`);
         server1_proc = startServer(APP_SERVER, 'server1', ENV_VARIABLES[2]);
         await waitUntilNodeSyncs(server1);
@@ -478,7 +479,7 @@ describe('Sharding', () => {
     });
   });
 
-  describe('API Tests', () => {
+  describe('API tests', () => {
     before(async () => {
       const server1Addr = parseOrLog(syncRequest(
           'GET', server1 + '/get_address').body.toString('utf-8')).result;
@@ -810,7 +811,12 @@ describe('Sharding', () => {
           const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(body, {code: 0, result: true});
+          assert.deepEqual(body.code, 0);
+          assert.deepEqual(eraseEvalRuleResMatched(body.result), {
+            "code": 0,
+            "error_message": "",
+            "matched": "erased",
+          });
         })
 
         it('/eval_rule with is_global = true', () => {
@@ -821,7 +827,12 @@ describe('Sharding', () => {
           const request = { ref, value, address, is_global, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
               .body.toString('utf-8'));
-          assert.deepEqual(body, {code: 0, result: true});
+          assert.deepEqual(body.code, 0);
+          assert.deepEqual(eraseEvalRuleResMatched(body.result), {
+            "code": 0,
+            "error_message": "",
+            "matched": "erased",
+          });
         })
       })
 
@@ -921,7 +932,63 @@ describe('Sharding', () => {
                   }
                 }
               },
-              true,
+              {
+                "code": 0,
+                "error_message": "",
+                "matched": {
+                  "state": {
+                    "closestRule": {
+                      "config": null,
+                      "path": [],
+                    },
+                    "matchedRulePath": [
+                      "apps",
+                      "test",
+                      "test_rule",
+                      "some",
+                      "path",
+                    ],
+                    "matchedValuePath": [
+                      "apps",
+                      "test",
+                      "test_rule",
+                      "some",
+                      "path",
+                    ],
+                    "pathVars": {}
+                  },
+                  "write": {
+                    "closestRule": {
+                      "config": {
+                        "write": "auth.addr === 'abcd'"
+                      },
+                      "path": [
+                        "apps",
+                        "test",
+                        "test_rule",
+                        "some",
+                        "path",
+                      ]
+                    },
+                    "matchedRulePath": [
+                      "apps",
+                      "test",
+                      "test_rule",
+                      "some",
+                      "path",
+                    ],
+                    "matchedValuePath": [
+                      "apps",
+                      "test",
+                      "test_rule",
+                      "some",
+                      "path",
+                    ],
+                    "pathVars": {},
+                    "subtreeRules": []
+                  }
+                }
+              },
               true,
             ]
           });
@@ -998,7 +1065,63 @@ describe('Sharding', () => {
                   }
                 }
               },
-              true,
+              {
+                "code": 0,
+                "error_message": "",
+                "matched": {
+                  "state": {
+                    "closestRule": {
+                      "config": null,
+                      "path": [],
+                    },
+                    "matchedRulePath": [
+                      "apps",
+                      "test",
+                      "test_rule",
+                      "some",
+                      "path",
+                    ],
+                    "matchedValuePath": [
+                      "apps",
+                      "test",
+                      "test_rule",
+                      "some",
+                      "path",
+                    ],
+                    "pathVars": {}
+                  },
+                  "write": {
+                    "closestRule": {
+                      "config": {
+                        "write": "auth.addr === 'abcd'"
+                      },
+                      "path": [
+                        "apps",
+                        "test",
+                        "test_rule",
+                        "some",
+                        "path",
+                      ]
+                    },
+                    "matchedRulePath": [
+                      "apps",
+                      "test",
+                      "test_rule",
+                      "some",
+                      "path",
+                    ],
+                    "matchedValuePath": [
+                      "apps",
+                      "test",
+                      "test_rule",
+                      "some",
+                      "path",
+                    ],
+                    "pathVars": {},
+                    "subtreeRules": []
+                  }
+                }
+              },
               true,
             ]
           });
@@ -1236,7 +1359,11 @@ describe('Sharding', () => {
           const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
           .then(res => {
-            expect(res.result.result).to.equal(true);
+            assert.deepEqual(eraseEvalRuleResMatched(res.result.result), {
+              "code": 0,
+              "error_message": "",
+              "matched": "erased",
+            });
           })
         })
 
@@ -1248,7 +1375,11 @@ describe('Sharding', () => {
               { ref, value, address, is_global: true, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
           return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
           .then(res => {
-            expect(res.result.result).to.equal(true);
+            assert.deepEqual(eraseEvalRuleResMatched(res.result.result), {
+              "code": 0,
+              "error_message": "",
+              "matched": "erased",
+            });
           })
         })
       })

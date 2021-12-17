@@ -9,7 +9,10 @@ const logger = new (require('../logger'))('SERVER_UTIL');
 
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const { BlockchainConsts, NodeConfigs } = require('../common/constants');
+const {
+  BlockchainConsts,
+  NodeConfigs
+} = require('../common/constants');
 const CommonUtil = require('../common/common-util');
 const DB = require('../db');
 
@@ -115,6 +118,11 @@ function checkTimestamp(timestamp) {
   }
 }
 
+function checkPeerWhitelist(address) {
+  return NodeConfigs.PEER_WHITELIST === '*' || (CommonUtil.isArray(NodeConfigs.PEER_WHITELIST) &&
+      NodeConfigs.PEER_WHITELIST.includes(address));
+}
+
 module.exports = {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
@@ -124,4 +132,5 @@ module.exports = {
   closeSocketSafe,
   checkTimestamp,
   encapsulateMessage,
+  checkPeerWhitelist
 };

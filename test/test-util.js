@@ -93,7 +93,7 @@ function addBlock(node, txs, votes, validators) {
 
 async function waitUntilTxFinalized(servers, txHash) {
   const MAX_ITERATION = 200;
-  const SLEEP_TIME_MS = 500;
+  const SLEEP_TIME_MS = 250;
   let iterCount = 0;
   const unchecked = new Set(servers);
   while (true) {
@@ -247,6 +247,12 @@ function eraseTxCreatedAt(tx) {
   return erased;
 }
 
+function eraseEvalRuleResMatched(res) {
+  const erased = JSON.parse(JSON.stringify(res));
+  _.set(erased, 'matched', 'erased');
+  return erased;
+}
+
 module.exports = {
   GET_OPTIONS_INCLUDE_ALL,
   readConfigFile,
@@ -266,4 +272,5 @@ module.exports = {
   getBlockByNumber,
   eraseStateGas,
   eraseTxCreatedAt,
+  eraseEvalRuleResMatched,
 };

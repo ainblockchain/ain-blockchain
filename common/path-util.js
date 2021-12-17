@@ -38,14 +38,15 @@ class PathUtil {
 
   static getTokenBridgeConfigPath(networkName, chainId, tokenId) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE, networkName, chainId, tokenId]);
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS, PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN,
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_BRIDGE, networkName, chainId, tokenId]);
   }
 
   static getTokenBridgeTokenPoolPath(networkName, chainId, tokenId) {
     return CommonUtil.formatPath([
-      PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE, networkName, chainId, tokenId,
-      PredefinedDbPaths.TOKEN_BRIDGE_TOKEN_POOL
-    ]);
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS, PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN,
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_BRIDGE, networkName, chainId, tokenId,
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_POOL]);
   }
 
   static getTransferPath(from, to, key) {
@@ -229,6 +230,12 @@ class PathUtil {
     return CommonUtil.formatPath([
         PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_HISTORY, networkName, chainId,
         tokenId, address, checkoutId]);
+  }
+
+  static getCheckoutHistoryDataPath(networkName, chainId, tokenId, address, checkoutId) {
+    return CommonUtil.appendPath(
+        PathUtil.getCheckoutHistoryPath(networkName, chainId, tokenId, address, checkoutId),
+        PredefinedDbPaths.CHECKOUT_HISTORY_DATA);
   }
 
   static getCheckoutHistoryRefundPath(networkName, chainId, tokenId, address, checkoutId) {
