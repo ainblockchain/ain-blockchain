@@ -25,7 +25,16 @@ class Tracker {
   }
 
   getNumNodesAlive() {
-    return Object.values(this.blockchainNodes).filter(nodeInfo => isNodeAlive(nodeInfo)).length;
+    let numAliveNodes = 0;
+    for (const [address, nodeInfo] of Object.entries(this.blockchainNodes)) {
+      if (isNodeAlive(nodeInfo)) {
+        this.blockchainNodes[address] = Object.assign({ isAlive: true }, this.blockchainNodes[address]);
+        numAliveNodes++;
+      } else {
+        this.blockchainNodes[address] = Object.assign({ isAlive: false }, this.blockchainNodes[address]);
+      }
+    }
+    return numAliveNodes;
   }
 
   getNodeLocation(ip) {
