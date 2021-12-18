@@ -622,6 +622,25 @@ class BlockchainNode {
     return 0; // Successfully merged
   }
 
+  addTrafficEventsForVoteTxs(txList, blockTimestamp) {
+    let proposeTimestamp = null;
+    for (let i = 0; i < txList.length; i++) {
+      const tx = txList[i];
+      if (i === 0) {
+        proposeTimestamp = tx.tx_body.timestamp;
+        this.tsm.addEvent(
+            TrafficEventTypes.PROPOSE_BEFORE_BLOCK, blockTimestamp - proposeTimestamp,
+            blockTimestamp);
+      } else {
+        const voteTimestamp = tx.tx_body.timestamp;
+        this.tsm.addEvent(
+            TrafficEventTypes.VOTE_BEFORE_BLOCK, blockTimestamp - voteTimestamp, blockTimestamp);
+        this.tsm.addEvent(
+            TrafficEventTypes.VOTE_AFTER_PROPOSE, voteTimestamp - proposeTimestamp, blockTimestamp);
+      }
+    }
+  }
+
   addTrafficEventsForTx(tx, receipt, blockTimestamp) {
     const opType = _.get(tx, 'tx_body.operation.type', null);
     if (opType === WriteDbOperations.SET) {
@@ -649,6 +668,8 @@ class BlockchainNode {
         TrafficEventTypes.BLOCK_TXS, block.transactions.length, blockTimestamp);
     this.tsm.addEvent(
         TrafficEventTypes.BLOCK_EVIDENCE, Object.keys(block.evidence).length, blockTimestamp);
+
+    this.addTrafficEventsForVoteTxs(block.last_votes, blockTimestamp);
 
     for (let i = 0; i < Math.min(block.transactions.length, block.receipts.length); i++) {
       const tx = block.transactions[i];

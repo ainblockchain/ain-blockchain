@@ -18,7 +18,7 @@ const Transaction = require('../../tx-pool/transaction');
 const CommonUtil = require('../../common/common-util');
 const {
   setNodeForTesting,
-  eraseEvalRuleResMatched,
+  eraseEvalResMatched,
 } = require('../test-util');
 const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
 
@@ -217,22 +217,42 @@ describe("DB operations", () => {
                 "write_rule": false,
               }
             }
-          },
-          "deeper": {
-            "path": {
-              ".owner": {
-                "owners": {
-                  "*": {
-                    "branch_owner": false,
-                    "write_function": true,
-                    "write_owner": false,
-                    "write_rule": true,
-                  },
-                  "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
-                    "branch_owner": true,
-                    "write_function": false,
-                    "write_owner": true,
-                    "write_rule": false,
+          }
+        },
+        "upper": {
+          "path": {
+            ".owner": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_function": true,
+                  "write_owner": false,
+                  "write_rule": true,
+                },
+                "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": true,
+                  "write_rule": false,
+                }
+              }
+            },
+            "deeper": {
+              "path": {
+                ".owner": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": false,
+                      "write_function": true,
+                      "write_owner": false,
+                      "write_rule": true,
+                    },
+                    "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
+                      "branch_owner": true,
+                      "write_function": false,
+                      "write_owner": true,
+                      "write_rule": false,
+                    }
                   }
                 }
               }
@@ -642,12 +662,12 @@ describe("DB operations", () => {
         });
       })
 
-      it("setValue to write with a rule and subtree rules", () => {
-        // For details, see test case 'evalRule to evaluate a rule with subtree rules'.
+      // For details, see test case 'evalRule to evaluate a rule with subtree rules'.
+      it("setValue to write with subtree rules", () => {
         assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/upper/path", 'some value'), {
           "bandwidth_gas_amount": 1,
           "code": 12101,
-          "error_message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'",
+          "error_message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'': [\"/deeper/path\"]",
         });
       })
 
@@ -1000,7 +1020,7 @@ describe("DB operations", () => {
         const functionTreeBefore = node.db.getOwner("/apps/test/test_function/some/path");
         assert.deepEqual(node.db.setFunction(
             "/apps/test/test_function/some/path", { ".function": null }), {
-          "code": 10405,
+          "code": 10403,
           "error_message": "Invalid function tree: /.function",
           "bandwidth_gas_amount": 1
         });
@@ -1021,6 +1041,25 @@ describe("DB operations", () => {
           "code": 10402,
           "error_message": "Invalid function path: /apps/test/test_function/some/path/.",
           "bandwidth_gas_amount": 1
+        });
+      })
+
+      // For details, see test case 'evalOwner to evaluate write_function permission with subtree owners'.
+      it("setFunction to write with subtree owners", () => {
+        const functionConfig = {
+          ".function": {
+            "fid_other": {
+              "function_url": "http://echo-bot.ainetwork.ai/trigger",
+              "function_id": "fid_other",
+              "function_type": "REST",
+            }
+          }
+        };
+        assert.deepEqual(node.db.setFunction(
+            "/apps/test/test_owner/some/upper/path", functionConfig), {
+          "code": 12401,
+          "error_message": "Non-empty (1) subtree owners for function path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
+          "bandwidth_gas_amount": 1,
         });
       })
     })
@@ -1287,13 +1326,13 @@ describe("DB operations", () => {
       const timestamp = 1234567890000;
 
       it("evalRule to evaluate a variable path rule", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12103,
           "error_message": "Write rule evaluated false: [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, timestamp)), {
           "code": 0,
           "error_message": "",
@@ -1302,25 +1341,25 @@ describe("DB operations", () => {
       })
 
       it("evalRule to evaluate a non-variable path rule", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/path", 'value', { addr: 'other' }, timestamp)), {
           "code": 12103,
           "error_message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'ijkl' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'other' }, timestamp)), {
           "code": 12103,
           "error_message": "Write rule evaluated false: [auth.addr === 'ijkl'] at '/apps/test/test_rule/some/upper/path/deeper/path' for value path '/apps/test/test_rule/some/upper/path/deeper/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
@@ -1329,13 +1368,13 @@ describe("DB operations", () => {
       })
 
       it("evalRule to evaluate a closest variable path rule", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12103,
           "error_message": "Write rule evaluated false: [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path/subpath' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'other' }, timestamp)), {
           "code": 0,
           "error_message": "",
@@ -1344,13 +1383,13 @@ describe("DB operations", () => {
       })
 
       it("evalRule to evaluate a closest non-variable rule", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'other' }, timestamp)), {
           "code": 12103,
           "error_message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
@@ -1359,13 +1398,13 @@ describe("DB operations", () => {
       })
 
       it("evalRule to evaluate a rule without subtree rules", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
         });
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'other' }, timestamp)), {
           "code": 12103,
           "error_message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/upper/path' for value path '/apps/test/test_rule/some/upper/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
@@ -1374,10 +1413,10 @@ describe("DB operations", () => {
       })
 
       it("evalRule to evaluate a rule with subtree rules", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12101,
-          "error_message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'",
+          "error_message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'': [\"/deeper/path\"]",
           "matched": "erased",
         });
       })
@@ -1432,7 +1471,7 @@ describe("DB operations", () => {
                 }
               }
             }), {
-          "code": 10504,
+          "code": 10503,
           "error_message": "Invalid rule tree: /.rule/write",
           "bandwidth_gas_amount": 1
         });
@@ -1448,7 +1487,7 @@ describe("DB operations", () => {
                 "write": "invalid_top_level_token"
               }
             }), {
-          "code": 10504,
+          "code": 10503,
           "error_message": "Invalid rule tree: /.rule/write",
           "bandwidth_gas_amount": 1
         });
@@ -1506,8 +1545,21 @@ describe("DB operations", () => {
           }
         });
       })
-    })
 
+      // For details, see test case 'evalOwner to evaluate write_rule permission with subtree owners'.
+      it("setRule to write with subtree owners", () => {
+        assert.deepEqual(node.db.setRule("/apps/test/test_owner/some/upper/path",
+            {
+              ".rule": {
+                "write": "auth.addr === 'xyz'"
+              }
+            }), {
+          "code": 12301,
+          "error_message": "Non-empty (1) subtree owners for rule path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
+          "bandwidth_gas_amount": 1,
+        });
+      })
+    })
   });
 
   describe("Owner operations", () => {
@@ -1517,7 +1569,7 @@ describe("DB operations", () => {
       })
 
       it("getOwner to retrieve existing owner config", () => {
-        assert.deepEqual(node.db.getOwner("/apps/test/test_owner/some/path"), {
+        assert.deepEqual(node.db.getOwner("/apps/test/test_owner/some/upper/path"), {
           ".owner": {
             "owners": {
               "*": {
@@ -1560,7 +1612,7 @@ describe("DB operations", () => {
       it("getOwner to retrieve existing owner config with is_shallow", () => {
         assert.deepEqual(node.db.getOwner("/apps/test/test_owner", { isShallow: true }), {
           some: {
-            "#state_ph": "0x5086ccf28e98a15e4d1de16b1f78e3b429e3049baeb39ea22041d75dd16f5800"
+            "#state_ph": "0x98275bc5455a86a3b903f77fe4a75e7e138317650fea89c18cbd5179e463cbc1"
           },
         })
       })
@@ -1590,11 +1642,12 @@ describe("DB operations", () => {
               }
             },
             "path": "/apps/test/test_owner/some/path"
-          }
+          },
+          "subtree_configs": []
         });
-        assert.deepEqual(node.db.matchOwner("/apps/test/test_owner/some/path/deeper/path", 'write_owner', 'ijkl'), {
+        assert.deepEqual(node.db.matchOwner("/apps/test/test_owner/some/upper/path/deeper/path", 'write_owner', 'ijkl'), {
           "matched_path": {
-            "target_path": "/apps/test/test_owner/some/path/deeper/path"
+            "target_path": "/apps/test/test_owner/some/upper/path/deeper/path"
           },
           "matched_config": {
             "config": {
@@ -1613,8 +1666,9 @@ describe("DB operations", () => {
                 }
               }
             },
-            "path": "/apps/test/test_owner/some/path/deeper/path"
-          }
+            "path": "/apps/test/test_owner/some/upper/path/deeper/path"
+          },
+          "subtree_configs": []
         });
       })
 
@@ -1641,11 +1695,12 @@ describe("DB operations", () => {
               }
             },
             "path": "/apps/test/test_owner/some/path"
-          }
+          },
+          "subtree_configs": []
         });
-        assert.deepEqual(node.db.matchOwner("/apps/test/test_owner/some/path/deeper/path", 'write_owner', 'other'), {
+        assert.deepEqual(node.db.matchOwner("/apps/test/test_owner/some/upper/path/deeper/path", 'write_owner', 'other'), {
           "matched_path": {
-            "target_path": "/apps/test/test_owner/some/path/deeper/path"
+            "target_path": "/apps/test/test_owner/some/upper/path/deeper/path"
           },
           "matched_config": {
             "config": {
@@ -1664,15 +1719,16 @@ describe("DB operations", () => {
                 }
               }
             },
-            "path": "/apps/test/test_owner/some/path/deeper/path"
-          }
+            "path": "/apps/test/test_owner/some/upper/path/deeper/path"
+          },
+          "subtree_configs": []
         });
       })
 
       it("matchOwner to match closest owner", () => {
-        assert.deepEqual(node.db.matchOwner("/apps/test/test_owner/some/path/deeper", 'write_owner', 'abcd'), {
+        assert.deepEqual(node.db.matchOwner("/apps/test/test_owner/some/path/subpath", 'write_owner', 'abcd'), {
           "matched_path": {
-            "target_path": "/apps/test/test_owner/some/path/deeper"
+            "target_path": "/apps/test/test_owner/some/path"
           },
           "matched_config": {
             "config": {
@@ -1692,64 +1748,249 @@ describe("DB operations", () => {
               }
             },
             "path": "/apps/test/test_owner/some/path"
-          }
+          },
+          "subtree_configs": []
+        });
+      })
+
+      it("matchOwner to match an owner without subtree owners", () => {
+        assert.deepEqual(node.db.matchOwner("/apps/test/test_owner/some/upper/path/subpath", 'write_owner', 'abcd'), {
+          "matched_path": {
+            "target_path": "/apps/test/test_owner/some/upper/path"
+          },
+          "matched_config": {
+            "config": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_function": true,
+                  "write_owner": false,
+                  "write_rule": true
+                },
+                "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": true,
+                  "write_rule": false
+                }
+              }
+            },
+            "path": "/apps/test/test_owner/some/upper/path"
+          },
+          "subtree_configs": []
+        });
+      })
+
+      it("matchOwner to match an owner with subtree owners", () => {
+        assert.deepEqual(node.db.matchOwner("/apps/test/test_owner/some/upper/path", 'write_owner', 'abcd'), {
+          "matched_path": {
+            "target_path": "/apps/test/test_owner/some/upper/path"
+          },
+          "matched_config": {
+            "config": {
+              "owners": {
+                "*": {
+                  "branch_owner": false,
+                  "write_function": true,
+                  "write_owner": false,
+                  "write_rule": true
+                },
+                "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": true,
+                  "write_rule": false
+                }
+              }
+            },
+            "path": "/apps/test/test_owner/some/upper/path"
+          },
+          "subtree_configs": [
+            {
+              "config": {
+                "owners": {
+                  "*": {
+                    "branch_owner": false,
+                    "write_function": true,
+                    "write_owner": false,
+                    "write_rule": true,
+                  },
+                  "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
+                    "branch_owner": true,
+                    "write_function": false,
+                    "write_owner": true,
+                    "write_rule": false,
+                  }
+                }
+              },
+              "path": "/deeper/path"
+            }
+          ]
         });
       })
     })
 
     describe("evalOwner:", () => {
       it("evalOwner to evaluate existing owner with matching address", () => {
-        expect(node.db.evalOwner(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/path", 'write_owner',
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }))
-                .to.equal(true);
-        expect(node.db.evalOwner("/apps/test/test_owner/some/path", 'write_rule', { addr: '' }))
-            .to.equal(false);
-        expect(node.db.evalOwner(
-            "/apps/test/test_owner/some/path/deeper/path", 'write_owner',
-            { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-                .to.equal(true);
-        expect(node.db.evalOwner(
-            "/apps/test/test_owner/some/path/deeper/path", 'write_rule',
-            { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-                .to.equal(false);
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/path", 'write_rule',{ addr: '' })), {
+          "code": 12302,
+          "error_message": "write_rule permission evaluated false: [null] at '/apps/test/test_owner/some/path' for rule path '/apps/test/test_owner/some/path' with permission 'write_rule', auth '{\"addr\":\"\"}'",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path/deeper/path", 'write_owner',
+            { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path/deeper/path", 'write_rule',
+            { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+          "code": 12302,
+          "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_function\":false,\"write_owner\":true,\"write_rule\":false}] at '/apps/test/test_owner/some/upper/path/deeper/path' for rule path '/apps/test/test_owner/some/upper/path/deeper/path' with permission 'write_rule', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+          "matched": "erased",
+        });
       })
 
       it("evalOwner to evaluate existing owner without matching address", () => {
-        expect(node.db.evalOwner("/apps/test/test_owner/some/path", 'write_owner', { addr: 'other' }))
-            .to.equal(false);
-        expect(node.db.evalOwner("/apps/test/test_owner/some/path", 'write_rule', { addr: 'other' }))
-            .to.equal(true);
-        expect(node.db.evalOwner(
-            "/apps/test/test_owner/some/path/deeper/path", 'write_owner', { addr: 'other' }))
-                .to.equal(false);
-        expect(node.db.evalOwner(
-            "/apps/test/test_owner/some/path/deeper/path", 'write_rule', { addr: 'other' }))
-                .to.equal(true);
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/path", 'write_owner', { addr: 'other' })), {
+          "code": 12502,
+          "error_message": "write_owner permission evaluated false: [{\"branch_owner\":false,\"write_function\":true,\"write_owner\":false,\"write_rule\":true}] at '/apps/test/test_owner/some/path' for owner path '/apps/test/test_owner/some/path' with permission 'write_owner', auth '{\"addr\":\"other\"}'",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/path", 'write_rule', { addr: 'other' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path/deeper/path", 'write_owner', { addr: 'other' })), {
+          "code": 12502,
+          "error_message": "write_owner permission evaluated false: [{\"branch_owner\":false,\"write_function\":true,\"write_owner\":false,\"write_rule\":true}] at '/apps/test/test_owner/some/upper/path/deeper/path' for owner path '/apps/test/test_owner/some/upper/path/deeper/path' with permission 'write_owner', auth '{\"addr\":\"other\"}'",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path/deeper/path", 'write_rule', { addr: 'other' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
       })
 
       it("evalOwner to evaluate closest owner", () => {
-        expect(node.db.evalOwner(
-            "/apps/test/test_owner/some/path/deeper", 'write_owner',
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }))
-                .to.equal(true);
-        expect(node.db.evalOwner(
-            "/apps/test/test_owner/some/path/deeper", 'write_rule',
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }))
-                .to.equal(false);
-        expect(node.db.evalOwner(
-            "/apps/test/test_owner/some/path/deeper", 'write_owner', { addr: 'other' }))
-                .to.equal(false);
-        expect(node.db.evalOwner(
-            "/apps/test/test_owner/some/path/deeper", 'write_rule', { addr: 'other' }))
-                .to.equal(true);
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/path/subpath", 'write_owner',
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/path/subpath", 'write_rule',{ addr: '' })), {
+          "code": 12302,
+          "error_message": "write_rule permission evaluated false: [null] at '/apps/test/test_owner/some/path' for rule path '/apps/test/test_owner/some/path/subpath' with permission 'write_rule', auth '{\"addr\":\"\"}'",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path/deeper/path/subpath", 'write_owner',
+            { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path/deeper/path/subpath", 'write_rule',
+            { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+          "code": 12302,
+          "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_function\":false,\"write_owner\":true,\"write_rule\":false}] at '/apps/test/test_owner/some/upper/path/deeper/path' for rule path '/apps/test/test_owner/some/upper/path/deeper/path/subpath' with permission 'write_rule', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+          "matched": "erased",
+        });
+      })
+
+      it("evalOwner to evaluate a owner without subtree owners", () => {
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path/subpath", 'write_owner',
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path/subpath", 'write_rule',
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
+          "code": 12302,
+          "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_function\":false,\"write_owner\":true,\"write_rule\":false}] at '/apps/test/test_owner/some/upper/path' for rule path '/apps/test/test_owner/some/upper/path/subpath' with permission 'write_rule', auth '{\"addr\":\"0x09A0d53FDf1c36A131938eb379b98910e55EEfe1\"}'",
+          "matched": "erased",
+        });
+      })
+
+      it("evalOwner to evaluate a owner with subtree owners", () => {
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path", 'write_rule',
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
+          "code": 12301,
+          "error_message": "Non-empty (1) subtree owners for rule path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path", 'write_function',
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
+          "code": 12401,
+          "error_message": "Non-empty (1) subtree owners for function path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path", 'write_owner',
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
+          "code": 12501,
+          "error_message": "Non-empty (1) subtree owners for owner path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
+          "matched": "erased",
+        });
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path", 'branch_owner',
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
+          "code": 12501,
+          "error_message": "Non-empty (1) subtree owners for owner path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
+          "matched": "erased",
+        });
+      })
+
+      it("evalOwner to evaluate a owner with invalid permission", () => {
+        assert.deepEqual(node.db.evalOwner(
+            "/apps/test/test_owner/some/upper/path", 'invalid permission',
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
+          "code": 12201,
+          "error_message": "Invalid permission 'invalid permission' for local path '/apps/test/test_owner/some/upper/path' with auth '{\"addr\":\"0x09A0d53FDf1c36A131938eb379b98910e55EEfe1\"}'",
+          "matched": null,
+        });
       })
     })
 
     describe("setOwner:", () => {
-      it("setOwner to overwrite existing owner config", () => {
-        const ownerTree = {
-          ".owner": {
+      const ownerTree = {
+        ".owner": {
+          "owners": {
+            "*": {
+              "branch_owner": true,
+              "write_function": true,
+              "write_owner": true,
+              "write_rule": true,
+            }
+          }
+        },
+        "deeper": {
+          ".owner": {  // deeper owner
             "owners": {
               "*": {
                 "branch_owner": true,
@@ -1758,20 +1999,11 @@ describe("DB operations", () => {
                 "write_rule": true,
               }
             }
-          },
-          "deeper": {
-            ".owner": {  // deeper owner
-              "owners": {
-                "*": {
-                  "branch_owner": true,
-                  "write_function": true,
-                  "write_owner": true,
-                  "write_rule": true,
-                }
-              }
-            }
           }
-        };
+        }
+      };
+
+      it("setOwner to overwrite existing owner config", () => {
         assert.deepEqual(node.db.setOwner(
             "/apps/test/test_owner/some/path", ownerTree,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
@@ -1802,7 +2034,7 @@ describe("DB operations", () => {
         assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/path", {
           ".owner": "invalid owners config"
         }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
-          "code": 10604,
+          "code": 10603,
           "error_message": "Invalid owner tree: /.owner",
           "bandwidth_gas_amount": 1
         });
@@ -1813,7 +2045,7 @@ describe("DB operations", () => {
             "owners": "invalid owners config"
           }
         }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
-          "code": 10604,
+          "code": 10603,
           "error_message": "Invalid owner tree: /.owner/owners",
           "bandwidth_gas_amount": 1
         });
@@ -1835,6 +2067,17 @@ describe("DB operations", () => {
         }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
           "code": 10602,
           "error_message": "Invalid owner path: /apps/test/test_owner/some/path/.",
+          "bandwidth_gas_amount": 1
+        });
+      })
+
+      // For details, see test case 'evalOwner to evaluate write_owner permission with subtree owners'.
+      it("setOwner to write with subtree owners", () => {
+        assert.deepEqual(node.db.setOwner(
+            "/apps/test/test_owner/some/upper/path", ownerTree,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }), {
+          "code": 12501,
+          "error_message": "Non-empty (1) subtree owners for owner path '/apps/test/test_owner/some/upper/path': [\"/deeper/path\"]",
           "bandwidth_gas_amount": 1
         });
       })
@@ -1873,7 +2116,7 @@ describe("DB operations", () => {
           },
           {
             type: "MATCH_OWNER",
-            ref: "/apps/test/test_owner/some/path/deeper",
+            ref: "/apps/test/test_owner/some/path/subpath",
           },
           {
             type: "EVAL_RULE",
@@ -1884,7 +2127,7 @@ describe("DB operations", () => {
           },
           {
             type: "EVAL_OWNER",
-            ref: "/apps/owner/other/path",
+            ref: "/apps/test/test_owner/some/path/subpath",
             permission: "write_rule",
             address: "abcd",
             timestamp: timestamp,
@@ -1946,7 +2189,7 @@ describe("DB operations", () => {
           },
           {
             "matched_path": {
-              "target_path": "/apps/test/test_owner/some/path/deeper"
+              "target_path": "/apps/test/test_owner/some/path"
             },
             "matched_config": {
               "config": {
@@ -1966,7 +2209,8 @@ describe("DB operations", () => {
                 }
               },
               "path": "/apps/test/test_owner/some/path"
-            }
+            },
+            "subtree_configs": []
           },
           {
             "code": 0,
@@ -2025,7 +2269,45 @@ describe("DB operations", () => {
               }
             }
           },
-          false
+          {
+            "code": 0,
+            "error_message": "",
+            "matched": {
+              "closestOwner": {
+                "config": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": false,
+                      "write_function": true,
+                      "write_owner": false,
+                      "write_rule": true,
+                    },
+                    "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+                      "branch_owner": true,
+                      "write_function": false,
+                      "write_owner": true,
+                      "write_rule": false,
+                    }
+                  }
+                },
+                "path": [
+                  "apps",
+                  "test",
+                  "test_owner",
+                  "some",
+                  "path",
+                ]
+              },
+              "matchedOwnerPath": [
+                "apps",
+                "test",
+                "test_owner",
+                "some",
+                "path",
+              ],
+              "subtreeOwners": []
+            }
+          }
         ]);
       })
 
@@ -2116,26 +2398,6 @@ describe("DB operations", () => {
                   "write_rule": false,
                 }
               }
-            },
-            "deeper": {
-              "path": {
-                ".owner": {
-                  "owners": {
-                    "*": {
-                      "branch_owner": false,
-                      "write_function": true,
-                      "write_owner": false,
-                      "write_rule": true,
-                    },
-                    "0x08Aed7AF9354435c38d52143EE50ac839D20696b": {
-                      "branch_owner": true,
-                      "write_function": false,
-                      "write_owner": true,
-                      "write_rule": false,
-                    }
-                  }
-                }
-              }
             }
           },
           {
@@ -2216,7 +2478,8 @@ describe("DB operations", () => {
                 }
               },
               "path": "/apps/test/test_owner/some/path"
-            }
+            },
+            "subtree_configs": []
           },
           {
             "code": 0,
@@ -2275,7 +2538,45 @@ describe("DB operations", () => {
               }
             }
           },
-          true,
+          {
+            "code": 0,
+            "error_message": "",
+            "matched": {
+              "closestOwner": {
+                "config": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": false,
+                      "write_function": true,
+                      "write_owner": false,
+                      "write_rule": true,
+                    },
+                    "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1": {
+                      "branch_owner": true,
+                      "write_function": false,
+                      "write_owner": true,
+                      "write_rule": false,
+                    }
+                  }
+                },
+                "path": [
+                  "apps",
+                  "test",
+                  "test_owner",
+                  "some",
+                  "path",
+                ]
+              },
+              "matchedOwnerPath": [
+                "apps",
+                "test",
+                "test_owner",
+                "some",
+                "path",
+              ],
+              "subtreeOwners": []
+            }
+          }
         ]);
       })
     })
@@ -3558,19 +3859,19 @@ describe("DB rule config", () => {
   });
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/balance`, 0, null, null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/balance`, -1, null, null)), {
       "code": 12103,
       "error_message": "Write rule evaluated false: [typeof newData === 'number' && newData >= 0] at '/apps/test/users/$uid/balance' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data '50', newData '-1', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/balance`, 1, null, null)), {
       "code": 0,
       "error_message": "",
@@ -3579,19 +3880,19 @@ describe("DB rule config", () => {
   })
 
   it("only allows certain users to write certain info if data exists", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/info`, "something", null, null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/info`, "something else", null, null)), {
       "code": 12103,
       "error_message": "Write rule evaluated false: [data !== null] at '/apps/test/users/$uid/info' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/info' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data 'null', newData '\"something else\"', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/new_info`, "something",
         { addr: node2.account.address }, null)), {
       "code": 0,
@@ -3601,14 +3902,14 @@ describe("DB rule config", () => {
   })
 
   it("apply the closest ancestor's rule config if not exists", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/child/grandson`, "something",
         { addr: node1.account.address }, null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/child/grandson`, "something",
         { addr: node1.account.address }, null)), {
       "code": 12103,
@@ -3618,13 +3919,13 @@ describe("DB rule config", () => {
   })
 
   it("only allows certain users to write certain info if data at other locations exists", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/balance_info`, "something", null, null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/balance_info`, "something", null, null)), {
       "code": 12103,
       "error_message": "Write rule evaluated false: [getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null] at '/apps/test/users/$uid/balance_info' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance_info' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '\"something\"', auth 'null', timestamp 'null'",
@@ -3633,13 +3934,13 @@ describe("DB rule config", () => {
   })
 
   it("validates old data and new data together", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/next_counter`, 11, null,  null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/next_counter`, 12, null, null)), {
       "code": 12103,
       "error_message": "Write rule evaluated false: [typeof newData === 'number' && newData === data + 1] at '/apps/test/users/$uid/next_counter' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data '10', newData '12', auth 'null', timestamp 'null'",
@@ -3648,14 +3949,14 @@ describe("DB rule config", () => {
   })
 
   it("can handle nested path variables", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node2.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/second_users/${node2.account.address}/${node2.account.address}`,
         "some value", null, null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/second_users/${node1.account.address}/next_counter`,
         "some other value", null, null)), {
       "code": 12103,
@@ -3665,13 +3966,13 @@ describe("DB rule config", () => {
   })
 
   it("duplicated path variables", () => {
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         '/apps/test/no_dup_key/aaa/bbb', "some value", null, null)), {
       "code": 0,
       "error_message": "",
       "matched": "erased",
     });
-    assert.deepEqual(eraseEvalRuleResMatched(node1.db.evalRule(
+    assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         '/apps/test/dup_key/aaa/bbb', "some value", null, null)), {
       "code": 0,
       "error_message": "",
@@ -3795,215 +4096,378 @@ describe("DB owner config", () => {
 
   // Known user
   it("branch_owner permission for known user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true/branch', 'branch_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true/branch', 'branch_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 12502,
+      "error_message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_owner\":true,\"write_rule\":true,\"write_function\":true}] at '/apps/test/test_owner/mixed/false/true/true' for owner path '/apps/test/test_owner/mixed/false/true/true/branch' with permission 'branch_owner', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true/branch', 'branch_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false/branch', 'branch_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 
   it("write_owner permission for known user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true', 'write_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true', 'write_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true', 'write_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 12502,
+      "error_message": "write_owner permission evaluated false: [{\"branch_owner\":true,\"write_owner\":false,\"write_rule\":true,\"write_function\":true}] at '/apps/test/test_owner/mixed/true/false/true' for owner path '/apps/test/test_owner/mixed/true/false/true' with permission 'write_owner', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false', 'write_owner',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 
   it("write_rule permission for known user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(false)
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/false' for rule path '/apps/test/test_owner/mixed/true/true/false' with permission 'write_rule', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+      "matched": "erased",
+    });
   })
 
   it("write_rule permission on deeper path for known user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true/deeper_path', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true/deeper_path', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true/deeper_path', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false/deeper_path', 'write_rule',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(false)
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/false' for rule path '/apps/test/test_owner/mixed/true/true/false/deeper_path' with permission 'write_rule', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+      "matched": "erased",
+    });
   })
 
   it("write_function permission for known user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(false)
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":true,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/false' for function path '/apps/test/test_owner/mixed/true/true/false' with permission 'write_function', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+      "matched": "erased",
+    });
   })
 
   it("write_function permission on deeper path for known user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true/deeper_path', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true/deeper_path', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true/deeper_path', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false/deeper_path', 'write_function',
-        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' }))
-            .to.equal(false)
+        { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":true,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/false' for function path '/apps/test/test_owner/mixed/true/true/false/deeper_path' with permission 'write_function', auth '{\"addr\":\"0x08Aed7AF9354435c38d52143EE50ac839D20696b\"}'",
+      "matched": "erased",
+    });
   })
 
   // Unknown user
   it("branch_owner permission for unknown user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true/branch', 'branch_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12502,
+      "error_message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/true' for owner path '/apps/test/test_owner/mixed/true/true/true/branch' with permission 'branch_owner', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true/branch', 'branch_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(true)
-    expect(node.db.evalOwner(
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true/branch', 'branch_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12502,
+      "error_message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/false/true' for owner path '/apps/test/test_owner/mixed/true/false/true/branch' with permission 'branch_owner', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false/branch', 'branch_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12502,
+      "error_message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":true,\"write_function\":true}] at '/apps/test/test_owner/mixed/true/true/false' for owner path '/apps/test/test_owner/mixed/true/true/false/branch' with permission 'branch_owner', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
   })
 
   it("write_owner permission for unknown user with mixed config", () => {
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/true', 'write_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/false/true/true', 'write_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/false/true', 'write_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(true)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/false', 'write_owner',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/true', 'write_owner',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12502,
+      "error_message": "write_owner permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/true' for owner path '/apps/test/test_owner/mixed/true/true/true' with permission 'write_owner', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/false/true/true', 'write_owner',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12502,
+      "error_message": "write_owner permission evaluated false: [{\"branch_owner\":true,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/false/true/true' for owner path '/apps/test/test_owner/mixed/false/true/true' with permission 'write_owner', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/false/true', 'write_owner',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/false', 'write_owner',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12502,
+      "error_message": "write_owner permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":true,\"write_function\":true}] at '/apps/test/test_owner/mixed/true/true/false' for owner path '/apps/test/test_owner/mixed/true/true/false' with permission 'write_owner', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
   })
 
   it("write_rule permission for unknown user with mixed config", () => {
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/true', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/false/true/true', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/false/true', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/false', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(true)
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/true', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/true' for rule path '/apps/test/test_owner/mixed/true/true/true' with permission 'write_rule', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/false/true/true', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/false/true/true' for rule path '/apps/test/test_owner/mixed/false/true/true' with permission 'write_rule', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/false/true', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":false,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/false/true' for rule path '/apps/test/test_owner/mixed/true/false/true' with permission 'write_rule', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/false', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 
   it("write_rule permission on deeper path for unknown user with mixed config", () => {
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/true/deeper_path', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/false/true/true/deeper_path', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/false/true/deeper_path', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/false/deeper_path', 'write_rule',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(true)
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/true/deeper_path', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/true' for rule path '/apps/test/test_owner/mixed/true/true/true/deeper_path' with permission 'write_rule', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/false/true/true/deeper_path', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":true,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/false/true/true' for rule path '/apps/test/test_owner/mixed/false/true/true/deeper_path' with permission 'write_rule', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/false/true/deeper_path', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12302,
+      "error_message": "write_rule permission evaluated false: [{\"branch_owner\":false,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/false/true' for rule path '/apps/test/test_owner/mixed/true/false/true/deeper_path' with permission 'write_rule', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/false/deeper_path', 'write_rule',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 
   it("write_function permission for unknown user with mixed config", () => {
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/true', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })).to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/false/true/true', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })).to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/false/true', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })).to.equal(false)
-    expect(node.db.evalOwner('/apps/test/test_owner/mixed/true/true/false', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })).to.equal(true)
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/true', 'write_function',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/true' for function path '/apps/test/test_owner/mixed/true/true/true' with permission 'write_function', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/false/true/true', 'write_function',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":true,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/false/true/true' for function path '/apps/test/test_owner/mixed/false/true/true' with permission 'write_function', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/false/true', 'write_function',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":false,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/false/true' for function path '/apps/test/test_owner/mixed/true/false/true' with permission 'write_function', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
+        '/apps/test/test_owner/mixed/true/true/false', 'write_function',
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 
   it("write_function permission on deeper path for unknown user with mixed config", () => {
-    expect(node.db.evalOwner(
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/true/deeper_path', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":false,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/true/true' for function path '/apps/test/test_owner/mixed/true/true/true/deeper_path' with permission 'write_function', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true/deeper_path', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":true,\"write_owner\":false,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/false/true/true' for function path '/apps/test/test_owner/mixed/false/true/true/deeper_path' with permission 'write_function', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true/deeper_path', 'write_function',
-         { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(false)
-    expect(node.db.evalOwner(
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 12402,
+      "error_message": "write_function permission evaluated false: [{\"branch_owner\":false,\"write_owner\":true,\"write_rule\":false,\"write_function\":false}] at '/apps/test/test_owner/mixed/true/false/true' for function path '/apps/test/test_owner/mixed/true/false/true/deeper_path' with permission 'write_function', auth '{\"addr\":\"0x07A43138CC760C85A5B1F115aa60eADEaa0bf417\"}'",
+      "matched": "erased",
+    });
+    assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false/deeper_path', 'write_function',
-        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' }))
-            .to.equal(true)
+        { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
+      "code": 0,
+      "error_message": "",
+      "matched": "erased",
+    });
   })
 })
-
 
 describe("DB sharding config", () => {
   let node;
@@ -4075,11 +4539,6 @@ describe("DB sharding config", () => {
           "to": {
             ".rule": {
               "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
-            },
-            "deeper": {
-              ".rule": {
-                "write": "auth.addr === 'def'"
-              }
             }
           }
         }
@@ -4104,18 +4563,6 @@ describe("DB sharding config", () => {
                   "write_function": true,
                   "write_owner": true,
                   "write_rule": true,
-                }
-              }
-            },
-            "deeper": {
-              ".owner": {  // deeper owner
-                "owners": {
-                  "*": {
-                    "branch_owner": true,
-                    "write_function": true,
-                    "write_owner": true,
-                    "write_rule": true,
-                  },
                 }
               }
             }
@@ -4172,29 +4619,35 @@ describe("DB sharding config", () => {
     describe("setValue with isGlobal:", () => {
       it("setValue with isGlobal = false", () => {
         expect(node.db.setValue(
-            "/apps/test/test_sharding/some/path/to/value", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            "/apps/test/test_sharding/some/path/to/value", newValue,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
             null, { extra: { executed_at: 1234567890000 }}).code)
-                .to.equal(0);
+            .to.equal(0);
         expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(newValue);
       })
 
       it("setValue with isGlobal = true", () => {
         expect(node.db.setValue(
-            "/apps/afan/apps/test/test_sharding/some/path/to/value", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-                .to.equal(0);
+            "/apps/afan/apps/test/test_sharding/some/path/to/value", newValue,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { isGlobal: true }).code)
+            .to.equal(0);
         expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(newValue);
       })
 
       it("setValue with isGlobal = true and non-existing path", () => {
         expect(node.db.setValue(
-            "/apps/some/non-existing/path", newValue, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-                .to.equal(0);
+            "/apps/some/non-existing/path", newValue,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { isGlobal: true }).code)
+            .to.equal(0);
       })
 
       it("setValue with isGlobal = false and non-writable path with sharding", () => {
-        assert.deepEqual(node.db.setValue("/apps/test/test_sharding/shards/enabled_shard/path", 20), {
+        assert.deepEqual(node.db.setValue(
+            "/apps/test/test_sharding/shards/enabled_shard/path", 20), {
           "code": 10103,
           "error_message": "Non-writable path with shard config: /values/apps/test/test_sharding/shards/enabled_shard",
           "bandwidth_gas_amount": 1
@@ -4203,25 +4656,33 @@ describe("DB sharding config", () => {
 
       it("setValue with isGlobal = true and non-writable path with sharding", () => {
         expect(node.db.setValue(
-            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 20, '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', null, null,
+            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 20,
+            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', null, null,
             100, 1234567890000, { isGlobal: true }).code)
-                .to.equal(0);
-        expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
+            .to.equal(0);
+        expect(node.db.getValue(
+            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path",
+            { isShallow: false, isGlobal: true }))
             .to.equal(10);  // value unchanged
       })
 
       it("setValue with isGlobal = false and writable path with sharding", () => {
-        expect(node.db.setValue("/apps/test/test_sharding/shards/disabled_shard/path", 20).code)
+        expect(node.db.setValue(
+            "/apps/test/test_sharding/shards/disabled_shard/path", 20).code)
             .to.equal(0);
         expect(node.db.getValue("/apps/test/test_sharding/shards/disabled_shard/path")).to.equal(20);
       })
 
       it("setValue with isGlobal = true and writable path with sharding", () => {
         expect(node.db.setValue(
-            "apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 20, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-                .to.equal(0);
-        expect(node.db.getValue("apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
+            "apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 20,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { isGlobal: true }).code)
+            .to.equal(0);
+        expect(node.db.getValue(
+            "apps/afan/apps/test/test_sharding/shards/disabled_shard/path",
+            { isShallow: false, isGlobal: true }))
             .to.equal(20);  // value changed
       })
     });
@@ -4229,24 +4690,31 @@ describe("DB sharding config", () => {
     describe("incValue with isGlobal:", () => {
       it("incValue with isGlobal = false", () => {
         expect(node.db.incValue(
-            "/apps/test/test_sharding/some/path/to/number", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            "/apps/test/test_sharding/some/path/to/number", incDelta,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
             null, { extra: { executed_at: 1234567890000 }}).code)
-                .to.equal(0);
-        expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
+            .to.equal(0);
+        expect(node.db.getValue(
+            "/apps/test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
       })
 
       it("incValue with isGlobal = true", () => {
         expect(node.db.incValue(
-            "/apps/afan/apps/test/test_sharding/some/path/to/number", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-                .to.equal(0);
-        expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
+            "/apps/afan/apps/test/test_sharding/some/path/to/number", incDelta,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { isGlobal: true }).code)
+            .to.equal(0);
+        expect(node.db.getValue(
+            "/apps/test/test_sharding/some/path/to/number")).to.equal(10 + incDelta);
       })
 
       it("incValue with isGlobal = true and non-existing path", () => {
         expect(node.db.incValue(
-            "/apps/some/non-existing/path", incDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 100, 1234567890000, { isGlobal: true }).code)
-                .to.equal(0);
+            "/apps/some/non-existing/path", incDelta,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 100, 1234567890000,
+            { isGlobal: true }).code)
+            .to.equal(0);
       })
 
       it("incValue with isGlobal = false and non-writable path with sharding", () => {
@@ -4259,10 +4727,13 @@ describe("DB sharding config", () => {
 
       it("incValue with isGlobal = true and non-writable path with sharding", () => {
         expect(node.db.incValue(
-            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
             null, null, 100, 1234567890000, { isGlobal: true }).code)
-                .to.equal(0);
-        expect(node.db.getValue("apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
+            .to.equal(0);
+        expect(node.db.getValue(
+            "apps/afan/apps/test/test_sharding/shards/enabled_shard/path",
+            { isShallow: false, isGlobal: true }))
             .to.equal(10);  // value unchanged
       })
 
@@ -4274,10 +4745,13 @@ describe("DB sharding config", () => {
 
       it("incValue with isGlobal = true and writable path with sharding", () => {
         expect(node.db.incValue(
-            "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
             null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-                .to.equal(0);
-        expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
+            .to.equal(0);
+        expect(node.db.getValue(
+            "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path",
+            { isShallow: false, isGlobal: true }))
             .to.equal(15);  // value changed
       })
     });
@@ -4285,24 +4759,30 @@ describe("DB sharding config", () => {
     describe("decValue with isGlobal:", () => {
       it("decValue with isGlobal = false", () => {
         expect(node.db.decValue(
-            "/apps/test/test_sharding/some/path/to/number", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            "/apps/test/test_sharding/some/path/to/number", decDelta,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
             null, { extra: { executed_at: 1234567890000 }}).code)
-                .to.equal(0);
-        expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
+            .to.equal(0);
+        expect(node.db.getValue(
+            "/apps/test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
       })
 
       it("decValue with isGlobal = true", () => {
         expect(node.db.decValue(
-            "/apps/afan/apps/test/test_sharding/some/path/to/number", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-                .to.equal(0);
-        expect(node.db.getValue("/apps/test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
+            "/apps/afan/apps/test/test_sharding/some/path/to/number", decDelta,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { isGlobal: true }).code)
+            .to.equal(0);
+        expect(node.db.getValue(
+            "/apps/test/test_sharding/some/path/to/number")).to.equal(10 - decDelta);
       })
 
       it("decValue with isGlobal = true and non-existing path", () => {
         expect(node.db.decValue(
-            "/apps/some/non-existing/path", decDelta, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 100, 1234567890000, { isGlobal: true }).code)
-                .to.equal(0);
+            "/apps/some/non-existing/path", decDelta,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, null, null, 100, 1234567890000, { isGlobal: true }).code)
+            .to.equal(0);
       })
 
       it("decValue with isGlobal = false and non-writable path with sharding", () => {
@@ -4315,12 +4795,14 @@ describe("DB sharding config", () => {
 
       it("decValue with isGlobal = true and non-writable path with sharding", () => {
         expect(node.db.decValue(
-            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 5,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
             null, null, 100, 1234567890000, { isGlobal: true }).code)
-                .to.equal(0);
+            .to.equal(0);
         expect(node.db.getValue(
-            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", { isShallow: false, isGlobal: true }))
-                .to.equal(10);  // value unchanged
+            "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path",
+            { isShallow: false, isGlobal: true }))
+            .to.equal(10);  // value unchanged
       })
 
       it("decValue with isGlobal = false and writable path with sharding", () => {
@@ -4332,11 +4814,15 @@ describe("DB sharding config", () => {
 
       it("decValue with isGlobal = true and writable path with sharding", () => {
         expect(node.db.decValue(
-            "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000, { isGlobal: true }).code)
-                .to.equal(0);
-        expect(node.db.getValue("/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", { isShallow: false, isGlobal: true }))
-          .to.equal(5);  // value changed
+            "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 5,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
+            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { isGlobal: true }).code)
+            .to.equal(0);
+        expect(node.db.getValue(
+            "/apps/afan/apps/test/test_sharding/shards/disabled_shard/path",
+            { isShallow: false, isGlobal: true }))
+            .to.equal(5);  // value changed
       })
     });
   })
@@ -4390,26 +4876,33 @@ describe("DB sharding config", () => {
 
     describe("getFunction with isGlobal:", () => {
       it("getFunction with isGlobal = false", () => {
-        assert.deepEqual(node.db.getFunction("/apps/test/test_sharding/some/path/to"), func);
-        expect(node.db.getFunction("apps/afan/test/test_sharding/some/path/to")).to.equal(null);
+        assert.deepEqual(node.db.getFunction(
+            "/apps/test/test_sharding/some/path/to"), func);
+        expect(node.db.getFunction(
+            "apps/afan/test/test_sharding/some/path/to")).to.equal(null);
       })
 
       it("getFunction with isGlobal = true", () => {
-        expect(node.db.getFunction("/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true })).to.equal(null);
-        assert.deepEqual(
-            node.db.getFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), func);
+        expect(node.db.getFunction(
+            "/apps/test/test_sharding/some/path/to",
+            { isShallow: false, isGlobal: true })).to.equal(null);
+        assert.deepEqual(node.db.getFunction(
+            "/apps/afan/apps/test/test_sharding/some/path/to",
+            { isShallow: false, isGlobal: true }), func);
       })
 
       it("getFunction with isGlobal = true and non-existing path", () => {
-        expect(node.db.getFunction("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
+        expect(node.db.getFunction(
+            "/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
       })
     });
 
     describe("setFunction with isGlobal:", () => {
       it("setFunction with isGlobal = false", () => {
         expect(node.db.setFunction(
-            "/apps/test/test_sharding/some/path/to", funcChange, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
-                .to.equal(0);
+            "/apps/test/test_sharding/some/path/to", funcChange,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
+            .to.equal(0);
         assert.deepEqual(node.db.getFunction("/apps/test/test_sharding/some/path/to"), newFunc);
       })
 
@@ -4417,21 +4910,24 @@ describe("DB sharding config", () => {
         expect(node.db.setFunction(
             "/apps/afan/apps/test/test_sharding/some/path/to", funcChange,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
-                .to.equal(0);
-        assert.deepEqual(
-            node.db.getFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newFunc);
+            .to.equal(0);
+        assert.deepEqual(node.db.getFunction(
+            "/apps/afan/apps/test/test_sharding/some/path/to",
+            { isShallow: false, isGlobal: true }), newFunc);
       })
 
       it("setFunction with isGlobal = true and non-existing path", () => {
         expect(node.db.setFunction(
-            "/apps/some/non-existing/path", funcChange, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
-                .to.equal(0);
+            "/apps/some/non-existing/path", funcChange,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
+            .to.equal(0);
       })
     });
 
     describe("matchFunction with isGlobal:", () => {
       it("matchFunction with isGlobal = false", () => {
-        assert.deepEqual(node.db.matchFunction("/apps/test/test_sharding/some/path/to"), {
+        assert.deepEqual(node.db.matchFunction(
+            "/apps/test/test_sharding/some/path/to"), {
           "matched_path": {
             "target_path": "/apps/test/test_sharding/some/path/to",
             "ref_path": "/apps/test/test_sharding/some/path/to",
@@ -4463,7 +4959,8 @@ describe("DB sharding config", () => {
       })
 
       it("matchFunction with isGlobal = true", () => {
-        assert.deepEqual(node.db.matchFunction("/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
+        assert.deepEqual(node.db.matchFunction(
+            "/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
           "matched_path": {
             "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
             "ref_path": "/apps/afan/apps/test/test_sharding/some/path/to",
@@ -4504,11 +5001,6 @@ describe("DB sharding config", () => {
     const rule = {
       ".rule": {
         "write": "auth.addr === '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'"
-      },
-      "deeper": {
-        ".rule": {
-          "write": "auth.addr === 'def'"
-        }
       }
     };
     const newRule = {
@@ -4525,30 +5017,35 @@ describe("DB sharding config", () => {
       })
 
       it("getRule with isGlobal = true", () => {
-        expect(node.db.getRule("/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true })).to.equal(null);
-        assert.deepEqual(
-            node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), rule);
+        expect(node.db.getRule(
+            "/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true })).to.equal(null);
+        assert.deepEqual(node.db.getRule(
+            "/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), rule);
       })
 
       it("getRule with isGlobal = true and non-existing path", () => {
-        expect(node.db.getRule("/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
+        expect(node.db.getRule(
+            "/apps/some/non-existing/path", { isShallow: false, isGlobal: true })).to.equal(null);
       })
     });
 
     describe("setRule with isGlobal:", () => {
       it("setRule with isGlobal = false", () => {
         expect(node.db.setRule(
-            "/apps/test/test_sharding/some/path/to", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
-                .to.equal(0);
+            "/apps/test/test_sharding/some/path/to", newRule,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }).code)
+            .to.equal(0);
         assert.deepEqual(node.db.getRule("/apps/test/test_sharding/some/path/to"), newRule);
       })
 
       it("setRule with isGlobal = true", () => {
         expect(node.db.setRule(
-            "/apps/afan/apps/test/test_sharding/some/path/to", newRule, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
-                .to.equal(0);
-        assert.deepEqual(
-            node.db.getRule("/apps/afan/apps/test/test_sharding/some/path/to", { isShallow: false, isGlobal: true }), newRule);
+            "/apps/afan/apps/test/test_sharding/some/path/to", newRule,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 0, { isGlobal: true }).code)
+            .to.equal(0);
+        assert.deepEqual(node.db.getRule(
+            "/apps/afan/apps/test/test_sharding/some/path/to",
+            { isShallow: false, isGlobal: true }), newRule);
       })
 
       it("setRule with isGlobal = true and non-existing path", () => {
@@ -4572,14 +5069,7 @@ describe("DB sharding config", () => {
               },
               "path": "/apps/test/test_sharding/some/path/to"
             },
-            "subtree_configs": [
-              {
-                "config": {
-                  "write": "auth.addr === 'def'"
-                },
-                "path": "/deeper",
-              }
-            ]
+            "subtree_configs": []
           },
           "state": {
             "matched_path": {
@@ -4596,7 +5086,8 @@ describe("DB sharding config", () => {
       })
 
       it("matchRule with isGlobal = true", () => {
-        assert.deepEqual(node.db.matchRule("/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
+        assert.deepEqual(node.db.matchRule(
+            "/apps/afan/apps/test/test_sharding/some/path/to", { isGlobal: true }), {
           "write": {
             "matched_path": {
               "target_path": "/apps/afan/apps/test/test_sharding/some/path/to",
@@ -4609,14 +5100,7 @@ describe("DB sharding config", () => {
               },
               "path": "/apps/afan/apps/test/test_sharding/some/path/to"
             },
-            "subtree_configs": [
-              {
-                "config": {
-                  "write": "auth.addr === 'def'"
-                },
-                "path": "/deeper",
-              }
-            ]
+            "subtree_configs": []
           },
           "state": {
             "matched_config": {
@@ -4639,8 +5123,8 @@ describe("DB sharding config", () => {
 
     describe("evalRule with isGlobal:", () => {
       it("evalRule with isGlobal = false", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/test/test_sharding/some/path/to/subpath", newValue,
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
+            "/apps/test/test_sharding/some/path/to", newValue,
             { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" })), {
           "code": 0,
           "error_message": "",
@@ -4649,8 +5133,8 @@ describe("DB sharding config", () => {
       })
 
       it("evalRule with isGlobal = true", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
-            "/apps/afan/apps/test/test_sharding/some/path/to/subpath", newValue,
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
+            "/apps/afan/apps/test/test_sharding/some/path/to", newValue,
             { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true })), {
           "code": 0,
           "error_message": "",
@@ -4659,7 +5143,7 @@ describe("DB sharding config", () => {
       })
 
       it("evalRule with isGlobal = true and non-existing path", () => {
-        assert.deepEqual(eraseEvalRuleResMatched(node.db.evalRule(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/some/non-existing/path", newValue,
             { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true })),
             null);
@@ -4684,18 +5168,6 @@ describe("DB sharding config", () => {
             "write_rule": true,
           }
         }
-      },
-      "deeper": {
-        ".owner": {  // deeper owner
-          "owners": {
-            "*": {
-              "branch_owner": true,
-              "write_function": true,
-              "write_owner": true,
-              "write_rule": true,
-            },
-          }
-        }
       }
     };
     const ownerChange = {
@@ -4714,18 +5186,6 @@ describe("DB sharding config", () => {
             "write_owner": true,
             "write_rule": true,
           },
-        }
-      },
-      "deeper": {
-        ".owner": {  // deeper owner
-          "owners": {
-            "*": {
-              "branch_owner": true,
-              "write_function": true,
-              "write_owner": true,
-              "write_rule": true,
-            },
-          }
         }
       }
     };
@@ -4796,7 +5256,8 @@ describe("DB sharding config", () => {
               }
             },
             "path": "/apps/test/test_sharding/some/path/to"
-          }
+          },
+          "subtree_configs": []
         });
       })
 
@@ -4823,7 +5284,8 @@ describe("DB sharding config", () => {
               }
             },
             "path": "/apps/afan/apps/test/test_sharding/some/path/to"
-          }
+          },
+          "subtree_configs": []
         });
       })
 
@@ -4834,21 +5296,30 @@ describe("DB sharding config", () => {
 
     describe("evalOwner with isGlobal:", () => {
       it("evalOwner with isGlobal = false", () => {
-        expect(node.db.evalOwner(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_sharding/some/path/to", "write_rule",
-            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" })).to.equal(true);
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
       })
 
       it("evalOwner with isGlobal = true", () => {
-        expect(node.db.evalOwner(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/afan/apps/test/test_sharding/some/path/to", "write_rule",
-            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })).to.equal(true);
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })), {
+          "code": 0,
+          "error_message": "",
+          "matched": "erased",
+        });
       })
 
       it("evalOwner with isGlobal = true and non-existing path", () => {
-        expect(node.db.evalOwner(
+        assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/some/non-existing/path", "write_rule",
-            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })).to.equal(null);
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })),
+            null);
       })
     });
   })

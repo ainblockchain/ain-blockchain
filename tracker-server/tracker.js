@@ -24,6 +24,7 @@ class Tracker {
     logger.debug(`: ${JSON.stringify(peerInfo, null, 2)}`);
   }
 
+  // Updates the aliveness status of the nodes and returns the number of alive nodes.
   getNumNodesAlive() {
     let numAliveNodes = 0;
     for (const [address, nodeInfo] of Object.entries(this.blockchainNodes)) {

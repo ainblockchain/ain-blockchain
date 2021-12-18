@@ -422,33 +422,33 @@ function isValidFunctionConfig(configPath, functionConfigObj) {
   return { isValid: true, invalidPath: '' };
 }
 
-function sanitizeOwnerPermissions(ownerPermissionsObj) {
-  if (!ownerPermissionsObj) {
+function sanitizeOwnerPermissions(permissionObj) {
+  if (!permissionObj) {
     return null;
   }
   return {
     [OwnerProperties.BRANCH_OWNER]:
-        CommonUtil.boolOrFalse(ownerPermissionsObj[OwnerProperties.BRANCH_OWNER]),
+        CommonUtil.boolOrFalse(permissionObj[OwnerProperties.BRANCH_OWNER]),
     [OwnerProperties.WRITE_FUNCTION]:
-        CommonUtil.boolOrFalse(ownerPermissionsObj[OwnerProperties.WRITE_FUNCTION]),
+        CommonUtil.boolOrFalse(permissionObj[OwnerProperties.WRITE_FUNCTION]),
     [OwnerProperties.WRITE_OWNER]:
-        CommonUtil.boolOrFalse(ownerPermissionsObj[OwnerProperties.WRITE_OWNER]),
+        CommonUtil.boolOrFalse(permissionObj[OwnerProperties.WRITE_OWNER]),
     [OwnerProperties.WRITE_RULE]:
-        CommonUtil.boolOrFalse(ownerPermissionsObj[OwnerProperties.WRITE_RULE]),
+        CommonUtil.boolOrFalse(permissionObj[OwnerProperties.WRITE_RULE]),
   };
 }
 
-function isValidOwnerPermissions(ownerPermissionsObj) {
+function isValidOwnerPermissions(permissionObj) {
   const LOG_HEADER = 'isValidOwnerPermissions';
 
-  if (CommonUtil.isEmpty(ownerPermissionsObj)) {
+  if (CommonUtil.isEmpty(permissionObj)) {
     return false;
   }
-  const sanitized = sanitizeOwnerPermissions(ownerPermissionsObj);
+  const sanitized = sanitizeOwnerPermissions(permissionObj);
   const isIdentical =
-      _.isEqual(JSON.parse(JSON.stringify(sanitized)), ownerPermissionsObj, { strict: true });
+      _.isEqual(JSON.parse(JSON.stringify(sanitized)), permissionObj, { strict: true });
   if (!isIdentical) {
-    const diffLines = CommonUtil.getJsonDiff(sanitized, ownerPermissionsObj);
+    const diffLines = CommonUtil.getJsonDiff(sanitized, permissionObj);
     logger.info(`[${LOG_HEADER}] Owner permission is in a non-standard format:\n${diffLines}\n`);
   }
   return isIdentical;

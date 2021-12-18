@@ -228,6 +228,20 @@ class RuleUtil {
     return getValue(PathUtil.getTokenBridgeTokenPoolPath(networkName, chainId, tokenId));
   }
 
+  validateCheckoutRefundData(networkName, chainId, tokenId, userAddr, checkoutId, auth, newData, getValue) {
+    const PathUtil = require('../common/path-util');
+    if (!this.isString(newData)) {
+      return false;
+    }
+    if (auth.fid !== '_closeCheckout' && auth.addr !== this.getTokenPoolAddr(networkName, chainId, tokenId, getValue)) {
+      return false;
+    }
+    if (!getValue(PathUtil.getCheckoutHistoryPath(networkName, chainId, tokenId, userAddr, checkoutId))) {
+      return false;
+    }
+    return true;
+  }
+
   validateCheckoutRequestData(networkName, chainId, tokenId, userAddr, checkoutId, newData, getValue) {
     const { PredefinedDbPaths } = require('../common/constants');
     const PathUtil = require('../common/path-util');
