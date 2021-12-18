@@ -247,6 +247,9 @@ class CommonUtil {
     if (args.include_proof !== undefined) {
       options.includeProof = CommonUtil.toBool(args.include_proof);
     }
+    if (args.is_partial_set !== undefined) {
+      options.isPartialSet = CommonUtil.toBool(args.is_partial_set);
+    }
     return options;
   }
 
