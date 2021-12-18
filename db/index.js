@@ -626,12 +626,12 @@ class DB {
       return null;
     }
     if (permission === OwnerProperties.WRITE_RULE) {
-      return this.getPermissionForRule(localPath, auth);
+      return this.getPermissionForRule(localPath, auth, options.isPartialSet);
     } else if (permission === OwnerProperties.WRITE_FUNCTION) {
-      return this.getPermissionForFunction(localPath, auth);
+      return this.getPermissionForFunction(localPath, auth, options.isPartialSet);
     } else if (permission === OwnerProperties.WRITE_OWNER ||
         permission === OwnerProperties.BRANCH_OWNER) {
-      return this.getPermissionForOwner(localPath, auth);
+      return this.getPermissionForOwner(localPath, auth, options.isPartialSet);
     } else {
       return {
         code: TxResultCode.EVAL_OWNER_INVALID_PERMISSION,
@@ -917,15 +917,15 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    const permCheckRes = this.getPermissionForFunction(localPath, auth);
+    const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
+    const applyRes = applyFunctionChange(curFunction, func);
+    const permCheckRes = this.getPermissionForFunction(localPath, auth, applyRes.isPartialSet);
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
           permCheckRes.error_message,
           unitWriteGasLimit);
     }
-    const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
-    const applyRes = applyFunctionChange(curFunction, func);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, applyRes.funcConfig);
     return CommonUtil.returnTxResult(
@@ -973,15 +973,15 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    const permCheckRes = this.getPermissionForRule(localPath, auth);
+    const curRule = this.getRule(rulePath, { isShallow: false, isGlobal });
+    const applyRes = applyRuleChange(curRule, rule);
+    const permCheckRes = this.getPermissionForRule(localPath, auth, applyRes.isPartialSet);
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
           permCheckRes.error_message,
           unitWriteGasLimit);
     }
-    const curRule = this.getRule(rulePath, { isShallow: false, isGlobal });
-    const applyRes = applyRuleChange(curRule, rule);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     this.writeDatabase(fullPath, applyRes.ruleConfig);
     return CommonUtil.returnTxResult(
@@ -1027,15 +1027,15 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    const permCheckRes = this.getPermissionForOwner(localPath, auth);
+    const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
+    const applyRes = applyOwnerChange(curOwner, owner);
+    const permCheckRes = this.getPermissionForOwner(localPath, auth, applyRes.isPartialSet);
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
           permCheckRes.error_message,
           unitWriteGasLimit);
     }
-    const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
-    const applyRes = applyOwnerChange(curOwner, owner);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     this.writeDatabase(fullPath, applyRes.ownerConfig);
     return CommonUtil.returnTxResult(
@@ -1789,9 +1789,9 @@ class DB {
     };
   }
 
-  getPermissionForRule(parsedRulePath, auth) {
+  getPermissionForRule(parsedRulePath, auth, isPartialSet) {
     const matched = this.matchOwnerForParsedPath(parsedRulePath);
-    if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+    if (!isPartialSet && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_RULE,
@@ -1821,9 +1821,9 @@ class DB {
     };
   }
 
-  getPermissionForFunction(parsedFuncPath, auth) {
+  getPermissionForFunction(parsedFuncPath, auth, isPartialSet) {
     const matched = this.matchOwnerForParsedPath(parsedFuncPath);
-    if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+    if (!isPartialSet && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_FUNCTION,
@@ -1853,9 +1853,9 @@ class DB {
     };
   }
 
-  getPermissionForOwner(parsedOwnerPath, auth) {
+  getPermissionForOwner(parsedOwnerPath, auth, isPartialSet) {
     const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
-    if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+    if (!isPartialSet && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_OWNER,
