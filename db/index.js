@@ -603,8 +603,7 @@ class DB {
       // No matched local path.
       return null;
     }
-    return this.convertOwnerMatch(
-        this.matchOwnerForParsedPath(localPath), isGlobal);
+    return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
   evalRule(valuePath, value, auth, timestamp, options) {
@@ -626,8 +625,22 @@ class DB {
       // No matched local path.
       return null;
     }
-    const matched = this.matchOwnerForParsedPath(localPath);
-    return this.checkPermission(matched.closestOwner.config, auth, permission);
+    if (permission === OwnerProperties.WRITE_RULE) {
+      return this.getPermissionForRule(localPath, auth);
+    } else if (permission === OwnerProperties.WRITE_FUNCTION) {
+      return this.getPermissionForFunction(localPath, auth);
+    } else if (permission === OwnerProperties.WRITE_OWNER ||
+        permission === OwnerProperties.BRANCH_OWNER) {
+      return this.getPermissionForOwner(localPath, auth);
+    } else {
+      return {
+        code: TxResultCode.EVAL_OWNER_INVALID_PERMISSION,
+        error_message: `Invalid permission '${permission}' ` +
+            `for local path '${CommonUtil.formatPath(localPath)}' ` +
+            `with auth '${JSON.stringify(auth)}'`,
+        matched: null,
+      };
+    }
   }
 
   // TODO(platfowner): Add tests for op.fid.
@@ -762,7 +775,7 @@ class DB {
           unitWriteGasLimit);
     }
     const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, timestamp);
-    if (ruleEvalRes.code > 0) {
+    if (CommonUtil.isFailedTxResultCode(ruleEvalRes.code)) {
       return CommonUtil.returnTxResult(
           ruleEvalRes.code,
           ruleEvalRes.error_message,
@@ -904,10 +917,11 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    if (!this.getPermissionForFunction(localPath, auth)) {
+    const permCheckRes = this.getPermissionForFunction(localPath, auth);
+    if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
-          TxResultCode.SET_FUNCTION_NO_WRITE_PERMISSION,
-          `No write_function permission on: ${functionPath}`,
+          permCheckRes.code,
+          permCheckRes.error_message,
           unitWriteGasLimit);
     }
     const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
@@ -959,10 +973,11 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    if (!this.getPermissionForRule(localPath, auth)) {
+    const permCheckRes = this.getPermissionForRule(localPath, auth);
+    if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
-          TxResultCode.SET_RULE_NO_WRITE_PERMISSION,
-          `No write_rule permission on: ${rulePath}`,
+          permCheckRes.code,
+          permCheckRes.error_message,
           unitWriteGasLimit);
     }
     const curRule = this.getRule(rulePath, { isShallow: false, isGlobal });
@@ -1012,10 +1027,11 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    if (!this.getPermissionForOwner(localPath, auth)) {
+    const permCheckRes = this.getPermissionForOwner(localPath, auth);
+    if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
-          TxResultCode.SET_OWNER_NO_WRITE_PERMISSION,
-          `No write_owner or branch_owner permission on: ${ownerPath}`,
+          permCheckRes.code,
+          permCheckRes.error_message,
           unitWriteGasLimit);
     }
     const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
@@ -1713,10 +1729,12 @@ class DB {
         this.addPathToValue(newValue, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
     // NOTE(platfowner): Value write operations with non-empty subtree write rules are not allowed.
     if (matchedWriteRules.subtreeRules && matchedWriteRules.subtreeRules.length > 0) {
+      const subtreeRulePathList = this.getSubtreeConfigPathList(matchedWriteRules.subtreeRules);
       return {
-        code: TxResultCode.VALUE_PERMISSION_NON_EMPTY_SUBTREE_RULES,
+        code: TxResultCode.EVAL_RULE_NON_EMPTY_SUBTREE_RULES,
         error_message: `Non-empty (${matchedWriteRules.subtreeRules.length}) subtree rules ` +
-            `for value path '${CommonUtil.formatPath(parsedValuePath)}'`,
+            `for value path '${CommonUtil.formatPath(parsedValuePath)}'': ` +
+            `${JSON.stringify(subtreeRulePathList)}`,
         matched,
       };
     }
@@ -1729,7 +1747,7 @@ class DB {
             `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
             `timestamp: ${timestamp}\n`);
         return {
-          code: TxResultCode.VALUE_PERMISSION_FALSE_WRITE_RULE_EVAL,
+          code: TxResultCode.EVAL_RULE_FALSE_WRITE_RULE_EVAL,
           error_message: `Write rule evaluated false: [${evalWriteRuleRes.ruleString}] ` +
               `at '${CommonUtil.formatPath(matchedWriteRules.closestRule.path)}' ` +
               `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
@@ -1745,7 +1763,7 @@ class DB {
             `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
             `newValue: ${JSON.stringify(newValue)}\n`);
         return {
-          code: TxResultCode.VALUE_PERMISSION_FALSE_STATE_RULE_EVAL,
+          code: TxResultCode.EVAL_RULE_FALSE_STATE_RULE_EVAL,
           error_message: `State rule evaluated false: [${evalStateRuleRes.ruleString}] ` +
               `at '${CommonUtil.formatPath(matchedStateRules.closestRule.path)}' ` +
               `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
@@ -1759,7 +1777,7 @@ class DB {
           `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
           `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
       return {
-        code: TxResultCode.VALUE_PERMISSION_INTERNAL_ERROR,
+        code: TxResultCode.EVAL_RULE_INTERNAL_ERROR,
         error_message: `Internal error: ${JSON.stringify(err)}`,
         matched,
       };
@@ -1773,24 +1791,99 @@ class DB {
 
   getPermissionForRule(parsedRulePath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedRulePath);
-    return this.checkPermission(matched.closestOwner.config, auth, OwnerProperties.WRITE_RULE);
+    if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+      const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
+      return {
+        code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_RULE,
+        error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
+            `for rule path '${CommonUtil.formatPath(parsedRulePath)}': ` +
+            `${JSON.stringify(subtreeOwnerPathList)}`,
+        matched,
+      };
+    }
+    const permission = OwnerProperties.WRITE_RULE;
+    const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
+    if (!checkRes.checkResult) {
+      return {
+        code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_RULE,
+        error_message: `${OwnerProperties.WRITE_RULE} permission evaluated false: [${checkRes.permissionString}] ` +
+            `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
+            `for rule path '${CommonUtil.formatPath(parsedRulePath)}' ` +
+            `with permission '${permission}', ` +
+            `auth '${JSON.stringify(auth)}'`,
+        matched,
+      };
+    }
+    return {
+      code: TxResultCode.SUCCESS,
+      error_message: '',
+      matched,
+    };
   }
 
   getPermissionForFunction(parsedFuncPath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedFuncPath);
-    return this.checkPermission(
-        matched.closestOwner.config, auth, OwnerProperties.WRITE_FUNCTION);
+    if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+      const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
+      return {
+        code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_FUNCTION,
+        error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
+            `for function path '${CommonUtil.formatPath(parsedFuncPath)}': ` +
+            `${JSON.stringify(subtreeOwnerPathList)}`,
+        matched,
+      };
+    }
+    const permission = OwnerProperties.WRITE_FUNCTION;
+    const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
+    if (!checkRes.checkResult) {
+      return {
+        code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_FUNCTION,
+        error_message: `${OwnerProperties.WRITE_FUNCTION} permission evaluated false: [${checkRes.permissionString}] ` +
+            `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
+            `for function path '${CommonUtil.formatPath(parsedFuncPath)}' ` +
+            `with permission '${permission}', ` +
+            `auth '${JSON.stringify(auth)}'`,
+        matched,
+      };
+    }
+    return {
+      code: TxResultCode.SUCCESS,
+      error_message: '',
+      matched,
+    };
   }
 
   getPermissionForOwner(parsedOwnerPath, auth) {
     const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
-    if (matched.closestOwner.path.length === parsedOwnerPath.length) {
-      return this.checkPermission(
-          matched.closestOwner.config, auth, OwnerProperties.WRITE_OWNER);
-    } else {
-      return this.checkPermission(
-          matched.closestOwner.config, auth, OwnerProperties.BRANCH_OWNER);
+    if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+      const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
+      return {
+        code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_OWNER,
+        error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
+            `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}': ` +
+            `${JSON.stringify(subtreeOwnerPathList)}`,
+        matched,
+      };
     }
+    const permission = matched.closestOwner.path.length === parsedOwnerPath.length ?
+        OwnerProperties.WRITE_OWNER : OwnerProperties.BRANCH_OWNER;
+    const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
+    if (!checkRes.checkResult) {
+      return {
+        code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_OWNER,
+        error_message: `${permission} permission evaluated false: [${checkRes.permissionString}] ` +
+            `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
+            `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}' ` +
+            `with permission '${permission}', ` +
+            `auth '${JSON.stringify(auth)}'`,
+        matched,
+      };
+    }
+    return {
+      code: TxResultCode.SUCCESS,
+      error_message: '',
+      matched,
+    };
   }
 
   static getVariableLabel(node) {
@@ -2141,21 +2234,15 @@ class DB {
     if (CommonUtil.isEmpty(stateRuleObj) ||
         !stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
       return {
-        ruleString: '',
+        ruleString: JSON.stringify(stateRuleObj),
         evalResult: true,
       };
     }
     const maxChildren = stateRuleObj[RuleProperties.MAX_CHILDREN];
     const maxChildrenEvalResult = Object.keys(newValue).length <= maxChildren;
-    if (!maxChildrenEvalResult) {
-      return {
-        ruleString: JSON.stringify(stateRuleObj),
-        evalResult: maxChildrenEvalResult,
-      };
-    }
     return {
-      ruleString: '',
-      evalResult: true,
+      ruleString: JSON.stringify(stateRuleObj),
+      evalResult: maxChildrenEvalResult,
     };
   }
 
@@ -2204,6 +2291,7 @@ class DB {
     // Maximum depth reached.
     if (depth === parsedRefPath.length) {
       return {
+        matchedOwnerNode: curOwnerNode,
         matchedDepth: depth,
         closestConfigNode: hasOwnerConfig(curOwnerNode) ? curOwnerNode : null,
         closestConfigDepth: hasOwnerConfig(curOwnerNode) ? depth : 0,
@@ -2222,6 +2310,7 @@ class DB {
     }
     // No match with child nodes.
     return {
+      matchedOwnerNode: null,
       matchedDepth: depth,
       closestConfigNode: hasOwnerConfig(curOwnerNode) ? curOwnerNode : null,
       closestConfigDepth: hasOwnerConfig(curOwnerNode) ? depth : 0,
@@ -2233,26 +2322,60 @@ class DB {
         parsedRefPath, 0, this.stateRoot.getChild(PredefinedDbPaths.OWNERS_ROOT));
   }
 
+  getSubtreeOwnersRecursive(depth, curOwnerNode) {
+    const owners = [];
+    if (depth !== 0 && hasOwnerConfig(curOwnerNode)) {
+      owners.push({
+        path: [],
+        config: getOwnerConfig(curOwnerNode),
+      })
+    }
+    if (curOwnerNode && !curOwnerNode.getIsLeaf()) {
+      // Traverse child nodes.
+      for (const label of curOwnerNode.getChildLabels()) {
+        const nextOwnerNode = curOwnerNode.getChild(label);
+        const subtreeOwners = this.getSubtreeOwnersRecursive(depth + 1, nextOwnerNode);
+        subtreeOwners.forEach((entry) => {
+          entry.path.unshift(label);
+          owners.push(entry);
+        });
+      }
+    }
+    return owners;
+  }
+
+  getSubtreeOwners(ownerNode) {
+    return this.getSubtreeOwnersRecursive(0, ownerNode);
+  }
+
   matchOwnerForParsedPath(parsedRefPath) {
     const matched = this.matchOwnerPath(parsedRefPath);
+    const subtreeOwners = matched.matchedOwnerNode ?
+        this.getSubtreeOwners(matched.matchedOwnerNode) : [];
     return {
       matchedOwnerPath: parsedRefPath.slice(0, matched.matchedDepth),
       closestOwner: {
         path: parsedRefPath.slice(0, matched.closestConfigDepth),
         config: getOwnerConfig(matched.closestConfigNode),
       },
+      subtreeOwners,
     }
   }
 
   convertOwnerMatch(matched, isGlobal) {
     const ownerPath = isGlobal ?
         this.toGlobalPath(matched.matchedOwnerPath) : matched.matchedOwnerPath;
-    return {
+    const converted = {
       matched_path: {
         target_path: CommonUtil.formatPath(ownerPath),
       },
       matched_config: this.convertPathAndConfig(matched.closestOwner, isGlobal),
     };
+    if (matched.subtreeOwners) {
+      converted.subtree_configs = matched.subtreeOwners.map((entry) =>
+          this.convertPathAndConfig(entry, false));
+    }
+    return converted;
   }
 
   getOwnerPermissions(config, auth) {
@@ -2288,8 +2411,16 @@ class DB {
   }
 
   checkPermission(config, auth, permission) {
-    const permissions = this.getOwnerPermissions(config, auth);
-    return !!(permissions && permissions[permission] === true);
+    const permissionObj = this.getOwnerPermissions(config, auth);
+    const checkResult = !!(permissionObj && permissionObj[permission] === true);
+    return {
+      permissionString: JSON.stringify(permissionObj),
+      checkResult,
+    };
+  }
+
+  getSubtreeConfigPathList(subtreeConfigs) {
+    return subtreeConfigs.map((config) => CommonUtil.formatPath(config.path));
   }
 }
 

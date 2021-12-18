@@ -407,7 +407,12 @@ describe('Native Function', () => {
           op_list: [
             {
               type: 'SET_OWNER',
-              ref: '/apps/test/test_function_triggering',
+              ref: '/apps/test/test_function_triggering/set_owner_allowed_path_with_fid',
+              value: null
+            },
+            {
+              type: 'SET_OWNER',
+              ref: '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid',
               value: null
             },
             {
@@ -493,7 +498,7 @@ describe('Native Function', () => {
             nonce: -1,
           }}).body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result'), {
-            "code": 10403,
+            "code": 10404,
             "error_message": "Trying to write owner-only function: _transfer",
             "bandwidth_gas_amount": 1,
             "gas_amount_charged": 0,
@@ -521,8 +526,8 @@ describe('Native Function', () => {
         });
       });
 
-      describe('Write rule: auth.fid', () => {
-        it('write rule: auth.fid: without function permission', async () => {
+      describe('Rule config with auth.fid', () => {
+        it('write rule with auth.fid: without write value permission', async () => {
           const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
             ref: saveLastTxNotAllowedPath + '/value',
             value: 'some value',
@@ -575,7 +580,7 @@ describe('Native Function', () => {
           expect(_.get(lastTx, 'tx_hash', null)).to.equal(null);
         });
 
-        it('write rule: auth.fid: with function permission', async () => {
+        it('write rule with auth.fid: with write value permission', async () => {
           const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
             ref: saveLastTxAllowedPath + '/value',
             value: 'some value',
@@ -629,8 +634,8 @@ describe('Native Function', () => {
         });
       });
 
-      describe('Write rule: auth.fids', () => {
-        it('write rule: auth.fids: without function permission', async () => {
+      describe('Rule config with auth.fids', () => {
+        it('write rule with auth.fids: without write value permission', async () => {
           const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
             ref: saveLastTxNotAllowedPathWithFids + '/value',
             value: 'some value',
@@ -683,7 +688,7 @@ describe('Native Function', () => {
           expect(_.get(lastTx, 'tx_hash', null)).to.equal(null);
         });
 
-        it('write rule: auth.fids: with function permission', async () => {
+        it('write rule with auth.fids: with write value permission', async () => {
           const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
             ref: saveLastTxAllowedPathWithFids + '/value',
             value: 'some value',
@@ -737,8 +742,8 @@ describe('Native Function', () => {
         });
       });
 
-      describe('Owner rule: auth.fid', () => {
-        it('owner rule: auth.fid: without function permission', async () => {
+      describe('Owner config with auth.fid', () => {
+        it('owner config with auth.fid: without branch_owner permission', async () => {
           const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
             ref: setOwnerConfigNotAllowedPath + '/value',
             value: 'some value',
@@ -756,8 +761,8 @@ describe('Native Function', () => {
                   "0": {
                     "path": "/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value",
                     "result": {
-                      "code": 10603,
-                      "error_message": "No write_owner or branch_owner permission on: /apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value",
+                      "code": 12502,
+                      "error_message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_function\":false,\"write_owner\":false,\"write_rule\":false}] at '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid' for owner path '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value' with permission 'branch_owner', auth '{\"addr\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\",\"fid\":\"_setOwnerConfig\",\"fids\":[\"_setOwnerConfig\"]}'",
                       "bandwidth_gas_amount": 1,
                     }
                   }
@@ -790,7 +795,7 @@ describe('Native Function', () => {
           expect(ownerConfig).to.equal(null);
         });
 
-        it('owner rule: auth.fid: with function permission', async () => {
+        it('owner config with auth.fid: with branch_owner permission', async () => {
           const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
             ref: setOwnerConfigAllowedPath + '/value',
             value: 'some value',
@@ -841,6 +846,17 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result
           // Should be not null.
           expect(ownerConfig).to.not.equal(null);
+
+          // Clean up
+          const res = parseOrLog(syncRequest('POST', server2 + '/set_owner', {
+            json: {
+              type: 'SET_OWNER',
+              ref: '/apps/test/test_function_triggering/set_owner_allowed_path_with_fid/value',
+              value: null,
+              nonce: -1,
+            }
+          }).body.toString('utf-8')).result;
+          assert.deepEqual(CommonUtil.isFailedTx(_.get(res, 'result')), false);
         });
       });
     });
@@ -3541,10 +3557,11 @@ describe('Native Function', () => {
     describe('Checkout: _openCheckout, _closeCheckout', () => {
       const client = jayson.client.http(server1 + '/json-rpc');
       const networkName = 'ETH';
-      const chainId = '3';
+      const chainId = 3;
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkoutRequestBasePath = `/checkout/requests/${networkName}/${chainId}/${tokenId}`;
       const checkoutHistoryBasePath = `/checkout/history/${networkName}/${chainId}/${tokenId}`;
+      const checkoutRefundsBasePath = `/checkout/refunds/${networkName}/${chainId}/${tokenId}`;
       const tokenBridgeConfig = BlockchainParams.token.bridge[networkName][chainId][tokenId];
       const {
         token_pool: tokenPoolAddr,
@@ -3873,7 +3890,7 @@ describe('Native Function', () => {
 
       it('cannot close checkout with a non-authorized address', async () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkoutHistoryBasePath}/${serviceUser}/0/data`,
+          ref: `${checkoutHistoryBasePath}/${serviceUser}/0`,
           value: {
             request: {
               amount: checkoutAmount,
@@ -3890,7 +3907,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutHistory = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/0/data`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
         expect(checkoutHistory).to.equal(null);
       });
 
@@ -3898,7 +3915,7 @@ describe('Native Function', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `${checkoutHistoryBasePath}/${serviceUser}/0/data`,
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/0`,
             value: {
               request: {
                 amount: checkoutAmount,
@@ -4043,7 +4060,7 @@ describe('Native Function', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `${checkoutHistoryBasePath}/${serviceUser}/1/data`,
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/1`,
             value: {
               request: {
                 amount: checkoutAmount,
@@ -4108,7 +4125,7 @@ describe('Native Function', () => {
                   }
                 },
                 "1": {
-                  "path": "/checkout/history/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1/refund",
+                  "path": "/checkout/refunds/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
@@ -4160,7 +4177,7 @@ describe('Native Function', () => {
           "gas_cost_total": 0
         });
         const refund = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/1/refund`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutRefundsBasePath}/${serviceUser}/1`).body.toString('utf-8')).result;
         assert.deepEqual(refund,
             '/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548');
         const refundTransfer = parseOrLog(syncRequest('GET',
@@ -4196,7 +4213,7 @@ describe('Native Function', () => {
     describe('Checkin: _openCheckin, _cancelCheckin, _closeCheckin', () => {
       const client = jayson.client.http(server1 + '/json-rpc');
       const networkName = 'ETH';
-      const chainId = '3';
+      const chainId = 3;
       const tokenId = '0xB16c0C80a81f73204d454426fC413CAe455525A7';
       const checkinRequestBasePath = `/checkin/requests/${networkName}/${chainId}/${tokenId}`;
       const checkinHistoryBasePath = `/checkin/history/${networkName}/${chainId}/${tokenId}`;

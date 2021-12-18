@@ -285,8 +285,7 @@ const PredefinedDbPaths = {
   CHECKIN_TOKEN_POOL: 'token_pool',
   CHECKOUT: 'checkout',
   CHECKOUT_HISTORY: 'history',
-  CHECKOUT_HISTORY_DATA: 'data',
-  CHECKOUT_HISTORY_REFUND: 'refund',
+  CHECKOUT_REFUNDS: 'refunds',
   CHECKOUT_REQUESTS: 'requests',
   CHECKOUT_STATS: 'stats',
   CHECKOUT_STATS_COMPLETE: 'complete',
@@ -566,6 +565,10 @@ const TrafficEventTypes = {
   BLOCK_LAST_VOTES: 'block_last_votes',
   BLOCK_SIZE: 'block_size',
   BLOCK_TXS: 'block_txs',
+  // Latency
+  PROPOSE_BEFORE_BLOCK: 'propose_before_block',
+  VOTE_BEFORE_BLOCK: 'vote_before_block',
+  VOTE_AFTER_PROPOSE: 'vote_after_propose',
   // Txs
   TX_BYTES: 'tx_bytes',
   TX_GAS_AMOUNT: 'tx_gas_amount',
