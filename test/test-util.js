@@ -247,7 +247,7 @@ function eraseTxCreatedAt(tx) {
   return erased;
 }
 
-function eraseEvalRuleResMatched(res) {
+function eraseEvalResMatched(res) {
   const erased = JSON.parse(JSON.stringify(res));
   _.set(erased, 'matched', 'erased');
   return erased;
@@ -272,5 +272,5 @@ module.exports = {
   getBlockByNumber,
   eraseStateGas,
   eraseTxCreatedAt,
-  eraseEvalRuleResMatched,
+  eraseEvalResMatched,
 };
