@@ -628,8 +628,13 @@ class BlockchainNode {
       const tx = txList[i];
       if (i === 0) {
         proposeTimestamp = tx.tx_body.timestamp;
+        this.tsm.addEvent(
+            TrafficEventTypes.PROPOSE_BEFORE_BLOCK, blockTimestamp - proposeTimestamp,
+            blockTimestamp);
       } else {
         const voteTimestamp = tx.tx_body.timestamp;
+        this.tsm.addEvent(
+            TrafficEventTypes.VOTE_BEFORE_BLOCK, blockTimestamp - voteTimestamp, blockTimestamp);
         this.tsm.addEvent(
             TrafficEventTypes.VOTE_AFTER_PROPOSE, voteTimestamp - proposeTimestamp, blockTimestamp);
       }
