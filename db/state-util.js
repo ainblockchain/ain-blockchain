@@ -608,6 +608,16 @@ function hasConfigLabelOnly(stateTreeObj, configLabel) {
 }
 
 /**
+ * Returns a config at the given path if available, otherwise null.
+ */
+function getConfigAtPath(stateTreeObj, configPath) {
+  if (!CommonUtil.isDict(stateTreeObj)) {
+    return null;
+  }
+  return CommonUtil.getJsObject(stateTreeObj, configPath);
+}
+
+/**
  * Returns a new rule tree created by applying the rule change to
  * the current rule tree.
  * 
@@ -619,22 +629,29 @@ function hasConfigLabelOnly(stateTreeObj, configLabel) {
 function applyRuleChange(curRuleTree, ruleChange) {
   if (!hasConfigLabel(curRuleTree, PredefinedDbPaths.DOT_RULE) ||
       !hasConfigLabelOnly(ruleChange, PredefinedDbPaths.DOT_RULE)) {
-    return CommonUtil.isDict(ruleChange) ?
+    const newRuleConfig = CommonUtil.isDict(ruleChange) ?
         JSON.parse(JSON.stringify(ruleChange)) : ruleChange;
+    return {
+      isPartialSet: false,
+      ruleConfig: newRuleConfig,
+    };
   }
-  const ruleChangeMap = CommonUtil.getJsObject(ruleChange, [PredefinedDbPaths.DOT_RULE]);
+  const ruleChangeMap = getConfigAtPath(ruleChange, [PredefinedDbPaths.DOT_RULE]);
   if (!ruleChangeMap || Object.keys(ruleChangeMap).length === 0) {
-    return curRuleTree;
+    return {
+      isPartialSet: true,
+      ruleConfig: curRuleTree,
+    };
   }
   const newRuleConfig = {}
   if (CommonUtil.isDict(curRuleTree) && curRuleTree[PredefinedDbPaths.DOT_RULE]) {
     CommonUtil.setJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE], curRuleTree[PredefinedDbPaths.DOT_RULE]);
   }
-  let newRuleMap = CommonUtil.getJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
+  let newRuleMap = getConfigAtPath(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
   if (!CommonUtil.isDict(newRuleMap)) {
     // Add a place holder.
     CommonUtil.setJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE], {});
-    newRuleMap = CommonUtil.getJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
+    newRuleMap = getConfigAtPath(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
   }
   for (const ruleKey in ruleChangeMap) {
     const ruleInfo = ruleChangeMap[ruleKey];
@@ -645,7 +662,10 @@ function applyRuleChange(curRuleTree, ruleChange) {
     }
   }
 
-  return newRuleConfig;
+  return {
+    isPartialSet: true,
+    ruleConfig: newRuleConfig,
+  };
 }
 
 /**
@@ -660,20 +680,27 @@ function applyRuleChange(curRuleTree, ruleChange) {
 function applyFunctionChange(curFuncTree, functionChange) {
   if (!hasConfigLabel(curFuncTree, PredefinedDbPaths.DOT_FUNCTION) ||
       !hasConfigLabelOnly(functionChange, PredefinedDbPaths.DOT_FUNCTION)) {
-    return CommonUtil.isDict(functionChange) ?
+    const newFuncConfig = CommonUtil.isDict(functionChange) ?
         JSON.parse(JSON.stringify(functionChange)) : functionChange;
+    return {
+      isPartialSet: false,
+      funcConfig: newFuncConfig,
+    };
   }
-  const funcChangeMap = CommonUtil.getJsObject(functionChange, [PredefinedDbPaths.DOT_FUNCTION]);
+  const funcChangeMap = getConfigAtPath(functionChange, [PredefinedDbPaths.DOT_FUNCTION]);
   if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
-    return curFuncTree;
+    return {
+      isPartialSet: true,
+      funcConfig: curFuncTree,
+    };
   }
   const newFuncConfig =
       CommonUtil.isDict(curFuncTree) ? JSON.parse(JSON.stringify(curFuncTree)) : {};
-  let newFuncMap = CommonUtil.getJsObject(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION]);
+  let newFuncMap = getConfigAtPath(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION]);
   if (!CommonUtil.isDict(newFuncMap)) {
     // Add a place holder.
     CommonUtil.setJsObject(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION], {});
-    newFuncMap = CommonUtil.getJsObject(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION]);
+    newFuncMap = getConfigAtPath(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION]);
   }
   for (const functionKey in funcChangeMap) {
     const functionInfo = funcChangeMap[functionKey];
@@ -684,7 +711,10 @@ function applyFunctionChange(curFuncTree, functionChange) {
     }
   }
 
-  return newFuncConfig;
+  return {
+    isPartialSet: true,
+    funcConfig: newFuncConfig,
+  };
 }
 
 /**
@@ -699,21 +729,28 @@ function applyFunctionChange(curFuncTree, functionChange) {
 function applyOwnerChange(curOwnerTree, ownerChange) {
   if (!hasConfigLabel(curOwnerTree, PredefinedDbPaths.DOT_OWNER) ||
       !hasConfigLabelOnly(ownerChange, PredefinedDbPaths.DOT_OWNER)) {
-    return CommonUtil.isDict(ownerChange) ?
+    const newOwnerConfig = CommonUtil.isDict(ownerChange) ?
         JSON.parse(JSON.stringify(ownerChange)) : ownerChange;
+    return {
+      isPartialSet: false,
+      ownerConfig: newOwnerConfig,
+    };
   }
   const ownerMapPath = [PredefinedDbPaths.DOT_OWNER, OwnerProperties.OWNERS];
-  const ownerChangeMap = CommonUtil.getJsObject(ownerChange, ownerMapPath);
+  const ownerChangeMap = getConfigAtPath(ownerChange, ownerMapPath);
   if (!ownerChangeMap || Object.keys(ownerChangeMap).length === 0) {
-    return curOwnerTree;
+    return {
+      isPartialSet: true,
+      ownerConfig: curOwnerTree,
+    };
   }
   const newOwnerConfig =
       CommonUtil.isDict(curOwnerTree) ? JSON.parse(JSON.stringify(curOwnerTree)) : {};
-  let newOwnerMap = CommonUtil.getJsObject(newOwnerConfig, ownerMapPath);
+  let newOwnerMap = getConfigAtPath(newOwnerConfig, ownerMapPath);
   if (!CommonUtil.isDict(newOwnerMap)) {
     // Add a place holder.
     CommonUtil.setJsObject(newOwnerConfig, ownerMapPath, {});
-    newOwnerMap = CommonUtil.getJsObject(newOwnerConfig, ownerMapPath);
+    newOwnerMap = getConfigAtPath(newOwnerConfig, ownerMapPath);
   }
   for (const ownerKey in ownerChangeMap) {
     const ownerPermissions = ownerChangeMap[ownerKey];
@@ -724,7 +761,10 @@ function applyOwnerChange(curOwnerTree, ownerChange) {
     }
   }
 
-  return newOwnerConfig;
+  return {
+    isPartialSet: true,
+    ownerConfig: newOwnerConfig,
+  };
 }
 
 /**
