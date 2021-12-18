@@ -20,7 +20,7 @@ const {
   waitUntilNetworkIsReady,
   waitUntilTxFinalized,
   getBlockByNumber,
-  eraseEvalRuleResMatched,
+  eraseEvalResMatched,
 } = require('../test-util');
 
 const PROJECT_ROOT = require('path').dirname(__filename) + "/../../"
@@ -161,7 +161,7 @@ async function cleanUp() {
       op_list: [
         {
           type: 'SET_OWNER',
-          ref: '/apps/test/test_owner',
+          ref: '/apps/test/test_owner/some/path',
           value: null
         },
         {
@@ -483,7 +483,8 @@ describe('Blockchain Node', () => {
               }
             },
             "path": "/apps/test/test_owner/some/path"
-          }
+          },
+          "subtree_configs": []
         }});
       })
     })
@@ -497,7 +498,7 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
-        assert.deepEqual(eraseEvalRuleResMatched(body.result), {
+        assert.deepEqual(eraseEvalResMatched(body.result), {
           "code": 0,
           "error_message": "",
           "matched": "erased",
@@ -513,7 +514,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
         body.result.error_message = 'erased';
-        assert.deepEqual(eraseEvalRuleResMatched(body.result), {
+        assert.deepEqual(eraseEvalResMatched(body.result), {
           "code": 12103,
           "error_message": "erased",
           "matched": "erased",
@@ -531,7 +532,39 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         assert.deepEqual(body, {
           code: 0,
-          result: true,
+          result: {
+            "code": 0,
+            "error_message": "",
+            "matched": {
+              "closestOwner": {
+                "config": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": false,
+                      "write_function": true,
+                      "write_owner": true,
+                      "write_rule": false,
+                    }
+                  }
+                },
+                "path": [
+                  "apps",
+                  "test",
+                  "test_owner",
+                  "some",
+                  "path",
+                ]
+              },
+              "matchedOwnerPath": [
+                "apps",
+                "test",
+                "test_owner",
+                "some",
+                "path",
+              ],
+              "subtreeOwners": []
+            }
+          }
         });
       })
     })
@@ -659,7 +692,39 @@ describe('Blockchain Node', () => {
                 }
               }
             },
-            true,
+            {
+              "code": 0,
+              "error_message": "",
+              "matched": {
+                "closestOwner": {
+                  "config": {
+                    "owners": {
+                      "*": {
+                        "branch_owner": false,
+                        "write_function": true,
+                        "write_owner": true,
+                        "write_rule": false,
+                      }
+                    }
+                  },
+                  "path": [
+                    "apps",
+                    "test",
+                    "test_owner",
+                    "some",
+                    "path",
+                  ]
+                },
+                "matchedOwnerPath": [
+                  "apps",
+                  "test",
+                  "test_owner",
+                  "some",
+                  "path",
+                ],
+                "subtreeOwners": []
+              }
+            }
           ]
         });
       })
@@ -916,7 +981,8 @@ describe('Blockchain Node', () => {
                 }
               },
               "path": "/apps/test/test_owner/some/path"
-            }
+            },
+            "subtree_configs": []
           });
         })
       })
@@ -930,7 +996,7 @@ describe('Blockchain Node', () => {
         const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
         .then(res => {
-          assert.deepEqual(eraseEvalRuleResMatched(res.result.result), {
+          assert.deepEqual(eraseEvalResMatched(res.result.result), {
             "code": 0,
             "error_message": "",
             "matched": "erased",
@@ -946,7 +1012,7 @@ describe('Blockchain Node', () => {
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
         .then(res => {
           res.result.result.error_message = 'erased';
-          assert.deepEqual(eraseEvalRuleResMatched(res.result.result), {
+          assert.deepEqual(eraseEvalResMatched(res.result.result), {
             "code": 12103,
             "error_message": "erased",
             "matched": "erased",
@@ -963,7 +1029,39 @@ describe('Blockchain Node', () => {
         const request = { ref, permission, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalOwner', request)
         .then(res => {
-          assert.deepEqual(res.result.result, true);
+          assert.deepEqual(res.result.result, {
+            "code": 0,
+            "error_message": "",
+            "matched": {
+              "closestOwner": {
+                "config": {
+                  "owners": {
+                    "*": {
+                      "branch_owner": false,
+                      "write_function": true,
+                      "write_owner": true,
+                      "write_rule": false,
+                    }
+                  }
+                },
+                "path": [
+                  "apps",
+                  "test",
+                  "test_owner",
+                  "some",
+                  "path",
+                ]
+              },
+              "matchedOwnerPath": [
+                "apps",
+                "test",
+                "test_owner",
+                "some",
+                "path",
+              ],
+              "subtreeOwners": []
+            }
+          });
         })
       })
     })
@@ -1463,8 +1561,8 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
-          "code": 10404,
-          "error_message": "No write_function permission on: /apps/some/wrong/path",
+          "code": 12402,
+          "error_message": "write_function permission evaluated false: [null] at '/apps' for function path '/apps/some/wrong/path' with permission 'write_function', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}'",
           "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
@@ -1551,8 +1649,8 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
-          "code": 10503,
-          "error_message": "No write_rule permission on: /apps/some/wrong/path",
+          "code": 12302,
+          "error_message": "write_rule permission evaluated false: [null] at '/apps' for rule path '/apps/some/wrong/path' with permission 'write_rule', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}'",
           "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
@@ -1667,8 +1765,8 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
-          "code": 10603,
-          "error_message": "No write_owner or branch_owner permission on: /apps/some/wrong/path",
+          "code": 12502,
+          "error_message": "branch_owner permission evaluated false: [null] at '/apps' for owner path '/apps/some/wrong/path' with permission 'branch_owner', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}'",
           "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
@@ -2725,6 +2823,32 @@ describe('Blockchain Node', () => {
         };
         const res = parseOrLog(syncRequest('POST', server1 + '/set', {json: {
             op_list: [
+              // clean up old owner configs.
+              {
+                type: 'SET_OWNER',
+                ref: '/apps/test/test_owner/other100/path',
+                value: null,
+              },
+              {
+                type: 'SET_OWNER',
+                ref: '/apps/test/test_owner/other200/path',
+                value: null,
+              },
+              {
+                type: 'SET_OWNER',
+                ref: '/apps/test/test_owner/other201/path',
+                value: null,
+              },
+              {
+                type: 'SET_OWNER',
+                ref: '/apps/test/test_owner/other202/path',
+                value: null,
+              },
+              {
+                type: 'SET_OWNER',
+                ref: '/apps/test/test_owner/other203/path',
+                value: null,
+              },
               {
                 type: 'SET_RULE',
                 ref: '/apps/test',
@@ -2734,6 +2858,7 @@ describe('Blockchain Node', () => {
                   }
                 }
               },
+              // set new owner config.
               {
                 type: 'SET_OWNER',
                 ref: '/apps/test',
