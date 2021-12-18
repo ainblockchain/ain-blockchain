@@ -1807,7 +1807,7 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_RULE,
-        error_message: `${OwnerProperties.WRITE_RULE} permission evaluated false: [${checkRes.permissionsString}] ` +
+        error_message: `${OwnerProperties.WRITE_RULE} permission evaluated false: [${checkRes.permissionString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for rule path '${CommonUtil.formatPath(parsedRulePath)}' ` +
             `with permission '${permission}', ` +
@@ -1839,7 +1839,7 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_FUNCTION,
-        error_message: `${OwnerProperties.WRITE_FUNCTION} permission evaluated false: [${checkRes.permissionsString}] ` +
+        error_message: `${OwnerProperties.WRITE_FUNCTION} permission evaluated false: [${checkRes.permissionString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for function path '${CommonUtil.formatPath(parsedFuncPath)}' ` +
             `with permission '${permission}', ` +
@@ -1872,7 +1872,7 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_OWNER,
-        error_message: `${permission} permission evaluated false: [${checkRes.permissionsString}] ` +
+        error_message: `${permission} permission evaluated false: [${checkRes.permissionString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}' ` +
             `with permission '${permission}', ` +
@@ -2412,10 +2412,10 @@ class DB {
   }
 
   checkPermission(config, auth, permission) {
-    const permissionsObj = this.getOwnerPermissions(config, auth);
-    const checkResult = !!(permissionsObj && permissionsObj[permission] === true);
+    const permissionObj = this.getOwnerPermissions(config, auth);
+    const checkResult = !!(permissionObj && permissionObj[permission] === true);
     return {
-      permissionsString: JSON.stringify(permissionsObj),
+      permissionString: JSON.stringify(permissionObj),
       checkResult,
     };
   }
