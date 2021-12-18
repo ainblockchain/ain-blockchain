@@ -1462,7 +1462,10 @@ describe("state-util", () => {
     };
 
     it("add / delete / modify non-existing rule", () => {
-      assert.deepEqual(applyRuleChange(null, curRule), curRule); // the same as the given rule change.
+      assert.deepEqual(applyRuleChange(null, curRule), {
+        "isPartialSet": false,
+        "ruleConfig": curRule,
+      }); // the same as the given rule change.
     });
 
     it("delete / modify existing rule", () => {
@@ -1475,11 +1478,14 @@ describe("state-util", () => {
           }
         }
       }), {
-        ".rule": {
-          // write: deleted
-          "state": {  // modified
-            "max_children": 100,
-            "ordering": "FIFO"
+        "isPartialSet": true,
+        "ruleConfig": {
+          ".rule": {
+            // write: deleted
+            "state": {  // modified
+              "max_children": 100,
+              "ordering": "FIFO"
+            }
           }
         }
         // deeper rule deleted
@@ -1497,11 +1503,14 @@ describe("state-util", () => {
           }
         }
       }), {
-        ".rule": {
-          "write": true,
-          "state": { // added
-            "max_children": 10,
-            "ordering": "FIFO"
+        "isPartialSet": true,
+        "ruleConfig": {
+          ".rule": {
+            "write": true,
+            "state": { // added
+              "max_children": 10,
+              "ordering": "FIFO"
+            }
           }
         }
       });
@@ -1519,20 +1528,26 @@ describe("state-util", () => {
           }
         }
       }), {
-        ".rule": {
-          "write": "auth.addr === 'efgh'", // modified
-          "state": null // deleted
-        },
-        "deeper": {
-          ".rule": { // replaced
-            "write": false
+        "isPartialSet": false,
+        "ruleConfig": {
+          ".rule": {
+            "write": "auth.addr === 'efgh'", // modified
+            "state": null // deleted
+          },
+          "deeper": {
+            ".rule": { // replaced
+              "write": false
+            }
           }
         }
       });
     });
 
     it("with null rule change", () => {
-      assert.deepEqual(applyRuleChange(curRule, null), null);
+      assert.deepEqual(applyRuleChange(curRule, null), {
+        "isPartialSet": false,
+        "ruleConfig": null,
+      });
     });
   })
 
@@ -1580,18 +1595,21 @@ describe("state-util", () => {
           }
         }
       }), {  // the same as the given function change.
-        ".function": {
-          "0x111": null,
-          "0x222": {
-            "function_type": "REST",
-            "function_id": "0x222"
-          },
-        },
-        "deeper": {
+        "isPartialSet": false,
+        "funcConfig": {
           ".function": {
-            "0x888": {
+            "0x111": null,
+            "0x222": {
               "function_type": "REST",
-              "function_id": "0x888"
+              "function_id": "0x222"
+            },
+          },
+          "deeper": {
+            ".function": {
+              "0x888": {
+                "function_type": "REST",
+                "function_id": "0x888"
+              }
             }
           }
         }
@@ -1612,25 +1630,28 @@ describe("state-util", () => {
           }
         }
       }), {
-        ".function": {
-          "0x222": {  // modified
-            "function_type": "REST",
-            "function_id": "0x222",
-          },
-          "0x333": {  // untouched
-            "function_type": "REST",
-            "function_id": "0x333"
-          },
-          "0x444": {  // added
-            "function_type": "REST",
-            "function_id": "0x444"
-          }
-        },
-        "deeper": {
-          ".function": {  // deeper function
-            "0x999": {
+        "isPartialSet": true,
+        "funcConfig": {
+          ".function": {
+            "0x222": {  // modified
               "function_type": "REST",
-              "function_id": "0x999"
+              "function_id": "0x222",
+            },
+            "0x333": {  // untouched
+              "function_type": "REST",
+              "function_id": "0x333"
+            },
+            "0x444": {  // added
+              "function_type": "REST",
+              "function_id": "0x444"
+            }
+          },
+          "deeper": {
+            ".function": {  // deeper function
+              "0x999": {
+                "function_type": "REST",
+                "function_id": "0x999"
+              }
             }
           }
         }
@@ -1658,21 +1679,24 @@ describe("state-util", () => {
           }
         }
       }), {
-        ".function": {  // replaced
-          "0x222": {
-            "function_type": "REST",
-            "function_id": "0x222",
-          },
-          "0x444": {
-            "function_type": "REST",
-            "function_id": "0x444"
-          }
-        },
-        "deeper": {  // replaced
-          ".function": {
-            "0x888": {
+        "isPartialSet": false,
+        "funcConfig": {
+          ".function": {  // replaced
+            "0x222": {
               "function_type": "REST",
-              "function_id": "0x888"
+              "function_id": "0x222",
+            },
+            "0x444": {
+              "function_type": "REST",
+              "function_id": "0x444"
+            }
+          },
+          "deeper": {  // replaced
+            ".function": {
+              "0x888": {
+                "function_type": "REST",
+                "function_id": "0x888"
+              }
             }
           }
         }
@@ -1680,7 +1704,10 @@ describe("state-util", () => {
     });
 
     it("with null function change", () => {
-      assert.deepEqual(applyFunctionChange(curFunction, null), null);
+      assert.deepEqual(applyFunctionChange(curFunction, null), {
+        "isPartialSet": false,
+        "funcConfig": null,
+      });
     });
   });
 
@@ -1747,18 +1774,9 @@ describe("state-util", () => {
           }
         }
       }), {  // the same as the given owner change.
-        ".owner": {  // owner
-          "owners": {
-            "*": {
-              "branch_owner": true,
-              "write_function": true,
-              "write_owner": true,
-              "write_rule": true,
-            },
-          }
-        },
-        "deeper": {
-          ".owner": {  // deeper owner
+        "isPartialSet": false,
+        "ownerConfig": {
+          ".owner": {  // owner
             "owners": {
               "*": {
                 "branch_owner": true,
@@ -1766,6 +1784,18 @@ describe("state-util", () => {
                 "write_owner": true,
                 "write_rule": true,
               },
+            }
+          },
+          "deeper": {
+            ".owner": {  // deeper owner
+              "owners": {
+                "*": {
+                  "branch_owner": true,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": true,
+                },
+              }
             }
           }
         }
@@ -1792,37 +1822,40 @@ describe("state-util", () => {
           }
         }
       }), {
-        ".owner": {
-          "owners": {
-            "*": {  // modified
-              "branch_owner": true,
-              "write_function": false,
-              "write_owner": false,
-              "write_rule": false,
-            },
-            "bbbb": {  // untouched
-              "branch_owner": true,
-              "write_function": true,
-              "write_owner": true,
-              "write_rule": true,
-            },
-            "cccc": {  // added
-              "branch_owner": true,
-              "write_function": true,
-              "write_owner": true,
-              "write_rule": true,
-            }
-          }
-        },
-        "deeper": {
-          ".owner": {  // deeper owner
+        "isPartialSet": true,
+        "ownerConfig": {
+          ".owner": {
             "owners": {
-              "*": {
+              "*": {  // modified
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              "bbbb": {  // untouched
                 "branch_owner": true,
                 "write_function": true,
                 "write_owner": true,
                 "write_rule": true,
               },
+              "cccc": {  // added
+                "branch_owner": true,
+                "write_function": true,
+                "write_owner": true,
+                "write_rule": true,
+              }
+            }
+          },
+          "deeper": {
+            ".owner": {  // deeper owner
+              "owners": {
+                "*": {
+                  "branch_owner": true,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": true,
+                },
+              }
             }
           }
         }
@@ -1860,30 +1893,33 @@ describe("state-util", () => {
           }
         }
       }), {
-        ".owner": {  // replaced
-          "owners": {
-            "*": {  // modify
-              "branch_owner": true,
-              "write_function": false,
-              "write_owner": false,
-              "write_rule": false,
-            },
-            "cccc": {  // add
-              "branch_owner": true,
-              "write_function": true,
-              "write_owner": true,
-              "write_rule": true,
-            }
-          }
-        },
-        "deeper": {  // replaced
-          ".owner": {
+        "isPartialSet": false,
+        "ownerConfig": {
+          ".owner": {  // replaced
             "owners": {
-              "CCCC": {
+              "*": {  // modify
+                "branch_owner": true,
+                "write_function": false,
+                "write_owner": false,
+                "write_rule": false,
+              },
+              "cccc": {  // add
                 "branch_owner": true,
                 "write_function": true,
                 "write_owner": true,
                 "write_rule": true,
+              }
+            }
+          },
+          "deeper": {  // replaced
+            ".owner": {
+              "owners": {
+                "CCCC": {
+                  "branch_owner": true,
+                  "write_function": true,
+                  "write_owner": true,
+                  "write_rule": true,
+                }
               }
             }
           }
@@ -1892,7 +1928,10 @@ describe("state-util", () => {
     });
 
     it("with null owner change", () => {
-      assert.deepEqual(applyOwnerChange(curOwner, null), null);
+      assert.deepEqual(applyOwnerChange(curOwner, null), {
+        "isPartialSet": false,
+        "ownerConfig": null,
+      });
     });
   });
 

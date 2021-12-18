@@ -925,9 +925,9 @@ class DB {
           unitWriteGasLimit);
     }
     const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
-    const newFunction = applyFunctionChange(curFunction, func);
+    const applyRes = applyFunctionChange(curFunction, func);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
-    this.writeDatabase(fullPath, newFunction);
+    this.writeDatabase(fullPath, applyRes.funcConfig);
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
@@ -981,9 +981,9 @@ class DB {
           unitWriteGasLimit);
     }
     const curRule = this.getRule(rulePath, { isShallow: false, isGlobal });
-    const newRule = applyRuleChange(curRule, rule);
+    const applyRes = applyRuleChange(curRule, rule);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
-    this.writeDatabase(fullPath, newRule);
+    this.writeDatabase(fullPath, applyRes.ruleConfig);
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
@@ -1035,9 +1035,9 @@ class DB {
           unitWriteGasLimit);
     }
     const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
-    const newOwner = applyOwnerChange(curOwner, owner);
+    const applyRes = applyOwnerChange(curOwner, owner);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
-    this.writeDatabase(fullPath, newOwner);
+    this.writeDatabase(fullPath, applyRes.ownerConfig);
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
