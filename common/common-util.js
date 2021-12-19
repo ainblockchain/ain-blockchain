@@ -247,9 +247,6 @@ class CommonUtil {
     if (args.include_proof !== undefined) {
       options.includeProof = CommonUtil.toBool(args.include_proof);
     }
-    if (args.is_partial_set !== undefined) {
-      options.isPartialSet = CommonUtil.toBool(args.is_partial_set);
-    }
     return options;
   }
 
@@ -257,6 +254,9 @@ class CommonUtil {
     const options = {};
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    if (args.is_partial_set !== undefined) {
+      options.isPartialSet = CommonUtil.toBool(args.is_partial_set);
     }
     return options;
   }

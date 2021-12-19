@@ -626,12 +626,12 @@ class DB {
       return null;
     }
     if (permission === OwnerProperties.WRITE_RULE) {
-      return this.getPermissionForRule(localPath, auth, options.isPartialSet);
+      return this.getPermissionForRule(localPath, auth, options && options.isPartialSet);
     } else if (permission === OwnerProperties.WRITE_FUNCTION) {
-      return this.getPermissionForFunction(localPath, auth, options.isPartialSet);
+      return this.getPermissionForFunction(localPath, auth, options && options.isPartialSet);
     } else if (permission === OwnerProperties.WRITE_OWNER ||
         permission === OwnerProperties.BRANCH_OWNER) {
-      return this.getPermissionForOwner(localPath, auth, options.isPartialSet);
+      return this.getPermissionForOwner(localPath, auth, options && options.isPartialSet);
     } else {
       return {
         code: TxResultCode.EVAL_OWNER_INVALID_PERMISSION,
