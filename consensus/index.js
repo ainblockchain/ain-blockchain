@@ -16,6 +16,8 @@ const {
   WriteDbOperations,
   PredefinedDbPaths,
   StateVersions,
+  TrafficEventTypes,
+  trafficStatsManager,
 } = require('../common/constants');
 const { ConsensusErrorCode } = require('../common/result-code');
 const {
@@ -263,6 +265,7 @@ class Consensus {
         logger.error(`[${LOG_HEADER}] Already have the block in my block pool`);
         return;
       }
+      ConsensusUtil.addTrafficEventsForProposalTx(proposalTx);
       if (proposalBlock.number > lastNotarizedBlock.number + 1) {
         logger.info(`[${LOG_HEADER}] Proposal block number (${proposalBlock.number}) is greater ` +
             `than current last notarized block number (${lastNotarizedBlock.number})`);
@@ -296,6 +299,7 @@ class Consensus {
         logger.debug(`[${LOG_HEADER}] Already have the vote in my tx tracker`);
         return;
       }
+      ConsensusUtil.addTrafficEventsForVoteTx(msg.value);
       const voteBlockNumber = ConsensusUtil.getBlockNumberFromConsensusTx(msg.value);
       const heighestSeenBlockNumber = this.node.bp.getHeighestSeenBlockNumber();
       if (voteBlockNumber > heighestSeenBlockNumber) {
