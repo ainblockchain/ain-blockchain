@@ -352,7 +352,7 @@ class P2pClient {
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach((node) => {
+    _.shuffle(Object.values(this.outbound)).slice(0, 2).forEach((node) => {
       node.socket.send(stringPayload);
     });
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
