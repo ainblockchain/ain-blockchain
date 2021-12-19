@@ -1795,8 +1795,8 @@ class DB {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_RULE,
-        error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
-            `for rule path '${CommonUtil.formatPath(parsedRulePath)}': ` +
+        error_message: `Non-empty (${matched.subtreeOwners.length}) ` +
+            `subtree owners for rule path '${CommonUtil.formatPath(parsedRulePath)}': ` +
             `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
       };
@@ -1827,8 +1827,8 @@ class DB {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_FUNCTION,
-        error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
-            `for function path '${CommonUtil.formatPath(parsedFuncPath)}': ` +
+        error_message: `Non-empty (${matched.subtreeOwners.length}) ` +
+            `subtree owners for function path '${CommonUtil.formatPath(parsedFuncPath)}': ` +
             `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
       };
@@ -1859,8 +1859,8 @@ class DB {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_OWNER,
-        error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
-            `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}': ` +
+        error_message: `Non-empty (${matched.subtreeOwners.length}) ` +
+            `subtree owners for owner path '${CommonUtil.formatPath(parsedOwnerPath)}': ` +
             `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
       };
