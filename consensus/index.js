@@ -222,20 +222,6 @@ class Consensus {
     return true;
   }
 
-  addTrafficEventsForProposalTx(proposalTx) {
-    const txTimestamp = proposalTx.tx_body.timestamp;
-    const currentTime = Date.now();
-    trafficStatsManager.addEvent(
-        TrafficEventTypes.PROPOSE_P2P_MESSAGE, currentTime - txTimestamp, currentTime);
-  }
-
-  addTrafficEventsForVoteTx(voteTx) {
-    const txTimestamp = voteTx.tx_body.timestamp;
-    const currentTime = Date.now();
-    trafficStatsManager.addEvent(
-        TrafficEventTypes.VOTE_P2P_MESSAGE, currentTime - txTimestamp, currentTime);
-  }
-
   // Types of consensus messages:
   //  1. Proposal { value: { proposalBlock, proposalTx }, type = 'PROPOSE' }
   //  2. Vote { value: <voting tx>, type = 'VOTE' }
@@ -279,7 +265,7 @@ class Consensus {
         logger.error(`[${LOG_HEADER}] Already have the block in my block pool`);
         return;
       }
-      this.addTrafficEventsForProposalTx(proposalTx);
+      ConsensusUtil.addTrafficEventsForProposalTx(proposalTx);
       if (proposalBlock.number > lastNotarizedBlock.number + 1) {
         logger.info(`[${LOG_HEADER}] Proposal block number (${proposalBlock.number}) is greater ` +
             `than current last notarized block number (${lastNotarizedBlock.number})`);
@@ -313,7 +299,7 @@ class Consensus {
         logger.debug(`[${LOG_HEADER}] Already have the vote in my tx tracker`);
         return;
       }
-      this.addTrafficEventsForVoteTx(msg.value);
+      ConsensusUtil.addTrafficEventsForVoteTx(msg.value);
       const voteBlockNumber = ConsensusUtil.getBlockNumberFromConsensusTx(msg.value);
       const heighestSeenBlockNumber = this.node.bp.getHeighestSeenBlockNumber();
       if (voteBlockNumber > heighestSeenBlockNumber) {

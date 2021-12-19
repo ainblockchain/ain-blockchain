@@ -622,7 +622,7 @@ class BlockchainNode {
     return 0; // Successfully merged
   }
 
-  addTrafficEventsForVoteTxs(txList, blockTimestamp) {
+  addTrafficEventsForVoteTxList(txList, blockTimestamp) {
     let proposeTimestamp = null;
     for (let i = 0; i < txList.length; i++) {
       const tx = txList[i];
@@ -669,7 +669,7 @@ class BlockchainNode {
     trafficStatsManager.addEvent(
         TrafficEventTypes.BLOCK_EVIDENCE, Object.keys(block.evidence).length, blockTimestamp);
 
-    this.addTrafficEventsForVoteTxs(block.last_votes, blockTimestamp);
+    this.addTrafficEventsForVoteTxList(block.last_votes, blockTimestamp);
 
     for (let i = 0; i < Math.min(block.transactions.length, block.receipts.length); i++) {
       const tx = block.transactions[i];
