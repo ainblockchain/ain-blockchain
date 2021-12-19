@@ -3,6 +3,8 @@ const {
   NodeConfigs,
   WriteDbOperations,
   PredefinedDbPaths,
+  TrafficEventTypes,
+  trafficStatsManager,
 } = require('../common/constants');
 const { ConsensusErrorCodeSetToVoteAgainst } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -129,6 +131,20 @@ class ConsensusUtil {
       }
     }
     return invalidBlockHashList;
+  }
+
+  static addTrafficEventsForProposalTx(proposalTx) {
+    const txTimestamp = proposalTx.tx_body.timestamp;
+    const currentTime = Date.now();
+    trafficStatsManager.addEvent(
+        TrafficEventTypes.PROPOSE_P2P_MESSAGE, currentTime - txTimestamp, currentTime);
+  }
+
+  static addTrafficEventsForVoteTx(voteTx) {
+    const txTimestamp = voteTx.tx_body.timestamp;
+    const currentTime = Date.now();
+    trafficStatsManager.addEvent(
+        TrafficEventTypes.VOTE_P2P_MESSAGE, currentTime - txTimestamp, currentTime);
   }
 }
 

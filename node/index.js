@@ -18,8 +18,9 @@ const {
   TransactionStates,
   StateVersions,
   SyncModeOptions,
-  TrafficEventTypes,
   WriteDbOperations,
+  TrafficEventTypes,
+  trafficStatsManager,
 } = require('../common/constants');
 const { TxResultCode } = require('../common/result-code');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
@@ -36,7 +37,7 @@ const ConsensusUtil = require('../consensus/consensus-util');
 const PathUtil = require('../common/path-util');
 
 class BlockchainNode {
-  constructor(account = null, eventHandler = null, trafficStatsManager = null) {
+  constructor(account = null, eventHandler = null) {
     this.keysDir = path.resolve(NodeConfigs.KEYS_ROOT_DIR, `${NodeConfigs.PORT}`);
     FileUtil.createDir(this.keysDir);
     this.snapshotDir = path.resolve(NodeConfigs.SNAPSHOTS_ROOT_DIR, `${NodeConfigs.PORT}`);
@@ -50,7 +51,6 @@ class BlockchainNode {
     this.urlExternal = null;
 
     this.eh = eventHandler;
-    this.tsm = trafficStatsManager;
     this.bc = new Blockchain(String(NodeConfigs.PORT));
     this.tp = new TransactionPool(this);
     this.bp = new BlockPool(this);
@@ -622,20 +622,20 @@ class BlockchainNode {
     return 0; // Successfully merged
   }
 
-  addTrafficEventsForVoteTxs(txList, blockTimestamp) {
+  addTrafficEventsForVoteTxList(txList, blockTimestamp) {
     let proposeTimestamp = null;
     for (let i = 0; i < txList.length; i++) {
       const tx = txList[i];
       if (i === 0) {
         proposeTimestamp = tx.tx_body.timestamp;
-        this.tsm.addEvent(
+        trafficStatsManager.addEvent(
             TrafficEventTypes.PROPOSE_BEFORE_BLOCK, blockTimestamp - proposeTimestamp,
             blockTimestamp);
       } else {
         const voteTimestamp = tx.tx_body.timestamp;
-        this.tsm.addEvent(
+        trafficStatsManager.addEvent(
             TrafficEventTypes.VOTE_BEFORE_BLOCK, blockTimestamp - voteTimestamp, blockTimestamp);
-        this.tsm.addEvent(
+        trafficStatsManager.addEvent(
             TrafficEventTypes.VOTE_AFTER_PROPOSE, voteTimestamp - proposeTimestamp, blockTimestamp);
       }
     }
@@ -645,31 +645,31 @@ class BlockchainNode {
     const opType = _.get(tx, 'tx_body.operation.type', null);
     if (opType === WriteDbOperations.SET) {
       const opList =_.get(tx, 'tx_body.operation.op_list', []);
-      this.tsm.addEvent(TrafficEventTypes.TX_OP_SIZE, opList.length, blockTimestamp);
+      trafficStatsManager.addEvent(TrafficEventTypes.TX_OP_SIZE, opList.length, blockTimestamp);
     } else {
-      this.tsm.addEvent(TrafficEventTypes.TX_OP_SIZE, 1, blockTimestamp);
+      trafficStatsManager.addEvent(TrafficEventTypes.TX_OP_SIZE, 1, blockTimestamp);
     }
-    this.tsm.addEvent(TrafficEventTypes.TX_BYTES, sizeof(tx), blockTimestamp);
-    this.tsm.addEvent(TrafficEventTypes.TX_GAS_AMOUNT, receipt.gas_amount_charged, blockTimestamp);
-    this.tsm.addEvent(TrafficEventTypes.TX_GAS_COST, receipt.gas_cost_total, blockTimestamp);
+    trafficStatsManager.addEvent(TrafficEventTypes.TX_BYTES, sizeof(tx), blockTimestamp);
+    trafficStatsManager.addEvent(TrafficEventTypes.TX_GAS_AMOUNT, receipt.gas_amount_charged, blockTimestamp);
+    trafficStatsManager.addEvent(TrafficEventTypes.TX_GAS_COST, receipt.gas_cost_total, blockTimestamp);
   }
 
   addTrafficEventsForBlock(block) {
     const blockTimestamp = block.timestamp;
-    this.tsm.addEvent(
+    trafficStatsManager.addEvent(
         TrafficEventTypes.BLOCK_GAS_AMOUNT, block.gas_amount_total, blockTimestamp);
-    this.tsm.addEvent(
+    trafficStatsManager.addEvent(
         TrafficEventTypes.BLOCK_GAS_COST, block.gas_cost_total, blockTimestamp);
-    this.tsm.addEvent(
+    trafficStatsManager.addEvent(
         TrafficEventTypes.BLOCK_LAST_VOTES, block.last_votes.length, blockTimestamp);
-    this.tsm.addEvent(
+    trafficStatsManager.addEvent(
         TrafficEventTypes.BLOCK_SIZE, block.size, blockTimestamp);
-    this.tsm.addEvent(
+    trafficStatsManager.addEvent(
         TrafficEventTypes.BLOCK_TXS, block.transactions.length, blockTimestamp);
-    this.tsm.addEvent(
+    trafficStatsManager.addEvent(
         TrafficEventTypes.BLOCK_EVIDENCE, Object.keys(block.evidence).length, blockTimestamp);
 
-    this.addTrafficEventsForVoteTxs(block.last_votes, blockTimestamp);
+    this.addTrafficEventsForVoteTxList(block.last_votes, blockTimestamp);
 
     for (let i = 0; i < Math.min(block.transactions.length, block.receipts.length); i++) {
       const tx = block.transactions[i];
@@ -715,9 +715,7 @@ class BlockchainNode {
         if (this.eh) {
           this.eh.emitBlockFinalized(blockToFinalize.number);
         }
-        if (this.tsm) {
-          this.addTrafficEventsForBlock(blockToFinalize);
-        }
+        this.addTrafficEventsForBlock(blockToFinalize);
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
             `${JSON.stringify(blockToFinalize, null, 2)}`);
