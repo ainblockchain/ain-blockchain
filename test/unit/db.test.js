@@ -763,8 +763,8 @@ describe("DB operations", () => {
             child2: 2
           }, { addr: 'abcd' },
           null, { extra: { executed_at: 1234567890000 }}), {
-          "error_message": "State rule evaluated false: [{\"max_children\":1}] at '/apps/test/test_rule/some/path/more/than/max' for value path '/apps/test/test_rule/some/path/more/than/max' with newValue '{\"child1\":1,\"child2\":2}'",
           "code": 12104,
+          "error_message": "State rule evaluated false: [{\"max_children\":1}] at '/apps/test/test_rule/some/path/more/than/max' for value path '/apps/test/test_rule/some/path/more/than/max' with newValue '{\"child1\":1,\"child2\":2}'",
           "bandwidth_gas_amount": 1
         });
       })
@@ -1386,7 +1386,6 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, timestamp)), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
       })
@@ -1395,7 +1394,6 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
@@ -1407,7 +1405,6 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'ijkl' }, timestamp)), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
@@ -1428,7 +1425,6 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'other' }, timestamp)), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
       })
@@ -1437,7 +1433,6 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
@@ -1452,7 +1447,6 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
@@ -1899,28 +1893,24 @@ describe("DB operations", () => {
             "/apps/test/test_owner/some/path", 'write_rule',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/path", 'write_function',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/path", 'write_owner',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/path", 'branch_owner',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
       })
@@ -1957,28 +1947,24 @@ describe("DB operations", () => {
             "/apps/test/test_owner/some/path/subpath", 'write_rule',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/path/subpath", 'write_function',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/path/subpath", 'write_owner',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/path/subpath", 'branch_owner',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
       })
@@ -2015,28 +2001,24 @@ describe("DB operations", () => {
             "/apps/test/test_owner/some/upper/path/subpath", 'write_rule',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path/subpath", 'write_function',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path/subpath", 'write_owner',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path/subpath", 'branch_owner',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
       })
@@ -2077,28 +2059,24 @@ describe("DB operations", () => {
             "/apps/test/test_owner/some/upper/path", 'write_rule',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isPartialSet: true })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path", 'write_function',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isPartialSet: true })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path", 'write_owner',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isPartialSet: true })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path", 'branch_owner',
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isPartialSet: true })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
       })
@@ -2649,7 +2627,6 @@ describe("DB operations", () => {
           },
           {
             "code": 0,
-            "error_message": "",
             "matched": {
               "state": {
                 "closestRule": {
@@ -2706,7 +2683,6 @@ describe("DB operations", () => {
           },
           {
             "code": 0,
-            "error_message": "",
             "matched": {
               "closestOwner": {
                 "config": {
@@ -4028,7 +4004,6 @@ describe("DB rule config", () => {
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/balance`, 0, null, null)), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
@@ -4040,7 +4015,6 @@ describe("DB rule config", () => {
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/balance`, 1, null, null)), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
   })
@@ -4049,7 +4023,6 @@ describe("DB rule config", () => {
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/info`, "something", null, null)), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
@@ -4062,7 +4035,6 @@ describe("DB rule config", () => {
         `/apps/test/users/${node2.account.address}/new_info`, "something",
         { addr: node2.account.address }, null)), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
   })
@@ -4072,7 +4044,6 @@ describe("DB rule config", () => {
         `/apps/test/users/${node1.account.address}/child/grandson`, "something",
         { addr: node1.account.address }, null)), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
@@ -4088,7 +4059,6 @@ describe("DB rule config", () => {
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/balance_info`, "something", null, null)), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
@@ -4103,7 +4073,6 @@ describe("DB rule config", () => {
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/next_counter`, 11, null,  null)), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
@@ -4119,7 +4088,6 @@ describe("DB rule config", () => {
         `/apps/test/second_users/${node2.account.address}/${node2.account.address}`,
         "some value", null, null)), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
@@ -4135,13 +4103,11 @@ describe("DB rule config", () => {
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         '/apps/test/no_dup_key/aaa/bbb', "some value", null, null)), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         '/apps/test/dup_key/aaa/bbb', "some value", null, null)), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
   })
@@ -4266,7 +4232,6 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/true/true/branch', 'branch_owner',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
@@ -4280,14 +4245,12 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/false/true/branch', 'branch_owner',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/true/false/branch', 'branch_owner',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
   })
@@ -4297,14 +4260,12 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/true/true', 'write_owner',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true', 'write_owner',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
@@ -4318,7 +4279,6 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/true/false', 'write_owner',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
   })
@@ -4328,21 +4288,18 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/true/true', 'write_rule',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true', 'write_rule',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true', 'write_rule',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
@@ -4359,21 +4316,18 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/true/true/deeper_path', 'write_rule',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true/deeper_path', 'write_rule',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true/deeper_path', 'write_rule',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
@@ -4390,21 +4344,18 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/true/true', 'write_function',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true', 'write_function',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true', 'write_function',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
@@ -4421,21 +4372,18 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/true/true/deeper_path', 'write_function',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/false/true/true/deeper_path', 'write_function',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
         '/apps/test/test_owner/mixed/true/false/true/deeper_path', 'write_function',
         { addr: '0x08Aed7AF9354435c38d52143EE50ac839D20696b' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
@@ -4460,7 +4408,6 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/false/true/true/branch', 'branch_owner',
         { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
@@ -4498,7 +4445,6 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/false/true', 'write_owner',
         { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
@@ -4536,7 +4482,6 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/true/false', 'write_rule',
         { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
   })
@@ -4567,7 +4512,6 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/true/false/deeper_path', 'write_rule',
         { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
   })
@@ -4598,7 +4542,6 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/true/false', 'write_function',
         { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
   })
@@ -4629,7 +4572,6 @@ describe("DB owner config", () => {
         '/apps/test/test_owner/mixed/true/true/false/deeper_path', 'write_function',
         { addr: '0x07A43138CC760C85A5B1F115aa60eADEaa0bf417' })), {
       "code": 0,
-      "error_message": "",
       "matched": "erased",
     });
   })
@@ -5293,7 +5235,6 @@ describe("DB sharding config", () => {
             "/apps/test/test_sharding/some/path/to", newValue,
             { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
       })
@@ -5303,7 +5244,6 @@ describe("DB sharding config", () => {
             "/apps/afan/apps/test/test_sharding/some/path/to", newValue,
             { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
       })
@@ -5466,7 +5406,6 @@ describe("DB sharding config", () => {
             "/apps/test/test_sharding/some/path/to", "write_rule",
             { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
       })
@@ -5476,7 +5415,6 @@ describe("DB sharding config", () => {
             "/apps/afan/apps/test/test_sharding/some/path/to", "write_rule",
             { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
       })

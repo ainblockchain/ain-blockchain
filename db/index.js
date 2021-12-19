@@ -1784,7 +1784,6 @@ class DB {
     }
     return {
       code: TxResultCode.SUCCESS,
-      error_message: '',
       matched,
     };
   }
@@ -1816,7 +1815,6 @@ class DB {
     }
     return {
       code: TxResultCode.SUCCESS,
-      error_message: '',
       matched,
     };
   }
@@ -1848,7 +1846,6 @@ class DB {
     }
     return {
       code: TxResultCode.SUCCESS,
-      error_message: '',
       matched,
     };
   }
@@ -1881,7 +1878,6 @@ class DB {
     }
     return {
       code: TxResultCode.SUCCESS,
-      error_message: '',
       matched,
     };
   }
