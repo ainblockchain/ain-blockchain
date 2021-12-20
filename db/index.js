@@ -617,6 +617,7 @@ class DB {
     return this.getPermissionForValue(localPath, value, auth, timestamp);
   }
 
+  // TODO(platfowner): Consider allowing the callers to specify target config.
   evalOwner(refPath, permission, auth, options) {
     const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(refPath);
