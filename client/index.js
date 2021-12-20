@@ -62,7 +62,7 @@ const maxProtocolVersion = max;
 const p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
 const p2pServer = p2pClient.server;
 
-const jsonRpcMethods = require('../json_rpc')(
+const jsonRpcApis = require('../json_rpc')(
     node, p2pServer, eventHandler, minProtocolVersion, maxProtocolVersion);
 
 function createAndExecuteTransaction(txBody) {
@@ -79,7 +79,7 @@ function createAndExecuteTransaction(txBody) {
 app.post(
   '/json-rpc',
   VersionUtil.validateVersion.bind({ minProtocolVersion, maxProtocolVersion }),
-  jayson.server(jsonRpcMethods).middleware()
+  jayson.server(jsonRpcApis).middleware()
 );
 
 app.get('/', (req, res, next) => {

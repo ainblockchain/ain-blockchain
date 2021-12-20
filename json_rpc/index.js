@@ -7,7 +7,6 @@ const getBlockApis = require('./block');
 const getDatabaseApis = require('./database');
 const getEventHandlerApis = require('./event-handler');
 const getNetworkApis = require('./network');
-const getStateModifyingApis = require('./state-modifying');
 const getTransactionApis = require('./transaction');
 const getVersionApis = require('./version');
 
@@ -23,30 +22,28 @@ const getVersionApis = require('./version');
  * @return {dict} A closure of functions compatible with the jayson library for
  *                  servicing JSON-RPC requests.
  */
-module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolVersion, maxProtocolVersion) {
-  // Non-transaction methods
-  const nonTxMethods = {
+module.exports = function getApis(node, p2pServer, eventHandler, minProtocolVersion, maxProtocolVersion) {
+  // Minimally required APIs
+  const apis = {
     ...getAccountApis(node, p2pServer),
     ...getApiAccessApis(node),
-    ...getBlockApis(node),
-    ...getDatabaseApis(node),
-    ...getNetworkApis(node, p2pServer),
-    ...getTransactionApis(node),
-    ...getVersionApis(minProtocolVersion, maxProtocolVersion),
   };
-
-  // Transaction methods
-  const txMethods = {
-    ...getStateModifyingApis(node, p2pServer),
-  };
-
-  const methods = nonTxMethods;
-  if (NodeConfigs.ENABLE_JSON_RPC_TX_API) {
-    Object.assign(methods, txMethods);
+  if (NodeConfigs.ENABLE_JSON_RPC_API) {
+    Object.assign(apis, {
+      ...getBlockApis(node),
+      ...getDatabaseApis(node),
+      ...getNetworkApis(node, p2pServer),
+      ...getTransactionApis(node, p2pServer),
+      ...getVersionApis(minProtocolVersion, maxProtocolVersion),
+    });
+  } else {
+    Object.assign(apis, {
+      p2p_getPeerCandidateInfo: getNetworkApis(node, p2pServer).p2p_getPeerCandidateInfo,
+    });
   }
   if (eventHandler !== null) {
-    Object.assign(methods, getEventHandlerApis(eventHandler));
+    Object.assign(apis, getEventHandlerApis(eventHandler));
   }
 
-  return methods;
+  return apis;
 };
