@@ -13,7 +13,7 @@ const {
 } = require('../test-util');
 
 describe("Functions", () => {
-  describe("triggerFunctions", () => {
+  describe("matchAndTriggerFunctions", () => {
     let node;
     let functions;
     const accountRegistrationGasAmount = BlockchainParams.resource.account_registration_gas_amount;
@@ -137,9 +137,9 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { func_results, promise_results } = functions.triggerFunctions(
-            CommonUtil.parsePath(refPathRest),
-            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+        const { func_results, promise_results } = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathRest), null, null, null, null, transaction, 0, 0,
+            accountRegistrationGasAmount, restFunctionCallGasAmount);
         if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
           assert.deepEqual(func_results, {
             "0x11111": {
@@ -208,9 +208,9 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { promise_results } = functions.triggerFunctions(
-            CommonUtil.parsePath(refPathRestMulti),
-            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+        const { promise_results } = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathRestMulti), null, null, null, null, transaction, 0, 0,
+            accountRegistrationGasAmount, restFunctionCallGasAmount);
         return promise_results.then((resp) => {
           if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
@@ -293,9 +293,9 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { promise_results } = functions.triggerFunctions(
-            CommonUtil.parsePath(refPathRestWithoutListener),
-            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+        const { promise_results } = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathRestWithoutListener), null, null, null, null, transaction,
+            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
         return promise_results.then((resp) => {
           if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
@@ -330,9 +330,9 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { promise_results } = functions.triggerFunctions(
-            CommonUtil.parsePath(refPathRestNotWhitelisted),
-            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+        const { promise_results } = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathRestNotWhitelisted), null, null, null, null, transaction,
+            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -369,9 +369,9 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { promise_results } = functions.triggerFunctions(
-            CommonUtil.parsePath(refPathRestNewlyWhitelisted),
-            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+        const { promise_results } = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathRestNewlyWhitelisted), null, null, null, null, transaction,
+            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
         return promise_results.then((resp) => {
           if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
             assert.deepEqual(resp, {
@@ -408,9 +408,9 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { promise_results } = functions.triggerFunctions(
-            CommonUtil.parsePath(refPathRestNewlyWhitelisted),
-            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+        const { promise_results } = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathRestNewlyWhitelisted), null, null, null, null, transaction,
+            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -437,9 +437,9 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { promise_results } = functions.triggerFunctions(
-            CommonUtil.parsePath(refPathNull),
-            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+        const { promise_results } = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathNull), null, null, null, null, transaction, 0, 0,
+            accountRegistrationGasAmount, restFunctionCallGasAmount);
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -494,7 +494,7 @@ describe("Functions", () => {
           "address": "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
         }
         const tx = Transaction.fromTxBody(txBody, null);
-        const { func_results, promise_results } = functions.triggerFunctions(
+        const { func_results, promise_results } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathTransfer), 10, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
             tx, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
@@ -542,7 +542,7 @@ describe("Functions", () => {
           "address": "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
         }
         const tx = Transaction.fromTxBody(txBody, null);
-        const { func_results, promise_results } = functions.triggerFunctions(
+        const { func_results, promise_results } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathTransfer), 10, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
             tx, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
@@ -594,9 +594,9 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { func_results, promise_results } = functions.triggerFunctions(
-            CommonUtil.parsePath(refPathRest),
-            null, null, null, null, transaction, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+        const { func_results, promise_results } = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathRest), null, null, null, null, transaction, 0, 0,
+            accountRegistrationGasAmount, restFunctionCallGasAmount);
         if (NodeConfigs.ENABLE_REST_FUNCTION_CALL) {
           assert.deepEqual(func_results, {
             "0x11111": {

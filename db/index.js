@@ -811,7 +811,7 @@ class DB {
           'resource/account_registration_gas_amount', blockNumber, this.stateRoot);
       const restFunctionCallGasAmount = DB.getBlockchainParam(
           'resource/rest_function_call_gas_amount', blockNumber, this.stateRoot);
-      const { func_results } = this.func.triggerFunctions(
+      const { func_results } = this.func.matchAndTriggerFunctions(
           localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime,
           accountRegistrationGasAmount, restFunctionCallGasAmount);
       funcResults = func_results;

@@ -89,16 +89,24 @@ class Functions {
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   // TODO(platfowner): Trigger subtree functions.
-  triggerFunctions(
+  matchAndTriggerFunctions(
       parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
+      accountRegistrationGasAmount, restFunctionCallGasAmount) {
+    const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
+    return this.triggerFunctions(
+        matched.matchedFunction.path, matched.pathVars, matched.matchedFunction.config,
+        parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
+        accountRegistrationGasAmount, restFunctionCallGasAmount);
+  }
+
+  triggerFunctions(
+      functionPath, pathVars, functionMap, parsedValuePath, value, prevValue, auth, timestamp,
+      transaction, blockNumber, blockTime,
       accountRegistrationGasAmount, restFunctionCallGasAmount) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
-    const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
-    const functionPath = matched.matchedFunction.path;
-    const functionMap = matched.matchedFunction.config;
     const functionList = Functions.getFunctionList(functionMap);
-    const params = Functions.convertPathVars2Params(matched.pathVars);
+    const params = Functions.convertPathVars2Params(pathVars);
     let triggerCount = 0;
     let failCount = 0;
     const promises = [];
