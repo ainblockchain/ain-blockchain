@@ -253,6 +253,14 @@ function eraseEvalResMatched(res) {
   return erased;
 }
 
+function eraseSubtreeFuncResPromiseResults(res) {
+  const erased = JSON.parse(JSON.stringify(res));
+  for (const triggerPath in res) {
+    _.set(erased, `${triggerPath}.promise_results`, 'erased');
+  }
+  return erased;
+}
+
 module.exports = {
   GET_OPTIONS_INCLUDE_ALL,
   readConfigFile,
@@ -273,4 +281,5 @@ module.exports = {
   eraseStateGas,
   eraseTxCreatedAt,
   eraseEvalResMatched,
+  eraseSubtreeFuncResPromiseResults,
 };
