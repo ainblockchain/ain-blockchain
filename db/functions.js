@@ -93,10 +93,19 @@ class Functions {
       parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
       accountRegistrationGasAmount, restFunctionCallGasAmount) {
     const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
-    return this.triggerFunctions(
+    const triggerRes = this.triggerFunctions(
         matched.matchedFunction.path, matched.pathVars, matched.matchedFunction.config,
         parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
         accountRegistrationGasAmount, restFunctionCallGasAmount);
+    const subtreeFuncRes = {};
+    for (const subtreeConfig of matched.subtreeFunctions) {
+      const subtreeTriggerRes = this.triggerFunctions(
+          subtreeConfig.path, {}, subtreeConfig.config,
+          parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
+          accountRegistrationGasAmount, restFunctionCallGasAmount);
+      subtreeFuncRes[CommonUtil.formatPath(subtreeConfig.path)] = subtreeTriggerRes;
+    }
+    return Object.assign(triggerRes, { subtree_func_results: subtreeFuncRes });
   }
 
   triggerFunctions(
