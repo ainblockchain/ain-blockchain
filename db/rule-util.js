@@ -245,6 +245,7 @@ class RuleUtil {
   validateCheckoutRequestData(networkName, chainId, tokenId, userAddr, checkoutId, newData, currentTime, getValue) {
     const { PredefinedDbPaths } = require('../common/constants');
     const PathUtil = require('../common/path-util');
+    // NOTE(liayoo): checkoutId should be the same as the transaction's timestamp to prevent duplicates.
     if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
         !this.isString(newData.recipient) || !this.isNumber(newData.fee_rate) ||
         Number(checkoutId) !== currentTime) {
@@ -273,12 +274,14 @@ class RuleUtil {
     if (!_.isEqual(request, newData.request)) {
       return false;
     }
+    // NOTE(liayoo): tx_hash could be undefined if the checkout failed/rejected without a tx generated.
     return this.isDict(newData.response) && this.isBool(newData.response.status) &&
         (newData.response.tx_hash === undefined || this.isValidHash(newData.response.tx_hash));
   }
 
   validateCheckinRequestData(networkName, chainId, tokenId, userAddr, checkinId, newData, currentTime, getValue) {
     const PathUtil = require('../common/path-util');
+    // NOTE(liayoo): checkinId should be the same as the transaction's timestamp to prevent duplicates.
     if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
         !this.isString(newData.sender) || !this.isString(newData.sender_proof) ||
         Number(checkinId) !== currentTime) {
