@@ -34,6 +34,8 @@ describe("Functions", () => {
 
     describe("Function triggering", () => {
       const refPathRest = "/apps/test/test_function/some/path/rest";
+      const refPathRestVarPath = "/apps/test/test_function/some/arbitrary/rest";
+      const funcPathRestVarPath = "/apps/test/test_function/some/$var_path/rest";
       const refPathRestMulti = "/apps/test/test_function/some/path/rest_multi";
       const refPathRestWithoutListener = "/apps/test/test_function/some/path/rest_without_listener";
       const refPathRestNotWhitelisted = "/apps/test/test_function/some/path/rest_not_whitelisted";
@@ -43,12 +45,21 @@ describe("Functions", () => {
       let requestBody1 = null, requestBody2 = null;
 
       before(() => {
-        const restFunction = {
+        const restFunctionNonVarPath = {
           ".function": {
             "0x11111": {
               "function_type": "REST",
               "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "0x11111"
+            }
+          }
+        };
+        const restFunctionVarPath = {
+          ".function": {
+            "0xvar_path": {
+              "function_type": "REST",
+              "function_url": "https://events.ainetwork.ai/trigger",
+              "function_id": "0xvar_path"
             }
           }
         };
@@ -89,7 +100,8 @@ describe("Functions", () => {
             "0x12345": null
           }
         };
-        assert.deepEqual(node.db.setFunction(refPathRest, restFunction).code, 0);
+        assert.deepEqual(node.db.setFunction(refPathRest, restFunctionNonVarPath).code, 0);
+        assert.deepEqual(node.db.setFunction(funcPathRestVarPath, restFunctionVarPath).code, 0);
         assert.deepEqual(node.db.setFunction(refPathRestMulti, restFunctionMulti).code, 0);
         assert.deepEqual(
             node.db.setFunction(refPathRestWithoutListener, restFunctionWithoutListener).code, 0);
@@ -121,7 +133,7 @@ describe("Functions", () => {
             });
       })
 
-      it("REST function", () => {
+      it("REST function with non-variable path", () => {
         transaction = {
           "tx_body": {
             "operation": {
@@ -159,10 +171,72 @@ describe("Functions", () => {
               "function_id": "0x11111",
               "function_type": "REST",
             },
+            "params": {},
             "transaction": {
               "tx_body": {
                 "operation": {
                   "ref": refPathRest,
+                  "type": "SET_VALUE",
+                  "value": 1000,
+                },
+                "nonce": 123,
+                "timestamp": 1566736760322,
+                "gas_price": 1,
+              },
+              "extra": {
+                "created_at": 1566736760323,
+                "executed_at": 1566736760324,
+              }
+            }
+          });
+        });
+      })
+
+      it("REST function with variable path", () => {
+        transaction = {
+          "tx_body": {
+            "operation": {
+              "ref": refPathRestVarPath,
+              "type": "SET_VALUE",
+              "value": 1000
+            },
+            "nonce": 123,
+            "timestamp": 1566736760322,
+            "gas_price": 1,
+          },
+          "extra": {
+            "created_at": 1566736760323,
+            "executed_at": 1566736760324,
+          }
+        }
+        const { func_results, promise_results } = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathRestVarPath), null, null, null, null, transaction, 0, 0,
+            accountRegistrationGasAmount, restFunctionCallGasAmount);
+        assert.deepEqual(func_results, {
+          "0xvar_path": {
+            "code": 0,
+            "bandwidth_gas_amount": 100,
+          }
+        });
+        return promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 1,
+            fail_count: 0,
+          });
+          assert.deepEqual(requestBody1, {
+            "function": {
+              "function_url": "https://events.ainetwork.ai/trigger",
+              "function_id": "0xvar_path",
+              "function_type": "REST",
+            },
+            "params": {
+              "var_path": "arbitrary"
+            },
+            "transaction": {
+              "tx_body": {
+                "operation": {
+                  "ref": refPathRestVarPath,
                   "type": "SET_VALUE",
                   "value": 1000,
                 },
@@ -211,6 +285,7 @@ describe("Functions", () => {
               "function_id": "0x11111",
               "function_type": "REST",
             },
+            "params": {},
             "transaction": {
               "tx_body": {
                 "operation": {
@@ -234,6 +309,7 @@ describe("Functions", () => {
               "function_id": "0x22222",
               "function_type": "REST",
             },
+            "params": {},
             "transaction": {
               "tx_body": {
                 "operation": {
