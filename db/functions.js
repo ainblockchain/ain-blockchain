@@ -194,6 +194,7 @@ class Functions {
             }
             promises.push(axios.post(functionEntry.function_url, {
               function: functionEntry,
+              params,
               transaction,
             }, {
               timeout: NodeConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
