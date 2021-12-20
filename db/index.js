@@ -1733,8 +1733,8 @@ class DB {
       const subtreeRulePathList = this.getSubtreeConfigPathList(matchedWriteRules.subtreeRules);
       return {
         code: TxResultCode.EVAL_RULE_NON_EMPTY_SUBTREE_RULES,
-        error_message: `Non-empty (${matchedWriteRules.subtreeRules.length}) subtree rules ` +
-            `for value path '${CommonUtil.formatPath(parsedValuePath)}'': ` +
+        error_message: `Non-empty (${matchedWriteRules.subtreeRules.length}) ` +
+            `subtree rules for value path '${CommonUtil.formatPath(parsedValuePath)}'': ` +
             `${JSON.stringify(subtreeRulePathList)}`,
         matched,
       };
@@ -1744,7 +1744,8 @@ class DB {
         matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
       if (!evalWriteRuleRes.evalResult) {
         logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${JSON.stringify(evalWriteRuleRes, null, 2)}, ` +
-            `matched: ${JSON.stringify(matchedWriteRules, null, 2)}, data: ${JSON.stringify(data)}, ` +
+            `matchedWriteRules: ${JSON.stringify(matchedWriteRules, null, 2)}, ` +
+            `data: ${JSON.stringify(data)}, ` +
             `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
             `timestamp: ${timestamp}\n`);
         return {
@@ -1761,7 +1762,8 @@ class DB {
       const evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
       if (!evalStateRuleRes.evalResult) {
         logger.debug(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
-            `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
+            `matchedStateRules: ${JSON.stringify(matchedStateRules, null, 2)}, ` +
+            `parsedValuePath: ${parsedValuePath}, ` +
             `newValue: ${JSON.stringify(newValue)}\n`);
         return {
           code: TxResultCode.EVAL_RULE_FALSE_STATE_RULE_EVAL,
@@ -1806,7 +1808,8 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_RULE,
-        error_message: `${OwnerProperties.WRITE_RULE} permission evaluated false: [${checkRes.permissionString}] ` +
+        error_message: `${OwnerProperties.WRITE_RULE} ` +
+            `permission evaluated false: [${checkRes.permissionString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for rule path '${CommonUtil.formatPath(parsedRulePath)}' ` +
             `with permission '${permission}', ` +
@@ -1837,7 +1840,8 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_FUNCTION,
-        error_message: `${OwnerProperties.WRITE_FUNCTION} permission evaluated false: [${checkRes.permissionString}] ` +
+        error_message: `${OwnerProperties.WRITE_FUNCTION} ` +
+            `permission evaluated false: [${checkRes.permissionString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for function path '${CommonUtil.formatPath(parsedFuncPath)}' ` +
             `with permission '${permission}', ` +
@@ -1869,7 +1873,8 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_OWNER,
-        error_message: `${permission} permission evaluated false: [${checkRes.permissionString}] ` +
+        error_message: `${permission} ` +
+            `permission evaluated false: [${checkRes.permissionString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}' ` +
             `with permission '${permission}', ` +
