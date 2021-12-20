@@ -1077,7 +1077,7 @@ describe("DB operations", () => {
       })
 
       // For details, see test case 'evalOwner to evaluate write_function permission with subtree owners'.
-      it("setFunction to write with subtree owners with isPartialSet = false", () => {
+      it("setFunction to write with subtree owners with isMerge = false", () => {
         const functionConfig = {
           ".function": {
             "fid_other": {
@@ -1096,7 +1096,7 @@ describe("DB operations", () => {
       })
 
       // For details, see test case 'evalOwner to evaluate write_function permission with subtree owners'.
-      it("setFunction to write with subtree owners with isPartialSet = true", () => {
+      it("setFunction to write with subtree owners with isMerge = true", () => {
         const functionConfig = {
           ".function": {
             "fid_other": {
@@ -1592,7 +1592,7 @@ describe("DB operations", () => {
       })
 
       // For details, see test case 'evalOwner to evaluate write_rule permission with subtree owners'.
-      it("setRule to write with subtree owners with isPartialSet = false", () => {
+      it("setRule to write with subtree owners with isMerge = false", () => {
         assert.deepEqual(node.db.setRule("/apps/test/test_owner/some/upper/path/deeper",
             {
               ".rule": {
@@ -1606,7 +1606,7 @@ describe("DB operations", () => {
       })
 
       // For details, see test case 'evalOwner to evaluate write_rule permission with subtree owners'.
-      it("setRule to write with subtree owners with isPartialSet = true", () => {
+      it("setRule to write with subtree owners with isMerge = true", () => {
         assert.deepEqual(node.db.setRule("/apps/test/test_owner/some/upper/path", {
               ".rule": {
                 "write": "auth.addr === 'xyz'"
@@ -2054,28 +2054,28 @@ describe("DB operations", () => {
         });
       })
 
-      it("evalOwner to evaluate a owner with subtree owners and isPartialSet = true", () => {
+      it("evalOwner to evaluate a owner with subtree owners and isMerge = true", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path", 'write_rule',
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isPartialSet: true })), {
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isMerge: true })), {
           "code": 0,
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path", 'write_function',
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isPartialSet: true })), {
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isMerge: true })), {
           "code": 0,
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path", 'write_owner',
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isPartialSet: true })), {
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isMerge: true })), {
           "code": 0,
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalOwner(
             "/apps/test/test_owner/some/upper/path", 'branch_owner',
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isPartialSet: true })), {
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, { isMerge: true })), {
           "code": 0,
           "matched": "erased",
         });
@@ -2187,7 +2187,7 @@ describe("DB operations", () => {
       })
 
       // For details, see test case 'evalOwner to evaluate write_owner permission with subtree owners'.
-      it("setOwner to write with subtree owners with isPartialSet = false", () => {
+      it("setOwner to write with subtree owners with isMerge = false", () => {
         assert.deepEqual(node.db.setOwner("/apps/test/test_owner/some/upper/path/deeper", {
           ".owner": {
             "owners": {
@@ -2207,7 +2207,7 @@ describe("DB operations", () => {
       })
 
       // For details, see test case 'evalOwner to evaluate write_owner permission with subtree owners'.
-      it("setOwner to write with subtree owners with isPartialSet = true", () => {
+      it("setOwner to write with subtree owners with isMerge = true", () => {
         assert.deepEqual(node.db.setOwner(
             "/apps/test/test_owner/some/upper/path", {
           ".owner": {
