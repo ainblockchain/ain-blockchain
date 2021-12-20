@@ -83,6 +83,11 @@ printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
+    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
+    exit
+fi
+
 # 1. Configure env vars (BLOCKCHAIN_CONFIGS_DIR, TRACKER_UPDATE_JSON_RPC_URL, ...)
 printf "\n#### [Step 1] Configure env vars ####\n\n"
 
