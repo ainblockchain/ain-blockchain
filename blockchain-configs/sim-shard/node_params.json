@@ -15,7 +15,7 @@
     "http://localhost:3000"
   ],
   "DEBUG": false,
-  "ENABLE_DEV_CLIENT_SET_API": false,
+  "ENABLE_DEV_CLIENT_SET_API": true,
   "ENABLE_EVENT_HANDLER": false,
   "ENABLE_EXPRESS_RATE_LIMIT": true,
   "ENABLE_GAS_FEE_WORKAROUND": true,
