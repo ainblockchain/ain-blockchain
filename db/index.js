@@ -627,12 +627,12 @@ class DB {
       return null;
     }
     if (permission === OwnerProperties.WRITE_RULE) {
-      return this.getPermissionForRule(localPath, auth, options && options.isPartialSet);
+      return this.getPermissionForRule(localPath, auth, options && options.isMerge);
     } else if (permission === OwnerProperties.WRITE_FUNCTION) {
-      return this.getPermissionForFunction(localPath, auth, options && options.isPartialSet);
+      return this.getPermissionForFunction(localPath, auth, options && options.isMerge);
     } else if (permission === OwnerProperties.WRITE_OWNER ||
         permission === OwnerProperties.BRANCH_OWNER) {
-      return this.getPermissionForOwner(localPath, auth, options && options.isPartialSet);
+      return this.getPermissionForOwner(localPath, auth, options && options.isMerge);
     } else {
       return {
         code: TxResultCode.EVAL_OWNER_INVALID_PERMISSION,
@@ -920,7 +920,7 @@ class DB {
     }
     const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
     const applyRes = applyFunctionChange(curFunction, func);
-    const permCheckRes = this.getPermissionForFunction(localPath, auth, applyRes.isPartialSet);
+    const permCheckRes = this.getPermissionForFunction(localPath, auth, applyRes.isMerge);
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
@@ -976,7 +976,7 @@ class DB {
     }
     const curRule = this.getRule(rulePath, { isShallow: false, isGlobal });
     const applyRes = applyRuleChange(curRule, rule);
-    const permCheckRes = this.getPermissionForRule(localPath, auth, applyRes.isPartialSet);
+    const permCheckRes = this.getPermissionForRule(localPath, auth, applyRes.isMerge);
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
@@ -1030,7 +1030,7 @@ class DB {
     }
     const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
     const applyRes = applyOwnerChange(curOwner, owner);
-    const permCheckRes = this.getPermissionForOwner(localPath, auth, applyRes.isPartialSet);
+    const permCheckRes = this.getPermissionForOwner(localPath, auth, applyRes.isMerge);
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
@@ -1789,9 +1789,9 @@ class DB {
     };
   }
 
-  getPermissionForRule(parsedRulePath, auth, isPartialSet) {
+  getPermissionForRule(parsedRulePath, auth, isMerge) {
     const matched = this.matchOwnerForParsedPath(parsedRulePath);
-    if (!isPartialSet && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+    if (!isMerge && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_RULE,
@@ -1820,9 +1820,9 @@ class DB {
     };
   }
 
-  getPermissionForFunction(parsedFuncPath, auth, isPartialSet) {
+  getPermissionForFunction(parsedFuncPath, auth, isMerge) {
     const matched = this.matchOwnerForParsedPath(parsedFuncPath);
-    if (!isPartialSet && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+    if (!isMerge && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_FUNCTION,
@@ -1851,9 +1851,9 @@ class DB {
     };
   }
 
-  getPermissionForOwner(parsedOwnerPath, auth, isPartialSet) {
+  getPermissionForOwner(parsedOwnerPath, auth, isMerge) {
     const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
-    if (!isPartialSet && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+    if (!isMerge && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_OWNER,

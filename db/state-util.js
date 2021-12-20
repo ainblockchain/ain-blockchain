@@ -624,22 +624,24 @@ function getConfigAtPath(stateTreeObj, configPath) {
  * @param {Object} curRuleTree current rule tree (to be modified by this rule)
  * @param {Object} ruleChange rule change
  */
-// NOTE(platfowner): Partial set is applied only when the current rule tree has
+// NOTE(platfowner): Config merge is applied only when the current rule tree has
 // .rule property and the rule change has .rule property as the only property.
 function applyRuleChange(curRuleTree, ruleChange) {
+  // 1. Config overwriting case:
   if (!hasConfigLabel(curRuleTree, PredefinedDbPaths.DOT_RULE) ||
       !hasConfigLabelOnly(ruleChange, PredefinedDbPaths.DOT_RULE)) {
     const newRuleConfig = CommonUtil.isDict(ruleChange) ?
         JSON.parse(JSON.stringify(ruleChange)) : ruleChange;
     return {
-      isPartialSet: false,
+      isMerge: false,
       ruleConfig: newRuleConfig,
     };
   }
+  // 2. Config merge case:
   const ruleChangeMap = getConfigAtPath(ruleChange, [PredefinedDbPaths.DOT_RULE]);
   if (!ruleChangeMap || Object.keys(ruleChangeMap).length === 0) {
     return {
-      isPartialSet: true,
+      isMerge: true,
       ruleConfig: curRuleTree,
     };
   }
@@ -663,7 +665,7 @@ function applyRuleChange(curRuleTree, ruleChange) {
   }
 
   return {
-    isPartialSet: true,
+    isMerge: true,
     ruleConfig: newRuleConfig,
   };
 }
@@ -675,22 +677,24 @@ function applyRuleChange(curRuleTree, ruleChange) {
  * @param {Object} curFuncTree current function tree (to be modified by this function)
  * @param {Object} functionChange function change
  */
-// NOTE(platfowner): Partial set is applied only when the current function tree has
+// NOTE(platfowner): Config merge is applied only when the current function tree has
 // .function property and the function change has .function property as the only property.
 function applyFunctionChange(curFuncTree, functionChange) {
+  // 1. Config overwriting case:
   if (!hasConfigLabel(curFuncTree, PredefinedDbPaths.DOT_FUNCTION) ||
       !hasConfigLabelOnly(functionChange, PredefinedDbPaths.DOT_FUNCTION)) {
     const newFuncConfig = CommonUtil.isDict(functionChange) ?
         JSON.parse(JSON.stringify(functionChange)) : functionChange;
     return {
-      isPartialSet: false,
+      isMerge: false,
       funcConfig: newFuncConfig,
     };
   }
+  // 2. Config merge case:
   const funcChangeMap = getConfigAtPath(functionChange, [PredefinedDbPaths.DOT_FUNCTION]);
   if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
     return {
-      isPartialSet: true,
+      isMerge: true,
       funcConfig: curFuncTree,
     };
   }
@@ -712,7 +716,7 @@ function applyFunctionChange(curFuncTree, functionChange) {
   }
 
   return {
-    isPartialSet: true,
+    isMerge: true,
     funcConfig: newFuncConfig,
   };
 }
@@ -724,23 +728,25 @@ function applyFunctionChange(curFuncTree, functionChange) {
  * @param {Object} curOwnerTree current owner tree (to be modified by this function)
  * @param {Object} ownerChange owner change
  */
-// NOTE(platfowner): Partial set is applied only when the current owner tree has
+// NOTE(platfowner): Config merge is applied only when the current owner tree has
 // .owner property and the owner change has .owner property as the only property.
 function applyOwnerChange(curOwnerTree, ownerChange) {
+  // 1. Config overwriting case:
   if (!hasConfigLabel(curOwnerTree, PredefinedDbPaths.DOT_OWNER) ||
       !hasConfigLabelOnly(ownerChange, PredefinedDbPaths.DOT_OWNER)) {
     const newOwnerConfig = CommonUtil.isDict(ownerChange) ?
         JSON.parse(JSON.stringify(ownerChange)) : ownerChange;
     return {
-      isPartialSet: false,
+      isMerge: false,
       ownerConfig: newOwnerConfig,
     };
   }
+  // 2. Config merge case:
   const ownerMapPath = [PredefinedDbPaths.DOT_OWNER, OwnerProperties.OWNERS];
   const ownerChangeMap = getConfigAtPath(ownerChange, ownerMapPath);
   if (!ownerChangeMap || Object.keys(ownerChangeMap).length === 0) {
     return {
-      isPartialSet: true,
+      isMerge: true,
       ownerConfig: curOwnerTree,
     };
   }
@@ -762,7 +768,7 @@ function applyOwnerChange(curOwnerTree, ownerChange) {
   }
 
   return {
-    isPartialSet: true,
+    isMerge: true,
     ownerConfig: newOwnerConfig,
   };
 }

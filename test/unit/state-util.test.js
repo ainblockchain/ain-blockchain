@@ -1463,7 +1463,7 @@ describe("state-util", () => {
 
     it("add / delete / modify non-existing rule", () => {
       assert.deepEqual(applyRuleChange(null, curRule), {
-        "isPartialSet": false,
+        "isMerge": false,
         "ruleConfig": curRule,
       }); // the same as the given rule change.
     });
@@ -1478,7 +1478,7 @@ describe("state-util", () => {
           }
         }
       }), {
-        "isPartialSet": true,
+        "isMerge": true,
         "ruleConfig": {
           ".rule": {
             // write: deleted
@@ -1503,7 +1503,7 @@ describe("state-util", () => {
           }
         }
       }), {
-        "isPartialSet": true,
+        "isMerge": true,
         "ruleConfig": {
           ".rule": {
             "write": true,
@@ -1528,7 +1528,7 @@ describe("state-util", () => {
           }
         }
       }), {
-        "isPartialSet": false,
+        "isMerge": false,
         "ruleConfig": {
           ".rule": {
             "write": "auth.addr === 'efgh'", // modified
@@ -1545,7 +1545,7 @@ describe("state-util", () => {
 
     it("with null rule change", () => {
       assert.deepEqual(applyRuleChange(curRule, null), {
-        "isPartialSet": false,
+        "isMerge": false,
         "ruleConfig": null,
       });
     });
@@ -1595,7 +1595,7 @@ describe("state-util", () => {
           }
         }
       }), {  // the same as the given function change.
-        "isPartialSet": false,
+        "isMerge": false,
         "funcConfig": {
           ".function": {
             "0x111": null,
@@ -1630,7 +1630,7 @@ describe("state-util", () => {
           }
         }
       }), {
-        "isPartialSet": true,
+        "isMerge": true,
         "funcConfig": {
           ".function": {
             "0x222": {  // modified
@@ -1679,7 +1679,7 @@ describe("state-util", () => {
           }
         }
       }), {
-        "isPartialSet": false,
+        "isMerge": false,
         "funcConfig": {
           ".function": {  // replaced
             "0x222": {
@@ -1705,7 +1705,7 @@ describe("state-util", () => {
 
     it("with null function change", () => {
       assert.deepEqual(applyFunctionChange(curFunction, null), {
-        "isPartialSet": false,
+        "isMerge": false,
         "funcConfig": null,
       });
     });
@@ -1774,7 +1774,7 @@ describe("state-util", () => {
           }
         }
       }), {  // the same as the given owner change.
-        "isPartialSet": false,
+        "isMerge": false,
         "ownerConfig": {
           ".owner": {  // owner
             "owners": {
@@ -1822,7 +1822,7 @@ describe("state-util", () => {
           }
         }
       }), {
-        "isPartialSet": true,
+        "isMerge": true,
         "ownerConfig": {
           ".owner": {
             "owners": {
@@ -1893,7 +1893,7 @@ describe("state-util", () => {
           }
         }
       }), {
-        "isPartialSet": false,
+        "isMerge": false,
         "ownerConfig": {
           ".owner": {  // replaced
             "owners": {
@@ -1929,7 +1929,7 @@ describe("state-util", () => {
 
     it("with null owner change", () => {
       assert.deepEqual(applyOwnerChange(curOwner, null), {
-        "isPartialSet": false,
+        "isMerge": false,
         "ownerConfig": null,
       });
     });
