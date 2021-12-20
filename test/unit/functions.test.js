@@ -37,12 +37,15 @@ describe("Functions", () => {
       const refPathRestVarPath = "/apps/test/test_function/some/arbitrary/rest";
       const funcPathRestVarPath = "/apps/test/test_function/some/$var_path/rest";
       const refPathRestMulti = "/apps/test/test_function/some/path/rest_multi";
+      const refPathRestWithSubtree = "/apps/test/test_function/some/path/rest_with_subtree";
       const refPathRestWithoutListener = "/apps/test/test_function/some/path/rest_without_listener";
       const refPathRestNotWhitelisted = "/apps/test/test_function/some/path/rest_not_whitelisted";
       const refPathNull = "/apps/test/test_function/some/path/null";
       const refPathFunctionUrlWhitelist = '/developers/rest_functions/url_whitelist/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0';
       const refPathRestNewlyWhitelisted = '/apps/test/test_function/some/path/rest_newly_whitelisted';
-      let requestBody1 = null, requestBody2 = null;
+      let requestBody1 = null;
+      let requestBody2 = null;
+      let requestBody3 = null;
 
       before(() => {
         const restFunctionNonVarPath = {
@@ -77,6 +80,35 @@ describe("Functions", () => {
             }
           }
         };
+        const restFunctionWithSubtree = {
+          ".function": {
+            "0x11111": {
+              "function_type": "REST",
+              "function_url": "https://events.ainetwork.ai/trigger",
+              "function_id": "0x11111"
+            }
+          },
+          "deeper": {
+            "$var_path": {
+              ".function": {
+                "0xvar_path": {
+                  "function_type": "REST",
+                  "function_url": "https://events.ainize.ai/trigger",
+                  "function_id": "0xvar_path"
+                }
+              }
+            },
+            "path": {
+              ".function": {
+                "0x33333": {
+                  "function_type": "REST",
+                  "function_url": "https://events.afan.ai/trigger",
+                  "function_id": "0x33333"
+                },
+              }
+            }
+          }
+        };
         const restFunctionWithoutListener = {
           ".function": {
             "0x33333": {
@@ -104,6 +136,8 @@ describe("Functions", () => {
         assert.deepEqual(node.db.setFunction(funcPathRestVarPath, restFunctionVarPath).code, 0);
         assert.deepEqual(node.db.setFunction(refPathRestMulti, restFunctionMulti).code, 0);
         assert.deepEqual(
+            node.db.setFunction(refPathRestWithSubtree, restFunctionWithSubtree).code, 0);
+        assert.deepEqual(
             node.db.setFunction(refPathRestWithoutListener, restFunctionWithoutListener).code, 0);
         assert.deepEqual(
             node.db.setFunction(refPathRestNotWhitelisted, restFunctionNotWhitelisted).code, 0);
@@ -113,24 +147,36 @@ describe("Functions", () => {
       beforeEach(() => {
         // Setup mock for REST API calls.
         const response = { 'success': true };
+        requestBody1 = null;
         nock('https://events.ainetwork.ai')
             .post('/trigger')
             .reply((uri, request) => {
-              requestBody1 = request;  // save request to requestBody1.
-              return [
-                201,
-                response,
-              ]
-            });
+          requestBody1 = request;  // save request to requestBody1.
+          return [
+            201,
+            response,
+          ]
+        });
+        requestBody2 = null;
         nock('https://events.ainize.ai')
             .post('/trigger')
             .reply((uri, request) => {
-              requestBody2 = request;  // save request to requestBody2.
-              return [
-                201,
-                response,
-              ]
-            });
+          requestBody2 = request;  // save request to requestBody2.
+          return [
+            201,
+            response,
+          ]
+        });
+        requestBody3 = null;
+        nock('https://events.afan.ai')
+            .post('/trigger')
+            .reply((uri, request) => {
+          requestBody3 = request;  // save request to requestBody3.
+          return [
+            201,
+            response,
+          ]
+        });
       })
 
       it("REST function with non-variable path", () => {
@@ -270,9 +316,19 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { promise_results } = functions.matchAndTriggerFunctions(
+        const { func_results, promise_results } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestMulti), null, null, null, null, transaction, 0, 0,
             accountRegistrationGasAmount, restFunctionCallGasAmount);
+        assert.deepEqual(func_results, {
+          "0x11111": {
+            "code": 0,
+            "bandwidth_gas_amount": 100,
+          },
+          "0x22222": {
+            "code": 0,
+            "bandwidth_gas_amount": 100,
+          }
+        });
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 2,
@@ -327,6 +383,115 @@ describe("Functions", () => {
               }
             }
           });
+        });
+      })
+
+      it("REST function with subtree", () => {
+        transaction = {
+          "tx_body": {
+            "operation": {
+              "ref": refPathRestWithSubtree,
+              "type": "SET_VALUE",
+              "value": 1000
+            },
+            "nonce": 123,
+            "timestamp": 1566736760322,
+            "gas_price": 1,
+          },
+          "extra": {
+            "created_at": 1566736760323,
+            "executed_at": 1566736760324,
+          }
+        }
+        const { func_results, promise_results } = functions.matchAndTriggerFunctions(
+            CommonUtil.parsePath(refPathRestWithSubtree), null, null, null, null, transaction, 0, 0,
+            accountRegistrationGasAmount, restFunctionCallGasAmount);
+        assert.deepEqual(func_results, {
+          "0x11111": {
+            "code": 0,
+            "bandwidth_gas_amount": 100,
+          }
+        });
+        return promise_results.then((resp) => {
+          assert.deepEqual(resp, {
+            func_count: 1,
+            trigger_count: 1,
+            fail_count: 0,
+          });
+          assert.deepEqual(requestBody1, {
+            "function": {
+              "function_url": "https://events.ainetwork.ai/trigger",
+              "function_id": "0x11111",
+              "function_type": "REST",
+            },
+            "params": {},
+            "transaction": {
+              "tx_body": {
+                "operation": {
+                  "ref": refPathRestWithSubtree,
+                  "type": "SET_VALUE",
+                  "value": 1000,
+                },
+                "nonce": 123,
+                "timestamp": 1566736760322,
+                "gas_price": 1,
+              },
+              "extra": {
+                "created_at": 1566736760323,
+                "executed_at": 1566736760324,
+              }
+            }
+          });
+          /*
+          assert.deepEqual(requestBody2, {
+            "function": {
+              "function_url": "https://events.ainize.ai/trigger",
+              "function_id": "0x22222",
+              "function_type": "REST",
+            },
+            "params": {},
+            "transaction": {
+              "tx_body": {
+                "operation": {
+                  "ref": refPathRestWithSubtree,
+                  "type": "SET_VALUE",
+                  "value": 1000,
+                },
+                "nonce": 123,
+                "timestamp": 1566736760322,
+                "gas_price": 1,
+              },
+              "extra": {
+                "created_at": 1566736760323,
+                "executed_at": 1566736760324,
+              }
+            }
+          });
+          assert.deepEqual(requestBody3, {
+            "function": {
+              "function_url": "https://events.afan.ai/trigger",
+              "function_id": "0x33333",
+              "function_type": "REST",
+            },
+            "params": {},
+            "transaction": {
+              "tx_body": {
+                "operation": {
+                  "ref": refPathRestWithSubtree,
+                  "type": "SET_VALUE",
+                  "value": 1000,
+                },
+                "nonce": 123,
+                "timestamp": 1566736760322,
+                "gas_price": 1,
+              },
+              "extra": {
+                "created_at": 1566736760323,
+                "executed_at": 1566736760324,
+              }
+            }
+          });
+          */
         });
       })
 
