@@ -5,6 +5,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const path = require('path');
+const stringify = require('fast-json-stable-stringify');
 const {
   DevFlags,
   NodeConfigs,
@@ -127,6 +128,31 @@ class BlockchainNode {
       return false;
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Failed to inject an account: ${err.stack}`);
+      return false;
+    }
+  }
+
+  verifyNodeAccountSignature(message, signature) {
+    const LOG_HEADER = 'verifyNodeAccountSignature';
+    if (!CommonUtil.isDict(message)) {
+      logger.debug(`[${LOG_HEADER}] Invalid message: ${JSON.stringify(message)}`);
+      return false;
+    }
+    if (!this.account) {
+      logger.debug(`[${LOG_HEADER}] Node account is not initialized: ${JSON.stringify(this.account)}`);
+      return false;
+    }
+    if (!CommonUtil.isNumber(message.timestamp) || message.timestamp < Date.now() - 10 * 60 * 1000) { // 10 min
+      logger.debug(`[${LOG_HEADER}] Stale message: ${JSON.stringify(message)}`);
+      return false;
+    }
+    try {
+      return ainUtil.ecVerifySig(
+          stringify(message), signature, this.account.address, this.getBlockchainParam('genesis/chain_id'));
+    } catch (e) {
+      logger.debug(
+          `[${LOG_HEADER}] Invalid signature: ${JSON.stringify(message)}, ${signature}, ` +
+          `${this.account.address}, ${this.getBlockchainParam('genesis/chain_id')}`);
       return false;
     }
   }
