@@ -3561,12 +3561,19 @@ ip-regex@^2.0.0:
   resolved "https://registry.yarnpkg.com/ip-regex/-/ip-regex-2.1.0.tgz#fa78bf5d2e6913c911ce9f819ee5146bb6d844e9"
   integrity sha1-+ni/XS5pE8kRzp+BnuUUa7bYROk=
 
+ip-whitelist@^1.2.2:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/ip-whitelist/-/ip-whitelist-1.2.2.tgz#034e8b7cf76fba2ec39bd367de851f47a35b9cb8"
+  integrity sha512-KqpJbPGcGJ4GFFDmeOpmw7kxjv6AJkqIyN/0I9rTgBwckax9B7NyTk4fZROlifuucI1X7LzLG5HhOe1CkgPEPw==
+  dependencies:
+    ipaddr.js "^1.9.1"
+
 ip@^1.1.5:
   version "1.1.5"
   resolved "https://registry.yarnpkg.com/ip/-/ip-1.1.5.tgz#bdded70114290828c0a039e72ef25f5aaec4354a"
   integrity sha1-vd7XARQpCCjAoDnnLvJfWq7ENUo=
 
-ipaddr.js@1.9.1:
+ipaddr.js@1.9.1, ipaddr.js@^1.9.1:
   version "1.9.1"
   resolved "https://registry.yarnpkg.com/ipaddr.js/-/ipaddr.js-1.9.1.tgz#bff38543eeb8984825079ff3a2a8e6cbd46781b3"
   integrity sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==
