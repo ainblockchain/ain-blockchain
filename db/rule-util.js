@@ -242,11 +242,12 @@ class RuleUtil {
     return true;
   }
 
-  validateCheckoutRequestData(networkName, chainId, tokenId, userAddr, checkoutId, newData, getValue) {
+  validateCheckoutRequestData(networkName, chainId, tokenId, userAddr, checkoutId, newData, currentTime, getValue) {
     const { PredefinedDbPaths } = require('../common/constants');
     const PathUtil = require('../common/path-util');
     if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
-        !this.isString(newData.recipient) || !this.isNumber(newData.fee_rate)) {
+        !this.isString(newData.recipient) || !this.isNumber(newData.fee_rate) ||
+        Number(checkoutId) !== currentTime) {
       return false;
     }
     const tokenBridgeConfig = this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue);
@@ -272,14 +273,15 @@ class RuleUtil {
     if (!_.isEqual(request, newData.request)) {
       return false;
     }
-    return this.isDict(newData.response) && this.isValidHash(newData.response.tx_hash) &&
-        this.isBool(newData.response.status);
+    return this.isDict(newData.response) && this.isBool(newData.response.status) &&
+        (newData.response.tx_hash === undefined || this.isValidHash(newData.response.tx_hash));
   }
 
-  validateCheckinRequestData(networkName, chainId, tokenId, userAddr, checkinId, newData, getValue) {
+  validateCheckinRequestData(networkName, chainId, tokenId, userAddr, checkinId, newData, currentTime, getValue) {
     const PathUtil = require('../common/path-util');
     if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
-        !this.isString(newData.sender) || !this.isString(newData.sender_proof)) {
+        !this.isString(newData.sender) || !this.isString(newData.sender_proof) ||
+        Number(checkinId) !== currentTime) {
       return false;
     }
     if (getValue(PathUtil.getCheckinHistoryPath(networkName, chainId, tokenId, userAddr, checkinId))) {
