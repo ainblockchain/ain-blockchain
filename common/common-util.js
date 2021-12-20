@@ -255,6 +255,9 @@ class CommonUtil {
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
     }
+    if (args.is_merge !== undefined) {
+      options.isMerge = CommonUtil.toBool(args.is_merge);
+    }
     return options;
   }
 
