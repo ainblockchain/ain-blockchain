@@ -103,6 +103,11 @@ printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "RESET_RESTART_OPTION=$RESET_RESTART_OPTION\n"
 printf "KILL_OPTION=$KILL_OPTION\n"
 
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
+    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
+    exit
+fi
+
 # Get confirmation.
 printf "\n"
 read -p "Do you want to proceed? >> (y/N) " -n 1 -r

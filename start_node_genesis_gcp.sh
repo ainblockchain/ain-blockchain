@@ -91,6 +91,11 @@ if [[ $ACCOUNT_INJECTION_OPTION != "private_key" ]] && [[ "$SHARD_INDEX" -gt 0 ]
     return 1
 fi
 
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
+    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
+    return 1
+fi
+
 if [[ $SEASON = "staging" ]]; then
     # for performance test pipeline
     export ENABLE_EXPRESS_RATE_LIMIT=false

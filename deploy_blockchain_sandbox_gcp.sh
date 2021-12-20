@@ -22,6 +22,11 @@ printf "START_NODE_IDX=$START_NODE_IDX\n"
 printf "END_NODE_IDX=$END_NODE_IDX\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
+    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
+    exit
+fi
+
 function parse_options() {
     local option="$1"
     if [[ $option = '--setup' ]]; then
