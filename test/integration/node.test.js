@@ -500,7 +500,6 @@ describe('Blockchain Node', () => {
         assert.deepEqual(body.code, 0);
         assert.deepEqual(eraseEvalResMatched(body.result), {
           "code": 0,
-          "error_message": "",
           "matched": "erased",
         });
       })
@@ -534,7 +533,6 @@ describe('Blockchain Node', () => {
           code: 0,
           result: {
             "code": 0,
-            "error_message": "",
             "matched": {
               "closestOwner": {
                 "config": {
@@ -637,7 +635,6 @@ describe('Blockchain Node', () => {
             },
             {
               "code": 0,
-              "error_message": "",
               "matched": {
                 "state": {
                   "closestRule": {
@@ -694,7 +691,6 @@ describe('Blockchain Node', () => {
             },
             {
               "code": 0,
-              "error_message": "",
               "matched": {
                 "closestOwner": {
                   "config": {
@@ -998,7 +994,6 @@ describe('Blockchain Node', () => {
         .then(res => {
           assert.deepEqual(eraseEvalResMatched(res.result.result), {
             "code": 0,
-            "error_message": "",
             "matched": "erased",
           });
         })
@@ -1031,7 +1026,6 @@ describe('Blockchain Node', () => {
         .then(res => {
           assert.deepEqual(res.result.result, {
             "code": 0,
-            "error_message": "",
             "matched": {
               "closestOwner": {
                 "config": {

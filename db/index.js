@@ -617,6 +617,7 @@ class DB {
     return this.getPermissionForValue(localPath, value, auth, timestamp);
   }
 
+  // TODO(platfowner): Consider allowing the callers to specify target config.
   evalOwner(refPath, permission, auth, options) {
     const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(refPath);
@@ -626,12 +627,12 @@ class DB {
       return null;
     }
     if (permission === OwnerProperties.WRITE_RULE) {
-      return this.getPermissionForRule(localPath, auth);
+      return this.getPermissionForRule(localPath, auth, options && options.isMerge);
     } else if (permission === OwnerProperties.WRITE_FUNCTION) {
-      return this.getPermissionForFunction(localPath, auth);
+      return this.getPermissionForFunction(localPath, auth, options && options.isMerge);
     } else if (permission === OwnerProperties.WRITE_OWNER ||
         permission === OwnerProperties.BRANCH_OWNER) {
-      return this.getPermissionForOwner(localPath, auth);
+      return this.getPermissionForOwner(localPath, auth, options && options.isMerge);
     } else {
       return {
         code: TxResultCode.EVAL_OWNER_INVALID_PERMISSION,
@@ -917,17 +918,17 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    const permCheckRes = this.getPermissionForFunction(localPath, auth);
+    const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
+    const applyRes = applyFunctionChange(curFunction, func);
+    const permCheckRes = this.getPermissionForFunction(localPath, auth, applyRes.isMerge);
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
           permCheckRes.error_message,
           unitWriteGasLimit);
     }
-    const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
-    const newFunction = applyFunctionChange(curFunction, func);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
-    this.writeDatabase(fullPath, newFunction);
+    this.writeDatabase(fullPath, applyRes.funcConfig);
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
@@ -973,17 +974,17 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    const permCheckRes = this.getPermissionForRule(localPath, auth);
+    const curRule = this.getRule(rulePath, { isShallow: false, isGlobal });
+    const applyRes = applyRuleChange(curRule, rule);
+    const permCheckRes = this.getPermissionForRule(localPath, auth, applyRes.isMerge);
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
           permCheckRes.error_message,
           unitWriteGasLimit);
     }
-    const curRule = this.getRule(rulePath, { isShallow: false, isGlobal });
-    const newRule = applyRuleChange(curRule, rule);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
-    this.writeDatabase(fullPath, newRule);
+    this.writeDatabase(fullPath, applyRes.ruleConfig);
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
@@ -1027,17 +1028,17 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    const permCheckRes = this.getPermissionForOwner(localPath, auth);
+    const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
+    const applyRes = applyOwnerChange(curOwner, owner);
+    const permCheckRes = this.getPermissionForOwner(localPath, auth, applyRes.isMerge);
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
           permCheckRes.error_message,
           unitWriteGasLimit);
     }
-    const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
-    const newOwner = applyOwnerChange(curOwner, owner);
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
-    this.writeDatabase(fullPath, newOwner);
+    this.writeDatabase(fullPath, applyRes.ownerConfig);
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
@@ -1784,19 +1785,18 @@ class DB {
     }
     return {
       code: TxResultCode.SUCCESS,
-      error_message: '',
       matched,
     };
   }
 
-  getPermissionForRule(parsedRulePath, auth) {
+  getPermissionForRule(parsedRulePath, auth, isMerge) {
     const matched = this.matchOwnerForParsedPath(parsedRulePath);
-    if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+    if (!isMerge && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_RULE,
-        error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
-            `for rule path '${CommonUtil.formatPath(parsedRulePath)}': ` +
+        error_message: `Non-empty (${matched.subtreeOwners.length}) ` +
+            `subtree owners for rule path '${CommonUtil.formatPath(parsedRulePath)}': ` +
             `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
       };
@@ -1816,19 +1816,18 @@ class DB {
     }
     return {
       code: TxResultCode.SUCCESS,
-      error_message: '',
       matched,
     };
   }
 
-  getPermissionForFunction(parsedFuncPath, auth) {
+  getPermissionForFunction(parsedFuncPath, auth, isMerge) {
     const matched = this.matchOwnerForParsedPath(parsedFuncPath);
-    if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+    if (!isMerge && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_FUNCTION,
-        error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
-            `for function path '${CommonUtil.formatPath(parsedFuncPath)}': ` +
+        error_message: `Non-empty (${matched.subtreeOwners.length}) ` +
+            `subtree owners for function path '${CommonUtil.formatPath(parsedFuncPath)}': ` +
             `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
       };
@@ -1848,19 +1847,18 @@ class DB {
     }
     return {
       code: TxResultCode.SUCCESS,
-      error_message: '',
       matched,
     };
   }
 
-  getPermissionForOwner(parsedOwnerPath, auth) {
+  getPermissionForOwner(parsedOwnerPath, auth, isMerge) {
     const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
-    if (matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+    if (!isMerge && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_OWNER,
-        error_message: `Non-empty (${matched.subtreeOwners.length}) subtree owners ` +
-            `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}': ` +
+        error_message: `Non-empty (${matched.subtreeOwners.length}) ` +
+            `subtree owners for owner path '${CommonUtil.formatPath(parsedOwnerPath)}': ` +
             `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
       };
@@ -1881,7 +1879,6 @@ class DB {
     }
     return {
       code: TxResultCode.SUCCESS,
-      error_message: '',
       matched,
     };
   }
