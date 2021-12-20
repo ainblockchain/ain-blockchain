@@ -627,7 +627,7 @@ function getConfigAtPath(stateTreeObj, configPath) {
 // NOTE(platfowner): Config merge is applied only when the current rule tree has
 // .rule property and the rule change has .rule property as the only property.
 function applyRuleChange(curRuleTree, ruleChange) {
-  // 1. Config overwriting case:
+  // 1. Config overwriting case (isMerge = false):
   if (!hasConfigLabel(curRuleTree, PredefinedDbPaths.DOT_RULE) ||
       !hasConfigLabelOnly(ruleChange, PredefinedDbPaths.DOT_RULE)) {
     const newRuleConfig = CommonUtil.isDict(ruleChange) ?
@@ -637,7 +637,7 @@ function applyRuleChange(curRuleTree, ruleChange) {
       ruleConfig: newRuleConfig,
     };
   }
-  // 2. Config merge case:
+  // 2. Config no changes case (isMerge = true):
   const ruleChangeMap = getConfigAtPath(ruleChange, [PredefinedDbPaths.DOT_RULE]);
   if (!ruleChangeMap || Object.keys(ruleChangeMap).length === 0) {
     return {
@@ -645,6 +645,7 @@ function applyRuleChange(curRuleTree, ruleChange) {
       ruleConfig: curRuleTree,
     };
   }
+  // 3. Config merge case (isMerge = true):
   const newRuleConfig = {}
   if (CommonUtil.isDict(curRuleTree) && curRuleTree[PredefinedDbPaths.DOT_RULE]) {
     CommonUtil.setJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE], curRuleTree[PredefinedDbPaths.DOT_RULE]);
@@ -680,7 +681,7 @@ function applyRuleChange(curRuleTree, ruleChange) {
 // NOTE(platfowner): Config merge is applied only when the current function tree has
 // .function property and the function change has .function property as the only property.
 function applyFunctionChange(curFuncTree, functionChange) {
-  // 1. Config overwriting case:
+  // 1. Config overwriting case (isMerge = false):
   if (!hasConfigLabel(curFuncTree, PredefinedDbPaths.DOT_FUNCTION) ||
       !hasConfigLabelOnly(functionChange, PredefinedDbPaths.DOT_FUNCTION)) {
     const newFuncConfig = CommonUtil.isDict(functionChange) ?
@@ -690,7 +691,7 @@ function applyFunctionChange(curFuncTree, functionChange) {
       funcConfig: newFuncConfig,
     };
   }
-  // 2. Config merge case:
+  // 2. Config no changes case (isMerge = true):
   const funcChangeMap = getConfigAtPath(functionChange, [PredefinedDbPaths.DOT_FUNCTION]);
   if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
     return {
@@ -698,6 +699,7 @@ function applyFunctionChange(curFuncTree, functionChange) {
       funcConfig: curFuncTree,
     };
   }
+  // 3. Config merge case (isMerge = true):
   const newFuncConfig =
       CommonUtil.isDict(curFuncTree) ? JSON.parse(JSON.stringify(curFuncTree)) : {};
   let newFuncMap = getConfigAtPath(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION]);
@@ -731,7 +733,7 @@ function applyFunctionChange(curFuncTree, functionChange) {
 // NOTE(platfowner): Config merge is applied only when the current owner tree has
 // .owner property and the owner change has .owner property as the only property.
 function applyOwnerChange(curOwnerTree, ownerChange) {
-  // 1. Config overwriting case:
+  // 1. Config overwriting case (isMerge = false):
   if (!hasConfigLabel(curOwnerTree, PredefinedDbPaths.DOT_OWNER) ||
       !hasConfigLabelOnly(ownerChange, PredefinedDbPaths.DOT_OWNER)) {
     const newOwnerConfig = CommonUtil.isDict(ownerChange) ?
@@ -741,7 +743,7 @@ function applyOwnerChange(curOwnerTree, ownerChange) {
       ownerConfig: newOwnerConfig,
     };
   }
-  // 2. Config merge case:
+  // 2. Config no changes case (isMerge = true):
   const ownerMapPath = [PredefinedDbPaths.DOT_OWNER, OwnerProperties.OWNERS];
   const ownerChangeMap = getConfigAtPath(ownerChange, ownerMapPath);
   if (!ownerChangeMap || Object.keys(ownerChangeMap).length === 0) {
@@ -750,6 +752,7 @@ function applyOwnerChange(curOwnerTree, ownerChange) {
       ownerConfig: curOwnerTree,
     };
   }
+  // 3. Config merge case (isMerge = true):
   const newOwnerConfig =
       CommonUtil.isDict(curOwnerTree) ? JSON.parse(JSON.stringify(curOwnerTree)) : {};
   let newOwnerMap = getConfigAtPath(newOwnerConfig, ownerMapPath);
