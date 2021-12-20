@@ -99,9 +99,11 @@ class Functions {
         accountRegistrationGasAmount, restFunctionCallGasAmount);
     const subtreeFuncRes = {};
     for (const subtreeConfig of matched.subtreeFunctions) {
+      const subtreeFuncPath = [...matched.matchedFunction.path, ...subtreeConfig.path];
+      const subtreeValuePath = [...parsedValuePath, ...subtreeConfig.path];
       const subtreeTriggerRes = this.triggerFunctions(
-          subtreeConfig.path, {}, subtreeConfig.config,
-          parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
+          subtreeFuncPath, {}, subtreeConfig.config,
+          subtreeValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
           accountRegistrationGasAmount, restFunctionCallGasAmount);
       subtreeFuncRes[CommonUtil.formatPath(subtreeConfig.path)] = subtreeTriggerRes;
     }
@@ -109,7 +111,7 @@ class Functions {
   }
 
   triggerFunctions(
-      functionPath, pathVars, functionMap, parsedValuePath, value, prevValue, auth, timestamp,
+      functionPath, pathVars, functionMap, valuePath, value, prevValue, auth, timestamp,
       transaction, blockNumber, blockTime,
       accountRegistrationGasAmount, restFunctionCallGasAmount) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
@@ -123,7 +125,7 @@ class Functions {
 
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
-          parsedValuePath, functionPath, timestamp, executedAt, params, value, prevValue,
+          valuePath, functionPath, timestamp, executedAt, params, value, prevValue,
           transaction, blockTime);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
@@ -141,7 +143,7 @@ class Functions {
           if (nativeFunction) {
             // Execute the matched native function.
             this.pushCall(
-                CommonUtil.formatPath(parsedValuePath), value, CommonUtil.formatPath(functionPath),
+                CommonUtil.formatPath(valuePath), value, CommonUtil.formatPath(functionPath),
                 functionEntry.function_id, nativeFunction);
             if (DevFlags.enableRichFunctionLogging) {
               logger.info(
@@ -157,8 +159,10 @@ class Functions {
                   value,
                   {
                     fid: functionEntry.function_id,
-                    valuePath: parsedValuePath,
+                    function: functionEntry,
+                    valuePath,
                     functionPath,
+                    value,
                     prevValue,
                     params,
                     timestamp,
@@ -201,10 +205,22 @@ class Functions {
                   `function_url '${functionEntry.function_url}' with:\n` +
                   formattedParams);
             }
+            const newAuth = Object.assign(
+                {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
             promises.push(axios.post(functionEntry.function_url, {
+              fid: functionEntry.function_id,
               function: functionEntry,
+              valuePath,
+              functionPath,
+              value,
+              prevValue,
               params,
+              timestamp,
+              executedAt,
               transaction,
+              blockNumber,
+              blockTime,
+              auth: newAuth,
             }, {
               timeout: NodeConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
             }).catch((error) => {
