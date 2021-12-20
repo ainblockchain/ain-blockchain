@@ -583,14 +583,7 @@ function isValidOwnerTree(treePath, ownerTreeObj, variableLabelPrefix) {
  * Returns whether the given state tree object has the given config label as a property.
  */
 function hasConfigLabel(stateTreeObj, configLabel) {
-  if (!CommonUtil.isDict(stateTreeObj)) {
-    return false;
-  }
-  if (CommonUtil.getJsObject(stateTreeObj, [configLabel]) === null) {
-    return false;
-  }
-
-  return true;
+  return CommonUtil.getJsObject(stateTreeObj, [configLabel]) !== null;
 }
 
 /**
@@ -600,21 +593,25 @@ function hasConfigLabelOnly(stateTreeObj, configLabel) {
   if (!hasConfigLabel(stateTreeObj, configLabel)) {
     return false;
   }
-  if (Object.keys(stateTreeObj).length !== 1) {
-    return false;
-  }
-
-  return true;
+  return Object.keys(stateTreeObj).length === 1;
 }
 
 /**
- * Returns a config at the given path if available, otherwise null.
+ * Returns a config at the given path of the given state tree object if available,
+ * otherwise null.
  */
-function getConfigAtPath(stateTreeObj, configPath) {
-  if (!CommonUtil.isDict(stateTreeObj)) {
-    return null;
-  }
+function getConfigFromStateTreeObj(stateTreeObj, configPath) {
   return CommonUtil.getJsObject(stateTreeObj, configPath);
+}
+
+/**
+ * Sets a config at the given path of the given state tree object.
+ */
+function setConfigToStateTreeObj(stateTreeObj, configPath, config) {
+  if (!CommonUtil.isDict(stateTreeObj)) {
+    return false;
+  }
+  return CommonUtil.setJsObject(stateTreeObj, configPath, config);
 }
 
 /**
@@ -638,7 +635,7 @@ function applyRuleChange(curRuleTree, ruleChange) {
     };
   }
   // 2. Config no changes case (isMerge = true):
-  const ruleChangeMap = getConfigAtPath(ruleChange, [PredefinedDbPaths.DOT_RULE]);
+  const ruleChangeMap = getConfigFromStateTreeObj(ruleChange, [PredefinedDbPaths.DOT_RULE]);
   if (!ruleChangeMap || Object.keys(ruleChangeMap).length === 0) {
     return {
       isMerge: true,
@@ -646,15 +643,13 @@ function applyRuleChange(curRuleTree, ruleChange) {
     };
   }
   // 3. Config merge case (isMerge = true):
-  const newRuleConfig = {}
-  if (CommonUtil.isDict(curRuleTree) && curRuleTree[PredefinedDbPaths.DOT_RULE]) {
-    CommonUtil.setJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE], curRuleTree[PredefinedDbPaths.DOT_RULE]);
-  }
-  let newRuleMap = getConfigAtPath(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
+  const newRuleConfig =
+      CommonUtil.isDict(curRuleTree) ? JSON.parse(JSON.stringify(curRuleTree)) : {};
+  let newRuleMap = getConfigFromStateTreeObj(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
   if (!CommonUtil.isDict(newRuleMap)) {
     // Add a place holder.
-    CommonUtil.setJsObject(newRuleConfig, [PredefinedDbPaths.DOT_RULE], {});
-    newRuleMap = getConfigAtPath(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
+    setConfigToStateTreeObj(newRuleConfig, [PredefinedDbPaths.DOT_RULE], {});
+    newRuleMap = getConfigFromStateTreeObj(newRuleConfig, [PredefinedDbPaths.DOT_RULE]);
   }
   for (const ruleKey in ruleChangeMap) {
     const ruleInfo = ruleChangeMap[ruleKey];
@@ -692,7 +687,7 @@ function applyFunctionChange(curFuncTree, functionChange) {
     };
   }
   // 2. Config no changes case (isMerge = true):
-  const funcChangeMap = getConfigAtPath(functionChange, [PredefinedDbPaths.DOT_FUNCTION]);
+  const funcChangeMap = getConfigFromStateTreeObj(functionChange, [PredefinedDbPaths.DOT_FUNCTION]);
   if (!funcChangeMap || Object.keys(funcChangeMap).length === 0) {
     return {
       isMerge: true,
@@ -702,11 +697,11 @@ function applyFunctionChange(curFuncTree, functionChange) {
   // 3. Config merge case (isMerge = true):
   const newFuncConfig =
       CommonUtil.isDict(curFuncTree) ? JSON.parse(JSON.stringify(curFuncTree)) : {};
-  let newFuncMap = getConfigAtPath(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION]);
+  let newFuncMap = getConfigFromStateTreeObj(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION]);
   if (!CommonUtil.isDict(newFuncMap)) {
     // Add a place holder.
-    CommonUtil.setJsObject(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION], {});
-    newFuncMap = getConfigAtPath(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION]);
+    setConfigToStateTreeObj(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION], {});
+    newFuncMap = getConfigFromStateTreeObj(newFuncConfig, [PredefinedDbPaths.DOT_FUNCTION]);
   }
   for (const functionKey in funcChangeMap) {
     const functionInfo = funcChangeMap[functionKey];
@@ -745,7 +740,7 @@ function applyOwnerChange(curOwnerTree, ownerChange) {
   }
   // 2. Config no changes case (isMerge = true):
   const ownerMapPath = [PredefinedDbPaths.DOT_OWNER, OwnerProperties.OWNERS];
-  const ownerChangeMap = getConfigAtPath(ownerChange, ownerMapPath);
+  const ownerChangeMap = getConfigFromStateTreeObj(ownerChange, ownerMapPath);
   if (!ownerChangeMap || Object.keys(ownerChangeMap).length === 0) {
     return {
       isMerge: true,
@@ -755,11 +750,11 @@ function applyOwnerChange(curOwnerTree, ownerChange) {
   // 3. Config merge case (isMerge = true):
   const newOwnerConfig =
       CommonUtil.isDict(curOwnerTree) ? JSON.parse(JSON.stringify(curOwnerTree)) : {};
-  let newOwnerMap = getConfigAtPath(newOwnerConfig, ownerMapPath);
+  let newOwnerMap = getConfigFromStateTreeObj(newOwnerConfig, ownerMapPath);
   if (!CommonUtil.isDict(newOwnerMap)) {
     // Add a place holder.
-    CommonUtil.setJsObject(newOwnerConfig, ownerMapPath, {});
-    newOwnerMap = getConfigAtPath(newOwnerConfig, ownerMapPath);
+    setConfigToStateTreeObj(newOwnerConfig, ownerMapPath, {});
+    newOwnerMap = getConfigFromStateTreeObj(newOwnerConfig, ownerMapPath);
   }
   for (const ownerKey in ownerChangeMap) {
     const ownerPermissions = ownerChangeMap[ownerKey];

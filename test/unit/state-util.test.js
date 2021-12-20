@@ -1486,9 +1486,17 @@ describe("state-util", () => {
               "max_children": 100,
               "ordering": "FIFO"
             }
+          },
+          "deeper": {  // deeper rules preserved
+            ".rule": {
+              "state": {
+                "max_children": 10,
+                "ordering": "FIFO",
+              },
+              "write": true,
+            }
           }
         }
-        // deeper rule deleted
       });
 
       assert.deepEqual(applyRuleChange({
