@@ -29,21 +29,18 @@ const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_CHAIN_LENGTH_DIFF = 5;
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INJECTION_OPTION: 'private_key', BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
-    PORT: 8081, P2P_PORT: 5001,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8081, P2P_PORT: 5001,
     UNSAFE_PRIVATE_KEY: 'b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96',
     ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
     PEER_CANDIDATE_JSON_RPC_URL: '',
   },
   {
-    ACCOUNT_INJECTION_OPTION: 'private_key', BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
-    PORT: 8082, P2P_PORT: 5002,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8082, P2P_PORT: 5002,
     UNSAFE_PRIVATE_KEY: '921cc48e48c876fc6ed1eb02a76ad520e8d16a91487f9c7e03441da8e35a0947',
     ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    ACCOUNT_INJECTION_OPTION: 'private_key', BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
-    PORT: 8083, P2P_PORT: 5003,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8083, P2P_PORT: 5003,
     UNSAFE_PRIVATE_KEY: '41e6e5718188ce9afd25e4b386482ac2c5272c49a622d8d217887bce21dce560',
     ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
@@ -327,7 +324,6 @@ describe('Blockchain Cluster', () => {
       const accountIndex = 3;
       const newServer = 'http://localhost:8084';
       const newServerProc = new Process(APP_SERVER, {
-        ACCOUNT_INJECTION_OPTION: 'private_key', DEBUG: true,
         UNSAFE_PRIVATE_KEY: '79e8473fb27896c16eeedc8aea7966e5fa489faca4deacdbbb2428750eb4d6eb',
         ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
         ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'

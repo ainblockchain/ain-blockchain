@@ -29,7 +29,7 @@ const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/1-node', ACCOUNT_INJECTION_OPTION: 'private_key',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/1-node',
     UNSAFE_PRIVATE_KEY: 'b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96',
     PEER_CANDIDATE_JSON_RPC_URL: '', ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8081, P2P_PORT: 5001,
     ENABLE_GAS_FEE_WORKAROUND: true,
@@ -39,23 +39,17 @@ const ENV_VARIABLES = [
     PORT: 9090, P2P_PORT: 6000,
   },
   {
-    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard',
-    PORT: 9091, P2P_PORT: 6001, ENABLE_EXPRESS_RATE_LIMIT: false,
-    ACCOUNT_INJECTION_OPTION: 'private_key',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard', PORT: 9091, P2P_PORT: 6001,
     UNSAFE_PRIVATE_KEY: 'd8f77aa2afe2580a858a8cc97b6056e10f888c6fd07ebb58755d8422b03da816',
-    PEER_CANDIDATE_JSON_RPC_URL: '', ENABLE_GAS_FEE_WORKAROUND: true,
+    PEER_CANDIDATE_JSON_RPC_URL: '', ENABLE_EXPRESS_RATE_LIMIT: false, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
-    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard',
-    PORT: 9092, P2P_PORT: 6002,
-    ACCOUNT_INJECTION_OPTION: 'private_key',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard', PORT: 9092, P2P_PORT: 6002,
     UNSAFE_PRIVATE_KEY: 'a3409e22bc14a3d0e73697df25617b3f2eaae9b5eade77615a32abc0ad5ee0df',
     ENABLE_EXPRESS_RATE_LIMIT: false, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
-    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard',
-    PORT: 9093, P2P_PORT: 6003,
-    ACCOUNT_INJECTION_OPTION: 'private_key',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard', PORT: 9093, P2P_PORT: 6003,
     UNSAFE_PRIVATE_KEY: 'c4611582dbb5319f08ba0907af6430a79e02b87b112aa4039d43e8765384f568',
     ENABLE_EXPRESS_RATE_LIMIT: false, ENABLE_GAS_FEE_WORKAROUND: true,
   },

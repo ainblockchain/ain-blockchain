@@ -10,7 +10,7 @@ const { NodeConfigs } = require('../common/constants');
 const { combine, timestamp, label, printf, colorize } = winston.format;
 
 const logDir = path.join(NodeConfigs.LOGS_DIR, String(NodeConfigs.PORT));
-const prefix = NodeConfigs.ACCOUNT_INJECTION_OPTION ?
+const prefix = process.argv[1].includes('client') ?
     `node-${NodeConfigs.PORT}` : `tracker-${NodeConfigs.PORT}`;
 const logFormat = printf(({level, message, label, timestamp}) => {
   return `${timestamp} [${label}] ${level}: ${message}`;

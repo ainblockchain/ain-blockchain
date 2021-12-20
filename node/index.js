@@ -80,19 +80,19 @@ class BlockchainNode {
         }
         break;
       case 'mnemonic':
-        break;
       case 'private_key':
-        // NOTE(liayoo): Could either specify UNSAFE_PRIVATE_KEY or inject an account using APIs.
+        // NOTE(liayoo): An account should be injected using APIs.
+        break;
+      case null:
         if (NodeConfigs.UNSAFE_PRIVATE_KEY) {
           const account = ainUtil.privateToAccount(Buffer.from(NodeConfigs.UNSAFE_PRIVATE_KEY, 'hex'));
           this.setAccountAndInitShardSetting(account);
           return;
         }
-        break;
       default:
         throw Error(
-            `[${LOG_HEADER}] Must specify ACCOUNT_INJECTION_OPTION as a process env or in ` +
-            `node_params.json (options: keystore, mnemonic, private_key)`);
+            `[${LOG_HEADER}] Must specify UNSAFE_PRIVATE_KEY or ACCOUNT_INJECTION_OPTION as a ` +
+            `process env or in node_params.json (options: keystore, mnemonic, private_key)`);
     }
     // Create a bootstrap account & wait for the account injection
     this.bootstrapAccount = ainUtil.createAccount();
