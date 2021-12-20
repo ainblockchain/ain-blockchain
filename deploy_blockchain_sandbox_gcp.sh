@@ -92,7 +92,7 @@ function inject_account() {
     local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
     printf "\n* >> Injecting an account for node $node_index ********************\n\n"
     printf "node_ip_addr='$node_ip_addr'\n"
-    PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others.[$node_index].private_key')
+    PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others.['$node_index'].private_key')
     echo $PRIVATE_KEY | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
 }
 
