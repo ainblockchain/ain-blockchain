@@ -159,6 +159,11 @@ const JsonRpcApiResultCode = {
   BATCH_TX_EXCEEDS_SIZE_LIMIT: 30403,
   BATCH_TX_MISSING_PROPERTIES: 30404,
   BATCH_TX_INVALID_FORMAT: 30405,
+  // ain_addToDevClientApiIpWhitelist
+  INVALID_IP: 30501,
+  IP_ALREADY_IN_WHITELIST: 30502,
+  // ain_removeFromDevClientApiIpWhitelist
+  IP_NOT_IN_WHITELIST: 30601,
 };
 
 /**

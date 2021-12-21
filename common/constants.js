@@ -559,6 +559,9 @@ const TrafficEventTypes = {
   P2P_TAG_CONSENSUS_MAX_OCCUR: 'p2p_tag_consensus_max_occur',
   P2P_TAG_TX_LENGTH: 'p2p_tag_tx_length',
   P2P_TAG_TX_MAX_OCCUR: 'p2p_tag_tx_max_occur',
+  // Access control
+  ACCESS_CONTROL_GET: 'access_control_get',
+  ACCESS_CONTROL_SET: 'access_control_set',
   // Client APIs
   CLIENT_API_GET: 'client_api_get',
   CLIENT_API_SET: 'client_api_set',
