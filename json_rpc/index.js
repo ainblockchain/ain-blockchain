@@ -401,6 +401,18 @@ module.exports = function getMethods(node, p2pServer, eventHandler, minProtocolV
       done(null, addProtocolVersion({ result }));
     },
 
+    ain_injectAccountFromPrivateKey: async function(args, done) {
+      const beginTime = Date.now();
+      let result = false;
+      if (await p2pServer.node.injectAccountFromPrivateKey(args.encryptedPrivateKey)) {
+        result = true;
+        p2pServer.client.run();
+      }
+      const latency = Date.now() - beginTime;
+      trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
+      return addProtocolVersion({ result });
+    },
+
     ain_injectAccountFromKeystore: async function(args, done) {
       const beginTime = Date.now();
       let result = false;

@@ -14,7 +14,6 @@ const {
   BlockchainSnapshotProperties,
   ShardingProperties,
   ShardingProtocols,
-  GenesisAccounts,
   TransactionStates,
   StateVersions,
   SyncModeOptions,
@@ -73,14 +72,30 @@ class BlockchainNode {
 
   initAccount() {
     const LOG_HEADER = 'initAccount';
-    if (NodeConfigs.ACCOUNT_INDEX !== null) { // TODO(liayoo): Deprecate ACCOUNT_INDEX.
-      this.setAccountAndInitShardSetting(GenesisAccounts.others[NodeConfigs.ACCOUNT_INDEX]);
-    } else if (NodeConfigs.ACCOUNT_INJECTION_OPTION !== null) {
-      // Create a bootstrap account & wait for the account injection
-      this.bootstrapAccount = ainUtil.createAccount();
-    } else {
-      throw Error(`[${LOG_HEADER}] Must specify either ACCOUNT_INJECTION_OPTION or ACCOUNT_INDEX.`);
+    switch (NodeConfigs.ACCOUNT_INJECTION_OPTION) {
+      case 'keystore':
+        if (!NodeConfigs.KEYSTORE_FILE_PATH) {
+          throw Error(
+              `[${LOG_HEADER}] Must specify KEYSTORE_FILE_PATH as a process env or in node_params.json`);
+        }
+        break;
+      case 'mnemonic':
+      case 'private_key':
+        // NOTE(liayoo): An account should be injected using APIs.
+        break;
+      case null:
+        if (NodeConfigs.UNSAFE_PRIVATE_KEY) {
+          const account = ainUtil.privateToAccount(Buffer.from(NodeConfigs.UNSAFE_PRIVATE_KEY, 'hex'));
+          this.setAccountAndInitShardSetting(account);
+          return;
+        }
+      default:
+        throw Error(
+            `[${LOG_HEADER}] Must specify UNSAFE_PRIVATE_KEY or ACCOUNT_INJECTION_OPTION as a ` +
+            `process env or in node_params.json (options: keystore, mnemonic, private_key)`);
     }
+    // Create a bootstrap account & wait for the account injection
+    this.bootstrapAccount = ainUtil.createAccount();
   }
 
   setAccountAndInitShardSetting(account) {
@@ -92,6 +107,26 @@ class BlockchainNode {
     logger.info(`[${LOG_HEADER}] Initializing a new blockchain node with account: ` +
         `${this.account.address}`);
     this.initShardSetting();
+  }
+
+  async injectAccountFromPrivateKey(encryptedPrivateKey) {
+    const LOG_HEADER = 'injectAccountFromPrivateKey';
+    if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
+      return false;
+    }
+    try {
+      const privateKey = await ainUtil.decryptWithPrivateKey(
+          this.bootstrapAccount.private_key, encryptedPrivateKey);
+      const accountFromPrivateKey = ainUtil.privateToAccount(Buffer.from(privateKey, 'hex'));
+      if (accountFromPrivateKey !== null) {
+        this.setAccountAndInitShardSetting(accountFromPrivateKey)
+        return true;
+      }
+      return false;
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Failed to inject an account: ${err.stack}`);
+      return false;
+    }
   }
 
   async injectAccountFromKeystore(encryptedPassword) {
@@ -337,6 +372,7 @@ class BlockchainNode {
   }
 
   getNonce(fromPending = true) {
+    if (!this.account) return null;
     return this.getNonceForAddr(this.account.address, fromPending);
   }
 
