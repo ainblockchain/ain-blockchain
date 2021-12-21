@@ -416,5 +416,5 @@ do
     # printf "START_NODE_CMD=$START_NODE_CMD\n"
     eval $START_NODE_CMD
     ((node_index++))
-    sleep 1
+    sleep 30
 done
