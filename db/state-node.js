@@ -10,8 +10,7 @@ const {
 const RadixTree = require('./radix-tree');
 
 class StateNode {
-  constructor(hashDelimiter, version = null) {
-    this.hashDelimiter = hashDelimiter;
+  constructor(version = null) {
     this.version = version;
     this.label = null;
     this.isLeaf = true;
@@ -20,7 +19,7 @@ class StateNode {
     this.parentRadixNodeSet = new Set();
     this.parentSet = new Set();
     // Used for internal nodes only.
-    this.radixTree = new RadixTree(hashDelimiter, version, this);
+    this.radixTree = new RadixTree(version, this);
     this.proofHash = null;
     this.treeHeight = 0;
     this.treeSize = 0;
@@ -42,8 +41,8 @@ class StateNode {
   }
 
   static _create(
-      hashDelimiter, version, label, isLeaf, value, proofHash, treeHeight, treeSize, treeBytes) {
-    const node = new StateNode(hashDelimiter, version);
+      version, label, isLeaf, value, proofHash, treeHeight, treeSize, treeBytes) {
+    const node = new StateNode(version);
     node.setLabel(label);
     node.setIsLeaf(isLeaf);
     node.setValue(value);
@@ -57,8 +56,9 @@ class StateNode {
   clone(version) {
     // For easy testing
     const versionToSet = version ? version : this.version;
-    const cloned = StateNode._create(this.hashDelimiter, versionToSet, this.label, this.isLeaf,
-        this.value, this.proofHash, this.treeHeight, this.treeSize, this.treeBytes);
+    const cloned = StateNode._create(
+        versionToSet, this.label, this.isLeaf, this.value, this.proofHash,
+        this.treeHeight, this.treeSize, this.treeBytes);
     if (!this.getIsLeaf()) {
       cloned.setRadixTree(this.radixTree.clone(versionToSet, cloned));
     }
@@ -76,11 +76,11 @@ class StateNode {
   /**
    * Constructs a sub-tree from the given snapshot object.
    */
-  static fromRadixSnapshot(obj, hashDelimiter) {
-    const curNode = new StateNode(hashDelimiter);
+  static fromRadixSnapshot(obj) {
+    const curNode = new StateNode();
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
-        const radixTree = RadixTree.fromRadixSnapshot(obj, hashDelimiter);
+        const radixTree = RadixTree.fromRadixSnapshot(obj);
         curNode.setRadixTree(radixTree);
         curNode.setIsLeaf(false);
         curNode.setVersion(radixTree.getVersion());
@@ -104,17 +104,17 @@ class StateNode {
   /**
    * Constructs a sub-tree from the given js object.
    */
-  static fromStateSnapshot(obj, hashDelimiter, version, stateInfoPrefix) {
-    const curNode = new StateNode(hashDelimiter, version);
+  static fromStateSnapshot(obj, version) {
+    const curNode = new StateNode(version);
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
         for (const key in obj) {
-          if (CommonUtil.isPrefixedLabel(key, stateInfoPrefix)) {
+          if (CommonUtil.isPrefixedLabel(key, StateInfoProperties.META_LABEL_PREFIX)) {
             // Skip state properties.
             continue;
           }
           const childObj = obj[key];
-          curNode.setChild(key, StateNode.fromStateSnapshot(childObj, hashDelimiter, version, stateInfoPrefix));
+          curNode.setChild(key, StateNode.fromStateSnapshot(childObj, version));
         }
       }
     } else {

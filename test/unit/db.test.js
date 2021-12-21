@@ -20,7 +20,6 @@ const {
   setNodeForTesting,
   eraseEvalResMatched,
 } = require('../test-util');
-const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
 
 describe("DB initialization", () => {
   let node;
@@ -5544,7 +5543,7 @@ describe("State info", () => {
       const proof = node.db.getStateProof('/values/blockchain_params/token/symbol');
       expect(proof).to.not.equal(null);
       expect(proof['#state_ph']).to.not.equal(null);
-      const verifResult = verifyStateProof(hashDelimiter, proof);
+      const verifResult = verifyStateProof(proof);
       _.set(verifResult, 'curProofHash', 'erased');
       assert.deepEqual(verifResult, {
         "curProofHash": "erased",

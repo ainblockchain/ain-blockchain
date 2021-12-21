@@ -16,8 +16,7 @@ const {
  * Implements Radix Node, which is used as a component of RadixTree.
  */
 class RadixNode {
-  constructor(hashDelimiter, version = null, serial = null, parentStateNode = null) {
-    this.hashDelimiter = hashDelimiter;
+  constructor(version = null, serial = null, parentStateNode = null) {
     this.version = version;
     this.serial = serial;
     this.parentStateNode = parentStateNode;
@@ -48,8 +47,9 @@ class RadixNode {
   }
 
   static _create(
-      hashDelimiter, version, serial, parentStateNode, childStateNode, labelRadix, labelSuffix, proofHash, treeHeight, treeSize, treeBytes) {
-    const node = new RadixNode(hashDelimiter, version, serial, parentStateNode);
+      version, serial, parentStateNode, childStateNode, labelRadix, labelSuffix, proofHash,
+      treeHeight, treeSize, treeBytes) {
+    const node = new RadixNode(version, serial, parentStateNode);
     if (childStateNode) {
       node.setChildStateNode(childStateNode);
     }
@@ -63,9 +63,10 @@ class RadixNode {
   }
 
   clone(version, parentStateNode = null) {
-    const cloned = RadixNode._create(this.hashDelimiter, version, this.getSerial(), parentStateNode,
-        this.getChildStateNode(), this.getLabelRadix(), this.getLabelSuffix(), this.getProofHash(),
-        this.getTreeHeight(), this.getTreeSize(), this.getTreeBytes());
+    const cloned = RadixNode._create(
+        version, this.getSerial(), parentStateNode, this.getChildStateNode(), this.getLabelRadix(),
+        this.getLabelSuffix(), this.getProofHash(), this.getTreeHeight(), this.getTreeSize(),
+        this.getTreeBytes());
     for (const child of this.getChildNodes()) {
       cloned.setChild(child.getLabelRadix(), child.getLabelSuffix(), child);
     }
@@ -590,7 +591,7 @@ class RadixNode {
     return numAffectedNodes;
   }
 
-  static getChildStateNodeFromRadixSnapshot(obj, hashDelimiter) {
+  static getChildStateNodeFromRadixSnapshot(obj) {
     const StateNode = require('./state-node');
     let childStateLabel = null;
     let childStateObj = null;
@@ -603,7 +604,7 @@ class RadixNode {
     if (childStateLabel === null) {
       return null;
     }
-    const childStateNode = StateNode.fromRadixSnapshot(childStateObj, hashDelimiter);
+    const childStateNode = StateNode.fromRadixSnapshot(childStateObj);
     childStateNode.setLabel(childStateLabel);
     const version = obj[`${StateInfoProperties.VERSION}:${childStateLabel}`];
     if (version) {
@@ -616,11 +617,11 @@ class RadixNode {
   /**
    * Constructs a sub-tree from the given snspshot object.
    */
-  static fromRadixSnapshot(obj, hashDelimiter) {
+  static fromRadixSnapshot(obj) {
     const version = obj[StateInfoProperties.VERSION];
     const serial = obj[StateInfoProperties.SERIAL];
-    const curNode = new RadixNode(this.hashDelimiter, version, serial);
-    const childStateNode = RadixNode.getChildStateNodeFromRadixSnapshot(obj, hashDelimiter);
+    const curNode = new RadixNode(version, serial);
+    const childStateNode = RadixNode.getChildStateNodeFromRadixSnapshot(obj);
     if (childStateNode !== null) {
       curNode.setChildStateNode(childStateNode);
     }
@@ -631,7 +632,7 @@ class RadixNode {
         if (CommonUtil.isEmpty(childLabel)) {
           return null;
         }
-        const childNode = RadixNode.fromRadixSnapshot(childObj, hashDelimiter);
+        const childNode = RadixNode.fromRadixSnapshot(childObj);
         const childLabelRadix = childLabel.charAt(0);
         const childLabelSuffix = childLabel.slice(1);
         curNode.setChild(childLabelRadix, childLabelSuffix, childNode);
