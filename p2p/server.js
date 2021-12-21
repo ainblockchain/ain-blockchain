@@ -515,9 +515,11 @@ class P2pServer {
                 `${JSON.stringify(consensusMessage)}`);
             if (DevFlags.enableP2pMessageTags) {
               logger.debug(`[${LOG_HEADER}] Tags attached to a consensus message: ${JSON.stringify(consensusTags)}`);
-              trafficStatsManager.addEvent(TrafficEventTypes.P2P_TAG_LENGTH, consensusTags.length);
               trafficStatsManager.addEvent(
-                  TrafficEventTypes.P2P_TAG_MAX_OCCUR, CommonUtil.countMaxOccurrences(consensusTags));
+                    TrafficEventTypes.P2P_TAG_CONSENSUS_LENGTH, consensusTags.length);
+              trafficStatsManager.addEvent(
+                  TrafficEventTypes.P2P_TAG_CONSENSUS_MAX_OCCUR,
+                  CommonUtil.countMaxOccurrences(consensusTags));
             }
             if (this.node.state === BlockchainNodeStates.SERVING) {
               this.consensus.handleConsensusMessage(consensusMessage, consensusTags);
@@ -544,9 +546,9 @@ class P2pServer {
             logger.debug(`[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(tx)}`);
             if (DevFlags.enableP2pMessageTags) {
               logger.debug(`[${LOG_HEADER}] Tags attached to a tx message: ${JSON.stringify(txTags)}`);
-              trafficStatsManager.addEvent(TrafficEventTypes.P2P_TAG_LENGTH, txTags.length);
+              trafficStatsManager.addEvent(TrafficEventTypes.P2P_TAG_TX_LENGTH, txTags.length);
               trafficStatsManager.addEvent(
-                  TrafficEventTypes.P2P_TAG_MAX_OCCUR, CommonUtil.countMaxOccurrences(txTags));
+                  TrafficEventTypes.P2P_TAG_TX_MAX_OCCUR, CommonUtil.countMaxOccurrences(txTags));
             }
             if (this.node.tp.transactionTracker[tx.hash]) {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
