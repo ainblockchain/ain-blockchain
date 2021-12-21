@@ -12,7 +12,7 @@ const {
   RuleProperties,
   OwnerProperties,
   ShardingProperties,
-  StateInfoProperties,
+  StateLabelProperties,
 } = require('../common/constants');
 
 const WRITE_RULE_ECMA_VERSION = 12;
@@ -220,7 +220,7 @@ function makeWriteRuleCodeSnippet(ruleString) {
 
 function getVariableLabels(parsedRulePath) {
   return parsedRulePath.filter((label) => CommonUtil.isPrefixedLabel(
-      label, StateInfoProperties.VARIABLE_LABEL_PREFIX));
+      label, StateLabelProperties.VARIABLE_LABEL_PREFIX));
 }
 
 /**
@@ -963,13 +963,13 @@ function getProofHashFromStateRoot(root, fullPath) {
  */
 function getProofHashOfRadixNode(childStatePh, subProofList) {
   let preimage = childStatePh !== null ? childStatePh : '';
-  preimage += StateInfoProperties.HASH_DELIMITER;
+  preimage += StateLabelProperties.HASH_DELIMITER;
   if (subProofList.length === 0) {
-    preimage += StateInfoProperties.HASH_DELIMITER;
+    preimage += StateLabelProperties.HASH_DELIMITER;
   } else {
     for (const subProof of subProofList) {
-      const radixLabel = subProof.label.slice(StateInfoProperties.RADIX_LABEL_PREFIX.length);
-      preimage += `${StateInfoProperties.HASH_DELIMITER}${radixLabel}${StateInfoProperties.HASH_DELIMITER}${subProof.proofHash}`;
+      const radixLabel = subProof.label.slice(StateLabelProperties.RADIX_LABEL_PREFIX.length);
+      preimage += `${StateLabelProperties.HASH_DELIMITER}${radixLabel}${StateLabelProperties.HASH_DELIMITER}${subProof.proofHash}`;
     }
   }
   return CommonUtil.hashString(preimage);
@@ -1001,7 +1001,7 @@ function verifyStateProof(proof, curLabels = []) {
         childMismatchedProofHash = subVerif.mismatchedProofHash;
         childMismatchedProofHashComputed = subVerif.mismatchedProofHashComputed;
       }
-      if (_.startsWith(label, StateInfoProperties.STATE_LABEL_PREFIX)) {
+      if (_.startsWith(label, StateLabelProperties.STATE_LABEL_PREFIX)) {
         childStatePh = subVerif.curProofHash;
         continue;  // continue
       }
@@ -1009,9 +1009,9 @@ function verifyStateProof(proof, curLabels = []) {
     } else {
       childProofHash = value;
     }
-    if (label === StateInfoProperties.STATE_PROOF_HASH) {
+    if (label === StateLabelProperties.STATE_PROOF_HASH) {
       curProofHash = childProofHash;
-    } else if (label === StateInfoProperties.RADIX_PROOF_HASH) {
+    } else if (label === StateLabelProperties.RADIX_PROOF_HASH) {
       curProofHash = childProofHash;
     } else {
       subProofList.push({

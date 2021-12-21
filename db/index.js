@@ -9,7 +9,7 @@ const {
   PredefinedDbPaths,
   OwnerProperties,
   RuleProperties,
-  StateInfoProperties,
+  StateLabelProperties,
   BlockchainSnapshotProperties,
   ShardingProperties,
   StateVersions,
@@ -531,11 +531,11 @@ class DB {
       return null;
     }
     return {
-      [StateInfoProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
-      [StateInfoProperties.TREE_SIZE]: stateNode.getTreeSize(),
-      [StateInfoProperties.TREE_BYTES]: stateNode.getTreeBytes(),
-      [StateInfoProperties.STATE_PROOF_HASH]: stateNode.getProofHash(),
-      [StateInfoProperties.VERSION]: stateNode.getVersion(),
+      [StateLabelProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
+      [StateLabelProperties.TREE_SIZE]: stateNode.getTreeSize(),
+      [StateLabelProperties.TREE_BYTES]: stateNode.getTreeBytes(),
+      [StateLabelProperties.STATE_PROOF_HASH]: stateNode.getProofHash(),
+      [StateLabelProperties.VERSION]: stateNode.getVersion(),
     };
   }
 
@@ -1199,11 +1199,11 @@ class DB {
     const stateGasCoefficient = DB.getBlockchainParam(
         'resource/state_gas_coefficient', blockNumber, stateRoot);
     const serviceTreeBytesDelta =
-        _.get(allStateUsageAfter, `service.${StateInfoProperties.TREE_BYTES}`, 0) -
-        _.get(allStateUsageBefore, `service.${StateInfoProperties.TREE_BYTES}`, 0);
+        _.get(allStateUsageAfter, `service.${StateLabelProperties.TREE_BYTES}`, 0) -
+        _.get(allStateUsageBefore, `service.${StateLabelProperties.TREE_BYTES}`, 0);
     const appStateGasAmount = Object.keys(stateUsagePerAppAfter).reduce((acc, appName) => {
-      const delta = stateUsagePerAppAfter[appName][StateInfoProperties.TREE_BYTES] -
-          stateUsagePerAppBefore[appName][StateInfoProperties.TREE_BYTES];
+      const delta = stateUsagePerAppAfter[appName][StateLabelProperties.TREE_BYTES] -
+          stateUsagePerAppBefore[appName][StateLabelProperties.TREE_BYTES];
       if (delta > 0) {
         acc[appName] = delta * stateGasCoefficient;
       }
@@ -1251,8 +1251,8 @@ class DB {
       CommonUtil.mergeNumericJsObjects(acc, cur);
       return acc;
     }, {});
-    delete usage[StateInfoProperties.VERSION];
-    delete usage[StateInfoProperties.STATE_PROOF_HASH];
+    delete usage[StateLabelProperties.VERSION];
+    delete usage[StateLabelProperties.STATE_PROOF_HASH];
     return usage;
   }
 
@@ -1260,8 +1260,8 @@ class DB {
     const root = this.getStateUsageAtPath('/');
     const apps = this.getStateUsageAtPath(PredefinedDbPaths.APPS);
     const service = {
-      [StateInfoProperties.TREE_BYTES]: root[StateInfoProperties.TREE_BYTES] - apps[StateInfoProperties.TREE_BYTES],
-      [StateInfoProperties.TREE_SIZE]: root[StateInfoProperties.TREE_SIZE] - apps[StateInfoProperties.TREE_SIZE]
+      [StateLabelProperties.TREE_BYTES]: root[StateLabelProperties.TREE_BYTES] - apps[StateLabelProperties.TREE_BYTES],
+      [StateLabelProperties.TREE_SIZE]: root[StateLabelProperties.TREE_SIZE] - apps[StateLabelProperties.TREE_SIZE]
     };
     return { root, apps, service };
   }
@@ -1304,37 +1304,37 @@ class DB {
   }
 
   checkStateGasBudgets(op, allAppsStateUsage, serviceStateUsage, result, budgets) {
-    if (serviceStateUsage[StateInfoProperties.TREE_BYTES] > budgets.serviceStateBudget) {
+    if (serviceStateUsage[StateLabelProperties.TREE_BYTES] > budgets.serviceStateBudget) {
       return Object.assign(result, {
           code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_ALL_SERVICES,
           error_message: `Exceeded state budget limit for services ` +
-              `(${serviceStateUsage[StateInfoProperties.TREE_BYTES]} > ${budgets.serviceStateBudget})`
+              `(${serviceStateUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.serviceStateBudget})`
       });
     }
-    if (allAppsStateUsage[StateInfoProperties.TREE_BYTES] > budgets.appsStateBudget) {
+    if (allAppsStateUsage[StateLabelProperties.TREE_BYTES] > budgets.appsStateBudget) {
       return Object.assign(result, {
           code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_ALL_APPS,
           error_message: `Exceeded state budget limit for apps ` +
-              `(${allAppsStateUsage[StateInfoProperties.TREE_BYTES]} > ${budgets.appsStateBudget})`
+              `(${allAppsStateUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.appsStateBudget})`
       });
     }
-    if (serviceStateUsage[StateInfoProperties.TREE_SIZE] > budgets.serviceTreeSizeBudget) {
+    if (serviceStateUsage[StateLabelProperties.TREE_SIZE] > budgets.serviceTreeSizeBudget) {
       return Object.assign(result, {
           code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_ALL_SERVICES,
           error_message: `Exceeded state tree size limit for services ` +
-              `(${serviceStateUsage[StateInfoProperties.TREE_SIZE]} > ${budgets.serviceTreeSizeBudget})`
+              `(${serviceStateUsage[StateLabelProperties.TREE_SIZE]} > ${budgets.serviceTreeSizeBudget})`
       });
     }
-    if (allAppsStateUsage[StateInfoProperties.TREE_SIZE] > budgets.appsTreeSizeBudget) {
+    if (allAppsStateUsage[StateLabelProperties.TREE_SIZE] > budgets.appsTreeSizeBudget) {
       return Object.assign(result, {
           code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_ALL_APPS,
           error_message: `Exceeded state tree size limit for apps ` +
-              `(${allAppsStateUsage[StateInfoProperties.TREE_SIZE]} > ${budgets.appsTreeSizeBudget})`
+              `(${allAppsStateUsage[StateLabelProperties.TREE_SIZE]} > ${budgets.appsTreeSizeBudget})`
       });
     }
     const stateFreeTierUsage = this.getStateFreeTierUsage();
-    const freeTierTreeBytesLimitReached = stateFreeTierUsage[StateInfoProperties.TREE_BYTES] >= budgets.freeStateBudget;
-    const freeTierTreeSizeLimitReached = stateFreeTierUsage[StateInfoProperties.TREE_SIZE] >= budgets.freeTreeSizeBudget;
+    const freeTierTreeBytesLimitReached = stateFreeTierUsage[StateLabelProperties.TREE_BYTES] >= budgets.freeStateBudget;
+    const freeTierTreeSizeLimitReached = stateFreeTierUsage[StateLabelProperties.TREE_SIZE] >= budgets.freeTreeSizeBudget;
     const appStakesTotal = this.getAppStakesTotal();
     for (const appName of CommonUtil.getAppNameList(op, this.shardingPath)) {
       const appStateUsage = this.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
@@ -1344,32 +1344,32 @@ class DB {
           return Object.assign(result, {
               code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_FREE_TIER,
               error_message: `Exceeded state budget limit for free tier ` +
-                  `(${stateFreeTierUsage[StateInfoProperties.TREE_BYTES]} > ${budgets.freeStateBudget})`
+                  `(${stateFreeTierUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.freeStateBudget})`
           });
         }
         if (freeTierTreeSizeLimitReached) {
           return Object.assign(result, {
             code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_FREE_TIER,
             error_message: `Exceeded state tree size limit for free tier ` +
-                `(${stateFreeTierUsage[StateInfoProperties.TREE_SIZE]} > ${budgets.freeTreeSizeBudget})`
+                `(${stateFreeTierUsage[StateLabelProperties.TREE_SIZE]} > ${budgets.freeTreeSizeBudget})`
           });
         }
         // else, we allow apps without stakes
       } else {
         const singleAppStateBudget = budgets.appsStateBudget * appStake / appStakesTotal;
         const singleAppTreeSizeBudget = budgets.appsStateBudget * appStake / appStakesTotal;
-        if (appStateUsage[StateInfoProperties.TREE_BYTES] > singleAppStateBudget) {
+        if (appStateUsage[StateLabelProperties.TREE_BYTES] > singleAppStateBudget) {
           return Object.assign(result, {
               code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_APP,
               error_message: `Exceeded state budget limit for app ${appName} ` +
-                  `(${appStateUsage[StateInfoProperties.TREE_BYTES]} > ${singleAppStateBudget})`
+                  `(${appStateUsage[StateLabelProperties.TREE_BYTES]} > ${singleAppStateBudget})`
           });
         }
-        if (appStateUsage[StateInfoProperties.TREE_SIZE] > singleAppTreeSizeBudget) {
+        if (appStateUsage[StateLabelProperties.TREE_SIZE] > singleAppTreeSizeBudget) {
           return Object.assign(result, {
               code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_APP,
               error_message: `Exceeded state tree size limit for app ${appName} ` +
-                  `(${appStateUsage[StateInfoProperties.TREE_SIZE]} > ${singleAppTreeSizeBudget})`
+                  `(${appStateUsage[StateLabelProperties.TREE_SIZE]} > ${singleAppTreeSizeBudget})`
           });
         }
       }
@@ -1679,8 +1679,8 @@ class DB {
 
   checkTreeHeightAndSize(budgets, blockNumber) {
     const {
-      [StateInfoProperties.TREE_HEIGHT]: treeHeight,
-      [StateInfoProperties.TREE_SIZE]: treeSize,
+      [StateLabelProperties.TREE_HEIGHT]: treeHeight,
+      [StateLabelProperties.TREE_SIZE]: treeSize,
     } = this.getStateInfo('/');
     const stateTreeHeightLimit = DB.getBlockchainParam(
         'resource/state_tree_height_limit', blockNumber, this.stateRoot);
@@ -1884,7 +1884,7 @@ class DB {
   static getVariableLabel(node) {
     if (!node.getIsLeaf()) {
       for (const label of node.getChildLabels()) {
-        if (CommonUtil.isPrefixedLabel(label, StateInfoProperties.VARIABLE_LABEL_PREFIX)) {
+        if (CommonUtil.isPrefixedLabel(label, StateLabelProperties.VARIABLE_LABEL_PREFIX)) {
           // It's assumed that there is at most one variable (i.e., with '$') child node.
           return label;
         }

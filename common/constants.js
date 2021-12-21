@@ -374,7 +374,7 @@ const FunctionTypes = {
  *
  * @enum {string}
  */
-const StateInfoProperties = {
+const StateLabelProperties = {
   HAS_PARENT_STATE_NODE: '#has_parent_state_node',
   HASH_DELIMITER: '#',  // Hash delimiter
   META_LABEL_PREFIX: '#',  // Prefix of all meta labels
@@ -707,7 +707,7 @@ module.exports = {
   RuleProperties,
   FunctionProperties,
   FunctionTypes,
-  StateInfoProperties,
+  StateLabelProperties,
   BlockchainSnapshotProperties,
   NativeFunctionIds,
   isNativeFunctionId,
