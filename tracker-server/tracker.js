@@ -12,9 +12,18 @@ const { BlockchainConsts } = require('../common/constants');
 
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 
+const NODE_INFO_REPORT_INTERVAL_MS = 60 * 1000;
+
 class Tracker {
   constructor() {
     this.blockchainNodes = {};
+    this.setIntervalForNodeInfoRecord();
+  }
+
+  setIntervalForNodeInfoRecord() {
+    setInterval(() => {
+      logger.info(`${JSON.stringify(this.blockchainNodes, null, 2)}`);
+    }, NODE_INFO_REPORT_INTERVAL_MS);
   }
 
   setBlockchainNode(peerInfo) {
@@ -26,7 +35,6 @@ class Tracker {
     `    - outgoingPeers: ${JSON.stringify(peerInfo.networkStatus.connectionStatus.outgoingPeers)}\n` +
     `  - consensusState: ${peerInfo.consensusStatus.state}\n` +
     `  - nodeState: ${peerInfo.nodeStatus.state}`);
-    logger.debug(`: ${JSON.stringify(peerInfo, null, 2)}`);
   }
 
   // Updates the aliveness status of the nodes and returns the number of alive nodes.
