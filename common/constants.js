@@ -558,7 +558,7 @@ const TrafficEventTypes = {
   P2P_MESSAGE_CLIENT: 'p2p_message_client',
   P2P_MESSAGE_SERVER: 'p2p_message_server',
   P2P_TAG_LENGTH: 'p2p_tag_length',
-  P2P_TAG_MAX_DUPLICATE: 'p2p_tag_max_duplicate',
+  P2P_TAG_MAX_OCCURRENCES: 'p2p_tag_max_occurrences',
   // Client APIs
   CLIENT_API_GET: 'client_api_get',
   CLIENT_API_SET: 'client_api_set',
