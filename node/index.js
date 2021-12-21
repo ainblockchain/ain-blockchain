@@ -21,6 +21,7 @@ const {
   WriteDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
+  StateInfoProperties,
 } = require('../common/constants');
 const { TxResultCode } = require('../common/result-code');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
@@ -54,7 +55,7 @@ class BlockchainNode {
     this.bc = new Blockchain(String(NodeConfigs.PORT));
     this.tp = new TransactionPool(this);
     this.bp = new BlockPool(this);
-    this.stateManager = new StateManager(BlockchainParams.genesis.hash_delimiter);
+    this.stateManager = new StateManager(StateInfoProperties.HASH_DELIMITER);
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),

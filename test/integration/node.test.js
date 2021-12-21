@@ -7,7 +7,7 @@ const syncRequest = require('sync-request');
 const rimraf = require("rimraf")
 const jayson = require('jayson/promise');
 const ainUtil = require('@ainblockchain/ain-util');
-const { BlockchainConsts, BlockchainParams, NodeConfigs } = require('../../common/constants');
+const { BlockchainConsts, BlockchainParams, NodeConfigs, StateInfoProperties } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
 const PathUtil = require('../../common/path-util');
 const {
@@ -194,7 +194,7 @@ async function cleanUp() {
 
 describe('Blockchain Node', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc;
-  const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
+  const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
 
   before(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);

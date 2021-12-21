@@ -2,15 +2,15 @@ const StateManager = require('../../db/state-manager');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
-const { StateVersions, BlockchainParams } = require('../../common/constants');
+const { StateVersions, BlockchainParams, StateInfoProperties } = require('../../common/constants');
 const StateNode = require('../../db/state-node');
 
 describe("state-manager", () => {
   let manager;
-  const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
+  const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
 
   beforeEach(() => {
-    manager = new StateManager(BlockchainParams.genesis.hash_delimiter);
+    manager = new StateManager(StateInfoProperties.HASH_DELIMITER);
   })
 
   describe("Initialize", () => {

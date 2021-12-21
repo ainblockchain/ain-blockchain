@@ -376,6 +376,8 @@ const FunctionTypes = {
  */
 const StateInfoProperties = {
   HAS_PARENT_STATE_NODE: '#has_parent_state_node',
+  HASH_DELIMITER: '#',  // Hash delimiter
+  META_LABEL_PREFIX: '#',  // Prefix of all meta labels
   NEXT_SERIAL: '#next_serial',
   NUM_PARENTS: '#num_parents',
   RADIX_LABEL_PREFIX: '#radix:',
@@ -383,6 +385,7 @@ const StateInfoProperties = {
   SERIAL: '#serial',
   STATE_LABEL_PREFIX: '#state:',
   STATE_PROOF_HASH: '#state_ph',
+  VARIABLE_LABEL_PREFIX: '$',  // Prefix of variable labels
   VERSION: '#version',
   TREE_HEIGHT: '#tree_height',
   TREE_SIZE: '#tree_size',

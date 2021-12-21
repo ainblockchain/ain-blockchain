@@ -124,7 +124,7 @@ class DB {
    */
   resetDbWithSnapshot(snapshot) {
     const LOG_HEADER = 'resetDbWithSnapshot';
-    const hashDelimiter = DB.getBlockchainParam('genesis/hash_delimiter');
+    const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
     const newRoot =
         StateNode.fromRadixSnapshot(snapshot[BlockchainSnapshotProperties.RADIX_SNAPSHOT], hashDelimiter);
     updateStateInfoForStateTree(newRoot);
@@ -411,7 +411,7 @@ class DB {
   // - Reference from root_b: child_1b -> child_2 -> child_3 (not affected)
   //
   static getRefForWritingToStateRoot(stateRoot, fullPath) {
-    const hashDelimiter = DB.getBlockchainParam('genesis/hash_delimiter');
+    const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
     let node = stateRoot;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
@@ -440,8 +440,8 @@ class DB {
   }
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
-    const stateInfoPrefix = DB.getBlockchainParam('genesis/state_info_prefix');
-    const hashDelimiter = DB.getBlockchainParam('genesis/hash_delimiter');
+    const stateInfoPrefix = StateInfoProperties.META_LABEL_PREFIX;
+    const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
     const tree = StateNode.fromStateSnapshot(stateObj, hashDelimiter, stateVersion, stateInfoPrefix);
     if (!NodeConfigs.LIGHTWEIGHT) {
       updateStateInfoForStateTree(tree);
@@ -558,10 +558,6 @@ class DB {
       return BlockchainParams[category][name];
     }
     return DB.getValueFromStateRoot(stateRoot, PathUtil.getSingleBlockchainParamPath(category, name));
-  }
-
-  static getVariableLabelPrefix() {
-    return DB.getBlockchainParam('genesis/variable_label_prefix');
   }
 
   isConsensusAppAdmin(address) {
@@ -882,7 +878,7 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
-    const variableLabelPrefix = DB.getVariableLabelPrefix();
+    const variableLabelPrefix = StateInfoProperties.VARIABLE_LABEL_PREFIX;
     const isValidObj = isValidJsObjectForStates(func, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -947,7 +943,7 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
-    const variableLabelPrefix = DB.getVariableLabelPrefix();
+    const variableLabelPrefix = StateInfoProperties.VARIABLE_LABEL_PREFIX;
     const isValidObj = isValidJsObjectForStates(rule, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -1001,7 +997,7 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
-    const variableLabelPrefix = DB.getVariableLabelPrefix();
+    const variableLabelPrefix = StateInfoProperties.VARIABLE_LABEL_PREFIX;
     const isValidObj = isValidJsObjectForStates(owner, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -1893,10 +1889,10 @@ class DB {
   }
 
   static getVariableLabel(node) {
-    const variableLabelPrefix = DB.getVariableLabelPrefix();
+    const variableLabelPrefix = StateInfoProperties.VARIABLE_LABEL_PREFIX;
     if (!node.getIsLeaf()) {
       for (const label of node.getChildLabels()) {
-        if (CommonUtil.isVariableLabel(label, variableLabelPrefix)) {
+        if (CommonUtil.isPrefixedLabel(label, variableLabelPrefix)) {
           // It's assumed that there is at most one variable (i.e., with '$') child node.
           return label;
         }

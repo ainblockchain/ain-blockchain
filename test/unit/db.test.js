@@ -20,7 +20,7 @@ const {
   setNodeForTesting,
   eraseEvalResMatched,
 } = require('../test-util');
-const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
+const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
 
 describe("DB initialization", () => {
   let node;

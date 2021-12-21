@@ -415,13 +415,13 @@ class RadixNode {
         treeBytes: sizeof(childStateNodeLabel) + childStateNode.getTreeBytes(),
       };
     }
-    treeInfo.preimage += this.hashDelimiter;
+    treeInfo.preimage += StateInfoProperties.HASH_DELIMITER;
     if (this.numChildren() === 0) {
-      treeInfo.preimage += this.hashDelimiter;
+      treeInfo.preimage += StateInfoProperties.HASH_DELIMITER;
     } else {
       treeInfo = this.getChildNodes().reduce((acc, child) => {
         const accPreimage = NodeConfigs.LIGHTWEIGHT ? '' : acc.preimage +
-            `${this.hashDelimiter}${child.getLabel()}${this.hashDelimiter}${child.getProofHash()}`;
+            `${StateInfoProperties.HASH_DELIMITER}${child.getLabel()}${StateInfoProperties.HASH_DELIMITER}${child.getProofHash()}`;
         const accTreeHeight = Math.max(acc.treeHeight, child.getTreeHeight());
         const accTreeSize = acc.treeSize + child.getTreeSize();
         const accTreeBytes = acc.treeBytes + child.getTreeBytes();
@@ -505,9 +505,9 @@ class RadixNode {
       }
       preimage += childStateNode.getProofHash();
     }
-    preimage += this.hashDelimiter;
+    preimage += StateInfoProperties.HASH_DELIMITER;
     if (this.numChildren() === 0) {
-      preimage += this.hashDelimiter;
+      preimage += StateInfoProperties.HASH_DELIMITER;
     } else {
       for (const child of this.getChildNodes()) {
         const label = child.getLabel();
@@ -516,7 +516,7 @@ class RadixNode {
         if (childRadixVerif.isVerified !== true) {
           return childRadixVerif;
         }
-        preimage += `${this.hashDelimiter}${child.getLabel()}${this.hashDelimiter}${child.getProofHash()}`;
+        preimage += `${StateInfoProperties.HASH_DELIMITER}${child.getLabel()}${StateInfoProperties.HASH_DELIMITER}${child.getProofHash()}`;
       }
     }
     const proofHashComputed = CommonUtil.hashString(preimage);
