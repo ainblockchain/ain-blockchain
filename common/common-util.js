@@ -802,6 +802,21 @@ class CommonUtil {
   static getWhitelistFromString(value) {
     return CommonUtil.isWildcard(value) ? value : value.split(',');
   }
+
+  static countMaxOccurrences(list) {
+    if (!CommonUtil.isArray(list)) {
+      return 0;
+    }
+    let maxOccurrences = 0;
+    const counts = {};
+    for (const item of list) {
+      counts[item] = (counts[item] || 0) + 1;
+      if (maxOccurrences < counts[item]) {
+        maxOccurrences = counts[item];
+      }
+    }
+    return maxOccurrences;
+  }
 }
 
 module.exports = CommonUtil;
