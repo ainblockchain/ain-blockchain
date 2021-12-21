@@ -218,8 +218,9 @@ function makeWriteRuleCodeSnippet(ruleString) {
   return WRITE_RULE_CODE_SNIPPET_PREFIX + ruleString;
 }
 
-function getVariableLabels(parsedRulePath, variableLabelPrefix) {
-  return parsedRulePath.filter((label) => CommonUtil.isPrefixedLabel(label, variableLabelPrefix));
+function getVariableLabels(parsedRulePath) {
+  return parsedRulePath.filter((label) => CommonUtil.isPrefixedLabel(
+      label, StateInfoProperties.VARIABLE_LABEL_PREFIX));
 }
 
 /**
@@ -242,14 +243,14 @@ function getPuncTokens(tokenList) {
   return tokenList.filter((token) => token.type === 'Punctuator').map((token) => token.value);
 }
 
-function isValidWriteRule(parsedRulePath, ruleString, variableLabelPrefix) {
+function isValidWriteRule(parsedRulePath, ruleString) {
   const LOG_HEADER = 'isValidWriteRule';
 
   if (ruleString !== null && !CommonUtil.isBool(ruleString) && !CommonUtil.isString(ruleString)) {
     return false;
   }
   if (CommonUtil.isString(ruleString)) {
-    const variableLabelList = getVariableLabels(parsedRulePath, variableLabelPrefix);
+    const variableLabelList = getVariableLabels(parsedRulePath);
     const idTokenWhitelistSet = new Set([
       ...WRITE_RULE_ID_TOKEN_WHITELIST_BASE,
       ...variableLabelList,
@@ -315,7 +316,7 @@ function isValidStateRule(stateRule) {
  */
 // NOTE(platfowner): Should have the same parameters as isValidFunctionConfig() and
 // isValidOwnerConfig() to be used with isValidConfigTreeRecursive().
-function isValidRuleConfig(configPath, ruleConfigObj, variableLabelPrefix) {
+function isValidRuleConfig(configPath, ruleConfigObj) {
   if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
@@ -331,7 +332,7 @@ function isValidRuleConfig(configPath, ruleConfigObj, variableLabelPrefix) {
   }
   const writeRule = sanitized[RuleProperties.WRITE];
   if (sanitized.hasOwnProperty(RuleProperties.WRITE) &&
-      !isValidWriteRule(configPath, writeRule, variableLabelPrefix)) {
+      !isValidWriteRule(configPath, writeRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
   }
   const stateRule = sanitized[RuleProperties.STATE];
@@ -514,7 +515,7 @@ function isValidOwnerConfig(configPath, ownerConfigObj) {
  * @param {*} stateConfigValidator state config validator function
  */
 function isValidConfigTreeRecursive(
-    treePath, stateTreeObj, subtreePath, configLabel, stateConfigValidator, variableLabelPrefix) {
+    treePath, stateTreeObj, subtreePath, configLabel, stateConfigValidator) {
   if (!CommonUtil.isDict(stateTreeObj) || CommonUtil.isEmpty(stateTreeObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath(subtreePath) };
   }
@@ -523,7 +524,7 @@ function isValidConfigTreeRecursive(
     subtreePath.push(label);
     const subtree = stateTreeObj[label];
     if (label === configLabel) {
-      const isValidConfig = stateConfigValidator([...treePath, ...subtreePath], subtree, variableLabelPrefix);
+      const isValidConfig = stateConfigValidator([...treePath, ...subtreePath], subtree);
       if (!isValidConfig.isValid) {
         return {
           isValid: false,
@@ -532,7 +533,7 @@ function isValidConfigTreeRecursive(
       }
     } else {
       const isValidSubtree = isValidConfigTreeRecursive(
-          treePath, subtree, subtreePath, configLabel, stateConfigValidator, variableLabelPrefix);
+          treePath, subtree, subtreePath, configLabel, stateConfigValidator);
       if (!isValidSubtree.isValid) {
         return isValidSubtree;
       }
@@ -546,37 +547,37 @@ function isValidConfigTreeRecursive(
 /**
  * Checks the validity of the given rule tree.
  */
-function isValidRuleTree(treePath, ruleTreeObj, variableLabelPrefix) {
+function isValidRuleTree(treePath, ruleTreeObj) {
   if (ruleTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      treePath, ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig, variableLabelPrefix);
+      treePath, ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig);
 }
 
 /**
  * Checks the validity of the given function tree.
  */
-function isValidFunctionTree(treePath, functionTreeObj, variableLabelPrefix) {
+function isValidFunctionTree(treePath, functionTreeObj) {
   if (functionTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      treePath, functionTreeObj, [], PredefinedDbPaths.DOT_FUNCTION, isValidFunctionConfig, variableLabelPrefix);
+      treePath, functionTreeObj, [], PredefinedDbPaths.DOT_FUNCTION, isValidFunctionConfig);
 }
 
 /**
  * Checks the validity of the given owner tree.
  */
-function isValidOwnerTree(treePath, ownerTreeObj, variableLabelPrefix) {
+function isValidOwnerTree(treePath, ownerTreeObj) {
   if (ownerTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      treePath, ownerTreeObj, [], PredefinedDbPaths.DOT_OWNER, isValidOwnerConfig, variableLabelPrefix);
+      treePath, ownerTreeObj, [], PredefinedDbPaths.DOT_OWNER, isValidOwnerConfig);
 }
 
 /**
@@ -960,15 +961,15 @@ function getProofHashFromStateRoot(root, fullPath) {
  * @param {Object} childStatePh proof hash of child state node. null if not available.
  * @param {Object} subProofList proof list of child radix nodes
  */
-function getProofHashOfRadixNode(hashDelimiter, childStatePh, subProofList) {
+function getProofHashOfRadixNode(childStatePh, subProofList) {
   let preimage = childStatePh !== null ? childStatePh : '';
-  preimage += hashDelimiter;
+  preimage += StateInfoProperties.HASH_DELIMITER;
   if (subProofList.length === 0) {
-    preimage += hashDelimiter;
+    preimage += StateInfoProperties.HASH_DELIMITER;
   } else {
     for (const subProof of subProofList) {
       const radixLabel = subProof.label.slice(StateInfoProperties.RADIX_LABEL_PREFIX.length);
-      preimage += `${hashDelimiter}${radixLabel}${hashDelimiter}${subProof.proofHash}`;
+      preimage += `${StateInfoProperties.HASH_DELIMITER}${radixLabel}${StateInfoProperties.HASH_DELIMITER}${subProof.proofHash}`;
     }
   }
   return CommonUtil.hashString(preimage);
@@ -979,7 +980,7 @@ function getProofHashOfRadixNode(hashDelimiter, childStatePh, subProofList) {
  * 
  * @param {Object} proof state proof
  */
-function verifyStateProof(hashDelimiter, proof, curLabels = []) {
+function verifyStateProof(proof, curLabels = []) {
   const curPath = CommonUtil.formatPath(curLabels);
   let childStatePh = null;
   let curProofHash = null;
@@ -993,7 +994,7 @@ function verifyStateProof(hashDelimiter, proof, curLabels = []) {
   for (const [label, value] of sortedProof) {
     let childProofHash = null;
     if (CommonUtil.isDict(value)) {
-      const subVerif = verifyStateProof(hashDelimiter, value, [...curLabels, label]);
+      const subVerif = verifyStateProof(value, [...curLabels, label]);
       if (childIsVerified === true && subVerif.isVerified !== true) {
         childIsVerified = false;
         childMismatchedPath = subVerif.mismatchedPath;
@@ -1032,7 +1033,7 @@ function verifyStateProof(hashDelimiter, proof, curLabels = []) {
       mismatchedProofHashComputed,
     };
   }
-  const computedProofHash = getProofHashOfRadixNode(hashDelimiter, childStatePh, subProofList);
+  const computedProofHash = getProofHashOfRadixNode(childStatePh, subProofList);
   const isVerified = childIsVerified && computedProofHash === curProofHash;
   const mismatchedPath = childIsVerified ? (isVerified ? null : curPath) : childMismatchedPath;
   const mismatchedProofHash = childIsVerified ? (isVerified ? null : curProofHash) : childMismatchedProofHash;

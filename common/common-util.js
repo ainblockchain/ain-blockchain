@@ -322,8 +322,8 @@ class CommonUtil {
     return ruleUtil.getBalancePath(addrOrServAcnt);
   }
 
-  static isPrefixedLabel(label, variableLabelPrefix) {
-    return _.startsWith(label, variableLabelPrefix);
+  static isPrefixedLabel(label, prefix) {
+    return _.startsWith(label, prefix);
   }
 
   static getJsObject(obj, path) {

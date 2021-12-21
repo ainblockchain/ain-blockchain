@@ -124,9 +124,8 @@ class DB {
    */
   resetDbWithSnapshot(snapshot) {
     const LOG_HEADER = 'resetDbWithSnapshot';
-    const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
     const newRoot =
-        StateNode.fromRadixSnapshot(snapshot[BlockchainSnapshotProperties.RADIX_SNAPSHOT], hashDelimiter);
+        StateNode.fromRadixSnapshot(snapshot[BlockchainSnapshotProperties.RADIX_SNAPSHOT]);
     updateStateInfoForStateTree(newRoot);
     const rootProofHash = snapshot[BlockchainSnapshotProperties.ROOT_PROOF_HASH];
     // Checks the state proof hash
@@ -411,7 +410,6 @@ class DB {
   // - Reference from root_b: child_1b -> child_2 -> child_3 (not affected)
   //
   static getRefForWritingToStateRoot(stateRoot, fullPath) {
-    const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
     let node = stateRoot;
     for (let i = 0; i < fullPath.length; i++) {
       const label = fullPath[i];
@@ -427,7 +425,7 @@ class DB {
           node = child;
         }
       } else {
-        const newChild = new StateNode(hashDelimiter, this.stateVersion);
+        const newChild = new StateNode(this.stateVersion);
         node.setChild(label, newChild);
         node = newChild;
       }
@@ -440,9 +438,7 @@ class DB {
   }
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
-    const stateInfoPrefix = StateInfoProperties.META_LABEL_PREFIX;
-    const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
-    const tree = StateNode.fromStateSnapshot(stateObj, hashDelimiter, stateVersion, stateInfoPrefix);
+    const tree = StateNode.fromStateSnapshot(stateObj, stateVersion);
     if (!NodeConfigs.LIGHTWEIGHT) {
       updateStateInfoForStateTree(tree);
     }
@@ -878,7 +874,6 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
-    const variableLabelPrefix = StateInfoProperties.VARIABLE_LABEL_PREFIX;
     const isValidObj = isValidJsObjectForStates(func, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -894,7 +889,7 @@ class DB {
           `Invalid function path: ${isValidPath.invalidPath}`,
           unitWriteGasLimit);
     }
-    const isValidFunction = isValidFunctionTree(parsedPath, func, variableLabelPrefix);
+    const isValidFunction = isValidFunctionTree(parsedPath, func);
     if (!isValidFunction.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_FUNCTION_INVALID_FUNCTION_TREE,
@@ -943,7 +938,6 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
-    const variableLabelPrefix = StateInfoProperties.VARIABLE_LABEL_PREFIX;
     const isValidObj = isValidJsObjectForStates(rule, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -959,7 +953,7 @@ class DB {
           `Invalid rule path: ${isValidPath.invalidPath}`,
           unitWriteGasLimit);
     }
-    const isValidRule = isValidRuleTree(parsedPath, rule, variableLabelPrefix);
+    const isValidRule = isValidRuleTree(parsedPath, rule);
     if (!isValidRule.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_RULE_INVALID_RULE_TREE,
@@ -997,7 +991,6 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
-    const variableLabelPrefix = StateInfoProperties.VARIABLE_LABEL_PREFIX;
     const isValidObj = isValidJsObjectForStates(owner, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -1013,7 +1006,7 @@ class DB {
           `Invalid owner path: ${isValidPath.invalidPath}`,
           unitWriteGasLimit);
     }
-    const isValidOwner = isValidOwnerTree(parsedPath, owner, variableLabelPrefix);
+    const isValidOwner = isValidOwnerTree(parsedPath, owner);
     if (!isValidOwner.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_OWNER_INVALID_OWNER_TREE,
@@ -1889,10 +1882,9 @@ class DB {
   }
 
   static getVariableLabel(node) {
-    const variableLabelPrefix = StateInfoProperties.VARIABLE_LABEL_PREFIX;
     if (!node.getIsLeaf()) {
       for (const label of node.getChildLabels()) {
-        if (CommonUtil.isPrefixedLabel(label, variableLabelPrefix)) {
+        if (CommonUtil.isPrefixedLabel(label, StateInfoProperties.VARIABLE_LABEL_PREFIX)) {
           // It's assumed that there is at most one variable (i.e., with '$') child node.
           return label;
         }

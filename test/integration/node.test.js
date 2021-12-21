@@ -194,7 +194,6 @@ async function cleanUp() {
 
 describe('Blockchain Node', () => {
   let tracker_proc, server1_proc, server2_proc, server3_proc;
-  const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
 
   before(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
@@ -730,7 +729,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         expect(body.code).to.equal(0);
         expect(body.result['#state_ph']).to.not.equal(null);
-        const verifResult = verifyStateProof(hashDelimiter, body.result);
+        const verifResult = verifyStateProof(body.result);
         _.set(verifResult, 'curProofHash', 'erased');
         assert.deepEqual(verifResult, {
           "curProofHash": "erased",
@@ -1065,7 +1064,7 @@ describe('Blockchain Node', () => {
         return jayson.client.http(server1 + '/json-rpc').request('ain_getStateProof', request)
         .then(res => {
           expect(res.result.result['#state_ph']).to.not.equal(null);
-          const verifResult = verifyStateProof(hashDelimiter, res.result.result);
+          const verifResult = verifyStateProof(res.result.result);
           _.set(verifResult, 'curProofHash', 'erased');
           assert.deepEqual(verifResult, {
             "curProofHash": "erased",
