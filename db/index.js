@@ -560,6 +560,10 @@ class DB {
     return DB.getValueFromStateRoot(stateRoot, PathUtil.getSingleBlockchainParamPath(category, name));
   }
 
+  static getVariableLabelPrefix() {
+    return DB.getBlockchainParam('genesis/variable_label_prefix');
+  }
+
   isConsensusAppAdmin(address) {
     const admins = this.getValue(PathUtil.getManageAppConfigAdminPath('consensus'));
     if (admins === null) {
@@ -878,7 +882,7 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
-    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix');
+    const variableLabelPrefix = DB.getVariableLabelPrefix();
     const isValidObj = isValidJsObjectForStates(func, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -943,7 +947,7 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
-    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix');
+    const variableLabelPrefix = DB.getVariableLabelPrefix();
     const isValidObj = isValidJsObjectForStates(rule, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -997,7 +1001,7 @@ class DB {
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasLimit = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
-    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix');
+    const variableLabelPrefix = DB.getVariableLabelPrefix();
     const isValidObj = isValidJsObjectForStates(owner, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
@@ -1889,10 +1893,10 @@ class DB {
   }
 
   static getVariableLabel(node) {
-    const variableLabelPrefix = DB.getBlockchainParam('genesis/variable_label_prefix');
+    const variableLabelPrefix = DB.getVariableLabelPrefix();
     if (!node.getIsLeaf()) {
       for (const label of node.getChildLabels()) {
-        if (label.startsWith(variableLabelPrefix)) {
+        if (CommonUtil.isVariableLabel(label, variableLabelPrefix)) {
           // It's assumed that there is at most one variable (i.e., with '$') child node.
           return label;
         }

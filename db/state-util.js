@@ -219,7 +219,7 @@ function makeWriteRuleCodeSnippet(ruleString) {
 }
 
 function getVariableLabels(parsedRulePath, variableLabelPrefix) {
-  return parsedRulePath.filter((label) => _.startsWith(label, variableLabelPrefix));
+  return parsedRulePath.filter((label) => CommonUtil.isVariableLabel(label, variableLabelPrefix));
 }
 
 /**
