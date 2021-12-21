@@ -549,6 +549,10 @@ class P2pClient {
     if (this.server.node.state !== BlockchainNodeStates.SERVING) {
       logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
       this.server.node.state = BlockchainNodeStates.SERVING;
+      if (this.server.consensus.stakeTx) {
+        this.broadcastTransaction(this.server.consensus.stakeTx);
+        this.server.consensus.stakeTx = null;
+      }
     }
     if (this.server.consensus.state === ConsensusStates.STARTING) {
       this.server.consensus.initConsensus();
@@ -594,10 +598,6 @@ class P2pClient {
         if (address) {
           logger.info(`Received address: ${address}`);
           this.requestChainSegment();
-          if (this.server.consensus.stakeTx) {
-            this.broadcastTransaction(this.server.consensus.stakeTx);
-            this.server.consensus.stakeTx = null;
-          }
         } else {
           logger.error('Address confirmation hasn\'t sent back. Close the socket connection');
           this.removePeerConnection(socket.url);
