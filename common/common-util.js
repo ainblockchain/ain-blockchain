@@ -322,6 +322,10 @@ class CommonUtil {
     return ruleUtil.getBalancePath(addrOrServAcnt);
   }
 
+  static isVariableLabel(label, variableLabelPrefix) {
+    return _.startsWith(label, variableLabelPrefix);
+  }
+
   static getJsObject(obj, path) {
     if (!CommonUtil.isArray(path)) {
       return null;
