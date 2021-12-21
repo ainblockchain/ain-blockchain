@@ -2,14 +2,14 @@ const StateManager = require('../../db/state-manager');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
-const { StateVersions, BlockchainParams, StateInfoProperties } = require('../../common/constants');
+const { StateVersions } = require('../../common/constants');
 const StateNode = require('../../db/state-node');
 
 describe("state-manager", () => {
   let manager;
 
   beforeEach(() => {
-    manager = new StateManager(StateInfoProperties.HASH_DELIMITER);
+    manager = new StateManager();
   })
 
   describe("Initialize", () => {

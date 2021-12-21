@@ -2,7 +2,7 @@ const logger = new (require('../logger'))('RADIX_TREE');
 
 const CommonUtil = require('../common/common-util');
 const {
-  StateInfoProperties,
+  StateLabelProperties,
 } = require('../common/constants');
 const RadixNode = require('./radix-node');
 
@@ -478,7 +478,7 @@ class RadixTree {
     const version = root.getVersion();
     const tree = new RadixTree(version);
     tree.setRoot(root);
-    tree.setNextSerial(obj[StateInfoProperties.NEXT_SERIAL]);
+    tree.setNextSerial(obj[StateLabelProperties.NEXT_SERIAL]);
     // NOTE(platfowner): Need to recompute and set numChildStateNodes.
     const numChildStateNodes = tree.getChildStateLabels().length;
     tree.setNumChildStateNodes(numChildStateNodes);

@@ -7,7 +7,7 @@ const assert = chai.assert;
 const ainUtil = require('@ainblockchain/ain-util');
 const {
   NodeConfigs,
-  StateInfoProperties,
+  StateLabelProperties,
   StateVersions,
   BlockchainParams,
 } = require('../../common/constants')
@@ -3552,7 +3552,7 @@ describe("DB operations", () => {
         tempDb.setValuesForTesting(`/transfer/${node.account.address}/${addr}`, valueObj);
         node.cloneAndFinalizeVersion(tempDb.stateVersion, -1);
         const serviceStateBudget = BlockchainParams.resource.state_tree_bytes_limit * BlockchainParams.resource.service_state_budget_ratio;
-        expect(node.db.getStateUsageAtPath('/')[StateInfoProperties.TREE_BYTES]).to.be.lessThan(serviceStateBudget);
+        expect(node.db.getStateUsageAtPath('/')[StateLabelProperties.TREE_BYTES]).to.be.lessThan(serviceStateBudget);
 
         const expectedGasAmountTotal = {
           bandwidth: {

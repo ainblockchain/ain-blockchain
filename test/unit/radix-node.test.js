@@ -4,7 +4,7 @@ const expect = chai.expect;
 const assert = chai.assert;
 const CommonUtil = require('../../common/common-util');
 const StateNode = require('../../db/state-node');
-const { StateInfoProperties } = require('../../common/constants');
+const { StateLabelProperties } = require('../../common/constants');
 
 describe("radix-node", () => {
   let node;
@@ -634,7 +634,7 @@ describe("radix-node", () => {
     });
 
     it("buildRadixInfo", () => {
-      const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
+      const hashDelimiter = StateLabelProperties.HASH_DELIMITER;
 
       const childPH1 = 'childPH1';
       const childPH2 = 'childPH2';

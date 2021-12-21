@@ -4,7 +4,6 @@ const expect = chai.expect;
 const assert = chai.assert;
 const RadixNode = require('../../db/radix-node');
 const StateNode = require('../../db/state-node');
-const { StateInfoProperties } = require('../../common/constants');
 
 describe("radix-tree", () => {
 

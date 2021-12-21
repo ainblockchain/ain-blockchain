@@ -5,7 +5,7 @@ const sizeof = require('object-sizeof');
 const CommonUtil = require('../common/common-util');
 const {
   NodeConfigs,
-  StateInfoProperties,
+  StateLabelProperties,
 } = require('../common/constants');
 const RadixTree = require('./radix-tree');
 
@@ -109,7 +109,7 @@ class StateNode {
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
         for (const key in obj) {
-          if (CommonUtil.isPrefixedLabel(key, StateInfoProperties.META_LABEL_PREFIX)) {
+          if (CommonUtil.isPrefixedLabel(key, StateLabelProperties.META_LABEL_PREFIX)) {
             // Skip state properties.
             continue;
           }
@@ -140,34 +140,34 @@ class StateNode {
       if (childNode.getIsLeaf()) {
         obj[label] = childNode.toStateSnapshot(options);
         if (includeVersion) {
-          obj[`${StateInfoProperties.VERSION}:${label}`] = childNode.getVersion();
+          obj[`${StateLabelProperties.VERSION}:${label}`] = childNode.getVersion();
         }
         if (includeTreeInfo) {
-          obj[`${StateInfoProperties.NUM_PARENTS}:${label}`] = childNode.numParents();
-          obj[`${StateInfoProperties.TREE_HEIGHT}:${label}`] = childNode.getTreeHeight();
-          obj[`${StateInfoProperties.TREE_SIZE}:${label}`] = childNode.getTreeSize();
-          obj[`${StateInfoProperties.TREE_BYTES}:${label}`] = childNode.getTreeBytes();
+          obj[`${StateLabelProperties.NUM_PARENTS}:${label}`] = childNode.numParents();
+          obj[`${StateLabelProperties.TREE_HEIGHT}:${label}`] = childNode.getTreeHeight();
+          obj[`${StateLabelProperties.TREE_SIZE}:${label}`] = childNode.getTreeSize();
+          obj[`${StateLabelProperties.TREE_BYTES}:${label}`] = childNode.getTreeBytes();
         }
         if (includeProof) {
-          obj[`${StateInfoProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
+          obj[`${StateLabelProperties.STATE_PROOF_HASH}:${label}`] = childNode.getProofHash();
         }
       } else {
         obj[label] = isShallow ?
-            { [`${StateInfoProperties.STATE_PROOF_HASH}`]: childNode.getProofHash() } :
+            { [`${StateLabelProperties.STATE_PROOF_HASH}`]: childNode.getProofHash() } :
             childNode.toStateSnapshot(options);
       }
     }
     if (includeVersion) {
-      obj[`${StateInfoProperties.VERSION}`] = this.getVersion();
+      obj[`${StateLabelProperties.VERSION}`] = this.getVersion();
     }
     if (includeTreeInfo) {
-      obj[`${StateInfoProperties.NUM_PARENTS}`] = this.numParents();
-      obj[`${StateInfoProperties.TREE_HEIGHT}`] = this.getTreeHeight();
-      obj[`${StateInfoProperties.TREE_SIZE}`] = this.getTreeSize();
-      obj[`${StateInfoProperties.TREE_BYTES}`] = this.getTreeBytes();
+      obj[`${StateLabelProperties.NUM_PARENTS}`] = this.numParents();
+      obj[`${StateLabelProperties.TREE_HEIGHT}`] = this.getTreeHeight();
+      obj[`${StateLabelProperties.TREE_SIZE}`] = this.getTreeSize();
+      obj[`${StateLabelProperties.TREE_BYTES}`] = this.getTreeBytes();
     }
     if (includeProof) {
-      obj[`${StateInfoProperties.STATE_PROOF_HASH}`] = this.getProofHash();
+      obj[`${StateLabelProperties.STATE_PROOF_HASH}`] = this.getProofHash();
     }
 
     return obj;
@@ -470,7 +470,7 @@ class StateNode {
   getProofOfStateNode(childLabel = null, childProof = null) {
     if (childLabel === null) {
       return {
-        [StateInfoProperties.STATE_PROOF_HASH]: this.getProofHash()
+        [StateLabelProperties.STATE_PROOF_HASH]: this.getProofHash()
       };
     } else {
       return this.radixTree.getProofOfStateNode(childLabel, childProof);
