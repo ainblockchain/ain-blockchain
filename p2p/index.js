@@ -549,13 +549,14 @@ class P2pClient {
     if (this.server.node.state !== BlockchainNodeStates.SERVING) {
       logger.info(`[${LOG_HEADER}] Blockchain Node is now synced!`);
       this.server.node.state = BlockchainNodeStates.SERVING;
-      if (this.server.consensus.stakeTx) {
-        this.broadcastTransaction(this.server.consensus.stakeTx);
-        this.server.consensus.stakeTx = null;
-      }
     }
     if (this.server.consensus.state === ConsensusStates.STARTING) {
       this.server.consensus.initConsensus();
+    }
+    if (this.server.consensus.stakeTx && Object.keys(this.outbound).length > 0) {
+      logger.info(`[${LOG_HEADER}] broadcasting stakeTx`);
+      this.broadcastTransaction(this.server.consensus.stakeTx);
+      this.server.consensus.stakeTx = null;
     }
     return true;
   }
