@@ -56,7 +56,8 @@ process.on('SIGINT', (_) => {
   process.exit(1);
 });
 
-const { min, max } = VersionUtil.matchVersions(BlockchainConsts.PROTOCOL_VERSION_MAP, BlockchainConsts.CURRENT_PROTOCOL_VERSION);
+const { min, max } = VersionUtil.matchVersions(
+    BlockchainConsts.PROTOCOL_VERSION_MAP, BlockchainConsts.CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? BlockchainConsts.CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 const p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
@@ -64,17 +65,6 @@ const p2pServer = p2pClient.server;
 
 const jsonRpcApis = require('../json_rpc')(
     node, p2pServer, eventHandler, minProtocolVersion, maxProtocolVersion);
-
-function createAndExecuteTransaction(txBody) {
-  const tx = node.createTransaction(txBody);
-  if (!tx) {
-    return {
-      tx_hash: null,
-      result: false,
-    };
-  }
-  return p2pServer.executeAndBroadcastTransaction(tx);
-}
 
 app.post(
   '/json-rpc',
@@ -127,234 +117,558 @@ app.use(ipWhitelist((ip) => {
       matchUrl(convertIpv6ToIpv4(ip), NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
 }));
 
-if (NodeConfigs.ENABLE_DEV_CLIENT_API) {
-  app.get('/get_value', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.db.getValue(req.query.ref, CommonUtil.toGetOptions(req.query));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+/**
+ * Dev Client GET APIs (available to whitelisted IPs)
+ */
 
-  app.get('/get_function', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.db.getFunction(req.query.ref, CommonUtil.toGetOptions(req.query));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+app.get('/get_value', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.db.getValue(req.query.ref, CommonUtil.toGetOptions(req.query));
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
-  app.get('/get_rule', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.db.getRule(req.query.ref, CommonUtil.toGetOptions(req.query));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+app.get('/get_function', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.db.getFunction(req.query.ref, CommonUtil.toGetOptions(req.query));
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
-  app.get('/get_owner', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.db.getOwner(req.query.ref, CommonUtil.toGetOptions(req.query));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+app.get('/get_rule', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.db.getRule(req.query.ref, CommonUtil.toGetOptions(req.query));
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
-  /**
-   * Returns the state proof at the given full database path.
-   */
-  app.get('/get_state_proof', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.db.getStateProof(req.query.ref);
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+app.get('/get_owner', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.db.getOwner(req.query.ref, CommonUtil.toGetOptions(req.query));
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
-  /**
-   * Returns the state proof hash at the given full database path.
-   */
-  app.get('/get_proof_hash', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.db.getProofHash(req.query.ref);
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+/**
+ * Returns the state proof at the given full database path.
+ */
+app.get('/get_state_proof', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.db.getStateProof(req.query.ref);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
-  /**
-   * Returns the state information at the given full database path.
-   */
-  app.get('/get_state_info', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.db.getStateInfo(req.query.ref);
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+/**
+ * Returns the state proof hash at the given full database path.
+ */
+app.get('/get_proof_hash', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.db.getProofHash(req.query.ref);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
-  /**
-   * Returns the state usage of the given app.
-   */
-  app.get('/get_state_usage', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.getStateUsage(req.query.app_name);
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+/**
+ * Returns the state information at the given full database path.
+ */
+app.get('/get_state_info', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.db.getStateInfo(req.query.ref);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
-  app.get('/match_function', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.db.matchFunction(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+/**
+ * Returns the state usage of the given app.
+ */
+app.get('/get_state_usage', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.getStateUsage(req.query.app_name);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
-  app.get('/match_rule', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.db.matchRule(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+app.get('/match_function', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.db.matchFunction(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
-  app.get('/match_owner', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.db.matchOwner(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+app.get('/match_rule', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.db.matchRule(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
-  app.post('/eval_rule', (req, res, next) => {
-    const beginTime = Date.now();
-    const body = req.body;
-    const auth = {};
-    if (body.address) {
-      auth.addr = body.address;
-    }
-    if (body.fid) {
-      auth.fid = body.fid;
-    }
-    const result = node.db.evalRule(
-        body.ref, body.value, auth, body.timestamp || Date.now(),
-        CommonUtil.toMatchOrEvalOptions(body));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+app.get('/match_owner', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.db.matchOwner(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
-  app.post('/eval_owner', (req, res, next) => {
-    const beginTime = Date.now();
-    const body = req.body;
-    const auth = {};
-    if (body.address) {
-      auth.addr = body.address;
-    }
-    if (body.fid) {
-      auth.fid = body.fid;
-    }
-    const result = node.db.evalOwner(
-        body.ref, body.permission, auth, CommonUtil.toMatchOrEvalOptions(body));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+app.post('/eval_rule', (req, res, next) => {
+  const beginTime = Date.now();
+  const body = req.body;
+  const auth = {};
+  if (body.address) {
+    auth.addr = body.address;
+  }
+  if (body.fid) {
+    auth.fid = body.fid;
+  }
+  const result = node.db.evalRule(
+      body.ref, body.value, auth, body.timestamp || Date.now(),
+      CommonUtil.toMatchOrEvalOptions(body));
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
-  app.post('/get', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.db.get(req.body.op_list);
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
+app.post('/eval_owner', (req, res, next) => {
+  const beginTime = Date.now();
+  const body = req.body;
+  const auth = {};
+  if (body.address) {
+    auth.addr = body.address;
+  }
+  if (body.fid) {
+    auth.fid = body.fid;
+  }
+  const result = node.db.evalOwner(
+      body.ref, body.permission, auth, CommonUtil.toMatchOrEvalOptions(body));
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
 
+app.post('/get', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.db.get(req.body.op_list);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
+
+app.get('/status', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = p2pClient.getStatus();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/node_status', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = p2pServer.getNodeStatus();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/connection_status', (req, res) => {
+  const beginTime = Date.now();
+  const result = p2pClient.getConnectionStatus();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+})
+
+app.get('/client_status', (req, res) => {
+  const beginTime = Date.now();
+  const result = p2pClient.getClientStatus();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+})
+
+app.get('/blocks', (req, res, next) => {
+  const beginTime = Date.now();
+  const blockEnd = node.bc.lastBlockNumber() + 1;
+  const blockBegin = Math.max(blockEnd - MAX_BLOCKS, 0);
+  const result = node.bc.getBlockList(blockBegin, blockEnd);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/last_block', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.bc.lastBlock();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/tx_pool', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.tp.transactions;
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/tx_tracker', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.tp.transactionTracker;
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/committed_nonce_tracker', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.tp.committedNonceTracker;
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/pending_nonce_tracker', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.tp.pendingNonceTracker;
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/protocol_versions', (req, res) => {
+  const beginTime = Date.now();
+  const result = p2pClient.server.getProtocolInfo();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/state_versions', (req, res) => {
+  const beginTime = Date.now();
+  const result = p2pServer.getStateVersionStatus();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+// TODO(platfowner): Support for subtree snapshots (i.e. with ref path).
+app.get('/get_final_state_snapshot', (req, res) => {
+  const beginTime = Date.now();
+  const result = node.takeFinalStateSnapshot(CommonUtil.toGetOptions(req.query));
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+// TODO(platfowner): Support for subtree snapshots (i.e. with ref path).
+app.get('/get_final_radix_snapshot', (req, res) => {
+  const beginTime = Date.now();
+  const result = node.takeFinalRadixSnapshot();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/tx_pool_size_util', (req, res) => {
+  const beginTime = Date.now();
+  const address = req.query.address;
+  const txPoolSizeUtil = node.getTxPoolSizeUtilization(address);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result: txPoolSizeUtil })
+    .end();
+});
+
+app.get('/get_transaction', (req, res, next) => {
+  const beginTime = Date.now();
+  const transactionInfo = node.getTransactionByHash(req.query.hash);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result: transactionInfo })
+    .end();
+});
+
+app.get('/get_block_by_hash', (req, res, next) => {
+  const beginTime = Date.now();
+  const block = node.bc.getBlockByHash(req.query.hash);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result: block })
+    .end();
+});
+
+app.get('/get_block_by_number', (req, res) => {
+  const beginTime = Date.now();
+  const block = node.bc.getBlockByNumber(req.query.number);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result: block })
+    .end();
+});
+
+app.get('/get_block_info_by_number', (req, res) => {
+  const beginTime = Date.now();
+  const blockInfo = node.bc.getBlockInfoByNumber(req.query.number);
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result: blockInfo })
+    .end();
+});
+
+app.get('/get_address', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.account ? node.account.address : null;
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/get_nonce', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.getNonceForAddr(req.query.address, req.query.from === 'pending');
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/get_timestamp', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.getTimestampForAddr(req.query.address, req.query.from === 'pending');
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/get_sharding', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.getSharding();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({
+      code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
+      result
+    })
+    .end();
+});
+
+app.get('/get_raw_consensus_status', (req, res) => {
+  const beginTime = Date.now();
+  const result = p2pServer.consensus.getRawStatus();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/get_consensus_status', (req, res) => {
+  const beginTime = Date.now();
+  const result = p2pServer.consensus.getStatus();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/get_network_id', (req, res) => {
+  const beginTime = Date.now();
+  const result = p2pServer.node.getBlockchainParam('genesis/network_id');
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/get_chain_id', (req, res) => {
+  const beginTime = Date.now();
+  const result = p2pServer.node.getBlockchainParam('genesis/chain_id');
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.get('/get_config', (req, res) => {
+  const beginTime = Date.now();
+  const result = p2pClient.getConfig();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+/**
+ * Dev Client SET APIs (available to whitelisted IPs, if ENABLE_DEV_CLIENT_SET_API == true)
+ */
+
+if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
   app.post('/set_value', (req, res, next) => {
     const beginTime = Date.now();
     const result = createAndExecuteTransaction(createSingleSetTxBody(
@@ -499,322 +813,6 @@ if (NodeConfigs.ENABLE_DEV_CLIENT_API) {
       .send({ code: DevClientApiResultCode.SUCCESS, result: true })
       .end();
   });
-
-  app.get('/status', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = p2pClient.getStatus();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/node_status', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = p2pServer.getNodeStatus();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/connection_status', (req, res) => {
-    const beginTime = Date.now();
-    const result = p2pClient.getConnectionStatus();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  })
-
-  app.get('/client_status', (req, res) => {
-    const beginTime = Date.now();
-    const result = p2pClient.getClientStatus();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  })
-
-  app.get('/blocks', (req, res, next) => {
-    const beginTime = Date.now();
-    const blockEnd = node.bc.lastBlockNumber() + 1;
-    const blockBegin = Math.max(blockEnd - MAX_BLOCKS, 0);
-    const result = node.bc.getBlockList(blockBegin, blockEnd);
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/last_block', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.bc.lastBlock();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/tx_pool', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.tp.transactions;
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/tx_tracker', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.tp.transactionTracker;
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/committed_nonce_tracker', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.tp.committedNonceTracker;
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/pending_nonce_tracker', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.tp.pendingNonceTracker;
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/protocol_versions', (req, res) => {
-    const beginTime = Date.now();
-    const result = p2pClient.server.getProtocolInfo();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/state_versions', (req, res) => {
-    const beginTime = Date.now();
-    const result = p2pServer.getStateVersionStatus();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  // TODO(platfowner): Support for subtree snapshots (i.e. with ref path).
-  app.get('/get_final_state_snapshot', (req, res) => {
-    const beginTime = Date.now();
-    const result = node.takeFinalStateSnapshot(CommonUtil.toGetOptions(req.query));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  // TODO(platfowner): Support for subtree snapshots (i.e. with ref path).
-  app.get('/get_final_radix_snapshot', (req, res) => {
-    const beginTime = Date.now();
-    const result = node.takeFinalRadixSnapshot();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/tx_pool_size_util', (req, res) => {
-    const beginTime = Date.now();
-    const address = req.query.address;
-    const txPoolSizeUtil = node.getTxPoolSizeUtilization(address);
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result: txPoolSizeUtil })
-      .end();
-  });
-
-  app.get('/get_transaction', (req, res, next) => {
-    const beginTime = Date.now();
-    const transactionInfo = node.getTransactionByHash(req.query.hash);
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result: transactionInfo })
-      .end();
-  });
-
-  app.get('/get_block_by_hash', (req, res, next) => {
-    const beginTime = Date.now();
-    const block = node.bc.getBlockByHash(req.query.hash);
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result: block })
-      .end();
-  });
-
-  app.get('/get_block_by_number', (req, res) => {
-    const beginTime = Date.now();
-    const block = node.bc.getBlockByNumber(req.query.number);
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result: block })
-      .end();
-  });
-
-  app.get('/get_block_info_by_number', (req, res) => {
-    const beginTime = Date.now();
-    const blockInfo = node.bc.getBlockInfoByNumber(req.query.number);
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result: blockInfo })
-      .end();
-  });
-
-  app.get('/get_address', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.account ? node.account.address : null;
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/get_nonce', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.getNonceForAddr(req.query.address, req.query.from === 'pending');
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/get_timestamp', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.getTimestampForAddr(req.query.address, req.query.from === 'pending');
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/get_sharding', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = node.getSharding();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: result !== null ? DevClientApiResultCode.SUCCESS : DevClientApiResultCode.FAILURE,
-        result
-      })
-      .end();
-  });
-
-  app.get('/get_raw_consensus_status', (req, res) => {
-    const beginTime = Date.now();
-    const result = p2pServer.consensus.getRawStatus();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/get_consensus_status', (req, res) => {
-    const beginTime = Date.now();
-    const result = p2pServer.consensus.getStatus();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/get_network_id', (req, res) => {
-    const beginTime = Date.now();
-    const result = p2pServer.node.getBlockchainParam('genesis/network_id');
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/get_chain_id', (req, res) => {
-    const beginTime = Date.now();
-    const result = p2pServer.node.getBlockchainParam('genesis/chain_id');
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.get('/get_config', (req, res) => {
-    const beginTime = Date.now();
-    const result = p2pClient.getConfig();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
 }
 
 const server = app.listen(NodeConfigs.PORT, () => {
@@ -830,6 +828,17 @@ server.headersTimeout = 630 * 1000; // 630 seconds
 p2pClient.run();
 
 module.exports = app;
+
+function createAndExecuteTransaction(txBody) {
+  const tx = node.createTransaction(txBody);
+  if (!tx) {
+    return {
+      tx_hash: null,
+      result: false,
+    };
+  }
+  return p2pServer.executeAndBroadcastTransaction(tx);
+}
 
 function createSingleSetTxBody(input, opType) {
   const op = {
