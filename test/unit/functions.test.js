@@ -51,60 +51,60 @@ describe("Functions", () => {
       before(() => {
         const restFunctionNonVarPath = {
           ".function": {
-            "0x11111": {
+            "0x00001": {
               "function_type": "REST",
               "function_url": "https://events.ainetwork.ai/trigger",
-              "function_id": "0x11111"
+              "function_id": "0x00001"
             }
           }
         };
         const restFunctionVarPath = {
           ".function": {
-            "0xvar_path": {
+            "0x10001": {
               "function_type": "REST",
               "function_url": "https://events.ainetwork.ai/trigger",
-              "function_id": "0xvar_path"
+              "function_id": "0x10001"
             }
           }
         };
         const restFunctionMulti = {
           ".function": {
-            "0x11111": {
+            "0x20001": {
               "function_type": "REST",
               "function_url": "https://events.ainetwork.ai/trigger",
-              "function_id": "0x11111"
+              "function_id": "0x20001"
             },
-            "0x22222": {
+            "0x20002": {
               "function_type": "REST",
               "function_url": "https://events.ainize.ai/trigger",
-              "function_id": "0x22222"
+              "function_id": "0x20002"
             }
           }
         };
         const restFunctionWithSubtree = {
           ".function": {
-            "0x11111": {
+            "0x30001": {
               "function_type": "REST",
               "function_url": "https://events.ainetwork.ai/trigger",
-              "function_id": "0x11111"
+              "function_id": "0x30001"
             }
           },
           "deeper": {
             "$var_path": {
               ".function": {
-                "0xvar_path": {
+                "0x30002": {
                   "function_type": "REST",
                   "function_url": "https://events.ainize.ai/trigger",
-                  "function_id": "0xvar_path"
+                  "function_id": "0x30002"
                 }
               }
             },
             "path": {
               ".function": {
-                "0x33333": {
+                "0x30003": {
                   "function_type": "REST",
                   "function_url": "https://events.afan.ai/trigger",
-                  "function_id": "0x33333"
+                  "function_id": "0x30003"
                 },
               }
             }
@@ -112,25 +112,25 @@ describe("Functions", () => {
         };
         const restFunctionWithoutListener = {
           ".function": {
-            "0x33333": {
+            "0x40001": {
               "function_type": "REST",
               "function_url": "http://localhost:3000/trigger",
-              "function_id": "0x33333"
+              "function_id": "0x40001"
             }
           }
         };
         const restFunctionNotWhitelisted = {
           ".function": {
-            "0x33333": {
+            "0x50001": {
               "function_type": "REST",
               "function_url": "https://events.comcom.ai/trigger",
-              "function_id": "0x33333"
+              "function_id": "0x50001"
             }
           }
         };
         const nullFunction = {
           ".function": {
-            "0x12345": null
+            "0x60001": null
           }
         };
         assert.deepEqual(node.db.setFunction(refPathRest, restFunctionNonVarPath).code, 0);
@@ -205,7 +205,7 @@ describe("Functions", () => {
             CommonUtil.parsePath(refPathRest), null, null, null, null, transaction, 0, 0,
             accountRegistrationGasAmount, restFunctionCallGasAmount);
         assert.deepEqual(funcResults, {
-          "0x11111": {
+          "0x00001": {
             "code": 0,
             "bandwidth_gas_amount": 100,
           }
@@ -219,15 +219,15 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody1, {
             "auth": {
-              "fid": "0x11111",
+              "fid": "0x00001",
               "fids": [],
             },
             "blockNumber": 0,
             "blockTime": 0,
             "executedAt": 1566736760324,
-            "fid": "0x11111",
+            "fid": "0x00001",
             "function": {
-              "function_id": "0x11111",
+              "function_id": "0x00001",
               "function_type": "REST",
               "function_url": "https://events.ainetwork.ai/trigger",
             },
@@ -296,7 +296,7 @@ describe("Functions", () => {
             CommonUtil.parsePath(refPathRestVarPath), null, null, null, null, transaction, 0, 0,
             accountRegistrationGasAmount, restFunctionCallGasAmount);
         assert.deepEqual(funcResults, {
-          "0xvar_path": {
+          "0x10001": {
             "code": 0,
             "bandwidth_gas_amount": 100,
           }
@@ -310,15 +310,15 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody1, {
             "auth": {
-              "fid": "0xvar_path",
+              "fid": "0x10001",
               "fids": [],
             },
             "blockNumber": 0,
             "blockTime": 0,
             "executedAt": 1566736760324,
-            "fid": "0xvar_path",
+            "fid": "0x10001",
             "function": {
-              "function_id": "0xvar_path",
+              "function_id": "0x10001",
               "function_type": "REST",
               "function_url": "https://events.ainetwork.ai/trigger",
             },
@@ -389,11 +389,11 @@ describe("Functions", () => {
             CommonUtil.parsePath(refPathRestMulti), null, null, null, null, transaction, 0, 0,
             accountRegistrationGasAmount, restFunctionCallGasAmount);
         assert.deepEqual(funcResults, {
-          "0x11111": {
+          "0x20001": {
             "code": 0,
             "bandwidth_gas_amount": 100,
           },
-          "0x22222": {
+          "0x20002": {
             "code": 0,
             "bandwidth_gas_amount": 100,
           }
@@ -407,15 +407,15 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody1, {
             "auth": {
-              "fid": "0x11111",
+              "fid": "0x20001",
               "fids": [],
             },
             "blockNumber": 0,
             "blockTime": 0,
             "executedAt": 1566736760324,
-            "fid": "0x11111",
+            "fid": "0x20001",
             "function": {
-              "function_id": "0x11111",
+              "function_id": "0x20001",
               "function_type": "REST",
               "function_url": "https://events.ainetwork.ai/trigger",
             },
@@ -458,15 +458,15 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody2, {
             "auth": {
-              "fid": "0x22222",
+              "fid": "0x20002",
               "fids": [],
             },
             "blockNumber": 0,
             "blockTime": 0,
             "executedAt": 1566736760324,
-            "fid": "0x22222",
+            "fid": "0x20002",
             "function": {
-              "function_id": "0x22222",
+              "function_id": "0x20002",
               "function_type": "REST",
               "function_url": "https://events.ainize.ai/trigger",
             },
@@ -535,7 +535,7 @@ describe("Functions", () => {
             CommonUtil.parsePath(refPathRestWithSubtree), null, null, null, null, transaction, 0, 0,
             accountRegistrationGasAmount, restFunctionCallGasAmount);
         assert.deepEqual(funcResults, {
-          "0x11111": {
+          "0x30001": {
             "code": 0,
             "bandwidth_gas_amount": 100,
           }
@@ -543,7 +543,7 @@ describe("Functions", () => {
         assert.deepEqual(eraseSubtreeFuncResPromiseResults(subtreeFuncResults), {
           "/deeper/$var_path": {
             "func_results": {
-              "0xvar_path": {
+              "0x30002": {
                 "bandwidth_gas_amount": 100,
                 "code": 0,
               }
@@ -552,7 +552,7 @@ describe("Functions", () => {
           },
           "/deeper/path": {
             "func_results": {
-              "0x33333": {
+              "0x30003": {
                 "bandwidth_gas_amount": 100,
                 "code": 0,
               }
@@ -568,15 +568,15 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody1, {
             "auth": {
-              "fid": "0x11111",
+              "fid": "0x30001",
               "fids": [],
             },
             "blockNumber": 0,
             "blockTime": 0,
             "executedAt": 1566736760324,
-            "fid": "0x11111",
+            "fid": "0x30001",
             "function": {
-              "function_id": "0x11111",
+              "function_id": "0x30001",
               "function_type": "REST",
               "function_url": "https://events.ainetwork.ai/trigger",
             },
@@ -619,15 +619,15 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody2, {
             "auth": {
-              "fid": "0xvar_path",
+              "fid": "0x30002",
               "fids": [],
             },
             "blockNumber": 0,
             "blockTime": 0,
             "executedAt": 1566736760324,
-            "fid": "0xvar_path",
+            "fid": "0x30002",
             "function": {
-              "function_id": "0xvar_path",
+              "function_id": "0x30002",
               "function_type": "REST",
               "function_url": "https://events.ainize.ai/trigger",
             },
@@ -674,15 +674,15 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBody3, {
             "auth": {
-              "fid": "0x33333",
+              "fid": "0x30003",
               "fids": [],
             },
             "blockNumber": 0,
             "blockTime": 0,
             "executedAt": 1566736760324,
-            "fid": "0x33333",
+            "fid": "0x30003",
             "function": {
-              "function_id": "0x33333",
+              "function_id": "0x30003",
               "function_type": "REST",
               "function_url": "https://events.afan.ai/trigger",
             },
@@ -889,21 +889,21 @@ describe("Functions", () => {
     })
 
     describe("Gas fee", () => {
-      const refPathRest = "/apps/test/test_function/some/path/rest";
+      const refPathRestGas = "/apps/test/test_function/some/path/rest_gas";
       const refPathTransfer =
           "/transfer/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0x107Ab4369070716cEA7f0d34359fa6a99F54951F/0/value";
 
       before(() => {
-        const restFunction = {
+        const restFunctionGas = {
           ".function": {
-            "0x11111": {
+            "0x90001": {
               "function_type": "REST",
               "function_url": "https://events.ainetwork.ai/trigger",
-              "function_id": "0x11111"
+              "function_id": "0x90001"
             }
           }
         };
-        assert.deepEqual(node.db.setFunction(refPathRest, restFunction).code, 0);
+        assert.deepEqual(node.db.setFunction(refPathRestGas, restFunctionGas).code, 0);
       })
 
       beforeEach(() => {
@@ -1029,7 +1029,7 @@ describe("Functions", () => {
         transaction = {
           "tx_body": {
             "operation": {
-              "ref": refPathRest,
+              "ref": refPathRestGas,
               "type": "SET_VALUE",
               "value": 1000
             },
@@ -1047,10 +1047,10 @@ describe("Functions", () => {
           subtree_func_results: subtreeFuncResults,
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathRest), null, null, null, null, transaction, 0, 0,
+            CommonUtil.parsePath(refPathRestGas), null, null, null, null, transaction, 0, 0,
             accountRegistrationGasAmount, restFunctionCallGasAmount);
         assert.deepEqual(funcResults, {
-          "0x11111": {
+          "0x90001": {
             "code": 0,
             "bandwidth_gas_amount": 100,
           }
