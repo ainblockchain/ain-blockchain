@@ -3,7 +3,7 @@ const {
   trafficStatsManager,
 } = require('../common/constants');
 const PathUtil = require('../common/path-util');
-const JsonRpcUtil = require('./util');
+const JsonRpcUtil = require('./json-rpc-util');
 
 module.exports = function getAccountApis(node, p2pServer) {
   return {

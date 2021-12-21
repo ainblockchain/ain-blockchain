@@ -5,7 +5,7 @@ const {
 } = require('../common/constants');
 const { JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
-const JsonRpcUtil = require('./util');
+const JsonRpcUtil = require('./json-rpc-util');
 
 module.exports = function getDatabaseApis(node) {
   return {
