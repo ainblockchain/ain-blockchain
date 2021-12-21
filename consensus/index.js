@@ -225,7 +225,7 @@ class Consensus {
   // Types of consensus messages:
   //  1. Proposal { value: { proposalBlock, proposalTx }, type = 'PROPOSE' }
   //  2. Vote { value: <voting tx>, type = 'VOTE' }
-  handleConsensusMessage(msg) {
+  handleConsensusMessage(msg, tags = []) {
     const LOG_HEADER = 'handleConsensusMessage';
 
     if (!this.checkConsensusProtocolVersion(msg)) {
@@ -284,7 +284,7 @@ class Consensus {
           e.log();
           if (ConsensusUtil.isVoteAgainstBlockError(e.code)) {
             this.node.bp.addSeenBlock(proposalBlock, proposalTx, false);
-            this.server.client.broadcastConsensusMessage(msg);
+            this.server.client.broadcastConsensusMessage(msg, tags);
             this.tryVoteAgainstInvalidBlock(proposalBlock);
           }
         } else {
@@ -292,7 +292,7 @@ class Consensus {
         }
         return;
       }
-      this.server.client.broadcastConsensusMessage(msg);
+      this.server.client.broadcastConsensusMessage(msg, tags);
       this.tryVoteForValidBlock(proposalBlock);
     } else if (msg.type === ConsensusMessageTypes.VOTE) {
       if (this.node.tp.transactionTracker[msg.value.hash]) {
@@ -312,7 +312,7 @@ class Consensus {
         logger.error(`[${LOG_HEADER}] Cannot process the vote or it's invalid: ${JSON.stringify(msg.value)}`);
         return;
       }
-      this.server.client.broadcastConsensusMessage(msg);
+      this.server.client.broadcastConsensusMessage(msg, tags);
     }
   }
 
