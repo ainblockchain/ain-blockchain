@@ -36,39 +36,39 @@ const MAX_ITERATION = 200;
 const MAX_NUM_VALIDATORS = 4;
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    UNSAFE_PRIVATE_KEY: 'b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96',
+    ENABLE_GAS_FEE_WORKAROUND: true, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_EXPRESS_RATE_LIMIT: false, PEER_CANDIDATE_JSON_RPC_URL: '',
     PORT: 8081, P2P_PORT: 5001,
   },
   {
-    ACCOUNT_INDEX: 1, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    UNSAFE_PRIVATE_KEY: '921cc48e48c876fc6ed1eb02a76ad520e8d16a91487f9c7e03441da8e35a0947',
+    ENABLE_GAS_FEE_WORKAROUND: true, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8082, P2P_PORT: 5002,
   },
   {
-    ACCOUNT_INDEX: 2, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    UNSAFE_PRIVATE_KEY: '41e6e5718188ce9afd25e4b386482ac2c5272c49a622d8d217887bce21dce560',
+    ENABLE_GAS_FEE_WORKAROUND: true, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8083, P2P_PORT: 5003,
   },
   {
-    ACCOUNT_INDEX: 3, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    UNSAFE_PRIVATE_KEY: '79e8473fb27896c16eeedc8aea7966e5fa489faca4deacdbbb2428750eb4d6eb',
+    ENABLE_GAS_FEE_WORKAROUND: true, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8084, P2P_PORT: 5004,
   },
   {
-    ACCOUNT_INDEX: 4, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true,
+    UNSAFE_PRIVATE_KEY: 'ff8ccb5edbc6662d7751501b377819fa6bc57ea29135de5f25f27c371d65bc4c',
+    ENABLE_GAS_FEE_WORKAROUND: true, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes',
     ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8085, P2P_PORT: 5005,
   },
 ];
 
 // Server configurations
-const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCOUNT_INDEX))
-const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
-const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
-const server4 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[3].ACCOUNT_INDEX))
-const server5 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[4].ACCOUNT_INDEX))
+const server1 = 'http://localhost:8081';
+const server2 = 'http://localhost:8082';
+const server3 = 'http://localhost:8083';
+const server4 = 'http://localhost:8084';
+const server5 = 'http://localhost:8085';
 const serverList = [server1, server2, server3, server4, server5];
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
