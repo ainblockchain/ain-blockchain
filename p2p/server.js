@@ -510,10 +510,19 @@ class P2pServer {
               return;
             }
             const consensusMessage = _.get(parsedMessage, 'data.message');
+            const consensusTags = _.get(parsedMessage, 'data.tags', []);
             logger.debug(`[${LOG_HEADER}] Receiving a consensus message: ` +
                 `${JSON.stringify(consensusMessage)}`);
+            if (DevFlags.enableP2pMessageTags) {
+              logger.debug(`[${LOG_HEADER}] Tags attached to a consensus message: ${JSON.stringify(consensusTags)}`);
+              trafficStatsManager.addEvent(
+                    TrafficEventTypes.P2P_TAG_CONSENSUS_LENGTH, consensusTags.length);
+              trafficStatsManager.addEvent(
+                  TrafficEventTypes.P2P_TAG_CONSENSUS_MAX_OCCUR,
+                  CommonUtil.countMaxOccurrences(consensusTags));
+            }
             if (this.node.state === BlockchainNodeStates.SERVING) {
-              this.consensus.handleConsensusMessage(consensusMessage);
+              this.consensus.handleConsensusMessage(consensusMessage, consensusTags);
             } else {
               logger.info(`\n [${LOG_HEADER}] Needs syncing...\n`);
               this.client.requestChainSegment();
@@ -533,7 +542,14 @@ class P2pServer {
               // this.convertTransactionMessage();
             }
             const tx = _.get(parsedMessage, 'data.transaction');
+            const txTags = _.get(parsedMessage, 'data.tags', []);
             logger.debug(`[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(tx)}`);
+            if (DevFlags.enableP2pMessageTags) {
+              logger.debug(`[${LOG_HEADER}] Tags attached to a tx message: ${JSON.stringify(txTags)}`);
+              trafficStatsManager.addEvent(TrafficEventTypes.P2P_TAG_TX_LENGTH, txTags.length);
+              trafficStatsManager.addEvent(
+                  TrafficEventTypes.P2P_TAG_TX_MAX_OCCUR, CommonUtil.countMaxOccurrences(txTags));
+            }
             if (this.node.tp.transactionTracker[tx.hash]) {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               const latency = Date.now() - beginTime;
@@ -559,7 +575,7 @@ class P2pServer {
                 newTxList.push(createdTx);
               }
               if (newTxList.length > 0) {
-                this.executeAndBroadcastTransaction({ tx_list: newTxList });
+                this.executeAndBroadcastTransaction({ tx_list: newTxList }, txTags);
               }
             } else {
               const createdTx = Transaction.create(tx.tx_body, tx.signature);
@@ -567,7 +583,7 @@ class P2pServer {
                 logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
                   `${JSON.stringify(tx, null, 2)}`);
               } else {
-                this.executeAndBroadcastTransaction(createdTx);
+                this.executeAndBroadcastTransaction(createdTx, txTags);
               }
             }
             break;
@@ -659,7 +675,7 @@ class P2pServer {
     socket.send(JSON.stringify(payload));
   }
 
-  executeAndBroadcastTransaction(tx) {
+  executeAndBroadcastTransaction(tx, tags = []) {
     const LOG_HEADER = 'executeAndBroadcastTransaction';
     if (!tx) {
       return {
@@ -695,7 +711,7 @@ class P2pServer {
       }
       logger.debug(`\n BATCH TX RESULT: ` + JSON.stringify(resultList));
       if (txListSucceeded.length > 0) {
-        this.client.broadcastTransaction({ tx_list: txListSucceeded });
+        this.client.broadcastTransaction({ tx_list: txListSucceeded }, tags);
       }
 
       return resultList;
@@ -703,7 +719,7 @@ class P2pServer {
       const result = this.node.executeTransactionAndAddToPool(tx);
       logger.debug(`\n TX RESULT: ` + JSON.stringify(result));
       if (!CommonUtil.isFailedTx(result)) {
-        this.client.broadcastTransaction(tx);
+        this.client.broadcastTransaction(tx, tags);
       }
 
       return {

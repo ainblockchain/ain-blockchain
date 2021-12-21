@@ -24,6 +24,8 @@ const DevFlags = {
   enableTrafficMonitoring: true,
   // Enables winston logger. (default = bunyan)
   enableWinstonLogger: false,
+  // Enables p2p message tagging.
+  enableP2pMessageTags: true,
 };
 
 // ** Blockchain configs **
@@ -555,6 +557,10 @@ const TrafficEventTypes = {
   // P2P messages
   P2P_MESSAGE_CLIENT: 'p2p_message_client',
   P2P_MESSAGE_SERVER: 'p2p_message_server',
+  P2P_TAG_CONSENSUS_LENGTH: 'p2p_tag_consensus_length',
+  P2P_TAG_CONSENSUS_MAX_OCCUR: 'p2p_tag_consensus_max_occur',
+  P2P_TAG_TX_LENGTH: 'p2p_tag_tx_length',
+  P2P_TAG_TX_MAX_OCCUR: 'p2p_tag_tx_max_occur',
   // Client APIs
   CLIENT_API_GET: 'client_api_get',
   CLIENT_API_SET: 'client_api_set',
