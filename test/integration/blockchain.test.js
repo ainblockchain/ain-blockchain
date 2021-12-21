@@ -29,25 +29,28 @@ const NUMBER_OF_TRANSACTIONS_SENT_BEFORE_TEST = 5;
 const MAX_CHAIN_LENGTH_DIFF = 5;
 const ENV_VARIABLES = [
   {
-    ACCOUNT_INDEX: 0, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8081, P2P_PORT: 5001,
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8081, P2P_PORT: 5001,
+    UNSAFE_PRIVATE_KEY: 'b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96',
+    ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
     PEER_CANDIDATE_JSON_RPC_URL: '',
   },
   {
-    ACCOUNT_INDEX: 1, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8082, P2P_PORT: 5002,
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8082, P2P_PORT: 5002,
+    UNSAFE_PRIVATE_KEY: '921cc48e48c876fc6ed1eb02a76ad520e8d16a91487f9c7e03441da8e35a0947',
+    ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
   {
-    ACCOUNT_INDEX: 2, BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8083, P2P_PORT: 5003,
-    ENABLE_DEV_CLIENT_SET_API: true, ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8083, P2P_PORT: 5003,
+    UNSAFE_PRIVATE_KEY: '41e6e5718188ce9afd25e4b386482ac2c5272c49a622d8d217887bce21dce560',
+    ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
   },
 ];
 
 // Server configurations
 const trackerServer = 'http://localhost:5000';
-const server1 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[0].ACCOUNT_INDEX))
-const server2 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[1].ACCOUNT_INDEX))
-const server3 = 'http://localhost:' + String(8081 + Number(ENV_VARIABLES[2].ACCOUNT_INDEX))
+const server1 = 'http://localhost:8081';
+const server2 = 'http://localhost:8082';
+const server3 = 'http://localhost:8083';
 const serverList = [server1, server2, server3 ];
 
 const JSON_RPC_ENDPOINT = '/json-rpc';
@@ -318,10 +321,10 @@ describe('Blockchain Cluster', () => {
       await waitForNewBlocks(server1);
       let baseChain;
       let number;
-      const accountIndex = 4;
-      const newServer = 'http://localhost:' + String(8081 + Number(accountIndex))
+      const accountIndex = 3;
+      const newServer = 'http://localhost:8084';
       const newServerProc = new Process(APP_SERVER, {
-        ACCOUNT_INDEX: accountIndex, DEBUG: true,
+        UNSAFE_PRIVATE_KEY: '79e8473fb27896c16eeedc8aea7966e5fa489faca4deacdbbb2428750eb4d6eb',
         ADDITIONAL_OWNERS: 'test:./test/data/owners_for_testing.json',
         ADDITIONAL_RULES: 'test:./test/data/rules_for_testing.json'
       });

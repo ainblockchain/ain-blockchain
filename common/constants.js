@@ -60,8 +60,6 @@ if (!semver.valid(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION)) {
 
 // ** Blockchain Params **
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
-// TODO(liayoo): Deprecate GenesisAccounts
-const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
 
 // ** Node configs, set for individual nodes by env vars **
 const NodeConfigs = {};
@@ -713,7 +711,6 @@ module.exports = {
   WriteDbOperations,
   TransactionStates,
   StateVersions,
-  GenesisAccounts,
   getBlockchainConfig,
   SyncModeOptions,
   TrafficEventTypes,
