@@ -84,15 +84,19 @@ module.exports = function getAccountApis(node, p2pServer) {
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
     },
 
-    ain_isValidator: function(args, done) {
+    ain_getValidatorInfo: function(args, done) {
       const beginTime = Date.now();
       const addr = args.address;
-      const whitelisted = node.db.getValue(PathUtil.getConsensusProposerWhitelistAddrPath(addr));
-      const stake = node.db.getValue(PathUtil.getServiceAccountBalancePath(addr));
-      const result = stake && whitelisted ? stake : 0;
+      const isWhitelisted = node.db.getValue(PathUtil.getConsensusProposerWhitelistAddrPath(addr)) || false;
+      const stake = node.db.getValue(PathUtil.getServiceAccountBalancePath(addr)) || 0;
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
-      done(null, JsonRpcUtil.addProtocolVersion({ result }));
+      done(null, JsonRpcUtil.addProtocolVersion({
+        result: {
+          isWhitelisted,
+          stake,
+        }
+      }));
     },
   };
 };
