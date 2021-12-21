@@ -10,13 +10,13 @@ const {
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
 } = require('../../db/state-util');
-const { BlockchainParams } = require('../../common/constants');
+const { StateInfoProperties } = require('../../common/constants');
 const { GET_OPTIONS_INCLUDE_ALL } = require('../test-util');
 
 describe("state-node", () => {
   let node;
-  const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
-  const stateInfoPrefix = BlockchainParams.genesis.state_info_prefix;
+  const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
+  const stateInfoPrefix = StateInfoProperties.META_LABEL_PREFIX;
 
   const label1 = '0x00aaaa';
   const label2 = '0x11bbbb';

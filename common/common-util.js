@@ -322,7 +322,7 @@ class CommonUtil {
     return ruleUtil.getBalancePath(addrOrServAcnt);
   }
 
-  static isVariableLabel(label, variableLabelPrefix) {
+  static isPrefixedLabel(label, variableLabelPrefix) {
     return _.startsWith(label, variableLabelPrefix);
   }
 

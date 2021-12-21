@@ -109,7 +109,7 @@ class StateNode {
     if (CommonUtil.isDict(obj)) {
       if (!CommonUtil.isEmpty(obj)) {
         for (const key in obj) {
-          if (_.startsWith(key, stateInfoPrefix)) {
+          if (CommonUtil.isPrefixedLabel(key, stateInfoPrefix)) {
             // Skip state properties.
             continue;
           }

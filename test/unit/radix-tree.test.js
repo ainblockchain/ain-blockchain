@@ -4,10 +4,10 @@ const expect = chai.expect;
 const assert = chai.assert;
 const RadixNode = require('../../db/radix-node');
 const StateNode = require('../../db/state-node');
-const { BlockchainParams } = require('../../common/constants');
+const { StateInfoProperties } = require('../../common/constants');
 
 describe("radix-tree", () => {
-  const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
+  const hashDelimiter = StateInfoProperties.HASH_DELIMITER;
 
   describe("initialization", () => {
     it("construct without version", () => {
