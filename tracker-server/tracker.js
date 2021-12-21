@@ -20,7 +20,12 @@ class Tracker {
   setBlockchainNode(peerInfo) {
     peerInfo.location = this.getNodeLocation(peerInfo.networkStatus.urls.ip);
     this.blockchainNodes[peerInfo.address] = peerInfo;
-    logger.info(`Update from node [${abbrAddr(peerInfo.address)}]`);
+    logger.info(`Update from node [${abbrAddr(peerInfo.address)}]\n` +
+    `  - p2pState: ${peerInfo.networkStatus.connectionStatus.p2pState}\n` +
+    `    - incomingPeers: ${JSON.stringify(peerInfo.networkStatus.connectionStatus.incomingPeers)}\n` +
+    `    - outgoingPeers: ${JSON.stringify(peerInfo.networkStatus.connectionStatus.outgoingPeers)}\n` +
+    `  - consensusState: ${peerInfo.consensusStatus.state}\n` +
+    `  - nodeState: ${peerInfo.nodeStatus.state}`);
     logger.debug(`: ${JSON.stringify(peerInfo, null, 2)}`);
   }
 
