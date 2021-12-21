@@ -255,6 +255,9 @@ class CommonUtil {
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
     }
+    if (args.is_merge !== undefined) {
+      options.isMerge = CommonUtil.toBool(args.is_merge);
+    }
     return options;
   }
 
@@ -798,6 +801,21 @@ class CommonUtil {
 
   static getWhitelistFromString(value) {
     return CommonUtil.isWildcard(value) ? value : value.split(',');
+  }
+
+  static countMaxOccurrences(list) {
+    if (!CommonUtil.isArray(list)) {
+      return 0;
+    }
+    let maxOccurrences = 0;
+    const counts = {};
+    for (const item of list) {
+      counts[item] = (counts[item] || 0) + 1;
+      if (maxOccurrences < counts[item]) {
+        maxOccurrences = counts[item];
+      }
+    }
+    return maxOccurrences;
   }
 }
 
