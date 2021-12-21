@@ -816,7 +816,6 @@ describe('Sharding', () => {
           assert.deepEqual(body.code, 0);
           assert.deepEqual(eraseEvalResMatched(body.result), {
             "code": 0,
-            "error_message": "",
             "matched": "erased",
           });
         })
@@ -832,7 +831,6 @@ describe('Sharding', () => {
           assert.deepEqual(body.code, 0);
           assert.deepEqual(eraseEvalResMatched(body.result), {
             "code": 0,
-            "error_message": "",
             "matched": "erased",
           });
         })
@@ -850,7 +848,6 @@ describe('Sharding', () => {
             "code": 0,
             "result": {
               "code": 0,
-              "error_message": "",
               "matched": {
                 "closestOwner": {
                   "config": {
@@ -897,7 +894,6 @@ describe('Sharding', () => {
             "code": 0,
             "result": {
               "code": 0,
-              "error_message": "",
               "matched": {
                 "closestOwner": {
                   "config": {
@@ -1000,7 +996,6 @@ describe('Sharding', () => {
               },
               {
                 "code": 0,
-                "error_message": "",
                 "matched": {
                   "state": {
                     "closestRule": {
@@ -1057,7 +1052,6 @@ describe('Sharding', () => {
               },
               {
                 "code": 0,
-                "error_message": "",
                 "matched": {
                   "closestOwner": {
                     "config": {
@@ -1165,7 +1159,6 @@ describe('Sharding', () => {
               },
               {
                 "code": 0,
-                "error_message": "",
                 "matched": {
                   "state": {
                     "closestRule": {
@@ -1222,7 +1215,6 @@ describe('Sharding', () => {
               },
               {
                 "code": 0,
-                "error_message": "",
                 "matched": {
                   "closestOwner": {
                     "config": {
@@ -1493,7 +1485,6 @@ describe('Sharding', () => {
           .then(res => {
             assert.deepEqual(eraseEvalResMatched(res.result.result), {
               "code": 0,
-              "error_message": "",
               "matched": "erased",
             });
           })
@@ -1509,7 +1500,6 @@ describe('Sharding', () => {
           .then(res => {
             assert.deepEqual(eraseEvalResMatched(res.result.result), {
               "code": 0,
-              "error_message": "",
               "matched": "erased",
             });
           })
@@ -1526,7 +1516,6 @@ describe('Sharding', () => {
           .then(res => {
             assert.deepEqual(res.result.result, {
               "code": 0,
-              "error_message": "",
               "matched": {
                 "closestOwner": {
                   "config": {
@@ -1570,7 +1559,6 @@ describe('Sharding', () => {
           .then(res => {
             assert.deepEqual(res.result.result, {
               "code": 0,
-              "error_message": "",
               "matched": {
                 "closestOwner": {
                   "config": {

@@ -3579,20 +3579,22 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const timestamp = Date.now();
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
+          ref: `${checkoutRequestBasePath}/${serviceUser}/${timestamp}`,
           value: {
             amount: minCheckoutPerRequest - 1,
             recipient: ethAddress,
             fee_rate: checkoutFeeRate,
-          }
+          },
+          timestamp,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkoutRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutRequestBasePath}/${serviceUser}/${timestamp}`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -3609,20 +3611,22 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const timestamp = Date.now();
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
+          ref: `${checkoutRequestBasePath}/${serviceUser}/${timestamp}`,
           value: {
             amount: maxCheckoutPerRequest + 1,
             recipient: ethAddress,
             fee_rate: checkoutFeeRate,
-          }
+          },
+          timestamp,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkoutRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutRequestBasePath}/${serviceUser}/${timestamp}`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -3639,14 +3643,16 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
-        const ref = `/checkout/requests/AIN/${chainId}/${tokenId}/${serviceUser}/0`;
+        const timestamp = Date.now();
+        const ref = `/checkout/requests/AIN/${chainId}/${tokenId}/${serviceUser}/${timestamp}`;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
             amount: checkoutAmount,
             recipient: ethAddress,
             fee_rate: checkoutFeeRate,
-          }
+          },
+          timestamp,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -3670,14 +3676,16 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
-        const ref = `/checkout/requests/${networkName}/1/${tokenId}/${serviceUser}/0`;
+        const timestamp = Date.now();
+        const ref = `/checkout/requests/${networkName}/1/${tokenId}/${serviceUser}/${timestamp}`;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
             amount: checkoutAmount,
             recipient: ethAddress,
             fee_rate: checkoutFeeRate,
-          }
+          },
+          timestamp,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -3701,14 +3709,16 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
-        const ref = `/checkout/requests/${networkName}/${chainId}/0xINVALID_TOKEN_ID/${serviceUser}/0`;
+        const timestamp = Date.now();
+        const ref = `/checkout/requests/${networkName}/${chainId}/0xINVALID_TOKEN_ID/${serviceUser}/${timestamp}`;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref,
           value: {
             amount: checkoutAmount,
             recipient: ethAddress,
             fee_rate: checkoutFeeRate,
-          }
+          },
+          timestamp,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -3732,20 +3742,22 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const timestamp = Date.now();
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
+          ref: `${checkoutRequestBasePath}/${serviceUser}/${timestamp}`,
           value: {
             amount: checkoutAmount,
             recipient: ethAddress.toLowerCase(),
             fee_rate: checkoutFeeRate,
-          }
+          },
+          timestamp,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkoutRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutRequestBasePath}/${serviceUser}/${timestamp}`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -3762,20 +3774,22 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const timestamp = Date.now();
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
+          ref: `${checkoutRequestBasePath}/${serviceUser}/${timestamp}`,
           value: {
             amount: beforeBalance + 1,
             recipient: ethAddress,
             fee_rate: checkoutFeeRate,
-          }
+          },
+          timestamp,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkoutRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutRequestBasePath}/${serviceUser}/${timestamp}`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -3792,14 +3806,15 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const timestamp = 1628255843548;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkoutRequestBasePath}/${serviceUser}/0`,
+          ref: `${checkoutRequestBasePath}/${serviceUser}/${timestamp}`,
           value: {
             amount: checkoutAmount,
             recipient: ethAddress,
             fee_rate: checkoutFeeRate,
           },
-          timestamp: 1628255843548
+          timestamp,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -3889,8 +3904,9 @@ describe('Native Function', () => {
       });
 
       it('cannot close checkout with a non-authorized address', async () => {
+        const timestamp = 1628255843548;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkoutHistoryBasePath}/${serviceUser}/0`,
+          ref: `${checkoutHistoryBasePath}/${serviceUser}/${timestamp}`,
           value: {
             request: {
               amount: checkoutAmount,
@@ -3907,7 +3923,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkoutHistory = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/${timestamp}`).body.toString('utf-8')).result;
         expect(checkoutHistory).to.equal(null);
       });
 
@@ -3915,7 +3931,7 @@ describe('Native Function', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `${checkoutHistoryBasePath}/${serviceUser}/0`,
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/1628255843548`,
             value: {
               request: {
                 amount: checkoutAmount,
@@ -3964,7 +3980,7 @@ describe('Native Function', () => {
                   }
                 },
                 "2": {
-                  "path": "/checkout/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
+                  "path": "/checkout/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548",
                   "result": {
                     "bandwidth_gas_amount": 1,
                     "code": 0,
@@ -4034,13 +4050,15 @@ describe('Native Function', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
             .body.toString('utf-8')).result || 0;
+        const timestamp = 1628255843549;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkoutRequestBasePath}/${serviceUser}/1`,
+          ref: `${checkoutRequestBasePath}/${serviceUser}/${timestamp}`,
           value: {
             amount: checkoutAmount,
             recipient: ethAddress,
             fee_rate: checkoutFeeRate,
-          }
+          },
+          timestamp,
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(0);
         if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
@@ -4060,7 +4078,7 @@ describe('Native Function', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `${checkoutHistoryBasePath}/${serviceUser}/1`,
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/${timestamp}`,
             value: {
               request: {
                 amount: checkoutAmount,
@@ -4074,7 +4092,7 @@ describe('Native Function', () => {
               }
             }
           },
-          timestamp: 1628255843548,
+          timestamp: 1628255843550,
           nonce: -1
         };
         const signature =
@@ -4096,7 +4114,7 @@ describe('Native Function', () => {
             "_closeCheckout": {
               "op_results": {
                 "0": {
-                  "path": "/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548/value",
+                  "path": "/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843550/value",
                   "result": {
                     "func_results": {
                       "_transfer": {
@@ -4125,14 +4143,14 @@ describe('Native Function', () => {
                   }
                 },
                 "1": {
-                  "path": "/checkout/refunds/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
+                  "path": "/checkout/refunds/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843549",
                   "result": {
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
                 },
                 "2": {
-                  "path": "/checkout/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
+                  "path": "/checkout/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843549",
                   "result": {
                     "func_results": {
                       "_openCheckout": {
@@ -4177,9 +4195,9 @@ describe('Native Function', () => {
           "gas_cost_total": 0
         });
         const refund = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkoutRefundsBasePath}/${serviceUser}/1`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkoutRefundsBasePath}/${serviceUser}/${timestamp}`).body.toString('utf-8')).result;
         assert.deepEqual(refund,
-            '/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548');
+            '/transfer/0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843550');
         const refundTransfer = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${refund}`).body.toString('utf-8')).result;
         assert.deepEqual(refundTransfer, { "value": amountPlusFee });
@@ -4241,8 +4259,8 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
-        const ref = `${checkinRequestBasePath}/${serviceUser}/0`;
         const timestamp = Date.now();
+        const ref = `${checkinRequestBasePath}/${serviceUser}/${timestamp}`;
         const senderProofBody = {
           ref,
           amount: 0,
@@ -4266,7 +4284,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkinequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/${timestamp}`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -4283,8 +4301,8 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
-        const ref = `/checkin/requests/AIN/${chainId}/${tokenId}/${serviceUser}/0`;
         const timestamp = Date.now();
+        const ref = `/checkin/requests/AIN/${chainId}/${tokenId}/${serviceUser}/${timestamp}`;
         const senderProofBody = {
           ref,
           amount: checkinAmount,
@@ -4325,8 +4343,8 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
-        const ref = `/checkin/requests/${networkName}/1/${tokenId}/${serviceUser}/0`;
         const timestamp = Date.now();
+        const ref = `/checkin/requests/${networkName}/1/${tokenId}/${serviceUser}/${timestamp}`;
         const senderProofBody = {
           ref,
           amount: checkinAmount,
@@ -4365,8 +4383,8 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
-        const ref = `/checkin/requests/${networkName}/${chainId}/0xINVALID_TOKEN_ID/${serviceUser}/0`;
         const timestamp = Date.now();
+        const ref = `/checkin/requests/${networkName}/${chainId}/0xINVALID_TOKEN_ID/${serviceUser}/${timestamp}`;
         const senderProofBody = {
           ref,
           amount: checkinAmount,
@@ -4407,8 +4425,8 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
-        const ref = `${checkinRequestBasePath}/${serviceUser}/0`;
         const timestamp = Date.now();
+        const ref = `${checkinRequestBasePath}/${serviceUser}/${timestamp}`;
         const senderProofBody = {
           ref,
           amount: checkinAmount,
@@ -4432,7 +4450,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkinRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${ref}`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -4449,8 +4467,8 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
-        const ref = `${checkinRequestBasePath}/${serviceUser}/0`;
         const timestamp = 1628255843548;
+        const ref = `${checkinRequestBasePath}/${serviceUser}/${timestamp}`;
         const senderProofBody = {
           ref,
           amount: checkinAmount,
@@ -4536,8 +4554,8 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
-        const ref = `${checkinRequestBasePath}/${serviceUser}/1`;
         const timestamp = Date.now();
+        const ref = `${checkinRequestBasePath}/${serviceUser}/${timestamp}`;
         const senderProofBody = {
           ref,
           amount: checkinAmount,
@@ -4561,7 +4579,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkinRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/1`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${ref}`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -4578,9 +4596,9 @@ describe('Native Function', () => {
             .body.toString('utf-8')).result;
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
-        const ref = `${checkinRequestBasePath}/${serviceUser}/1`;
-        const amount = beforeTokenPoolBalance - checkinAmount + 1;
         const timestamp = Date.now();
+        const ref = `${checkinRequestBasePath}/${serviceUser}/${timestamp}`;
+        const amount = beforeTokenPoolBalance - checkinAmount + 1;
         const senderProofBody = {
           ref,
           amount,
@@ -4604,7 +4622,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkinRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/1`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${ref}`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -4617,9 +4635,9 @@ describe('Native Function', () => {
 
       it('cannot close checkin with a non-authorized address', async () => {
         const request = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/1628255843548`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkinHistoryBasePath}/${serviceUser}/0`,
+          ref: `${checkinHistoryBasePath}/${serviceUser}/1628255843548`,
           value: {
             request,
             response: {
@@ -4632,7 +4650,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkinHistory = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkinHistoryBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkinHistoryBasePath}/${serviceUser}/1628255843548`).body.toString('utf-8')).result;
         expect(checkinHistory).to.equal(null);
       });
 
@@ -4644,11 +4662,11 @@ describe('Native Function', () => {
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const timestamp = Date.now();
         const request = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/0`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/1628255843548`).body.toString('utf-8')).result;
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `${checkinHistoryBasePath}/${serviceUser}/0`,
+            ref: `${checkinHistoryBasePath}/${serviceUser}/1628255843548`,
             value: {
               request,
               response: {
@@ -4728,7 +4746,7 @@ describe('Native Function', () => {
                   }
                 },
                 "3": {
-                  "path": "/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/0",
+                  "path": "/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843548",
                   "result": {
                     "func_results": {
                       "_openCheckin": {
@@ -4800,8 +4818,8 @@ describe('Native Function', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
             .body.toString('utf-8')).result || 0;
-        const ref = `${checkinRequestBasePath}/${serviceUser}/1`;
-        const timestamp = Date.now();
+        const timestamp = 1628255843549;
+        const ref = `${checkinRequestBasePath}/${serviceUser}/${timestamp}`;
         const senderProofBody = {
           ref,
           amount: checkinAmount,
@@ -4816,7 +4834,7 @@ describe('Native Function', () => {
           sender_proof: senderProof,
         };
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkinRequestBasePath}/${serviceUser}/1`,
+          ref,
           value: request,
           timestamp,
           nonce: -1,
@@ -4830,7 +4848,7 @@ describe('Native Function', () => {
         const txBody = {
           operation: {
             type: 'SET_VALUE',
-            ref: `${checkinHistoryBasePath}/${serviceUser}/1`,
+            ref: `${checkinHistoryBasePath}/${serviceUser}/${timestamp}`,
             value: {
               request,
               response: {
@@ -4868,7 +4886,7 @@ describe('Native Function', () => {
             "_closeCheckin": {
               "op_results": {
                 "0": {
-                  "path": "/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1",
+                  "path": "/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/1628255843549",
                   "result": {
                     "func_results": {
                       "_openCheckin": {
@@ -4940,7 +4958,7 @@ describe('Native Function', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
-          ref: `${checkinRequestBasePath}/${serviceUser}/1`,
+          ref: `${checkinRequestBasePath}/${serviceUser}/1628255843549`,
           value: null
         }}).body.toString('utf-8'));
         expect(body.code).to.equal(40001);
@@ -4948,7 +4966,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
         const checkinRequest = parseOrLog(syncRequest('GET',
-            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/1`).body.toString('utf-8')).result;
+            server2 + `/get_value?ref=${checkinRequestBasePath}/${serviceUser}/1628255843549`).body.toString('utf-8')).result;
         const afterRequestUserBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
         const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
@@ -4967,8 +4985,8 @@ describe('Native Function', () => {
         const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
             .body.toString('utf-8')).result || 0;
-        const ref = `${checkinRequestBasePath}/${serviceUser}/2`;
         const timestamp = Date.now();
+        const ref = `${checkinRequestBasePath}/${serviceUser}/${timestamp}`;
         const senderProofBody = {
           ref,
           amount: checkinAmount,
