@@ -3,7 +3,7 @@ const {
   TrafficEventTypes,
   trafficStatsManager,
 } = require('../common/constants');
-const JsonRpcUtil = require('./util');
+const JsonRpcUtil = require('./json-rpc-util');
 
 module.exports = function getNetworkApis(node, p2pServer) {
   return {

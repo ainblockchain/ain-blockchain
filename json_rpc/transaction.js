@@ -1,5 +1,5 @@
 const sizeof = require('object-sizeof');
-const JsonRpcUtil = require('./util');
+const JsonRpcUtil = require('./json-rpc-util');
 const {
   TrafficEventTypes,
   trafficStatsManager,

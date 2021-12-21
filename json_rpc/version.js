@@ -5,7 +5,7 @@ const {
   trafficStatsManager,
 } = require('../common/constants');
 const { JsonRpcApiResultCode } = require('../common/result-code');
-const JsonRpcUtil = require('./util');
+const JsonRpcUtil = require('./json-rpc-util');
 
 module.exports = function getVersionApis(minProtocolVersion, maxProtocolVersion) {
   return {
