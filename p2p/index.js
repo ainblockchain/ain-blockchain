@@ -358,9 +358,15 @@ class P2pClient {
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach((node) => {
-      node.socket.send(stringPayload);
-    });
+    if (DevFlags.enableTxBroadcastLimit) {
+      _.shuffle(Object.values(this.outbound)).slice(0, 2).forEach((node) => {
+        node.socket.send(stringPayload);
+      });
+    } else {
+      Object.values(this.outbound).forEach((node) => {
+        node.socket.send(stringPayload);
+      });
+    }
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
 
@@ -631,6 +637,7 @@ class P2pClient {
    * http(s)://xxx.xxx.xxx.xxx/json-rpc
    */
   async connectWithPeerCandidateUrl(peerCandidateJsonRpcUrl) {
+    const LOG_HEADER = 'connectWithPeerCandidateUrl';
     const myP2pUrl = _.get(this.server.urls, 'p2p.url', '');
     const myJsonRpcUrl = _.get(this.server.urls, 'jsonRpc.url', '');
     if (!peerCandidateJsonRpcUrl || peerCandidateJsonRpcUrl === '' ||
@@ -675,6 +682,7 @@ class P2pClient {
       // NOTE(minsulee2): Add a peer candidate up on the list if it is not connected.
       newPeerP2pUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
     }
+    logger.info(`[${LOG_HEADER}] Try to connect(${JSON.stringify(newPeerP2pUrlListWithoutMyUrl)})`);
     this.connectWithPeerUrlList(_.shuffle(newPeerP2pUrlListWithoutMyUrl));
   }
 

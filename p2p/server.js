@@ -70,11 +70,11 @@ class P2pServer {
   }
 
   async listen() {
-    this.wsServer = new Websocket.Server({
-      port: NodeConfigs.P2P_PORT,
+    const wsOptions = { port: NodeConfigs.P2P_PORT };
+    if (DevFlags.enableWsCompression) {
       // Enables server-side compression. For option details, see
       // https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback
-      perMessageDeflate: {
+      wsOptions.perMessageDeflate = {
         zlibDeflateOptions: {
           // See zlib defaults.
           chunkSize: 1024,
@@ -91,8 +91,9 @@ class P2pServer {
         // Below options specified as default values.
         concurrencyLimit: 10, // Limits zlib concurrency for perf.
         threshold: 1024 // Size (in bytes) below which messages should not be compressed.
-      }
-    });
+      };
+    }
+    this.wsServer = new Websocket.Server(wsOptions);
     // Set the number of maximum clients.
     this.wsServer.setMaxListeners(NodeConfigs.MAX_NUM_INBOUND_CONNECTION);
     this.wsServer.on('connection', (socket) => {
