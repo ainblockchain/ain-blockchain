@@ -114,6 +114,7 @@ class P2pServer {
     this.urls = this.initUrls();
   }
 
+  // NOTE(minsulee2): This builds the URL using a client socket in the server side.
   buildRemoteUrlFromSocket(socket) {
     return `${socket._socket.remoteAddress}:${socket._socket.remotePort}`;
   }
