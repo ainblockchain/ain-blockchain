@@ -123,6 +123,14 @@ function checkPeerWhitelist(address) {
       NodeConfigs.PEER_WHITELIST.includes(address));
 }
 
+function addPeerConnection(peerConnectionsInProgress, url) {
+  peerConnectionsInProgress.set(url, true);
+}
+
+function removePeerConnection(peerConnectionsInProgress, url) {
+  peerConnectionsInProgress.delete(url);
+}
+
 module.exports = {
   getAddressFromSocket,
   removeSocketConnectionIfExists,
@@ -132,5 +140,7 @@ module.exports = {
   closeSocketSafe,
   checkTimestamp,
   encapsulateMessage,
-  checkPeerWhitelist
+  checkPeerWhitelist,
+  addPeerConnection,
+  removePeerConnection
 };
