@@ -99,9 +99,28 @@ class Functions {
         accountRegistrationGasAmount, restFunctionCallGasAmount);
     const subtreeFuncRes = {};
     for (const subtreeConfig of matchedFunction.subtreeFunctions) {
+      const matchedPrevValues =
+          Functions.matchValueWithFunctionPath(prevValue, subtreeConfig.path);
       const matchedValues = Functions.matchValueWithFunctionPath(value, subtreeConfig.path);
       const subtreeFuncPathRes = {};
-      // Step 1: Trigger functions with matched values.
+      // Step 1: (implicit deletion) Trigger functions with matched prev values being deleted.
+      for (const pathKey of Object.keys(matchedPrevValues)) {
+        if (matchedValues[pathKey] === undefined) {  // For only paths of values being deleted.
+          const matchedPrevValue = matchedPrevValues[pathKey];
+          const subtreeFuncPath = [...matchedFunction.matchedFunction.path, ...subtreeConfig.path];
+          const pathVars = Object.assign({}, matchedFunction.pathVars, matchedPrevValue.pathVars);
+          const subtreeValuePath = [...parsedValuePath, ...matchedPrevValue.path];
+          const subtreeValue = null;  // Trigger with value = null.
+          const substreePrevValue = matchedPrevValue.value;
+          const subtreeValuePathRes = this.triggerFunctions(
+              subtreeFuncPath, pathVars, subtreeConfig.config,
+              subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
+              transaction, blockNumber, blockTime,
+              accountRegistrationGasAmount, restFunctionCallGasAmount);
+          subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
+        }
+      }
+      // Step 2: Trigger functions with matched values.
       for (const pathKey of Object.keys(matchedValues)) {
         const matchedValue = matchedValues[pathKey];
         const subtreeFuncPath = [...matchedFunction.matchedFunction.path, ...subtreeConfig.path];
@@ -118,25 +137,6 @@ class Functions {
             transaction, blockNumber, blockTime,
             accountRegistrationGasAmount, restFunctionCallGasAmount);
         subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
-      }
-      // Step 2: (implicit deletion) Trigger functions with matched prev values being deleted.
-      const matchedPrevValues =
-          Functions.matchValueWithFunctionPath(prevValue, subtreeConfig.path);
-      for (const pathKey of Object.keys(matchedPrevValues)) {
-        if (matchedValues[pathKey] === undefined) {  // For only paths of values being deleted.
-          const matchedPrevValue = matchedPrevValues[pathKey];
-          const subtreeFuncPath = [...matchedFunction.matchedFunction.path, ...subtreeConfig.path];
-          const pathVars = Object.assign({}, matchedFunction.pathVars, matchedPrevValue.pathVars);
-          const subtreeValuePath = [...parsedValuePath, ...matchedPrevValue.path];
-          const subtreeValue = null;  // Trigger with value = null.
-          const substreePrevValue = matchedPrevValue.value;
-          const subtreeValuePathRes = this.triggerFunctions(
-              subtreeFuncPath, pathVars, subtreeConfig.config,
-              subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
-              transaction, blockNumber, blockTime,
-              accountRegistrationGasAmount, restFunctionCallGasAmount);
-          subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
-        }
       }
       subtreeFuncRes[CommonUtil.formatPath(subtreeConfig.path)] = subtreeFuncPathRes;
     }
