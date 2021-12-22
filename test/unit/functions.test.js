@@ -267,12 +267,13 @@ describe("Functions", () => {
       })
 
       it("REST function with non-variable path", () => {
-        const transaction = {
+        const value = 'value';
+        const tx = {
           "tx_body": {
             "operation": {
               "ref": refPathRest,
               "type": "SET_VALUE",
-              "value": 1000
+              "value": value,
             },
             "nonce": 123,
             "timestamp": 1566736760322,
@@ -288,7 +289,8 @@ describe("Functions", () => {
           subtree_func_results: subtreeFuncResults,
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathRest), null, null, null, null, transaction, 0, 0,
+            CommonUtil.parsePath(refPathRest), value, "prev value", { addr: 'abcd' },
+            1234567890000, tx, 1000, 1234567890999,
             accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "0x00001": {
@@ -305,11 +307,12 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBodyAinetwork, {
             "auth": {
+              "addr": "abcd",
               "fid": "0x00001",
               "fids": [],
             },
-            "blockNumber": 0,
-            "blockTime": 0,
+            "blockNumber": 1000,
+            "blockTime": 1234567890999,
             "executedAt": 1566736760324,
             "fid": "0x00001",
             "function": {
@@ -326,8 +329,8 @@ describe("Functions", () => {
               "rest",
             ],
             "params": {},
-            "prevValue": null,
-            "timestamp": null,
+            "prevValue": "prev value",
+            "timestamp": 1234567890000,
             "transaction": {
               "extra": {
                 "created_at": 1566736760323,
@@ -339,12 +342,12 @@ describe("Functions", () => {
                 "operation": {
                   "ref": "/apps/test/test_function/some/path/rest",
                   "type": "SET_VALUE",
-                  "value": 1000,
+                  "value": "value",
                 },
                 "timestamp": 1566736760322,
               }
             },
-            "value": null,
+            "value": "value",
             "valuePath": [
               "apps",
               "test",
@@ -358,12 +361,13 @@ describe("Functions", () => {
       })
 
       it("REST function with variable path", () => {
-        const transaction = {
+        const value = 'value';
+        const tx = {
           "tx_body": {
             "operation": {
               "ref": refPathRestVarPath,
               "type": "SET_VALUE",
-              "value": 1000
+              "value": value,
             },
             "nonce": 123,
             "timestamp": 1566736760322,
@@ -379,7 +383,8 @@ describe("Functions", () => {
           subtree_func_results: subtreeFuncResults,
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathRestVarPath), null, null, null, null, transaction, 0, 0,
+            CommonUtil.parsePath(refPathRestVarPath), value, "prev value", { addr: 'abcd' },
+            1234567890000, tx, 1000, 1234567890999,
             accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "0x10001": {
@@ -396,11 +401,12 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBodyAinetwork, {
             "auth": {
+              "addr": "abcd",
               "fid": "0x10001",
               "fids": [],
             },
-            "blockNumber": 0,
-            "blockTime": 0,
+            "blockNumber": 1000,
+            "blockTime": 1234567890999,
             "executedAt": 1566736760324,
             "fid": "0x10001",
             "function": {
@@ -417,10 +423,10 @@ describe("Functions", () => {
               "rest",
             ],
             "params": {
-              "var_path": "arbitrary",
+              "var_path": "arbitrary"
             },
-            "prevValue": null,
-            "timestamp": null,
+            "prevValue": "prev value",
+            "timestamp": 1234567890000,
             "transaction": {
               "extra": {
                 "created_at": 1566736760323,
@@ -432,12 +438,12 @@ describe("Functions", () => {
                 "operation": {
                   "ref": "/apps/test/test_function/some/arbitrary/rest",
                   "type": "SET_VALUE",
-                  "value": 1000,
+                  "value": "value",
                 },
                 "timestamp": 1566736760322,
               }
             },
-            "value": null,
+            "value": "value",
             "valuePath": [
               "apps",
               "test",
@@ -451,12 +457,13 @@ describe("Functions", () => {
       })
 
       it("REST function multi", () => {
-        const transaction = {
+        const value = 'value';
+        const tx = {
           "tx_body": {
             "operation": {
               "ref": refPathRestMulti,
               "type": "SET_VALUE",
-              "value": 1000
+              "value": value,
             },
             "nonce": 123,
             "timestamp": 1566736760322,
@@ -472,7 +479,8 @@ describe("Functions", () => {
           subtree_func_results: subtreeFuncResults,
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathRestMulti), null, null, null, null, transaction, 0, 0,
+            CommonUtil.parsePath(refPathRestMulti), value, "prev value", { addr: 'abcd' },
+            1234567890000, tx, 1000, 1234567890999,
             accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "0x20001": {
@@ -493,11 +501,12 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBodyAinetwork, {
             "auth": {
+              "addr": "abcd",
               "fid": "0x20001",
               "fids": [],
             },
-            "blockNumber": 0,
-            "blockTime": 0,
+            "blockNumber": 1000,
+            "blockTime": 1234567890999,
             "executedAt": 1566736760324,
             "fid": "0x20001",
             "function": {
@@ -514,8 +523,8 @@ describe("Functions", () => {
               "rest_multi",
             ],
             "params": {},
-            "prevValue": null,
-            "timestamp": null,
+            "prevValue": "prev value",
+            "timestamp": 1234567890000,
             "transaction": {
               "extra": {
                 "created_at": 1566736760323,
@@ -527,12 +536,12 @@ describe("Functions", () => {
                 "operation": {
                   "ref": "/apps/test/test_function/some/path/rest_multi",
                   "type": "SET_VALUE",
-                  "value": 1000,
+                  "value": "value",
                 },
                 "timestamp": 1566736760322,
               }
             },
-            "value": null,
+            "value": "value",
             "valuePath": [
               "apps",
               "test",
@@ -544,11 +553,12 @@ describe("Functions", () => {
           });
           assert.deepEqual(requestBodyAinize, {
             "auth": {
+              "addr": "abcd",
               "fid": "0x20002",
               "fids": [],
             },
-            "blockNumber": 0,
-            "blockTime": 0,
+            "blockNumber": 1000,
+            "blockTime": 1234567890999,
             "executedAt": 1566736760324,
             "fid": "0x20002",
             "function": {
@@ -565,8 +575,8 @@ describe("Functions", () => {
               "rest_multi",
             ],
             "params": {},
-            "prevValue": null,
-            "timestamp": null,
+            "prevValue": "prev value",
+            "timestamp": 1234567890000,
             "transaction": {
               "extra": {
                 "created_at": 1566736760323,
@@ -578,12 +588,12 @@ describe("Functions", () => {
                 "operation": {
                   "ref": "/apps/test/test_function/some/path/rest_multi",
                   "type": "SET_VALUE",
-                  "value": 1000,
+                  "value": "value",
                 },
                 "timestamp": 1566736760322,
               }
             },
-            "value": null,
+            "value": "value",
             "valuePath": [
               "apps",
               "test",
@@ -596,7 +606,8 @@ describe("Functions", () => {
         });
       })
 
-      it("REST function with subtree", () => {
+      it("REST function with subtree and prevValue = null", () => {
+        const prevValue = null;
         const value = {
           "deep": {
             "path": {
@@ -612,7 +623,7 @@ describe("Functions", () => {
             }
           }
         };
-        const transaction = {
+        const tx = {
           "tx_body": {
             "operation": {
               "ref": refPathRestWithSubtree,
@@ -633,8 +644,8 @@ describe("Functions", () => {
           subtree_func_results: subtreeFuncResults,
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathRestWithSubtree), value, "prev value", { addr: 'abcd' },
-            1234567890000, transaction, 1000, 1234567890999,
+            CommonUtil.parsePath(refPathRestWithSubtree), value, prevValue, { addr: 'abcd' },
+            1234567890000, tx, 1000, 1234567890999,
             accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "0x30001": {
@@ -722,7 +733,7 @@ describe("Functions", () => {
               "rest_with_subtree",
             ],
             "params": {},
-            "prevValue": "prev value",
+            "prevValue": null,
             "timestamp": 1234567890000,
             "transaction": {
               "extra": {
@@ -802,7 +813,7 @@ describe("Functions", () => {
               "rest_with_subtree",
             ],
             "params": {},
-            "prevValue": "prev value",
+            "prevValue": null,
             "timestamp": 1234567890000,
             "transaction": {
               "extra": {
@@ -886,7 +897,7 @@ describe("Functions", () => {
             "params": {
               "var_path": "other_path"
             },
-            "prevValue": "prev value",
+            "prevValue": null,
             "timestamp": 1234567890000,
             "transaction": {
               "extra": {
@@ -960,7 +971,7 @@ describe("Functions", () => {
             "params": {
               "var_path": "other_path"
             },
-            "prevValue": "prev value",
+            "prevValue": null,
             "timestamp": 1234567890000,
             "transaction": {
               "extra": {
@@ -1034,7 +1045,7 @@ describe("Functions", () => {
               "path",
             ],
             "params": {},
-            "prevValue": "prev value",
+            "prevValue": null,
             "timestamp": 1234567890000,
             "transaction": {
               "extra": {
@@ -1106,7 +1117,7 @@ describe("Functions", () => {
               "path",
             ],
             "params": {},
-            "prevValue": "prev value",
+            "prevValue": null,
             "timestamp": 1234567890000,
             "transaction": {
               "extra": {
@@ -1156,12 +1167,13 @@ describe("Functions", () => {
       })
 
       it("REST function without listener", () => {
-        const transaction = {
+        const value = 'value';
+        const tx = {
           "tx_body": {
             "operation": {
               "ref": refPathRestWithoutListener,
               "type": "SET_VALUE",
-              "value": 1000
+              "value": value,
             },
             "nonce": 123,
             "timestamp": 1566736760322,
@@ -1173,8 +1185,9 @@ describe("Functions", () => {
           }
         }
         const { promise_results } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathRestWithoutListener), null, null, null, null, transaction,
-            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            CommonUtil.parsePath(refPathRestWithoutListener), value, "prev value", { addr: 'abcd' },
+            1234567890000, tx, 1000, 1234567890999,
+            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -1185,7 +1198,8 @@ describe("Functions", () => {
       })
 
       it("REST function NOT whitelisted", () => {
-        const transaction = {
+        const value = 'value';
+        const tx = {
           "tx_body": {
             "operation": {
               "ref": refPathRestNotWhitelisted,
@@ -1202,8 +1216,9 @@ describe("Functions", () => {
           }
         }
         const { promise_results } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathRestNotWhitelisted), null, null, null, null, transaction,
-            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            CommonUtil.parsePath(refPathRestNotWhitelisted), value, "prev value", { addr: 'abcd' },
+            1234567890000, tx, 1000, 1234567890999,
+            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -1214,6 +1229,8 @@ describe("Functions", () => {
       })
 
       it('REST function newly whitelisted', () => {
+        const value = 'value';
+
         node.db.setValuesForTesting(refPathFunctionUrlWhitelist, 'http://localhost:5000');
         node.db.setFunction(refPathRestNewlyWhitelisted, {
           ".function": {
@@ -1224,12 +1241,12 @@ describe("Functions", () => {
             }
           }
         }, { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' });
-        const transaction = {
+        const tx = {
           "tx_body": {
             "operation": {
               "ref": refPathRestNewlyWhitelisted,
               "type": "SET_VALUE",
-              "value": 1000
+              "value": value,
             },
             "nonce": 123,
             "timestamp": 1566736760322,
@@ -1241,8 +1258,9 @@ describe("Functions", () => {
           }
         }
         const { promise_results } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathRestNewlyWhitelisted), null, null, null, null, transaction,
-            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            CommonUtil.parsePath(refPathRestNewlyWhitelisted),
+            value, "prev value", { addr: 'abcd' }, 1234567890000, tx, 1000, 1234567890999,
+            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -1253,14 +1271,16 @@ describe("Functions", () => {
       });
 
       it('REST function newly de-whitelisted', () => {
+        const value = 'value';
+
         // delete function from the whitelist
         node.db.setValuesForTesting(refPathFunctionUrlWhitelist, null);
-        const transaction = {
+        const tx = {
           "tx_body": {
             "operation": {
               "ref": refPathRestNewlyWhitelisted,
               "type": "SET_VALUE",
-              "value": 1000
+              "value": value,
             },
             "nonce": 123,
             "timestamp": 1566736760322,
@@ -1272,8 +1292,9 @@ describe("Functions", () => {
           }
         }
         const { promise_results } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathRestNewlyWhitelisted), null, null, null, null, transaction,
-            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            CommonUtil.parsePath(refPathRestNewlyWhitelisted),
+            value, "prev value", { addr: 'abcd' }, 1234567890000, tx, 1000, 1234567890999,
+            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -1284,12 +1305,13 @@ describe("Functions", () => {
       });
 
       it("null function", () => {
-        const transaction = {
+        const value = 'value';
+        const tx = {
           "tx_body": {
             "operation": {
               "ref": refPathNull,
               "type": "SET_VALUE",
-              "value": 1000
+              "value": value,
             },
             "nonce": 123,
             "timestamp": 1566736760322,
@@ -1301,7 +1323,8 @@ describe("Functions", () => {
           }
         }
         const { promise_results } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathNull), null, null, null, null, transaction, 0, 0,
+            CommonUtil.parsePath(refPathNull),
+            value, "prev value", { addr: 'abcd' }, 1234567890000, tx, 1000, 1234567890999,
             accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
@@ -1345,11 +1368,12 @@ describe("Functions", () => {
       })
 
       it("Native function (_transfer) with account registration", () => {
+        const value = 10;
         const txBody = {
           "operation": {
             "ref": refPathTransfer,
             "type": "SET_VALUE",
-            "value": 10
+            "value": value, 
           },
           "nonce": -1,
           "timestamp": 1566736760322,
@@ -1362,9 +1386,9 @@ describe("Functions", () => {
           subtree_func_results: subtreeFuncResults,
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathTransfer), 10, null,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
-            tx, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            CommonUtil.parsePath(refPathTransfer), value, null,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322, tx,
+            1000, 1234567890999, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "_transfer": {
             "op_results": {
@@ -1398,11 +1422,12 @@ describe("Functions", () => {
       });
 
       it("Native function (_transfer) without account registration", () => {
+        const value = 10;
         const txBody = {
           "operation": {
             "ref": refPathTransfer,
             "type": "SET_VALUE",
-            "value": 10
+            "value": value,
           },
           "nonce": -1,
           "timestamp": 1566736760322,
@@ -1415,9 +1440,9 @@ describe("Functions", () => {
           subtree_func_results: subtreeFuncResults,
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathTransfer), 10, null,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
-            tx, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            CommonUtil.parsePath(refPathTransfer), value, null,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322, tx,
+            1000, 1234567890999, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "_transfer": {
             "op_results": {
@@ -1451,12 +1476,13 @@ describe("Functions", () => {
       });
 
       it("REST function with external RPC call", () => {
-        const transaction = {
+        const value = 'value';
+        const tx = {
           "tx_body": {
             "operation": {
               "ref": refPathRestGas,
               "type": "SET_VALUE",
-              "value": 1000
+              "value": value,
             },
             "nonce": 123,
             "timestamp": 1566736760322,
@@ -1472,8 +1498,9 @@ describe("Functions", () => {
           subtree_func_results: subtreeFuncResults,
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathRestGas), null, null, null, null, transaction, 0, 0,
-            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            CommonUtil.parsePath(refPathRestGas), value, null,
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322, tx,
+            1000, 1234567890999, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "0x90001": {
             "code": 0,
@@ -1654,5 +1681,73 @@ describe("Functions", () => {
         '$var_path2'
       ]), []);
     })
+  });
+
+  describe("matchValueWithValuePath", () => {
+    const value = {
+      some: {
+        value: 'some value',
+        path: {
+          to: 'some path to value'
+        },
+        other_path: {
+          to: 'some other_path to value'
+        },
+        deep: {
+          path: {
+            to: "some deep path to value"
+          },
+          deeper: {
+            path: {
+              to: "some deep deeper path to value"
+            },
+            other_path: {
+              to: 'some deep deeper other_path to value'
+            }
+          }
+        }
+      }
+    };
+
+    it("with matching path", () => {
+      assert.deepEqual(Functions.matchValueWithValuePath(value, [
+        'some',
+        'value',
+      ]), "some value");
+      assert.deepEqual(Functions.matchValueWithValuePath(value, [
+        'some',
+        'path',
+      ]), {
+        "to": "some path to value"
+      });
+      assert.deepEqual(Functions.matchValueWithValuePath(value, [
+        'some',
+        'deep',
+        'deeper',
+      ]), {
+        "other_path": {
+          "to": "some deep deeper other_path to value"
+        },
+        "path": {
+          "to": "some deep deeper path to value"
+        }
+      });
+    });
+
+    it("with non-matching path", () => {
+      assert.deepEqual(Functions.matchValueWithValuePath(value, [
+        'non_matching',
+      ]), null);
+      assert.deepEqual(Functions.matchValueWithValuePath(value, [
+        'some',
+        'non_matching',
+        'to',
+      ]), null);
+      assert.deepEqual(Functions.matchValueWithValuePath(value, [
+        'some',
+        'deep',
+        'non_matching',
+      ]), null);
+    });
   });
 })
