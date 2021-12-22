@@ -44,9 +44,14 @@ describe("Functions", () => {
       const refPathNull = "/apps/test/test_function/some/path/null";
       const refPathFunctionUrlWhitelist = '/developers/rest_functions/url_whitelist/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0';
       const refPathRestNewlyWhitelisted = '/apps/test/test_function/some/path/rest_newly_whitelisted';
-      let requestBody1 = null;
-      let requestBody2 = null;
-      let requestBody3 = null;
+      let requestBodyAinetwork = null;
+      let requestBodyAinetwork2 = null;
+      let requestBodyAinize = null;
+      let requestBodyAinize2 = null;
+      let requestBodyAinize3 = null;
+      let requestBodyAinize4 = null;
+      let requestBodyAfan = null;
+      let requestBodyAfan2 = null;
 
       before(() => {
         const restFunctionNonVarPath = {
@@ -87,24 +92,55 @@ describe("Functions", () => {
               "function_type": "REST",
               "function_url": "https://events.ainetwork.ai/trigger",
               "function_id": "0x30001"
+            },
+            "0x30002": {
+              "function_type": "REST",
+              "function_url": "https://events2.ainetwork.ai/trigger",
+              "function_id": "0x30002"
             }
           },
-          "deeper": {
+          "deep": {
             "$var_path": {
               ".function": {
-                "0x30002": {
+                "0x30101": {
                   "function_type": "REST",
                   "function_url": "https://events.ainize.ai/trigger",
-                  "function_id": "0x30002"
+                  "function_id": "0x30101"
+                },
+                "0x30102": {
+                  "function_type": "REST",
+                  "function_url": "https://events2.ainize.ai/trigger",
+                  "function_id": "0x30102"
+                }
+              },
+              "to": {
+                "$var_path2": {
+                  ".function": {
+                    "0x30301": {
+                      "function_type": "REST",
+                      "function_url": "https://events3.ainize.ai/trigger",
+                      "function_id": "0x30301"
+                    },
+                    "0x30302": {
+                      "function_type": "REST",
+                      "function_url": "https://events4.ainize.ai/trigger",
+                      "function_id": "0x30302"
+                    }
+                  }
                 }
               }
             },
             "path": {
               ".function": {
-                "0x30003": {
+                "0x30201": {
                   "function_type": "REST",
                   "function_url": "https://events.afan.ai/trigger",
-                  "function_id": "0x30003"
+                  "function_id": "0x30201"
+                },
+                "0x30202": {
+                  "function_type": "REST",
+                  "function_url": "https://events2.afan.ai/trigger",
+                  "function_id": "0x30202"
                 },
               }
             }
@@ -148,31 +184,81 @@ describe("Functions", () => {
       beforeEach(() => {
         // Setup mock for REST API calls.
         const response = { 'success': true };
-        requestBody1 = null;
+        requestBodyAinetwork = null;
         nock('https://events.ainetwork.ai')
             .post('/trigger')
             .reply((uri, request) => {
-          requestBody1 = request;  // save request to requestBody1.
+          requestBodyAinetwork = request;  // save request to requestBodyAinetwork.
           return [
             201,
             response,
           ]
         });
-        requestBody2 = null;
+        requestBodyAinetwork2 = null;
+        nock('https://events2.ainetwork.ai')
+            .post('/trigger')
+            .reply((uri, request) => {
+          requestBodyAinetwork2 = request;  // save request to requestBodyAinetwork2.
+          return [
+            201,
+            response,
+          ]
+        });
+        requestBodyAinize = null;
         nock('https://events.ainize.ai')
             .post('/trigger')
             .reply((uri, request) => {
-          requestBody2 = request;  // save request to requestBody2.
+          requestBodyAinize = request;  // save request to requestBodyAinize.
           return [
             201,
             response,
           ]
         });
-        requestBody3 = null;
+        requestBodyAinize2 = null;
+        nock('https://events2.ainize.ai')
+            .post('/trigger')
+            .reply((uri, request) => {
+          requestBodyAinize2 = request;  // save request to requestBodyAinize2.
+          return [
+            201,
+            response,
+          ]
+        });
+        requestBodyAinize3 = null;
+        nock('https://events3.ainize.ai')
+            .post('/trigger')
+            .reply((uri, request) => {
+          requestBodyAinize3 = request;  // save request to requestBodyAinize3.
+          return [
+            201,
+            response,
+          ]
+        });
+        requestBodyAinize4 = null;
+        nock('https://events4.ainize.ai')
+            .post('/trigger')
+            .reply((uri, request) => {
+          requestBodyAinize4 = request;  // save request to requestBodyAinize4.
+          return [
+            201,
+            response,
+          ]
+        });
+        requestBodyAfan = null;
         nock('https://events.afan.ai')
             .post('/trigger')
             .reply((uri, request) => {
-          requestBody3 = request;  // save request to requestBody3.
+          requestBodyAfan = request;  // save request to requestBodyAfan.
+          return [
+            201,
+            response,
+          ]
+        });
+        requestBodyAfan2 = null;
+        nock('https://events2.afan.ai')
+            .post('/trigger')
+            .reply((uri, request) => {
+          requestBodyAfan2 = request;  // save request to requestBodyAfan2.
           return [
             201,
             response,
@@ -181,7 +267,7 @@ describe("Functions", () => {
       })
 
       it("REST function with non-variable path", () => {
-        transaction = {
+        const transaction = {
           "tx_body": {
             "operation": {
               "ref": refPathRest,
@@ -203,7 +289,7 @@ describe("Functions", () => {
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRest), null, null, null, null, transaction, 0, 0,
-            accountRegistrationGasAmount, restFunctionCallGasAmount);
+            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "0x00001": {
             "code": 0,
@@ -217,7 +303,7 @@ describe("Functions", () => {
             trigger_count: 1,
             fail_count: 0,
           });
-          assert.deepEqual(requestBody1, {
+          assert.deepEqual(requestBodyAinetwork, {
             "auth": {
               "fid": "0x00001",
               "fids": [],
@@ -272,7 +358,7 @@ describe("Functions", () => {
       })
 
       it("REST function with variable path", () => {
-        transaction = {
+        const transaction = {
           "tx_body": {
             "operation": {
               "ref": refPathRestVarPath,
@@ -294,7 +380,7 @@ describe("Functions", () => {
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestVarPath), null, null, null, null, transaction, 0, 0,
-            accountRegistrationGasAmount, restFunctionCallGasAmount);
+            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "0x10001": {
             "code": 0,
@@ -308,7 +394,7 @@ describe("Functions", () => {
             trigger_count: 1,
             fail_count: 0,
           });
-          assert.deepEqual(requestBody1, {
+          assert.deepEqual(requestBodyAinetwork, {
             "auth": {
               "fid": "0x10001",
               "fids": [],
@@ -365,7 +451,7 @@ describe("Functions", () => {
       })
 
       it("REST function multi", () => {
-        transaction = {
+        const transaction = {
           "tx_body": {
             "operation": {
               "ref": refPathRestMulti,
@@ -387,7 +473,7 @@ describe("Functions", () => {
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestMulti), null, null, null, null, transaction, 0, 0,
-            accountRegistrationGasAmount, restFunctionCallGasAmount);
+            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "0x20001": {
             "code": 0,
@@ -405,7 +491,7 @@ describe("Functions", () => {
             trigger_count: 2,
             fail_count: 0,
           });
-          assert.deepEqual(requestBody1, {
+          assert.deepEqual(requestBodyAinetwork, {
             "auth": {
               "fid": "0x20001",
               "fids": [],
@@ -456,7 +542,7 @@ describe("Functions", () => {
               "rest_multi",
             ]
           });
-          assert.deepEqual(requestBody2, {
+          assert.deepEqual(requestBodyAinize, {
             "auth": {
               "fid": "0x20002",
               "fids": [],
@@ -511,12 +597,27 @@ describe("Functions", () => {
       })
 
       it("REST function with subtree", () => {
-        transaction = {
+        const value = {
+          "deep": {
+            "path": {
+              "to": "deep path to value"
+            },
+            "other_path": {
+              "to": "deep other_path to value"
+            },
+          },
+          "other_deep": {
+            "path": {
+              "to": "deep path to value"
+            }
+          }
+        };
+        const transaction = {
           "tx_body": {
             "operation": {
               "ref": refPathRestWithSubtree,
               "type": "SET_VALUE",
-              "value": 1000
+              "value": value,
             },
             "nonce": 123,
             "timestamp": 1566736760322,
@@ -532,47 +633,79 @@ describe("Functions", () => {
           subtree_func_results: subtreeFuncResults,
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
-            CommonUtil.parsePath(refPathRestWithSubtree), null, null, null, null, transaction, 0, 0,
-            accountRegistrationGasAmount, restFunctionCallGasAmount);
+            CommonUtil.parsePath(refPathRestWithSubtree), value, "prev value", { addr: 'abcd' },
+            1234567890000, transaction, 1000, 1234567890999,
+            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "0x30001": {
+            "code": 0,
+            "bandwidth_gas_amount": 100,
+          },
+          "0x30002": {
             "code": 0,
             "bandwidth_gas_amount": 100,
           }
         });
         assert.deepEqual(eraseSubtreeFuncResPromiseResults(subtreeFuncResults), {
-          "/deeper/$var_path": {
-            "func_results": {
-              "0x30002": {
-                "bandwidth_gas_amount": 100,
-                "code": 0,
-              }
+          "/deep/$var_path": {
+            "/deep/other_path": {
+              "func_results": {
+                "0x30101": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30102": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                }
+              },
+              "promise_results": "erased"
             },
-            "promise_results": "erased",
+            "/deep/path": {
+              "func_results": {
+                "0x30101": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30102": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                }
+              },
+              "promise_results": "erased"
+            }
           },
-          "/deeper/path": {
-            "func_results": {
-              "0x30003": {
-                "bandwidth_gas_amount": 100,
-                "code": 0,
-              }
-            },
-            "promise_results": "erased",
+          "/deep/$var_path/to/$var_path2": {},
+          "/deep/path": {
+            "/deep/path": {
+              "func_results": {
+                "0x30201": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30202": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                }
+              },
+              "promise_results": "erased"
+            }
           }
         });
         return promiseResults.then((resp) => {
           assert.deepEqual(resp, {
-            func_count: 1,
-            trigger_count: 1,
+            func_count: 2,
+            trigger_count: 2,
             fail_count: 0,
           });
-          assert.deepEqual(requestBody1, {
+          assert.deepEqual(requestBodyAinetwork, {
             "auth": {
+              "addr": "abcd",
               "fid": "0x30001",
               "fids": [],
             },
-            "blockNumber": 0,
-            "blockTime": 0,
+            "blockNumber": 1000,
+            "blockTime": 1234567890999,
             "executedAt": 1566736760324,
             "fid": "0x30001",
             "function": {
@@ -589,8 +722,8 @@ describe("Functions", () => {
               "rest_with_subtree",
             ],
             "params": {},
-            "prevValue": null,
-            "timestamp": null,
+            "prevValue": "prev value",
+            "timestamp": 1234567890000,
             "transaction": {
               "extra": {
                 "created_at": 1566736760323,
@@ -602,12 +735,40 @@ describe("Functions", () => {
                 "operation": {
                   "ref": "/apps/test/test_function/some/path/rest_with_subtree",
                   "type": "SET_VALUE",
-                  "value": 1000,
+                  "value": {
+                    "deep": {
+                      "other_path": {
+                        "to": "deep other_path to value"
+                      },
+                      "path": {
+                        "to": "deep path to value"
+                      }
+                    },
+                    "other_deep": {
+                      "path": {
+                        "to": "deep path to value"
+                      }
+                    }
+                  }
                 },
-                "timestamp": 1566736760322,
+                "timestamp": 1566736760322
               }
             },
-            "value": null,
+            "value": {
+              "deep": {
+                "other_path": {
+                  "to": "deep other_path to value"
+                },
+                "path": {
+                  "to": "deep path to value"
+                }
+              },
+              "other_deep": {
+                "path": {
+                  "to": "deep path to value"
+                }
+              }
+            },
             "valuePath": [
               "apps",
               "test",
@@ -617,17 +778,98 @@ describe("Functions", () => {
               "rest_with_subtree",
             ]
           });
-          assert.deepEqual(requestBody2, {
+          assert.deepEqual(requestBodyAinetwork2, {
             "auth": {
+              "addr": "abcd",
               "fid": "0x30002",
               "fids": [],
             },
-            "blockNumber": 0,
-            "blockTime": 0,
+            "blockNumber": 1000,
+            "blockTime": 1234567890999,
             "executedAt": 1566736760324,
             "fid": "0x30002",
             "function": {
               "function_id": "0x30002",
+              "function_type": "REST",
+              "function_url": "https://events2.ainetwork.ai/trigger",
+            },
+            "functionPath": [
+              "apps",
+              "test",
+              "test_function",
+              "some",
+              "path",
+              "rest_with_subtree",
+            ],
+            "params": {},
+            "prevValue": "prev value",
+            "timestamp": 1234567890000,
+            "transaction": {
+              "extra": {
+                "created_at": 1566736760323,
+                "executed_at": 1566736760324,
+              },
+              "tx_body": {
+                "gas_price": 1,
+                "nonce": 123,
+                "operation": {
+                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                  "type": "SET_VALUE",
+                  "value": {
+                    "deep": {
+                      "other_path": {
+                        "to": "deep other_path to value",
+                      },
+                      "path": {
+                        "to": "deep path to value"
+                      }
+                    },
+                    "other_deep": {
+                      "path": {
+                        "to": "deep path to value"
+                      }
+                    }
+                  }
+                },
+                "timestamp": 1566736760322
+              }
+            },
+            "value": {
+              "deep": {
+                "other_path": {
+                  "to": "deep other_path to value"
+                },
+                "path": {
+                  "to": "deep path to value"
+                }
+              },
+              "other_deep": {
+                "path": {
+                  "to": "deep path to value"
+                }
+              }
+            },
+            "valuePath": [
+              "apps",
+              "test",
+              "test_function",
+              "some",
+              "path",
+              "rest_with_subtree",
+            ]
+          });
+          assert.deepEqual(requestBodyAinize, {
+            "auth": {
+              "addr": "abcd",
+              "fid": "0x30101",
+              "fids": [],
+            },
+            "blockNumber": 1000,
+            "blockTime": 1234567890999,
+            "executedAt": 1566736760324,
+            "fid": "0x30101",
+            "function": {
+              "function_id": "0x30101",
               "function_type": "REST",
               "function_url": "https://events.ainize.ai/trigger",
             },
@@ -638,12 +880,14 @@ describe("Functions", () => {
               "some",
               "path",
               "rest_with_subtree",
-              "deeper",
+              "deep",
               "$var_path",
             ],
-            "params": {},
-            "prevValue": null,
-            "timestamp": null,
+            "params": {
+              "var_path": "other_path"
+            },
+            "prevValue": "prev value",
+            "timestamp": 1234567890000,
             "transaction": {
               "extra": {
                 "created_at": 1566736760323,
@@ -655,12 +899,28 @@ describe("Functions", () => {
                 "operation": {
                   "ref": "/apps/test/test_function/some/path/rest_with_subtree",
                   "type": "SET_VALUE",
-                  "value": 1000,
+                  "value": {
+                    "deep": {
+                      "other_path": {
+                        "to": "deep other_path to value",
+                      },
+                      "path": {
+                        "to": "deep path to value"
+                      }
+                    },
+                    "other_deep": {
+                      "path": {
+                        "to": "deep path to value"
+                      }
+                    }
+                  }
                 },
-                "timestamp": 1566736760322,
+                "timestamp": 1566736760322
               }
             },
-            "value": null,
+            "value": {
+              "to": "deep other_path to value"
+            },
             "valuePath": [
               "apps",
               "test",
@@ -668,21 +928,98 @@ describe("Functions", () => {
               "some",
               "path",
               "rest_with_subtree",
-              "deeper",
-              "$var_path",
+              "deep",
+              "other_path",
             ]
           });
-          assert.deepEqual(requestBody3, {
+          assert.deepEqual(requestBodyAinize2, {
             "auth": {
-              "fid": "0x30003",
+              "addr": "abcd",
+              "fid": "0x30102",
               "fids": [],
             },
-            "blockNumber": 0,
-            "blockTime": 0,
+            "blockNumber": 1000,
+            "blockTime": 1234567890999,
             "executedAt": 1566736760324,
-            "fid": "0x30003",
+            "fid": "0x30102",
             "function": {
-              "function_id": "0x30003",
+              "function_id": "0x30102",
+              "function_type": "REST",
+              "function_url": "https://events2.ainize.ai/trigger",
+            },
+            "functionPath": [
+              "apps",
+              "test",
+              "test_function",
+              "some",
+              "path",
+              "rest_with_subtree",
+              "deep",
+              "$var_path",
+            ],
+            "params": {
+              "var_path": "other_path"
+            },
+            "prevValue": "prev value",
+            "timestamp": 1234567890000,
+            "transaction": {
+              "extra": {
+                "created_at": 1566736760323,
+                "executed_at": 1566736760324,
+              },
+              "tx_body": {
+                "gas_price": 1,
+                "nonce": 123,
+                "operation": {
+                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                  "type": "SET_VALUE",
+                  "value": {
+                    "deep": {
+                      "other_path": {
+                        "to": "deep other_path to value"
+                      },
+                      "path": {
+                        "to": "deep path to value"
+                      }
+                    },
+                    "other_deep": {
+                      "path": {
+                        "to": "deep path to value"
+                      }
+                    }
+                  }
+                },
+                "timestamp": 1566736760322
+              }
+            },
+            "value": {
+              "to": "deep other_path to value"
+            },
+            "valuePath": [
+              "apps",
+              "test",
+              "test_function",
+              "some",
+              "path",
+              "rest_with_subtree",
+              "deep",
+              "other_path",
+            ]
+          });
+          assert.deepEqual(requestBodyAinize3, null);
+          assert.deepEqual(requestBodyAinize4, null);
+          assert.deepEqual(requestBodyAfan, {
+            "auth": {
+              "addr": "abcd",
+              "fid": "0x30201",
+              "fids": [],
+            },
+            "blockNumber": 1000,
+            "blockTime": 1234567890999,
+            "executedAt": 1566736760324,
+            "fid": "0x30201",
+            "function": {
+              "function_id": "0x30201",
               "function_type": "REST",
               "function_url": "https://events.afan.ai/trigger",
             },
@@ -693,12 +1030,12 @@ describe("Functions", () => {
               "some",
               "path",
               "rest_with_subtree",
-              "deeper",
+              "deep",
               "path",
             ],
             "params": {},
-            "prevValue": null,
-            "timestamp": null,
+            "prevValue": "prev value",
+            "timestamp": 1234567890000,
             "transaction": {
               "extra": {
                 "created_at": 1566736760323,
@@ -710,12 +1047,28 @@ describe("Functions", () => {
                 "operation": {
                   "ref": "/apps/test/test_function/some/path/rest_with_subtree",
                   "type": "SET_VALUE",
-                  "value": 1000,
+                  "value": {
+                    "deep": {
+                      "other_path": {
+                        "to": "deep other_path to value"
+                      },
+                      "path": {
+                        "to": "deep path to value"
+                      }
+                    },
+                    "other_deep": {
+                      "path": {
+                        "to": "deep path to value"
+                      }
+                    }
+                  }
                 },
-                "timestamp": 1566736760322,
+                "timestamp": 1566736760322
               }
             },
-            "value": null,
+            "value": {
+              "to": "deep path to value"
+            },
             "valuePath": [
               "apps",
               "test",
@@ -723,7 +1076,79 @@ describe("Functions", () => {
               "some",
               "path",
               "rest_with_subtree",
-              "deeper",
+              "deep",
+              "path",
+            ]
+          });
+          assert.deepEqual(requestBodyAfan2, {
+            "auth": {
+              "addr": "abcd",
+              "fid": "0x30202",
+              "fids": [],
+            },
+            "blockNumber": 1000,
+            "blockTime": 1234567890999,
+            "executedAt": 1566736760324,
+            "fid": "0x30202",
+            "function": {
+              "function_id": "0x30202",
+              "function_type": "REST",
+              "function_url": "https://events2.afan.ai/trigger",
+            },
+            "functionPath": [
+              "apps",
+              "test",
+              "test_function",
+              "some",
+              "path",
+              "rest_with_subtree",
+              "deep",
+              "path",
+            ],
+            "params": {},
+            "prevValue": "prev value",
+            "timestamp": 1234567890000,
+            "transaction": {
+              "extra": {
+                "created_at": 1566736760323,
+                "executed_at": 1566736760324,
+              },
+              "tx_body": {
+                "gas_price": 1,
+                "nonce": 123,
+                "operation": {
+                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                  "type": "SET_VALUE",
+                  "value": {
+                    "deep": {
+                      "other_path": {
+                        "to": "deep other_path to value"
+                      },
+                      "path": {
+                        "to": "deep path to value"
+                      }
+                    },
+                    "other_deep": {
+                      "path": {
+                        "to": "deep path to value"
+                      }
+                    }
+                  }
+                },
+                "timestamp": 1566736760322
+              }
+            },
+            "value": {
+              "to": "deep path to value"
+            },
+            "valuePath": [
+              "apps",
+              "test",
+              "test_function",
+              "some",
+              "path",
+              "rest_with_subtree",
+              "deep",
               "path",
             ]
           });
@@ -731,7 +1156,7 @@ describe("Functions", () => {
       })
 
       it("REST function without listener", () => {
-        transaction = {
+        const transaction = {
           "tx_body": {
             "operation": {
               "ref": refPathRestWithoutListener,
@@ -749,7 +1174,7 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestWithoutListener), null, null, null, null, transaction,
-            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -778,7 +1203,7 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestNotWhitelisted), null, null, null, null, transaction,
-            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -817,7 +1242,7 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestNewlyWhitelisted), null, null, null, null, transaction,
-            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -848,7 +1273,7 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestNewlyWhitelisted), null, null, null, null, transaction,
-            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+            0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -877,7 +1302,7 @@ describe("Functions", () => {
         }
         const { promise_results } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathNull), null, null, null, null, transaction, 0, 0,
-            accountRegistrationGasAmount, restFunctionCallGasAmount);
+            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         return promise_results.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -939,7 +1364,7 @@ describe("Functions", () => {
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathTransfer), 10, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
-            tx, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+            tx, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "_transfer": {
             "op_results": {
@@ -992,7 +1417,7 @@ describe("Functions", () => {
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathTransfer), 10, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322,
-            tx, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount);
+            tx, 0, 0, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "_transfer": {
             "op_results": {
@@ -1026,7 +1451,7 @@ describe("Functions", () => {
       });
 
       it("REST function with external RPC call", () => {
-        transaction = {
+        const transaction = {
           "tx_body": {
             "operation": {
               "ref": refPathRestGas,
@@ -1048,7 +1473,7 @@ describe("Functions", () => {
           promise_results: promiseResults,
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestGas), null, null, null, null, transaction, 0, 0,
-            accountRegistrationGasAmount, restFunctionCallGasAmount);
+            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
         assert.deepEqual(funcResults, {
           "0x90001": {
             "code": 0,
@@ -1067,7 +1492,7 @@ describe("Functions", () => {
     });
   });
 
-  describe("convertPathVars2Params()", () => {
+  describe("convertPathVars2Params", () => {
     it("convert correctly", () => {
       pathVars = {
         "$from": "from_addr",
@@ -1080,6 +1505,154 @@ describe("Functions", () => {
         "key": "10"
       }
       assert.deepEqual(Functions.convertPathVars2Params(pathVars), params);
+    })
+  });
+
+  describe("matchValueWithFunctionPath", () => {
+    const value = {
+      some: {
+        value: 'some value',
+        path: {
+          to: 'some path to value'
+        },
+        other_path: {
+          to: 'some other_path to value'
+        },
+        deep: {
+          path: {
+            to: "some deep path to value"
+          },
+          deeper: {
+            path: {
+              to: "some deep deeper path to value"
+            },
+            other_path: {
+              to: 'some deep deeper other_path to value'
+            }
+          }
+        }
+      }
+    };
+
+    it("with matching non-variable path", () => {
+      assert.deepEqual(Functions.matchValueWithFunctionPath(value, [
+        'some',
+        'value',
+      ]), [
+        {
+          "value": "some value",
+          "pathVars": {},
+          "path": [
+            "some",
+            "value",
+          ]
+        }
+      ]);
+      assert.deepEqual(Functions.matchValueWithFunctionPath(value, [
+        'some',
+        'deep',
+        'deeper',
+        'path',
+        'to',
+      ]), [
+        {
+          "value": "some deep deeper path to value",
+          "pathVars": {},
+          "path": [
+            "some",
+            "deep",
+            "deeper",
+            "path",
+            "to",
+          ]
+        }
+      ]);
+    })
+
+    it("with too-long non-variable path", () => {
+      assert.deepEqual(Functions.matchValueWithFunctionPath(value, [
+        'some',
+        'path',
+        'to',
+        'value'
+      ]), []);
+    })
+
+    it("with matching variable path", () => {
+      assert.deepEqual(Functions.matchValueWithFunctionPath(value, [
+        'some',
+        '$var_path',
+        'to',
+      ]), [
+        {
+          "value": "some path to value",
+          "pathVars": {
+            "$var_path": "path",
+          },
+          "path": [
+            "some",
+            "path",
+            "to",
+          ]
+        },
+        {
+          "value": "some other_path to value",
+          "pathVars": {
+            "$var_path": "other_path",
+          },
+          "path": [
+            "some",
+            "other_path",
+            "to",
+          ]
+        }
+      ]);
+      assert.deepEqual(Functions.matchValueWithFunctionPath(value, [
+        'some',
+        '$var_path1',
+        'deeper',
+        '$var_path2',
+      ]), [
+        {
+          "value": {
+            "to": "some deep deeper path to value"
+          },
+          "pathVars": {
+            "$var_path1": "deep",
+            "$var_path2": "path",
+          },
+          "path": [
+            "some",
+            "deep",
+            "deeper",
+            "path",
+          ]
+        },
+        {
+          "value": {
+            "to": "some deep deeper other_path to value"
+          },
+          "pathVars": {
+            "$var_path1": "deep",
+            "$var_path2": "other_path",
+          },
+          "path": [
+            "some",
+            "deep",
+            "deeper",
+            "other_path",
+          ]
+        }
+      ]);
+    })
+
+    it("with too-long variable path", () => {
+      assert.deepEqual(Functions.matchValueWithFunctionPath(value, [
+        'some',
+        '$var_path1',
+        'to',
+        '$var_path2'
+      ]), []);
     })
   });
 })

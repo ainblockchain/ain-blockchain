@@ -738,7 +738,6 @@ class DB {
     return DB.getAppStakeFromStateRoot(this.stateRoot, appName);
   }
 
-  // TODO(platfowner): Define error code explicitly.
   // TODO(platfowner): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
   //                   and setOwner() as well.
   setValue(valuePath, value, auth, timestamp, transaction, blockNumber, blockTime, options) {
@@ -809,7 +808,7 @@ class DB {
           'resource/rest_function_call_gas_amount', blockNumber, this.stateRoot);
       const { func_results } = this.func.matchAndTriggerFunctions(
           localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime,
-          accountRegistrationGasAmount, restFunctionCallGasAmount);
+          accountRegistrationGasAmount, restFunctionCallGasAmount, options);
       funcResults = func_results;
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
         return CommonUtil.returnTxResult(
@@ -1884,7 +1883,7 @@ class DB {
   static getVariableLabel(node) {
     if (!node.getIsLeaf()) {
       for (const label of node.getChildLabels()) {
-        if (CommonUtil.isPrefixedLabel(label, StateLabelProperties.VARIABLE_LABEL_PREFIX)) {
+        if (CommonUtil.isVariableLabel(label)) {
           // It's assumed that there is at most one variable (i.e., with '$') child node.
           return label;
         }
@@ -1923,7 +1922,7 @@ class DB {
         matched.matchedFunctionPath.unshift(varLabel);
         if (matched.pathVars[varLabel] !== undefined) {
           // This should not happen!
-          logger.error('Duplicated path variables that should NOT happen!')
+          logger.error(`Duplicated function path variables [${varLabel}] that should NOT happen!`)
         } else {
           matched.pathVars[varLabel] = parsedValuePath[depth];
         }
@@ -2064,7 +2063,7 @@ class DB {
         matched.matchedRulePath.unshift(varLabel);
         if (matched.pathVars[varLabel] !== undefined) {
           // This should not happen!
-          logger.error('Duplicated path variables that should NOT happen!')
+          logger.error(`Duplicated rule path variables [${varLabel}] that should NOT happen!`)
         } else {
           matched.pathVars[varLabel] = parsedValuePath[depth];
         }

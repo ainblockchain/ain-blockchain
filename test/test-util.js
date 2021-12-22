@@ -255,8 +255,11 @@ function eraseEvalResMatched(res) {
 
 function eraseSubtreeFuncResPromiseResults(res) {
   const erased = JSON.parse(JSON.stringify(res));
-  for (const triggerPath in res) {
-    _.set(erased, `${triggerPath}.promise_results`, 'erased');
+  for (const subtreeFuncPath in res) {
+    const subtreeFuncPathRes = res[subtreeFuncPath];
+    for (const subtreeValuePath in subtreeFuncPathRes) {
+      _.set(erased, `${subtreeFuncPath}.${subtreeValuePath}.promise_results`, 'erased');
+    }
   }
   return erased;
 }

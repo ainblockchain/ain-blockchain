@@ -326,6 +326,11 @@ class CommonUtil {
     return _.startsWith(label, prefix);
   }
 
+  static isVariableLabel(label) {
+    const { StateLabelProperties } = require('../common/constants');
+    return CommonUtil.isPrefixedLabel(label, StateLabelProperties.VARIABLE_LABEL_PREFIX)
+  }
+
   static getJsObject(obj, path) {
     if (!CommonUtil.isArray(path)) {
       return null;
