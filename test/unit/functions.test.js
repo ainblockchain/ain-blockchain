@@ -44,14 +44,14 @@ describe("Functions", () => {
       const refPathNull = "/apps/test/test_function/some/path/null";
       const refPathFunctionUrlWhitelist = '/developers/rest_functions/url_whitelist/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1/0';
       const refPathRestNewlyWhitelisted = '/apps/test/test_function/some/path/rest_newly_whitelisted';
-      let requestBodyAinetwork = null;
-      let requestBodyAinetwork2 = null;
-      let requestBodyAinize = null;
-      let requestBodyAinize2 = null;
-      let requestBodyAinize3 = null;
-      let requestBodyAinize4 = null;
-      let requestBodyAfan = null;
-      let requestBodyAfan2 = null;
+      let requestBodyAinetwork = [];
+      let requestBodyAinetwork2 = [];
+      let requestBodyAinize = [];
+      let requestBodyAinize2 = [];
+      let requestBodyAinize3 = [];
+      let requestBodyAinize4 = [];
+      let requestBodyAfan = [];
+      let requestBodyAfan2 = [];
 
       before(() => {
         const restFunctionNonVarPath = {
@@ -184,81 +184,81 @@ describe("Functions", () => {
       beforeEach(() => {
         // Setup mock for REST API calls.
         const response = { 'success': true };
-        requestBodyAinetwork = null;
+        requestBodyAinetwork = [];
         nock('https://events.ainetwork.ai')
             .post('/trigger')
             .reply((uri, request) => {
-          requestBodyAinetwork = request;  // save request to requestBodyAinetwork.
+          requestBodyAinetwork.push(request);  // save request to requestBodyAinetwork.
           return [
             201,
             response,
           ]
         });
-        requestBodyAinetwork2 = null;
+        requestBodyAinetwork2 = [];
         nock('https://events2.ainetwork.ai')
             .post('/trigger')
             .reply((uri, request) => {
-          requestBodyAinetwork2 = request;  // save request to requestBodyAinetwork2.
+          requestBodyAinetwork2.push(request);  // save request to requestBodyAinetwork2.
           return [
             201,
             response,
           ]
         });
-        requestBodyAinize = null;
+        requestBodyAinize = [];
         nock('https://events.ainize.ai')
             .post('/trigger')
             .reply((uri, request) => {
-          requestBodyAinize = request;  // save request to requestBodyAinize.
+          requestBodyAinize.push(request);  // save request to requestBodyAinize.
           return [
             201,
             response,
           ]
         });
-        requestBodyAinize2 = null;
+        requestBodyAinize2 = [];
         nock('https://events2.ainize.ai')
             .post('/trigger')
             .reply((uri, request) => {
-          requestBodyAinize2 = request;  // save request to requestBodyAinize2.
+          requestBodyAinize2.push(request);  // save request to requestBodyAinize2.
           return [
             201,
             response,
           ]
         });
-        requestBodyAinize3 = null;
+        requestBodyAinize3 = [];
         nock('https://events3.ainize.ai')
             .post('/trigger')
             .reply((uri, request) => {
-          requestBodyAinize3 = request;  // save request to requestBodyAinize3.
+          requestBodyAinize3.push(request);  // save request to requestBodyAinize3.
           return [
             201,
             response,
           ]
         });
-        requestBodyAinize4 = null;
+        requestBodyAinize4 = [];
         nock('https://events4.ainize.ai')
             .post('/trigger')
             .reply((uri, request) => {
-          requestBodyAinize4 = request;  // save request to requestBodyAinize4.
+          requestBodyAinize4.push(request);  // save request to requestBodyAinize4.
           return [
             201,
             response,
           ]
         });
-        requestBodyAfan = null;
+        requestBodyAfan = [];
         nock('https://events.afan.ai')
             .post('/trigger')
             .reply((uri, request) => {
-          requestBodyAfan = request;  // save request to requestBodyAfan.
+          requestBodyAfan.push(request);  // save request to requestBodyAfan.
           return [
             201,
             response,
           ]
         });
-        requestBodyAfan2 = null;
+        requestBodyAfan2 = [];
         nock('https://events2.afan.ai')
             .post('/trigger')
             .reply((uri, request) => {
-          requestBodyAfan2 = request;  // save request to requestBodyAfan2.
+          requestBodyAfan2.push(request);  // save request to requestBodyAfan2.
           return [
             201,
             response,
@@ -305,58 +305,60 @@ describe("Functions", () => {
             trigger_count: 1,
             fail_count: 0,
           });
-          assert.deepEqual(requestBodyAinetwork, {
-            "auth": {
-              "addr": "abcd",
-              "fid": "0x00001",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x00001",
-            "function": {
-              "function_id": "0x00001",
-              "function_type": "REST",
-              "function_url": "https://events.ainetwork.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest",
-            ],
-            "params": {},
-            "prevValue": "prev value",
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+          assert.deepEqual(requestBodyAinetwork, [
+            {
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x00001",
+                "fids": [],
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest",
-                  "type": "SET_VALUE",
-                  "value": "value",
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
+              "fid": "0x00001",
+              "function": {
+                "function_id": "0x00001",
+                "function_type": "REST",
+                "function_url": "https://events.ainetwork.ai/trigger",
+              },
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest",
+              ],
+              "params": {},
+              "prevValue": "prev value",
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
                 },
-                "timestamp": 1566736760322,
-              }
-            },
-            "value": "value",
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest",
-            ]
-          });
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest",
+                    "type": "SET_VALUE",
+                    "value": "value",
+                  },
+                  "timestamp": 1566736760322,
+                }
+              },
+              "value": "value",
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest",
+              ]
+            }
+          ]);
         });
       })
 
@@ -399,60 +401,62 @@ describe("Functions", () => {
             trigger_count: 1,
             fail_count: 0,
           });
-          assert.deepEqual(requestBodyAinetwork, {
-            "auth": {
-              "addr": "abcd",
-              "fid": "0x10001",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x10001",
-            "function": {
-              "function_id": "0x10001",
-              "function_type": "REST",
-              "function_url": "https://events.ainetwork.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "$var_path",
-              "rest",
-            ],
-            "params": {
-              "var_path": "arbitrary"
-            },
-            "prevValue": "prev value",
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+          assert.deepEqual(requestBodyAinetwork, [
+            {
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x10001",
+                "fids": [],
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/arbitrary/rest",
-                  "type": "SET_VALUE",
-                  "value": "value",
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
+              "fid": "0x10001",
+              "function": {
+                "function_id": "0x10001",
+                "function_type": "REST",
+                "function_url": "https://events.ainetwork.ai/trigger",
+              },
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "$var_path",
+                "rest",
+              ],
+              "params": {
+                "var_path": "arbitrary"
+              },
+              "prevValue": "prev value",
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
                 },
-                "timestamp": 1566736760322,
-              }
-            },
-            "value": "value",
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "arbitrary",
-              "rest",
-            ]
-          });
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/arbitrary/rest",
+                    "type": "SET_VALUE",
+                    "value": "value",
+                  },
+                  "timestamp": 1566736760322,
+                }
+              },
+              "value": "value",
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "arbitrary",
+                "rest",
+              ]
+            }
+          ]);
         });
       })
 
@@ -499,110 +503,114 @@ describe("Functions", () => {
             trigger_count: 2,
             fail_count: 0,
           });
-          assert.deepEqual(requestBodyAinetwork, {
-            "auth": {
-              "addr": "abcd",
+          assert.deepEqual(requestBodyAinetwork, [
+            {
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x20001",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x20001",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x20001",
-            "function": {
-              "function_id": "0x20001",
-              "function_type": "REST",
-              "function_url": "https://events.ainetwork.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_multi",
-            ],
-            "params": {},
-            "prevValue": "prev value",
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x20001",
+                "function_type": "REST",
+                "function_url": "https://events.ainetwork.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_multi",
-                  "type": "SET_VALUE",
-                  "value": "value",
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_multi",
+              ],
+              "params": {},
+              "prevValue": "prev value",
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
                 },
-                "timestamp": 1566736760322,
-              }
-            },
-            "value": "value",
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_multi",
-            ]
-          });
-          assert.deepEqual(requestBodyAinize, {
-            "auth": {
-              "addr": "abcd",
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_multi",
+                    "type": "SET_VALUE",
+                    "value": "value",
+                  },
+                  "timestamp": 1566736760322,
+                }
+              },
+              "value": "value",
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_multi",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAinize, [
+            {
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x20002",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x20002",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x20002",
-            "function": {
-              "function_id": "0x20002",
-              "function_type": "REST",
-              "function_url": "https://events.ainize.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_multi",
-            ],
-            "params": {},
-            "prevValue": "prev value",
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x20002",
+                "function_type": "REST",
+                "function_url": "https://events.ainize.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_multi",
-                  "type": "SET_VALUE",
-                  "value": "value",
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_multi",
+              ],
+              "params": {},
+              "prevValue": "prev value",
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
                 },
-                "timestamp": 1566736760322,
-              }
-            },
-            "value": "value",
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_multi",
-            ]
-          });
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_multi",
+                    "type": "SET_VALUE",
+                    "value": "value",
+                  },
+                  "timestamp": 1566736760322,
+                }
+              },
+              "value": "value",
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_multi",
+              ]
+            }
+          ]);
         });
       })
 
@@ -709,460 +717,622 @@ describe("Functions", () => {
             trigger_count: 2,
             fail_count: 0,
           });
-          assert.deepEqual(requestBodyAinetwork, {
-            "auth": {
-              "addr": "abcd",
+          assert.deepEqual(requestBodyAinetwork, [
+            {
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30001",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x30001",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x30001",
-            "function": {
-              "function_id": "0x30001",
-              "function_type": "REST",
-              "function_url": "https://events.ainetwork.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-            ],
-            "params": {},
-            "prevValue": null,
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x30001",
+                "function_type": "REST",
+                "function_url": "https://events.ainetwork.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
-                  "type": "SET_VALUE",
-                  "value": {
-                    "deep": {
-                      "other_path": {
-                        "to": "deep other_path to value"
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+              ],
+              "params": {},
+              "prevValue": null,
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       },
-                      "path": {
-                        "to": "deep path to value"
-                      }
-                    },
-                    "other_deep": {
-                      "path": {
-                        "to": "deep path to value"
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       }
                     }
-                  }
-                },
-                "timestamp": 1566736760322
-              }
-            },
-            "value": {
-              "deep": {
-                "other_path": {
-                  "to": "deep other_path to value"
-                },
-                "path": {
-                  "to": "deep path to value"
+                  },
+                  "timestamp": 1566736760322
                 }
               },
-              "other_deep": {
-                "path": {
-                  "to": "deep path to value"
+              "value": {
+                "deep": {
+                  "other_path": {
+                    "to": "deep other_path to value"
+                  },
+                  "path": {
+                    "to": "deep path to value"
+                  }
+                },
+                "other_deep": {
+                  "path": {
+                    "to": "deep path to value"
+                  }
                 }
-              }
-            },
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-            ]
-          });
-          assert.deepEqual(requestBodyAinetwork2, {
-            "auth": {
-              "addr": "abcd",
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAinetwork2, [
+            {
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30002",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x30002",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x30002",
-            "function": {
-              "function_id": "0x30002",
-              "function_type": "REST",
-              "function_url": "https://events2.ainetwork.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-            ],
-            "params": {},
-            "prevValue": null,
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x30002",
+                "function_type": "REST",
+                "function_url": "https://events2.ainetwork.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
-                  "type": "SET_VALUE",
-                  "value": {
-                    "deep": {
-                      "other_path": {
-                        "to": "deep other_path to value",
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+              ],
+              "params": {},
+              "prevValue": null,
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value",
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       },
-                      "path": {
-                        "to": "deep path to value"
-                      }
-                    },
-                    "other_deep": {
-                      "path": {
-                        "to": "deep path to value"
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       }
                     }
-                  }
-                },
-                "timestamp": 1566736760322
-              }
-            },
-            "value": {
-              "deep": {
-                "other_path": {
-                  "to": "deep other_path to value"
-                },
-                "path": {
-                  "to": "deep path to value"
+                  },
+                  "timestamp": 1566736760322
                 }
               },
-              "other_deep": {
-                "path": {
-                  "to": "deep path to value"
+              "value": {
+                "deep": {
+                  "other_path": {
+                    "to": "deep other_path to value"
+                  },
+                  "path": {
+                    "to": "deep path to value"
+                  }
+                },
+                "other_deep": {
+                  "path": {
+                    "to": "deep path to value"
+                  }
                 }
-              }
-            },
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-            ]
-          });
-          assert.deepEqual(requestBodyAinize, {
-            "auth": {
-              "addr": "abcd",
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAinize, [
+            {
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30101",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x30101",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x30101",
-            "function": {
-              "function_id": "0x30101",
-              "function_type": "REST",
-              "function_url": "https://events.ainize.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "path",
-            ],
-            "params": {},
-            "prevValue": null,
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x30101",
+                "function_type": "REST",
+                "function_url": "https://events.ainize.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
-                  "type": "SET_VALUE",
-                  "value": {
-                    "deep": {
-                      "other_path": {
-                        "to": "deep other_path to value",
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "path",
+              ],
+              "params": {},
+              "prevValue": null,
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value",
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       },
-                      "path": {
-                        "to": "deep path to value"
-                      }
-                    },
-                    "other_deep": {
-                      "path": {
-                        "to": "deep path to value"
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       }
                     }
-                  }
-                },
-                "timestamp": 1566736760322
-              }
-            },
-            "value": {
-              "to": "deep path to value"
-            },
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "path",
-            ]
-          });
-          assert.deepEqual(requestBodyAinize2, {
-            "auth": {
-              "addr": "abcd",
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": {
+                "to": "deep path to value"
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "path",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAinize2, [
+            {
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30102",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x30102",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x30102",
-            "function": {
-              "function_id": "0x30102",
-              "function_type": "REST",
-              "function_url": "https://events2.ainize.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "path",
-            ],
-            "params": {},
-            "prevValue": null,
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x30102",
+                "function_type": "REST",
+                "function_url": "https://events2.ainize.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
-                  "type": "SET_VALUE",
-                  "value": {
-                    "deep": {
-                      "other_path": {
-                        "to": "deep other_path to value"
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "path",
+              ],
+              "params": {},
+              "prevValue": null,
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       },
-                      "path": {
-                        "to": "deep path to value"
-                      }
-                    },
-                    "other_deep": {
-                      "path": {
-                        "to": "deep path to value"
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       }
                     }
-                  }
-                },
-                "timestamp": 1566736760322
-              }
-            },
-            "value": {
-              "to": "deep path to value"
-            },
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "path",
-            ]
-          });
-          assert.deepEqual(requestBodyAinize3, {
-            "auth": {
-              "addr": "abcd",
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": {
+                "to": "deep path to value"
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "path",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAinize3, [
+            {  // first call.
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30201",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x30201",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x30201",
-            "function": {
-              "function_id": "0x30201",
-              "function_type": "REST",
-              "function_url": "https://events3.ainize.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "$var_path",
-            ],
-            "params": {
-              "var_path": "other_path"
-            },
-            "prevValue": null,
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x30201",
+                "function_type": "REST",
+                "function_url": "https://events3.ainize.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
-                  "type": "SET_VALUE",
-                  "value": {
-                    "deep": {
-                      "other_path": {
-                        "to": "deep other_path to value",
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "$var_path",
+              ],
+              "params": {
+                "var_path": "path"
+              },
+              "prevValue": null,
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       },
-                      "path": {
-                        "to": "deep path to value"
-                      }
-                    },
-                    "other_deep": {
-                      "path": {
-                        "to": "deep path to value"
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       }
                     }
-                  }
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": {
+                "to": "deep path to value"
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "path",
+              ]
+            },
+            {  // second call
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30201",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
+              "fid": "0x30201",
+              "function": {
+                "function_id": "0x30201",
+                "function_type": "REST",
+                "function_url": "https://events3.ainize.ai/trigger",
+              },
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "$var_path",
+              ],
+              "params": {
+                "var_path": "other_path"
+              },
+              "prevValue": null,
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
                 },
-                "timestamp": 1566736760322
-              }
-            },
-            "value": {
-              "to": "deep other_path to value"
-            },
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "other_path",
-            ]
-          });
-          assert.deepEqual(requestBodyAinize4, {
-            "auth": {
-              "addr": "abcd",
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      },
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      }
+                    }
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": {
+                "to": "deep other_path to value"
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "other_path",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAinize4, [
+            {  // first call
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30202",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x30202",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x30202",
-            "function": {
-              "function_id": "0x30202",
-              "function_type": "REST",
-              "function_url": "https://events4.ainize.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "$var_path",
-            ],
-            "params": {
-              "var_path": "other_path"
-            },
-            "prevValue": null,
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x30202",
+                "function_type": "REST",
+                "function_url": "https://events4.ainize.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
-                  "type": "SET_VALUE",
-                  "value": {
-                    "deep": {
-                      "other_path": {
-                        "to": "deep other_path to value"
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "$var_path",
+              ],
+              "params": {
+                "var_path": "path"
+              },
+              "prevValue": null,
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       },
-                      "path": {
-                        "to": "deep path to value"
-                      }
-                    },
-                    "other_deep": {
-                      "path": {
-                        "to": "deep path to value"
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       }
                     }
-                  }
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": {
+                "to": "deep path to value"
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "path",
+              ]
+            },
+            {  // second call
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30202",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
+              "fid": "0x30202",
+              "function": {
+                "function_id": "0x30202",
+                "function_type": "REST",
+                "function_url": "https://events4.ainize.ai/trigger",
+              },
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "$var_path",
+              ],
+              "params": {
+                "var_path": "other_path"
+              },
+              "prevValue": null,
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
                 },
-                "timestamp": 1566736760322
-              }
-            },
-            "value": {
-              "to": "deep other_path to value"
-            },
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "other_path",
-            ]
-          });
-          assert.deepEqual(requestBodyAfan, null);
-          assert.deepEqual(requestBodyAfan2, null);
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      },
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      }
+                    }
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": {
+                "to": "deep other_path to value"
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "other_path",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAfan, [
+          ]);
+          assert.deepEqual(requestBodyAfan2, [
+          ]);
         });
       })
 
@@ -1173,7 +1343,11 @@ describe("Functions", () => {
               "to": "PREVIOUS: deep path to value"
             },
             "existing_path": {
-              "to": "PREVIOUS: deep existing to value"
+              "to": {
+                "existing_path2": {
+                  "to": "PREVIOUS: deep existing_path to existing_path2 to value"
+                }
+              }
             }
           },
         };
@@ -1243,6 +1417,19 @@ describe("Functions", () => {
             }
           },
           "/deep/$var_path": {
+            "/deep/existing_path": {  // non-null prevValue case only!
+              "func_results": {
+                "0x30201": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30202": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                }
+              },
+              "promise_results": "erased"
+            },
             "/deep/path": {
               "func_results": {
                 "0x30201": {
@@ -1270,7 +1457,21 @@ describe("Functions", () => {
               "promise_results": "erased"
             }
           },
-          "/deep/$var_path/to/$var_path2": {},
+          "/deep/$var_path/to/$var_path2": {  // non-null prevValue case only!
+            "/deep/existing_path/to/existing_path2": {
+              "func_results": {
+                "0x30301": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30302": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                }
+              },
+              "promise_results": "erased"
+            }
+          }
         });
         return promiseResults.then((resp) => {
           assert.deepEqual(resp, {
@@ -1278,482 +1479,970 @@ describe("Functions", () => {
             trigger_count: 2,
             fail_count: 0,
           });
-          assert.deepEqual(requestBodyAinetwork, {
-            "auth": {
-              "addr": "abcd",
+          assert.deepEqual(requestBodyAinetwork, [
+            {
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30001",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x30001",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x30001",
-            "function": {
-              "function_id": "0x30001",
-              "function_type": "REST",
-              "function_url": "https://events.ainetwork.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-            ],
-            "params": {},
-            "prevValue": {
-              "deep": {
-                "existing_path": {
-                  "to": "PREVIOUS: deep existing to value"
-                },
-                "path": {
-                  "to": "PREVIOUS: deep path to value"
-                }
-              }
-            },
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x30001",
+                "function_type": "REST",
+                "function_url": "https://events.ainetwork.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
-                  "type": "SET_VALUE",
-                  "value": {
-                    "deep": {
-                      "other_path": {
-                        "to": "deep other_path to value"
-                      },
-                      "path": {
-                        "to": "deep path to value"
-                      }
-                    },
-                    "other_deep": {
-                      "path": {
-                        "to": "deep path to value"
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+              ],
+              "params": {},
+              "prevValue": {  // non-null prevValue case only!
+                "deep": {
+                  "path": {
+                    "to": "PREVIOUS: deep path to value"
+                  },
+                  "existing_path": {
+                    "to": {
+                      "existing_path2": {
+                        "to": "PREVIOUS: deep existing_path to existing_path2 to value"
                       }
                     }
                   }
-                },
-                "timestamp": 1566736760322
-              }
-            },
-            "value": {
-              "deep": {
-                "other_path": {
-                  "to": "deep other_path to value"
-                },
-                "path": {
-                  "to": "deep path to value"
                 }
               },
-              "other_deep": {
-                "path": {
-                  "to": "deep path to value"
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      },
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      }
+                    }
+                  },
+                  "timestamp": 1566736760322
                 }
-              }
-            },
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-            ]
-          });
-          assert.deepEqual(requestBodyAinetwork2, {
-            "auth": {
-              "addr": "abcd",
+              },
+              "value": {
+                "deep": {
+                  "other_path": {
+                    "to": "deep other_path to value"
+                  },
+                  "path": {
+                    "to": "deep path to value"
+                  }
+                },
+                "other_deep": {
+                  "path": {
+                    "to": "deep path to value"
+                  }
+                }
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAinetwork2, [
+            {
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30002",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x30002",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x30002",
-            "function": {
-              "function_id": "0x30002",
-              "function_type": "REST",
-              "function_url": "https://events2.ainetwork.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-            ],
-            "params": {},
-            "prevValue": {
-              "deep": {
-                "existing_path": {
-                  "to": "PREVIOUS: deep existing to value"
-                },
-                "path": {
-                  "to": "PREVIOUS: deep path to value"
-                }
-              }
-            },
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x30002",
+                "function_type": "REST",
+                "function_url": "https://events2.ainetwork.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
-                  "type": "SET_VALUE",
-                  "value": {
-                    "deep": {
-                      "other_path": {
-                        "to": "deep other_path to value",
-                      },
-                      "path": {
-                        "to": "deep path to value"
-                      }
-                    },
-                    "other_deep": {
-                      "path": {
-                        "to": "deep path to value"
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+              ],
+              "params": {},
+              "prevValue": {  // non-null prevValue case only!
+                "deep": {
+                  "path": {
+                    "to": "PREVIOUS: deep path to value"
+                  },
+                  "existing_path": {
+                    "to": {
+                      "existing_path2": {
+                        "to": "PREVIOUS: deep existing_path to existing_path2 to value"
                       }
                     }
                   }
-                },
-                "timestamp": 1566736760322
-              }
-            },
-            "value": {
-              "deep": {
-                "other_path": {
-                  "to": "deep other_path to value"
-                },
-                "path": {
-                  "to": "deep path to value"
                 }
               },
-              "other_deep": {
-                "path": {
-                  "to": "deep path to value"
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value",
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      },
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      }
+                    }
+                  },
+                  "timestamp": 1566736760322
                 }
-              }
-            },
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-            ]
-          });
-          assert.deepEqual(requestBodyAinize, {
-            "auth": {
-              "addr": "abcd",
+              },
+              "value": {
+                "deep": {
+                  "other_path": {
+                    "to": "deep other_path to value"
+                  },
+                  "path": {
+                    "to": "deep path to value"
+                  }
+                },
+                "other_deep": {
+                  "path": {
+                    "to": "deep path to value"
+                  }
+                }
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAinize, [
+            {
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30101",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x30101",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x30101",
-            "function": {
-              "function_id": "0x30101",
-              "function_type": "REST",
-              "function_url": "https://events.ainize.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "path",
-            ],
-            "params": {},
-            "prevValue": {
-              "to": "PREVIOUS: deep path to value"
-            },
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x30101",
+                "function_type": "REST",
+                "function_url": "https://events.ainize.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
-                  "type": "SET_VALUE",
-                  "value": {
-                    "deep": {
-                      "other_path": {
-                        "to": "deep other_path to value",
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "path",
+              ],
+              "params": {},
+              "prevValue": {  // non-null prevValue case only!
+                "to": "PREVIOUS: deep path to value"
+              },
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value",
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       },
-                      "path": {
-                        "to": "deep path to value"
-                      }
-                    },
-                    "other_deep": {
-                      "path": {
-                        "to": "deep path to value"
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       }
                     }
-                  }
-                },
-                "timestamp": 1566736760322
-              }
-            },
-            "value": {
-              "to": "deep path to value"
-            },
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "path",
-            ]
-          });
-          assert.deepEqual(requestBodyAinize2, {
-            "auth": {
-              "addr": "abcd",
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": {
+                "to": "deep path to value"
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "path",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAinize2, [
+            {
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30102",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x30102",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x30102",
-            "function": {
-              "function_id": "0x30102",
-              "function_type": "REST",
-              "function_url": "https://events2.ainize.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "path",
-            ],
-            "params": {},
-            "prevValue": {
-              "to": "PREVIOUS: deep path to value"
-            },
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x30102",
+                "function_type": "REST",
+                "function_url": "https://events2.ainize.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
-                  "type": "SET_VALUE",
-                  "value": {
-                    "deep": {
-                      "other_path": {
-                        "to": "deep other_path to value"
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "path",
+              ],
+              "params": {},
+              "prevValue": {  // non-null prevValue case only!
+                "to": "PREVIOUS: deep path to value"
+              },
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       },
-                      "path": {
-                        "to": "deep path to value"
-                      }
-                    },
-                    "other_deep": {
-                      "path": {
-                        "to": "deep path to value"
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       }
                     }
-                  }
-                },
-                "timestamp": 1566736760322
-              }
-            },
-            "value": {
-              "to": "deep path to value"
-            },
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "path",
-            ]
-          });
-          assert.deepEqual(requestBodyAinize3, {
-            "auth": {
-              "addr": "abcd",
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": {
+                "to": "deep path to value"
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "path",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAinize3, [
+            {  // first call
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30201",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x30201",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x30201",
-            "function": {
-              "function_id": "0x30201",
-              "function_type": "REST",
-              "function_url": "https://events3.ainize.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "$var_path",
-            ],
-            "params": {
-              "var_path": "other_path"
-            },
-            "prevValue": null,
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x30201",
+                "function_type": "REST",
+                "function_url": "https://events3.ainize.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
-                  "type": "SET_VALUE",
-                  "value": {
-                    "deep": {
-                      "other_path": {
-                        "to": "deep other_path to value"
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "$var_path",
+              ],
+              "params": {
+                "var_path": "path"
+              },
+              "prevValue": {  // non-null prevValue case only!
+                "to": "PREVIOUS: deep path to value"
+              },
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       },
-                      "path": {
-                        "to": "deep path to value"
-                      }
-                    },
-                    "other_deep": {
-                      "path": {
-                        "to": "deep path to value"
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       }
                     }
-                  }
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": {
+                "to": "deep path to value"
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "path",
+              ]
+            },
+            {  // second call
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30201",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
+              "fid": "0x30201",
+              "function": {
+                "function_id": "0x30201",
+                "function_type": "REST",
+                "function_url": "https://events3.ainize.ai/trigger",
+              },
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "$var_path",
+              ],
+              "params": {
+                "var_path": "other_path"
+              },
+              "prevValue": null,
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
                 },
-                "timestamp": 1566736760322
-              }
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      },
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      }
+                    }
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": {
+                "to": "deep other_path to value"
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "other_path",
+              ]
             },
-            "value": {
-              "to": "deep other_path to value"
-            },
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "other_path",
-            ]
-          });
-          assert.deepEqual(requestBodyAinize4, {
-            "auth": {
-              "addr": "abcd",
+            {  // third call: non-null prevValue case only!
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30201",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
+              "fid": "0x30201",
+              "function": {
+                "function_id": "0x30201",
+                "function_type": "REST",
+                "function_url": "https://events3.ainize.ai/trigger",
+              },
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "$var_path",
+              ],
+              "params": {
+                "var_path": "existing_path"
+              },
+              "prevValue": {
+                "to": {
+                  "existing_path2": {
+                    "to": "PREVIOUS: deep existing_path to existing_path2 to value"
+                  }
+                }
+              },
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      },
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      }
+                    }
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": null,  // being deleted!
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "existing_path",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAinize4, [
+            {  // first call
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30202",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
               "fid": "0x30202",
-              "fids": [],
-            },
-            "blockNumber": 1000,
-            "blockTime": 1234567890999,
-            "executedAt": 1566736760324,
-            "fid": "0x30202",
-            "function": {
-              "function_id": "0x30202",
-              "function_type": "REST",
-              "function_url": "https://events4.ainize.ai/trigger",
-            },
-            "functionPath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "$var_path",
-            ],
-            "params": {
-              "var_path": "other_path"
-            },
-            "prevValue": null,
-            "timestamp": 1234567890000,
-            "transaction": {
-              "extra": {
-                "created_at": 1566736760323,
-                "executed_at": 1566736760324,
+              "function": {
+                "function_id": "0x30202",
+                "function_type": "REST",
+                "function_url": "https://events4.ainize.ai/trigger",
               },
-              "tx_body": {
-                "gas_price": 1,
-                "nonce": 123,
-                "operation": {
-                  "ref": "/apps/test/test_function/some/path/rest_with_subtree",
-                  "type": "SET_VALUE",
-                  "value": {
-                    "deep": {
-                      "other_path": {
-                        "to": "deep other_path to value"
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "$var_path",
+              ],
+              "params": {
+                "var_path": "path"
+              },
+              "prevValue": {  // non-null prevValue case only!
+                "to": "PREVIOUS: deep path to value"
+              },
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       },
-                      "path": {
-                        "to": "deep path to value"
-                      }
-                    },
-                    "other_deep": {
-                      "path": {
-                        "to": "deep path to value"
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
                       }
                     }
-                  }
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": {
+                "to": "deep path to value"
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "path",
+              ]
+            },
+            {  // second call
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30202",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
+              "fid": "0x30202",
+              "function": {
+                "function_id": "0x30202",
+                "function_type": "REST",
+                "function_url": "https://events4.ainize.ai/trigger",
+              },
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "$var_path",
+              ],
+              "params": {
+                "var_path": "other_path"
+              },
+              "prevValue": null,
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
                 },
-                "timestamp": 1566736760322
-              }
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      },
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      }
+                    }
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": {
+                "to": "deep other_path to value"
+              },
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "other_path",
+              ]
             },
-            "value": {
-              "to": "deep other_path to value"
-            },
-            "valuePath": [
-              "apps",
-              "test",
-              "test_function",
-              "some",
-              "path",
-              "rest_with_subtree",
-              "deep",
-              "other_path",
-            ]
-          });
-          assert.deepEqual(requestBodyAfan, null);
-          assert.deepEqual(requestBodyAfan2, null);
+            {  // third call: non-null prevValue case only!
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30202",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
+              "fid": "0x30202",
+              "function": {
+                "function_id": "0x30202",
+                "function_type": "REST",
+                "function_url": "https://events4.ainize.ai/trigger",
+              },
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "$var_path",
+              ],
+              "params": {
+                "var_path": "existing_path"
+              },
+              "prevValue": {
+                "to": {
+                  "existing_path2": {
+                    "to": "PREVIOUS: deep existing_path to existing_path2 to value"
+                  }
+                }
+              },
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      },
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      }
+                    }
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": null,  // being deleted!
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "existing_path",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAfan, [
+            {  // non-null prevValue case only!
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30301",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
+              "fid": "0x30301",
+              "function": {
+                "function_id": "0x30301",
+                "function_type": "REST",
+                "function_url": "https://events.afan.ai/trigger",
+              },
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "$var_path",
+                "to",
+                "$var_path2",
+              ],
+              "params": {
+                "var_path": "existing_path",
+                "var_path2": "existing_path2",
+              },
+              "prevValue": {
+                "to": "PREVIOUS: deep existing_path to existing_path2 to value"
+              },
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      },
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      }
+                    }
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": null,  // being deleted!
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "existing_path",
+                "to",
+                "existing_path2",
+              ]
+            }
+          ]);
+          assert.deepEqual(requestBodyAfan2, [
+            {  // non-null prevValue case only!
+              "auth": {
+                "addr": "abcd",
+                "fid": "0x30302",
+                "fids": [],
+              },
+              "blockNumber": 1000,
+              "blockTime": 1234567890999,
+              "executedAt": 1566736760324,
+              "fid": "0x30302",
+              "function": {
+                "function_id": "0x30302",
+                "function_type": "REST",
+                "function_url": "https://events2.afan.ai/trigger",
+              },
+              "functionPath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "$var_path",
+                "to",
+                "$var_path2",
+              ],
+              "params": {
+                "var_path": "existing_path",
+                "var_path2": "existing_path2",
+              },
+              "prevValue": {
+                "to": "PREVIOUS: deep existing_path to existing_path2 to value"
+              },
+              "timestamp": 1234567890000,
+              "transaction": {
+                "extra": {
+                  "created_at": 1566736760323,
+                  "executed_at": 1566736760324,
+                },
+                "tx_body": {
+                  "gas_price": 1,
+                  "nonce": 123,
+                  "operation": {
+                    "ref": "/apps/test/test_function/some/path/rest_with_subtree",
+                    "type": "SET_VALUE",
+                    "value": {
+                      "deep": {
+                        "other_path": {
+                          "to": "deep other_path to value"
+                        },
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      },
+                      "other_deep": {
+                        "path": {
+                          "to": "deep path to value"
+                        }
+                      }
+                    }
+                  },
+                  "timestamp": 1566736760322
+                }
+              },
+              "value": null,  // being deleted!
+              "valuePath": [
+                "apps",
+                "test",
+                "test_function",
+                "some",
+                "path",
+                "rest_with_subtree",
+                "deep",
+                "existing_path",
+                "to",
+                "existing_path2",
+              ]
+            }
+          ]);
         });
       })
 
@@ -2156,8 +2845,8 @@ describe("Functions", () => {
       assert.deepEqual(Functions.matchValueWithFunctionPath(value, [
         'some',
         'value',
-      ]), [
-        {
+      ]), {
+        "/some/value": {
           "value": "some value",
           "pathVars": {},
           "path": [
@@ -2165,15 +2854,15 @@ describe("Functions", () => {
             "value",
           ]
         }
-      ]);
+      });
       assert.deepEqual(Functions.matchValueWithFunctionPath(value, [
         'some',
         'deep',
         'deeper',
         'path',
         'to',
-      ]), [
-        {
+      ]), {
+        "/some/deep/deeper/path/to": {
           "value": "some deep deeper path to value",
           "pathVars": {},
           "path": [
@@ -2184,7 +2873,7 @@ describe("Functions", () => {
             "to",
           ]
         }
-      ]);
+      });
     })
 
     it("with too-long non-variable path", () => {
@@ -2193,7 +2882,7 @@ describe("Functions", () => {
         'path',
         'to',
         'value'
-      ]), []);
+      ]), {});
     })
 
     it("with matching variable path", () => {
@@ -2201,8 +2890,8 @@ describe("Functions", () => {
         'some',
         '$var_path',
         'to',
-      ]), [
-        {
+      ]), {
+        "/some/path/to": {
           "value": "some path to value",
           "pathVars": {
             "$var_path": "path",
@@ -2213,7 +2902,7 @@ describe("Functions", () => {
             "to",
           ]
         },
-        {
+        "/some/other_path/to": {
           "value": "some other_path to value",
           "pathVars": {
             "$var_path": "other_path",
@@ -2224,14 +2913,14 @@ describe("Functions", () => {
             "to",
           ]
         }
-      ]);
+      });
       assert.deepEqual(Functions.matchValueWithFunctionPath(value, [
         'some',
         '$var_path1',
         'deeper',
         '$var_path2',
-      ]), [
-        {
+      ]), {
+        "/some/deep/deeper/path": {
           "value": {
             "to": "some deep deeper path to value"
           },
@@ -2246,7 +2935,7 @@ describe("Functions", () => {
             "path",
           ]
         },
-        {
+        "/some/deep/deeper/other_path": {
           "value": {
             "to": "some deep deeper other_path to value"
           },
@@ -2261,7 +2950,7 @@ describe("Functions", () => {
             "other_path",
           ]
         }
-      ]);
+      });
     })
 
     it("with too-long variable path", () => {
@@ -2270,7 +2959,7 @@ describe("Functions", () => {
         '$var_path1',
         'to',
         '$var_path2'
-      ]), []);
+      ]), {});
     })
   });
 
