@@ -1876,6 +1876,10 @@ describe('Native Function', () => {
                 "2": {
                   "path": "/staking/test_service_gas_fee/balance_total",
                   "result": {
+                    "subtree_func_results": {
+                      "/$staking_key/stake/$record_id/value": {},
+                      "/$staking_key/unstake/$record_id/value": {},
+                    },
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
@@ -1954,6 +1958,10 @@ describe('Native Function', () => {
                 "2": {
                   "path": "/staking/test_service_gas_fee/balance_total",
                   "result": {
+                    "subtree_func_results": {
+                      "/$staking_key/stake/$record_id/value": {},
+                      "/$staking_key/unstake/$record_id/value": {},
+                    },
                     "code": 0,
                     "bandwidth_gas_amount": 1
                   }
@@ -2327,6 +2335,10 @@ describe('Native Function', () => {
                     "path": "/staking/test_service_staking/balance_total",
                     "result": {
                       "code": 0,
+                      "subtree_func_results": {
+                        "/$staking_key/stake/$record_id/value": {},
+                        "/$staking_key/unstake/$record_id/value": {},
+                      },
                       "bandwidth_gas_amount": 1,
                     }
                   }
@@ -2538,6 +2550,10 @@ describe('Native Function', () => {
                   "1": {
                     "path": "/staking/test_service_staking/balance_total",
                     "result": {
+                      "subtree_func_results": {
+                        "/$staking_key/stake/$record_id/value": {},
+                        "/$staking_key/unstake/$record_id/value": {},
+                      },
                       "code": 0,
                       "bandwidth_gas_amount": 1,
                     }
