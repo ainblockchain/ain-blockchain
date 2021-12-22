@@ -72,6 +72,26 @@ class P2pServer {
   async listen() {
     this.wsServer = new Websocket.Server({
       port: NodeConfigs.P2P_PORT,
+      // Enables server-side compression. For option details, see
+      // https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback
+      perMessageDeflate: {
+        zlibDeflateOptions: {
+          // See zlib defaults.
+          chunkSize: 1024,
+          memLevel: 7,
+          level: 3
+        },
+        zlibInflateOptions: {
+          chunkSize: 10 * 1024
+        },
+        // Other options settable:
+        clientNoContextTakeover: true, // Defaults to negotiated value.
+        serverNoContextTakeover: true, // Defaults to negotiated value.
+        serverMaxWindowBits: 10, // Defaults to negotiated value.
+        // Below options specified as default values.
+        concurrencyLimit: 10, // Limits zlib concurrency for perf.
+        threshold: 1024 // Size (in bytes) below which messages should not be compressed.
+      }
     });
     // Set the number of maximum clients.
     this.wsServer.setMaxListeners(NodeConfigs.MAX_NUM_INBOUND_CONNECTION);
@@ -424,7 +444,7 @@ class P2pServer {
             } else {
               const addressFromSig = getAddressFromMessage(parsedMessage);
               if (!checkPeerWhitelist(addressFromSig)) {
-                logger.debug(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
+                logger.error(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
                 closeSocketSafe(this.inbound, socket);
                 return;
               }

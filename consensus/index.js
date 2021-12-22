@@ -141,11 +141,6 @@ class Consensus {
       }
       this.isInEpochTransition = true;
       this.node.tryFinalizeChain();
-      if (this.stakeTx && Object.keys(this.server.client.outbound).length > 0) {
-        logger.info(`[${LOG_HEADER}] broadcasting stakeTx`);
-        this.server.client.broadcastTransaction(this.stakeTx);
-        this.stakeTx = null;
-      }
       let currentTime = Date.now();
       if (DevFlags.enableNtpSync && this.epoch % 100 === 0) {
         // adjust time
