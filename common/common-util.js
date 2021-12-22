@@ -721,13 +721,29 @@ class CommonUtil {
     }, { gasAmountTotal: 0, gasCostTotal: 0 });
   }
 
-  static returnTxResult(code, message = null, bandwidthGasAmount = 0, funcResults = null) {
+  static deleteSubtreeFuncResPromiseResults(res) {
+    const deleted = JSON.parse(JSON.stringify(res));
+    for (const subtreeFuncPath in res) {
+      const subtreeFuncPathRes = res[subtreeFuncPath];
+      for (const subtreeValuePath in subtreeFuncPathRes) {
+        _.unset(deleted, `${subtreeFuncPath}.${subtreeValuePath}.promise_results`);
+      }
+    }
+    return deleted;
+  }
+
+  static returnTxResult(
+      code, message = null, bandwidthGasAmount = 0, funcResults = null, subtreeFuncResults = null) {
     const result = {};
     if (message) {
       result.error_message = message;
     }
     if (!CommonUtil.isEmpty(funcResults)) {
       result.func_results = funcResults;
+    }
+    if (!CommonUtil.isEmpty(subtreeFuncResults)) {
+      result.subtree_func_results =
+          CommonUtil.deleteSubtreeFuncResPromiseResults(subtreeFuncResults);
     }
     result.code = code;
     result.bandwidth_gas_amount = bandwidthGasAmount;

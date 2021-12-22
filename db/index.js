@@ -798,6 +798,7 @@ class DB {
     const valueCopy = CommonUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
     let funcResults = null;
+    let subtreeFuncResults = null;
     if (auth && (auth.addr || auth.fid)) {
       if (blockTime === null) {
         blockTime = this.lastBlockTimestamp();
@@ -806,16 +807,26 @@ class DB {
           'resource/account_registration_gas_amount', blockNumber, this.stateRoot);
       const restFunctionCallGasAmount = DB.getBlockchainParam(
           'resource/rest_function_call_gas_amount', blockNumber, this.stateRoot);
-      const { func_results } = this.func.matchAndTriggerFunctions(
+      const { func_results, subtree_func_results } = this.func.matchAndTriggerFunctions(
           localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime,
           accountRegistrationGasAmount, restFunctionCallGasAmount, options);
       funcResults = func_results;
+      subtreeFuncResults = subtree_func_results;
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
         return CommonUtil.returnTxResult(
             TxResultCode.SET_VALUE_TRIGGERED_FUNCTION_CALL_FAILED,
             `Triggered function call failed`,
             unitWriteGasLimit,
-            funcResults);
+            funcResults,
+            subtreeFuncResults);
+      }
+      if (CommonUtil.isFailedSubtreeFuncTrigger(subtreeFuncResults)) {
+        return CommonUtil.returnTxResult(
+            TxResultCode.SET_VALUE_TRIGGERED_SUBTREE_FUNCTION_CALL_FAILED,
+            `Triggered subtree function call failed`,
+            unitWriteGasLimit,
+            funcResults,
+            subtreeFuncResults);
       }
     }
     if (value !== null) {
@@ -830,7 +841,8 @@ class DB {
         TxResultCode.SUCCESS,
         null,
         unitWriteGasLimit,
-        funcResults);
+        funcResults,
+        subtreeFuncResults);
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
