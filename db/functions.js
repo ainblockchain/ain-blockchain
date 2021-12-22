@@ -49,6 +49,8 @@ class Functions {
         func: this._distributeFee.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.ERASE_VALUE]: {
         func: this._eraseValue.bind(this), ownerOnly: false, extraGasAmount: 0 },
+      [NativeFunctionIds.FAIL]: {
+        func: this._fail.bind(this), ownerOnly: false, extraGasAmount: 0 },
       [NativeFunctionIds.HANDLE_OFFENSES]: {
         func: this._handleOffenses.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.HOLD]: {
@@ -613,6 +615,14 @@ class Functions {
     } else {
       return this.returnFuncResult(context, FunctionResultCode.FAILURE);
     }
+  }
+
+  /**
+   * Does nothing except always fails.
+   * This is often used for testing purposes.
+   */
+  _fail(value, context) {
+    return this.returnFuncResult(context, FunctionResultCode.FAILURE);
   }
 
   /**
