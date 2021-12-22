@@ -13,6 +13,7 @@ const {
   NativeFunctionIds,
   WriteDbOperations,
   OwnerProperties,
+  StateLabelProperties,
   buildOwnerPermissions,
   buildRulePermission,
 } = require('../common/constants');
@@ -88,24 +89,31 @@ class Functions {
    * @param {Object} transaction transaction
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
-  // TODO(platfowner): Trigger subtree functions.
+  // TODO(platfowner): Replace preValue.
+  // TODO(platfowner): Update isFailedTx() and gas util functions.
   matchAndTriggerFunctions(
       parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
-      accountRegistrationGasAmount, restFunctionCallGasAmount) {
-    const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
+      accountRegistrationGasAmount, restFunctionCallGasAmount, options) {
+    const matchedFunction = this.db.matchFunctionForParsedPath(parsedValuePath);
     const triggerRes = this.triggerFunctions(
-        matched.matchedFunction.path, matched.pathVars, matched.matchedFunction.config,
+        matchedFunction.matchedFunction.path, matchedFunction.pathVars, matchedFunction.matchedFunction.config,
         parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
         accountRegistrationGasAmount, restFunctionCallGasAmount);
     const subtreeFuncRes = {};
-    for (const subtreeConfig of matched.subtreeFunctions) {
-      const subtreeFuncPath = [...matched.matchedFunction.path, ...subtreeConfig.path];
-      const subtreeValuePath = [...parsedValuePath, ...subtreeConfig.path];
-      const subtreeTriggerRes = this.triggerFunctions(
-          subtreeFuncPath, {}, subtreeConfig.config,
-          subtreeValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
-          accountRegistrationGasAmount, restFunctionCallGasAmount);
-      subtreeFuncRes[CommonUtil.formatPath(subtreeConfig.path)] = subtreeTriggerRes;
+    for (const subtreeConfig of matchedFunction.subtreeFunctions) {
+      const matchedValueList = Functions.matchValueWithFunctionPath(value, subtreeConfig.path);
+      const subtreeFuncPathRes = {};
+      for (const matchedValue of matchedValueList) {
+        const subtreeFuncPath = [...matchedFunction.matchedFunction.path, ...subtreeConfig.path];
+        const pathVars = Object.assign({}, matchedFunction.pathVars, matchedValue.pathVars);
+        const subtreeValuePath = [...parsedValuePath, ...matchedValue.path];
+        const subtreeValuePathRes = this.triggerFunctions(
+            subtreeFuncPath, pathVars, subtreeConfig.config,
+            subtreeValuePath, matchedValue.value, prevValue, auth, timestamp, transaction,
+            blockNumber, blockTime, accountRegistrationGasAmount, restFunctionCallGasAmount);
+        subtreeFuncPathRes[CommonUtil.formatPath(matchedValue.path)] = subtreeValuePathRes;
+      }
+      subtreeFuncRes[CommonUtil.formatPath(subtreeConfig.path)] = subtreeFuncPathRes;
     }
     return Object.assign(triggerRes, { subtree_func_results: subtreeFuncRes });
   }
@@ -364,6 +372,52 @@ class Functions {
       });
     }
     return params;
+  }
+
+  static matchValueWithFunctionPathRecursive(
+      valueObj, parsedValuePath, parsedFunctionPath, depth, pathVars) {
+    const matched = [];
+    if (depth == parsedFunctionPath.length) {
+      matched.push({
+        path: parsedValuePath,
+        pathVars,
+        value: JSON.parse(JSON.stringify(valueObj)),
+      });
+      return matched;
+    }
+    if (!CommonUtil.isDict(valueObj)) {
+      // Avoid some special cases like string.
+      return matched;
+    }
+    const functionLabel = parsedFunctionPath[depth];
+    if (CommonUtil.isVariableLabel(functionLabel)) {
+      for (const valueLabel of Object.keys(valueObj)) {
+        const pathVarsCopy = JSON.parse(JSON.stringify(pathVars));
+        if (pathVarsCopy[functionLabel] !== undefined) {
+          // This should not happen!
+          logger.error(`Duplicated path variables [${functionLabel}] that should NOT happen!`)
+        } else {
+          pathVarsCopy[functionLabel] = valueLabel;
+        }
+        const matchedRecur = Functions.matchValueWithFunctionPathRecursive(
+            valueObj[valueLabel], [...parsedValuePath, valueLabel], parsedFunctionPath,
+            depth + 1, pathVarsCopy);
+        matched.push(...matchedRecur);
+      }
+    } else {
+      if (valueObj[functionLabel] !== undefined) {
+        const matchedRecur = Functions.matchValueWithFunctionPathRecursive(
+            valueObj[functionLabel], [...parsedValuePath, functionLabel], parsedFunctionPath,
+            depth + 1, pathVars);
+        matched.push(...matchedRecur);
+      }
+    }
+
+    return matched;
+  }
+
+  static matchValueWithFunctionPath(value, parsedFunctionPath) {
+    return Functions.matchValueWithFunctionPathRecursive(value, [], parsedFunctionPath, 0, {});
   }
 
   setValueOrLog(valuePath, value, context) {
