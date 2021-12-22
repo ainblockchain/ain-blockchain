@@ -610,8 +610,8 @@ describe("CommonUtil", () => {
           }
         },
         "subtree_func_results": {
-          "/deep/path": {
-            "/deep/path": {
+          "/shallow/path": {
+            "/shallow/path": {
               "func_results": {
                 "0x30101": {
                   "bandwidth_gas_amount": 100,
@@ -625,8 +625,8 @@ describe("CommonUtil", () => {
               "promise_results": "erased"
             }
           },
-          "/deep/$var_path": {
-            "/deep/path": {
+          "/shallow/$var_path": {
+            "/shallow/path": {
               "func_results": {
                 "0x30201": {
                   "bandwidth_gas_amount": 100,
@@ -639,7 +639,7 @@ describe("CommonUtil", () => {
               },
               "promise_results": "erased"
             },
-            "/deep/other_path": {
+            "/shallow/other_path": {
               "func_results": {
                 "0x30201": {
                   "bandwidth_gas_amount": 100,
@@ -653,7 +653,7 @@ describe("CommonUtil", () => {
               "promise_results": "erased"
             },
           },
-          "/deep/$var_path/to/$var_path2": {},
+          "/shallow/$var_path/to/$var_path2": {},
         },
         "bandwidth_gas_amount": 1,
         "gas_amount_total": {
@@ -673,8 +673,8 @@ describe("CommonUtil", () => {
           }
         },
         "subtree_func_results": {
-          "/deep/path": {
-            "/deep/path": {
+          "/shallow/path": {
+            "/shallow/path": {
               "func_results": {
                 "0x30101": {
                   "bandwidth_gas_amount": 100,
@@ -688,8 +688,8 @@ describe("CommonUtil", () => {
               "promise_results": "erased"
             }
           },
-          "/deep/$var_path": {
-            "/deep/path": {
+          "/shallow/$var_path": {
+            "/shallow/path": {
               "func_results": {
                 "0x30201": {
                   "bandwidth_gas_amount": 100,
@@ -702,7 +702,7 @@ describe("CommonUtil", () => {
               },
               "promise_results": "erased"
             },
-            "/deep/other_path": {
+            "/shallow/other_path": {
               "func_results": {
                 "0x30201": {
                   "bandwidth_gas_amount": 100,
@@ -716,7 +716,7 @@ describe("CommonUtil", () => {
               "promise_results": "erased"
             },
           },
-          "/deep/$var_path/to/$var_path2": {},
+          "/shallow/$var_path/to/$var_path2": {},
         },
         "bandwidth_gas_amount": 1,
         "gas_amount_total": {
@@ -1117,194 +1117,6 @@ describe("CommonUtil", () => {
                               },
                               "0x30202": {
                                 "bandwidth_gas_amount": 100,
-                                "code": 0,
-                              }
-                            },
-                            "promise_results": "erased"
-                          },
-                        },
-                        "/deep/$var_path/to/$var_path2": {},
-                      },
-                      "code": 0,
-                      "bandwidth_gas_amount": 1
-                    }
-                  }
-                },
-                "code": 0,
-                "bandwidth_gas_amount": 0,
-              }
-            },
-            "code": 0,
-            "bandwidth_gas_amount": 0
-          },
-          "2": {
-            "code": 10201,  // A root operation failed.
-            "error_message": "Not a number type: bar or 10",
-            "bandwidth_gas_amount": 1,
-          },
-        }
-      })).to.equal(true);
-
-      expect(CommonUtil.isFailedTx({
-        "result_list": {
-          "0": {
-            "code": 0,
-            "bandwidth_gas_amount": 1
-          },
-          "1": {
-            "func_results": {
-              "_saveLastTx": {
-                "op_results": {
-                  "0": {
-                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
-                    "result": {
-                      "func_results": {
-                        "_eraseValue": {
-                          "op_results": {
-                            "0": {
-                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
-                              "result": {
-                                "code": 10201,  // A sub-operation failed.
-                                "error_message": "Not a number type: bar or 10",
-                                "bandwidth_gas_amount": 1
-                              }
-                            }
-                          },
-                          "code": 0,
-                          "bandwidth_gas_amount": 0,
-                        }
-                      },
-                      "subtree_func_results": {
-                        "/deep/path": {
-                          "/deep/path": {
-                            "func_results": {
-                              "0x30101": {
-                                "bandwidth_gas_amount": 100,
-                                "code": 0,
-                              },
-                              "0x30102": {
-                                "bandwidth_gas_amount": 100,
-                                "code": 0,
-                              }
-                            },
-                            "promise_results": "erased"
-                          }
-                        },
-                        "/deep/$var_path": {
-                          "/deep/path": {
-                            "func_results": {
-                              "0x30201": {
-                                "bandwidth_gas_amount": 100,
-                                "code": 0,
-                              },
-                              "0x30202": {
-                                "bandwidth_gas_amount": 100,
-                                "code": 0,
-                              }
-                            },
-                            "promise_results": "erased"
-                          },
-                          "/deep/other_path": {
-                            "func_results": {
-                              "0x30201": {
-                                "bandwidth_gas_amount": 100,
-                                "code": 0,
-                              },
-                              "0x30202": {
-                                "bandwidth_gas_amount": 100,
-                                "code": 0,
-                              }
-                            },
-                            "promise_results": "erased"
-                          },
-                        },
-                        "/deep/$var_path/to/$var_path2": {},
-                      },
-                      "code": 0,
-                      "bandwidth_gas_amount": 1
-                    }
-                  }
-                },
-                "code": 0,
-                "bandwidth_gas_amount": 0,
-              }
-            },
-            "code": 0,
-            "bandwidth_gas_amount": 0
-          },
-          "2": {
-            "code": 0,
-            "bandwidth_gas_amount": 1,
-          },
-        }
-      })).to.equal(true);
-
-      expect(CommonUtil.isFailedTx({
-        "result_list": {
-          "0": {
-            "code": 0,
-            "bandwidth_gas_amount": 1
-          },
-          "1": {
-            "func_results": {
-              "_saveLastTx": {
-                "op_results": {
-                  "0": {
-                    "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
-                    "result": {
-                      "func_results": {
-                        "_eraseValue": {
-                          "op_results": {
-                            "0": {
-                              "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
-                              "result": {
-                                "code": 0,
-                                "bandwidth_gas_amount": 1
-                              }
-                            }
-                          },
-                          "code": 0,
-                          "bandwidth_gas_amount": 0,
-                        }
-                      },
-                      "subtree_func_results": {
-                        "/deep/path": {
-                          "/deep/path": {
-                            "func_results": {
-                              "0x30101": {
-                                "bandwidth_gas_amount": 100,
-                                "code": 0,
-                              },
-                              "0x30102": {
-                                "bandwidth_gas_amount": 100,
-                                "code": 0,
-                              }
-                            },
-                            "promise_results": "erased"
-                          }
-                        },
-                        "/deep/$var_path": {
-                          "/deep/path": {
-                            "func_results": {
-                              "0x30201": {
-                                "bandwidth_gas_amount": 100,
-                                "code": 0,
-                              },
-                              "0x30202": {
-                                "bandwidth_gas_amount": 100,
-                                "code": 0,
-                              }
-                            },
-                            "promise_results": "erased"
-                          },
-                          "/deep/other_path": {
-                            "func_results": {
-                              "0x30201": {
-                                "bandwidth_gas_amount": 100,
-                                "code": 0,
-                              },
-                              "0x30202": {
-                                "bandwidth_gas_amount": 100,
                                 "code": 20001,  // A subtree function call failed.
                               }
                             },
@@ -1416,6 +1228,52 @@ describe("CommonUtil", () => {
                       "bandwidth_gas_amount": 10
                     }
                   },
+                  "subtree_func_results": {
+                    "/deep/path": {
+                      "/deep/path": {
+                        "func_results": {
+                          "0x30101": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          },
+                          "0x30102": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          }
+                        },
+                        "promise_results": "erased"
+                      }
+                    },
+                    "/deep/$var_path": {
+                      "/deep/path": {
+                        "func_results": {
+                          "0x30201": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          },
+                          "0x30202": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          }
+                        },
+                        "promise_results": "erased"
+                      },
+                      "/deep/other_path": {
+                        "func_results": {
+                          "0x30201": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          },
+                          "0x30202": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 20001,  // A subtree function call failed.
+                          }
+                        },
+                        "promise_results": "erased"
+                      }
+                    },
+                    "/deep/$var_path/to/$var_path2": {},
+                  },
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 }
@@ -1425,11 +1283,57 @@ describe("CommonUtil", () => {
             "bandwidth_gas_amount": 20,
           }
         },
+        "subtree_func_results": {
+          "/shallow/path": {
+            "/shallow/path": {
+              "func_results": {
+                "0x30101": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30102": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                }
+              },
+              "promise_results": "erased"
+            }
+          },
+          "/shallow/$var_path": {
+            "/shallow/path": {
+              "func_results": {
+                "0x30201": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30202": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                }
+              },
+              "promise_results": "erased"
+            },
+            "/shallow/other_path": {
+              "func_results": {
+                "0x30201": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30202": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 20001,  // A subtree function call failed.
+                }
+              },
+              "promise_results": "erased"
+            }
+          },
+          "/shallow/$var_path/to/$var_path2": {},
+        },
         "code": 0,
         "bandwidth_gas_amount": 30
       };
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(serviceOp, result), {
-        service: 62
+        service: 1262
       });
     })
 
@@ -1456,6 +1360,52 @@ describe("CommonUtil", () => {
                       "bandwidth_gas_amount": 10
                     }
                   },
+                  "subtree_func_results": {
+                    "/deep/path": {
+                      "/deep/path": {
+                        "func_results": {
+                          "0x30101": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          },
+                          "0x30102": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          }
+                        },
+                        "promise_results": "erased"
+                      }
+                    },
+                    "/deep/$var_path": {
+                      "/deep/path": {
+                        "func_results": {
+                          "0x30201": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          },
+                          "0x30202": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          }
+                        },
+                        "promise_results": "erased"
+                      },
+                      "/deep/other_path": {
+                        "func_results": {
+                          "0x30201": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          },
+                          "0x30202": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 20001,  // A subtree function call failed.
+                          }
+                        },
+                        "promise_results": "erased"
+                      }
+                    },
+                    "/deep/$var_path/to/$var_path2": {},
+                  },
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 }
@@ -1465,12 +1415,58 @@ describe("CommonUtil", () => {
             "bandwidth_gas_amount": 20,
           }
         },
+        "subtree_func_results": {
+          "/shallow/path": {
+            "/shallow/path": {
+              "func_results": {
+                "0x30101": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30102": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                }
+              },
+              "promise_results": "erased"
+            }
+          },
+          "/shallow/$var_path": {
+            "/shallow/path": {
+              "func_results": {
+                "0x30201": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30202": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                }
+              },
+              "promise_results": "erased"
+            },
+            "/shallow/other_path": {
+              "func_results": {
+                "0x30201": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30202": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 20001,  // A subtree function call failed.
+                }
+              },
+              "promise_results": "erased"
+            }
+          },
+          "/shallow/$var_path/to/$var_path2": {},
+        },
         "code": 0,
         "bandwidth_gas_amount": 30
       };
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(appOp, result), {
         app: {
-          test: 62
+          test: 1262
         },
         service: 0
       });
@@ -1499,6 +1495,52 @@ describe("CommonUtil", () => {
                       "bandwidth_gas_amount": 10
                     }
                   },
+                  "subtree_func_results": {
+                    "/deep/path": {
+                      "/deep/path": {
+                        "func_results": {
+                          "0x30101": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          },
+                          "0x30102": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          }
+                        },
+                        "promise_results": "erased"
+                      }
+                    },
+                    "/deep/$var_path": {
+                      "/deep/path": {
+                        "func_results": {
+                          "0x30201": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          },
+                          "0x30202": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          }
+                        },
+                        "promise_results": "erased"
+                      },
+                      "/deep/other_path": {
+                        "func_results": {
+                          "0x30201": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 0,
+                          },
+                          "0x30202": {
+                            "bandwidth_gas_amount": 100,
+                            "code": 20001,  // A subtree function call failed.
+                          }
+                        },
+                        "promise_results": "erased"
+                      }
+                    },
+                    "/deep/$var_path/to/$var_path2": {},
+                  },
                   "code": 0,
                   "bandwidth_gas_amount": 1
                 }
@@ -1508,12 +1550,58 @@ describe("CommonUtil", () => {
             "bandwidth_gas_amount": 20,
           }
         },
+        "subtree_func_results": {
+          "/shallow/path": {
+            "/shallow/path": {
+              "func_results": {
+                "0x30101": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30102": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                }
+              },
+              "promise_results": "erased"
+            }
+          },
+          "/shallow/$var_path": {
+            "/shallow/path": {
+              "func_results": {
+                "0x30201": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30202": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                }
+              },
+              "promise_results": "erased"
+            },
+            "/shallow/other_path": {
+              "func_results": {
+                "0x30201": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 0,
+                },
+                "0x30202": {
+                  "bandwidth_gas_amount": 100,
+                  "code": 20001,  // A subtree function call failed.
+                }
+              },
+              "promise_results": "erased"
+            }
+          },
+          "/shallow/$var_path/to/$var_path2": {},
+        },
         "code": 0,
         "bandwidth_gas_amount": 30
       };
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(appOp, result), {
         app: {
-          test: 61
+          test: 1261
         },
         service: 1
       });
@@ -1545,6 +1633,52 @@ describe("CommonUtil", () => {
                           "bandwidth_gas_amount": 10
                         }
                       },
+                      "subtree_func_results": {
+                        "/deep/path": {
+                          "/deep/path": {
+                            "func_results": {
+                              "0x30101": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              },
+                              "0x30102": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              }
+                            },
+                            "promise_results": "erased"
+                          }
+                        },
+                        "/deep/$var_path": {
+                          "/deep/path": {
+                            "func_results": {
+                              "0x30201": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              },
+                              "0x30202": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              }
+                            },
+                            "promise_results": "erased"
+                          },
+                          "/deep/other_path": {
+                            "func_results": {
+                              "0x30201": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              },
+                              "0x30202": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 20001,  // A subtree function call failed.
+                              }
+                            },
+                            "promise_results": "erased"
+                          }
+                        },
+                        "/deep/$var_path/to/$var_path2": {},
+                      },
                       "code": 0,
                       "bandwidth_gas_amount": 1
                     }
@@ -1553,6 +1687,52 @@ describe("CommonUtil", () => {
                 "code": 0,
                 "bandwidth_gas_amount": 20
               }
+            },
+            "subtree_func_results": {
+              "/shallow/path": {
+                "/shallow/path": {
+                  "func_results": {
+                    "0x30101": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    },
+                    "0x30102": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    }
+                  },
+                  "promise_results": "erased"
+                }
+              },
+              "/shallow/$var_path": {
+                "/shallow/path": {
+                  "func_results": {
+                    "0x30201": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    },
+                    "0x30202": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    }
+                  },
+                  "promise_results": "erased"
+                },
+                "/shallow/other_path": {
+                  "func_results": {
+                    "0x30201": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    },
+                    "0x30202": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 20001,  // A subtree function call failed.
+                    }
+                  },
+                  "promise_results": "erased"
+                }
+              },
+              "/shallow/$var_path/to/$var_path2": {},
             },
             "code": 0,
             "bandwidth_gas_amount": 30
@@ -1564,7 +1744,7 @@ describe("CommonUtil", () => {
         }
       };
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(setTxOp, result), {
-        service: 63
+        service: 1263
       });
     })
 
@@ -1594,6 +1774,52 @@ describe("CommonUtil", () => {
                           "bandwidth_gas_amount": 10
                         }
                       },
+                      "subtree_func_results": {
+                        "/deep/path": {
+                          "/deep/path": {
+                            "func_results": {
+                              "0x30101": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              },
+                              "0x30102": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              }
+                            },
+                            "promise_results": "erased"
+                          }
+                        },
+                        "/deep/$var_path": {
+                          "/deep/path": {
+                            "func_results": {
+                              "0x30201": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              },
+                              "0x30202": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              }
+                            },
+                            "promise_results": "erased"
+                          },
+                          "/deep/other_path": {
+                            "func_results": {
+                              "0x30201": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              },
+                              "0x30202": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 20001,  // A subtree function call failed.
+                              }
+                            },
+                            "promise_results": "erased"
+                          }
+                        },
+                        "/deep/$var_path/to/$var_path2": {},
+                      },
                       "code": 0,
                       "bandwidth_gas_amount": 1
                     }
@@ -1602,6 +1828,52 @@ describe("CommonUtil", () => {
                 "code": 0,
                 "bandwidth_gas_amount": 20
               }
+            },
+            "subtree_func_results": {
+              "/shallow/path": {
+                "/shallow/path": {
+                  "func_results": {
+                    "0x30101": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    },
+                    "0x30102": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    }
+                  },
+                  "promise_results": "erased"
+                }
+              },
+              "/shallow/$var_path": {
+                "/shallow/path": {
+                  "func_results": {
+                    "0x30201": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    },
+                    "0x30202": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    }
+                  },
+                  "promise_results": "erased"
+                },
+                "/shallow/other_path": {
+                  "func_results": {
+                    "0x30201": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    },
+                    "0x30202": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 20001,  // A subtree function call failed.
+                    }
+                  },
+                  "promise_results": "erased"
+                }
+              },
+              "/shallow/$var_path/to/$var_path2": {},
             },
             "code": 0,
             "bandwidth_gas_amount": 30
@@ -1614,7 +1886,7 @@ describe("CommonUtil", () => {
       };
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(setTxOp, result), {
         app: {
-          test: 63
+          test: 1263
         },
         service: 0
       });
@@ -1646,6 +1918,52 @@ describe("CommonUtil", () => {
                           "bandwidth_gas_amount": 10
                         }
                       },
+                      "subtree_func_results": {
+                        "/deep/path": {
+                          "/deep/path": {
+                            "func_results": {
+                              "0x30101": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              },
+                              "0x30102": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              }
+                            },
+                            "promise_results": "erased"
+                          }
+                        },
+                        "/deep/$var_path": {
+                          "/deep/path": {
+                            "func_results": {
+                              "0x30201": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              },
+                              "0x30202": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              }
+                            },
+                            "promise_results": "erased"
+                          },
+                          "/deep/other_path": {
+                            "func_results": {
+                              "0x30201": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 0,
+                              },
+                              "0x30202": {
+                                "bandwidth_gas_amount": 100,
+                                "code": 20001,  // A subtree function call failed.
+                              }
+                            },
+                            "promise_results": "erased"
+                          }
+                        },
+                        "/deep/$var_path/to/$var_path2": {},
+                      },
                       "code": 0,
                       "bandwidth_gas_amount": 1
                     }
@@ -1654,6 +1972,52 @@ describe("CommonUtil", () => {
                 "code": 0,
                 "bandwidth_gas_amount": 20
               }
+            },
+            "subtree_func_results": {
+              "/shallow/path": {
+                "/shallow/path": {
+                  "func_results": {
+                    "0x30101": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    },
+                    "0x30102": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    }
+                  },
+                  "promise_results": "erased"
+                }
+              },
+              "/shallow/$var_path": {
+                "/shallow/path": {
+                  "func_results": {
+                    "0x30201": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    },
+                    "0x30202": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    }
+                  },
+                  "promise_results": "erased"
+                },
+                "/shallow/other_path": {
+                  "func_results": {
+                    "0x30201": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 0,
+                    },
+                    "0x30202": {
+                      "bandwidth_gas_amount": 100,
+                      "code": 20001,  // A subtree function call failed.
+                    }
+                  },
+                  "promise_results": "erased"
+                }
+              },
+              "/shallow/$var_path/to/$var_path2": {},
             },
             "code": 0,
             "bandwidth_gas_amount": 30
@@ -1666,7 +2030,7 @@ describe("CommonUtil", () => {
       };
       assert.deepEqual(CommonUtil.getTotalBandwidthGasAmount(setTxOp, result), {
         app: {
-          test: 62
+          test: 1262
         },
         service: 1
       });
