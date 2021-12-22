@@ -358,7 +358,7 @@ class P2pClient {
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    _.shuffle(Object.values(this.outbound)).slice(0, 2).forEach((node) => {
+    Object.values(this.outbound).forEach((node) => {
       node.socket.send(stringPayload);
     });
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
@@ -553,11 +553,6 @@ class P2pClient {
     if (this.server.consensus.state === ConsensusStates.STARTING) {
       this.server.consensus.initConsensus();
     }
-    if (this.server.consensus.stakeTx && Object.keys(this.outbound).length > 0) {
-      logger.info(`[${LOG_HEADER}] broadcasting stakeTx`);
-      this.broadcastTransaction(this.server.consensus.stakeTx);
-      this.server.consensus.stakeTx = null;
-    }
     return true;
   }
 
@@ -599,6 +594,10 @@ class P2pClient {
         if (address) {
           logger.info(`Received address: ${address}`);
           this.requestChainSegment();
+          if (this.server.consensus.stakeTx) {
+            this.broadcastTransaction(this.server.consensus.stakeTx);
+            this.server.consensus.stakeTx = null;
+          }
         } else {
           logger.error('Address confirmation hasn\'t sent back. Close the socket connection');
           this.removePeerConnection(socket.url);

@@ -416,10 +416,5 @@ do
     # printf "START_NODE_CMD=$START_NODE_CMD\n"
     eval $START_NODE_CMD
     ((node_index++))
-    if [[ $node_index -gt 19 ]]; then
-        sleep 30
-    else
-        # initial validators
-        sleep 60
-    fi
+    sleep 1
 done
