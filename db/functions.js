@@ -13,7 +13,6 @@ const {
   NativeFunctionIds,
   WriteDbOperations,
   OwnerProperties,
-  StateLabelProperties,
   buildOwnerPermissions,
   buildRulePermission,
 } = require('../common/constants');
@@ -89,7 +88,6 @@ class Functions {
    * @param {Object} transaction transaction
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
-  // TODO(platfowner): Replace preValue.
   // TODO(platfowner): Update isFailedTx() and gas util functions.
   matchAndTriggerFunctions(
       parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
@@ -103,15 +101,22 @@ class Functions {
     for (const subtreeConfig of matchedFunction.subtreeFunctions) {
       const matchedValueList = Functions.matchValueWithFunctionPath(value, subtreeConfig.path);
       const subtreeFuncPathRes = {};
-      for (const matchedValue of matchedValueList) {
-        const subtreeFuncPath = [...matchedFunction.matchedFunction.path, ...subtreeConfig.path];
-        const pathVars = Object.assign({}, matchedFunction.pathVars, matchedValue.pathVars);
-        const subtreeValuePath = [...parsedValuePath, ...matchedValue.path];
-        const subtreeValuePathRes = this.triggerFunctions(
-            subtreeFuncPath, pathVars, subtreeConfig.config,
-            subtreeValuePath, matchedValue.value, prevValue, auth, timestamp, transaction,
-            blockNumber, blockTime, accountRegistrationGasAmount, restFunctionCallGasAmount);
-        subtreeFuncPathRes[CommonUtil.formatPath(matchedValue.path)] = subtreeValuePathRes;
+      if (matchedValueList.length === 0) {
+        // TODO(platfowner): Implement this.
+      } else {
+        for (const matchedValue of matchedValueList) {
+          const subtreeFuncPath = [...matchedFunction.matchedFunction.path, ...subtreeConfig.path];
+          const pathVars = Object.assign({}, matchedFunction.pathVars, matchedValue.pathVars);
+          const subtreeValuePath = [...parsedValuePath, ...matchedValue.path];
+          const substreePrevValue =
+              Functions.matchValueWithValuePath(prevValue, matchedValue.path);
+          const subtreeValuePathRes = this.triggerFunctions(
+              subtreeFuncPath, pathVars, subtreeConfig.config,
+              subtreeValuePath, matchedValue.value, substreePrevValue, auth, timestamp,
+              transaction, blockNumber, blockTime,
+              accountRegistrationGasAmount, restFunctionCallGasAmount);
+          subtreeFuncPathRes[CommonUtil.formatPath(matchedValue.path)] = subtreeValuePathRes;
+        }
       }
       subtreeFuncRes[CommonUtil.formatPath(subtreeConfig.path)] = subtreeFuncPathRes;
     }
@@ -389,15 +394,15 @@ class Functions {
       // Avoid some special cases like string.
       return matched;
     }
-    const functionLabel = parsedFunctionPath[depth];
-    if (CommonUtil.isVariableLabel(functionLabel)) {
+    const label = parsedFunctionPath[depth];
+    if (CommonUtil.isVariableLabel(label)) {
       for (const valueLabel of Object.keys(valueObj)) {
         const pathVarsCopy = JSON.parse(JSON.stringify(pathVars));
-        if (pathVarsCopy[functionLabel] !== undefined) {
+        if (pathVarsCopy[label] !== undefined) {
           // This should not happen!
-          logger.error(`Duplicated path variables [${functionLabel}] that should NOT happen!`)
+          logger.error(`Duplicated path variables [${label}] that should NOT happen!`)
         } else {
-          pathVarsCopy[functionLabel] = valueLabel;
+          pathVarsCopy[label] = valueLabel;
         }
         const matchedRecur = Functions.matchValueWithFunctionPathRecursive(
             valueObj[valueLabel], [...parsedValuePath, valueLabel], parsedFunctionPath,
@@ -405,9 +410,9 @@ class Functions {
         matched.push(...matchedRecur);
       }
     } else {
-      if (valueObj[functionLabel] !== undefined) {
+      if (valueObj[label] !== undefined) {
         const matchedRecur = Functions.matchValueWithFunctionPathRecursive(
-            valueObj[functionLabel], [...parsedValuePath, functionLabel], parsedFunctionPath,
+            valueObj[label], [...parsedValuePath, label], parsedFunctionPath,
             depth + 1, pathVars);
         matched.push(...matchedRecur);
       }
@@ -418,6 +423,21 @@ class Functions {
 
   static matchValueWithFunctionPath(value, parsedFunctionPath) {
     return Functions.matchValueWithFunctionPathRecursive(value, [], parsedFunctionPath, 0, {});
+  }
+
+  static matchValueWithValuePath(value, parsedValuePath) {
+    let valueObj = value;
+    for (const label of parsedValuePath) {
+      if (!CommonUtil.isDict(valueObj)) {
+        return null;
+      }
+      if (valueObj[label] === undefined) {
+        return null;
+      }
+      valueObj = valueObj[label];
+    }
+
+    return CommonUtil.isDict(valueObj) ? JSON.parse(JSON.stringify(valueObj)) : valueObj;
   }
 
   setValueOrLog(valuePath, value, context) {
