@@ -47,7 +47,9 @@ const {
   checkTimestamp,
   closeSocketSafe,
   encapsulateMessage,
-  checkPeerWhitelist
+  checkPeerWhitelist,
+  addPeerConnection,
+  removePeerConnection
 } = require('./util');
 const PathUtil = require('../common/path-util');
 
@@ -65,6 +67,7 @@ class P2pServer {
     this.dataProtocolVersion = BlockchainConsts.DATA_PROTOCOL_VERSION;
     this.majorDataProtocolVersion = VersionUtil.toMajorVersion(BlockchainConsts.DATA_PROTOCOL_VERSION);
     this.inbound = {};
+    this.peerConnectionsInProgress = new Map();
     this.isReportingShardProofHash = false;
     this.lastReportedBlockNumberSent = -1;
   }
@@ -94,14 +97,25 @@ class P2pServer {
       };
     }
     this.wsServer = new Websocket.Server(wsOptions);
-    // Set the number of maximum clients.
-    this.wsServer.setMaxListeners(NodeConfigs.MAX_NUM_INBOUND_CONNECTION);
     this.wsServer.on('connection', (socket) => {
-      this.setServerSidePeerEventHandlers(socket);
+      const url = this.buildRemoteUrlFromSocket(socket);
+      addPeerConnection(this.peerConnectionsInProgress, url);
+      if (Object.keys(this.inbound).length + this.peerConnectionsInProgress.size <=
+          NodeConfigs.MAX_NUM_INBOUND_CONNECTION) {
+        this.setServerSidePeerEventHandlers(socket, url);
+      } else {
+        logger.error(`Cannot exceed max connection: ${NodeConfigs.MAX_NUM_INBOUND_CONNECTION}`);
+        removePeerConnection(this.peerConnectionsInProgress, url);
+        closeSocketSafe(this.inbound, socket);
+      }
     });
     logger.info(`Listening to peer-to-peer connections on: ${NodeConfigs.P2P_PORT}\n`);
     await this.setUpIpAddresses();
     this.urls = this.initUrls();
+  }
+
+  buildRemoteUrlFromSocket(socket) {
+    return `${socket._socket.remoteAddress}:${socket._socket.remotePort}`;
   }
 
   getNodeAddress() {
@@ -379,7 +393,7 @@ class P2pServer {
     return url.includes(ipv4Address);
   }
 
-  setServerSidePeerEventHandlers(socket) {
+  setServerSidePeerEventHandlers(socket, url) {
     const LOG_HEADER = 'setServerSidePeerEventHandlers';
     socket.on('message', (message) => {
       const beginTime = Date.now();
@@ -388,8 +402,9 @@ class P2pServer {
         const peerNetworkId = _.get(parsedMessage, 'networkId');
         const address = getAddressFromSocket(this.inbound, socket);
         if (peerNetworkId !== this.node.getBlockchainParam('genesis/network_id')) {
-          logger.error(`The given network ID(${peerNetworkId}) of the node(${address}) is MISSING or ` +
-            `DIFFERENT from mine. Disconnect the connection.`);
+          logger.error(`The given network ID(${peerNetworkId}) of the node(${address}) is ` +
+              `MISSING or DIFFERENT from mine. Disconnect the connection.`);
+          removePeerConnection(this.peerConnectionsInProgress, url);
           closeSocketSafe(this.inbound, socket);
           const latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
@@ -399,6 +414,7 @@ class P2pServer {
         if (!VersionUtil.isValidProtocolVersion(dataProtoVer)) {
           logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
               `INAPPROPRIATE. Disconnect the connection.`);
+          removePeerConnection(this.peerConnectionsInProgress, url);
           closeSocketSafe(this.inbound, socket);
           const latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
@@ -424,12 +440,14 @@ class P2pServer {
             const peerInfo = _.get(parsedMessage, 'data.body.peerInfo');
             if (!address) {
               logger.error(`Providing an address is compulsary when initiating p2p communication.`);
+              removePeerConnection(this.peerConnectionsInProgress, url);
               closeSocketSafe(this.inbound, socket);
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
               return;
             } else if (!peerInfo) {
               logger.error(`Providing peerInfo is compulsary when initiating p2p communication.`);
+              removePeerConnection(this.peerConnectionsInProgress, url);
               closeSocketSafe(this.inbound, socket);
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
@@ -438,6 +456,7 @@ class P2pServer {
               logger.error(`A sinature of the peer(${address}) is missing during p2p ` +
                   `communication. Cannot proceed the further communication.`);
               // NOTE(minsulee2): Strictly close socket necessary??
+              removePeerConnection(this.peerConnectionsInProgress, url);
               closeSocketSafe(this.inbound, socket);
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
@@ -446,11 +465,13 @@ class P2pServer {
               const addressFromSig = getAddressFromMessage(parsedMessage);
               if (!checkPeerWhitelist(addressFromSig)) {
                 logger.error(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
+                removePeerConnection(this.peerConnectionsInProgress, url);
                 closeSocketSafe(this.inbound, socket);
                 return;
               }
               if (addressFromSig !== address) {
                 logger.error(`The addresses(${addressFromSig} and ${address}) are not the same!!`);
+                removePeerConnection(this.peerConnectionsInProgress, url);
                 closeSocketSafe(this.inbound, socket);
                 const latency = Date.now() - beginTime;
                 trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
@@ -468,6 +489,7 @@ class P2pServer {
                 peerInfo,
                 version: dataProtoVer
               };
+              removePeerConnection(this.peerConnectionsInProgress, url);
               const body = {
                 address: this.getNodeAddress(),
                 peerInfo: this.client.getStatus(),
@@ -495,6 +517,7 @@ class P2pServer {
                 if (this.checkIpAddressFromPeerInfo(ipv4Address, p2pUrl)) {
                   this.client.connectToPeer(p2pUrl);
                 } else {
+                  removePeerConnection(this.peerConnectionsInProgress, url);
                   closeSocketSafe(this.inbound, socket);
                 }
               }
@@ -655,8 +678,10 @@ class P2pServer {
 
     socket.on('close', () => {
       const address = getAddressFromSocket(this.inbound, socket);
+      const url = this.buildRemoteUrlFromSocket(socket);
+      removePeerConnection(this.peerConnectionsInProgress, url);
       removeSocketConnectionIfExists(this.inbound, address);
-      logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
+      logger.info(`Disconnected from a peer: ${address || url}`);
     });
 
     socket.on('error', (error) => {
