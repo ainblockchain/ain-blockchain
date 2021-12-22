@@ -99,23 +99,43 @@ class Functions {
         accountRegistrationGasAmount, restFunctionCallGasAmount);
     const subtreeFuncRes = {};
     for (const subtreeConfig of matchedFunction.subtreeFunctions) {
-      const matchedValueList = Functions.matchValueWithFunctionPath(value, subtreeConfig.path);
+      const matchedValues = Functions.matchValueWithFunctionPath(value, subtreeConfig.path);
       const subtreeFuncPathRes = {};
-      if (matchedValueList.length === 0) {
-        // TODO(platfowner): Implement this.
-      } else {
-        for (const matchedValue of matchedValueList) {
+      // Step 1: Trigger functions with matched values.
+      for (const pathKey of Object.keys(matchedValues)) {
+        const matchedValue = matchedValues[pathKey];
+        const subtreeFuncPath = [...matchedFunction.matchedFunction.path, ...subtreeConfig.path];
+        const pathVars = Object.assign({}, matchedFunction.pathVars, matchedValue.pathVars);
+        const subtreeValuePath = [...parsedValuePath, ...matchedValue.path];
+        const subtreeValue = matchedValue.value;
+        // NOTE(platfowner): this.db.getValue() cannot be used
+        // as the previous value is already overwritten.
+        const substreePrevValue =
+            Functions.matchValueWithValuePath(prevValue, matchedValue.path);
+        const subtreeValuePathRes = this.triggerFunctions(
+            subtreeFuncPath, pathVars, subtreeConfig.config,
+            subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
+            transaction, blockNumber, blockTime,
+            accountRegistrationGasAmount, restFunctionCallGasAmount);
+        subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
+      }
+      // Step 2: (implicit deletion) Trigger functions with matched prev values being deleted.
+      const matchedPrevValues =
+          Functions.matchValueWithFunctionPath(prevValue, subtreeConfig.path);
+      for (const pathKey of Object.keys(matchedPrevValues)) {
+        if (matchedValues[pathKey] === undefined) {  // For only paths of values being deleted.
+          const matchedPrevValue = matchedPrevValues[pathKey];
           const subtreeFuncPath = [...matchedFunction.matchedFunction.path, ...subtreeConfig.path];
-          const pathVars = Object.assign({}, matchedFunction.pathVars, matchedValue.pathVars);
-          const subtreeValuePath = [...parsedValuePath, ...matchedValue.path];
-          const substreePrevValue =
-              Functions.matchValueWithValuePath(prevValue, matchedValue.path);
+          const pathVars = Object.assign({}, matchedFunction.pathVars, matchedPrevValue.pathVars);
+          const subtreeValuePath = [...parsedValuePath, ...matchedPrevValue.path];
+          const subtreeValue = null;  // Trigger with value = null.
+          const substreePrevValue = matchedPrevValue.value;
           const subtreeValuePathRes = this.triggerFunctions(
               subtreeFuncPath, pathVars, subtreeConfig.config,
-              subtreeValuePath, matchedValue.value, substreePrevValue, auth, timestamp,
+              subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
               transaction, blockNumber, blockTime,
               accountRegistrationGasAmount, restFunctionCallGasAmount);
-          subtreeFuncPathRes[CommonUtil.formatPath(matchedValue.path)] = subtreeValuePathRes;
+          subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
         }
       }
       subtreeFuncRes[CommonUtil.formatPath(subtreeConfig.path)] = subtreeFuncPathRes;
@@ -381,13 +401,13 @@ class Functions {
 
   static matchValueWithFunctionPathRecursive(
       valueObj, parsedValuePath, parsedFunctionPath, depth, pathVars) {
-    const matched = [];
+    const matched = {};
     if (depth == parsedFunctionPath.length) {
-      matched.push({
+      matched[CommonUtil.formatPath(parsedValuePath)] = {
         path: parsedValuePath,
         pathVars,
         value: JSON.parse(JSON.stringify(valueObj)),
-      });
+      };
       return matched;
     }
     if (!CommonUtil.isDict(valueObj)) {
@@ -407,14 +427,14 @@ class Functions {
         const matchedRecur = Functions.matchValueWithFunctionPathRecursive(
             valueObj[valueLabel], [...parsedValuePath, valueLabel], parsedFunctionPath,
             depth + 1, pathVarsCopy);
-        matched.push(...matchedRecur);
+        Object.assign(matched, matchedRecur);
       }
     } else {
       if (valueObj[label] !== undefined) {
         const matchedRecur = Functions.matchValueWithFunctionPathRecursive(
             valueObj[label], [...parsedValuePath, label], parsedFunctionPath,
             depth + 1, pathVars);
-        matched.push(...matchedRecur);
+        Object.assign(matched, matchedRecur);
       }
     }
 
