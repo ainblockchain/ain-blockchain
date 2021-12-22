@@ -22,6 +22,7 @@ class Tracker {
 
   setIntervalForNodeInfoRecord() {
     setInterval(() => {
+      // NOTE(minsulee2): This will be turned into logger.debug();
       logger.info(`${JSON.stringify(this.blockchainNodes, null, 2)}`);
     }, NODE_INFO_REPORT_INTERVAL_MS);
   }
