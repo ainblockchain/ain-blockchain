@@ -2783,15 +2783,6 @@ describe("DB operations", () => {
             }
           },
           {
-            type: 'SET_RULE',
-            ref: functionResultPath,
-            value: {
-              ".rule": {
-                "write": true  // Allow all.
-              }
-            }
-          },
-          {
             type: 'SET_FUNCTION',
             ref: functionResultPath,
             value: {
@@ -2810,7 +2801,7 @@ describe("DB operations", () => {
           operation: {
             type: 'SET_VALUE',
             ref: valuePath,
-            value,
+            value: value,
           },
           gas_price: 1,
           nonce: -1,
@@ -2855,7 +2846,13 @@ describe("DB operations", () => {
           "code": 0,
           "bandwidth_gas_amount": 1
         });
-        assert.deepEqual(node.db.getValue(valuePath), value)
+        assert.deepEqual(node.db.getValue(
+            '/apps/test/test_function_triggering/allowed_path'), {
+          ".last_tx": {
+            "value": "erased"
+          },
+          "value": "some value"
+        });
       })
 
       it("when failed with function triggering", () => {
@@ -2886,22 +2883,13 @@ describe("DB operations", () => {
             }
           },
           {
-            type: 'SET_RULE',
-            ref: functionResultPath,
-            value: {
-              ".rule": {
-                "write": "auth.fid !== '_eraseValue'"  // Do NOT allow writes by the last function.
-              }
-            }
-          },
-          {
             type: 'SET_FUNCTION',
             ref: functionResultPath,
             value: {
               ".function": {
-                "_eraseValue": {
+                "_fail": {
                   "function_type": "NATIVE",
-                  "function_id": "_eraseValue"
+                  "function_id": "_fail"
                 }
               }
             }
@@ -2913,7 +2901,7 @@ describe("DB operations", () => {
           operation: {
             type: 'SET_VALUE',
             ref: valuePath,
-            value,
+            value: value,
           },
           gas_price: 1,
           nonce: -1,
@@ -2932,17 +2920,7 @@ describe("DB operations", () => {
                   "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                   "result": {
                     "func_results": {
-                      "_eraseValue": {
-                        "op_results": {
-                          "0": {
-                            "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
-                            "result": {
-                              "code": 12103,
-                              "error_message": "Write rule evaluated false: [auth.fid !== '_eraseValue'] at '/apps/test/test_function_triggering/allowed_path/.last_tx/value' for value path '/apps/test/test_function_triggering/allowed_path/.last_tx/value' with path vars '{}', data '{\"tx_hash\":\"0xa67134a3d4d525a35681801f6ccaad4ba3e4a7c75a2568aea84cf514c932d39f\"}', newData '\"erased\"', auth '{\"addr\":\"abcd\",\"fid\":\"_eraseValue\",\"fids\":[\"_saveLastTx\",\"_eraseValue\"]}', timestamp '1234567890000'",
-                              "bandwidth_gas_amount": 1
-                            }
-                          }
-                        },
+                      "_fail": {
                         "code": 20001,
                         "bandwidth_gas_amount": 0,
                       }
@@ -2962,6 +2940,238 @@ describe("DB operations", () => {
           "bandwidth_gas_amount": 1,
         });
         assert.deepEqual(node.db.getValue(valuePath), value)
+      })
+
+      it("when successful with subtree function triggering (subtree of subtree)", () => {
+        const valuePath = '/apps/test/test_function_triggering/allowed_path';
+        const rulePath = '/apps/test/test_function_triggering/allowed_path';
+        const functionPath = '/apps/test/test_function_triggering/allowed_path/deep';
+        const eraseFuncPath = '/apps/test/test_function_triggering/allowed_path/.last_tx/deep/tx_hash';
+        const value = {
+          deep: {
+            value: 'some value',
+          }
+        }
+
+        const result = node.db.executeMultiSetOperation([
+          {
+            type: 'SET_FUNCTION',
+            ref: functionPath,
+            value: {
+              ".function": {
+                "_saveLastTx": {
+                  "function_type": "NATIVE",
+                  "function_id": "_saveLastTx"
+                }
+              }
+            }
+          },
+          {
+            type: 'SET_RULE',
+            ref: rulePath,
+            value: {
+              ".rule": {
+                "write": true
+              }
+            }
+          },
+          {
+            type: 'SET_FUNCTION',
+            ref: eraseFuncPath,
+            value: {
+              ".function": {
+                "_eraseValue": {
+                  "function_type": "NATIVE",
+                  "function_id": "_eraseValue"
+                }
+              }
+            }
+          },
+        ], { addr: 'abcd' }, null, { extra: { executed_at: timestamp }});
+        expect(CommonUtil.isFailedTx(result)).to.equal(false);
+
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: valuePath,
+            value: value,
+          },
+          gas_price: 1,
+          nonce: -1,
+          timestamp,
+          address: 'abcd',
+        };
+        const tx = Transaction.fromTxBody(txBody, null);
+        expect(tx).to.not.equal(null);
+
+        assert.deepEqual(node.db.executeSingleSetOperation(txBody.operation, { addr: 'abcd' },
+            timestamp, tx), {
+          "bandwidth_gas_amount": 1,
+          "code": 0,
+          "subtree_func_results": {
+            "/.last_tx/deep/tx_hash": {},
+            "/deep": {
+              "/deep": {
+                "func_results": {
+                  "_saveLastTx": {
+                    "bandwidth_gas_amount": 0,
+                    "code": 0,
+                    "op_results": {
+                      "0": {
+                        "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/deep",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 0,
+                          "subtree_func_results": {
+                            "/tx_hash": {
+                              "/tx_hash": {
+                                "func_results": {
+                                  "_eraseValue": {
+                                    "bandwidth_gas_amount": 0,
+                                    "code": 0,
+                                    "op_results": {
+                                      "0": {
+                                        "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/deep/tx_hash",
+                                        "result": {
+                                          "bandwidth_gas_amount": 1,
+                                          "code": 0,
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+        assert.deepEqual(node.db.getValue(
+            '/apps/test/test_function_triggering/allowed_path'), {
+          ".last_tx": {
+            "deep": {
+              "tx_hash": "erased"
+            }
+          },
+          "deep": {
+            "value": "some value"
+          }
+        })
+      })
+
+      it("when failed with subtree function triggering (subtree of subtree)", () => {
+        const valuePath = '/apps/test/test_function_triggering/allowed_path';
+        const rulePath = '/apps/test/test_function_triggering/allowed_path';
+        const functionPath = '/apps/test/test_function_triggering/allowed_path/deep';
+        const failFuncPath = '/apps/test/test_function_triggering/allowed_path/.last_tx/deep/tx_hash';
+        const value = {
+          deep: {
+            value: 'some value',
+          }
+        }
+
+        const result = node.db.executeMultiSetOperation([
+          {
+            type: 'SET_FUNCTION',
+            ref: functionPath,
+            value: {
+              ".function": {
+                "_saveLastTx": {
+                  "function_type": "NATIVE",
+                  "function_id": "_saveLastTx"
+                }
+              }
+            }
+          },
+          {
+            type: 'SET_RULE',
+            ref: rulePath,
+            value: {
+              ".rule": {
+                "write": true
+              }
+            }
+          },
+          {
+            type: 'SET_FUNCTION',
+            ref: failFuncPath,
+            value: {
+              ".function": {
+                "_fail": {
+                  "function_type": "NATIVE",
+                  "function_id": "_fail"
+                }
+              }
+            }
+          },
+        ], { addr: 'abcd' }, null, { extra: { executed_at: timestamp }});
+        expect(CommonUtil.isFailedTx(result)).to.equal(false);
+
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: valuePath,
+            value: value,
+          },
+          gas_price: 1,
+          nonce: -1,
+          timestamp,
+          address: 'abcd',
+        };
+        const tx = Transaction.fromTxBody(txBody, null);
+        expect(tx).to.not.equal(null);
+
+        assert.deepEqual(node.db.executeSingleSetOperation(txBody.operation, { addr: 'abcd' },
+            timestamp, tx), {
+          "bandwidth_gas_amount": 1,
+          "code": 10105,
+          "error_message": "Triggered subtree function call failed",
+          "subtree_func_results": {
+            "/.last_tx/deep/tx_hash": {},
+            "/deep": {
+              "/deep": {
+                "func_results": {
+                  "_saveLastTx": {
+                    "bandwidth_gas_amount": 0,
+                    "code": 20001,
+                    "op_results": {
+                      "0": {
+                        "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/deep",
+                        "result": {
+                          "bandwidth_gas_amount": 1,
+                          "code": 10105,
+                          "error_message": "Triggered subtree function call failed",
+                          "subtree_func_results": {
+                            "/tx_hash": {
+                              "/tx_hash": {
+                                "func_results": {
+                                  "_fail": {
+                                    "bandwidth_gas_amount": 0,
+                                    "code": 20001,
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+        assert.deepEqual(node.db.getValue(
+            '/apps/test/test_function_triggering/allowed_path/deep'), {
+          "value": "some value"
+        })
       })
     })
 
