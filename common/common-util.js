@@ -429,6 +429,11 @@ class CommonUtil {
             return true;
           }
         }
+        if (subResult.subtree_func_results) {
+          if (CommonUtil.isFailedSubtreeFuncTrigger(subResult.subtree_func_results)) {
+            return true;
+          }
+        }
       }
       return false;
     }
@@ -437,6 +442,11 @@ class CommonUtil {
     }
     if (result.func_results) {
       if (CommonUtil.isFailedFuncTrigger(result.func_results)) {
+        return true;
+      }
+    }
+    if (result.subtree_func_results) {
+      if (CommonUtil.isFailedSubtreeFuncTrigger(result.subtree_func_results)) {
         return true;
       }
     }
@@ -462,6 +472,25 @@ class CommonUtil {
             if (CommonUtil.isFailedTx(opResult.result)) {
               return true;
             }
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns true if the given result is from a failed subtree function trigger.
+   */
+  static isFailedSubtreeFuncTrigger(result) {
+    if (CommonUtil.isDict(result)) {
+      for (const functionPath in result) {
+        const funcPathResult = result[functionPath];
+        for (const valuePath in funcPathResult) {
+          const valuePathResult = funcPathResult[valuePath];
+          const funcResult = valuePathResult.func_results;
+          if (CommonUtil.isFailedFuncTrigger(funcResult)) {
+            return true;
           }
         }
       }
