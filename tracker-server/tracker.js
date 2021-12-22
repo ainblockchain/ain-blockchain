@@ -12,16 +12,30 @@ const { BlockchainConsts } = require('../common/constants');
 
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 
+const NODE_INFO_REPORT_INTERVAL_MS = 60 * 1000;
+
 class Tracker {
   constructor() {
     this.blockchainNodes = {};
+    this.setIntervalForNodeInfoRecord();
+  }
+
+  setIntervalForNodeInfoRecord() {
+    setInterval(() => {
+      // NOTE(minsulee2): This will be turned into logger.debug();
+      logger.info(`${JSON.stringify(this.blockchainNodes, null, 2)}`);
+    }, NODE_INFO_REPORT_INTERVAL_MS);
   }
 
   setBlockchainNode(peerInfo) {
     peerInfo.location = this.getNodeLocation(peerInfo.networkStatus.urls.ip);
     this.blockchainNodes[peerInfo.address] = peerInfo;
-    logger.info(`Update from node [${abbrAddr(peerInfo.address)}]`);
-    logger.debug(`: ${JSON.stringify(peerInfo, null, 2)}`);
+    logger.info(`Update from node [${abbrAddr(peerInfo.address)}]\n` +
+    `  - p2pState: ${peerInfo.networkStatus.connectionStatus.p2pState}\n` +
+    `    - incomingPeers: ${JSON.stringify(peerInfo.networkStatus.connectionStatus.incomingPeers)}\n` +
+    `    - outgoingPeers: ${JSON.stringify(peerInfo.networkStatus.connectionStatus.outgoingPeers)}\n` +
+    `  - consensusState: ${peerInfo.consensusStatus.state}\n` +
+    `  - nodeState: ${peerInfo.nodeStatus.state}`);
   }
 
   // Updates the aliveness status of the nodes and returns the number of alive nodes.
