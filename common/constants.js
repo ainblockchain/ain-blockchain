@@ -26,6 +26,10 @@ const DevFlags = {
   enableWinstonLogger: false,
   // Enables p2p message tagging.
   enableP2pMessageTags: true,
+  // Enables ws compression.
+  enableWsCompression: true,
+  // Enables limits on tx broadcasting (max = 2).
+  enableTxBroadcastLimit: false,
 };
 
 // ** Blockchain configs **
@@ -60,8 +64,6 @@ if (!semver.valid(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION)) {
 
 // ** Blockchain Params **
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
-// TODO(liayoo): Deprecate GenesisAccounts
-const GenesisAccounts = getBlockchainConfig('genesis_accounts.json');
 
 // ** Node configs, set for individual nodes by env vars **
 const NodeConfigs = {};
@@ -561,6 +563,9 @@ const TrafficEventTypes = {
   P2P_TAG_CONSENSUS_MAX_OCCUR: 'p2p_tag_consensus_max_occur',
   P2P_TAG_TX_LENGTH: 'p2p_tag_tx_length',
   P2P_TAG_TX_MAX_OCCUR: 'p2p_tag_tx_max_occur',
+  // Access control
+  ACCESS_CONTROL_GET: 'access_control_get',
+  ACCESS_CONTROL_SET: 'access_control_set',
   // Client APIs
   CLIENT_API_GET: 'client_api_get',
   CLIENT_API_SET: 'client_api_set',
@@ -710,7 +715,6 @@ module.exports = {
   WriteDbOperations,
   TransactionStates,
   StateVersions,
-  GenesisAccounts,
   getBlockchainConfig,
   SyncModeOptions,
   TrafficEventTypes,
