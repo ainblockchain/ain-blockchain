@@ -252,7 +252,7 @@ function deploy_node() {
         if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
             GENESIS_ACCOUNTS_PATH="blockchain-configs/testnet-prod/genesis_accounts.json"
         fi
-        PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others.['$node_index'].private_key')
+        PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others['$node_index'].private_key')
         echo $PRIVATE_KEY | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     fi
 
