@@ -792,9 +792,9 @@ class DB {
             unitWriteGasLimit);
       }
     }
-    const prevValue = this.getValue(valuePath, { isShallow: false, isGlobal });
-    const prevValueCopy =
-        CommonUtil.isDict(prevValue) ? JSON.parse(JSON.stringify(prevValue)) : prevValue;
+    const prevValue = this.getValue(CommonUtil.formatPath(localPath));
+    const prevValueCopy = CommonUtil.isDict(prevValue) ?
+        JSON.parse(JSON.stringify(prevValue)) : prevValue;
     const valueCopy = CommonUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
     let funcResults = null;
@@ -835,7 +835,7 @@ class DB {
 
   incValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
     const isGlobal = options && options.isGlobal;
-    const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
+    const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
       const unitWriteGasLimit = DB.getBlockchainParam(
@@ -852,7 +852,7 @@ class DB {
 
   decValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
     const isGlobal = options && options.isGlobal;
-    const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
+    const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
       const unitWriteGasLimit = DB.getBlockchainParam(
@@ -912,7 +912,7 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
+    const curFunction = this.getFunction(CommonUtil.formatPath(localPath));
     const applyRes = applyFunctionChange(curFunction, func);
     const permCheckRes = this.getPermissionForFunction(localPath, auth, applyRes.isMerge);
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
@@ -967,7 +967,7 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    const curRule = this.getRule(rulePath, { isShallow: false, isGlobal });
+    const curRule = this.getRule(CommonUtil.formatPath(localPath));
     const applyRes = applyRuleChange(curRule, rule);
     const permCheckRes = this.getPermissionForRule(localPath, auth, applyRes.isMerge);
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
@@ -1020,7 +1020,7 @@ class DB {
           null,
           unitWriteGasLimit);
     }
-    const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
+    const curOwner = this.getOwner(CommonUtil.formatPath(localPath));
     const applyRes = applyOwnerChange(curOwner, owner);
     const permCheckRes = this.getPermissionForOwner(localPath, auth, applyRes.isMerge);
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
