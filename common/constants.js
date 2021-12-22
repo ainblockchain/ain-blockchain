@@ -26,6 +26,8 @@ const DevFlags = {
   enableWinstonLogger: false,
   // Enables p2p message tagging.
   enableP2pMessageTags: true,
+  // Enables ws compression.
+  enableWsCompression: true,
 };
 
 // ** Blockchain configs **
