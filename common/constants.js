@@ -150,7 +150,6 @@ const P2pNetworkStates = {
  * Predefined database paths.
  * @enum {string}
  */
-// TODO(platfowner): Move '.something' paths to here from '[Owner|Function|Rule|Value]Properties'.
 const PredefinedDbPaths = {
   // Roots
   OWNERS_ROOT: 'owners',

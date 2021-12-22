@@ -90,7 +90,6 @@ class Functions {
    * @param {Object} transaction transaction
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
-  // TODO(platfowner): Update isFailedTx() and gas util functions.
   matchAndTriggerFunctions(
       parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
       accountRegistrationGasAmount, restFunctionCallGasAmount, options) {
