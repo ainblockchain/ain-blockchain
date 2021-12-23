@@ -27,7 +27,7 @@ const DevFlags = {
   // Enables p2p message tagging.
   enableP2pMessageTags: true,
   // Enables p2p message tags checking.
-  enableP2pMessageTagsChecking: true,
+  enableP2pMessageTagsChecking: false,
   // Enables ws compression.
   enableWsCompression: true,
   // Enables limits on tx broadcasting (max = 2).
