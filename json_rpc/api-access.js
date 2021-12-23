@@ -44,7 +44,7 @@ module.exports = function getApiAccessApis(node) {
         }));
         return;
       }
-      if (net.isIP(args.message.ip) !== 4) {
+      if (net.isIPv4(args.message.ip)) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
