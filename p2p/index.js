@@ -39,6 +39,7 @@ class P2pClient {
         this, node, minProtocolVersion, maxProtocolVersion);
     this.peerCandidates = {};
     this.isConnectingToPeerCandidates = false;
+    this.steadyIntervalCount = 0;
     this.outbound = {};
     this.p2pState = P2pNetworkStates.STARTING;
     this.peerConnectionsInProgress = new Map();
@@ -250,14 +251,44 @@ class P2pClient {
     }
   }
 
+  async discoverPeerWithGuardingFlag() {
+    if (!this.isConnectingToPeerCandidates) {
+      this.isConnectingToPeerCandidates = true;
+      const nextPeerCandidate = this.assignRandomPeerCandidate();
+      await this.connectWithPeerCandidateUrl(nextPeerCandidate);
+      this.isConnectingToPeerCandidates = false;
+    }
+  }
+
+  disconnectRandomPeer() {
+    if (Object.keys(this.outbound) === 0) {
+      return;
+    }
+    const randomPeer = _.shuffle(Object.values(this.outbound))[0];
+    closeSocketSafe(this.outbound, randomPeer.socket);
+  }
+
+  async tryReorgPeerConnections() {
+    if (Object.keys(this.outbound).length < NodeConfigs.PEER_REORG_MIN_OUTBOUND) {
+      return;
+    }
+    if (this.steadyIntervalCount < NodeConfigs.PEER_REORG_STEADY_INTERVAL_COUNT) {
+      this.steadyIntervalCount++;
+    } else {
+      this.steadyIntervalCount = 0;
+      this.disconnectRandomPeer();
+      this.p2pState = P2pNetworkStates.EXPANDING;
+      await this.discoverPeerWithGuardingFlag();
+    }
+  }
+
   setIntervalForPeerCandidatesConnection() {
     this.intervalPeerCandidatesConnection = setInterval(async () => {
       this.updateP2pState();
-      if (this.p2pState === P2pNetworkStates.EXPANDING && !this.isConnectingToPeerCandidates) {
-        this.isConnectingToPeerCandidates = true;
-        const nextPeerCandidate = this.assignRandomPeerCandidate();
-        await this.connectWithPeerCandidateUrl(nextPeerCandidate);
-        this.isConnectingToPeerCandidates = false;
+      if (this.p2pState === P2pNetworkStates.EXPANDING) {
+        await this.discoverPeerWithGuardingFlag();
+      } else if (this.p2pState === P2pNetworkStates.STEADY) {
+        await this.tryReorgPeerConnections();
       }
     }, NodeConfigs.PEER_CANDIDATES_CONNECTION_INTERVAL_MS);
   }
