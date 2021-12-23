@@ -458,7 +458,7 @@
         "y": 17
       },
       "hiddenSeries": false,
-      "id": 4,
+      "id": 6,
       "legend": {
         "avg": false,
         "current": false,
@@ -485,8 +485,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "exemplar": true,
-          "expr": "network_status:connection_status:num_inbound",
+          "expr": "network_status:connection_status:num_outbound",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -494,7 +493,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "num_inbound",
+      "title": "num_outbound",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -624,7 +623,7 @@
         "y": 25
       },
       "hiddenSeries": false,
-      "id": 6,
+      "id": 4,
       "legend": {
         "avg": false,
         "current": false,
@@ -651,7 +650,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "network_status:connection_status:num_outbound",
+          "exemplar": true,
+          "expr": "network_status:connection_status:num_inbound",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -659,7 +659,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "num_outbound",
+      "title": "num_inbound",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -783,7 +783,7 @@
         "y": 33
       },
       "hiddenSeries": false,
-      "id": 84,
+      "id": 108,
       "legend": {
         "avg": false,
         "current": false,
@@ -810,8 +810,12 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
-          "expr": "node_status:health",
+          "expr": "network_status:connection_status:state_numeric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -819,7 +823,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "node_status:health",
+      "title": "connection_status:state_numeric",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -934,12 +938,6 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -949,7 +947,7 @@
         "y": 41
       },
       "hiddenSeries": false,
-      "id": 18,
+      "id": 84,
       "legend": {
         "avg": false,
         "current": false,
@@ -976,7 +974,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "node_status:state_numeric",
+          "exemplar": true,
+          "expr": "node_status:health",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -984,7 +983,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "node_status:state_numeric",
+      "title": "node_status:health",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1114,7 +1113,7 @@
         "y": 49
       },
       "hiddenSeries": false,
-      "id": 24,
+      "id": 18,
       "legend": {
         "avg": false,
         "current": false,
@@ -1141,7 +1140,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "consensus_status:health",
+          "expr": "node_status:state_numeric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -1149,7 +1148,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "consensus_status:health",
+      "title": "node_status:state_numeric",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1279,7 +1278,7 @@
         "y": 57
       },
       "hiddenSeries": false,
-      "id": 20,
+      "id": 24,
       "legend": {
         "avg": false,
         "current": false,
@@ -1306,7 +1305,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "consensus_status:state_numeric",
+          "expr": "consensus_status:health",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -1314,7 +1313,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "consensus_status:state_numeric",
+      "title": "consensus_status:health",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1444,7 +1443,7 @@
         "y": 65
       },
       "hiddenSeries": false,
-      "id": 8,
+      "id": 20,
       "legend": {
         "avg": false,
         "current": false,
@@ -1471,7 +1470,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "node_status:state_version_status:num_versions",
+          "expr": "consensus_status:state_numeric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -1479,7 +1478,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "state_version_status:num_versions",
+      "title": "consensus_status:state_numeric",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1594,6 +1593,12 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1603,7 +1608,7 @@
         "y": 73
       },
       "hiddenSeries": false,
-      "id": 26,
+      "id": 8,
       "legend": {
         "avg": false,
         "current": false,
@@ -1630,7 +1635,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "tx_status:tx_pool_size",
+          "expr": "node_status:state_version_status:num_versions",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -1638,7 +1643,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "tx_pool_size",
+      "title": "state_version_status:num_versions",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1762,7 +1767,7 @@
         "y": 81
       },
       "hiddenSeries": false,
-      "id": 28,
+      "id": 26,
       "legend": {
         "avg": false,
         "current": false,
@@ -1789,7 +1794,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "tx_status:tx_tracker_size",
+          "expr": "tx_status:tx_pool_size",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -1797,7 +1802,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "tx_tracker_size",
+      "title": "tx_pool_size",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1912,12 +1917,6 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1927,7 +1926,7 @@
         "y": 89
       },
       "hiddenSeries": false,
-      "id": 32,
+      "id": 28,
       "legend": {
         "avg": false,
         "current": false,
@@ -1954,8 +1953,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "exemplar": true,
-          "expr": "cpu_status:usage_percent",
+          "expr": "tx_status:tx_tracker_size",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -1963,7 +1961,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "cpu_status:usage_percent",
+      "title": "tx_tracker_size",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2093,7 +2091,7 @@
         "y": 97
       },
       "hiddenSeries": false,
-      "id": 40,
+      "id": 32,
       "legend": {
         "avg": false,
         "current": false,
@@ -2121,7 +2119,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "memory_status:os:usage_percent",
+          "expr": "cpu_status:usage_percent",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -2129,7 +2127,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "memory_status:os:usage_percent",
+      "title": "cpu_status:usage_percent",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2250,6 +2248,12 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -2259,7 +2263,7 @@
         "y": 105
       },
       "hiddenSeries": false,
-      "id": 14,
+      "id": 40,
       "legend": {
         "avg": false,
         "current": false,
@@ -2286,7 +2290,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "memory_status:heap_stats:used_heap_size",
+          "exemplar": true,
+          "expr": "memory_status:os:usage_percent",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -2294,7 +2299,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "used_heap_size",
+      "title": "memory_status:os:usage_percent",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2418,7 +2423,7 @@
         "y": 113
       },
       "hiddenSeries": false,
-      "id": 30,
+      "id": 14,
       "legend": {
         "avg": false,
         "current": false,
@@ -2445,7 +2450,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "memory_status:heap_stats:malloced_memory",
+          "expr": "memory_status:heap_stats:used_heap_size",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -2453,7 +2458,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "malloced_memory",
+      "title": "used_heap_size",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2577,7 +2582,7 @@
         "y": 121
       },
       "hiddenSeries": false,
-      "id": 38,
+      "id": 30,
       "legend": {
         "avg": false,
         "current": false,
@@ -2604,8 +2609,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "exemplar": true,
-          "expr": "disk_status:usage_percent",
+          "expr": "memory_status:heap_stats:malloced_memory",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -2613,7 +2617,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "disk_status:usage_percent",
+      "title": "malloced_memory",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2728,12 +2732,6 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -2743,7 +2741,7 @@
         "y": 129
       },
       "hiddenSeries": false,
-      "id": 12,
+      "id": 38,
       "legend": {
         "avg": false,
         "current": false,
@@ -2771,7 +2769,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "disk_status:usage",
+          "expr": "disk_status:usage_percent",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -2779,7 +2777,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "disk_status:usage",
+      "title": "disk_status:usage_percent",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2894,6 +2892,12 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -2903,7 +2907,7 @@
         "y": 137
       },
       "hiddenSeries": false,
-      "id": 10,
+      "id": 12,
       "legend": {
         "avg": false,
         "current": false,
@@ -2930,7 +2934,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "node_status:db_status:state_info:tree_size",
+          "exemplar": true,
+          "expr": "disk_status:usage",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -2938,7 +2943,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "state_info:tree_size",
+      "title": "disk_status:usage",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -3062,7 +3067,7 @@
         "y": 145
       },
       "hiddenSeries": false,
-      "id": 36,
+      "id": 10,
       "legend": {
         "avg": false,
         "current": false,
@@ -3089,8 +3094,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "exemplar": true,
-          "expr": "node_status:db_status:state_info:tree_bytes",
+          "expr": "node_status:db_status:state_info:tree_size",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -3098,7 +3102,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "state_info:tree_bytes",
+      "title": "state_info:tree_size",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -3222,7 +3226,7 @@
         "y": 153
       },
       "hiddenSeries": false,
-      "id": 42,
+      "id": 36,
       "legend": {
         "avg": false,
         "current": false,
@@ -3250,31 +3254,15 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:json_rpc_get:rate",
+          "expr": "node_status:db_status:state_info:tree_bytes",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:json_rpc_get:rate",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:json_rpc_get:rate",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "G"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "json_rpc_get:rate",
+      "title": "state_info:tree_bytes",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -3407,12 +3395,6 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -3422,7 +3404,7 @@
         "y": 161
       },
       "hiddenSeries": false,
-      "id": 64,
+      "id": 42,
       "legend": {
         "avg": false,
         "current": false,
@@ -3450,31 +3432,31 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:json_rpc_get:metric",
+          "expr": "client_status:traffic_stats:1_m:json_rpc_get:rate",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         },
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:json_rpc_get:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:json_rpc_get:metric",
+          "expr": "client_status:traffic_stats:5_m:json_rpc_get:rate",
           "hide": false,
           "interval": "",
           "legendFormat": "",
           "refId": "C"
+        },
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_h:json_rpc_get:rate",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "G"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "json_rpc_get:metric (latency)",
+      "title": "json_rpc_get:rate",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -3623,7 +3605,7 @@
         "y": 169
       },
       "hiddenSeries": false,
-      "id": 52,
+      "id": 64,
       "legend": {
         "avg": false,
         "current": false,
@@ -3651,14 +3633,14 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:json_rpc_set:rate",
+          "expr": "client_status:traffic_stats:1_m:json_rpc_get:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         },
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:json_rpc_set:rate",
+          "expr": "client_status:traffic_stats:5_m:json_rpc_get:metric",
           "hide": false,
           "interval": "",
           "legendFormat": "",
@@ -3666,7 +3648,7 @@
         },
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:json_rpc_set:rate",
+          "expr": "client_status:traffic_stats:1_h:json_rpc_get:metric",
           "hide": false,
           "interval": "",
           "legendFormat": "",
@@ -3675,7 +3657,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "json_rpc_set:rate",
+      "title": "json_rpc_get:metric (latency)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -3817,7 +3799,7 @@
         "y": 177
       },
       "hiddenSeries": false,
-      "id": 62,
+      "id": 52,
       "legend": {
         "avg": false,
         "current": false,
@@ -3845,14 +3827,14 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:json_rpc_set:metric",
+          "expr": "client_status:traffic_stats:1_m:json_rpc_set:rate",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         },
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:json_rpc_set:metric",
+          "expr": "client_status:traffic_stats:5_m:json_rpc_set:rate",
           "hide": false,
           "interval": "",
           "legendFormat": "",
@@ -3860,7 +3842,7 @@
         },
         {
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:json_rpc_set:metric",
+          "expr": "client_status:traffic_stats:1_h:json_rpc_set:rate",
           "hide": false,
           "interval": "",
           "legendFormat": "",
@@ -3869,7 +3851,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "json_rpc_set:metric (latency)",
+      "title": "json_rpc_set:rate",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -4002,6 +3984,12 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -4009,6 +3997,100 @@
         "w": 12,
         "x": 0,
         "y": 185
+      },
+      "hiddenSeries": false,
+      "id": 62,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.3.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_m:json_rpc_set:metric",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:5_m:json_rpc_set:metric",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "B"
+        },
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_h:json_rpc_set:metric",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "json_rpc_set:metric (latency)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 193
       },
       "hiddenSeries": false,
       "id": 44,
@@ -4108,7 +4190,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 193
+        "y": 201
       },
       "hiddenSeries": false,
       "id": 60,
@@ -4208,7 +4290,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 201
+        "y": 209
       },
       "hiddenSeries": false,
       "id": 50,
@@ -4308,7 +4390,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 209
+        "y": 217
       },
       "hiddenSeries": false,
       "id": 58,
@@ -4400,13 +4482,13 @@
     "list": []
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Blockchain Servers",
   "uid": "M6YpMSyMz",
-  "version": 26,
+  "version": 27,
   "weekStart": ""
 }
