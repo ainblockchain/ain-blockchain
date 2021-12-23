@@ -74,6 +74,7 @@ class P2pClient {
       targetOutBound: NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
       numInbound: incomingPeers.length,
       numOutbound: outgoingPeers.length,
+      numConnections: incomingPeers.length + outgoingPeers.length,
       incomingPeers: incomingPeers,
       outgoingPeers: outgoingPeers,
     };
