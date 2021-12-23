@@ -141,7 +141,10 @@ class Functions {
       }
       subtreeFuncRes[CommonUtil.formatPath(subtreeConfig.path)] = subtreeFuncPathRes;
     }
-    return Object.assign(triggerRes, { subtree_func_results: subtreeFuncRes });
+    if (Object.keys(subtreeFuncRes).length > 0) {
+      Object.assign(triggerRes, { subtree_func_results: subtreeFuncRes });
+    }
+    return triggerRes;
   }
 
   triggerFunctions(
