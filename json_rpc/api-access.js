@@ -91,7 +91,7 @@ module.exports = function getApiAccessApis(node) {
         return;
       }
       if (CommonUtil.isWildcard(args.message.ip)
-          && NodeConfigs.DEV_CLIENT_API_IP_WHITELIST === '*') {
+          && CommonUtil.isWildcard(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST)) {
         NodeConfigs.DEV_CLIENT_API_IP_WHITELIST = [];
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
