@@ -97,7 +97,7 @@ const main = async () => {
 
   // Get versions
   const ainJsVersion = getVersion(`${AINJS}/src`, 'constants.ts', 'BLOCKCHAIN_PROTOCOL_VERSION', 4);
-  const GPT2Version = getVersion(`${GPT2}/functions`, 'util.js', 'CURRENT_PROTOCOL_VERSION', 3);
+  const GPT2Version = getVersionFromAinJs(ainJsVersion, GPT2);
   const insightVersion = getVersion(`${INSIGHT}/src/data/constants`, 'const.js', 'VERSION', 1);
   const faucetVersion = getVersionFromAinJs(ainJsVersion, FAUCET);
   const connectVersion = faucetVersion;
