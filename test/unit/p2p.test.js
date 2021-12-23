@@ -332,6 +332,7 @@ describe("P2p", () => {
           p2pState: P2pNetworkStates.STARTING,
           maxInbound: NodeConfigs.MAX_NUM_INBOUND_CONNECTION,
           targetOutBound: NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
+          numConnections: 0,
           numInbound: 0,
           numOutbound: 0,
           incomingPeers: [],
