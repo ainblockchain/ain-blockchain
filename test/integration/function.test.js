@@ -1502,7 +1502,7 @@ describe('Native Function', () => {
       });
     });
 
-    describe('App creation', () => {
+    describe('Create app: _createApp', () => {
       before(async () => {
         const appStakingPath =
             `/staking/test_service_create_app0/${serviceAdmin}/0/stake/${Date.now()}/value`;
@@ -1572,6 +1572,21 @@ describe('Native Function', () => {
           "gas_cost_total": 0
         });
         if (!(await waitUntilTxFinalized(serverList, _.get(createAppRes, 'tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+      });
+
+      it("when successful with null value", async () => {
+        const manageAppPath = '/manage_app/0test_service_create_app/create/1';
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: manageAppPath,
+          value: null,
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+        assert.deepEqual(body.code, 40001);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
       });
@@ -2051,6 +2066,28 @@ describe('Native Function', () => {
         expect(toAfterBalance).to.equal(toBeforeBalance + transferAmount);
       });
 
+      it('transfer: transfer with null value', async () => {
+        let fromBeforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
+        let toBeforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: transferPath + '/2/value',
+          value: null,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+        assert.deepEqual(body.code, 40001);
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const fromAfterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
+        const toAfterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferToBalancePath}`).body.toString('utf-8')).result;
+        expect(fromAfterBalance).to.equal(fromBeforeBalance);
+        expect(toAfterBalance).to.equal(toBeforeBalance);
+      });
+
       it('transfer: transfer more than account balance', async () => {
         let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
@@ -2277,7 +2314,7 @@ describe('Native Function', () => {
         });
       })
 
-      describe('Stake', () => {
+      describe('Stake:', () => {
         it('stake: stake', async () => {
           let beforeBalance = parseOrLog(syncRequest('GET',
               server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
@@ -2377,6 +2414,28 @@ describe('Native Function', () => {
           expect(stakingAppBalanceTotal).to.equal(stakeAmount + 1);
         });
 
+        it('stake: stake with null value', async () => {
+          const beforeBalance = parseOrLog(syncRequest('GET', server2 +
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          const beforeStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: stakePath + '/2/value',
+            value: null,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+          assert.deepEqual(body.code, 40001);
+          if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+            console.error(`Failed to check finalization of tx.`);
+          }
+          const afterStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const afterBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${serviceUserBalancePath}`).body.toString('utf-8')).result;
+          expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance);
+          expect(afterBalance).to.equal(beforeBalance);
+        });
+
         it('stake: stake more than account balance', async () => {
           const beforeBalance = parseOrLog(syncRequest('GET', server2 +
               `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
@@ -2453,12 +2512,39 @@ describe('Native Function', () => {
         });
       });
 
-      describe('Unstake', () => {
-        it('unstake: unstake by another address', async () => {
-          let beforeBalance = parseOrLog(syncRequest('GET',
+      describe('Unstake:', () => {
+        it('unstake: unstake with null value', async () => {
+          const beforeBalance = parseOrLog(syncRequest('GET',
               server2 + `/get_value?ref=/accounts/${serviceUserBad}/balance`)
               .body.toString('utf-8')).result;
-          let beforeStakingAccountBalance = parseOrLog(syncRequest('GET',
+          const beforeStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: `${unstakePath}/1/value`,
+            value: null,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+          assert.deepEqual(body.code, 40001);
+          if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+            console.error(`Failed to check finalization of tx.`);
+          }
+          const unstakeRequest = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${unstakePath}/1`).body.toString('utf-8')).result;
+          const afterStakingAccountBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
+          const balance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=/accounts/${serviceUserBad}/balance`)
+              .body.toString('utf-8')).result;
+          expect(unstakeRequest).to.equal(null);
+          expect(afterStakingAccountBalance).to.equal(beforeStakingAccountBalance);
+          expect(balance).to.equal(beforeBalance);
+        });
+
+        it('unstake: unstake by another address', async () => {
+          const beforeBalance = parseOrLog(syncRequest('GET',
+              server2 + `/get_value?ref=/accounts/${serviceUserBad}/balance`)
+              .body.toString('utf-8')).result;
+          const beforeStakingAccountBalance = parseOrLog(syncRequest('GET',
               server2 + `/get_value?ref=${stakingServiceAccountBalancePath}`).body.toString('utf-8')).result;
           const body = parseOrLog(syncRequest('POST', server3 + '/set_value', {json: {
             ref: `${unstakePath}/1/value`,
@@ -2623,7 +2709,7 @@ describe('Native Function', () => {
         await setUpApp('test_service_payment', serverList, { admin: { [serviceAdmin]: true } });
       });
 
-      it('payments: non-app admin cannot write pay records', async () => {
+      it('payments: pay by non-app admin', async () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
               ref: `/payments/test_service_payment/${serviceUser}/0/pay/key1`,
               value: {
@@ -2636,7 +2722,7 @@ describe('Native Function', () => {
         }
       });
 
-      it('payments: amount = 0', async () => {
+      it('payments: pay with amount = 0', async () => {
         const payRef = `/payments/test_service_payment/${serviceUser}/0/pay/key1`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: payRef,
@@ -2650,7 +2736,7 @@ describe('Native Function', () => {
         }
       });
 
-      it('payments: amount is not a number', async () => {
+      it('payments: pay with amount is not a number', async () => {
         const payRef = `/payments/test_service_payment/${serviceUser}/0/pay/key1`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: payRef,
@@ -2664,7 +2750,7 @@ describe('Native Function', () => {
         }
       });
 
-      it('payments: payment amount > admin balance', async () => {
+      it('payments: pay with payment amount > admin balance', async () => {
         const adminBalance = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
         const payRef = `/payments/test_service_payment/${serviceUser}/0/pay/key1`;
@@ -2680,7 +2766,34 @@ describe('Native Function', () => {
         }
       });
 
-      it('payments: app admin can write pay records', async () => {
+      it('payments: pay with null value', async () => {
+        const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        const payRef = `/payments/test_service_payment/${serviceUser}/0/pay/key2`;
+        const serviceAccountBalanceBefore = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service_payment/${serviceUser}|0/balance`)
+            .body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', { json: {
+          ref: payRef,
+          value: null,
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+        assert.deepEqual(body.code, 40001);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        expect(adminBalanceAfter).to.equals(adminBalanceBefore);
+        const serviceAccountBalanceAfter = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service_payment/${serviceUser}|0/balance`)
+            .body.toString('utf-8')).result;
+        expect(serviceAccountBalanceAfter).to.equals(serviceAccountBalanceBefore);
+      });
+
+      it('payments: pay by app admin', async () => {
         const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
         const payRef = `/payments/test_service_payment/${serviceUser}/0/pay/key2`;
@@ -2757,7 +2870,7 @@ describe('Native Function', () => {
         assert.deepEqual(serviceAccountBalance, amount);
       });
 
-      it('payments: non-app admin cannot write claim records', async () => {
+      it('payments: claim by non-app admin', async () => {
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
               ref: `/payments/test_service_payment/${serviceUser}/0/claim/key1`,
               value: {
@@ -2771,7 +2884,7 @@ describe('Native Function', () => {
         }
       });
 
-      it('payments: claim amount > payment balance', async () => {
+      it('payments: claim with amount > payment balance', async () => {
         const paymentBalance = parseOrLog(syncRequest('GET',
             server1 + `/get_value?ref=/service_accounts/payments/test_service_payment/${serviceUser}|0/balance`)
             .body.toString('utf-8')).result;
@@ -2789,7 +2902,7 @@ describe('Native Function', () => {
         }
       });
 
-      it('payments: invalid claim target', async () => {
+      it('payments: claim with invalid claim target', async () => {
         const paymentBalance = parseOrLog(syncRequest('GET',
             server1 + `/get_value?ref=/service_accounts/payments/test_service_payment/${serviceUser}|0/balance`)
             .body.toString('utf-8')).result;
@@ -2807,7 +2920,34 @@ describe('Native Function', () => {
         }
       });
 
-      it('payments: app admin can claim payments with individual account target', async () => {
+      it('payments: claim with null value', async () => {
+        const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        const paymentClaimRef = `/payments/test_service_payment/${serviceUser}/0/claim/key2`;
+        const serviceAccountBalanceBefore = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service_payment/${serviceUser}|0/balance`)
+            .body.toString('utf-8')).result;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: paymentClaimRef,
+          value: null,
+          nonce: -1,
+          timestamp: 1234567890000,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+        assert.deepEqual(body.code, 40001);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const adminBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+            `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
+        expect(adminBalanceAfter).to.equals(adminBalanceBefore);
+        const serviceAccountBalanceAfter = parseOrLog(syncRequest('GET',
+            server1 + `/get_value?ref=/service_accounts/payments/test_service_payment/${serviceUser}|0/balance`)
+                .body.toString('utf-8')).result;
+        expect(serviceAccountBalanceAfter).to.equals(serviceAccountBalanceBefore);
+      });
+
+      it('payments: claim by app admin with individual account target', async () => {
         const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
         const paymentClaimRef = `/payments/test_service_payment/${serviceUser}/0/claim/key2`;
@@ -2887,7 +3027,7 @@ describe('Native Function', () => {
         expect(serviceAccountBalance).to.equals(0);
       });
 
-      it('payments: app admin can claim payments + hold in escrow', async () => {
+      it('payments: claim + hold in escrow by app admin', async () => {
         // pay
         const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
@@ -2958,7 +3098,7 @@ describe('Native Function', () => {
         expect(adminBalanceAfter).to.equals(adminBalanceBefore);
       });
 
-      it('payments: app admin can claim payments with service account target', async () => {
+      it('payments: claim by app admin with service account target', async () => {
         const adminBalanceBefore = parseOrLog(syncRequest('GET', server1 +
             `/get_value?ref=/accounts/${serviceAdmin}/balance`).body.toString('utf-8')).result;
         const payRef = `/payments/test_service_payment/${serviceUser}/0/pay/key3`;
@@ -3071,6 +3211,34 @@ describe('Native Function', () => {
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
+        });
+
+        it("escrow: individual -> individual: hold with null value", async () => {
+          const key = 1234567890000 + 2;
+          const holdRef = `/escrow/${serviceUser}/${serviceAdmin}/0/hold/${key}`;
+          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          const escrowServiceAccountBalanceBefore = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/balance`)
+              .body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+            ref: holdRef,
+            value: null,
+            nonce: -1,
+            timestamp: 1234567890000,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+          assert.deepEqual(body.code, 40001);
+          if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+            console.error(`Failed to check finalization of tx.`);
+          }
+          const userBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          expect(userBalanceAfter).to.equals(userBalanceBefore);
+          const escrowServiceAccountBalanceAfter = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/balance`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountBalanceAfter).to.equals(escrowServiceAccountBalanceBefore);
         });
 
         it("escrow: individual -> individual: source account can write hold", async () => {
@@ -3190,6 +3358,34 @@ describe('Native Function', () => {
           if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
             console.error(`Failed to check finalization of tx.`);
           }
+        });
+
+        it("escrow: individual -> individual: release with null value", async () => {
+          const key = 1234567890000 + 6;
+          const releaseRef = `/escrow/${serviceUser}/${serviceAdmin}/0/release/${key}`;
+          const userBalanceBefore = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          const escrowServiceAccountBalanceBefore = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/balance`)
+              .body.toString('utf-8')).result;
+          const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+            ref: releaseRef,
+            value: null,
+            nonce: -1,
+            timestamp: 1234567890000,
+          }}).body.toString('utf-8'));
+          assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+          assert.deepEqual(body.code, 40001);
+          if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+            console.error(`Failed to check finalization of tx.`);
+          }
+          const userBalanceAfter = parseOrLog(syncRequest('GET', server1 +
+              `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+          expect(userBalanceAfter).to.equals(userBalanceBefore);
+          const escrowServiceAccountBalanceAfter = parseOrLog(syncRequest('GET',
+              server1 + `/get_value?ref=/service_accounts/escrow/escrow/${serviceUser}:${serviceAdmin}:0/balance`)
+              .body.toString('utf-8')).result;
+          expect(escrowServiceAccountBalanceAfter).to.equals(escrowServiceAccountBalanceBefore);
         });
 
         it("escrow: individual -> individual: admin account can write release (ratio = 0)", async () => {
@@ -3817,6 +4013,32 @@ describe('Native Function', () => {
         expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
       });
 
+      it('cannot open checkout with null value', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const timestamp = 1628255843548;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref: `${checkoutRequestBasePath}/${serviceUser}/${timestamp}`,
+          value: null,
+          timestamp,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+        assert.deepEqual(body.code, 40001);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
       it('can open checkout', async () => {
         const beforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
@@ -3942,6 +4164,44 @@ describe('Native Function', () => {
         const checkoutHistory = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${checkoutHistoryBasePath}/${serviceUser}/${timestamp}`).body.toString('utf-8')).result;
         expect(checkoutHistory).to.equal(null);
+      });
+
+      it('cannot close checkout with null value', async () => {
+        const userPendingAmountBefore = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/pending/${serviceUser}`)
+            .body.toString('utf-8')).result;
+        const totalPendingAmountBefore = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/pending/total`)
+            .body.toString('utf-8')).result;
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `${checkoutHistoryBasePath}/${serviceUser}/1628255843548`,
+            value: null,
+          },
+          timestamp: 1628255843548,
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
+        const res = await client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        });
+        assert.deepEqual(_.get(res, 'result.result.result.code'), 12103);
+        const txHash = _.get(res, 'result.result.tx_hash');
+        if (!(await waitUntilTxFinalized(serverList, txHash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const userPendingAmountAfter = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/pending/${serviceUser}`)
+            .body.toString('utf-8')).result;
+        const totalPendingAmountAfter = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/checkout/stats/pending/total`)
+            .body.toString('utf-8')).result;
+        expect(userPendingAmountAfter).to.equal(userPendingAmountBefore);
+        expect(totalPendingAmountAfter).to.equal(totalPendingAmountBefore);
       });
 
       it('can close a successful checkout with token pool key', async () => {
@@ -4478,6 +4738,34 @@ describe('Native Function', () => {
         expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
       });
 
+      it('cannot open checkin with null value', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const timestamp = 1628255843548;
+        const ref = `${checkinRequestBasePath}/${serviceUser}/${timestamp}`;
+        const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
+          ref,
+          value: null,
+          timestamp,
+          nonce: -1,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(_.get(body, 'result.result.code'), 12103);
+        assert.deepEqual(body.code, 40001);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const afterRequestUserBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`).body.toString('utf-8')).result;
+        const afterRequestTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`)
+            .body.toString('utf-8')).result;
+        expect(afterRequestUserBalance).to.equal(beforeBalance);
+        expect(afterRequestTokenPoolBalance).to.equal(beforeTokenPoolBalance);
+      });
+
       it('can open checkin', async () => {
         const beforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
@@ -4669,6 +4957,43 @@ describe('Native Function', () => {
         const checkinHistory = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${checkinHistoryBasePath}/${serviceUser}/1628255843548`).body.toString('utf-8')).result;
         expect(checkinHistory).to.equal(null);
+      });
+
+      it('cannot close checkin with null value', async () => {
+        const beforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const beforeTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        const timestamp = Date.now();
+        const txBody = {
+          operation: {
+            type: 'SET_VALUE',
+            ref: `${checkinHistoryBasePath}/${serviceUser}/1628255843548`,
+            value: null,
+          },
+          timestamp,
+          nonce: -1
+        };
+        const signature =
+            ainUtil.ecSignTransaction(txBody, Buffer.from('d42f73de4ee706a4891dad643e0a65c0677020dbc2425f585442d0de2c742a44', 'hex'));
+        const res = await client.request('ain_sendSignedTransaction', {
+          tx_body: txBody,
+          signature,
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
+        });
+        assert.deepEqual(_.get(res, 'result.result.result.code'), 12103);
+        const txHash = _.get(res, 'result.result.tx_hash');
+        if (!(await waitUntilTxFinalized(serverList, txHash))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const afterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${serviceUser}/balance`)
+            .body.toString('utf-8')).result;
+        const afterTokenPoolBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=/accounts/${tokenPoolAddr}/balance`).body.toString('utf-8')).result;
+        expect(afterBalance).to.equal(beforeBalance);
+        expect(afterTokenPoolBalance).to.equal(beforeTokenPoolBalance);
       });
 
       it('can close a successful checkin with token pool key', async () => {
