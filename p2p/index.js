@@ -278,7 +278,7 @@ class P2pClient {
     } else {
       this.steadyIntervalCount = 0;
       this.disconnectRandomPeer();
-      this.p2pState = P2pNetworkStates.EXPANDING;
+      this.updateP2pState();
       await this.discoverPeerWithGuardingFlag();
     }
   }
