@@ -40,7 +40,6 @@ const {
 } = require('../common/network-util');
 const {
   getAddressFromSocket,
-  removeSocketConnectionIfExists,
   signMessage,
   getAddressFromMessage,
   verifySignedMessage,
@@ -678,10 +677,10 @@ class P2pServer {
     });
 
     socket.on('close', () => {
-      const address = getAddressFromSocket(this.inbound, socket);
       const url = this.buildRemoteUrlFromSocket(socket);
       removePeerConnection(this.peerConnectionsInProgress, url);
-      removeSocketConnectionIfExists(this.inbound, address);
+      const address = getAddressFromSocket(this.inbound, socket);
+      closeSocketSafe(this.inbound, socket);
       logger.info(`Disconnected from a peer: ${address || url}`);
     });
 

@@ -18,7 +18,6 @@ const {
 } = require('../common/constants');
 const {
   getAddressFromSocket,
-  removeSocketConnectionIfExists,
   signMessage,
   getAddressFromMessage,
   verifySignedMessage,
@@ -262,12 +261,17 @@ class P2pClient {
     }
   }
 
+  closeSocketWithP2pStateUpdate(socket) {
+    closeSocketSafe(this.outbound, socket);
+    this.updateP2pState();
+  }
+
   disconnectRandomPeer() {
     if (Object.keys(this.outbound) === 0) {
       return;
     }
     const randomPeer = _.shuffle(Object.values(this.outbound))[0];
-    closeSocketSafe(this.outbound, randomPeer.socket);
+    closeSocketWithP2pStateUpdate(randomPeer.socket)
   }
 
   async tryReorgPeerConnections() {
@@ -429,6 +433,11 @@ class P2pClient {
     return true;
   }
 
+  clearAllConnections(socket) {
+    removePeerConnection(this.peerConnectionsInProgress, socket.url);
+    this.closeSocketWithP2pStateUpdate(socket);
+  }
+
   setClientSidePeerEventHandlers(socket) {
     const LOG_HEADER = 'setClientSidePeerEventHandlers';
     socket.on('message', (message) => {
@@ -439,8 +448,7 @@ class P2pClient {
       if (peerNetworkId !== this.server.node.getBlockchainParam('genesis/network_id')) {
         logger.error(`The given network ID(${peerNetworkId}) of the node(${address}) is MISSING ` +
             `or DIFFERENT from mine. Disconnect the connection.`);
-        removePeerConnection(this.peerConnectionsInProgress, socket.url);
-        closeSocketSafe(this.outbound, socket);
+        this.clearAllConnections(socket);
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
         return;
@@ -449,8 +457,7 @@ class P2pClient {
       if (!VersionUtil.isValidProtocolVersion(dataProtoVer)) {
         logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
             `INAPPROPRIATE. Disconnect the connection.`);
-        removePeerConnection(this.peerConnectionsInProgress, socket.url);
-        closeSocketSafe(this.outbound, socket);
+        this.clearAllConnections(socket);
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
         return;
@@ -480,16 +487,14 @@ class P2pClient {
           if (!address) {
             logger.error(`[${LOG_HEADER}] Providing an address is compulsary when initiating ` +
                 `p2p communication.`);
-            removePeerConnection(this.peerConnectionsInProgress, socket.url);
-            closeSocketSafe(this.outbound, socket);
+            this.clearAllConnections(socket);
             const latency = Date.now() - beginTime;
             trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
             return;
           } else if (!_.get(parsedMessage, 'data.signature')) {
             logger.error(`[${LOG_HEADER}] A sinature of the peer(${address}) is missing during ` +
                 `p2p communication. Cannot proceed the further communication.`);
-            removePeerConnection(this.peerConnectionsInProgress, socket.url);
-            closeSocketSafe(this.outbound, socket);
+            this.clearAllConnections(socket);
             const latency = Date.now() - beginTime;
             trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
             return;
@@ -498,8 +503,7 @@ class P2pClient {
             if (addressFromSig !== address) {
               logger.error(`[${LOG_HEADER}] The addresses(${addressFromSig} and ${address}) are ` +
                   `not the same!!`);
-              removePeerConnection(this.peerConnectionsInProgress, socket.url);
-              closeSocketSafe(this.outbound, socket);
+              this.clearAllConnections(socket);
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
               return;
@@ -507,8 +511,7 @@ class P2pClient {
             if (!verifySignedMessage(parsedMessage, addressFromSig)) {
               logger.error(`[${LOG_HEADER}] The message is not correctly signed. ` +
                   `Discard the message!!`);
-              removePeerConnection(this.peerConnectionsInProgress, socket.url);
-              closeSocketSafe(this.outbound, socket);
+              this.clearAllConnections(socket);
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
               return;
@@ -567,11 +570,10 @@ class P2pClient {
 
     socket.on('close', () => {
       const address = getAddressFromSocket(this.outbound, socket);
-      removeSocketConnectionIfExists(this.outbound, address);
-      removePeerConnection(this.peerConnectionsInProgress, socket.url);
       if (_.get(this.chainSyncInProgress, 'address') === address) {
         this.resetChainSyncPeer();
       }
+      this.clearAllConnections(socket);
       logger.info(`Disconnected from a peer: ${address || socket.url}`);
     });
 
@@ -643,8 +645,7 @@ class P2pClient {
           }
         } else {
           logger.error('Address confirmation hasn\'t sent back. Close the socket connection');
-          removePeerConnection(this.peerConnectionsInProgress, socket.url);
-          closeSocketSafe(this.outbound, socket);
+          this.clearAllConnections(socket);
         }
     }, NodeConfigs.P2P_WAIT_FOR_ADDRESS_TIMEOUT_MS);
   }
@@ -749,6 +750,7 @@ class P2pClient {
       const isMessageSent = this.sendPeerInfo(socket);
       if (isMessageSent) {
         addPeerConnection(this.peerConnectionsInProgress, url);
+        this.updateP2pState();
         this.setTimerForPeerAddressResponse(socket);
       }
     });
@@ -832,10 +834,9 @@ class P2pClient {
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
         const socket = _.get(node, 'socket');
         if (socket.readyState !== 1) {
-          const address = getAddressFromSocket(this.outbound, socket);
-          removeSocketConnectionIfExists(this.outbound, address);
-          logger.info(`A peer(${address}) is not ready to communicate with. ` +
+          logger.info(`A peer(${node.peerInfo.address}) is not ready to communicate with. ` +
               `The readyState is(${socket.readyState})`);
+          this.closeSocketWithP2pStateUpdate(socket);
         } else {
           socket.ping();
           this.updateStatusToPeer(socket, node.peerInfo.address);
