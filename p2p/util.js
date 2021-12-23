@@ -34,7 +34,7 @@ function getAddressFromSocket(connectionObj, socket) {
   return Object.keys(connectionObj).find(address => connectionObj[address].socket === socket);
 }
 
-function removeSocketConnectionIfExists(connectionObj, address) {
+function _removeSocketConnectionIfExists(connectionObj, address) {
   if (address in connectionObj) {
     delete connectionObj[address];
     logger.info(` => Updated managed peers info: ${Object.keys(connectionObj)}`);
@@ -43,7 +43,7 @@ function removeSocketConnectionIfExists(connectionObj, address) {
 
 function closeSocketSafe(connections, socket) {
   const address = getAddressFromSocket(connections, socket);
-  removeSocketConnectionIfExists(connections, address);
+  _removeSocketConnectionIfExists(connections, address);
   socket.close();
 }
 
@@ -133,7 +133,6 @@ function removePeerConnection(peerConnectionsInProgress, url) {
 
 module.exports = {
   getAddressFromSocket,
-  removeSocketConnectionIfExists,
   signMessage,
   getAddressFromMessage,
   verifySignedMessage,
