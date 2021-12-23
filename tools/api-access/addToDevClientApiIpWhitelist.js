@@ -50,6 +50,10 @@ async function processArguments() {
   } else {
     ip = process.argv[5];
   }
+  if (!ip) {
+    console.error('Please specify an IP');
+    usage();
+  }
   await addToDevClientApiIpWhitelist(endpointUrl, chainId, accountType, keystoreFilePath, ip);
 }
 

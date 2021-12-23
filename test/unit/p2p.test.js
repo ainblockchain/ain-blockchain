@@ -329,9 +329,11 @@ describe("P2p", () => {
     describe("getConnectionStatus", () => {
       it("shows initial values of connection status", () => {
         assert.deepEqual(p2pClient.getConnectionStatus(), {
-          p2pState: P2pNetworkStates.STARTING,
+          state: P2pNetworkStates.STARTING,
+          stateNumeric: 0,
           maxInbound: NodeConfigs.MAX_NUM_INBOUND_CONNECTION,
           targetOutBound: NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
+          numConnections: 0,
           numInbound: 0,
           numOutbound: 0,
           incomingPeers: [],
