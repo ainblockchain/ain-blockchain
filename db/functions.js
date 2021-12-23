@@ -586,6 +586,10 @@ class Functions {
    * This is often used for testing purposes.
    */
   _saveLastTx(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const transaction = context.transaction;
     const parsedValuePath = context.valuePath;
     if (parsedValuePath.length === 0) {
@@ -610,6 +614,10 @@ class Functions {
    * This is often used for testing purposes.
    */
   _eraseValue(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const parsedValuePath = context.valuePath;
     const result = this.setValueOrLog(CommonUtil.formatPath(parsedValuePath), 'erased', context);
     if (!CommonUtil.isFailedTx(result)) {
@@ -624,6 +632,10 @@ class Functions {
    * This is often used for testing purposes.
    */
   _fail(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     return this.returnFuncResult(context, FunctionResultCode.FAILURE);
   }
 
@@ -632,6 +644,10 @@ class Functions {
    * This is often used for testing purposes.
    */
   _setOwnerConfig(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const parsedValuePath = context.valuePath;
     const auth = context.auth;
     const owner = {
@@ -651,6 +667,10 @@ class Functions {
   }
 
   _transfer(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const from = context.params.from;
     const to = context.params.to;
     const fromBalancePath = CommonUtil.getBalancePath(from);
@@ -710,6 +730,10 @@ class Functions {
   }
 
   _createApp(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const { isValidServiceName } = require('./state-util');
     const appName = context.params.app_name;
     if (!isValidServiceName(appName)) {
@@ -749,6 +773,10 @@ class Functions {
   }
 
   _collectFee(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const from = context.params.from;
     const gasFeeServiceAccountName = CommonUtil.toServiceAccountName(
         PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE_UNCLAIMED);
@@ -772,6 +800,10 @@ class Functions {
   }
 
   _distributeFee(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const blockNumber = context.params.number;
     // NOTE(liayoo): Because we need to have the votes to determine which validators to give the
     //               rewards to, we're distributing the rewards from the (N-1)th block when a
@@ -809,6 +841,10 @@ class Functions {
   }
 
   _claimReward(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const addr = context.params.user_addr;
     const unclaimedRewardsPath = PathUtil.getConsensusRewardsUnclaimedPath(addr);
     const unclaimedRewards = this.db.getValue(unclaimedRewardsPath) || 0;
@@ -839,6 +875,10 @@ class Functions {
   }
 
   _handleOffenses(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     if (CommonUtil.isEmpty(value.offenses)) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
@@ -858,6 +898,10 @@ class Functions {
   }
 
   _stake(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const stakingKey = context.params.staking_key;
@@ -890,6 +934,10 @@ class Functions {
   }
 
   _unstake(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const stakingKey = context.params.staking_key;
@@ -914,6 +962,10 @@ class Functions {
   }
 
   _pay(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
@@ -933,6 +985,10 @@ class Functions {
   }
 
   _claim(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
@@ -972,6 +1028,10 @@ class Functions {
   }
 
   _hold(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const sourceAccount = context.params.source_account;
     const targetAccount = context.params.target_account;
     const escrowKey = context.params.escrow_key;
@@ -992,6 +1052,10 @@ class Functions {
   }
 
   _release(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const sourceAccount = context.params.source_account;
     const targetAccount = context.params.target_account;
     const escrowKey = context.params.escrow_key;
@@ -1030,6 +1094,10 @@ class Functions {
   }
 
   _updateLatestShardReport(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const blockNumberReported = Number(context.params.block_number);
     const parsedValuePath = context.valuePath;
     if (!CommonUtil.isArray(context.functionPath)) {
@@ -1142,6 +1210,7 @@ class Functions {
 
   _openCheckin(value, context) {
     if (value === null) {
+      // Does nothing for null value.
       // NOTE(liayoo): It's not a SET_VALUE for a request, but for a cancellation. A request should
       // only happen if the value is NOT null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
@@ -1194,6 +1263,7 @@ class Functions {
 
   _cancelCheckin(value, context) {
     if (value !== null) {
+      // Does nothing for null value.
       // NOTE(liayoo): It's not a SET_VALUE for a cancel, but for a request. A cancel should only 
       // happen if the value is null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
@@ -1219,6 +1289,10 @@ class Functions {
   }
 
   _closeCheckin(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const networkName = context.params.network_name;
     const chainId = context.params.chain_id;
     const tokenId = context.params.token_id;
@@ -1327,6 +1401,7 @@ class Functions {
 
   _openCheckout(value, context) {
     if (value === null) {
+      // Does nothing for null value.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
     const networkName = context.params.network_name;
@@ -1377,6 +1452,10 @@ class Functions {
   }
 
   _closeCheckout(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const networkName = context.params.network_name;
     const chainId = context.params.chain_id;
     const tokenId = context.params.token_id;
