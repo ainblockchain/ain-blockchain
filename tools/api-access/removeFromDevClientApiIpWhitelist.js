@@ -5,11 +5,11 @@ const stringify = require('fast-json-stable-stringify');
 const { BlockchainConsts } = require('../../common/constants');
 const { getAccountPrivateKey } = require('./util');
 
-async function sendRemoveFromToDevClientApiIpWhitelistRequest(endpointUrl, privateKey, chainId, ipAddresses) {
+async function sendRemoveFromToDevClientApiIpWhitelistRequest(endpointUrl, privateKey, chainId, ip) {
   const message = {
     timestamp: Date.now(),
     method: 'ain_removeFromDevClientApiIpWhitelist',
-    ip: ipAddresses,
+    ip,
   };
   const signature = ainUtil.ecSignMessage(stringify(message), Buffer.from(privateKey, 'hex'), chainId);
   return await axios.post(
@@ -29,9 +29,9 @@ async function sendRemoveFromToDevClientApiIpWhitelistRequest(endpointUrl, priva
   });
 }
 
-async function removeFromDevClientApiIpWhitelist(endpointUrl, chainId, type, keystoreFilePath, ipAddresses) {
+async function removeFromDevClientApiIpWhitelist(endpointUrl, chainId, type, keystoreFilePath, ip) {
   const privateKey = await getAccountPrivateKey(type, keystoreFilePath);
-  const res = await sendRemoveFromToDevClientApiIpWhitelistRequest(endpointUrl, privateKey, chainId, ipAddresses);
+  const res = await sendRemoveFromToDevClientApiIpWhitelistRequest(endpointUrl, privateKey, chainId, ip);
   console.log('Result:', res);
 }
 
@@ -43,14 +43,18 @@ async function processArguments() {
   const chainId = Number(process.argv[3]);
   const accountType = process.argv[4];
   let keystoreFilePath = null;
-  let ipAddresses = null;
+  let ip = null;
   if (accountType === 'keystore') {
     keystoreFilePath = process.argv[5];
-    ipAddresses = process.argv[6];
+    ip = process.argv[6];
   } else {
-    ipAddresses = process.argv[5];
+    ip = process.argv[5];
   }
-  await removeFromDevClientApiIpWhitelist(endpointUrl, chainId, accountType, keystoreFilePath, ipAddresses);
+  if (!ip) {
+    console.error('Please specify an IP');
+    usage();
+  }
+  await removeFromDevClientApiIpWhitelist(endpointUrl, chainId, accountType, keystoreFilePath, ip);
 }
 
 function usage() {
