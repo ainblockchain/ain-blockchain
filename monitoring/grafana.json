@@ -393,27 +393,15 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
           "expr": "client_status:traffic_stats:1_m:block_last_votes:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:block_last_votes:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:block_last_votes:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -579,30 +567,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:propose_p_2_p_message:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:propose_p_2_p_message:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -768,30 +732,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:vote_p_2_p_message:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:vote_p_2_p_message:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -957,30 +897,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:propose_before_block:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:propose_before_block:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -1147,30 +1063,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:vote_before_block:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:vote_before_block:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -1336,30 +1228,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:vote_after_propose:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:vote_after_propose:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -1525,30 +1393,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:p_2_p_tag_consensus_length:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:p_2_p_tag_consensus_length:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -1708,30 +1552,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:p_2_p_tag_consensus_max_occur:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:p_2_p_tag_consensus_max_occur:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -1891,30 +1711,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:p_2_p_tag_tx_length:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:p_2_p_tag_tx_length:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -2081,30 +1877,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:p_2_p_tag_tx_max_occur:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:p_2_p_tag_tx_max_occur:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -2262,27 +2034,15 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
           "expr": "client_status:traffic_stats:1_m:block_txs:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:block_txs:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:block_txs:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -2439,27 +2199,15 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
           "expr": "client_status:traffic_stats:1_m:block_size:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:block_size:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:block_size:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -2610,27 +2358,15 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
           "expr": "client_status:traffic_stats:1_m:block_gas_amount:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:block_gas_amount:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:block_gas_amount:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -2782,27 +2518,15 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
           "expr": "client_status:traffic_stats:1_m:block_gas_cost:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:block_gas_cost:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:block_gas_cost:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -2960,27 +2684,15 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
           "expr": "client_status:traffic_stats:1_m:tx_bytes:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:tx_bytes:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:tx_bytes:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -3131,27 +2843,15 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
           "expr": "client_status:traffic_stats:1_m:tx_op_size:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:tx_op_size:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:tx_op_size:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -3303,27 +3003,15 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
           "expr": "client_status:traffic_stats:1_m:tx_gas_amount:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:tx_gas_amount:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:tx_gas_amount:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -3491,27 +3179,15 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
           "expr": "client_status:traffic_stats:1_m:tx_gas_cost:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:tx_gas_cost:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:tx_gas_cost:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -4642,13 +4318,13 @@
     "list": []
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Blockchain Servers",
   "uid": "M6YpMSyMz",
-  "version": 23,
+  "version": 24,
   "weekStart": ""
 }
