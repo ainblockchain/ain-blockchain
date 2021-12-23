@@ -32,7 +32,19 @@ module.exports = function getApiAccessApis(node) {
         done({ code: 403, message: 'Forbidden' });
         return;
       }
-      if (!CommonUtil.isWildcard(args.message.ip) && net.isIP(args.message.ip) !== 0) {
+      if (CommonUtil.isWildcard(args.message.ip)) {
+        NodeConfigs.DEV_CLIENT_API_IP_WHITELIST = '*';
+        const latency = Date.now() - beginTime;
+        trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
+        done(null, JsonRpcUtil.addProtocolVersion({
+          result: {
+            code: JsonRpcApiResultCode.SUCCESS,
+            message: `Added IP (${args.message.ip}) to whitelist: ${JSON.stringify(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST)}`
+          }
+        }));
+        return;
+      }
+      if (!net.isIPv4(args.message.ip)) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
