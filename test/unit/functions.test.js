@@ -10,7 +10,7 @@ const BlockchainNode = require('../../node')
 const CommonUtil = require('../../common/common-util');
 const {
   setNodeForTesting,
-  eraseSubtreeFuncResPromiseResults,
+  eraseSubtreeFuncResFuncPromises,
 } = require('../test-util');
 
 // NOTE(platfowner): These test cases assume ENABLE_REST_FUNCTION_CALL = true.
@@ -287,7 +287,7 @@ describe("Functions", () => {
         const {
           func_results: funcResults,
           subtree_func_results: subtreeFuncResults,
-          promise_results: promiseResults,
+          func_promises: funcPromises,
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRest), value, "prev value", { addr: 'abcd' },
             1234567890000, tx, 1000, 1234567890999,
@@ -299,7 +299,7 @@ describe("Functions", () => {
           }
         });
         assert.deepEqual(subtreeFuncResults, {});
-        return promiseResults.then((resp) => {
+        return funcPromises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -383,7 +383,7 @@ describe("Functions", () => {
         const {
           func_results: funcResults,
           subtree_func_results: subtreeFuncResults,
-          promise_results: promiseResults,
+          func_promises: funcPromises,
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestVarPath), value, "prev value", { addr: 'abcd' },
             1234567890000, tx, 1000, 1234567890999,
@@ -395,7 +395,7 @@ describe("Functions", () => {
           }
         });
         assert.deepEqual(subtreeFuncResults, {});
-        return promiseResults.then((resp) => {
+        return funcPromises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -481,7 +481,7 @@ describe("Functions", () => {
         const {
           func_results: funcResults,
           subtree_func_results: subtreeFuncResults,
-          promise_results: promiseResults,
+          func_promises: funcPromises,
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestMulti), value, "prev value", { addr: 'abcd' },
             1234567890000, tx, 1000, 1234567890999,
@@ -497,7 +497,7 @@ describe("Functions", () => {
           }
         });
         assert.deepEqual(subtreeFuncResults, {});
-        return promiseResults.then((resp) => {
+        return funcPromises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 2,
             trigger_count: 2,
@@ -650,7 +650,7 @@ describe("Functions", () => {
         const {
           func_results: funcResults,
           subtree_func_results: subtreeFuncResults,
-          promise_results: promiseResults,
+          func_promises: funcPromises,
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestWithSubtree), value, prevValue, { addr: 'abcd' },
             1234567890000, tx, 1000, 1234567890999,
@@ -665,7 +665,7 @@ describe("Functions", () => {
             "bandwidth_gas_amount": 100,
           }
         });
-        assert.deepEqual(eraseSubtreeFuncResPromiseResults(subtreeFuncResults), {
+        assert.deepEqual(eraseSubtreeFuncResFuncPromises(subtreeFuncResults), {
           "/deep/path": {
             "/deep/path": {
               "func_results": {
@@ -678,7 +678,7 @@ describe("Functions", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             }
           },
           "/deep/$var_path": {
@@ -693,7 +693,7 @@ describe("Functions", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             },
             "/deep/other_path": {
               "func_results": {
@@ -706,12 +706,12 @@ describe("Functions", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             },
           },
           "/deep/$var_path/to/$var_path2": {},
         });
-        return promiseResults.then((resp) => {
+        return funcPromises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 2,
             trigger_count: 2,
@@ -1385,7 +1385,7 @@ describe("Functions", () => {
         const {
           func_results: funcResults,
           subtree_func_results: subtreeFuncResults,
-          promise_results: promiseResults,
+          func_promises: funcPromises,
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestWithSubtree), value, prevValue, { addr: 'abcd' },
             1234567890000, tx, 1000, 1234567890999,
@@ -1400,7 +1400,7 @@ describe("Functions", () => {
             "bandwidth_gas_amount": 100,
           }
         });
-        assert.deepEqual(eraseSubtreeFuncResPromiseResults(subtreeFuncResults), {
+        assert.deepEqual(eraseSubtreeFuncResFuncPromises(subtreeFuncResults), {
           "/deep/path": {
             "/deep/path": {
               "func_results": {
@@ -1413,7 +1413,7 @@ describe("Functions", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             }
           },
           "/deep/$var_path": {
@@ -1428,7 +1428,7 @@ describe("Functions", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             },
             "/deep/path": {
               "func_results": {
@@ -1441,7 +1441,7 @@ describe("Functions", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             },
             "/deep/other_path": {
               "func_results": {
@@ -1454,7 +1454,7 @@ describe("Functions", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             }
           },
           "/deep/$var_path/to/$var_path2": {  // non-null prevValue case only!
@@ -1469,11 +1469,11 @@ describe("Functions", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             }
           }
         });
-        return promiseResults.then((resp) => {
+        return funcPromises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 2,
             trigger_count: 2,
@@ -2464,11 +2464,11 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { promise_results } = functions.matchAndTriggerFunctions(
+        const { func_promises } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestWithoutListener), value, "prev value", { addr: 'abcd' },
             1234567890000, tx, 1000, 1234567890999,
             accountRegistrationGasAmount, restFunctionCallGasAmount, {});
-        return promise_results.then((resp) => {
+        return func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -2495,11 +2495,11 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { promise_results } = functions.matchAndTriggerFunctions(
+        const { func_promises } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestNotWhitelisted), value, "prev value", { addr: 'abcd' },
             1234567890000, tx, 1000, 1234567890999,
             accountRegistrationGasAmount, restFunctionCallGasAmount, {});
-        return promise_results.then((resp) => {
+        return func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 0,
@@ -2537,11 +2537,11 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { promise_results } = functions.matchAndTriggerFunctions(
+        const { func_promises } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestNewlyWhitelisted),
             value, "prev value", { addr: 'abcd' }, 1234567890000, tx, 1000, 1234567890999,
             accountRegistrationGasAmount, restFunctionCallGasAmount, {});
-        return promise_results.then((resp) => {
+        return func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -2571,11 +2571,11 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { promise_results } = functions.matchAndTriggerFunctions(
+        const { func_promises } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestNewlyWhitelisted),
             value, "prev value", { addr: 'abcd' }, 1234567890000, tx, 1000, 1234567890999,
             accountRegistrationGasAmount, restFunctionCallGasAmount, {});
-        return promise_results.then((resp) => {
+        return func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 0,
@@ -2602,11 +2602,11 @@ describe("Functions", () => {
             "executed_at": 1566736760324,
           }
         }
-        const { promise_results } = functions.matchAndTriggerFunctions(
+        const { func_promises } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathNull),
             value, "prev value", { addr: 'abcd' }, 1234567890000, tx, 1000, 1234567890999,
             accountRegistrationGasAmount, restFunctionCallGasAmount, {});
-        return promise_results.then((resp) => {
+        return func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 0,
@@ -2664,7 +2664,7 @@ describe("Functions", () => {
         const {
           func_results: funcResults,
           subtree_func_results: subtreeFuncResults,
-          promise_results: promiseResults,
+          func_promises: funcPromises,
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathTransfer), value, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322, tx,
@@ -2692,7 +2692,7 @@ describe("Functions", () => {
           }
         });
         assert.deepEqual(subtreeFuncResults, {});
-        return promiseResults.then((resp) => {
+        return funcPromises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -2718,7 +2718,7 @@ describe("Functions", () => {
         const {
           func_results: funcResults,
           subtree_func_results: subtreeFuncResults,
-          promise_results: promiseResults,
+          func_promises: funcPromises,
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathTransfer), value, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322, tx,
@@ -2746,7 +2746,7 @@ describe("Functions", () => {
           }
         });
         assert.deepEqual(subtreeFuncResults, {});
-        return promiseResults.then((resp) => {
+        return funcPromises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,
@@ -2776,7 +2776,7 @@ describe("Functions", () => {
         const {
           func_results: funcResults,
           subtree_func_results: subtreeFuncResults,
-          promise_results: promiseResults,
+          func_promises: funcPromises,
         } = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestGas), value, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322, tx,
@@ -2788,7 +2788,7 @@ describe("Functions", () => {
           }
         });
         assert.deepEqual(subtreeFuncResults, {});
-        return promiseResults.then((resp) => {
+        return funcPromises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
             trigger_count: 1,

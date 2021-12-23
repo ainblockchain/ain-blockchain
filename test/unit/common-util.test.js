@@ -622,7 +622,7 @@ describe("CommonUtil", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             }
           },
           "/shallow/$var_path": {
@@ -637,7 +637,7 @@ describe("CommonUtil", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             },
             "/shallow/other_path": {
               "func_results": {
@@ -650,7 +650,7 @@ describe("CommonUtil", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             },
           },
           "/shallow/$var_path/to/$var_path2": {},
@@ -685,7 +685,7 @@ describe("CommonUtil", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             }
           },
           "/shallow/$var_path": {
@@ -700,7 +700,7 @@ describe("CommonUtil", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             },
             "/shallow/other_path": {
               "func_results": {
@@ -713,7 +713,7 @@ describe("CommonUtil", () => {
                   "code": 20001,  // A subtree function call failed.
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             },
           },
           "/shallow/$var_path/to/$var_path2": {},
@@ -999,7 +999,7 @@ describe("CommonUtil", () => {
                                 "code": 0,
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           }
                         },
                         "/deep/$var_path": {
@@ -1014,7 +1014,7 @@ describe("CommonUtil", () => {
                                 "code": 0,
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           },
                           "/deep/other_path": {
                             "func_results": {
@@ -1027,7 +1027,7 @@ describe("CommonUtil", () => {
                                 "code": 0,
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           },
                         },
                         "/deep/$var_path/to/$var_path2": {},
@@ -1092,7 +1092,7 @@ describe("CommonUtil", () => {
                                 "code": 0,
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           }
                         },
                         "/deep/$var_path": {
@@ -1107,7 +1107,7 @@ describe("CommonUtil", () => {
                                 "code": 0,
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           },
                           "/deep/other_path": {
                             "func_results": {
@@ -1120,7 +1120,7 @@ describe("CommonUtil", () => {
                                 "code": 20001,  // A subtree function call failed.
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           },
                         },
                         "/deep/$var_path/to/$var_path2": {},
@@ -1241,7 +1241,7 @@ describe("CommonUtil", () => {
                             "code": 0,
                           }
                         },
-                        "promise_results": "erased"
+                        "func_promises": "erased"
                       }
                     },
                     "/deep/$var_path": {
@@ -1256,7 +1256,7 @@ describe("CommonUtil", () => {
                             "code": 0,
                           }
                         },
-                        "promise_results": "erased"
+                        "func_promises": "erased"
                       },
                       "/deep/other_path": {
                         "func_results": {
@@ -1269,7 +1269,7 @@ describe("CommonUtil", () => {
                             "code": 20001,  // A subtree function call failed.
                           }
                         },
-                        "promise_results": "erased"
+                        "func_promises": "erased"
                       }
                     },
                     "/deep/$var_path/to/$var_path2": {},
@@ -1296,7 +1296,7 @@ describe("CommonUtil", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             }
           },
           "/shallow/$var_path": {
@@ -1311,7 +1311,7 @@ describe("CommonUtil", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             },
             "/shallow/other_path": {
               "func_results": {
@@ -1324,7 +1324,7 @@ describe("CommonUtil", () => {
                   "code": 20001,  // A subtree function call failed.
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             }
           },
           "/shallow/$var_path/to/$var_path2": {},
@@ -1373,7 +1373,7 @@ describe("CommonUtil", () => {
                             "code": 0,
                           }
                         },
-                        "promise_results": "erased"
+                        "func_promises": "erased"
                       }
                     },
                     "/deep/$var_path": {
@@ -1388,7 +1388,7 @@ describe("CommonUtil", () => {
                             "code": 0,
                           }
                         },
-                        "promise_results": "erased"
+                        "func_promises": "erased"
                       },
                       "/deep/other_path": {
                         "func_results": {
@@ -1401,7 +1401,7 @@ describe("CommonUtil", () => {
                             "code": 20001,  // A subtree function call failed.
                           }
                         },
-                        "promise_results": "erased"
+                        "func_promises": "erased"
                       }
                     },
                     "/deep/$var_path/to/$var_path2": {},
@@ -1428,7 +1428,7 @@ describe("CommonUtil", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             }
           },
           "/shallow/$var_path": {
@@ -1443,7 +1443,7 @@ describe("CommonUtil", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             },
             "/shallow/other_path": {
               "func_results": {
@@ -1456,7 +1456,7 @@ describe("CommonUtil", () => {
                   "code": 20001,  // A subtree function call failed.
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             }
           },
           "/shallow/$var_path/to/$var_path2": {},
@@ -1508,7 +1508,7 @@ describe("CommonUtil", () => {
                             "code": 0,
                           }
                         },
-                        "promise_results": "erased"
+                        "func_promises": "erased"
                       }
                     },
                     "/deep/$var_path": {
@@ -1523,7 +1523,7 @@ describe("CommonUtil", () => {
                             "code": 0,
                           }
                         },
-                        "promise_results": "erased"
+                        "func_promises": "erased"
                       },
                       "/deep/other_path": {
                         "func_results": {
@@ -1536,7 +1536,7 @@ describe("CommonUtil", () => {
                             "code": 20001,  // A subtree function call failed.
                           }
                         },
-                        "promise_results": "erased"
+                        "func_promises": "erased"
                       }
                     },
                     "/deep/$var_path/to/$var_path2": {},
@@ -1563,7 +1563,7 @@ describe("CommonUtil", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             }
           },
           "/shallow/$var_path": {
@@ -1578,7 +1578,7 @@ describe("CommonUtil", () => {
                   "code": 0,
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             },
             "/shallow/other_path": {
               "func_results": {
@@ -1591,7 +1591,7 @@ describe("CommonUtil", () => {
                   "code": 20001,  // A subtree function call failed.
                 }
               },
-              "promise_results": "erased"
+              "func_promises": "erased"
             }
           },
           "/shallow/$var_path/to/$var_path2": {},
@@ -1646,7 +1646,7 @@ describe("CommonUtil", () => {
                                 "code": 0,
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           }
                         },
                         "/deep/$var_path": {
@@ -1661,7 +1661,7 @@ describe("CommonUtil", () => {
                                 "code": 0,
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           },
                           "/deep/other_path": {
                             "func_results": {
@@ -1674,7 +1674,7 @@ describe("CommonUtil", () => {
                                 "code": 20001,  // A subtree function call failed.
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           }
                         },
                         "/deep/$var_path/to/$var_path2": {},
@@ -1701,7 +1701,7 @@ describe("CommonUtil", () => {
                       "code": 0,
                     }
                   },
-                  "promise_results": "erased"
+                  "func_promises": "erased"
                 }
               },
               "/shallow/$var_path": {
@@ -1716,7 +1716,7 @@ describe("CommonUtil", () => {
                       "code": 0,
                     }
                   },
-                  "promise_results": "erased"
+                  "func_promises": "erased"
                 },
                 "/shallow/other_path": {
                   "func_results": {
@@ -1729,7 +1729,7 @@ describe("CommonUtil", () => {
                       "code": 20001,  // A subtree function call failed.
                     }
                   },
-                  "promise_results": "erased"
+                  "func_promises": "erased"
                 }
               },
               "/shallow/$var_path/to/$var_path2": {},
@@ -1787,7 +1787,7 @@ describe("CommonUtil", () => {
                                 "code": 0,
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           }
                         },
                         "/deep/$var_path": {
@@ -1802,7 +1802,7 @@ describe("CommonUtil", () => {
                                 "code": 0,
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           },
                           "/deep/other_path": {
                             "func_results": {
@@ -1815,7 +1815,7 @@ describe("CommonUtil", () => {
                                 "code": 20001,  // A subtree function call failed.
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           }
                         },
                         "/deep/$var_path/to/$var_path2": {},
@@ -1842,7 +1842,7 @@ describe("CommonUtil", () => {
                       "code": 0,
                     }
                   },
-                  "promise_results": "erased"
+                  "func_promises": "erased"
                 }
               },
               "/shallow/$var_path": {
@@ -1857,7 +1857,7 @@ describe("CommonUtil", () => {
                       "code": 0,
                     }
                   },
-                  "promise_results": "erased"
+                  "func_promises": "erased"
                 },
                 "/shallow/other_path": {
                   "func_results": {
@@ -1870,7 +1870,7 @@ describe("CommonUtil", () => {
                       "code": 20001,  // A subtree function call failed.
                     }
                   },
-                  "promise_results": "erased"
+                  "func_promises": "erased"
                 }
               },
               "/shallow/$var_path/to/$var_path2": {},
@@ -1931,7 +1931,7 @@ describe("CommonUtil", () => {
                                 "code": 0,
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           }
                         },
                         "/deep/$var_path": {
@@ -1946,7 +1946,7 @@ describe("CommonUtil", () => {
                                 "code": 0,
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           },
                           "/deep/other_path": {
                             "func_results": {
@@ -1959,7 +1959,7 @@ describe("CommonUtil", () => {
                                 "code": 20001,  // A subtree function call failed.
                               }
                             },
-                            "promise_results": "erased"
+                            "func_promises": "erased"
                           }
                         },
                         "/deep/$var_path/to/$var_path2": {},
@@ -1986,7 +1986,7 @@ describe("CommonUtil", () => {
                       "code": 0,
                     }
                   },
-                  "promise_results": "erased"
+                  "func_promises": "erased"
                 }
               },
               "/shallow/$var_path": {
@@ -2001,7 +2001,7 @@ describe("CommonUtil", () => {
                       "code": 0,
                     }
                   },
-                  "promise_results": "erased"
+                  "func_promises": "erased"
                 },
                 "/shallow/other_path": {
                   "func_results": {
@@ -2014,7 +2014,7 @@ describe("CommonUtil", () => {
                       "code": 20001,  // A subtree function call failed.
                     }
                   },
-                  "promise_results": "erased"
+                  "func_promises": "erased"
                 }
               },
               "/shallow/$var_path/to/$var_path2": {},
