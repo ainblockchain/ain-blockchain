@@ -277,7 +277,7 @@ class Functions {
         }
       }
     }
-    const promiseResults = Promise.all(promises).then(() => {
+    const funcPromises = Promise.all(promises).then(() => {
       return {
         func_count: functionList ? functionList.length : 0,
         trigger_count: triggerCount,
@@ -286,7 +286,7 @@ class Functions {
     });
     return {
       func_results: funcResults,
-      promise_results: promiseResults,
+      func_promises: funcPromises,
     };
   }
 

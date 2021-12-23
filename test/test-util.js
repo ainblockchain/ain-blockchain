@@ -253,12 +253,12 @@ function eraseEvalResMatched(res) {
   return erased;
 }
 
-function eraseSubtreeFuncResPromiseResults(res) {
+function eraseSubtreeFuncResFuncPromises(res) {
   const erased = JSON.parse(JSON.stringify(res));
   for (const subtreeFuncPath in res) {
     const subtreeFuncPathRes = res[subtreeFuncPath];
     for (const subtreeValuePath in subtreeFuncPathRes) {
-      _.set(erased, `${subtreeFuncPath}.${subtreeValuePath}.promise_results`, 'erased');
+      _.set(erased, `${subtreeFuncPath}.${subtreeValuePath}.func_promises`, 'erased');
     }
   }
   return erased;
@@ -284,5 +284,5 @@ module.exports = {
   eraseStateGas,
   eraseTxCreatedAt,
   eraseEvalResMatched,
-  eraseSubtreeFuncResPromiseResults,
+  eraseSubtreeFuncResFuncPromises,
 };

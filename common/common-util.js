@@ -721,12 +721,12 @@ class CommonUtil {
     }, { gasAmountTotal: 0, gasCostTotal: 0 });
   }
 
-  static deleteSubtreeFuncResPromiseResults(res) {
+  static deleteSubtreeFuncResFuncPromises(res) {
     const deleted = JSON.parse(JSON.stringify(res));
     for (const subtreeFuncPath in res) {
       const subtreeFuncPathRes = res[subtreeFuncPath];
       for (const subtreeValuePath in subtreeFuncPathRes) {
-        _.unset(deleted, `${subtreeFuncPath}.${subtreeValuePath}.promise_results`);
+        _.unset(deleted, `${subtreeFuncPath}.${subtreeValuePath}.func_promises`);
       }
     }
     return deleted;
@@ -743,7 +743,7 @@ class CommonUtil {
     }
     if (!CommonUtil.isEmpty(subtreeFuncResults)) {
       result.subtree_func_results =
-          CommonUtil.deleteSubtreeFuncResPromiseResults(subtreeFuncResults);
+          CommonUtil.deleteSubtreeFuncResFuncPromises(subtreeFuncResults);
     }
     result.code = code;
     result.bandwidth_gas_amount = bandwidthGasAmount;
