@@ -32,7 +32,7 @@ module.exports = function getApiAccessApis(node) {
         done({ code: 403, message: 'Forbidden' });
         return;
       }
-      if (!CommonUtil.isWildcard(args.message.ip) && net.isIP(args.message.ip) !== 0) {
+      if (!CommonUtil.isWildcard(args.message.ip) && net.isIP(args.message.ip) !== 4) {
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.ACCESS_CONTROL_SET, latency);
         done(null, JsonRpcUtil.addProtocolVersion({
