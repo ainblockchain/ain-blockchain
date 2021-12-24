@@ -43,8 +43,9 @@ class P2pUtil {
   }
 
   static closeSocketSafe(connections, socket) {
-    const address = getAddressFromSocket(connections, socket);
-    P2pUtil.closeSocketSafeByAddress(connections, address);
+    const address = P2pUtil.getAddressFromSocket(connections, socket);
+    P2pUtil._removeSocketConnectionIfExists(connections, address);
+    socket.close();
   }
 
   static closeSocketSafeByAddress(connections, address) {

@@ -38,7 +38,7 @@ const {
   getIpAddress,
   convertIpv6ToIpv4
 } = require('../common/network-util');
-const P2pUtil = require('./util');
+const P2pUtil = require('./p2p-util');
 const PathUtil = require('../common/path-util');
 
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
@@ -668,7 +668,7 @@ class P2pServer {
     socket.on('close', () => {
       const url = this.buildRemoteUrlFromSocket(socket);
       P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
-      const address = P2pUtil.P2pUtil.getAddressFromSocket(this.inbound, socket);
+      const address = P2pUtil.getAddressFromSocket(this.inbound, socket);
       P2pUtil.closeSocketSafe(this.inbound, socket);
       if (address in this.client.outbound) {
         P2pUtil.closeSocketSafeByAddress(this.client.outbound, address);
@@ -677,7 +677,7 @@ class P2pServer {
     });
 
     socket.on('error', (error) => {
-      const address = P2pUtil.P2pUtil.getAddressFromSocket(this.inbound, socket);
+      const address = P2pUtil.getAddressFromSocket(this.inbound, socket);
       logger.error(`Error in communication with peer ${address}: ` +
           `${JSON.stringify(error, null, 2)}`);
     });
