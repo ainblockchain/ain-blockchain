@@ -133,7 +133,7 @@ function addPeerConnection(peerConnectionsInProgress, url) {
   peerConnectionsInProgress.set(url, true);
 }
 
-function removePeerConnection(peerConnectionsInProgress, url) {
+function removeFromPeerConnectionsInProgress(peerConnectionsInProgress, url) {
   peerConnectionsInProgress.delete(url);
 }
 
@@ -148,5 +148,5 @@ module.exports = {
   encapsulateMessage,
   checkPeerWhitelist,
   addPeerConnection,
-  removePeerConnection
+  removeFromPeerConnectionsInProgress
 };
