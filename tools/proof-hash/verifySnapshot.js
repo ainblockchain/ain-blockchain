@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const { StateVersions, BlockchainParams } = require('../../common/constants');
+const { StateVersions } = require('../../common/constants');
 const FileUtil = require('../../common/file-util');
 const Blockchain = require('../../blockchain');
 const StateManager = require('../../db/state-manager');
@@ -18,7 +18,7 @@ async function verifySnapshot(snapshotFile) {
 
   console.log(`\n* Initializing db states with snapshot...`);
   const bc = new Blockchain(String(8888));
-  const stateManager = new StateManager(BlockchainParams.genesis.hash_delimiter);
+  const stateManager = new StateManager();
   const db = DB.create(
       StateVersions.EMPTY, 'verifyBlock', bc, false, bc.lastBlockNumber(), stateManager);
   db.initDb(snapshot);

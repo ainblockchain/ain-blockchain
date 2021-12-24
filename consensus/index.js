@@ -16,8 +16,6 @@ const {
   WriteDbOperations,
   PredefinedDbPaths,
   StateVersions,
-  TrafficEventTypes,
-  trafficStatsManager,
 } = require('../common/constants');
 const { ConsensusErrorCode } = require('../common/result-code');
 const {
@@ -905,13 +903,13 @@ class Consensus {
 
     const epoch = this.epoch;
     if (this.votedForEpoch(epoch)) {
-      logger.info(
+      logger.debug(
           `[${LOG_HEADER}] Already voted for ${this.node.bp.epochToBlock[epoch]} ` +
           `at epoch ${epoch} but trying to propose at the same epoch`);
       return;
     }
     if (this.proposer && CommonUtil.areSameAddrs(this.proposer, this.node.account.address)) {
-      logger.info(`[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
+      logger.debug(`[${LOG_HEADER}] I'm the proposer ${this.node.account.address}`);
       try {
         const consensusMsg = this.encapsulateConsensusMessage(
             this.createProposal(epoch), ConsensusMessageTypes.PROPOSE);
@@ -920,7 +918,7 @@ class Consensus {
         logger.error(`[${LOG_HEADER}] Error while creating a proposal: ${err.stack}`);
       }
     } else {
-      logger.info(`[${LOG_HEADER}] Not my turn ${this.node.account.address}`);
+      logger.debug(`[${LOG_HEADER}] Not my turn ${this.node.account.address}`);
     }
   }
 

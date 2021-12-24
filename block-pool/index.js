@@ -271,10 +271,10 @@ class BlockPool {
         });
         this.tryUpdateNotarized(blockHash);
       }
-      logger.info(
+      logger.debug(
           `[${LOG_HEADER}] Block added to the block pool: ${block.number} / ${block.epoch}`);
     } else {
-      logger.info(
+      logger.debug(
           `[${LOG_HEADER}] Block already in the block pool: ${block.number} / ${block.epoch}`);
     }
   }
@@ -289,10 +289,10 @@ class BlockPool {
     if (CommonUtil.isEmpty(blockInfo.block)) {
       this.hashToInvalidBlockInfo[blockHash].block = block;
       this.hashToInvalidBlockInfo[blockHash].proposal = proposalTx;
-      logger.info(
+      logger.debug(
           `[${LOG_HEADER}] Invalid block added to the block pool: ${block.number} / ${block.epoch}`);
     } else {
-      logger.info(
+      logger.debug(
           `[${LOG_HEADER}] Invalid block already in the block pool: ${block.number} / ${block.epoch}`);
     }
   }

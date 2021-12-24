@@ -9,7 +9,6 @@ const stringify = require('fast-json-stable-stringify');
 const {
   DevFlags,
   NodeConfigs,
-  BlockchainParams,
   BlockchainNodeStates,
   PredefinedDbPaths,
   BlockchainSnapshotProperties,
@@ -54,7 +53,7 @@ class BlockchainNode {
     this.bc = new Blockchain(String(NodeConfigs.PORT));
     this.tp = new TransactionPool(this);
     this.bp = new BlockPool(this);
-    this.stateManager = new StateManager(BlockchainParams.genesis.hash_delimiter);
+    this.stateManager = new StateManager();
     const initialVersion = `${StateVersions.NODE}:${this.bc.lastBlockNumber()}`;
     this.db = DB.create(
         StateVersions.EMPTY, initialVersion, this.bc, false, this.bc.lastBlockNumber(),
@@ -327,14 +326,14 @@ class BlockchainNode {
       logger.error(`[${LOG_HEADER}] Failed to finalize version: ${newFinalVersion}`);
     }
     if (DevFlags.enableStateTreeTransfer) {
-      logger.info(`[${LOG_HEADER}] Transfering state tree: ${version} -> ${newFinalVersion}`);
+      logger.debug(`[${LOG_HEADER}] Transfering state tree: ${version} -> ${newFinalVersion}`);
       if (!this.stateManager.transferStateTree(version, newFinalVersion)) {
         logger.error(
             `[${LOG_HEADER}] Failed to transfer state tree: ${version} -> ${newFinalVersion}`);
       }
     }
     if (oldFinalVersion) {
-      logger.info(`[${LOG_HEADER}] Deleting previous final version: ${oldFinalVersion}`);
+      logger.debug(`[${LOG_HEADER}] Deleting previous final version: ${oldFinalVersion}`);
       if (!this.stateManager.deleteVersion(oldFinalVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to delete previous final version: ${oldFinalVersion}`);
       }
