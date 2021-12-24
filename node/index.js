@@ -326,14 +326,14 @@ class BlockchainNode {
       logger.error(`[${LOG_HEADER}] Failed to finalize version: ${newFinalVersion}`);
     }
     if (DevFlags.enableStateTreeTransfer) {
-      logger.info(`[${LOG_HEADER}] Transfering state tree: ${version} -> ${newFinalVersion}`);
+      logger.debug(`[${LOG_HEADER}] Transfering state tree: ${version} -> ${newFinalVersion}`);
       if (!this.stateManager.transferStateTree(version, newFinalVersion)) {
         logger.error(
             `[${LOG_HEADER}] Failed to transfer state tree: ${version} -> ${newFinalVersion}`);
       }
     }
     if (oldFinalVersion) {
-      logger.info(`[${LOG_HEADER}] Deleting previous final version: ${oldFinalVersion}`);
+      logger.debug(`[${LOG_HEADER}] Deleting previous final version: ${oldFinalVersion}`);
       if (!this.stateManager.deleteVersion(oldFinalVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to delete previous final version: ${oldFinalVersion}`);
       }
