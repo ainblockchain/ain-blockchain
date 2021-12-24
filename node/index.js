@@ -785,8 +785,11 @@ class BlockchainNode {
         TrafficEventTypes.BLOCK_TXS, block.transactions.length, blockTimestamp);
     trafficStatsManager.addEvent(
         TrafficEventTypes.BLOCK_EVIDENCE, Object.keys(block.evidence).length, blockTimestamp);
-    trafficStatsManager.addEvent(
-        TrafficEventTypes.BLOCK_FINALIZED, currentTime - blockTimestamp, currentTime);
+    // Exclude genesis block
+    if (block.number > 0) {
+      trafficStatsManager.addEvent(
+          TrafficEventTypes.BLOCK_FINALIZED, currentTime - blockTimestamp, currentTime);
+    }
 
     // NOTE(platfowner): We use block timestamp instead of tx timestamp to have
     // monotonic increasing values.
