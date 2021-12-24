@@ -42,6 +42,7 @@ class P2pUtil {
     }
   }
 
+  // NOTE(minsulee2): this is also called in case address is not set on in/outbound.
   static closeSocketSafe(connections, socket) {
     const address = P2pUtil.getAddressFromSocket(connections, socket);
     P2pUtil._removeSocketConnectionIfExists(connections, address);
