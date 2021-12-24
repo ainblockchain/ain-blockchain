@@ -1192,9 +1192,9 @@ describe('Blockchain Node', () => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
             "available": {
-              "tree_bytes": 2474987586,
+              "tree_bytes": 2474819814,
               "tree_height": 30,
-              "tree_size": 24749934
+              "tree_size": 24748934
             },
             "staking": {
               "app": 1,
@@ -1202,9 +1202,9 @@ describe('Blockchain Node', () => {
               "unstakeable": 1
             },
             "usage": {
-              "tree_bytes": 12414,
+              "tree_bytes": 180186,
               "tree_height": 24,
-              "tree_size": 66
+              "tree_size": 1066
             }
           });
         })
