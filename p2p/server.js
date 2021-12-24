@@ -465,7 +465,7 @@ class P2pServer {
             } else {
               const addressFromSig = getAddressFromMessage(parsedMessage);
               if (!checkPeerWhitelist(addressFromSig)) {
-                logger.error(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
+                logger.debug(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
                 removePeerConnection(this.peerConnectionsInProgress, url);
                 closeSocketSafe(this.inbound, socket);
                 return;
