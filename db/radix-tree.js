@@ -2,7 +2,7 @@ const logger = new (require('../logger'))('RADIX_TREE');
 
 const CommonUtil = require('../common/common-util');
 const {
-  StateInfoProperties,
+  StateLabelProperties,
 } = require('../common/constants');
 const RadixNode = require('./radix-node');
 
@@ -11,8 +11,7 @@ const RadixNode = require('./radix-node');
  * it uses a radix tree internally.
  */
 class RadixTree {
-  constructor(hashDelimiter, version = null, parentStateNode = null) {
-    this.hashDelimiter = hashDelimiter;
+  constructor(version = null, parentStateNode = null) {
     this.version = version;
     this.nextSerial = 0;
     this.root = this._newRadixNode(parentStateNode);
@@ -20,7 +19,7 @@ class RadixTree {
   }
 
   clone(version, parentStateNode) {
-    const clonedTree = new RadixTree(this.hashDelimiter, version);
+    const clonedTree = new RadixTree(version);
     clonedTree.setNextSerial(this.getNextSerial());
     clonedTree.setRoot(this.root.clone(version, parentStateNode));
     clonedTree.setNumChildStateNodes(this.getNumChildStateNodes());
@@ -28,7 +27,7 @@ class RadixTree {
   }
 
   _newRadixNode(parentStateNode = null) {
-    return new RadixNode(this.hashDelimiter, this.getVersion(), this.getAndIncNextSerial(), parentStateNode);
+    return new RadixNode(this.getVersion(), this.getAndIncNextSerial(), parentStateNode);
   }
 
   static _toRadixLabel(stateLabel) {
@@ -474,12 +473,12 @@ class RadixTree {
   /**
    * Constructs a radix tree from the given snapshot object.
    */
-  static fromRadixSnapshot(obj, hashDelimiter) {
-    const root = RadixNode.fromRadixSnapshot(obj, hashDelimiter);
+  static fromRadixSnapshot(obj) {
+    const root = RadixNode.fromRadixSnapshot(obj);
     const version = root.getVersion();
-    const tree = new RadixTree(hashDelimiter, version);
+    const tree = new RadixTree(version);
     tree.setRoot(root);
-    tree.setNextSerial(obj[StateInfoProperties.NEXT_SERIAL]);
+    tree.setNextSerial(obj[StateLabelProperties.NEXT_SERIAL]);
     // NOTE(platfowner): Need to recompute and set numChildStateNodes.
     const numChildStateNodes = tree.getChildStateLabels().length;
     tree.setNumChildStateNodes(numChildStateNodes);
