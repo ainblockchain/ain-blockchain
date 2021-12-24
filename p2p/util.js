@@ -16,150 +16,139 @@ const {
 const CommonUtil = require('../common/common-util');
 const DB = require('../db');
 
-function _isValidMessage(message) {
-  const body = _.get(message, 'data.body');
-  if (!body || !CommonUtil.isDict(body)) {
-    logger.error('Data body is not included in the message.');
-    return false;
+class P2pUtil {
+  static _isValidMessage(message) {
+    const body = _.get(message, 'data.body');
+    if (!body || !CommonUtil.isDict(body)) {
+      logger.error('Data body is not included in the message.');
+      return false;
+    }
+    const signature = _.get(message, 'data.signature');
+    if (!signature) {
+      logger.error('Data signature is not included in the message.');
+      return false;
+    }
+    return true;
   }
-  const signature = _.get(message, 'data.signature');
-  if (!signature) {
-    logger.error('Data signature is not included in the message.');
-    return false;
+
+  static getAddressFromSocket(connectionObj, socket) {
+    return Object.keys(connectionObj).find(address => connectionObj[address].socket === socket);
   }
-  return true;
-}
 
-function getAddressFromSocket(connectionObj, socket) {
-  return Object.keys(connectionObj).find(address => connectionObj[address].socket === socket);
-}
-
-function _removeSocketConnectionIfExists(connectionObj, address) {
-  if (address in connectionObj) {
-    delete connectionObj[address];
-    logger.info(`Address(${address}) has just been disconnected.`);
+  static _removeSocketConnectionIfExists(connectionObj, address) {
+    if (address in connectionObj) {
+      delete connectionObj[address];
+      logger.info(`Address(${address}) has just been disconnected.`);
+    }
   }
-}
 
-function closeSocketSafe(connections, socket) {
-  const address = getAddressFromSocket(connections, socket);
-  _removeSocketConnectionIfExists(connections, address);
-  socket.close();
-}
-
-function closeSocketSafeByAddress(connections, address) {
-  const socket = connections[address].socket;
-  socket.close();
-  _removeSocketConnectionIfExists(connections, address);
-}
-
-function signMessage(messageBody, privateKey) {
-  if (!CommonUtil.isDict(messageBody)) {
-    logger.error('The message body must be the object type.');
-    return null;
+  static closeSocketSafe(connections, socket) {
+    const address = getAddressFromSocket(connections, socket);
+    P2pUtil._removeSocketConnectionIfExists(connections, address);
+    socket.close();
   }
-  let privateKeyBuffer;
-  try {
-    privateKeyBuffer = Buffer.from(privateKey, 'hex');
-  } catch {
-    logger.error('The private key is not correctly set on the buffer to sign a message.');
-    return null;
-  }
-  if (!privateKey || !ainUtil.isValidPrivate(privateKeyBuffer)) {
-    logger.error('The private key is not optional but mandatory or worng private key is typed.');
-    return null;
-  }
-  const chainId = DB.getBlockchainParam('genesis/chain_id');
-  return ainUtil.ecSignMessage(JSON.stringify(messageBody), privateKeyBuffer, chainId);
-}
 
-function getAddressFromMessage(message) {
-  if (!_isValidMessage(message)) {
-    return null;
-  } else {
-    const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.data.body));
-    return CommonUtil.getAddressFromSignature(logger, hashedMessage, message.data.signature);
+  static closeSocketSafeByAddress(connections, address) {
+    const socket = connections[address].socket;
+    socket.close();
+    P2pUtil._removeSocketConnectionIfExists(connections, address);
   }
-}
 
-function verifySignedMessage(message, address) {
-  if (!_isValidMessage(message)) {
-    return null;
-  } else {
+  static signMessage(messageBody, privateKey) {
+    if (!CommonUtil.isDict(messageBody)) {
+      logger.error('The message body must be the object type.');
+      return null;
+    }
+    let privateKeyBuffer;
+    try {
+      privateKeyBuffer = Buffer.from(privateKey, 'hex');
+    } catch {
+      logger.error('The private key is not correctly set on the buffer to sign a message.');
+      return null;
+    }
+    if (!privateKey || !ainUtil.isValidPrivate(privateKeyBuffer)) {
+      logger.error('The private key is not optional but mandatory or worng private key is typed.');
+      return null;
+    }
     const chainId = DB.getBlockchainParam('genesis/chain_id');
-    return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address, chainId);
+    return ainUtil.ecSignMessage(JSON.stringify(messageBody), privateKeyBuffer, chainId);
   }
-}
 
-function encapsulateMessage(type, dataObj) {
-  if (!type || !CommonUtil.isString(type)) {
-    logger.error('Type must be specified.');
-    return null;
-  };
-  if (!dataObj || !CommonUtil.isDict(dataObj)) {
-    logger.error('dataObj cannot be null or undefined.');
-    return null;
+  static getAddressFromMessage(message) {
+    if (!P2pUtil._isValidMessage(message)) {
+      return null;
+    } else {
+      const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.data.body));
+      return CommonUtil.getAddressFromSignature(logger, hashedMessage, message.data.signature);
+    }
   }
-  const message = {
-    type,
-    data: dataObj,
-    protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
-    dataProtoVer: BlockchainConsts.DATA_PROTOCOL_VERSION,
-    networkId: DB.getBlockchainParam('genesis/network_id'),
-    timestamp: Date.now()
-  };
-  return message;
-}
 
-function checkTimestamp(timestamp) {
-  if (!timestamp || !CommonUtil.isNumber(timestamp)) {
-    return false;
-  } else {
-    const now = Date.now();
-    if (now - timestamp > NodeConfigs.P2P_MESSAGE_TIMEOUT_MS) {
+  static verifySignedMessage(message, address) {
+    if (!P2pUtil._isValidMessage(message)) {
+      return null;
+    } else {
+      const chainId = DB.getBlockchainParam('genesis/chain_id');
+      return ainUtil.ecVerifySig(JSON.stringify(message.data.body), message.data.signature, address, chainId);
+    }
+  }
+
+  static encapsulateMessage(type, dataObj) {
+    if (!type || !CommonUtil.isString(type)) {
+      logger.error('Type must be specified.');
+      return null;
+    };
+    if (!dataObj || !CommonUtil.isDict(dataObj)) {
+      logger.error('dataObj cannot be null or undefined.');
+      return null;
+    }
+    const message = {
+      type,
+      data: dataObj,
+      protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+      dataProtoVer: BlockchainConsts.DATA_PROTOCOL_VERSION,
+      networkId: DB.getBlockchainParam('genesis/network_id'),
+      timestamp: Date.now()
+    };
+    return message;
+  }
+
+  static checkTimestamp(timestamp) {
+    if (!timestamp || !CommonUtil.isNumber(timestamp)) {
       return false;
     } else {
-      return true;
+      const now = Date.now();
+      if (now - timestamp > NodeConfigs.P2P_MESSAGE_TIMEOUT_MS) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+  }
+
+  static checkPeerWhitelist(address) {
+    return NodeConfigs.PEER_WHITELIST === '*' || (CommonUtil.isArray(NodeConfigs.PEER_WHITELIST) &&
+      NodeConfigs.PEER_WHITELIST.includes(address));
+  }
+
+  static addPeerConnection(peerConnectionsInProgress, url) {
+    peerConnectionsInProgress.set(url, true);
+  }
+
+  static removeFromPeerConnectionsInProgress(peerConnectionsInProgress, url) {
+    peerConnectionsInProgress.delete(url);
+  }
+
+  static areIdenticalUrls(url1, url2) {
+    if (NodeConfigs.HOSTING_ENV === 'local') {
+      const comparingUrl1 = new URL(url1);
+      const comapringUrl2 = new URL(url2);
+      return CommonUtil.isValidPrivateUrl(comparingUrl1.hostname) &&
+          CommonUtil.isValidPrivateUrl(comapringUrl2.hostname) &&
+          comparingUrl1.port === comapringUrl2.port;
+    } else {
+      return url1 === url2;
     }
   }
 }
 
-function checkPeerWhitelist(address) {
-  return NodeConfigs.PEER_WHITELIST === '*' || (CommonUtil.isArray(NodeConfigs.PEER_WHITELIST) &&
-      NodeConfigs.PEER_WHITELIST.includes(address));
-}
-
-function addPeerConnection(peerConnectionsInProgress, url) {
-  peerConnectionsInProgress.set(url, true);
-}
-
-function removeFromPeerConnectionsInProgress(peerConnectionsInProgress, url) {
-  peerConnectionsInProgress.delete(url);
-}
-
-function areIdenticalUrls(url1, url2) {
-  if (NodeConfigs.HOSTING_ENV === 'local') {
-    const comparingUrl1 = new URL(url1);
-    const comapringUrl2 = new URL(url2);
-    return CommonUtil.isValidPrivateUrl(comparingUrl1.hostname) &&
-        CommonUtil.isValidPrivateUrl(comapringUrl2.hostname) &&
-        comparingUrl1.port === comapringUrl2.port;
-  } else {
-    return url1 === url2;
-  }
-}
-
-module.exports = {
-  getAddressFromSocket,
-  signMessage,
-  getAddressFromMessage,
-  verifySignedMessage,
-  closeSocketSafe,
-  closeSocketSafeByAddress,
-  checkTimestamp,
-  encapsulateMessage,
-  checkPeerWhitelist,
-  addPeerConnection,
-  removeFromPeerConnectionsInProgress,
-  areIdenticalUrls
-};
+module.exports = P2pUtil;
