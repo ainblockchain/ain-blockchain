@@ -37,7 +37,7 @@ function getAddressFromSocket(connectionObj, socket) {
 function _removeSocketConnectionIfExists(connectionObj, address) {
   if (address in connectionObj) {
     delete connectionObj[address];
-    logger.info(` => Updated managed peers info: ${Object.keys(connectionObj)}`);
+    logger.info(`Address(${address}) has just been disconnected.`);
   }
 }
 
@@ -47,10 +47,10 @@ function closeSocketSafe(connections, socket) {
   socket.close();
 }
 
-function closeCorrespondingConnection(connections, address) {
+function closeSocketSafeByAddress(connections, address) {
   const socket = connections[address].socket;
-  closeSocketSafe(connections, socket);
-  logger.info(`Corresponding address(${address}) in outbound is also disconnected.`);
+  socket.close();
+  _removeSocketConnectionIfExists(connections, address);
 }
 
 function signMessage(messageBody, privateKey) {
@@ -143,7 +143,7 @@ module.exports = {
   getAddressFromMessage,
   verifySignedMessage,
   closeSocketSafe,
-  closeCorrespondingConnection,
+  closeSocketSafeByAddress,
   checkTimestamp,
   encapsulateMessage,
   checkPeerWhitelist,
