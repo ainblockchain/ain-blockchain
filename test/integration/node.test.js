@@ -10,6 +10,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const { BlockchainConsts, BlockchainParams, NodeConfigs } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
 const PathUtil = require('../../common/path-util');
+const { JsonRpcApiResultCode } = require('../../common/result-code');
 const {
   verifyStateProof,
 } = require('../../db/state-util');
@@ -37,6 +38,7 @@ const ENV_VARIABLES = [
     UNSAFE_PRIVATE_KEY: '921cc48e48c876fc6ed1eb02a76ad520e8d16a91487f9c7e03441da8e35a0947',
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8082, P2P_PORT: 5002,
     ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
+    GET_RESP_BYTES_LIMIT: 77819, GET_RESP_MAX_SIBLINGS: 999, // For get_value limit tests
   },
   {
     UNSAFE_PRIVATE_KEY: '41e6e5718188ce9afd25e4b386482ac2c5272c49a622d8d217887bce21dce560',
@@ -811,6 +813,63 @@ describe('Blockchain Node', () => {
         })
         .then(res => {
           expect(res.result.result).to.equal(expected);
+        });
+      });
+
+      it('returns error when requested data exceeds the get response limits (bytes)', async () => {
+        const bigTree = {};
+        for (let i = 0; i < 10; i++) {
+          bigTree[i] = {};
+          for (let j = 0; j < 1000; j++) {
+            bigTree[i][j] = 'a';
+          }
+        }
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: '/apps/test/test_value/some/path',
+          value: bigTree, // 77820 bytes (using object-sizeof)
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request('ain_get', {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/apps/test/test_value/some/path",
+          include_tree_info: true,
+        })
+        .then(res => {
+          expect(res.result.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES);
+          expect(
+              res.result.result.message
+                  .includes('The data exceeds the max byte limit of the requested node'), true);
+        });
+      });
+
+      it('returns error when requested data exceeds the get response limits (siblings)', async () => {
+        const wideTree = {};
+        for (let i = 0; i < 1000; i++) {
+          wideTree[i] = 'a';
+        }
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: '/apps/test/test_value/some/path',
+          value: wideTree, // 1000 siblings
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request('ain_get', {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/apps/test/test_value/some/path",
+          include_tree_info: true,
+        })
+        .then(res => {
+          expect(res.result.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS);
+          expect(
+              res.result.result.message
+                  .includes('The data exceeds the max sibling limit of the requested node'), true);
         });
       });
     });
