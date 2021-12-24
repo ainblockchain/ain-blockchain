@@ -769,12 +769,12 @@ class P2pServer {
   async setUpDbForSharding() {
     const LOG_HEADER = 'setUpDbForSharding';
     const shardingConfig = this.node.getAllBlockchainParamsFromState().sharding;
-    const parentChainEndpoint = shardingConfig.parent_chain_poc + '/json-rpc';
-    const shardOwner = shardingConfig.shard_owner;
-    const shardReporter = shardingConfig.shard_reporter;
-    const shardingPath = shardingConfig.sharding_path;
-    const maxShardReport = shardingConfig.max_shard_report;
-    const numShardReportDeleted = shardingConfig.num_shard_report_deleted;
+    const parentChainEndpoint = shardingConfig[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
+    const shardOwner = shardingConfig[ShardingProperties.SHARD_OWNER];
+    const shardReporter = shardingConfig[ShardingProperties.SHARD_REPORTER];
+    const shardingPath = shardingConfig[ShardingProperties.SHARDING_PATH];
+    const maxShardReport = shardingConfig[ShardingProperties.MAX_SHARD_REPORT];
+    const numShardReportDeleted = shardingConfig[ShardingProperties.NUM_SHARD_REPORT_DELETED];
     const shardReporterPrivateKey = this.node.account.private_key;
     const appName = _.get(CommonUtil.parsePath(shardingPath), 1, null);
     if (!appName) {
