@@ -15,25 +15,25 @@ module.exports = function getDatabaseApis(node) {
       let latency;
       switch (args.type) {
         case ReadDbOperations.GET_VALUE:
-          result = node.db.getValue(args.ref, CommonUtil.toGetOptions(args));
+          result = node.db.getValue(args.ref, CommonUtil.toGetOptions(args, true));
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
           return;
         case ReadDbOperations.GET_RULE:
-          result = node.db.getRule(args.ref, CommonUtil.toGetOptions(args));
+          result = node.db.getRule(args.ref, CommonUtil.toGetOptions(args, true));
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
           return;
         case ReadDbOperations.GET_FUNCTION:
-          result = node.db.getFunction(args.ref, CommonUtil.toGetOptions(args));
+          result = node.db.getFunction(args.ref, CommonUtil.toGetOptions(args, true));
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
           return;
         case ReadDbOperations.GET_OWNER:
-          result = node.db.getOwner(args.ref, CommonUtil.toGetOptions(args));
+          result = node.db.getOwner(args.ref, CommonUtil.toGetOptions(args, true));
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({ result }));
@@ -48,8 +48,10 @@ module.exports = function getDatabaseApis(node) {
           latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
           done(null, JsonRpcUtil.addProtocolVersion({
-            code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
-            message: 'Invalid get operation'
+            result: {
+              code: JsonRpcApiResultCode.GET_INVALID_OPERATION,
+              message: 'Invalid get operation'
+            }
           }));
       }
     },
@@ -57,7 +59,7 @@ module.exports = function getDatabaseApis(node) {
     ain_matchFunction: function(args, done) {
       const beginTime = Date.now();
       const result =
-          node.db.matchFunction(args.ref, CommonUtil.toMatchOrEvalOptions(args));
+          node.db.matchFunction(args.ref, CommonUtil.toMatchOrEvalOptions(args, true));
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
@@ -65,7 +67,7 @@ module.exports = function getDatabaseApis(node) {
 
     ain_matchRule: function(args, done) {
       const beginTime = Date.now();
-      const result = node.db.matchRule(args.ref, CommonUtil.toMatchOrEvalOptions(args));
+      const result = node.db.matchRule(args.ref, CommonUtil.toMatchOrEvalOptions(args, true));
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
@@ -73,7 +75,7 @@ module.exports = function getDatabaseApis(node) {
 
     ain_matchOwner: function(args, done) {
       const beginTime = Date.now();
-      const result = node.db.matchOwner(args.ref, CommonUtil.toMatchOrEvalOptions(args));
+      const result = node.db.matchOwner(args.ref, CommonUtil.toMatchOrEvalOptions(args, true));
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
@@ -90,7 +92,7 @@ module.exports = function getDatabaseApis(node) {
       }
       const timestamp = args.timestamp || Date.now();
       const result = node.db.evalRule(
-          args.ref, args.value, auth, timestamp, CommonUtil.toMatchOrEvalOptions(args));
+          args.ref, args.value, auth, timestamp, CommonUtil.toMatchOrEvalOptions(args, true));
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
@@ -106,7 +108,7 @@ module.exports = function getDatabaseApis(node) {
         auth.fid = args.fid;
       }
       const result = node.db.evalOwner(
-          args.ref, args.permission, auth, CommonUtil.toMatchOrEvalOptions(args));
+          args.ref, args.permission, auth, CommonUtil.toMatchOrEvalOptions(args, true));
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));
