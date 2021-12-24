@@ -27,7 +27,8 @@ const {
   encapsulateMessage,
   checkPeerWhitelist,
   addPeerConnection,
-  removeFromPeerConnectionsInProgress
+  removeFromPeerConnectionsInProgress,
+  areIdenticalUrls
 } = require('./util');
 const {
   sendGetRequest
@@ -53,7 +54,7 @@ class P2pClient {
     await this.server.listen();
     if (NodeConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.setIntervalForTrackerUpdate();
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
-      if (this.isTheSameJsonRpcUrl(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL,
+      if (areIdenticalUrls(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL,
           _.get(this.server.urls, 'jsonRpc.url', ''))) {
         await this.startBlockchainNode(0);
       } else {
@@ -678,18 +679,6 @@ class P2pClient {
     }
   }
 
-  isTheSameJsonRpcUrl(peerCandidateJsonRpcUrl, myJsonRpcUrl) {
-    if (NodeConfigs.HOSTING_ENV === 'local') {
-      const peerCandidateUrl = new URL(peerCandidateJsonRpcUrl);
-      const myUrl = new URL(myJsonRpcUrl);
-      return CommonUtil.isValidPrivateUrl(peerCandidateUrl.hostname) &&
-          CommonUtil.isValidPrivateUrl(myUrl.hostname) &&
-          peerCandidateUrl.port === myUrl.port;
-    } else {
-      return peerCandidateJsonRpcUrl === myJsonRpcUrl;
-    }
-  }
-
   updatePeerCandidates() {
     Object.values(this.outbound).forEach(peer => {
       const jsonRpcUrl = _.get(peer, 'peerInfo.networkStatus.urls.jsonRpc.url');
@@ -707,10 +696,10 @@ class P2pClient {
     const myP2pUrl = _.get(this.server.urls, 'p2p.url', '');
     const myJsonRpcUrl = _.get(this.server.urls, 'jsonRpc.url', '');
     if (!peerCandidateJsonRpcUrl || peerCandidateJsonRpcUrl === '' ||
-        this.isTheSameJsonRpcUrl(peerCandidateJsonRpcUrl, myJsonRpcUrl)) {
+        areIdenticalUrls(peerCandidateJsonRpcUrl, myJsonRpcUrl)) {
       delete this.peerCandidates[peerCandidateJsonRpcUrl];
       // NOTE(minsulee2): in case of either a starting node or a seed node
-      if (this.isTheSameJsonRpcUrl(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL,
+      if (areIdenticalUrls(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL,
           _.get(this.server.urls, 'jsonRpc.url', ''))) {
         this.updatePeerCandidates();
       }
