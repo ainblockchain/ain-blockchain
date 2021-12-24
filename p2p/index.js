@@ -243,7 +243,10 @@ class P2pClient {
       return NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL;
     } else {
       const notQueriedCandidateEntries = peerCandidatesEntries.filter(([, value]) => {
-        return value.queriedAt === null;
+        // NOTE(minsulee2): this gets stuck if the never queried node gets offline. To avoid this,
+        // the node which queried more than 5 minutes ago can also be considered as notQueried.
+        return value.queriedAt === null ? true :
+            Date.now() - value.queriedAt > NodeConfigs.PEER_CANDIDATE_RECONNECTION_THRESHOLD_MS;
       });
       if (notQueriedCandidateEntries.length > 0) {
         return _.shuffle(notQueriedCandidateEntries)[0][0];
@@ -284,7 +287,7 @@ class P2pClient {
     }
     this.disconnectRandomPeer();
     this.updateP2pState();
-    // await this.discoverPeerWithGuardingFlag();
+    await this.discoverPeerWithGuardingFlag();
     console.log('reorgreorgreorgreorgreorgreorgreorgreorgreorgreorgreorgreorgreorgreorgreorgreorg')
     // if (this.steadyIntervalCount < NodeConfigs.PEER_REORG_STEADY_INTERVAL_COUNT) {
     //   this.steadyIntervalCount++;
