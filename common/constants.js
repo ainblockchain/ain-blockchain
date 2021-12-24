@@ -150,7 +150,6 @@ const P2pNetworkStates = {
  * Predefined database paths.
  * @enum {string}
  */
-// TODO(platfowner): Move '.something' paths to here from '[Owner|Function|Rule|Value]Properties'.
 const PredefinedDbPaths = {
   // Roots
   OWNERS_ROOT: 'owners',
@@ -374,8 +373,10 @@ const FunctionTypes = {
  *
  * @enum {string}
  */
-const StateInfoProperties = {
+const StateLabelProperties = {
   HAS_PARENT_STATE_NODE: '#has_parent_state_node',
+  HASH_DELIMITER: '#',  // Hash delimiter
+  META_LABEL_PREFIX: '#',  // Prefix of all meta labels
   NEXT_SERIAL: '#next_serial',
   NUM_PARENTS: '#num_parents',
   RADIX_LABEL_PREFIX: '#radix:',
@@ -383,6 +384,7 @@ const StateInfoProperties = {
   SERIAL: '#serial',
   STATE_LABEL_PREFIX: '#state:',
   STATE_PROOF_HASH: '#state_ph',
+  VARIABLE_LABEL_PREFIX: '$',  // Prefix of variable labels
   VERSION: '#version',
   TREE_HEIGHT: '#tree_height',
   TREE_SIZE: '#tree_size',
@@ -417,6 +419,7 @@ const NativeFunctionIds = {
   CREATE_APP: '_createApp',
   DISTRIBUTE_FEE: '_distributeFee',
   ERASE_VALUE: '_eraseValue',
+  FAIL: '_fail',
   HANDLE_OFFENSES: '_handleOffenses',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
@@ -704,7 +707,7 @@ module.exports = {
   RuleProperties,
   FunctionProperties,
   FunctionTypes,
-  StateInfoProperties,
+  StateLabelProperties,
   BlockchainSnapshotProperties,
   NativeFunctionIds,
   isNativeFunctionId,

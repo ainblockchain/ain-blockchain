@@ -2,7 +2,6 @@ const FileUtil = require('../../common/file-util');
 const {
   verifyStateProof,
 } = require('../../db/state-util');
-const { BlockchainParams } = require('../../common/constants');
 
 async function verifyProof(proofFile) {
   console.log(`\n* Reading proof file: ${proofFile}...`);
@@ -14,7 +13,7 @@ async function verifyProof(proofFile) {
   }
 
   console.log(`\n* Verifying proof...`);
-  const result = verifyStateProof(BlockchainParams.genesis.hash_delimiter, proof);
+  const result = verifyStateProof(proof);
   console.log(`  > Root proof hash: ${result.curProofHash}`);
   console.log(`  > Is verified: ${result.isVerified}`);
   console.log(`  > Mismatched path: ${result.mismatchedPath}`);

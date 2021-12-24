@@ -2,15 +2,14 @@ const StateManager = require('../../db/state-manager');
 const chai = require('chai');
 const expect = chai.expect;
 const assert = chai.assert;
-const { StateVersions, BlockchainParams } = require('../../common/constants');
+const { StateVersions } = require('../../common/constants');
 const StateNode = require('../../db/state-node');
 
 describe("state-manager", () => {
   let manager;
-  const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
 
   beforeEach(() => {
-    manager = new StateManager(BlockchainParams.genesis.hash_delimiter);
+    manager = new StateManager();
   })
 
   describe("Initialize", () => {
@@ -28,7 +27,7 @@ describe("state-manager", () => {
     const finalVersion = 'final version';
 
     beforeEach(() => {
-      const finalRoot = new StateNode(hashDelimiter);
+      const finalRoot = new StateNode();
       finalRoot.setValue('final value');
       manager.setRoot(finalVersion, finalRoot);
       manager.finalizeVersion(finalVersion);
@@ -36,7 +35,7 @@ describe("state-manager", () => {
 
     it("numVersions", () => {
       expect(manager.numVersions()).to.equal(2);
-      const newRoot = new StateNode(hashDelimiter);
+      const newRoot = new StateNode();
       manager.setRoot('new version', newRoot);
       expect(manager.numVersions()).to.equal(3);
     });
@@ -78,7 +77,7 @@ describe("state-manager", () => {
     const finalVersion = 'final version';
 
     beforeEach(() => {
-      const finalRoot = new StateNode(hashDelimiter);
+      const finalRoot = new StateNode();
       finalRoot.setValue(finalVersion);
       manager.setRoot(finalVersion, finalRoot);
       manager.finalizeVersion(finalVersion);
@@ -88,7 +87,7 @@ describe("state-manager", () => {
       it("setRoot", () => {
         expect(manager.numVersions()).to.equal(2);
 
-        const newRoot = new StateNode(hashDelimiter);
+        const newRoot = new StateNode();
         newRoot.setValue('some value');
         manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
@@ -125,7 +124,7 @@ describe("state-manager", () => {
 
     describe("cloneVersion", () => {
       it("cloneVersion", () => {
-        const newRoot = new StateNode(hashDelimiter);
+        const newRoot = new StateNode();
         newRoot.setValue('some value');
         manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
@@ -150,7 +149,7 @@ describe("state-manager", () => {
 
     describe("transferStateTree", () => {
       it("transferStateTree w/ existing version", () => {
-        const newRoot = new StateNode(hashDelimiter);
+        const newRoot = new StateNode();
         newRoot.setValue('some value');
         manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
@@ -161,7 +160,7 @@ describe("state-manager", () => {
       });
 
       it("transferStateTree w/ non-existing version", () => {
-        const newRoot = new StateNode(hashDelimiter);
+        const newRoot = new StateNode();
         newRoot.setValue('some value');
         manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
@@ -183,7 +182,7 @@ describe("state-manager", () => {
 
     describe("deleteVersion", () => {
       it("deleteVersion w/ non-final version", () => {
-        const newRoot = new StateNode(hashDelimiter);
+        const newRoot = new StateNode();
         newRoot.setValue('some value');
         manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
@@ -221,7 +220,7 @@ describe("state-manager", () => {
 
     describe("finalizeVersion", () => {
       it("finalizeVersion w/ non-final version", () => {
-        const newRoot = new StateNode(hashDelimiter);
+        const newRoot = new StateNode();
         newRoot.setValue('some value');
         manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);
@@ -247,7 +246,7 @@ describe("state-manager", () => {
       });
 
       it("finalizeVersion w/ final version", () => {
-        const newRoot = new StateNode(hashDelimiter);
+        const newRoot = new StateNode();
         newRoot.setValue('some value');
         manager.setRoot('new version', newRoot);
         expect(manager.numVersions()).to.equal(3);

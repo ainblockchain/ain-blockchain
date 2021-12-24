@@ -10,13 +10,10 @@ const {
   updateStateInfoForStateTree,
   verifyStateInfoForStateTree,
 } = require('../../db/state-util');
-const { BlockchainParams } = require('../../common/constants');
 const { GET_OPTIONS_INCLUDE_ALL } = require('../test-util');
 
 describe("state-node", () => {
   let node;
-  const hashDelimiter = BlockchainParams.genesis.hash_delimiter;
-  const stateInfoPrefix = BlockchainParams.genesis.state_info_prefix;
 
   const label1 = '0x00aaaa';
   const label2 = '0x11bbbb';
@@ -30,18 +27,18 @@ describe("state-node", () => {
   let child4;
 
   beforeEach(() => {
-    node = new StateNode(hashDelimiter);
+    node = new StateNode();
 
-    child1 = new StateNode(hashDelimiter);
-    child2 = new StateNode(hashDelimiter);
-    child3 = new StateNode(hashDelimiter);
-    child4 = new StateNode(hashDelimiter);
+    child1 = new StateNode();
+    child2 = new StateNode();
+    child3 = new StateNode();
+    child4 = new StateNode();
     child1.setValue('value1');
     child2.setValue('value2');
     child3.setValue('value3');
     child4.setValue('value4');
 
-    stateTree = new StateNode(hashDelimiter);
+    stateTree = new StateNode();
     stateTree.setChild(label1, child1);
     stateTree.setChild(label2, child2);
     stateTree.setChild(label3, child3);
@@ -67,9 +64,9 @@ describe("state-node", () => {
       const version = 'ver';
       const label = 'label';
       const value = 'val';
-      const parentNode = new StateNode(hashDelimiter);
+      const parentNode = new StateNode();
       const childLabel = 'childLabel';
-      const childNode = new StateNode(hashDelimiter);
+      const childNode = new StateNode();
       const proofHash = 'PH';
       const treeHeight = 1;
       const treeSize = 10;
@@ -102,7 +99,7 @@ describe("state-node", () => {
 
   describe("initialization with version", () => {
     it("constructor", () => {
-      const node2 = new StateNode(hashDelimiter, 'version1');
+      const node2 = new StateNode('version1');
       expect(node2.version).to.equal('version1');
       expect(node2.label).to.equal(null);
       expect(node2.isLeaf).to.equal(true);
@@ -233,13 +230,13 @@ describe("state-node", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
-      const snapshot1 = StateNode.fromStateSnapshot('str', hashDelimiter, ver1, stateInfoPrefix).toRadixSnapshot();
+      const snapshot1 = StateNode.fromStateSnapshot('str', ver1).toRadixSnapshot();
       expect(snapshot1).to.equal('str');
-      expect(StateNode.fromRadixSnapshot(snapshot1, hashDelimiter).toRadixSnapshot()).to.equal('str');
+      expect(StateNode.fromRadixSnapshot(snapshot1).toRadixSnapshot()).to.equal('str');
 
-      const snapshot2 = StateNode.fromStateSnapshot(100, hashDelimiter, ver1, stateInfoPrefix).toRadixSnapshot();
+      const snapshot2 = StateNode.fromStateSnapshot(100, ver1).toRadixSnapshot();
       expect(snapshot2).to.equal(100);
-      expect(StateNode.fromRadixSnapshot(snapshot2, hashDelimiter).toRadixSnapshot()).to.equal(100);
+      expect(StateNode.fromRadixSnapshot(snapshot2).toRadixSnapshot()).to.equal(100);
     })
 
     it("internal node", () => {
@@ -256,7 +253,7 @@ describe("state-node", () => {
           db: 2200,
         }
       };
-      const stateTree = StateNode.fromStateSnapshot(stateObj, hashDelimiter, version, stateInfoPrefix);
+      const stateTree = StateNode.fromStateSnapshot(stateObj, version);
       // set versions of state nodes and radix nodes
       stateTree.setVersion('ver_root');
       stateTree.getChild('a').setVersion('ver_a');
@@ -352,7 +349,7 @@ describe("state-node", () => {
       });
 
       // fromRadixSnapshot()
-      const stateTreeRebuilt = StateNode.fromRadixSnapshot(snapshot, hashDelimiter);
+      const stateTreeRebuilt = StateNode.fromRadixSnapshot(snapshot);
       assert.deepEqual(stateTreeRebuilt.toRadixSnapshot(), {
         "#next_serial": 10,
         "#radix:6": {
@@ -485,13 +482,13 @@ describe("state-node", () => {
 
   describe("toJsObject", () => {
     it("leaf node", () => {
-      expect(StateNode.fromStateSnapshot(true, hashDelimiter, null, stateInfoPrefix).toStateSnapshot()).to.equal(true);
-      expect(StateNode.fromStateSnapshot(false, hashDelimiter, null, stateInfoPrefix).toStateSnapshot()).to.equal(false);
-      expect(StateNode.fromStateSnapshot(10, hashDelimiter, null, stateInfoPrefix).toStateSnapshot()).to.equal(10);
-      expect(StateNode.fromStateSnapshot('str', hashDelimiter, null, stateInfoPrefix).toStateSnapshot()).to.equal('str');
-      expect(StateNode.fromStateSnapshot('', hashDelimiter, null, stateInfoPrefix).toStateSnapshot()).to.equal('');
-      expect(StateNode.fromStateSnapshot(null, hashDelimiter, null, stateInfoPrefix).toStateSnapshot()).to.equal(null);
-      expect(StateNode.fromStateSnapshot(undefined, hashDelimiter, null, stateInfoPrefix).toStateSnapshot()).to.equal(undefined);
+      expect(StateNode.fromStateSnapshot(true, null).toStateSnapshot()).to.equal(true);
+      expect(StateNode.fromStateSnapshot(false, null).toStateSnapshot()).to.equal(false);
+      expect(StateNode.fromStateSnapshot(10, null).toStateSnapshot()).to.equal(10);
+      expect(StateNode.fromStateSnapshot('str', null).toStateSnapshot()).to.equal('str');
+      expect(StateNode.fromStateSnapshot('', null).toStateSnapshot()).to.equal('');
+      expect(StateNode.fromStateSnapshot(null, null).toStateSnapshot()).to.equal(null);
+      expect(StateNode.fromStateSnapshot(undefined, null).toStateSnapshot()).to.equal(undefined);
     })
 
     it("internal node", () => {
@@ -522,7 +519,7 @@ describe("state-node", () => {
           empty_obj: {},
         }
       };
-      assert.deepEqual(StateNode.fromStateSnapshot(stateObj, hashDelimiter, null, stateInfoPrefix).toStateSnapshot(), {
+      assert.deepEqual(StateNode.fromStateSnapshot(stateObj, null).toStateSnapshot(), {
         bool: false,
         number: 10,
         str: 'str',
@@ -556,8 +553,8 @@ describe("state-node", () => {
     it("leaf node", () => {
       const ver1 = 'ver1';
 
-      expect(StateNode.fromStateSnapshot('str', hashDelimiter, ver1, stateInfoPrefix).toStateSnapshot(GET_OPTIONS_INCLUDE_ALL)).to.equal('str');
-      expect(StateNode.fromStateSnapshot(100, hashDelimiter, ver1, stateInfoPrefix).toStateSnapshot(GET_OPTIONS_INCLUDE_ALL)).to.equal(100);
+      expect(StateNode.fromStateSnapshot('str', ver1).toStateSnapshot(GET_OPTIONS_INCLUDE_ALL)).to.equal('str');
+      expect(StateNode.fromStateSnapshot(100, ver1).toStateSnapshot(GET_OPTIONS_INCLUDE_ALL)).to.equal(100);
     })
 
     it("internal node", () => {
@@ -574,7 +571,7 @@ describe("state-node", () => {
           db: 2200,
         }
       };
-      const stateTree = StateNode.fromStateSnapshot(stateObj, hashDelimiter, ver1, stateInfoPrefix);
+      const stateTree = StateNode.fromStateSnapshot(stateObj, ver1);
       updateStateInfoForStateTree(stateTree);
 
       // includeVersion = true
@@ -677,17 +674,17 @@ describe("state-node", () => {
 
   describe("toJsObject with isShallow", () => {
     it("leaf node", () => {
-      expect(StateNode.fromStateSnapshot('str', hashDelimiter, null, stateInfoPrefix).toStateSnapshot({ isShallow: true })).to.equal('str');
-      expect(StateNode.fromStateSnapshot(100, hashDelimiter, null, stateInfoPrefix).toStateSnapshot({ isShallow: true })).to.equal(100);
+      expect(StateNode.fromStateSnapshot('str', null).toStateSnapshot({ isShallow: true })).to.equal('str');
+      expect(StateNode.fromStateSnapshot(100, null).toStateSnapshot({ isShallow: true })).to.equal(100);
     })
 
     it("internal node", () => {
-      assert.deepEqual(StateNode.fromStateSnapshot({ a: 1, b: 2, c: 3 }, hashDelimiter, null, stateInfoPrefix).toStateSnapshot({ isShallow: true }), {
+      assert.deepEqual(StateNode.fromStateSnapshot({ a: 1, b: 2, c: 3 }, null).toStateSnapshot({ isShallow: true }), {
         a: 1,
         b: 2,
         c: 3,
       });
-      assert.deepEqual(StateNode.fromStateSnapshot({ a: { aa: 11 }, b: 2 }, hashDelimiter, null, stateInfoPrefix).toStateSnapshot({ isShallow: true }), {
+      assert.deepEqual(StateNode.fromStateSnapshot({ a: { aa: 11 }, b: 2 }, null).toStateSnapshot({ isShallow: true }), {
         a: {
           "#state_ph": null
         },
@@ -710,12 +707,12 @@ describe("state-node", () => {
         db: 2200,
       }
     };
-    const stateTree = StateNode.fromStateSnapshot(stateObj, hashDelimiter, ver1, stateInfoPrefix);
+    const stateTree = StateNode.fromStateSnapshot(stateObj, ver1);
     updateStateInfoForStateTree(stateTree);
 
     it("without options", () => {
       const stateObjWithoutOptions = stateTree.toStateSnapshot();
-      const stateTreeParsed = StateNode.fromStateSnapshot(stateObjWithoutOptions, hashDelimiter, null, stateInfoPrefix);
+      const stateTreeParsed = StateNode.fromStateSnapshot(stateObjWithoutOptions, null);
 
       // child order
       assert.deepEqual(stateTreeParsed.getChildLabels(), [
@@ -730,7 +727,7 @@ describe("state-node", () => {
 
     it("with options", () => {
       const stateObjWithOptions = stateTree.toStateSnapshot(GET_OPTIONS_INCLUDE_ALL);
-      const stateTreeParsed = StateNode.fromStateSnapshot(stateObjWithOptions, hashDelimiter, null, stateInfoPrefix);
+      const stateTreeParsed = StateNode.fromStateSnapshot(stateObjWithOptions, null);
 
       // child order
       assert.deepEqual(stateTreeParsed.getChildLabels(), [
@@ -783,10 +780,10 @@ describe("state-node", () => {
 
   describe("parentRadixNode", () => {
     it("add / has / delete / getParentRadixNodes / numParentRadixNodes with single node", () => {
-      const node = new StateNode(hashDelimiter);
+      const node = new StateNode();
       node.setValue('value1');
-      const parentRadixNode1 = new RadixNode(hashDelimiter);
-      const parentRadixNode2 = new RadixNode(hashDelimiter);
+      const parentRadixNode1 = new RadixNode();
+      const parentRadixNode2 = new RadixNode();
       expect(node.hasParentRadixNode(parentRadixNode1)).to.equal(false);
       expect(node.hasParentRadixNode(parentRadixNode2)).to.equal(false);
       assert.deepEqual(node.getParentRadixNodes(), []);
@@ -818,12 +815,12 @@ describe("state-node", () => {
     });
 
     it("add / has / delete / getParentRadixNodes / numParentRadixNodes with multiple nodes", () => {
-      const node1 = new StateNode(hashDelimiter);
-      const node2 = new StateNode(hashDelimiter);
+      const node1 = new StateNode();
+      const node2 = new StateNode();
       node1.setValue('value1');
       node2.setValue('value2');
-      const parentRadixNode1 = new RadixNode(hashDelimiter);
-      const parentRadixNode2 = new RadixNode(hashDelimiter);
+      const parentRadixNode1 = new RadixNode();
+      const parentRadixNode2 = new RadixNode();
       expect(node1.hasParentRadixNode(parentRadixNode1)).to.equal(false);
       expect(node1.hasParentRadixNode(parentRadixNode2)).to.equal(false);
       expect(node2.hasParentRadixNode(parentRadixNode1)).to.equal(false);
@@ -879,9 +876,9 @@ describe("state-node", () => {
     });
 
     it("add existing parentRadixNode", () => {
-      const node = new StateNode(hashDelimiter);
+      const node = new StateNode();
       node.setValue('value1');
-      const parentRadixNode = new RadixNode(hashDelimiter);
+      const parentRadixNode = new RadixNode();
       expect(node.hasParentRadixNode(parentRadixNode)).to.equal(false);
       assert.deepEqual(node.getParentRadixNodes(), []);
       expect(node.numParentRadixNodes()).to.equal(0);
@@ -898,10 +895,10 @@ describe("state-node", () => {
     });
 
     it("delete non-existing parentRadixNode", () => {
-      const node = new StateNode(hashDelimiter);
+      const node = new StateNode();
       node.setValue('value1');
-      const parentRadixNode1 = new RadixNode(hashDelimiter);
-      const parentRadixNode2 = new RadixNode(hashDelimiter);
+      const parentRadixNode1 = new RadixNode();
+      const parentRadixNode2 = new RadixNode();
       expect(node.hasParentRadixNode(parentRadixNode1)).to.equal(false);
       expect(node.hasParentRadixNode(parentRadixNode2)).to.equal(false);
       assert.deepEqual(node.getParentRadixNodes(), []);
@@ -923,7 +920,7 @@ describe("state-node", () => {
 
   describe("getParentNodes / hasAParent / hasMultipleParents / numParents", () => {
     it("with no parent", () => {
-      const node = new StateNode(hashDelimiter);
+      const node = new StateNode();
       assert.deepEqual(node.getParentNodes(), []);
       expect(node.hasAtLeastOneParent()).to.equal(false);
       expect(node.hasMultipleParents()).to.equal(false);
@@ -931,8 +928,8 @@ describe("state-node", () => {
     });
 
     it("with one parent", () => {
-      const parent = new StateNode(hashDelimiter);
-      const node = new StateNode(hashDelimiter);
+      const parent = new StateNode();
+      const node = new StateNode();
       parent.setChild('label', node);
       assert.deepEqual(node.getParentNodes(), [parent]);
       expect(node.hasAtLeastOneParent()).to.equal(true);
@@ -941,9 +938,9 @@ describe("state-node", () => {
     });
 
     it("with two parents", () => {
-      const parent1 = new StateNode(hashDelimiter);
-      const parent2 = new StateNode(hashDelimiter);
-      const node = new StateNode(hashDelimiter);
+      const parent1 = new StateNode();
+      const parent2 = new StateNode();
+      const node = new StateNode();
       parent1.setChild('label', node);
       parent2.setChild('label', node);
       assert.deepEqual(node.getParentNodes(), [parent1, parent2]);
@@ -953,10 +950,10 @@ describe("state-node", () => {
     });
 
     it("with three parents", () => {
-      const parent1 = new StateNode(hashDelimiter);
-      const parent2 = new StateNode(hashDelimiter);
-      const parent3 = new StateNode(hashDelimiter);
-      const node = new StateNode(hashDelimiter);
+      const parent1 = new StateNode();
+      const parent2 = new StateNode();
+      const parent3 = new StateNode();
+      const node = new StateNode();
       parent1.setChild('label', node);
       parent2.setChild('label', node);
       parent3.setChild('label', node);
@@ -977,18 +974,18 @@ describe("state-node", () => {
     let child2;
 
     beforeEach(() => {
-      parent1 = new StateNode(hashDelimiter);
-      parent2 = new StateNode(hashDelimiter);
+      parent1 = new StateNode();
+      parent2 = new StateNode();
 
-      child1 = new StateNode(hashDelimiter);
+      child1 = new StateNode();
       child1.setValue('value1');
 
-      child2 = new StateNode(hashDelimiter);
+      child2 = new StateNode();
       child2.setValue('value2');
     });
 
     it("get / set / has / delete with single parent", () => {
-      const parent = new StateNode(hashDelimiter);
+      const parent = new StateNode();
       assert.deepEqual(parent.getChild(label1), null);
       assert.deepEqual(parent.getChild(label2), null);
       assert.deepEqual(child1.getParentNodes(), []);
@@ -1248,7 +1245,7 @@ describe("state-node", () => {
 
   describe("radix tree", () => {
     it("setRadixTree", () => {
-      const newRadixTree = new RadixTree(hashDelimiter);
+      const newRadixTree = new RadixTree();
       node.setRadixTree(newRadixTree);
       assert.deepEqual(node.radixTree, newRadixTree);
       assert.deepEqual(newRadixTree.root.getParentStateNode(), node);
@@ -1434,7 +1431,7 @@ describe("state-node", () => {
 
     describe("tree bytes", () => {
       it("leaf node", () => {
-        const parent = new StateNode(hashDelimiter);
+        const parent = new StateNode();
         const label = 'label';
         parent.setChild(label, node);
         expect(node.buildStateInfo().treeBytes).to.equal(160);
@@ -1455,7 +1452,7 @@ describe("state-node", () => {
       });
 
       it("internal node", () => {
-        const parent = new StateNode(hashDelimiter);
+        const parent = new StateNode();
         const label = 'label';
         parent.setChild(label, stateTree);
 
