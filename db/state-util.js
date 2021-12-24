@@ -286,7 +286,7 @@ function isValidWriteRule(parsedRulePath, ruleString) {
   return true;
 }
 
-function isValidStateRule(stateRule) {
+function isValidStateRule(stateRule, params) {
   if (stateRule === null) {
     return true;
   }
@@ -308,7 +308,7 @@ function isValidStateRule(stateRule) {
     }
     // TODO(platfowner): Add '20' as a blockchain param.
     if (!CommonUtil.isNumber(stateRule[RuleProperties.GC_NUM_SIBLINGS_DELETED]) ||
-      stateRule[RuleProperties.GC_NUM_SIBLINGS_DELETED] < 20) {
+      stateRule[RuleProperties.GC_NUM_SIBLINGS_DELETED] < params.minGcNumSiblingsDeleted) {
       return false;
     }
     if (stateRule[RuleProperties.GC_NUM_SIBLINGS_DELETED] >
@@ -323,12 +323,12 @@ function isValidStateRule(stateRule) {
 /**
  * Checks the validity of the given rule configuration.
  * 
- * @param {Object} configPath path of the config
+ * @param {Object} params params to be used in the validation
  * @param {Object} ruleConfigObj rule config object
  */
 // NOTE(platfowner): Should have the same parameters as isValidFunctionConfig() and
 // isValidOwnerConfig() to be used with isValidConfigTreeRecursive().
-function isValidRuleConfig(configPath, ruleConfigObj) {
+function isValidRuleConfig(params, ruleConfigObj) {
   if (!CommonUtil.isDict(ruleConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
@@ -344,11 +344,11 @@ function isValidRuleConfig(configPath, ruleConfigObj) {
   }
   const writeRule = sanitized[RuleProperties.WRITE];
   if (sanitized.hasOwnProperty(RuleProperties.WRITE) &&
-      !isValidWriteRule(configPath, writeRule)) {
+      !isValidWriteRule(params.configPath, writeRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
   }
   const stateRule = sanitized[RuleProperties.STATE];
-  if (sanitized.hasOwnProperty(RuleProperties.STATE) && !isValidStateRule(stateRule)) {
+  if (sanitized.hasOwnProperty(RuleProperties.STATE) && !isValidStateRule(stateRule, params)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.STATE]) };
   }
 
@@ -401,12 +401,12 @@ function isValidFunctionInfo(functionInfoObj) {
 /**
  * Checks the validity of the given function configuration.
  * 
- * @param {Object} configPath path of the config
+ * @param {Object} params params to be used in the validation
  * @param {Object} functionConfigObj function config object
  */
 // NOTE(platfowner): Should have the same parameters as isValidRuleConfig() and
 // isValidOwnerConfig() to be used with isValidConfigTreeRecursive().
-function isValidFunctionConfig(configPath, functionConfigObj) {
+function isValidFunctionConfig(params, functionConfigObj) {
   if (!CommonUtil.isDict(functionConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
@@ -470,12 +470,12 @@ function isValidOwnerPermissions(permissionObj) {
 /**
  * Checks the validity of the given owner configuration.
  * 
- * @param {Object} configPath path of the config
+ * @param {Object} params params to be used in the validation
  * @param {Object} ownerConfigObj owner config object
  */
 // NOTE(platfowner): Should have the same parameters as isValidFunctionConfig() and
 // isValidRuleConfig() to be used with isValidConfigTreeRecursive().
-function isValidOwnerConfig(configPath, ownerConfigObj) {
+function isValidOwnerConfig(params, ownerConfigObj) {
   if (!CommonUtil.isDict(ownerConfigObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([]) };
   }
@@ -525,9 +525,10 @@ function isValidOwnerConfig(configPath, ownerConfigObj) {
  * @param {*} path recursion path
  * @param {*} configLabel config label
  * @param {*} stateConfigValidator state config validator function
+ * @param {Object} params params to be used in the validation
  */
 function isValidConfigTreeRecursive(
-    treePath, stateTreeObj, subtreePath, configLabel, stateConfigValidator) {
+    treePath, stateTreeObj, subtreePath, configLabel, stateConfigValidator, params = {}) {
   if (!CommonUtil.isDict(stateTreeObj) || CommonUtil.isEmpty(stateTreeObj)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath(subtreePath) };
   }
@@ -536,7 +537,8 @@ function isValidConfigTreeRecursive(
     subtreePath.push(label);
     const subtree = stateTreeObj[label];
     if (label === configLabel) {
-      const isValidConfig = stateConfigValidator([...treePath, ...subtreePath], subtree);
+      const newParams = Object.assign({}, params, { configPath: [...treePath, ...subtreePath]});
+      const isValidConfig = stateConfigValidator(newParams, subtree);
       if (!isValidConfig.isValid) {
         return {
           isValid: false,
@@ -545,7 +547,7 @@ function isValidConfigTreeRecursive(
       }
     } else {
       const isValidSubtree = isValidConfigTreeRecursive(
-          treePath, subtree, subtreePath, configLabel, stateConfigValidator);
+          treePath, subtree, subtreePath, configLabel, stateConfigValidator, params);
       if (!isValidSubtree.isValid) {
         return isValidSubtree;
       }
@@ -559,13 +561,13 @@ function isValidConfigTreeRecursive(
 /**
  * Checks the validity of the given rule tree.
  */
-function isValidRuleTree(treePath, ruleTreeObj) {
+function isValidRuleTree(treePath, ruleTreeObj, params) {
   if (ruleTreeObj === null) {
     return { isValid: true, invalidPath: '' };
   }
 
   return isValidConfigTreeRecursive(
-      treePath, ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig);
+      treePath, ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig, params);
 }
 
 /**
