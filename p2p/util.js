@@ -137,6 +137,18 @@ function removeFromPeerConnectionsInProgress(peerConnectionsInProgress, url) {
   peerConnectionsInProgress.delete(url);
 }
 
+function areIdenticalUrls(url1, url2) {
+  if (NodeConfigs.HOSTING_ENV === 'local') {
+    const comparingUrl1 = new URL(url1);
+    const comapringUrl2 = new URL(url2);
+    return CommonUtil.isValidPrivateUrl(comparingUrl1.hostname) &&
+        CommonUtil.isValidPrivateUrl(comapringUrl2.hostname) &&
+        comparingUrl1.port === comapringUrl2.port;
+  } else {
+    return url1 === url2;
+  }
+}
+
 module.exports = {
   getAddressFromSocket,
   signMessage,
@@ -148,5 +160,6 @@ module.exports = {
   encapsulateMessage,
   checkPeerWhitelist,
   addPeerConnection,
-  removeFromPeerConnectionsInProgress
+  removeFromPeerConnectionsInProgress,
+  areIdenticalUrls
 };
