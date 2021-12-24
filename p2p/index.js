@@ -266,7 +266,7 @@ class P2pClient {
       return;
     }
     // NOTE(minsulee2): To avoid breaking connections between ADDRESS_REQUEST and ADDRESS_RESPONSE,
-    // nodes, which is successful bi directed connections, are picked to disconnect.
+    // bidirectionally connected peers are picked to disconnect.
     const bidirectedConnections = Object.keys(this.outbound).filter(address => {
       return Object.keys(this.server.inbound).includes(address);
     });
