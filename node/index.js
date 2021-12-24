@@ -12,7 +12,7 @@ const {
   BlockchainNodeStates,
   PredefinedDbPaths,
   BlockchainSnapshotProperties,
-  StateInfoProperties,
+  StateLabelProperties,
   ShardingProperties,
   ShardingProtocols,
   TransactionStates,
@@ -472,13 +472,13 @@ class BlockchainNode {
       freeTreeSizeBudget,
     } = DB.getStateBudgets(this.bc.lastBlockNumber(), this.stateManager.getFinalRoot());
     const freeTierUsage = this.db.getStateFreeTierUsage();
-    const freeTierTreeSize = freeTierUsage ? freeTierUsage[StateInfoProperties.TREE_SIZE] : 0;
-    const freeTierTreeBytes = freeTierUsage ? freeTierUsage[StateInfoProperties.TREE_BYTES] : 0;
+    const freeTierTreeSize = !CommonUtil.isEmpty(freeTierUsage) ? freeTierUsage[StateLabelProperties.TREE_SIZE] : 0;
+    const freeTierTreeBytes = !CommonUtil.isEmpty(freeTierUsage) ? freeTierUsage[StateLabelProperties.TREE_BYTES] : 0;
     const rawUsage = this.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
     const usage = {
-      tree_height: rawUsage ? rawUsage[StateInfoProperties.TREE_HEIGHT] : 0,
-      tree_size: rawUsage ? rawUsage[StateInfoProperties.TREE_SIZE] : 0,
-      tree_bytes: rawUsage ? rawUsage[StateInfoProperties.TREE_BYTES] : 0,
+      tree_height: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_HEIGHT] : 0,
+      tree_size: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_SIZE] : 0,
+      tree_bytes: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_BYTES] : 0,
     };
     const available = {
       tree_height: stateTreeHeightLimit,
