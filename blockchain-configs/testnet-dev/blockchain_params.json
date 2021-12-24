@@ -70,7 +70,7 @@
     "state_tree_height_limit": 30,
     "state_tree_bytes_limit": 5000000000,
     "state_label_length_limit": 150,
-    "bandwidth_budget_per_block": 10000,
+    "bandwidth_budget_per_block": 1000000,
     "service_state_budget_ratio": 0.5,
     "apps_state_budget_ratio": 0.45,
     "free_state_budget_ratio": 0.05,
