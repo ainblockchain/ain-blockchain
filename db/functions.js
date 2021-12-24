@@ -1263,7 +1263,7 @@ class Functions {
 
   _cancelCheckin(value, context) {
     if (value !== null) {
-      // Does nothing for null value.
+      // Does nothing for non-null value.
       // NOTE(liayoo): It's not a SET_VALUE for a cancel, but for a request. A cancel should only 
       // happen if the value is null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
