@@ -169,6 +169,7 @@ const PredefinedDbPaths = {
   BLOCKCHAIN_PARAMS_RESOURCE: 'resource',
   BLOCKCHAIN_PARAMS_SHARDING: 'sharding',
   BLOCKCHAIN_PARAMS_SHARDING_MAX_SHARD_REPORT: 'max_shard_report',
+  BLOCKCHAIN_PARAMS_SHARDING_NUM_SHARD_REPORT_DELETED: 'num_shard_report_deleted',
   BLOCKCHAIN_PARAMS_SHARDING_PARENT_CHAIN_POC: 'parent_chain_poc',
   BLOCKCHAIN_PARAMS_SHARDING_PATH: 'sharding_path',
   BLOCKCHAIN_PARAMS_SHARDING_PROTOCOL: 'sharding_protocol',
@@ -298,6 +299,7 @@ const PredefinedDbPaths = {
   SHARDING: 'sharding',
   SHARDING_SHARD: 'shard',
   SHARDING_SHARD_MAX_SHARD_REPORT: 'max_shard_report',
+  SHARDING_SHARD_NUM_SHARD_REPORT_DELETED: 'num_shard_report_deleted',
   SHARDING_SHARD_PARENT_CHAIN_POC: 'parent_chain_poc',
   SHARDING_SHARD_PATH: 'sharding_path',
   SHARDING_SHARD_PROTOCOL: 'sharding_protocol',
@@ -344,6 +346,7 @@ const RuleProperties = {
   STATE: 'state',
   MAX_CHILDREN: 'max_children',
   GC_MAX_SIBLINGS: 'gc_max_siblings',
+  GC_NUM_SIBLINGS_DELETED: 'gc_num_siblings_deleted',
   // TODO(liayoo): Add more properties (max_height, max_size, max_bytes)
 };
 
@@ -447,6 +450,7 @@ function isNativeFunctionId(fid) {
 const ShardingProperties = {
   LATEST_BLOCK_NUMBER: 'latest_block_number',
   MAX_SHARD_REPORT: 'max_shard_report',
+  NUM_SHARD_REPORT_DELETED: 'num_shard_report_deleted',
   PARENT_CHAIN_POC: 'parent_chain_poc',
   PROOF_HASH: 'proof_hash',
   PROOF_HASH_MAP: 'proof_hash_map',
