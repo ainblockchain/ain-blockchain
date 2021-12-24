@@ -836,7 +836,6 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           type: 'GET_VALUE',
           ref: "/apps/test/test_value/some/path",
-          include_tree_info: true,
         })
         .then(res => {
           expect(res.result.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES);
@@ -863,7 +862,6 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
           type: 'GET_VALUE',
           ref: "/apps/test/test_value/some/path",
-          include_tree_info: true,
         })
         .then(res => {
           expect(res.result.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS);
