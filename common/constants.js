@@ -150,7 +150,6 @@ const P2pNetworkStates = {
  * Predefined database paths.
  * @enum {string}
  */
-// TODO(platfowner): Move '.something' paths to here from '[Owner|Function|Rule|Value]Properties'.
 const PredefinedDbPaths = {
   // Roots
   OWNERS_ROOT: 'owners',
@@ -170,6 +169,7 @@ const PredefinedDbPaths = {
   BLOCKCHAIN_PARAMS_RESOURCE: 'resource',
   BLOCKCHAIN_PARAMS_SHARDING: 'sharding',
   BLOCKCHAIN_PARAMS_SHARDING_MAX_SHARD_REPORT: 'max_shard_report',
+  BLOCKCHAIN_PARAMS_SHARDING_NUM_SHARD_REPORT_DELETED: 'num_shard_report_deleted',
   BLOCKCHAIN_PARAMS_SHARDING_PARENT_CHAIN_POC: 'parent_chain_poc',
   BLOCKCHAIN_PARAMS_SHARDING_PATH: 'sharding_path',
   BLOCKCHAIN_PARAMS_SHARDING_PROTOCOL: 'sharding_protocol',
@@ -299,6 +299,7 @@ const PredefinedDbPaths = {
   SHARDING: 'sharding',
   SHARDING_SHARD: 'shard',
   SHARDING_SHARD_MAX_SHARD_REPORT: 'max_shard_report',
+  SHARDING_SHARD_NUM_SHARD_REPORT_DELETED: 'num_shard_report_deleted',
   SHARDING_SHARD_PARENT_CHAIN_POC: 'parent_chain_poc',
   SHARDING_SHARD_PATH: 'sharding_path',
   SHARDING_SHARD_PROTOCOL: 'sharding_protocol',
@@ -345,6 +346,7 @@ const RuleProperties = {
   STATE: 'state',
   MAX_CHILDREN: 'max_children',
   GC_MAX_SIBLINGS: 'gc_max_siblings',
+  GC_NUM_SIBLINGS_DELETED: 'gc_num_siblings_deleted',
   // TODO(liayoo): Add more properties (max_height, max_size, max_bytes)
 };
 
@@ -374,8 +376,10 @@ const FunctionTypes = {
  *
  * @enum {string}
  */
-const StateInfoProperties = {
+const StateLabelProperties = {
   HAS_PARENT_STATE_NODE: '#has_parent_state_node',
+  HASH_DELIMITER: '#',  // Hash delimiter
+  META_LABEL_PREFIX: '#',  // Prefix of all meta labels
   NEXT_SERIAL: '#next_serial',
   NUM_PARENTS: '#num_parents',
   RADIX_LABEL_PREFIX: '#radix:',
@@ -383,6 +387,7 @@ const StateInfoProperties = {
   SERIAL: '#serial',
   STATE_LABEL_PREFIX: '#state:',
   STATE_PROOF_HASH: '#state_ph',
+  VARIABLE_LABEL_PREFIX: '$',  // Prefix of variable labels
   VERSION: '#version',
   TREE_HEIGHT: '#tree_height',
   TREE_SIZE: '#tree_size',
@@ -417,6 +422,7 @@ const NativeFunctionIds = {
   CREATE_APP: '_createApp',
   DISTRIBUTE_FEE: '_distributeFee',
   ERASE_VALUE: '_eraseValue',
+  FAIL: '_fail',
   HANDLE_OFFENSES: '_handleOffenses',
   HOLD: '_hold',
   OPEN_CHECKIN: '_openCheckin',
@@ -444,6 +450,7 @@ function isNativeFunctionId(fid) {
 const ShardingProperties = {
   LATEST_BLOCK_NUMBER: 'latest_block_number',
   MAX_SHARD_REPORT: 'max_shard_report',
+  NUM_SHARD_REPORT_DELETED: 'num_shard_report_deleted',
   PARENT_CHAIN_POC: 'parent_chain_poc',
   PROOF_HASH: 'proof_hash',
   PROOF_HASH_MAP: 'proof_hash_map',
@@ -704,7 +711,7 @@ module.exports = {
   RuleProperties,
   FunctionProperties,
   FunctionTypes,
-  StateInfoProperties,
+  StateLabelProperties,
   BlockchainSnapshotProperties,
   NativeFunctionIds,
   isNativeFunctionId,
