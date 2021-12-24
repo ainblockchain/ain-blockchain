@@ -45,7 +45,7 @@ const {
   verifySignedMessage,
   checkTimestamp,
   closeSocketSafe,
-  closeCorrespondingConnection,
+  closeSocketSafeByAddress,
   encapsulateMessage,
   checkPeerWhitelist,
   addPeerConnection,
@@ -683,7 +683,7 @@ class P2pServer {
       const address = getAddressFromSocket(this.inbound, socket);
       closeSocketSafe(this.inbound, socket);
       if (address in this.client.outbound) {
-        closeCorrespondingConnection(this.client.outbound, address);
+        closeSocketSafeByAddress(this.client.outbound, address);
       }
       logger.info(`Disconnected from a peer: ${address || url}`);
     });
