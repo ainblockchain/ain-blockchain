@@ -288,7 +288,7 @@
         "y": 9
       },
       "hiddenSeries": false,
-      "id": 84,
+      "id": 106,
       "legend": {
         "avg": false,
         "current": false,
@@ -315,8 +315,12 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
-          "expr": "node_status:health",
+          "expr": "network_status:connection_status:num_connections",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -324,7 +328,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "node_status:health",
+      "title": "num_connections",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -393,27 +397,15 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
           "expr": "client_status:traffic_stats:1_m:block_last_votes:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:block_last_votes:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:block_last_votes:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -466,7 +458,7 @@
         "y": 17
       },
       "hiddenSeries": false,
-      "id": 18,
+      "id": 6,
       "legend": {
         "avg": false,
         "current": false,
@@ -493,7 +485,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "node_status:state_numeric",
+          "expr": "network_status:connection_status:num_outbound",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -501,7 +493,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "node_status:state_numeric",
+      "title": "num_outbound",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -579,30 +571,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:propose_p_2_p_message:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:propose_p_2_p_message:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -655,7 +623,7 @@
         "y": 25
       },
       "hiddenSeries": false,
-      "id": 24,
+      "id": 4,
       "legend": {
         "avg": false,
         "current": false,
@@ -682,7 +650,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "consensus_status:health",
+          "exemplar": true,
+          "expr": "network_status:connection_status:num_inbound",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -690,7 +659,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "consensus_status:health",
+      "title": "num_inbound",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -768,30 +737,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:vote_p_2_p_message:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:vote_p_2_p_message:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -829,12 +774,6 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -844,7 +783,7 @@
         "y": 33
       },
       "hiddenSeries": false,
-      "id": 20,
+      "id": 108,
       "legend": {
         "avg": false,
         "current": false,
@@ -871,7 +810,12 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "consensus_status:state_numeric",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
+          "exemplar": true,
+          "expr": "network_status:connection_status:state_numeric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -879,7 +823,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "consensus_status:state_numeric",
+      "title": "connection_status:state_numeric",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -957,30 +901,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:propose_before_block:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:propose_before_block:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -1018,12 +938,6 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
@@ -1033,7 +947,7 @@
         "y": 41
       },
       "hiddenSeries": false,
-      "id": 4,
+      "id": 84,
       "legend": {
         "avg": false,
         "current": false,
@@ -1061,7 +975,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "network_status:connection_status:num_inbound",
+          "expr": "node_status:health",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -1069,7 +983,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "connection_status:num_inbound",
+      "title": "node_status:health",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1147,30 +1061,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:vote_before_block:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:vote_before_block:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -1223,7 +1113,7 @@
         "y": 49
       },
       "hiddenSeries": false,
-      "id": 6,
+      "id": 18,
       "legend": {
         "avg": false,
         "current": false,
@@ -1250,7 +1140,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "network_status:connection_status:num_outbound",
+          "expr": "node_status:state_numeric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -1258,7 +1148,7 @@
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "connection_status:num_outbound",
+      "title": "node_status:state_numeric",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1336,30 +1226,6 @@
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:vote_after_propose:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "IpGY85sGk"
-          },
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:vote_after_propose:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -1410,6 +1276,336 @@
         "w": 12,
         "x": 0,
         "y": 57
+      },
+      "hiddenSeries": false,
+      "id": 24,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.3.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "consensus_status:health",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "consensus_status:health",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 64
+      },
+      "hiddenSeries": false,
+      "id": 98,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.3.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_m:p_2_p_tag_consensus_length:metric",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "p_2_p_tag_consensus_length",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 65
+      },
+      "hiddenSeries": false,
+      "id": 20,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.3.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "consensus_status:state_numeric",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "consensus_status:state_numeric",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 72
+      },
+      "hiddenSeries": false,
+      "id": 100,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.3.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_m:p_2_p_tag_consensus_max_occur:metric",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "p_2_p_tag_consensus_max_occur",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 73
       },
       "hiddenSeries": false,
       "id": 8,
@@ -1486,10 +1682,10 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 64
+        "y": 80
       },
       "hiddenSeries": false,
-      "id": 68,
+      "id": 102,
       "legend": {
         "avg": false,
         "current": false,
@@ -1516,32 +1712,20 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:block_txs:metric",
+          "expr": "client_status:traffic_stats:1_m:p_2_p_tag_tx_length:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:block_txs:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:block_txs:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "block_txs",
+      "title": "p_2_p_tag_tx_length",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1580,7 +1764,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 65
+        "y": 81
       },
       "hiddenSeries": false,
       "id": 26,
@@ -1651,22 +1835,16 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 72
+        "y": 88
       },
       "hiddenSeries": false,
-      "id": 66,
+      "id": 104,
       "legend": {
         "avg": false,
         "current": false,
@@ -1693,32 +1871,20 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:block_size:metric",
+          "expr": "client_status:traffic_stats:1_m:p_2_p_tag_tx_max_occur:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:block_size:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:block_size:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "block_size",
+      "title": "p_2_p_tag_tx_max_occur",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1757,7 +1923,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 73
+        "y": 89
       },
       "hiddenSeries": false,
       "id": 28,
@@ -1834,10 +2000,10 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 80
+        "y": 96
       },
       "hiddenSeries": false,
-      "id": 70,
+      "id": 68,
       "legend": {
         "avg": false,
         "current": false,
@@ -1864,32 +2030,20 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:block_gas_amount:metric",
+          "expr": "client_status:traffic_stats:1_m:block_txs:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:block_gas_amount:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:block_gas_amount:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "block_gas_amount",
+      "title": "block_txs",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1934,7 +2088,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 81
+        "y": 97
       },
       "hiddenSeries": false,
       "id": 32,
@@ -2006,16 +2160,22 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 88
+        "y": 104
       },
       "hiddenSeries": false,
-      "id": 74,
+      "id": 66,
       "legend": {
         "avg": false,
         "current": false,
@@ -2042,32 +2202,20 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:block_gas_cost:metric",
+          "expr": "client_status:traffic_stats:1_m:block_size:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:block_gas_cost:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:block_gas_cost:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "block_gas_cost",
+      "title": "block_size",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2112,7 +2260,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 89
+        "y": 105
       },
       "hiddenSeries": false,
       "id": 40,
@@ -2190,10 +2338,10 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 96
+        "y": 112
       },
       "hiddenSeries": false,
-      "id": 80,
+      "id": 70,
       "legend": {
         "avg": false,
         "current": false,
@@ -2220,32 +2368,20 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:tx_bytes:metric",
+          "expr": "client_status:traffic_stats:1_m:block_gas_amount:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:tx_bytes:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:tx_bytes:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "tx_bytes",
+      "title": "block_gas_amount",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2284,7 +2420,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 97
+        "y": 113
       },
       "hiddenSeries": false,
       "id": 14,
@@ -2361,10 +2497,10 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 104
+        "y": 120
       },
       "hiddenSeries": false,
-      "id": 82,
+      "id": 74,
       "legend": {
         "avg": false,
         "current": false,
@@ -2391,32 +2527,20 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:tx_op_size:metric",
+          "expr": "client_status:traffic_stats:1_m:block_gas_cost:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:tx_op_size:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:tx_op_size:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "tx_op_size",
+      "title": "block_gas_cost",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2455,7 +2579,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 105
+        "y": 121
       },
       "hiddenSeries": false,
       "id": 30,
@@ -2532,10 +2656,10 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 112
+        "y": 128
       },
       "hiddenSeries": false,
-      "id": 78,
+      "id": 80,
       "legend": {
         "avg": false,
         "current": false,
@@ -2562,32 +2686,20 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:tx_gas_amount:metric",
+          "expr": "client_status:traffic_stats:1_m:tx_bytes:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:tx_gas_amount:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:tx_gas_amount:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "tx_gas_amount",
+      "title": "tx_bytes",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2626,7 +2738,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 113
+        "y": 129
       },
       "hiddenSeries": false,
       "id": 38,
@@ -2704,10 +2816,10 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 120
+        "y": 136
       },
       "hiddenSeries": false,
-      "id": 76,
+      "id": 82,
       "legend": {
         "avg": false,
         "current": false,
@@ -2734,32 +2846,20 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:tx_gas_cost:metric",
+          "expr": "client_status:traffic_stats:1_m:tx_op_size:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:tx_gas_cost:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:tx_gas_cost:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "tx_gas_cost",
+      "title": "tx_op_size",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2804,7 +2904,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 121
+        "y": 137
       },
       "hiddenSeries": false,
       "id": 12,
@@ -2882,10 +2982,10 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 128
+        "y": 144
       },
       "hiddenSeries": false,
-      "id": 42,
+      "id": 78,
       "legend": {
         "avg": false,
         "current": false,
@@ -2912,32 +3012,20 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:json_rpc_get:rate",
+          "expr": "client_status:traffic_stats:1_m:tx_gas_amount:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:json_rpc_get:rate",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:json_rpc_get:rate",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "G"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "json_rpc_get:rate",
+      "title": "tx_gas_amount",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -2976,7 +3064,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 129
+        "y": 145
       },
       "hiddenSeries": false,
       "id": 10,
@@ -3047,22 +3135,16 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 136
+        "y": 152
       },
       "hiddenSeries": false,
-      "id": 64,
+      "id": 76,
       "legend": {
         "avg": false,
         "current": false,
@@ -3089,32 +3171,20 @@
       "steppedLine": false,
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "IpGY85sGk"
+          },
           "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:json_rpc_get:metric",
+          "expr": "client_status:traffic_stats:1_m:tx_gas_cost:metric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:json_rpc_get:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:json_rpc_get:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
       "timeRegions": [],
-      "title": "json_rpc_get:metric (latency)",
+      "title": "tx_gas_cost",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -3153,7 +3223,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 137
+        "y": 153
       },
       "hiddenSeries": false,
       "id": 36,
@@ -3193,206 +3263,6 @@
       "thresholds": [],
       "timeRegions": [],
       "title": "state_info:tree_bytes",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "format": "short",
-          "logBase": 1,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 144
-      },
-      "hiddenSeries": false,
-      "id": 52,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.3.0",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:json_rpc_set:rate",
-          "interval": "",
-          "legendFormat": "",
-          "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:json_rpc_set:rate",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:json_rpc_set:rate",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
-        }
-      ],
-      "thresholds": [],
-      "timeRegions": [],
-      "title": "json_rpc_set:rate",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "format": "short",
-          "logBase": 1,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 152
-      },
-      "hiddenSeries": false,
-      "id": 62,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.3.0",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_m:json_rpc_set:metric",
-          "interval": "",
-          "legendFormat": "",
-          "refId": "A"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:5_m:json_rpc_set:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "B"
-        },
-        {
-          "exemplar": true,
-          "expr": "client_status:traffic_stats:1_h:json_rpc_set:metric",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
-        }
-      ],
-      "thresholds": [],
-      "timeRegions": [],
-      "title": "json_rpc_set:metric (latency)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -3525,6 +3395,100 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 161
+      },
+      "hiddenSeries": false,
+      "id": 42,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.3.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_m:json_rpc_get:rate",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:5_m:json_rpc_get:rate",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "C"
+        },
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_h:json_rpc_get:rate",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "G"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "json_rpc_get:rate",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "fieldConfig": {
         "defaults": {
           "unit": "short"
@@ -3594,6 +3558,106 @@
       "thresholds": [],
       "timeRegions": [],
       "title": "p_2_p_message_server:metric (latency)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 169
+      },
+      "hiddenSeries": false,
+      "id": 64,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.3.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_m:json_rpc_get:metric",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:5_m:json_rpc_get:metric",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "B"
+        },
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_h:json_rpc_get:metric",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "json_rpc_get:metric (latency)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -3731,6 +3795,106 @@
       "gridPos": {
         "h": 8,
         "w": 12,
+        "x": 0,
+        "y": 177
+      },
+      "hiddenSeries": false,
+      "id": 52,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.3.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_m:json_rpc_set:rate",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:5_m:json_rpc_set:rate",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "B"
+        },
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_h:json_rpc_set:rate",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "json_rpc_set:rate",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
         "x": 12,
         "y": 184
       },
@@ -3820,13 +3984,113 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 192
+        "x": 0,
+        "y": 185
+      },
+      "hiddenSeries": false,
+      "id": 62,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.3.0",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_m:json_rpc_set:metric",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:5_m:json_rpc_set:metric",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "B"
+        },
+        {
+          "exemplar": true,
+          "expr": "client_status:traffic_stats:1_h:json_rpc_set:metric",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "json_rpc_set:metric (latency)",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 193
       },
       "hiddenSeries": false,
       "id": 44,
@@ -3925,8 +4189,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 200
+        "x": 0,
+        "y": 201
       },
       "hiddenSeries": false,
       "id": 60,
@@ -4025,8 +4289,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 208
+        "x": 0,
+        "y": 209
       },
       "hiddenSeries": false,
       "id": 50,
@@ -4125,8 +4389,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 216
+        "x": 0,
+        "y": 217
       },
       "hiddenSeries": false,
       "id": 58,
@@ -4218,13 +4482,13 @@
     "list": []
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "",
   "title": "Blockchain Servers",
   "uid": "M6YpMSyMz",
-  "version": 21,
+  "version": 27,
   "weekStart": ""
 }

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic] [--restart|--reset]\n"
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic|--private-key] [--restart|--reset]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 --setup --canary --full-sync --keystore\n"
     printf "\n"
     exit
@@ -43,13 +43,19 @@ function parse_options() {
         FULL_SYNC_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ $option = '--private-key' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            printf "Multiple account injection options given\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
@@ -91,6 +97,11 @@ printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "RESET_RESTART_OPTION=$RESET_RESTART_OPTION\n"
 
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
+    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
+    exit
+fi
+
 # Get confirmation.
 printf "\n"
 read -p "Do you want to proceed? >> (y/N) " -n 1 -r
@@ -99,24 +110,19 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
+# Read node ip addresses
+IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
 if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
     # Get keystore password
     printf "Enter password: "
     read -s PASSWORD
     printf "\n\n"
-
-    # Read node ip addresses
-    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
-
     if [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
         KEYSTORE_DIR="testnet_prod_keys/"
     else
         KEYSTORE_DIR="testnet_dev_staging_keys/"
     fi
 elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
-    # Read node ip addresses
-    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
-
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
@@ -239,6 +245,15 @@ function deploy_node() {
             sleep 1
             echo 0
         } | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+    else
+        printf "\n* >> Injecting an account for node $node_index ********************\n\n"
+        printf "node_ip_addr='$node_ip_addr'\n"
+        local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
+        if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
+            GENESIS_ACCOUNTS_PATH="blockchain-configs/testnet-prod/genesis_accounts.json"
+        fi
+        PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others['$node_index'].private_key')
+        echo $PRIVATE_KEY | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     fi
 
     #5. Wait until node is synced

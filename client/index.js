@@ -6,13 +6,15 @@ const express = require('express');
 const cors = require('cors');
 // NOTE(liayoo): To use async/await (ref: https://github.com/tedeh/jayson#promises)
 const jayson = require('jayson/promise');
-const _ = require('lodash');
-const rateLimit = require("express-rate-limit");
+const rateLimit = require('express-rate-limit');
+const ipWhitelist = require('ip-whitelist');
+const matchUrl = require('match-url-wildcard');
 const BlockchainNode = require('../node');
 const P2pClient = require('../p2p');
 const EventHandler = require('../event-handler');
 const CommonUtil = require('../common/common-util');
 const VersionUtil = require('../common/version-util');
+const { convertIpv6ToIpv4 } = require('../common/network-util');
 const {
   BlockchainConsts,
   WriteDbOperations,
@@ -54,30 +56,20 @@ process.on('SIGINT', (_) => {
   process.exit(1);
 });
 
-const { min, max } = VersionUtil.matchVersions(BlockchainConsts.PROTOCOL_VERSION_MAP, BlockchainConsts.CURRENT_PROTOCOL_VERSION);
+const { min, max } = VersionUtil.matchVersions(
+    BlockchainConsts.PROTOCOL_VERSION_MAP, BlockchainConsts.CURRENT_PROTOCOL_VERSION);
 const minProtocolVersion = min === undefined ? BlockchainConsts.CURRENT_PROTOCOL_VERSION : min;
 const maxProtocolVersion = max;
 const p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
 const p2pServer = p2pClient.server;
 
-const jsonRpcMethods = require('../json_rpc')(
+const jsonRpcApis = require('../json_rpc')(
     node, p2pServer, eventHandler, minProtocolVersion, maxProtocolVersion);
-
-function createAndExecuteTransaction(txBody) {
-  const tx = node.createTransaction(txBody);
-  if (!tx) {
-    return {
-      tx_hash: null,
-      result: false,
-    };
-  }
-  return p2pServer.executeAndBroadcastTransaction(tx);
-}
 
 app.post(
   '/json-rpc',
   VersionUtil.validateVersion.bind({ minProtocolVersion, maxProtocolVersion }),
-  jayson.server(jsonRpcMethods).middleware()
+  jayson.server(jsonRpcApis).middleware()
 );
 
 app.get('/', (req, res, next) => {
@@ -106,6 +98,28 @@ app.get('/metrics', (req, res, next) => {
     .send(result)
     .end();
 });
+
+// Used in wait_until_node_sync_gcp.sh
+app.get('/last_block_number', (req, res, next) => {
+  const beginTime = Date.now();
+  const result = node.bc.lastBlockNumber();
+  const latency = Date.now() - beginTime;
+  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
+  res.status(200)
+    .set('Content-Type', 'application/json')
+    .send({ code: DevClientApiResultCode.SUCCESS, result })
+    .end();
+});
+
+app.use(ipWhitelist((ip) => {
+  return CommonUtil.isWildcard(NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
+      matchUrl(ip, NodeConfigs.DEV_CLIENT_API_IP_WHITELIST) ||
+      matchUrl(convertIpv6ToIpv4(ip), NodeConfigs.DEV_CLIENT_API_IP_WHITELIST);
+}));
+
+/**
+ * Dev Client GET APIs (available to whitelisted IPs)
+ */
 
 app.get('/get_value', (req, res, next) => {
   const beginTime = Date.now();
@@ -334,153 +348,6 @@ app.post('/get', (req, res, next) => {
     .end();
 });
 
-if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
-  app.post('/set_value', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = createAndExecuteTransaction(createSingleSetTxBody(
-        req.body, WriteDbOperations.SET_VALUE));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: CommonUtil.isFailedTx(result.result) ?
-            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
-        result
-      })
-      .end();
-  });
-
-  app.post('/inc_value', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = createAndExecuteTransaction(createSingleSetTxBody(
-        req.body, WriteDbOperations.INC_VALUE));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: CommonUtil.isFailedTx(result.result) ?
-            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
-        result
-      })
-      .end();
-  });
-
-  app.post('/dec_value', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = createAndExecuteTransaction(createSingleSetTxBody(
-        req.body, WriteDbOperations.DEC_VALUE));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: CommonUtil.isFailedTx(result.result) ?
-            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
-        result
-      })
-      .end();
-  });
-
-  app.post('/set_function', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = createAndExecuteTransaction(createSingleSetTxBody(
-        req.body, WriteDbOperations.SET_FUNCTION));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: CommonUtil.isFailedTx(result.result) ?
-            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
-        result
-      })
-      .end();
-  });
-
-  app.post('/set_rule', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = createAndExecuteTransaction(createSingleSetTxBody(
-        req.body, WriteDbOperations.SET_RULE));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: CommonUtil.isFailedTx(result.result) ?
-            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
-        result
-      })
-      .end();
-  });
-
-  app.post('/set_owner', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = createAndExecuteTransaction(createSingleSetTxBody(
-        req.body, WriteDbOperations.SET_OWNER));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: CommonUtil.isFailedTx(result.result) ?
-            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
-        result
-      })
-      .end();
-  });
-
-  // A custom address can be used as a devel method for bypassing the trasaction verification.
-  // TODO(platfowner): Replace custom address with real signature.
-  app.post('/set', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({
-        code: CommonUtil.isFailedTx(result.result) ?
-            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
-        result
-      })
-      .end();
-  });
-
-  app.post('/batch', (req, res, next) => {
-    const beginTime = Date.now();
-    const result = createAndExecuteTransaction(createBatchTxBody(req.body));
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result })
-      .end();
-  });
-
-  app.post('/sign_transaction', (req, res) => {
-    const beginTime = Date.now();
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result: node.createTransaction(req.body) })
-      .end();
-  })
-
-  app.post('/broadcast_consensus_msg', (req, res) => {
-    const beginTime = Date.now();
-    p2pClient.broadcastConsensusMessage(req.body);
-    const latency = Date.now() - beginTime;
-    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
-    res.status(200)
-      .set('Content-Type', 'application/json')
-      .send({ code: DevClientApiResultCode.SUCCESS, result: true })
-      .end();
-  });
-}
-
 app.get('/status', (req, res, next) => {
   const beginTime = Date.now();
   const result = p2pClient.getStatus();
@@ -541,17 +408,6 @@ app.get('/blocks', (req, res, next) => {
 app.get('/last_block', (req, res, next) => {
   const beginTime = Date.now();
   const result = node.bc.lastBlock();
-  const latency = Date.now() - beginTime;
-  trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
-  res.status(200)
-    .set('Content-Type', 'application/json')
-    .send({ code: DevClientApiResultCode.SUCCESS, result })
-    .end();
-});
-
-app.get('/last_block_number', (req, res, next) => {
-  const beginTime = Date.now();
-  const result = node.bc.lastBlockNumber();
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -708,7 +564,7 @@ app.get('/get_block_info_by_number', (req, res) => {
 
 app.get('/get_address', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.account.address;
+  const result = node.account ? node.account.address : null;
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -808,8 +664,157 @@ app.get('/get_config', (req, res) => {
     .end();
 });
 
-// We will want changes in ports and the database to be broadcast across
-// all instances so lets pass this info into the p2p server
+/**
+ * Dev Client SET APIs (available to whitelisted IPs, if ENABLE_DEV_CLIENT_SET_API == true)
+ */
+
+if (NodeConfigs.ENABLE_DEV_CLIENT_SET_API) {
+  app.post('/set_value', (req, res, next) => {
+    const beginTime = Date.now();
+    const result = createAndExecuteTransaction(createSingleSetTxBody(
+        req.body, WriteDbOperations.SET_VALUE));
+    const latency = Date.now() - beginTime;
+    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
+      .end();
+  });
+
+  app.post('/inc_value', (req, res, next) => {
+    const beginTime = Date.now();
+    const result = createAndExecuteTransaction(createSingleSetTxBody(
+        req.body, WriteDbOperations.INC_VALUE));
+    const latency = Date.now() - beginTime;
+    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
+      .end();
+  });
+
+  app.post('/dec_value', (req, res, next) => {
+    const beginTime = Date.now();
+    const result = createAndExecuteTransaction(createSingleSetTxBody(
+        req.body, WriteDbOperations.DEC_VALUE));
+    const latency = Date.now() - beginTime;
+    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
+      .end();
+  });
+
+  app.post('/set_function', (req, res, next) => {
+    const beginTime = Date.now();
+    const result = createAndExecuteTransaction(createSingleSetTxBody(
+        req.body, WriteDbOperations.SET_FUNCTION));
+    const latency = Date.now() - beginTime;
+    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
+      .end();
+  });
+
+  app.post('/set_rule', (req, res, next) => {
+    const beginTime = Date.now();
+    const result = createAndExecuteTransaction(createSingleSetTxBody(
+        req.body, WriteDbOperations.SET_RULE));
+    const latency = Date.now() - beginTime;
+    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
+      .end();
+  });
+
+  app.post('/set_owner', (req, res, next) => {
+    const beginTime = Date.now();
+    const result = createAndExecuteTransaction(createSingleSetTxBody(
+        req.body, WriteDbOperations.SET_OWNER));
+    const latency = Date.now() - beginTime;
+    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
+      .end();
+  });
+
+  // A custom address can be used as a devel method for bypassing the trasaction verification.
+  // TODO(platfowner): Replace custom address with real signature.
+  app.post('/set', (req, res, next) => {
+    const beginTime = Date.now();
+    const result = createAndExecuteTransaction(createMultiSetTxBody(req.body));
+    const latency = Date.now() - beginTime;
+    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({
+        code: CommonUtil.isFailedTx(result.result) ?
+            DevClientApiResultCode.FAILURE : DevClientApiResultCode.SUCCESS,
+        result
+      })
+      .end();
+  });
+
+  app.post('/batch', (req, res, next) => {
+    const beginTime = Date.now();
+    const result = createAndExecuteTransaction(createBatchTxBody(req.body));
+    const latency = Date.now() - beginTime;
+    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({ code: DevClientApiResultCode.SUCCESS, result })
+      .end();
+  });
+
+  app.post('/sign_transaction', (req, res) => {
+    const beginTime = Date.now();
+    const latency = Date.now() - beginTime;
+    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({ code: DevClientApiResultCode.SUCCESS, result: node.createTransaction(req.body) })
+      .end();
+  })
+
+  app.post('/broadcast_consensus_msg', (req, res) => {
+    const beginTime = Date.now();
+    p2pClient.broadcastConsensusMessage(req.body);
+    const latency = Date.now() - beginTime;
+    trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_SET, latency);
+    res.status(200)
+      .set('Content-Type', 'application/json')
+      .send({ code: DevClientApiResultCode.SUCCESS, result: true })
+      .end();
+  });
+}
+
 const server = app.listen(NodeConfigs.PORT, () => {
   logger.info(`App listening on port ${NodeConfigs.PORT}`);
   logger.info(`Press Ctrl+C to quit.`);
@@ -823,6 +828,17 @@ server.headersTimeout = 630 * 1000; // 630 seconds
 p2pClient.run();
 
 module.exports = app;
+
+function createAndExecuteTransaction(txBody) {
+  const tx = node.createTransaction(txBody);
+  if (!tx) {
+    return {
+      tx_hash: null,
+      result: false,
+    };
+  }
+  return p2pServer.executeAndBroadcastTransaction(tx);
+}
 
 function createSingleSetTxBody(input, opType) {
   const op = {
