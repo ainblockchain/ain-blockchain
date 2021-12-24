@@ -770,7 +770,9 @@ class BlockchainNode {
   }
 
   addTrafficEventsForBlock(block) {
+    const currentTime = Date.now();
     const blockTimestamp = block.timestamp;
+
     trafficStatsManager.addEvent(
         TrafficEventTypes.BLOCK_GAS_AMOUNT, block.gas_amount_total, blockTimestamp);
     trafficStatsManager.addEvent(
@@ -783,7 +785,11 @@ class BlockchainNode {
         TrafficEventTypes.BLOCK_TXS, block.transactions.length, blockTimestamp);
     trafficStatsManager.addEvent(
         TrafficEventTypes.BLOCK_EVIDENCE, Object.keys(block.evidence).length, blockTimestamp);
+    trafficStatsManager.addEvent(
+        TrafficEventTypes.BLOCK_FINALIZED, currentTime - blockTimestamp, currentTime);
 
+    // NOTE(platfowner): We use block timestamp instead of tx timestamp to have
+    // monotonic increasing values.
     this.addTrafficEventsForVoteTxList(block.last_votes, blockTimestamp);
 
     for (let i = 0; i < Math.min(block.transactions.length, block.receipts.length); i++) {

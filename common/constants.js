@@ -578,6 +578,7 @@ const TrafficEventTypes = {
   CLIENT_API_SET: 'client_api_set',
   // Blocks
   BLOCK_EVIDENCE: 'block_evidence',
+  BLOCK_FINALIZED: 'block_finalized',
   BLOCK_GAS_AMOUNT: 'block_gas_amount',
   BLOCK_GAS_COST: 'block_gas_cost',
   BLOCK_LAST_VOTES: 'block_last_votes',
