@@ -489,7 +489,13 @@ class DB {
         };
       }
     }
-    return stateNode.toStateSnapshot(options);
+    const result = stateNode.toStateSnapshot(options);
+    if (options && options.fromApi) {
+      // May exceed the limit due to metadata (tree info, proof hashes, etc.)
+      const respLimitCheck = DB.checkRespLimits(result);
+      if (respLimitCheck !== true) return respLimitCheck;
+    }
+    return result;
   }
 
   readDatabase(refPath, rootLabel, options) {
