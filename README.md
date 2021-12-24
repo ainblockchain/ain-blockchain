@@ -107,7 +107,7 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore PEER_CANDIDATE_JSON_RPC_URL='' DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
 ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```

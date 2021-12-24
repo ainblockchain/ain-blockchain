@@ -53,15 +53,14 @@ class P2pClient {
     await this.server.listen();
     if (NodeConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.setIntervalForTrackerUpdate();
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
-      if (NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL === '' ||
-          NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL === _.get(this.server.urls, 'jsonRpc.url', '')) {
+      if (this.isTheSameJsonRpcUrl(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL,
+          _.get(this.server.urls, 'jsonRpc.url', ''))) {
         await this.startBlockchainNode(0);
-        return;
       } else {
         await this.startBlockchainNode(1);
       }
     }
-    this.connectWithPeerCandidateUrl(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL);
+    await this.discoverPeerWithGuardingFlag();
     this.setIntervalForPeerCandidatesConnection();
   }
 
@@ -288,7 +287,6 @@ class P2pClient {
     this.disconnectRandomPeer();
     this.updateP2pState();
     await this.discoverPeerWithGuardingFlag();
-    console.log('reorgreorgreorgreorgreorgreorgreorgreorgreorgreorgreorgreorgreorgreorgreorgreorg')
     // if (this.steadyIntervalCount < NodeConfigs.PEER_REORG_STEADY_INTERVAL_COUNT) {
     //   this.steadyIntervalCount++;
     // } else {
@@ -683,6 +681,25 @@ class P2pClient {
     }
   }
 
+  isTheSameJsonRpcUrl(peerCandidateJsonRpcUrl, myJsonRpcUrl) {
+    if (NodeConfigs.HOSTING_ENV === 'local') {
+      const peerCandidateUrl = new URL(peerCandidateJsonRpcUrl);
+      const myUrl = new URL(myJsonRpcUrl);
+      return CommonUtil.isValidPrivateUrl(peerCandidateUrl.hostname) &&
+          CommonUtil.isValidPrivateUrl(myUrl.hostname) &&
+          peerCandidateUrl.port === myUrl.port;
+    } else {
+      return peerCandidateJsonRpcUrl === myJsonRpcUrl;
+    }
+  }
+
+  updatePeerCandidates() {
+    Object.values(this.outbound).forEach(peer => {
+      const jsonRpcUrl = _.get(peer, 'peerInfo.networkStatus.urls.jsonRpc.url');
+      this.peerCandidates[jsonRpcUrl] = { queriedAt: null };
+    });
+  }
+
   /**
    * Tries to connect multiple peer candidates via the given peer candidate url.
    * @param {string} peerCandidateJsonRpcUrl should be something like
@@ -693,7 +710,13 @@ class P2pClient {
     const myP2pUrl = _.get(this.server.urls, 'p2p.url', '');
     const myJsonRpcUrl = _.get(this.server.urls, 'jsonRpc.url', '');
     if (!peerCandidateJsonRpcUrl || peerCandidateJsonRpcUrl === '' ||
-        peerCandidateJsonRpcUrl === myJsonRpcUrl) {
+        this.isTheSameJsonRpcUrl(peerCandidateJsonRpcUrl, myJsonRpcUrl)) {
+      delete this.peerCandidates[peerCandidateJsonRpcUrl];
+      // NOTE(minsulee2): in case of either a starting node or a seed node
+      if (this.isTheSameJsonRpcUrl(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL,
+          _.get(this.server.urls, 'jsonRpc.url', ''))) {
+        this.updatePeerCandidates();
+      }
       return;
     }
     const resp = await sendGetRequest(peerCandidateJsonRpcUrl, 'p2p_getPeerCandidateInfo', { });

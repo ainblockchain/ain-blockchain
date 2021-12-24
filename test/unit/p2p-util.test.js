@@ -40,20 +40,6 @@ describe("P2P Util", () => {
     });
   });
 
-  describe("removeSocketConnectionIfExists", () => {
-    it("removes nothing", () => {
-      const clonedConnectionObj = JSON.parse(JSON.stringify(connectionObj));
-      util.removeSocketConnectionIfExists(clonedConnectionObj, '0xdeadbeef');
-      assert.deepEqual(clonedConnectionObj, clonedConnectionObj);
-    });
-
-    it("removes the socket successfully", () => {
-      const clonedConnectionObj = JSON.parse(JSON.stringify(connectionObj));
-      util.removeSocketConnectionIfExists(clonedConnectionObj, mockAddress);
-      expect(clonedConnectionObj[mockAddress]).to.equal(undefined);
-    });
-  });
-
   describe("closeSocketSafe", () => {
     it("closes nothing", () => {
       util.closeSocketSafe(connectionObj, comparingSocket);
