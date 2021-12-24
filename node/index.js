@@ -12,6 +12,7 @@ const {
   BlockchainNodeStates,
   PredefinedDbPaths,
   BlockchainSnapshotProperties,
+  StateLabelProperties,
   ShardingProperties,
   ShardingProtocols,
   TransactionStates,
@@ -443,9 +444,62 @@ class BlockchainNode {
     return shardingInfo;
   }
 
-  getStateUsage(appName) {
+  static calcUnstakeableAmount(stateBudget, freeStateBudget, appUsage, freeTierUsage, appStake, totalStake) {
+    if (!totalStake) return appStake;
+    if (!appStake || stateBudget <= appUsage) return 0;
+    // NOTE(liayoo): stateUsage <= (appStake - unstakeable) / (totalStake - unstakeable) * stateBudget
+    const unstakeable = (stateBudget * appStake - appUsage * totalStake) / (stateBudget - appUsage);
+    if (unstakeable < 0) return 0;
+    if (unstakeable >= appStake) {
+      if (appUsage + freeTierUsage > freeStateBudget) { // Cannot use free tier
+        return Math.max(appStake - 1, 0);
+      }
+      return appStake;
+    }
+    return unstakeable;
+  }
+
+  getStateUsageWithStakingInfo(appName) {
     if (!appName) return null;
-    return this.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
+    const stateTreeHeightLimit = this.getBlockchainParam('resource/state_tree_height_limit');
+    const appStakesTotal = this.db.getAppStakesTotal();
+    const appStake = this.db.getAppStake(appName);
+    const appStakeRatio = appStakesTotal > 0 ? appStake / appStakesTotal : 1;
+    const {
+      appsStateBudget,
+      appsTreeSizeBudget,
+      freeStateBudget,
+      freeTreeSizeBudget,
+    } = DB.getStateBudgets(this.bc.lastBlockNumber(), this.stateManager.getFinalRoot());
+    const freeTierUsage = this.db.getStateFreeTierUsage();
+    const freeTierTreeSize = !CommonUtil.isEmpty(freeTierUsage) ? freeTierUsage[StateLabelProperties.TREE_SIZE] : 0;
+    const freeTierTreeBytes = !CommonUtil.isEmpty(freeTierUsage) ? freeTierUsage[StateLabelProperties.TREE_BYTES] : 0;
+    const rawUsage = this.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
+    const usage = {
+      tree_height: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_HEIGHT] : 0,
+      tree_size: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_SIZE] : 0,
+      tree_bytes: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_BYTES] : 0,
+    };
+    const available = {
+      tree_height: stateTreeHeightLimit,
+      tree_size: Math.max(0, (appsTreeSizeBudget * appStakeRatio) - usage.tree_size),
+      tree_bytes: Math.max(0, (appsStateBudget * appStakeRatio) - usage.tree_bytes),
+    };
+    const staking = {
+      app: appStake,
+      total: appStakesTotal,
+      unstakeable: Math.min(
+        BlockchainNode.calcUnstakeableAmount(
+            appsTreeSizeBudget, freeTreeSizeBudget, usage.tree_size, freeTierTreeSize, appStake, appStakesTotal),
+        BlockchainNode.calcUnstakeableAmount(
+            appsStateBudget, freeStateBudget, usage.tree_bytes, freeTierTreeBytes, appStake, appStakesTotal),
+      ),
+    };
+    return {
+      usage,
+      available,
+      staking,
+    };
   }
 
   getTxPoolSizeUtilization(address) {
