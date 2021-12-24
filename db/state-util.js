@@ -209,6 +209,10 @@ function sanitizeRuleConfig(rule) {
         CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.GC_MAX_SIBLINGS],
             rule[RuleProperties.STATE][RuleProperties.GC_MAX_SIBLINGS]);
       }
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.GC_NUM_SIBLINGS_DELETED)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.GC_NUM_SIBLINGS_DELETED],
+            rule[RuleProperties.STATE][RuleProperties.GC_NUM_SIBLINGS_DELETED]);
+      }
     }
   }
   return sanitized;
@@ -300,6 +304,15 @@ function isValidStateRule(stateRule) {
   if (stateRule.hasOwnProperty(RuleProperties.GC_MAX_SIBLINGS)) {
     if (!CommonUtil.isNumber(stateRule[RuleProperties.GC_MAX_SIBLINGS]) ||
       stateRule[RuleProperties.GC_MAX_SIBLINGS] <= 0) {
+      return false;
+    }
+    // TODO(platfowner): Add '20' as a blockchain param.
+    if (!CommonUtil.isNumber(stateRule[RuleProperties.GC_NUM_SIBLINGS_DELETED]) ||
+      stateRule[RuleProperties.GC_NUM_SIBLINGS_DELETED] < 20) {
+      return false;
+    }
+    if (stateRule[RuleProperties.GC_NUM_SIBLINGS_DELETED] >
+      stateRule[RuleProperties.GC_MAX_SIBLINGS]) {
       return false;
     }
     hasValidProperty = true;

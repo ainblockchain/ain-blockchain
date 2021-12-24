@@ -2257,10 +2257,12 @@ class DB {
       return 0;
     }
     const stateRuleObj = stateRuleConfig[RuleProperties.STATE];
-    if (CommonUtil.isEmpty(stateRuleObj) || !stateRuleObj[RuleProperties.GC_MAX_SIBLINGS]) {
+    if (CommonUtil.isEmpty(stateRuleObj) || !stateRuleObj[RuleProperties.GC_MAX_SIBLINGS] ||
+        !stateRuleObj[RuleProperties.GC_NUM_SIBLINGS_DELETED]) {
       return 0;
     }
     const gcMaxSiblings = stateRuleObj[RuleProperties.GC_MAX_SIBLINGS];
+    const gcNumSiblingsDeleted = stateRuleObj[RuleProperties.GC_NUM_SIBLINGS_DELETED];
     // Check the number of children of the parent
     const parentPathLen = matchedRules.closestRule.path.length - 1;
     if (parentPathLen < 0) {
@@ -2276,8 +2278,7 @@ class DB {
     }
     let numDeleted = 0;
     const childLabelList = stateNodeForReading.getChildLabels();
-    const numChildren = childLabelList.length;
-    while (numChildren - numDeleted > gcMaxSiblings) {
+    while (numDeleted < gcNumSiblingsDeleted) {
       const childLabel = childLabelList[numDeleted++];
       this.writeDatabase([...parentPath, childLabel], null);
     }
