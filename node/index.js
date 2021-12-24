@@ -446,7 +446,7 @@ class BlockchainNode {
 
   static calcUnstakeableAmount(stateBudget, freeStateBudget, appUsage, freeTierUsage, appStake, totalStake) {
     if (!totalStake) return appStake;
-    if (!appStake || stateBudget === appUsage) return 0;
+    if (!appStake || stateBudget <= appUsage) return 0;
     // NOTE(liayoo): stateUsage <= (appStake - x) / (totalStake - x) * stateBudget
     const unstakeable = (stateBudget * appStake - appUsage * totalStake) / (stateBudget - appUsage);
     if (unstakeable < 0) return 0;
