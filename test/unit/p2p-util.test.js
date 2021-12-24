@@ -1,4 +1,4 @@
-const util = require('../../p2p/util');
+const util = require('../../p2p/p2p-util');
 const Websocket = require('ws');
 const chai = require('chai');
 const expect = chai.expect;

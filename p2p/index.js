@@ -16,7 +16,7 @@ const {
   TrafficEventTypes,
   trafficStatsManager,
 } = require('../common/constants');
-const P2pUtil = require('./util');
+const P2pUtil = require('./p2p-util');
 const {
   sendGetRequest
 } = require('../common/network-util');
