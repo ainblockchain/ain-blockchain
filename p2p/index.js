@@ -274,10 +274,12 @@ class P2pClient {
     if (Object.keys(this.outbound) === 0) {
       return;
     }
-    const biDirectedConnections = Object.keys(this.outbound).filter(address => {
+    // NOTE(minsulee2): To avoid breaking connections between ADDRESS_REQUEST and ADDRESS_RESPONSE,
+    // nodes, which is successful bi directed connections, are picked to disconnect.
+    const bidirectedConnections = Object.keys(this.outbound).filter(address => {
       return Object.keys(this.server.inbound).includes(address);
     });
-    const randomPeerAddress = _.shuffle(biDirectedConnections)[0];
+    const randomPeerAddress = _.shuffle(bidirectedConnections)[0];
     this.closeSocketWithP2pStateUpdate(this.outbound[randomPeerAddress].socket);
   }
 
@@ -679,7 +681,7 @@ class P2pClient {
     }
   }
 
-  updatePeerCandidates() {
+  initPeerCandidates() {
     Object.values(this.outbound).forEach(peer => {
       const jsonRpcUrl = _.get(peer, 'peerInfo.networkStatus.urls.jsonRpc.url');
       this.peerCandidates[jsonRpcUrl] = { queriedAt: null };
@@ -701,7 +703,7 @@ class P2pClient {
       // NOTE(minsulee2): in case of either a starting node or a seed node
       if (areIdenticalUrls(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL,
           _.get(this.server.urls, 'jsonRpc.url', ''))) {
-        this.updatePeerCandidates();
+        this.initPeerCandidates();
       }
       return;
     }
