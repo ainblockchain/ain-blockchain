@@ -284,17 +284,14 @@ class P2pClient {
     if (Object.keys(this.outbound).length < NodeConfigs.PEER_REORG_MIN_OUTBOUND) {
       return;
     }
-    this.disconnectRandomPeer();
-    this.updateP2pState();
-    await this.discoverPeerWithGuardingFlag();
-    // if (this.steadyIntervalCount < NodeConfigs.PEER_REORG_STEADY_INTERVAL_COUNT) {
-    //   this.steadyIntervalCount++;
-    // } else {
-    //   this.steadyIntervalCount = 0;
-    //   this.disconnectRandomPeer();
-    //   this.updateP2pState();
-    //   await this.discoverPeerWithGuardingFlag();
-    // }
+    if (this.steadyIntervalCount < NodeConfigs.PEER_REORG_STEADY_INTERVAL_COUNT) {
+      this.steadyIntervalCount++;
+    } else {
+      this.steadyIntervalCount = 0;
+      this.disconnectRandomPeer();
+      this.updateP2pState();
+      await this.discoverPeerWithGuardingFlag();
+    }
   }
 
   setIntervalForPeerCandidatesConnection() {
