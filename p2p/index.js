@@ -246,7 +246,7 @@ class P2pClient {
         // NOTE(minsulee2): this gets stuck if the never queried node gets offline. To avoid this,
         // the node which queried more than 5 minutes ago can also be considered as notQueried.
         return value.queriedAt === null ? true :
-            Date.now() - value.queriedAt > NodeConfigs.PEER_CANDIDATE_RECONNECTION_THRESHOLD_MS;
+            Date.now() - value.queriedAt > NodeConfigs.PEER_CANDIDATE_RETRY_THRESHOLD_MS;
       });
       if (notQueriedCandidateEntries.length > 0) {
         return _.shuffle(notQueriedCandidateEntries)[0][0];
