@@ -711,18 +711,51 @@ describe("state-util", () => {
       expect(isValidStateRule({
         "max_children": 0
       })).to.equal(false);
+      // without gc_num_siblings_deleted
       expect(isValidStateRule({
-        "gc_max_siblings": ''
+        "gc_max_siblings": 1,
       })).to.equal(false);
       expect(isValidStateRule({
-        "gc_max_siblings": -1
+        "gc_max_siblings": '',
+        "gc_num_siblings_deleted": 20,
       })).to.equal(false);
       expect(isValidStateRule({
-        "gc_max_siblings": 0
+        "gc_max_siblings": -1,
+        "gc_num_siblings_deleted": 20,
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": 0,
+        "gc_num_siblings_deleted": 20,
       })).to.equal(false);
       expect(isValidStateRule({
         "max_children": 10,
-        "gc_max_siblings": -1
+        "gc_max_siblings": -1,
+        "gc_num_siblings_deleted": 20,
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": 20,
+        "gc_num_siblings_deleted": '10',
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": 20,
+        "gc_num_siblings_deleted": -1,
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": 20,
+        "gc_num_siblings_deleted": 0,
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": 20,
+        "gc_num_siblings_deleted": 19,
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "gc_max_siblings": 20,
+        "gc_num_siblings_deleted": 21,
+      })).to.equal(false);
+      expect(isValidStateRule({
+        "max_children": 10,
+        "gc_max_siblings": 20,
+        "gc_num_siblings_deleted": 21,
       })).to.equal(false);
     })
 
@@ -731,11 +764,21 @@ describe("state-util", () => {
         "max_children": 10
       })).to.equal(true);
       expect(isValidStateRule({
-        "gc_max_siblings": 1
+        "gc_max_siblings": 20,
+        "gc_num_siblings_deleted": 20,
+      })).to.equal(true);
+      expect(isValidStateRule({
+        "gc_max_siblings": 100,
+        "gc_num_siblings_deleted": 20,
+      })).to.equal(true);
+      expect(isValidStateRule({
+        "gc_max_siblings": 100,
+        "gc_num_siblings_deleted": 100,
       })).to.equal(true);
       expect(isValidStateRule({
         "max_children": 10,
-        "gc_max_siblings": 2
+        "gc_max_siblings": 20,
+        "gc_num_siblings_deleted": 20,
       })).to.equal(true);
     })
   })
@@ -806,14 +849,16 @@ describe("state-util", () => {
       }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig([], {
         "state": {
-          "gc_max_siblings": 1
+          "gc_max_siblings": 20,
+          "gc_num_siblings_deleted": 20,
         }
       }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig([], {
         "write": "auth.addr === 'abcd'",
         "state": {
-          "max_children": 1,
-          "gc_max_siblings": 1
+          "max_children": 10,
+          "gc_max_siblings": 20,
+          "gc_num_siblings_deleted": 20,
         }
       }), {isValid: true, invalidPath: ''});
     })
