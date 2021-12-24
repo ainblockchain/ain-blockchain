@@ -470,7 +470,7 @@ class BlockchainNode {
       appsTreeSizeBudget,
       freeStateBudget,
       freeTreeSizeBudget,
-    } = DB.getStateBudgets();
+    } = DB.getStateBudgets(this.bc.lastBlockNumber(), this.stateManager.getFinalRoot());
     const freeTierUsage = this.db.getStateFreeTierUsage();
     const freeTierTreeSize = freeTierUsage ? freeTierUsage[StateInfoProperties.TREE_SIZE] : 0;
     const freeTierTreeBytes = freeTierUsage ? freeTierUsage[StateInfoProperties.TREE_BYTES] : 0;
