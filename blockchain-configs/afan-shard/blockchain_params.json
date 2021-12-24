@@ -89,6 +89,7 @@
     "sharding_path": "/apps/afan",
     "parent_chain_poc": "http://127.0.0.1:8081",
     "reporting_period": 5,
-    "max_shard_report": 100
+    "max_shard_report": 100,
+    "num_shard_report_deleted": 20
   }
 }
