@@ -47,6 +47,12 @@ function closeSocketSafe(connections, socket) {
   socket.close();
 }
 
+function closeCorrespondingConnection(connections, address) {
+  const socket = connections[address].socket;
+  closeSocketSafe(connections, socket);
+  logger.info(`Corresponding address(${address}) in outbound is also disconnected.`);
+}
+
 function signMessage(messageBody, privateKey) {
   if (!CommonUtil.isDict(messageBody)) {
     logger.error('The message body must be the object type.');
@@ -137,6 +143,7 @@ module.exports = {
   getAddressFromMessage,
   verifySignedMessage,
   closeSocketSafe,
+  closeCorrespondingConnection,
   checkTimestamp,
   encapsulateMessage,
   checkPeerWhitelist,
