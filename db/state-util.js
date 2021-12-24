@@ -537,7 +537,7 @@ function isValidConfigTreeRecursive(
     subtreePath.push(label);
     const subtree = stateTreeObj[label];
     if (label === configLabel) {
-      const newParams = Object.assign({}, params, { configPath: [...treePath, ...subtreePath]});
+      const newParams = Object.assign({}, params, { configPath: [...treePath, ...subtreePath] });
       const isValidConfig = stateConfigValidator(newParams, subtree);
       if (!isValidConfig.isValid) {
         return {
