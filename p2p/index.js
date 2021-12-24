@@ -267,6 +267,10 @@ class P2pClient {
 
   closeSocketWithP2pStateUpdate(socket) {
     closeSocketSafe(this.outbound, socket);
+    const address = getAddressFromSocket(this.outbound, socket);
+    if (address in this.server.inbound) {
+      closeSocketSafeByAddress(this.server.inbound, address);
+    }
     this.updateP2pState();
   }
 
