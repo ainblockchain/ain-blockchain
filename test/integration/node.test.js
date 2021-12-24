@@ -781,9 +781,21 @@ describe('Blockchain Node', () => {
             'GET', server1 + `/get_state_usage?app_name=test`)
                 .body.toString('utf-8'));
         assert.deepEqual(body.result, {
-          "#tree_height": 24,
-          "#tree_size": 65,
-          "#tree_bytes": 12200,
+          "available": {
+            "tree_bytes": 2474987586,
+            "tree_height": 30,
+            "tree_size": 24749934
+          },
+          "staking": {
+            "app": 1,
+            "total": 1,
+            "unstakeable": 1
+          },
+          "usage": {
+            "tree_bytes": 12414,
+            "tree_height": 24,
+            "tree_size": 66
+          }
         });
       });
     });
@@ -1122,9 +1134,21 @@ describe('Blockchain Node', () => {
         .then(res => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
-            "#tree_bytes": 12200,
-            "#tree_height": 24,
-            "#tree_size": 65,
+            "available": {
+              "tree_bytes": 2474987586,
+              "tree_height": 30,
+              "tree_size": 24749934
+            },
+            "staking": {
+              "app": 1,
+              "total": 1,
+              "unstakeable": 1
+            },
+            "usage": {
+              "tree_bytes": 12414,
+              "tree_height": 24,
+              "tree_size": 66
+            }
           });
         })
       })
