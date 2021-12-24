@@ -465,7 +465,7 @@ class P2pServer {
             } else {
               const addressFromSig = getAddressFromMessage(parsedMessage);
               if (!checkPeerWhitelist(addressFromSig)) {
-                logger.error(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
+                logger.debug(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
                 removePeerConnection(this.peerConnectionsInProgress, url);
                 closeSocketSafe(this.inbound, socket);
                 return;
@@ -769,11 +769,12 @@ class P2pServer {
   async setUpDbForSharding() {
     const LOG_HEADER = 'setUpDbForSharding';
     const shardingConfig = this.node.getAllBlockchainParamsFromState().sharding;
-    const parentChainEndpoint = shardingConfig.parent_chain_poc + '/json-rpc';
-    const shardOwner = shardingConfig.shard_owner;
-    const shardReporter = shardingConfig.shard_reporter;
-    const shardingPath = shardingConfig.sharding_path;
-    const maxShardReport = shardingConfig.max_shard_report;
+    const parentChainEndpoint = shardingConfig[ShardingProperties.PARENT_CHAIN_POC] + '/json-rpc';
+    const shardOwner = shardingConfig[ShardingProperties.SHARD_OWNER];
+    const shardReporter = shardingConfig[ShardingProperties.SHARD_REPORTER];
+    const shardingPath = shardingConfig[ShardingProperties.SHARDING_PATH];
+    const maxShardReport = shardingConfig[ShardingProperties.MAX_SHARD_REPORT];
+    const numShardReportDeleted = shardingConfig[ShardingProperties.NUM_SHARD_REPORT_DELETED];
     const shardReporterPrivateKey = this.node.account.private_key;
     const appName = _.get(CommonUtil.parsePath(shardingPath), 1, null);
     if (!appName) {
@@ -791,7 +792,7 @@ class P2pServer {
     }
     logger.info(`[${LOG_HEADER}] shard app created`);
     const shardingSetupTxBody = P2pServer.buildShardingSetupTxBody(
-        shardReporter, shardingPath, maxShardReport, shardingConfig);
+        shardReporter, shardingPath, maxShardReport, numShardReportDeleted, shardingConfig);
     await sendTxAndWaitForFinalization(
         parentChainEndpoint, shardingSetupTxBody, shardReporterPrivateKey);
     logger.info(`[${LOG_HEADER}] shard set up success`);
@@ -900,7 +901,8 @@ class P2pServer {
     }
   }
 
-  static buildShardingSetupTxBody(shardReporter, shardingPath, maxShardReport, shardingConfig) {
+  static buildShardingSetupTxBody(
+      shardReporter, shardingPath, maxShardReport, numShardReportDeleted, shardingConfig) {
     const proofHashRulesLight = `auth.addr === '${shardReporter}'`;
     const latestBlockNumber = `(getValue('${shardingPath}/${PredefinedDbPaths.DOT_SHARD}/` +
         `${ShardingProperties.LATEST_BLOCK_NUMBER}') || 0)`;
@@ -962,7 +964,8 @@ class P2pServer {
             value: {
               [PredefinedDbPaths.DOT_RULE]: {
                 [RuleProperties.STATE]: {
-                  [RuleProperties.GC_MAX_SIBLINGS]: maxShardReport
+                  [RuleProperties.GC_MAX_SIBLINGS]: maxShardReport,
+                  [RuleProperties.GC_NUM_SIBLINGS_DELETED]: numShardReportDeleted,
                 }
               }
             }

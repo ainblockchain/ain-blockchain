@@ -579,7 +579,7 @@ class P2pClient {
 
     socket.on('pong', () => {
       const address = getAddressFromSocket(this.outbound, socket);
-      logger.info(`The peer(${address}) is alive.`);
+      logger.debug(`The peer (${address}) is alive.`);
     });
 
     socket.on('close', () => {

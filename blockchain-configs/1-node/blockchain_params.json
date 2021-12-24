@@ -41,10 +41,7 @@
     "num_genesis_accounts": 10,
     "epoch_ms": 1000,
     "chain_id": 0,
-    "network_id": 0,
-    "hash_delimiter": "#",
-    "variable_label_prefix": "$",
-    "state_info_prefix": "#"
+    "network_id": 0
   },
   "resource": {
     "state_tree_height_limit": 30,

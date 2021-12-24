@@ -10,9 +10,9 @@ const {
 } = require('../common/constants');
 
 class StateManager {
-  constructor(hashDelimiter) {
+  constructor() {
     this.rootMap = new Map();
-    this.setRoot(StateVersions.EMPTY, new StateNode(hashDelimiter, StateVersions.EMPTY));
+    this.setRoot(StateVersions.EMPTY, new StateNode(StateVersions.EMPTY));
     this._setFinalVersion(null);
   }
 

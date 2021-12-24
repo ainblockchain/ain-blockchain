@@ -322,6 +322,15 @@ class CommonUtil {
     return ruleUtil.getBalancePath(addrOrServAcnt);
   }
 
+  static isPrefixedLabel(label, prefix) {
+    return _.startsWith(label, prefix);
+  }
+
+  static isVariableLabel(label) {
+    const { StateLabelProperties } = require('../common/constants');
+    return CommonUtil.isPrefixedLabel(label, StateLabelProperties.VARIABLE_LABEL_PREFIX)
+  }
+
   static getJsObject(obj, path) {
     if (!CommonUtil.isArray(path)) {
       return null;
@@ -420,6 +429,11 @@ class CommonUtil {
             return true;
           }
         }
+        if (subResult.subtree_func_results) {
+          if (CommonUtil.isFailedSubtreeFuncTrigger(subResult.subtree_func_results)) {
+            return true;
+          }
+        }
       }
       return false;
     }
@@ -428,6 +442,11 @@ class CommonUtil {
     }
     if (result.func_results) {
       if (CommonUtil.isFailedFuncTrigger(result.func_results)) {
+        return true;
+      }
+    }
+    if (result.subtree_func_results) {
+      if (CommonUtil.isFailedSubtreeFuncTrigger(result.subtree_func_results)) {
         return true;
       }
     }
@@ -453,6 +472,25 @@ class CommonUtil {
             if (CommonUtil.isFailedTx(opResult.result)) {
               return true;
             }
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns true if the given result is from a failed subtree function trigger.
+   */
+  static isFailedSubtreeFuncTrigger(result) {
+    if (CommonUtil.isDict(result)) {
+      for (const functionPath in result) {
+        const funcPathResult = result[functionPath];
+        for (const valuePath in funcPathResult) {
+          const valuePathResult = funcPathResult[valuePath];
+          const funcResult = valuePathResult.func_results;
+          if (CommonUtil.isFailedFuncTrigger(funcResult)) {
+            return true;
           }
         }
       }
@@ -555,27 +593,68 @@ class CommonUtil {
     return gasAmount;
   }
 
+  static getFuncResultsBandwidthGasAmount(triggeringPath, resultObj) {
+    const gasAmount = { service: 0 };
+
+    for (const funcRes of Object.values(resultObj)) {
+      if (!CommonUtil.isEmpty(funcRes.op_results)) {
+        for (const opRes of Object.values(funcRes.op_results)) {
+          CommonUtil.mergeNumericJsObjects(
+            gasAmount,
+            CommonUtil.getTotalBandwidthGasAmountInternal(CommonUtil.parsePath(opRes.path), opRes.result)
+          );
+        }
+      }
+      // Follow the tx type of the triggering tx.
+      CommonUtil.mergeNumericJsObjects(
+        gasAmount,
+        CommonUtil.getSingleOpBandwidthGasAmount(triggeringPath, funcRes.bandwidth_gas_amount)
+      );
+    }
+
+    return gasAmount;
+  }
+
+  static getSubtreeFuncResultsBandwidthGasAmount(triggeringPath, resultObj) {
+    const gasAmount = { service: 0 };
+
+    if (CommonUtil.isDict(resultObj)) {
+      for (const functionPath in resultObj) {
+        const funcPathResult = resultObj[functionPath];
+        for (const valuePath in funcPathResult) {
+          const valuePathResult = funcPathResult[valuePath];
+          const funcResult = valuePathResult.func_results;
+          CommonUtil.mergeNumericJsObjects(
+            gasAmount,
+            CommonUtil.getFuncResultsBandwidthGasAmount(
+                [...triggeringPath, ...CommonUtil.parsePath(valuePath)], funcResult)
+          );
+        }
+      }
+    }
+
+    return gasAmount;
+  }
+
   static getTotalBandwidthGasAmountInternal(triggeringPath, resultObj) {
     const gasAmount = { service: 0 };
+
     if (!resultObj) return gasAmount;
     if (resultObj.result_list) return gasAmount; // NOTE: Assume nested SET is not allowed
 
     if (resultObj.func_results) {
-      for (const funcRes of Object.values(resultObj.func_results)) {
-        if (!CommonUtil.isEmpty(funcRes.op_results)) {
-          for (const opRes of Object.values(funcRes.op_results)) {
-            CommonUtil.mergeNumericJsObjects(
-              gasAmount,
-              CommonUtil.getTotalBandwidthGasAmountInternal(CommonUtil.parsePath(opRes.path), opRes.result)
-            );
-          }
-        }
-        // Follow the tx type of the triggering tx.
-        CommonUtil.mergeNumericJsObjects(
-          gasAmount,
-          CommonUtil.getSingleOpBandwidthGasAmount(triggeringPath, funcRes.bandwidth_gas_amount)
-        );
-      }
+      CommonUtil.mergeNumericJsObjects(
+        gasAmount,
+        CommonUtil.getFuncResultsBandwidthGasAmount(triggeringPath, resultObj.func_results)
+      );
+    }
+
+    if (resultObj.subtree_func_results) {
+      CommonUtil.mergeNumericJsObjects(
+        gasAmount,
+        CommonUtil.getSubtreeFuncResultsBandwidthGasAmount(
+            triggeringPath, resultObj.subtree_func_results)
+      );
     }
 
     if (resultObj.bandwidth_gas_amount) {
@@ -594,6 +673,7 @@ class CommonUtil {
    */
   static getTotalBandwidthGasAmount(op, result) {
     const gasAmount = { service: 0 };
+
     if (!op || !result) return gasAmount;
     if (result.result_list) {
       for (const [index, res] of Object.entries(result.result_list)) {
@@ -641,13 +721,29 @@ class CommonUtil {
     }, { gasAmountTotal: 0, gasCostTotal: 0 });
   }
 
-  static returnTxResult(code, message = null, bandwidthGasAmount = 0, funcResults = null) {
+  static deleteSubtreeFuncResFuncPromises(res) {
+    const deleted = JSON.parse(JSON.stringify(res));
+    for (const subtreeFuncPath in res) {
+      const subtreeFuncPathRes = res[subtreeFuncPath];
+      for (const subtreeValuePath in subtreeFuncPathRes) {
+        _.unset(deleted, `${subtreeFuncPath}.${subtreeValuePath}.func_promises`);
+      }
+    }
+    return deleted;
+  }
+
+  static returnTxResult(
+      code, message = null, bandwidthGasAmount = 0, funcResults = null, subtreeFuncResults = null) {
     const result = {};
     if (message) {
       result.error_message = message;
     }
     if (!CommonUtil.isEmpty(funcResults)) {
       result.func_results = funcResults;
+    }
+    if (!CommonUtil.isEmpty(subtreeFuncResults)) {
+      result.subtree_func_results =
+          CommonUtil.deleteSubtreeFuncResFuncPromises(subtreeFuncResults);
     }
     result.code = code;
     result.bandwidth_gas_amount = bandwidthGasAmount;
