@@ -964,7 +964,9 @@ class DB {
           `Invalid rule path: ${isValidPath.invalidPath}`,
           unitWriteGasLimit);
     }
-    const isValidRule = isValidRuleTree(parsedPath, rule);
+    const minGcNumSiblingsDeleted = DB.getBlockchainParam(
+          'resource/min_gc_num_siblings_deleted', blockNumber, this.stateRoot);
+    const isValidRule = isValidRuleTree(parsedPath, rule, { minGcNumSiblingsDeleted });
     if (!isValidRule.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_RULE_INVALID_RULE_TREE,
