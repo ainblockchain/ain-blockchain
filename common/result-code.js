@@ -144,8 +144,8 @@ const FunctionResultCode = {
 const JsonRpcApiResultCode = {
   // Common code
   SUCCESS: 0,
-  GET_EXCEEDS_MAX_BYTES: 1,
-  GET_EXCEEDS_MAX_SIBLINGS: 2,
+  GET_EXCEEDS_MAX_BYTES: 30001,
+  GET_EXCEEDS_MAX_SIBLINGS: 30002,
   // ain_checkProtocolVersion
   PROTO_VERSION_NOT_SPECIFIED: 30101,
   PROTO_VERSION_INVALID: 30102,
