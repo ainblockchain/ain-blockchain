@@ -138,7 +138,7 @@ module.exports = function getDatabaseApis(node) {
 
     ain_getStateUsage: function(args, done) {
       const beginTime = Date.now();
-      const result = node.getStateUsage(args.app_name);
+      const result = node.getStateUsageWithStakingInfo(args.app_name);
       const latency = Date.now() - beginTime;
       trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_GET, latency);
       done(null, JsonRpcUtil.addProtocolVersion({ result }));

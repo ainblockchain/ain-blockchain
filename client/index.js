@@ -233,7 +233,7 @@ app.get('/get_state_info', (req, res, next) => {
  */
 app.get('/get_state_usage', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.getStateUsage(req.query.app_name);
+  const result = node.getStateUsageWithStakingInfo(req.query.app_name);
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
