@@ -479,6 +479,7 @@ class P2pServer {
                 version: dataProtoVer
               };
               P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
+              this.client.initPeerCandidates(peerInfo);
               const body = {
                 address: this.getNodeAddress(),
                 peerInfo: this.client.getStatus(),

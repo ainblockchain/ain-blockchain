@@ -672,11 +672,11 @@ class P2pClient {
     }
   }
 
-  initPeerCandidates() {
-    Object.values(this.outbound).forEach(peer => {
-      const jsonRpcUrl = _.get(peer, 'peerInfo.networkStatus.urls.jsonRpc.url');
+  initPeerCandidates(peerInfo) {
+    const jsonRpcUrl = _.get(peerInfo, 'networkStatus.urls.jsonRpc.url');
+    if (!this.peerCandidates[jsonRpcUrl]) {
       this.peerCandidates[jsonRpcUrl] = { queriedAt: null };
-    });
+    }
   }
 
   /**
@@ -691,11 +691,6 @@ class P2pClient {
     if (!peerCandidateJsonRpcUrl || peerCandidateJsonRpcUrl === '' ||
         P2pUtil.areIdenticalUrls(peerCandidateJsonRpcUrl, myJsonRpcUrl)) {
       delete this.peerCandidates[peerCandidateJsonRpcUrl];
-      // NOTE(minsulee2): in case of either a starting node or a seed node
-      if (P2pUtil.areIdenticalUrls(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL,
-          _.get(this.server.urls, 'jsonRpc.url', ''))) {
-        this.initPeerCandidates();
-      }
       return;
     }
     const resp = await sendGetRequest(peerCandidateJsonRpcUrl, 'p2p_getPeerCandidateInfo', { });
