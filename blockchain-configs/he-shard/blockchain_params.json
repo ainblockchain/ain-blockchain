@@ -59,8 +59,8 @@
     "state_label_length_limit": 150,
     "bandwidth_budget_per_block": 10000,
     "service_state_budget_ratio": 0.5,
-    "apps_state_budget_ratio": 0.45,
-    "free_state_budget_ratio": 0.05,
+    "apps_state_budget_ratio": 0.495,
+    "free_state_budget_ratio": 0.005,
     "max_state_tree_size_per_byte": 0.01,
     "state_gas_coefficient": 1,
     "unit_write_gas_amount": 1,
@@ -68,8 +68,8 @@
     "rest_function_call_gas_amount": 100,
     "gas_price_unit": 0.000001,
     "service_bandwidth_budget_ratio": 0.5,
-    "apps_bandwidth_budget_ratio": 0.45,
-    "free_bandwidth_budget_ratio": 0.05,
+    "apps_bandwidth_budget_ratio": 0.495,
+    "free_bandwidth_budget_ratio": 0.005,
     "min_staking_for_app_tx": 0,
     "min_balance_for_service_tx": 0,
     "max_function_urls_per_developer": 3,
@@ -80,7 +80,8 @@
       "3": "http://localhost:3000"
     },
     "tx_bytes_limit": 10000,
-    "batch_tx_list_size_limit": 50
+    "batch_tx_list_size_limit": 50,
+    "min_gc_num_siblings_deleted": 20
   },
   "sharding": {
     "shard_owner": "0xBBB2219cD5eACc54Ce95deF7a67dDe71C8241891",

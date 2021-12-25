@@ -3844,7 +3844,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 10902);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for apps (12621228 > 9000000)");
+        assert.deepEqual(res.error_message.includes("Exceeded state budget limit for apps"), true);
         assert.deepEqual(res.gas_amount_total, {
           bandwidth: { service: 0, app: { test: 1 } },
           state: { service: 8, app: { test: 12596108 } }
@@ -3902,7 +3902,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 10907);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for app app_0 (988222 > 818181.8181818182)");
+        assert.deepEqual(res.error_message.includes("Exceeded state budget limit for app app_0"), true);
         assert.deepEqual(res.gas_amount_total, {
           bandwidth: { service: 0, app: { app_0: 1 } },
           state: { service: 8, app: { app_0: 986108 } }
@@ -3945,7 +3945,7 @@ describe("DB operations", () => {
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
         const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
         assert.deepEqual(res.code, 10905);
-        assert.deepEqual(res.error_message, "Exceeded state budget limit for free tier (1808222 > 1000000)");
+        assert.deepEqual(res.error_message.includes("Exceeded state budget limit for free tier"), true);
         assert.deepEqual(res.gas_amount_total, {
           bandwidth: { service: 0, app: { app_0: 1 } },
           state: { service: 8, app: { app_0: 1806108 } }
