@@ -479,7 +479,10 @@ class P2pServer {
                 version: dataProtoVer
               };
               P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
-              this.client.initPeerCandidates(peerInfo);
+              const jsonRpcUrl = _.get(peerInfo, 'networkStatus.urls.jsonRpc.url');
+              if (!this.client.peerCandidates[jsonRpcUrl]) {
+                this.client.setPeerCandidates(jsonRpcUrl, null);
+              }
               const body = {
                 address: this.getNodeAddress(),
                 peerInfo: this.client.getStatus(),
