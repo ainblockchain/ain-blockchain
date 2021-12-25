@@ -101,8 +101,8 @@ async function setUp() {
             ".rule": {
               "state": {
                 "max_children": 10,
-                "gc_max_siblings": 100,
-                "gc_num_siblings_deleted": 20,
+                "gc_max_siblings": 200,
+                "gc_num_siblings_deleted": 100,
               }
             },
             "and": {
@@ -408,8 +408,8 @@ describe('Blockchain Node', () => {
                 "config": {
                   "state": {
                     "max_children": 10,
-                    "gc_max_siblings": 100,
-                    "gc_num_siblings_deleted": 20,
+                    "gc_max_siblings": 200,
+                    "gc_num_siblings_deleted": 100,
                   }
                 }
               }
@@ -450,8 +450,8 @@ describe('Blockchain Node', () => {
                 "config": {
                   "state": {
                     "max_children": 10,
-                    "gc_max_siblings": 100,
-                    "gc_num_siblings_deleted": 20,
+                    "gc_max_siblings": 200,
+                    "gc_num_siblings_deleted": 100,
                   }
                 }
               }
@@ -916,8 +916,8 @@ describe('Blockchain Node', () => {
                 "config": {
                   "state": {
                     "max_children": 10,
-                    "gc_max_siblings": 100,
-                    "gc_num_siblings_deleted": 20,
+                    "gc_max_siblings": 200,
+                    "gc_num_siblings_deleted": 100,
                   }
                 }
               }
@@ -957,8 +957,8 @@ describe('Blockchain Node', () => {
                 "config": {
                   "state": {
                     "max_children": 10,
-                    "gc_max_siblings": 100,
-                    "gc_num_siblings_deleted": 20,
+                    "gc_max_siblings": 200,
+                    "gc_num_siblings_deleted": 100,
                   }
                 }
               }
