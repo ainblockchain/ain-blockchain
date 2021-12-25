@@ -91,7 +91,7 @@
     },
     "tx_bytes_limit": 10000,
     "batch_tx_list_size_limit": 50,
-    "min_gc_num_siblings_deleted": 20
+    "min_gc_num_siblings_deleted": 100
   },
   "sharding": {
     "shard_owner": "",
