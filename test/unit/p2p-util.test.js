@@ -1,4 +1,4 @@
-const util = require('../../p2p/util');
+const util = require('../../p2p/p2p-util');
 const Websocket = require('ws');
 const chai = require('chai');
 const expect = chai.expect;
@@ -37,20 +37,6 @@ describe("P2P Util", () => {
 
     it("finds the socket successfully", () => {
       expect(util.getAddressFromSocket(connectionObj, mockSocket)).to.equal(mockAddress);
-    });
-  });
-
-  describe("removeSocketConnectionIfExists", () => {
-    it("removes nothing", () => {
-      const clonedConnectionObj = JSON.parse(JSON.stringify(connectionObj));
-      util.removeSocketConnectionIfExists(clonedConnectionObj, '0xdeadbeef');
-      assert.deepEqual(clonedConnectionObj, clonedConnectionObj);
-    });
-
-    it("removes the socket successfully", () => {
-      const clonedConnectionObj = JSON.parse(JSON.stringify(connectionObj));
-      util.removeSocketConnectionIfExists(clonedConnectionObj, mockAddress);
-      expect(clonedConnectionObj[mockAddress]).to.equal(undefined);
     });
   });
 
