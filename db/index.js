@@ -1,7 +1,6 @@
 const logger = new (require('../logger'))('DATABASE');
 
 const _ = require('lodash');
-const sizeof = require('object-sizeof');
 const {
   DevFlags,
   NodeConfigs,
@@ -699,6 +698,13 @@ class DB {
   // TODO(platfowner): Add tests for op.fid.
   // NOTE(liayoo): This function is only for external uses (APIs).
   get(opList) {
+    if (opList.length > NodeConfigs.GET_OP_LIST_SIZE_LIMIT) {
+      return {
+        code: JsonRpcApiResultCode.GET_EXCEEDS_OP_LIST_SIZE_LIMIT,
+        message: `The request exceeds the max op_list size limit of the requested node: ` +
+            `${opList.length} > ${NodeConfigs.GET_OP_LIST_SIZE_LIMIT}`
+      };
+    }
     const resultList = [];
     for (const op of opList) {
       if (op.type === undefined || op.type === ReadDbOperations.GET_VALUE) {
@@ -736,14 +742,6 @@ class DB {
         }
         resultList.push(this.evalOwner(
             op.ref, op.permission, auth, CommonUtil.toMatchOrEvalOptions(op)));
-      }
-      const bytes = sizeof(resultList);
-      if (bytes > NodeConfigs.GET_RESP_BYTES_LIMIT) {
-        return {
-          code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES,
-          message: `The data exceeds the max byte limit of the requested node: ` +
-              `${bytes} > ${NodeConfigs.GET_RESP_BYTES_LIMIT}`
-        };
       }
     }
     return resultList;
