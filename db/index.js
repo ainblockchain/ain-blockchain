@@ -698,7 +698,8 @@ class DB {
   // TODO(platfowner): Add tests for op.fid.
   // NOTE(liayoo): This function is only for external uses (APIs).
   get(opList) {
-    if (opList.length > NodeConfigs.GET_OP_LIST_SIZE_LIMIT) {
+    if (CommonUtil.isNumber(NodeConfigs.GET_OP_LIST_SIZE_LIMIT) &&
+      opList.length > NodeConfigs.GET_OP_LIST_SIZE_LIMIT) {
       return {
         code: JsonRpcApiResultCode.GET_EXCEEDS_OP_LIST_SIZE_LIMIT,
         message: `The request exceeds the max op_list size limit of the requested node: ` +
