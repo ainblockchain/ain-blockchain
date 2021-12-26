@@ -474,19 +474,9 @@ class DB {
       return null;
     }
     if (options && options.fromApi) {
-      if (stateNode.numChildren() > NodeConfigs.GET_RESP_MAX_SIBLINGS) {
-        return {
-          code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS,
-          message: `The data exceeds the max sibling limit of the requested node: ` +
-              `${stateNode.numChildren()} > ${NodeConfigs.GET_RESP_MAX_SIBLINGS}`
-        };
-      }
-      if (stateNode.getTreeBytes() > NodeConfigs.GET_RESP_BYTES_LIMIT) {
-        return {
-          code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES,
-          message: `The data exceeds the max byte limit of the requested node: ` +
-              `${stateNode.getTreeBytes()} > ${NodeConfigs.GET_RESP_BYTES_LIMIT}`
-        };
+      const limitChecked = DB.checkRespTreeLimits(stateNode);
+      if (limitChecked !== true) {
+        return limitChecked;
       }
     }
     return stateNode.toStateSnapshot(options);
@@ -589,13 +579,11 @@ class DB {
       // No matched local path.
       return null;
     }
-    const result = this.convertFunctionMatch(
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.FUNCTIONS_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
+    return this.convertFunctionMatch(
         this.matchFunctionForParsedPath(localPath), isGlobal);
-    if (options && options.fromApi) {
-      const respLimitCheck = DB.checkRespLimits(result);
-      if (respLimitCheck !== true) return respLimitCheck;
-    }
-    return result;
   }
 
   matchRule(valuePath, options) {
@@ -606,16 +594,14 @@ class DB {
       // No matched local path.
       return null;
     }
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.RULES_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
     const matched = this.matchRuleForParsedPath(localPath);
-    const result = {
+    return {
       write: this.convertRuleMatch(matched.write, isGlobal),
       state: this.convertRuleMatch(matched.state, isGlobal)
     };
-    if (options && options.fromApi) {
-      const respLimitCheck = DB.checkRespLimits(result);
-      if (respLimitCheck !== true) return respLimitCheck;
-    }
-    return result;
   }
 
   matchOwner(rulePath, options) {
@@ -626,12 +612,10 @@ class DB {
       // No matched local path.
       return null;
     }
-    const result = this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
-    if (options && options.fromApi) {
-      const respLimitCheck = DB.checkRespLimits(result);
-      if (respLimitCheck !== true) return respLimitCheck;
-    }
-    return result;
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.OWNERS_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
+    return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
   evalRule(valuePath, value, auth, timestamp, options) {
@@ -642,12 +626,10 @@ class DB {
       // No matched local path.
       return null;
     }
-    const result = this.getPermissionForValue(localPath, value, auth, timestamp);
-    if (options && options.fromApi) {
-      const respLimitCheck = DB.checkRespLimits(result);
-      if (respLimitCheck !== true) return respLimitCheck;
-    }
-    return result;
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.RULES_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
+    return this.getPermissionForValue(localPath, value, auth, timestamp);
   }
 
   // TODO(platfowner): Consider allowing the callers to specify target config.
@@ -660,6 +642,9 @@ class DB {
       // No matched local path.
       return null;
     }
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.OWNERS_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
     if (permission === OwnerProperties.WRITE_RULE) {
       result = this.getPermissionForRule(localPath, auth, options && options.isMerge);
     } else if (permission === OwnerProperties.WRITE_FUNCTION) {
@@ -676,22 +661,39 @@ class DB {
         matched: null,
       };
     }
-    if (options && options.fromApi) {
-      const respLimitCheck = DB.checkRespLimits(result);
-      if (respLimitCheck !== true) return respLimitCheck;
-    }
     return result;
   }
 
   // TODO(liayoo): Apply stricter limits to rule/function/owner state budgets
-  static checkRespLimits(result) {
-    const bytes = sizeof(result);
-    if (bytes > NodeConfigs.GET_RESP_BYTES_LIMIT) {
+  static checkRespTreeLimits(stateNode) {
+    if (stateNode.numChildren() > NodeConfigs.GET_RESP_MAX_SIBLINGS) {
+      return {
+        code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS,
+        message: `The data exceeds the max sibling limit of the requested node: ` +
+            `${stateNode.numChildren()} > ${NodeConfigs.GET_RESP_MAX_SIBLINGS}`
+      };
+    }
+    if (stateNode.getTreeBytes() > NodeConfigs.GET_RESP_BYTES_LIMIT) {
       return {
         code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES,
         message: `The data exceeds the max byte limit of the requested node: ` +
-            `${bytes} > ${NodeConfigs.GET_RESP_BYTES_LIMIT}`
+            `${stateNode.getTreeBytes()} > ${NodeConfigs.GET_RESP_BYTES_LIMIT}`
       };
+    }
+    return true;
+  }
+
+  checkRespTreeLimitsForEvalOrMatch(rootLabel, localPath, options) {
+    if (options && options.fromApi) {
+    const targetStateRoot = options.isFinal ? this.stateManager.getFinalRoot() : this.stateRoot;
+      const fullPath = DB.getFullPath(localPath, rootLabel);
+      const stateNode = DB.getRefForReadingFromStateRoot(targetStateRoot, fullPath);
+      if (stateNode !== null) {
+        const limitChecked = DB.checkRespTreeLimits(stateNode);
+        if (limitChecked !== true) {
+          return limitChecked;
+        }
+      }
     }
     return true;
   }
@@ -737,8 +739,14 @@ class DB {
         resultList.push(this.evalOwner(
             op.ref, op.permission, auth, CommonUtil.toMatchOrEvalOptions(op)));
       }
-      const respLimitCheck = DB.checkRespLimits(resultList);
-      if (respLimitCheck !== true) return respLimitCheck;
+      const bytes = sizeof(resultList);
+      if (bytes > NodeConfigs.GET_RESP_BYTES_LIMIT) {
+        return {
+          code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES,
+          message: `The data exceeds the max byte limit of the requested node: ` +
+              `${bytes} > ${NodeConfigs.GET_RESP_BYTES_LIMIT}`
+        };
+      }
     }
     return resultList;
   }
