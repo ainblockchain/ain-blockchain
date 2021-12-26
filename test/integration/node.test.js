@@ -2104,6 +2104,41 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, null);
       })
+
+      it('set with op_list size bigger than set_op_list_size_limit', async () => {
+        // Check the original value.
+        const resultBefore = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=/apps/test/test_value/some102/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, null);
+
+        const request = { op_list: [] };
+        const setOpListSizeLimit = BlockchainParams.resource.set_op_list_size_limit;
+        for (let i = 0; i < setOpListSizeLimit + 1; i++) { // 1 more than the limit
+          request.op_list.push({
+            type: 'INC_VALUE',
+            ref: '/apps/test/test_value/some102/path',
+            value: 1
+          });
+        }
+        const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
+            .body.toString('utf-8'));
+        expect(body.result.result.code).to.equal(JsonRpcApiResultCode.SET_EXCEEDS_OP_LIST_SIZE_LIMIT);
+        expect(
+            body.result.result.error_message
+                .includes('The transaction exceeds the max op_list size limit')).to.equal(true);
+
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+
+        // Confirm that the values are not set.
+        const resultAfter = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=/apps/test/test_value/some102/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, null);
+      })
     })
 
     describe('/batch api', () => {
