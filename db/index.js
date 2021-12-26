@@ -637,7 +637,6 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(refPath);
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
-    let result;
     if (localPath === null) {
       // No matched local path.
       return null;
@@ -646,12 +645,12 @@ class DB {
         PredefinedDbPaths.OWNERS_ROOT, localPath, options);
     if (limitChecked !== true) return limitChecked;
     if (permission === OwnerProperties.WRITE_RULE) {
-      result = this.getPermissionForRule(localPath, auth, options && options.isMerge);
+      return this.getPermissionForRule(localPath, auth, options && options.isMerge);
     } else if (permission === OwnerProperties.WRITE_FUNCTION) {
-      result = this.getPermissionForFunction(localPath, auth, options && options.isMerge);
+      return this.getPermissionForFunction(localPath, auth, options && options.isMerge);
     } else if (permission === OwnerProperties.WRITE_OWNER ||
         permission === OwnerProperties.BRANCH_OWNER) {
-      result = this.getPermissionForOwner(localPath, auth, options && options.isMerge);
+      return this.getPermissionForOwner(localPath, auth, options && options.isMerge);
     } else {
       return {
         code: TxResultCode.EVAL_OWNER_INVALID_PERMISSION,
@@ -661,7 +660,6 @@ class DB {
         matched: null,
       };
     }
-    return result;
   }
 
   // TODO(liayoo): Apply stricter limits to rule/function/owner state budgets
