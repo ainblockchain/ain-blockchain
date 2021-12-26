@@ -742,6 +742,7 @@ class CommonUtil {
       code, message = null, bandwidthGasAmount = 0, funcResults = null, subtreeFuncResults = null) {
     const result = {};
     if (message) {
+      // TODO(liayoo): change error_message to message.
       result.error_message = message;
     }
     if (!CommonUtil.isEmpty(funcResults)) {
