@@ -1191,6 +1191,15 @@ class DB {
   }
 
   executeMultiSetOperation(opList, auth, timestamp, tx, blockNumber, blockTime) {
+    const setOpListSizeLimit = DB.getBlockchainParam(
+        'resource/set_op_list_size_limit', blockNumber, this.stateRoot);
+    if (blockNumber > 0 && opList.length > setOpListSizeLimit) {
+      return {
+        code: JsonRpcApiResultCode.SET_EXCEEDS_OP_LIST_SIZE_LIMIT,
+        error_message: `The transaction exceeds the max op_list size limit: ` +
+            `${opList.length} > ${setOpListSizeLimit}`
+      };
+    }
     const resultList = {};
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];

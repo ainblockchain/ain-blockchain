@@ -75,7 +75,8 @@
       "3": "http://localhost:3000"
     },
     "tx_bytes_limit": 10000,
-    "batch_tx_list_size_limit": 50
+    "batch_tx_list_size_limit": 50,
+    "set_op_list_size_limit": 50
   },
   "sharding": {
     "shard_owner": "",
