@@ -3808,6 +3808,8 @@ describe("DB operations", () => {
           nonce: -1,
           timestamp: 1568798344000,
         };
+        // NOTE(liayoo): The set_op_list_size_limit blockchain param for 1-node setup is set to 1500
+        //    because of this test case.
         for (let i = 0; i < 1500; i++) {
           overSizeTxBody.operation.op_list.push({
             type: 'SET_VALUE',
