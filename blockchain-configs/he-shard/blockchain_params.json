@@ -84,6 +84,10 @@
     "set_op_list_size_limit": 50,
     "min_gc_num_siblings_deleted": 100
   },
+  "reward": {
+    "type": "FIXED",
+    "annual_rate": 0.08
+  },
   "sharding": {
     "shard_owner": "0xBBB2219cD5eACc54Ce95deF7a67dDe71C8241891",
     "shard_reporter": "0x00Ba0Cb2B1157882963024E0CF837E773d11535d",
@@ -92,6 +96,6 @@
     "parent_chain_poc": "http://127.0.0.1:8081",
     "reporting_period": 5,
     "max_shard_report": 100,
-    "num_shard_report_deleted": 20
+    "num_shard_report_deleted": 100
   }
 }

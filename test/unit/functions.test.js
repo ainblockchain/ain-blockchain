@@ -20,6 +20,16 @@ describe("Functions", () => {
     let functions;
     const accountRegistrationGasAmount = BlockchainParams.resource.account_registration_gas_amount;
     const restFunctionCallGasAmount = BlockchainParams.resource.rest_function_call_gas_amount;
+    const rewardType = BlockchainParams.reward.type;
+    const rewardAnnualRate = BlockchainParams.reward.annual_rate;
+    const epochMs = BlockchainParams.genesis.epoch_ms;
+    const blockchainParams = {
+      accountRegistrationGasAmount,
+      restFunctionCallGasAmount,
+      rewardType,
+      rewardAnnualRate,
+      epochMs,
+    };
 
     before(() => {
       rimraf.sync(NodeConfigs.CHAINS_DIR);
@@ -286,8 +296,7 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRest), value, "prev value", { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999,
-            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
         assert.deepEqual(triggerRes.func_results, {
           "0x00001": {
             "code": 0,
@@ -378,8 +387,7 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestVarPath), value, "prev value", { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999,
-            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
         assert.deepEqual(triggerRes.func_results, {
           "0x10001": {
             "code": 0,
@@ -472,8 +480,7 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestMulti), value, "prev value", { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999,
-            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
         assert.deepEqual(triggerRes.func_results, {
           "0x20001": {
             "code": 0,
@@ -637,8 +644,7 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestWithSubtree), value, prevValue, { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999,
-            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
         assert.deepEqual(triggerRes.func_results, {
           "0x30001": {
             "code": 0,
@@ -1368,8 +1374,7 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestWithSubtree), value, prevValue, { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999,
-            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
         assert.deepEqual(triggerRes.func_results, {
           "0x30001": {
             "code": 0,
@@ -2446,8 +2451,7 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestWithoutListener), value, "prev value", { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999,
-            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -2477,8 +2481,7 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestNotWhitelisted), value, "prev value", { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999,
-            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -2520,7 +2523,7 @@ describe("Functions", () => {
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestNewlyWhitelisted),
             value, "prev value", { addr: 'abcd' }, 1234567890000, tx, 1000, 1234567890999,
-            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            blockchainParams, {});
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -2554,7 +2557,7 @@ describe("Functions", () => {
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestNewlyWhitelisted),
             value, "prev value", { addr: 'abcd' }, 1234567890000, tx, 1000, 1234567890999,
-            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            blockchainParams, {});
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -2585,7 +2588,7 @@ describe("Functions", () => {
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathNull),
             value, "prev value", { addr: 'abcd' }, 1234567890000, tx, 1000, 1234567890999,
-            accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            blockchainParams, {});
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -2644,7 +2647,7 @@ describe("Functions", () => {
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathTransfer), value, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322, tx,
-            1000, 1234567890999, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            1000, 1234567890999, blockchainParams, {});
         assert.deepEqual(triggerRes.func_results, {
           "_transfer": {
             "op_results": {
@@ -2694,7 +2697,7 @@ describe("Functions", () => {
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathTransfer), value, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322, tx,
-            1000, 1234567890999, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            1000, 1234567890999, blockchainParams, {});
         assert.deepEqual(triggerRes.func_results, {
           "_transfer": {
             "op_results": {
@@ -2748,7 +2751,7 @@ describe("Functions", () => {
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestGas), value, null,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322, tx,
-            1000, 1234567890999, accountRegistrationGasAmount, restFunctionCallGasAmount, {});
+            1000, 1234567890999, blockchainParams, {});
         assert.deepEqual(triggerRes.func_results, {
           "0x90001": {
             "code": 0,

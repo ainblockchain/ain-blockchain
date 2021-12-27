@@ -336,8 +336,12 @@ describe("P2p", () => {
           numConnections: 0,
           numInbound: 0,
           numOutbound: 0,
+          numPeerCandidates: 0,
+          numPeerConnectionsInProgress: 0,
           incomingPeers: [],
           outgoingPeers: [],
+          peerCandidates: [],
+          peerConnectionsInProgress: [],
         });
       });
     });
