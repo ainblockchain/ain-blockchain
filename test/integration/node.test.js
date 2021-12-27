@@ -10,6 +10,7 @@ const ainUtil = require('@ainblockchain/ain-util');
 const { BlockchainConsts, BlockchainParams, NodeConfigs } = require('../../common/constants');
 const CommonUtil = require('../../common/common-util');
 const PathUtil = require('../../common/path-util');
+const { JsonRpcApiResultCode } = require('../../common/result-code');
 const {
   verifyStateProof,
 } = require('../../db/state-util');
@@ -36,6 +37,7 @@ const ENV_VARIABLES = [
     UNSAFE_PRIVATE_KEY: '921cc48e48c876fc6ed1eb02a76ad520e8d16a91487f9c7e03441da8e35a0947',
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8082, P2P_PORT: 5002,
     ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
+    GET_RESP_BYTES_LIMIT: 77819, GET_RESP_MAX_SIBLINGS: 999, // For get_value limit tests
   },
   {
     UNSAFE_PRIVATE_KEY: '41e6e5718188ce9afd25e4b386482ac2c5272c49a622d8d217887bce21dce560',
@@ -812,6 +814,61 @@ describe('Blockchain Node', () => {
           expect(res.result.result).to.equal(expected);
         });
       });
+
+      it('returns error when requested data exceeds the get response limits (bytes)', async () => {
+        const bigTree = {};
+        for (let i = 0; i < 10; i++) {
+          bigTree[i] = {};
+          for (let j = 0; j < 1000; j++) {
+            bigTree[i][j] = 'a';
+          }
+        }
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: '/apps/test/test_value/some/path',
+          value: bigTree, // 77820 bytes (using object-sizeof)
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request('ain_get', {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/apps/test/test_value/some/path",
+        })
+        .then(res => {
+          expect(res.result.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES);
+          expect(
+              res.result.result.message
+                  .includes('The data exceeds the max byte limit of the requested node'), true);
+        });
+      });
+
+      it('returns error when requested data exceeds the get response limits (siblings)', async () => {
+        const wideTree = {};
+        for (let i = 0; i < 1000; i++) {
+          wideTree[i] = 'a';
+        }
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: '/apps/test/test_value/some/path',
+          value: wideTree, // 1000 siblings
+        }}).body.toString('utf-8'));
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request('ain_get', {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET_VALUE',
+          ref: "/apps/test/test_value/some/path",
+        })
+        .then(res => {
+          expect(res.result.result.code).to.equal(JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS);
+          expect(
+              res.result.result.message
+                  .includes('The data exceeds the max sibling limit of the requested node'), true);
+        });
+      });
     });
 
     describe('ain_matchFunction api', () => {
@@ -1134,9 +1191,9 @@ describe('Blockchain Node', () => {
           const stateUsage = res.result.result;
           assert.deepEqual(stateUsage, {
             "available": {
-              "tree_bytes": 2474987586,
+              "tree_bytes": 2474819814,
               "tree_height": 30,
-              "tree_size": 24749934
+              "tree_size": 24748934
             },
             "staking": {
               "app": 1,
@@ -1144,9 +1201,9 @@ describe('Blockchain Node', () => {
               "unstakeable": 1
             },
             "usage": {
-              "tree_bytes": 12414,
+              "tree_bytes": 180186,
               "tree_height": 24,
-              "tree_size": 66
+              "tree_size": 1066
             }
           });
         })
@@ -2043,6 +2100,41 @@ describe('Blockchain Node', () => {
         // Confirm that the original value is not altered.
         const resultAfter = parseOrLog(syncRequest(
             'GET', server1 + '/get_value?ref=/apps/test/test_value/some101/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultAfter, null);
+      })
+
+      it('set with op_list size bigger than set_op_list_size_limit', async () => {
+        // Check the original value.
+        const resultBefore = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=/apps/test/test_value/some102/path')
+            .body.toString('utf-8')).result;
+        assert.deepEqual(resultBefore, null);
+
+        const request = { op_list: [] };
+        const setOpListSizeLimit = BlockchainParams.resource.set_op_list_size_limit;
+        for (let i = 0; i < setOpListSizeLimit + 1; i++) { // 1 more than the limit
+          request.op_list.push({
+            type: 'INC_VALUE',
+            ref: '/apps/test/test_value/some102/path',
+            value: 1
+          });
+        }
+        const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
+            .body.toString('utf-8'));
+        expect(body.result.result.code).to.equal(JsonRpcApiResultCode.SET_EXCEEDS_OP_LIST_SIZE_LIMIT);
+        expect(
+            body.result.result.error_message
+                .includes('The transaction exceeds the max op_list size limit')).to.equal(true);
+
+        expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
+        if (!(await waitUntilTxFinalized(serverList, _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+
+        // Confirm that the values are not set.
+        const resultAfter = parseOrLog(syncRequest(
+            'GET', server1 + '/get_value?ref=/apps/test/test_value/some102/path')
             .body.toString('utf-8')).result;
         assert.deepEqual(resultAfter, null);
       })

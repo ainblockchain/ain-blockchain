@@ -123,7 +123,7 @@ app.use(ipWhitelist((ip) => {
 
 app.get('/get_value', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.db.getValue(req.query.ref, CommonUtil.toGetOptions(req.query));
+  const result = node.db.getValue(req.query.ref, CommonUtil.toGetOptions(req.query, true));
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -137,7 +137,7 @@ app.get('/get_value', (req, res, next) => {
 
 app.get('/get_function', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.db.getFunction(req.query.ref, CommonUtil.toGetOptions(req.query));
+  const result = node.db.getFunction(req.query.ref, CommonUtil.toGetOptions(req.query, true));
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -151,7 +151,7 @@ app.get('/get_function', (req, res, next) => {
 
 app.get('/get_rule', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.db.getRule(req.query.ref, CommonUtil.toGetOptions(req.query));
+  const result = node.db.getRule(req.query.ref, CommonUtil.toGetOptions(req.query, true));
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -165,7 +165,7 @@ app.get('/get_rule', (req, res, next) => {
 
 app.get('/get_owner', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.db.getOwner(req.query.ref, CommonUtil.toGetOptions(req.query));
+  const result = node.db.getOwner(req.query.ref, CommonUtil.toGetOptions(req.query, true));
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -247,7 +247,7 @@ app.get('/get_state_usage', (req, res, next) => {
 
 app.get('/match_function', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.db.matchFunction(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
+  const result = node.db.matchFunction(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query, true));
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -261,7 +261,7 @@ app.get('/match_function', (req, res, next) => {
 
 app.get('/match_rule', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.db.matchRule(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
+  const result = node.db.matchRule(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query, true));
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -275,7 +275,7 @@ app.get('/match_rule', (req, res, next) => {
 
 app.get('/match_owner', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.db.matchOwner(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query));
+  const result = node.db.matchOwner(req.query.ref, CommonUtil.toMatchOrEvalOptions(req.query, true));
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -299,7 +299,7 @@ app.post('/eval_rule', (req, res, next) => {
   }
   const result = node.db.evalRule(
       body.ref, body.value, auth, body.timestamp || Date.now(),
-      CommonUtil.toMatchOrEvalOptions(body));
+      CommonUtil.toMatchOrEvalOptions(body, true));
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -322,7 +322,7 @@ app.post('/eval_owner', (req, res, next) => {
     auth.fid = body.fid;
   }
   const result = node.db.evalOwner(
-      body.ref, body.permission, auth, CommonUtil.toMatchOrEvalOptions(body));
+      body.ref, body.permission, auth, CommonUtil.toMatchOrEvalOptions(body, true));
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -485,7 +485,7 @@ app.get('/state_versions', (req, res) => {
 // TODO(platfowner): Support for subtree snapshots (i.e. with ref path).
 app.get('/get_final_state_snapshot', (req, res) => {
   const beginTime = Date.now();
-  const result = node.takeFinalStateSnapshot(CommonUtil.toGetOptions(req.query));
+  const result = node.takeFinalStateSnapshot(CommonUtil.toGetOptions(req.query, true));
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
