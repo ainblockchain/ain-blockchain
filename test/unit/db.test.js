@@ -727,53 +727,30 @@ describe("DB operations", () => {
         expect(node.db.setRule("/apps/test/test_rule/some/path/more/than/max/$sibling", {
           ".rule": {
             "state": {
-              "gc_max_siblings": 20,
-              "gc_num_siblings_deleted": 20,
+              "gc_max_siblings": 100,
+              "gc_num_siblings_deleted": 100,
             }
           }
         }).code).to.equal(0);
         assert.deepEqual(node.db.getRule("/apps/test/test_rule/some/path/more/than/max/$sibling"), {
           ".rule": {
             "state": {
-              "gc_max_siblings": 20,
-              "gc_num_siblings_deleted": 20,
+              "gc_max_siblings": 100,
+              "gc_num_siblings_deleted": 100,
             }
           }
         });
-        // Set 20 children
-        for (let i = 0; i < 20; i++) {
-          expect(node.db.setValue(`/apps/test/test_rule/some/path/more/than/max/child${i}`, i, { addr: 'abcd' },
+        // Set 100 children
+        for (let i = 0; i < 100; i++) {
+          expect(node.db.setValue(`/apps/test/test_rule/some/path/more/than/max/child_${i}`, i, { addr: 'abcd' },
               null, { extra: { executed_at: 1234567890000 + i }}).code).to.equal(0);
         }
-        assert.deepEqual(node.db.getValue("/apps/test/test_rule/some/path/more/than/max"), {
-          "child0": 0,
-          "child1": 1,
-          "child2": 2,
-          "child3": 3,
-          "child4": 4,
-          "child5": 5,
-          "child6": 6,
-          "child7": 7,
-          "child8": 8,
-          "child9": 9,
-          "child10": 10,
-          "child11": 11,
-          "child12": 12,
-          "child13": 13,
-          "child14": 14,
-          "child15": 15,
-          "child16": 16,
-          "child17": 17,
-          "child18": 18,
-          "child19": 19,
-        });
-        // Set 21st child
-        expect(node.db.setValue("/apps/test/test_rule/some/path/more/than/max/child20", 20, { addr: 'abcd' },
-            null, { extra: { executed_at: 1234567890000 + 20 }}).code).to.equal(0);
-        // 1st child removed
-        assert.deepEqual(node.db.getValue("/apps/test/test_rule/some/path/more/than/max"), {
-          "child20": 20
-        });
+        assert.deepEqual(Object.keys(node.db.getValue("/apps/test/test_rule/some/path/more/than/max")).length, 100);
+        // Set 101'st child
+        expect(node.db.setValue("/apps/test/test_rule/some/path/more/than/max/child_100", 100, { addr: 'abcd' },
+            null, { extra: { executed_at: 1234567890000 + 100 }}).code).to.equal(0);
+        // 100 children removed
+        assert.deepEqual(Object.keys(node.db.getValue("/apps/test/test_rule/some/path/more/than/max")).length, 1);
       })
 
       it("setValue to write value with more than max_children keys", () => {
@@ -3808,6 +3785,8 @@ describe("DB operations", () => {
           nonce: -1,
           timestamp: 1568798344000,
         };
+        // NOTE(liayoo): The set_op_list_size_limit blockchain param for 1-node setup is set to 1500
+        //    because of this test case.
         for (let i = 0; i < 1500; i++) {
           overSizeTxBody.operation.op_list.push({
             type: 'SET_VALUE',

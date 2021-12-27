@@ -25,7 +25,7 @@ class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.server = new P2pServer(
         this, node, minProtocolVersion, maxProtocolVersion);
-    this.peerCandidates = {};
+    this.peerCandidates = new Map();
     this.isConnectingToPeerCandidates = false;
     this.steadyIntervalCount = 0;
     this.outbound = {};
@@ -225,11 +225,10 @@ class P2pClient {
    * 3) Use PEER_CANDIDATE_JSON_RPC_URL if there are no peerCandidates at all.
    */
   assignRandomPeerCandidate() {
-    const peerCandidatesEntries = Object.entries(this.peerCandidates);
-    if (peerCandidatesEntries.length === 0) {
+    if (this.peerCandidates.size === 0) {
       return NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL;
     } else {
-      const notQueriedCandidateEntries = peerCandidatesEntries.filter(([, value]) => {
+      const notQueriedCandidateEntries = [...this.peerCandidates.entries()].filter(([, value]) => {
         // NOTE(minsulee2): this gets stuck if the never queried node gets offline. To avoid this,
         // the node which queried more than 5 minutes ago can also be considered as notQueried.
         return value.queriedAt === null ? true :
@@ -238,7 +237,7 @@ class P2pClient {
       if (notQueriedCandidateEntries.length > 0) {
         return _.shuffle(notQueriedCandidateEntries)[0][0];
       } else {
-        return _.shuffle(peerCandidatesEntries)[0][0];
+        return _.shuffle(this.peerCandidates.keys())[0];
       }
     }
   }
@@ -689,8 +688,8 @@ class P2pClient {
     }
   }
 
-  setPeerCandidates(jsonRpcUrl, queriedAt) {
-    this.peerCandidates[jsonRpcUrl] = { queriedAt: queriedAt };
+  setPeerCandidate(jsonRpcUrl, queriedAt) {
+    this.peerCandidates.set(jsonRpcUrl, { queriedAt });
   }
 
   /**
@@ -704,7 +703,7 @@ class P2pClient {
     const myJsonRpcUrl = _.get(this.server.urls, 'jsonRpc.url', '');
     if (!peerCandidateJsonRpcUrl || peerCandidateJsonRpcUrl === '' ||
         P2pUtil.areIdenticalUrls(peerCandidateJsonRpcUrl, myJsonRpcUrl)) {
-      delete this.peerCandidates[peerCandidateJsonRpcUrl];
+      this.peerCandidates.delete(peerCandidateJsonRpcUrl);
       return;
     }
     const resp = await sendGetRequest(peerCandidateJsonRpcUrl, 'p2p_getPeerCandidateInfo', { });
@@ -723,13 +722,13 @@ class P2pClient {
       return;
     }
     if (jsonRpcUrlFromResp !== myJsonRpcUrl) {
-      this.setPeerCandidates(jsonRpcUrlFromResp, Date.now());
+      this.setPeerCandidate(jsonRpcUrlFromResp, Date.now());
     }
     const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
     Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
-      if (url !== myJsonRpcUrl && !this.peerCandidates[url] && this.isValidJsonRpcUrl(url) &&
+      if (url !== myJsonRpcUrl && !this.peerCandidates.has(url) && this.isValidJsonRpcUrl(url) &&
           P2pUtil.checkPeerWhitelist(address)) {
-        this.setPeerCandidates(url, null);
+        this.setPeerCandidate(url, null);
       }
     });
     const newPeerP2pUrlList = _.get(peerCandidateInfo, 'newPeerP2pUrlList', []);

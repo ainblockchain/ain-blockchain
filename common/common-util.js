@@ -227,7 +227,7 @@ class CommonUtil {
     return ruleUtil.toEscrowAccountName(source, target, escrowKey);
   }
 
-  static toGetOptions(args) {
+  static toGetOptions(args, fromApi = false) {
     const options = {};
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
@@ -247,16 +247,22 @@ class CommonUtil {
     if (args.include_proof !== undefined) {
       options.includeProof = CommonUtil.toBool(args.include_proof);
     }
+    if (fromApi) {
+      options.fromApi = true;
+    }
     return options;
   }
 
-  static toMatchOrEvalOptions(args) {
+  static toMatchOrEvalOptions(args, fromApi = false) {
     const options = {};
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
     }
     if (args.is_merge !== undefined) {
       options.isMerge = CommonUtil.toBool(args.is_merge);
+    }
+    if (fromApi) {
+      options.fromApi = true;
     }
     return options;
   }
@@ -736,6 +742,7 @@ class CommonUtil {
       code, message = null, bandwidthGasAmount = 0, funcResults = null, subtreeFuncResults = null) {
     const result = {};
     if (message) {
+      // TODO(liayoo): change error_message to message.
       result.error_message = message;
     }
     if (!CommonUtil.isEmpty(funcResults)) {
