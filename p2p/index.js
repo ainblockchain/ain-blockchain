@@ -271,6 +271,9 @@ class P2pClient {
       return;
     }
     const randomPeerAddress = _.shuffle(addressArray)[0];
+    if (!this.outbound[randomPeerAddress]) {
+      return;
+    }
     this.closeSocketWithP2pStateUpdate(this.outbound[randomPeerAddress].socket);
   }
 
