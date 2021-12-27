@@ -129,7 +129,7 @@ fi
 FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
 FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ $KEYSTORE_DIR package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
-NUM_PARENT_NODES=7
+NUM_PARENT_NODES=10
 NUM_SHARD_NODES=3
 
 TRACKER_ZONE="asia-east1-b"
@@ -141,6 +141,9 @@ NODE_ZONE_LIST=(
     "europe-west4-a" \
     "asia-east1-b" \
     "us-west1-b" \
+    "asia-southeast1-b" \
+    "us-central1-a" \
+    "europe-west4-a" \
 )
 
 function deploy_tracker() {
@@ -276,6 +279,9 @@ NODE_TARGET_ADDR_LIST=(
     "${GCP_USER}@${SEASON}-node-4-netherlands" \
     "${GCP_USER}@${SEASON}-node-5-taiwan" \
     "${GCP_USER}@${SEASON}-node-6-oregon" \
+    "${GCP_USER}@${SEASON}-node-7-singapore" \
+    "${GCP_USER}@${SEASON}-node-8-iowa" \
+    "${GCP_USER}@${SEASON}-node-9-netherlands" \
 )
 
 printf "\nStarting blockchain servers...\n\n"
