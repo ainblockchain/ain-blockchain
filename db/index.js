@@ -810,21 +810,21 @@ class DB {
     const parsedPath = CommonUtil.parsePath(valuePath);
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
-    const unitWriteGasLimit = DB.getBlockchainParam(
+    const unitWriteGasAmount = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
     const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_VALUE_INVALID_VALUE_PATH,
           `Invalid value path: ${isValidPath.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const isValidObj = isValidJsObjectForStates(value, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_VALUE_INVALID_VALUE_STATES,
           `Invalid object for states: ${isValidObj.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -832,14 +832,14 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SUCCESS,
           null,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, timestamp);
     if (CommonUtil.isFailedTxResultCode(ruleEvalRes.code)) {
       return CommonUtil.returnTxResult(
           ruleEvalRes.code,
           ruleEvalRes.error_message,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);
@@ -848,12 +848,12 @@ class DB {
         // There is nothing to do.
         return CommonUtil.returnTxResult(
             TxResultCode.SUCCESS,
-            null, unitWriteGasLimit);
+            null, unitWriteGasAmount);
       } else {
         return CommonUtil.returnTxResult(
             TxResultCode.SET_VALUE_NO_WRITABLE_PATH_WITH_SHARD_CONFIG,
             `Non-writable path with shard config: ${isWritablePath.invalidPath}`,
-            unitWriteGasLimit);
+            unitWriteGasAmount);
       }
     }
     const prevValue = this.getValue(CommonUtil.formatPath(localPath));
@@ -890,7 +890,7 @@ class DB {
         return CommonUtil.returnTxResult(
             TxResultCode.SET_VALUE_TRIGGERED_FUNCTION_CALL_FAILED,
             `Triggered function call failed`,
-            unitWriteGasLimit,
+            unitWriteGasAmount,
             funcResults,
             subtreeFuncResults);
       }
@@ -898,7 +898,7 @@ class DB {
         return CommonUtil.returnTxResult(
             TxResultCode.SET_VALUE_TRIGGERED_SUBTREE_FUNCTION_CALL_FAILED,
             `Triggered subtree function call failed`,
-            unitWriteGasLimit,
+            unitWriteGasAmount,
             funcResults,
             subtreeFuncResults);
       }
@@ -914,7 +914,7 @@ class DB {
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
-        unitWriteGasLimit,
+        unitWriteGasAmount,
         funcResults,
         subtreeFuncResults);
   }
@@ -924,12 +924,12 @@ class DB {
     const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
-      const unitWriteGasLimit = DB.getBlockchainParam(
+      const unitWriteGasAmount = DB.getBlockchainParam(
           'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
       return CommonUtil.returnTxResult(
           TxResultCode.INC_VALUE_NOT_A_NUMBER_TYPE,
           `Not a number type: ${valueBefore} or ${delta}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) + delta;
     return this.setValue(
@@ -941,12 +941,12 @@ class DB {
     const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
-      const unitWriteGasLimit = DB.getBlockchainParam(
+      const unitWriteGasAmount = DB.getBlockchainParam(
           'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
       return CommonUtil.returnTxResult(
           TxResultCode.DEC_VALUE_NOT_A_NUMBER_TYPE,
           `Not a number type: ${valueBefore} or ${delta}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) - delta;
     return this.setValue(
@@ -957,14 +957,14 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
-    const unitWriteGasLimit = DB.getBlockchainParam(
+    const unitWriteGasAmount = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
     const isValidObj = isValidJsObjectForStates(func, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_FUNCTION_INVALID_FUNCTION_STATES,
           `Invalid object for states: ${isValidObj.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const parsedPath = CommonUtil.parsePath(functionPath);
     const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
@@ -972,14 +972,14 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_FUNCTION_INVALID_FUNCTION_PATH,
           `Invalid function path: ${isValidPath.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const isValidFunction = isValidFunctionTree(parsedPath, func);
     if (!isValidFunction.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_FUNCTION_INVALID_FUNCTION_TREE,
           `Invalid function tree: ${isValidFunction.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     if (!auth || !this.isConsensusAppAdmin(auth.addr)) {
       const ownerOnlyFid = this.func.hasOwnerOnlyFunction(func);
@@ -987,7 +987,7 @@ class DB {
         return CommonUtil.returnTxResult(
             TxResultCode.SET_FUNCTION_OWNER_ONLY_FUNCTION,
             `Trying to write owner-only function: ${ownerOnlyFid}`,
-            unitWriteGasLimit);
+            unitWriteGasAmount);
       }
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
@@ -996,7 +996,7 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SUCCESS,
           null,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const curFunction = this.getFunction(CommonUtil.formatPath(localPath));
     const applyRes = applyFunctionChange(curFunction, func);
@@ -1005,14 +1005,14 @@ class DB {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
           permCheckRes.error_message,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, applyRes.funcConfig);
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
-        unitWriteGasLimit);
+        unitWriteGasAmount);
   }
 
   // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
@@ -1021,14 +1021,14 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
-    const unitWriteGasLimit = DB.getBlockchainParam(
+    const unitWriteGasAmount = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
     const isValidObj = isValidJsObjectForStates(rule, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_RULE_INVALID_RULE_STATES,
           `Invalid object for states: ${isValidObj.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const parsedPath = CommonUtil.parsePath(rulePath);
     const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
@@ -1036,7 +1036,7 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_RULE_INVALID_RULE_PATH,
           `Invalid rule path: ${isValidPath.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const minGcNumSiblingsDeleted = DB.getBlockchainParam(
           'resource/min_gc_num_siblings_deleted', blockNumber, this.stateRoot);
@@ -1045,7 +1045,7 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_RULE_INVALID_RULE_TREE,
           `Invalid rule tree: ${isValidRule.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -1053,7 +1053,7 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SUCCESS,
           null,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const curRule = this.getRule(CommonUtil.formatPath(localPath));
     const applyRes = applyRuleChange(curRule, rule);
@@ -1062,28 +1062,28 @@ class DB {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
           permCheckRes.error_message,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     this.writeDatabase(fullPath, applyRes.ruleConfig);
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
-        unitWriteGasLimit);
+        unitWriteGasAmount);
   }
 
   setOwner(ownerPath, owner, auth, blockNumber, options) {
     const isGlobal = options && options.isGlobal;
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
-    const unitWriteGasLimit = DB.getBlockchainParam(
+    const unitWriteGasAmount = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
     const isValidObj = isValidJsObjectForStates(owner, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_OWNER_INVALID_OWNER_STATES,
           `Invalid object for states: ${isValidObj.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const parsedPath = CommonUtil.parsePath(ownerPath);
     const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
@@ -1091,14 +1091,14 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_OWNER_INVALID_OWNER_PATH,
           `Invalid owner path: ${isValidPath.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const isValidOwner = isValidOwnerTree(parsedPath, owner);
     if (!isValidOwner.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_OWNER_INVALID_OWNER_TREE,
           `Invalid owner tree: ${isValidOwner.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -1106,7 +1106,7 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SUCCESS,
           null,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const curOwner = this.getOwner(CommonUtil.formatPath(localPath));
     const applyRes = applyOwnerChange(curOwner, owner);
@@ -1115,14 +1115,14 @@ class DB {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
           permCheckRes.error_message,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     this.writeDatabase(fullPath, applyRes.ownerConfig);
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
-        unitWriteGasLimit);
+        unitWriteGasAmount);
   }
 
   /**
@@ -1193,12 +1193,12 @@ class DB {
         result = this.setOwner(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
         break;
       default:
-        const unitWriteGasLimit = DB.getBlockchainParam(
+        const unitWriteGasAmount = DB.getBlockchainParam(
             'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
         return CommonUtil.returnTxResult(
             TxResultCode.TX_INVALID_OPERATION_TYPE,
             `Invalid operation type: ${op.type}`,
-            unitWriteGasLimit);
+            unitWriteGasAmount);
     }
     return result;
   }
@@ -1243,12 +1243,12 @@ class DB {
       gas_cost_total: 0
     };
     if (!op) {
-      const unitWriteGasLimit = DB.getBlockchainParam(
+      const unitWriteGasAmount = DB.getBlockchainParam(
           'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
       Object.assign(result, CommonUtil.returnTxResult(
           TxResultCode.TX_INVALID_OPERATION,
           `Invalid operation: ${op}`,
-          unitWriteGasLimit));
+          unitWriteGasAmount));
       DB.updateGasAmountTotal(tx, gasAmountTotal, result);
       return result;
     }
