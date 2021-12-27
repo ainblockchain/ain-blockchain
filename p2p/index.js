@@ -671,8 +671,14 @@ class P2pClient {
     }
   }
 
-  setPeerCandidate(jsonRpcUrl, queriedAt) {
-    this.peerCandidates.set(jsonRpcUrl, { queriedAt });
+  setPeerCandidate(jsonRpcUrl, address, queriedAt) {
+    if (CommonUtil.isArray(NodeConfigs.PEER_WHITELIST) &&
+        NodeConfigs.PEER_WHITELIST.includes(address)) {
+      this.peerCandidates.set(jsonRpcUrl, { queriedAt });
+    } else if (CommonUtil.isString(NodeConfigs.PEER_WHITELIST) &&
+        CommonUtil.isWildcard(NodeConfigs.PEER_WHITELIST)) {
+      this.peerCandidates.set(jsonRpcUrl, { queriedAt });
+    }
   }
 
   /**
@@ -699,19 +705,20 @@ class P2pClient {
     // NOTE(platfowner): As peerCandidateUrl can be a domain name url with multiple nodes,
     // use the json rpc url in response instead.
     const jsonRpcUrlFromResp = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
+    const address = _.get(peerCandidateInfo, 'address');
     if (!jsonRpcUrlFromResp) {
       logger.error(`Invalid peer candidate json rpc url from peer candidate url ` +
           `(${peerCandidateJsonRpcUrl}).`);
       return;
     }
     if (jsonRpcUrlFromResp !== myJsonRpcUrl) {
-      this.setPeerCandidate(jsonRpcUrlFromResp, Date.now());
+      this.setPeerCandidate(jsonRpcUrlFromResp, address, Date.now());
     }
     const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
     Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
       if (url !== myJsonRpcUrl && !this.peerCandidates.has(url) && this.isValidJsonRpcUrl(url) &&
           P2pUtil.checkPeerWhitelist(address)) {
-        this.setPeerCandidate(url, null);
+        this.setPeerCandidate(url, address, null);
       }
     });
     const newPeerP2pUrlList = _.get(peerCandidateInfo, 'newPeerP2pUrlList', []);
@@ -722,7 +729,6 @@ class P2pClient {
       .map(([, p2pUrl]) => p2pUrl);
     const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
     const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.urls.p2p.url');
-    const address = _.get(peerCandidateInfo, 'address');
     if (peerCandidateP2pUrl !== myP2pUrl && isAvailableForConnection && !this.outbound[address]) {
       // NOTE(minsulee2): Add a peer candidate up on the list if it is not connected.
       newPeerP2pUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
