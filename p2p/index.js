@@ -646,7 +646,8 @@ class P2pClient {
             this.server.consensus.stakeTx = null;
           }
         } else {
-          logger.error('Address confirmation hasn\'t sent back. Close the socket connection');
+          logger.error(`Address confirmation hasn\'t sent back. ` +
+              `Close the socket(${socket.url}) connection`);
           this.clearPeerConnectionsInProgress(socket);
         }
     }, NodeConfigs.P2P_WAIT_FOR_ADDRESS_TIMEOUT_MS);

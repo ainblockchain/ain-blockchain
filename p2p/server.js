@@ -92,7 +92,9 @@ class P2pServer {
           NodeConfigs.MAX_NUM_INBOUND_CONNECTION) {
         this.setServerSidePeerEventHandlers(socket, url);
       } else {
-        logger.error(`Cannot exceed max connection: ${NodeConfigs.MAX_NUM_INBOUND_CONNECTION}`);
+        logger.error(`Cannot exceed max connection: ${NodeConfigs.MAX_NUM_INBOUND_CONNECTION}\n` +
+            `- Connected: ${JSON.stringify(Object.keys(this.inbound))}\n` +
+            `- Connecting: ${JSON.stringify(Array.from(this.peerConnectionsInProgress.keys()))}`);
         P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
         P2pUtil.closeSocketSafe(this.inbound, socket);
       }
@@ -453,7 +455,7 @@ class P2pServer {
             } else {
               const addressFromSig = P2pUtil.getAddressFromMessage(parsedMessage);
               if (!P2pUtil.checkPeerWhitelist(addressFromSig)) {
-                logger.debug(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
+                logger.error(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
                 P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
                 P2pUtil.closeSocketSafe(this.inbound, socket);
                 return;
@@ -531,7 +533,8 @@ class P2pServer {
             logger.debug(`[${LOG_HEADER}] Receiving a consensus message: ` +
                 `${JSON.stringify(consensusMessage)}`);
             if (DevFlags.enableP2pMessageTags) {
-              logger.debug(`[${LOG_HEADER}] Tags attached to a consensus message: ${JSON.stringify(consensusTags)}`);
+              logger.debug(`[${LOG_HEADER}] Tags attached to a consensus message: ` +
+                  `${JSON.stringify(consensusTags)}`);
               trafficStatsManager.addEvent(
                     TrafficEventTypes.P2P_TAG_CONSENSUS_LENGTH, consensusTags.length);
               trafficStatsManager.addEvent(
@@ -586,7 +589,7 @@ class P2pServer {
                 const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
                 if (!createdTx) {
                   logger.info(`[${LOG_HEADER}] Failed to create a transaction for subTx: ` +
-                    `${JSON.stringify(subTx, null, 2)}`);
+                      `${JSON.stringify(subTx, null, 2)}`);
                   continue;
                 }
                 newTxList.push(createdTx);
@@ -598,7 +601,7 @@ class P2pServer {
               const createdTx = Transaction.create(tx.tx_body, tx.signature);
               if (!createdTx) {
                 logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
-                  `${JSON.stringify(tx, null, 2)}`);
+                    `${JSON.stringify(tx, null, 2)}`);
               } else {
                 this.executeAndBroadcastTransaction(createdTx, txTags);
               }
