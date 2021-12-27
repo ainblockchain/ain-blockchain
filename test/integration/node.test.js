@@ -815,6 +815,19 @@ describe('Blockchain Node', () => {
         });
       });
 
+      it('returns error when invalid op_list is given', () => {
+        const jsonRpcClient = jayson.client.http(server2 + '/json-rpc');
+        return jsonRpcClient.request('ain_get', {
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
+          type: 'GET',
+          op_list: null
+        })
+        .then(res => {
+          expect(res.result.result.code).to.equal(JsonRpcApiResultCode.GET_INVALID_OP_LIST);
+          expect(res.result.result.message).to.equal('Invalid op_list given');
+        });
+      });
+
       it('returns error when requested data exceeds the get response limits (bytes)', async () => {
         const bigTree = {};
         for (let i = 0; i < 10; i++) {
