@@ -11,6 +11,7 @@ const {
   NodeConfigs,
   BlockchainConsts,
   PredefinedDbPaths,
+  BlockchainParams,
 } = require('../../common/constants');
 const {
   ConsensusMessageTypes,
@@ -343,32 +344,33 @@ describe('Consensus', () => {
       const blockNumber = txInfo.number;
       const consensusRound = parseOrLog(syncRequest('GET',
           server2 + `/get_value?ref=/consensus/number/${blockNumber}`).body.toString('utf-8')).result;
-      const proposer = consensusRound.propose.proposer;
+      const blockRewardMultiplier =
+          BlockchainParams.reward.annual_rate * BlockchainParams.genesis.epoch_ms / 31557600000; // 365.25 * 24 * 60 * 60 * 1000
       const blockHash = consensusRound.propose.block_hash;
       const votes = consensusRound[blockHash].vote;
       const validators = Object.keys(votes);
       const gasCostTotal = consensusRound.propose.gas_cost_total;
-      const proposerReward = gasCostTotal / 2;
-      const validatorRewardTotal = gasCostTotal - proposerReward;
       const totalAtStake = Object.values(votes).reduce((acc, cur) => acc + cur.stake, 0);
-      let rewardSum = 0;
-      validators.forEach((validator, index) => {
-        const validatorStake = votes[validator].stake;
-        let validatorReward = 0;
-        if (index === validators.length - 1) {
-          validatorReward = validatorRewardTotal - rewardSum;
-        } else {
-          validatorReward = validatorRewardTotal * (validatorStake / totalAtStake);
-          rewardSum += validatorReward;
+      let txFeeSum = 0;
+      for (let index = 0; index < validators.length; index++) {
+        const validatorAddr = validators[index];
+        const validatorStake = votes[validatorAddr].stake;
+        const blockReward = blockRewardMultiplier * validatorStake;
+        let txFee = 0;
+        if (gasCostTotal > 0) {
+          if (index === validators.length - 1) {
+            txFee = gasCostTotal - txFeeSum;
+          } else {
+            txFee = gasCostTotal * (validatorStake / totalAtStake);
+            txFeeSum += txFee;
+          }
         }
-        if (validator === proposer) {
-          validatorReward += proposerReward;
-        }
-        assert.deepEqual(_.get(rewardsBefore, `${validator}.unclaimed`, 0) + validatorReward,
-            rewardsAfter[validator].unclaimed);
-        assert.deepEqual(_.get(rewardsBefore, `${validator}.cumulative`, 0) + validatorReward,
-            rewardsAfter[validator].cumulative);
-      });
+        // It's greater than or equal to the expected values because block rewards are keep accumulating
+        expect(rewardsAfter[validatorAddr].unclaimed).to.be.at.least(
+            _.get(rewardsBefore, `${validatorAddr}.unclaimed`, 0) + (txFee + blockReward));
+        expect(rewardsAfter[validatorAddr].cumulative).to.be.at.least(
+            _.get(rewardsBefore, `${validatorAddr}.cumulative`, 0) + (txFee + blockReward));
+      }
       assert.deepEqual(txWithGasFee.result.gas_cost_total, consensusRound.propose.gas_cost_total);
     });
 
