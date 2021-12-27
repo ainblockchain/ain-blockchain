@@ -16,7 +16,7 @@ const {
   buildOwnerPermissions,
   BlockchainParams,
 } = require('../common/constants');
-const { TxResultCode } = require('../common/result-code');
+const { TxResultCode, JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('./state-node');
@@ -472,6 +472,12 @@ class DB {
     if (stateNode === null) {
       return null;
     }
+    if (options && options.fromApi) {
+      const limitChecked = DB.checkRespTreeLimits(stateNode);
+      if (limitChecked !== true) {
+        return limitChecked;
+      }
+    }
     return stateNode.toStateSnapshot(options);
   }
 
@@ -572,6 +578,9 @@ class DB {
       // No matched local path.
       return null;
     }
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.FUNCTIONS_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
     return this.convertFunctionMatch(
         this.matchFunctionForParsedPath(localPath), isGlobal);
   }
@@ -584,6 +593,9 @@ class DB {
       // No matched local path.
       return null;
     }
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.RULES_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
     const matched = this.matchRuleForParsedPath(localPath);
     return {
       write: this.convertRuleMatch(matched.write, isGlobal),
@@ -599,6 +611,9 @@ class DB {
       // No matched local path.
       return null;
     }
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.OWNERS_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
     return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
@@ -610,6 +625,9 @@ class DB {
       // No matched local path.
       return null;
     }
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.RULES_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
     return this.getPermissionForValue(localPath, value, auth, timestamp);
   }
 
@@ -622,6 +640,9 @@ class DB {
       // No matched local path.
       return null;
     }
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.OWNERS_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
     if (permission === OwnerProperties.WRITE_RULE) {
       return this.getPermissionForRule(localPath, auth, options && options.isMerge);
     } else if (permission === OwnerProperties.WRITE_FUNCTION) {
@@ -640,10 +661,53 @@ class DB {
     }
   }
 
+  // TODO(liayoo): Apply stricter limits to rule/function/owner state budgets
+  static checkRespTreeLimits(stateNode) {
+    if (stateNode.numChildren() > NodeConfigs.GET_RESP_MAX_SIBLINGS) {
+      return {
+        code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS,
+        message: `The data exceeds the max sibling limit of the requested node: ` +
+            `${stateNode.numChildren()} > ${NodeConfigs.GET_RESP_MAX_SIBLINGS}`
+      };
+    }
+    if (stateNode.getTreeBytes() > NodeConfigs.GET_RESP_BYTES_LIMIT) {
+      return {
+        code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES,
+        message: `The data exceeds the max byte limit of the requested node: ` +
+            `${stateNode.getTreeBytes()} > ${NodeConfigs.GET_RESP_BYTES_LIMIT}`
+      };
+    }
+    return true;
+  }
+
+  checkRespTreeLimitsForEvalOrMatch(rootLabel, localPath, options) {
+    if (options && options.fromApi) {
+    const targetStateRoot = options.isFinal ? this.stateManager.getFinalRoot() : this.stateRoot;
+      const fullPath = DB.getFullPath(localPath, rootLabel);
+      const stateNode = DB.getRefForReadingFromStateRoot(targetStateRoot, fullPath);
+      if (stateNode !== null) {
+        const limitChecked = DB.checkRespTreeLimits(stateNode);
+        if (limitChecked !== true) {
+          return limitChecked;
+        }
+      }
+    }
+    return true;
+  }
+
   // TODO(platfowner): Add tests for op.fid.
+  // NOTE(liayoo): This function is only for external uses (APIs).
   get(opList) {
+    if (CommonUtil.isNumber(NodeConfigs.GET_OP_LIST_SIZE_LIMIT) &&
+      opList.length > NodeConfigs.GET_OP_LIST_SIZE_LIMIT) {
+      return {
+        code: JsonRpcApiResultCode.GET_EXCEEDS_OP_LIST_SIZE_LIMIT,
+        message: `The request exceeds the max op_list size limit of the requested node: ` +
+            `${opList.length} > ${NodeConfigs.GET_OP_LIST_SIZE_LIMIT}`
+      };
+    }
     const resultList = [];
-    opList.forEach((op) => {
+    for (const op of opList) {
       if (op.type === undefined || op.type === ReadDbOperations.GET_VALUE) {
         resultList.push(this.getValue(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.GET_RULE) {
@@ -680,7 +744,7 @@ class DB {
         resultList.push(this.evalOwner(
             op.ref, op.permission, auth, CommonUtil.toMatchOrEvalOptions(op)));
       }
-    });
+    }
     return resultList;
   }
 
@@ -1130,6 +1194,15 @@ class DB {
   }
 
   executeMultiSetOperation(opList, auth, timestamp, tx, blockNumber, blockTime) {
+    const setOpListSizeLimit = DB.getBlockchainParam(
+        'resource/set_op_list_size_limit', blockNumber, this.stateRoot);
+    if (blockNumber > 0 && opList.length > setOpListSizeLimit) {
+      return {
+        code: JsonRpcApiResultCode.SET_EXCEEDS_OP_LIST_SIZE_LIMIT,
+        error_message: `The transaction exceeds the max op_list size limit: ` +
+            `${opList.length} > ${setOpListSizeLimit}`
+      };
+    }
     const resultList = {};
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
