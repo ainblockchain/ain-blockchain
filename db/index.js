@@ -698,6 +698,12 @@ class DB {
   // TODO(platfowner): Add tests for op.fid.
   // NOTE(liayoo): This function is only for external uses (APIs).
   get(opList) {
+    if (!CommonUtil.isArray(opList)) {
+      return {
+        code: JsonRpcApiResultCode.GET_INVALID_OP_LIST,
+        message: `Invalid op_list given`
+      };
+    }
     if (CommonUtil.isNumber(NodeConfigs.GET_OP_LIST_SIZE_LIMIT) &&
       opList.length > NodeConfigs.GET_OP_LIST_SIZE_LIMIT) {
       return {
