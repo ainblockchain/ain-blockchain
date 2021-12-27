@@ -84,6 +84,10 @@
     "set_op_list_size_limit": 50,
     "min_gc_num_siblings_deleted": 100
   },
+  "reward": {
+    "type": "FIXED",
+    "annual_rate": 0.08
+  },
   "sharding": {
     "shard_owner": "0xB0B0d133E6a82A982396Fa7E4B4F9eC85d1DFBF4",
     "shard_reporter": "0x00B0475e875460650CF2d5Ba575B575f27D43369",
