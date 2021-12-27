@@ -29,7 +29,6 @@ const TRACKER_SERVER = PROJECT_ROOT + "tracker-server/index.js"
 const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const ENV_VARIABLES = [
   {
-    PEER_CANDIDATE_JSON_RPC_URL: '',
     UNSAFE_PRIVATE_KEY: 'b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96',
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/3-nodes', PORT: 8081, P2P_PORT: 5001,
     ENABLE_GAS_FEE_WORKAROUND: true, ENABLE_EXPRESS_RATE_LIMIT: false,
@@ -104,8 +103,8 @@ async function setUp() {
             ".rule": {
               "state": {
                 "max_children": 10,
-                "gc_max_siblings": 100,
-                "gc_num_siblings_deleted": 20,
+                "gc_max_siblings": 200,
+                "gc_num_siblings_deleted": 100,
               }
             },
             "and": {
@@ -411,8 +410,8 @@ describe('Blockchain Node', () => {
                 "config": {
                   "state": {
                     "max_children": 10,
-                    "gc_max_siblings": 100,
-                    "gc_num_siblings_deleted": 20,
+                    "gc_max_siblings": 200,
+                    "gc_num_siblings_deleted": 100,
                   }
                 }
               }
@@ -453,8 +452,8 @@ describe('Blockchain Node', () => {
                 "config": {
                   "state": {
                     "max_children": 10,
-                    "gc_max_siblings": 100,
-                    "gc_num_siblings_deleted": 20,
+                    "gc_max_siblings": 200,
+                    "gc_num_siblings_deleted": 100,
                   }
                 }
               }
@@ -974,8 +973,8 @@ describe('Blockchain Node', () => {
                 "config": {
                   "state": {
                     "max_children": 10,
-                    "gc_max_siblings": 100,
-                    "gc_num_siblings_deleted": 20,
+                    "gc_max_siblings": 200,
+                    "gc_num_siblings_deleted": 100,
                   }
                 }
               }
@@ -1015,8 +1014,8 @@ describe('Blockchain Node', () => {
                 "config": {
                   "state": {
                     "max_children": 10,
-                    "gc_max_siblings": 100,
-                    "gc_num_siblings_deleted": 20,
+                    "gc_max_siblings": 200,
+                    "gc_num_siblings_deleted": 100,
                   }
                 }
               }
