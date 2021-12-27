@@ -513,10 +513,10 @@ describe('Blockchain Node', () => {
         const body = parseOrLog(syncRequest('POST', server1 + '/eval_rule', {json: request})
             .body.toString('utf-8'));
         assert.deepEqual(body.code, 0);
-        body.result.error_message = 'erased';
+        body.result.message = 'erased';
         assert.deepEqual(eraseEvalResMatched(body.result), {
           "code": 12103,
-          "error_message": "erased",
+          "message": "erased",
           "matched": "erased",
         });
       })
@@ -1076,10 +1076,10 @@ describe('Blockchain Node', () => {
         const request = { ref, value, address, protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION };
         return jayson.client.http(server1 + '/json-rpc').request('ain_evalRule', request)
         .then(res => {
-          res.result.result.error_message = 'erased';
+          res.result.result.message = 'erased';
           assert.deepEqual(eraseEvalResMatched(res.result.result), {
             "code": 12103,
-            "error_message": "erased",
+            "message": "erased",
             "matched": "erased",
           });
         })
@@ -1394,11 +1394,11 @@ describe('Blockchain Node', () => {
         const request = {ref: '/apps/some/wrong/path', value: "some other value"};
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: request})
           .body.toString('utf-8'));
-        body.result.result.error_message = 'erased';
+        body.result.result.message = 'erased';
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
           "code": 12103,
-          "error_message": "erased",
+          "message": "erased",
           "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
@@ -1461,11 +1461,11 @@ describe('Blockchain Node', () => {
         const request = {ref: "/apps/some/wrong/path2", value: 10};
         const body = parseOrLog(syncRequest('POST', server1 + '/inc_value', {json: request})
           .body.toString('utf-8'));
-        body.result.result.error_message = 'erased';
+        body.result.result.message = 'erased';
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
           "code": 12103,
-          "error_message": "erased",
+          "message": "erased",
           "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
@@ -1528,11 +1528,11 @@ describe('Blockchain Node', () => {
         const request = {ref: "/apps/some/wrong/path3", value: 10};
         const body = parseOrLog(syncRequest('POST', server1 + '/dec_value', {json: request})
           .body.toString('utf-8'));
-        body.result.result.error_message = 'erased';
+        body.result.result.message = 'erased';
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
           "code": 12103,
-          "error_message": "erased",
+          "message": "erased",
           "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
@@ -1638,7 +1638,7 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
           "code": 12402,
-          "error_message": "write_function permission evaluated false: [null] at '/apps' for function path '/apps/some/wrong/path' with permission 'write_function', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}'",
+          "message": "write_function permission evaluated false: [null] at '/apps' for function path '/apps/some/wrong/path' with permission 'write_function', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}'",
           "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
@@ -1726,7 +1726,7 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
           "code": 12302,
-          "error_message": "write_rule permission evaluated false: [null] at '/apps' for rule path '/apps/some/wrong/path' with permission 'write_rule', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}'",
+          "message": "write_rule permission evaluated false: [null] at '/apps' for rule path '/apps/some/wrong/path' with permission 'write_rule', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}'",
           "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
@@ -1842,7 +1842,7 @@ describe('Blockchain Node', () => {
         assert.deepEqual(_.get(body, 'result.result'), {
           "bandwidth_gas_amount": 1,
           "code": 12502,
-          "error_message": "branch_owner permission evaluated false: [null] at '/apps' for owner path '/apps/some/wrong/path' with permission 'branch_owner', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}'",
+          "message": "branch_owner permission evaluated false: [null] at '/apps' for owner path '/apps/some/wrong/path' with permission 'branch_owner', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}'",
           "gas_amount_charged": 0,
           "gas_amount_total": {
             "bandwidth": {
@@ -2056,7 +2056,7 @@ describe('Blockchain Node', () => {
         };
         const body = parseOrLog(syncRequest('POST', server1 + '/set', {json: request})
             .body.toString('utf-8'));
-        body.result.result.result_list[3].error_message = 'erased';
+        body.result.result.result_list[3].message = 'erased';
         assert.deepEqual(_.get(body, 'result.result'), {
           "result_list": {
             "0": {
@@ -2073,7 +2073,7 @@ describe('Blockchain Node', () => {
             },
             "3": {
               "code": 12103,
-              "error_message": "erased",
+              "message": "erased",
               "bandwidth_gas_amount": 1
             }
           },
@@ -2124,7 +2124,7 @@ describe('Blockchain Node', () => {
             .body.toString('utf-8'));
         expect(body.result.result.code).to.equal(JsonRpcApiResultCode.SET_EXCEEDS_OP_LIST_SIZE_LIMIT);
         expect(
-            body.result.result.error_message
+            body.result.result.message
                 .includes('The transaction exceeds the max op_list size limit')).to.equal(true);
 
         expect(_.get(body, 'result.tx_hash')).to.not.equal(null);
@@ -2688,7 +2688,7 @@ describe('Blockchain Node', () => {
           }
           result.tx_hash = 'erased';
           if (result.result.code > 0) {
-            result.result.error_message = 'erased';
+            result.result.message = 'erased';
           }
         }
         assert.deepEqual(body.result, [
@@ -2764,7 +2764,7 @@ describe('Blockchain Node', () => {
           {
             "tx_hash": "erased",
             "result": {
-              "error_message": "erased",
+              "message": "erased",
               "code": 12103,
               "bandwidth_gas_amount": 1,
               "gas_amount_charged": 0,
@@ -3199,7 +3199,7 @@ describe('Blockchain Node', () => {
           protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         }).then((res) => {
           assert.deepEqual(res.result.result.result, {
-            "error_message": "[executeTransactionAndAddToPool] Invalid signature",
+            "message": "[executeTransactionAndAddToPool] Invalid signature",
             "code": 10703,
             "bandwidth_gas_amount": 0
           });
@@ -3579,7 +3579,7 @@ describe('Blockchain Node', () => {
           {
             "result": {
               "code": 10705,
-              "error_message": "[executeTransactionAndAddToPool] Tx pool does NOT have enough room (100) for account: 0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
+              "message": "[executeTransactionAndAddToPool] Tx pool does NOT have enough room (100) for account: 0x85a620A5A46d01cc1fCF49E73ab00710d4da943E",
               "bandwidth_gas_amount": 0
             },
             "tx_hash": "erased"
@@ -3768,7 +3768,7 @@ describe('Blockchain Node', () => {
             {
               "tx_hash": "erased",
               "result": {
-                "error_message": "[executeTransactionAndAddToPool] Invalid signature",
+                "message": "[executeTransactionAndAddToPool] Invalid signature",
                 "code": 10703,
                 "bandwidth_gas_amount": 0
               }
@@ -3961,7 +3961,7 @@ describe('Blockchain Node', () => {
       }).body.toString('utf-8'));
       expect(txResBody.code).to.equals(40001);
       expect(txResBody.result.result.code).to.equals(10802);
-      expect(txResBody.result.result.error_message).to.equals("[precheckTxBillingParams] User doesn't have permission to the billing account");
+      expect(txResBody.result.result.message).to.equals("[precheckTxBillingParams] User doesn't have permission to the billing account");
     });
 
     it('app-dependent service tx: billing account', async () => {
@@ -4164,7 +4164,7 @@ describe('Blockchain Node', () => {
       }).body.toString('utf-8'));
       assert.deepEqual(txResBody.result.result, {
         "bandwidth_gas_amount": 0,
-        "error_message": "[precheckTxBillingParams] Multiple app-dependent service operations for a billing account",
+        "message": "[precheckTxBillingParams] Multiple app-dependent service operations for a billing account",
         "code": 10803
       });
     });
