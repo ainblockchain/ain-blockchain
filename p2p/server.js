@@ -92,7 +92,7 @@ class P2pServer {
           NodeConfigs.MAX_NUM_INBOUND_CONNECTION) {
         this.setServerSidePeerEventHandlers(socket, url);
       } else {
-        logger.error(`Cannot exceed max connection: ${NodeConfigs.MAX_NUM_INBOUND_CONNECTION}\n` +
+        logger.info(`Cannot exceed max connection: ${NodeConfigs.MAX_NUM_INBOUND_CONNECTION}\n` +
             `- Connected: ${JSON.stringify(Object.keys(this.inbound))}\n` +
             `- Connecting: ${JSON.stringify(Array.from(this.peerConnectionsInProgress.keys()))}`);
         P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
@@ -455,7 +455,7 @@ class P2pServer {
             } else {
               const addressFromSig = P2pUtil.getAddressFromMessage(parsedMessage);
               if (!P2pUtil.checkPeerWhitelist(addressFromSig)) {
-                logger.error(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
+                logger.info(`This peer(${addressFromSig}) is not on the PEER_WHITELIST.`);
                 P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
                 P2pUtil.closeSocketSafe(this.inbound, socket);
                 return;
