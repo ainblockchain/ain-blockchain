@@ -871,9 +871,19 @@ class DB {
           'resource/account_registration_gas_amount', blockNumber, this.stateRoot);
       const restFunctionCallGasAmount = DB.getBlockchainParam(
           'resource/rest_function_call_gas_amount', blockNumber, this.stateRoot);
+      const rewardType = DB.getBlockchainParam('reward/type', blockNumber, this.stateRoot);
+      const rewardAnnualRate = DB.getBlockchainParam('reward/annual_rate', blockNumber, this.stateRoot);
+      const epochMs = DB.getBlockchainParam('genesis/epoch_ms', blockNumber, this.stateRoot);
+      const blockchainParams = {
+        accountRegistrationGasAmount,
+        restFunctionCallGasAmount,
+        rewardType,
+        rewardAnnualRate,
+        epochMs,
+      };
       const { func_results, subtree_func_results } = this.func.matchAndTriggerFunctions(
           localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime,
-          accountRegistrationGasAmount, restFunctionCallGasAmount, options);
+          blockchainParams, options);
       funcResults = func_results;
       subtreeFuncResults = subtree_func_results;
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
