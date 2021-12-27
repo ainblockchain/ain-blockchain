@@ -56,7 +56,7 @@ async function sendSignedTx(endpoint, params) {
   ).then((resp) => {
     const result = _.get(resp, 'data.result.result.result', {});
     const success = !CommonUtil.isFailedTx(result);
-    return { success, errMsg: result.error_message };
+    return { success, errMsg: result.message };
   }).catch((err) => {
     logger.error(`Failed to send transaction: ${err}`);
     return { success: false, errMsg: err.message };

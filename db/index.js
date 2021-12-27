@@ -653,7 +653,7 @@ class DB {
     } else {
       return {
         code: TxResultCode.EVAL_OWNER_INVALID_PERMISSION,
-        error_message: `Invalid permission '${permission}' ` +
+        message: `Invalid permission '${permission}' ` +
             `for local path '${CommonUtil.formatPath(localPath)}' ` +
             `with auth '${JSON.stringify(auth)}'`,
         matched: null,
@@ -838,7 +838,7 @@ class DB {
     if (CommonUtil.isFailedTxResultCode(ruleEvalRes.code)) {
       return CommonUtil.returnTxResult(
           ruleEvalRes.code,
-          ruleEvalRes.error_message,
+          ruleEvalRes.message,
           unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
@@ -1004,7 +1004,7 @@ class DB {
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
-          permCheckRes.error_message,
+          permCheckRes.message,
           unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
@@ -1061,7 +1061,7 @@ class DB {
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
-          permCheckRes.error_message,
+          permCheckRes.message,
           unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
@@ -1114,7 +1114,7 @@ class DB {
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
-          permCheckRes.error_message,
+          permCheckRes.message,
           unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
@@ -1209,7 +1209,7 @@ class DB {
     if (blockNumber > 0 && opList.length > setOpListSizeLimit) {
       return {
         code: JsonRpcApiResultCode.SET_EXCEEDS_OP_LIST_SIZE_LIMIT,
-        error_message: `The transaction exceeds the max op_list size limit: ` +
+        message: `The transaction exceeds the max op_list size limit: ` +
             `${opList.length} > ${setOpListSizeLimit}`
       };
     }
@@ -1403,28 +1403,28 @@ class DB {
     if (serviceStateUsage[StateLabelProperties.TREE_BYTES] > budgets.serviceStateBudget) {
       return Object.assign(result, {
           code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_ALL_SERVICES,
-          error_message: `Exceeded state budget limit for services ` +
+          message: `Exceeded state budget limit for services ` +
               `(${serviceStateUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.serviceStateBudget})`
       });
     }
     if (allAppsStateUsage[StateLabelProperties.TREE_BYTES] > budgets.appsStateBudget) {
       return Object.assign(result, {
           code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_ALL_APPS,
-          error_message: `Exceeded state budget limit for apps ` +
+          message: `Exceeded state budget limit for apps ` +
               `(${allAppsStateUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.appsStateBudget})`
       });
     }
     if (serviceStateUsage[StateLabelProperties.TREE_SIZE] > budgets.serviceTreeSizeBudget) {
       return Object.assign(result, {
           code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_ALL_SERVICES,
-          error_message: `Exceeded state tree size limit for services ` +
+          message: `Exceeded state tree size limit for services ` +
               `(${serviceStateUsage[StateLabelProperties.TREE_SIZE]} > ${budgets.serviceTreeSizeBudget})`
       });
     }
     if (allAppsStateUsage[StateLabelProperties.TREE_SIZE] > budgets.appsTreeSizeBudget) {
       return Object.assign(result, {
           code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_ALL_APPS,
-          error_message: `Exceeded state tree size limit for apps ` +
+          message: `Exceeded state tree size limit for apps ` +
               `(${allAppsStateUsage[StateLabelProperties.TREE_SIZE]} > ${budgets.appsTreeSizeBudget})`
       });
     }
@@ -1439,14 +1439,14 @@ class DB {
         if (freeTierTreeBytesLimitReached) {
           return Object.assign(result, {
               code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_FREE_TIER,
-              error_message: `Exceeded state budget limit for free tier ` +
+              message: `Exceeded state budget limit for free tier ` +
                   `(${stateFreeTierUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.freeStateBudget})`
           });
         }
         if (freeTierTreeSizeLimitReached) {
           return Object.assign(result, {
             code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_FREE_TIER,
-            error_message: `Exceeded state tree size limit for free tier ` +
+            message: `Exceeded state tree size limit for free tier ` +
                 `(${stateFreeTierUsage[StateLabelProperties.TREE_SIZE]} > ${budgets.freeTreeSizeBudget})`
           });
         }
@@ -1457,14 +1457,14 @@ class DB {
         if (appStateUsage[StateLabelProperties.TREE_BYTES] > singleAppStateBudget) {
           return Object.assign(result, {
               code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_APP,
-              error_message: `Exceeded state budget limit for app ${appName} ` +
+              message: `Exceeded state budget limit for app ${appName} ` +
                   `(${appStateUsage[StateLabelProperties.TREE_BYTES]} > ${singleAppStateBudget})`
           });
         }
         if (appStateUsage[StateLabelProperties.TREE_SIZE] > singleAppTreeSizeBudget) {
           return Object.assign(result, {
               code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_APP,
-              error_message: `Exceeded state tree size limit for app ${appName} ` +
+              message: `Exceeded state tree size limit for app ${appName} ` +
                   `(${appStateUsage[StateLabelProperties.TREE_SIZE]} > ${singleAppTreeSizeBudget})`
           });
         }
@@ -1501,7 +1501,7 @@ class DB {
     if (balance < gasCost) {
       Object.assign(executionResult, {
         code: TxResultCode.FEE_BALANCE_TOO_LOW,
-        error_message: `Failed to collect gas fee: balance too low (${balance} / ${gasCost})`
+        message: `Failed to collect gas fee: balance too low (${balance} / ${gasCost})`
       });
       this.restoreDb(); // Revert changes made by the tx operations
       balance = this.getBalance(billedTo);
@@ -1519,7 +1519,7 @@ class DB {
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) { // Should not happend
       Object.assign(executionResult, {
         code: TxResultCode.FEE_FAILED_TO_COLLECT_GAS_FEE,
-        error_message: `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`
+        message: `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`
       });
     }
   }
@@ -1781,13 +1781,13 @@ class DB {
     if (treeHeight > stateTreeHeightLimit) {
       return {
         code: TxResultCode.TREE_OUT_OF_TREE_HEIGHT_LIMIT,
-        error_message: `Out of tree height limit (${treeHeight} > ${stateTreeHeightLimit})`
+        message: `Out of tree height limit (${treeHeight} > ${stateTreeHeightLimit})`
       };
     }
     if (treeSize > budgets.treeSizeBudget) {
       return {
         code: TxResultCode.TREE_OUT_OF_TREE_SIZE_LIMIT,
-        error_message: `Out of tree size budget (${treeSize} > ${budgets.treeSizeBudget})`
+        message: `Out of tree size budget (${treeSize} > ${budgets.treeSizeBudget})`
       };
     }
     return {
@@ -1820,7 +1820,7 @@ class DB {
       const subtreeRulePathList = this.getSubtreeConfigPathList(matchedWriteRules.subtreeRules);
       return {
         code: TxResultCode.EVAL_RULE_NON_EMPTY_SUBTREE_RULES,
-        error_message: `Non-empty (${matchedWriteRules.subtreeRules.length}) ` +
+        message: `Non-empty (${matchedWriteRules.subtreeRules.length}) ` +
             `subtree rules for value path '${CommonUtil.formatPath(parsedValuePath)}'': ` +
             `${JSON.stringify(subtreeRulePathList)}`,
         matched,
@@ -1837,7 +1837,7 @@ class DB {
             `timestamp: ${timestamp}\n`);
         return {
           code: TxResultCode.EVAL_RULE_FALSE_WRITE_RULE_EVAL,
-          error_message: `Write rule evaluated false: [${evalWriteRuleRes.ruleString}] ` +
+          message: `Write rule evaluated false: [${evalWriteRuleRes.ruleString}] ` +
               `at '${CommonUtil.formatPath(matchedWriteRules.closestRule.path)}' ` +
               `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
               `with path vars '${JSON.stringify(matchedWriteRules.pathVars)}', ` +
@@ -1854,7 +1854,7 @@ class DB {
             `newValue: ${JSON.stringify(newValue)}\n`);
         return {
           code: TxResultCode.EVAL_RULE_FALSE_STATE_RULE_EVAL,
-          error_message: `State rule evaluated false: [${evalStateRuleRes.ruleString}] ` +
+          message: `State rule evaluated false: [${evalStateRuleRes.ruleString}] ` +
               `at '${CommonUtil.formatPath(matchedStateRules.closestRule.path)}' ` +
               `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
               `with newValue '${JSON.stringify(newValue)}'`,
@@ -1868,7 +1868,7 @@ class DB {
           `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
       return {
         code: TxResultCode.EVAL_RULE_INTERNAL_ERROR,
-        error_message: `Internal error: ${JSON.stringify(err)}`,
+        message: `Internal error: ${JSON.stringify(err)}`,
         matched,
       };
     }
@@ -1884,7 +1884,7 @@ class DB {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_RULE,
-        error_message: `Non-empty (${matched.subtreeOwners.length}) ` +
+        message: `Non-empty (${matched.subtreeOwners.length}) ` +
             `subtree owners for rule path '${CommonUtil.formatPath(parsedRulePath)}': ` +
             `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
@@ -1895,7 +1895,7 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_RULE,
-        error_message: `${OwnerProperties.WRITE_RULE} ` +
+        message: `${OwnerProperties.WRITE_RULE} ` +
             `permission evaluated false: [${checkRes.permissionString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for rule path '${CommonUtil.formatPath(parsedRulePath)}' ` +
@@ -1916,7 +1916,7 @@ class DB {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_FUNCTION,
-        error_message: `Non-empty (${matched.subtreeOwners.length}) ` +
+        message: `Non-empty (${matched.subtreeOwners.length}) ` +
             `subtree owners for function path '${CommonUtil.formatPath(parsedFuncPath)}': ` +
             `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
@@ -1927,7 +1927,7 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_FUNCTION,
-        error_message: `${OwnerProperties.WRITE_FUNCTION} ` +
+        message: `${OwnerProperties.WRITE_FUNCTION} ` +
             `permission evaluated false: [${checkRes.permissionString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for function path '${CommonUtil.formatPath(parsedFuncPath)}' ` +
@@ -1948,7 +1948,7 @@ class DB {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_OWNER,
-        error_message: `Non-empty (${matched.subtreeOwners.length}) ` +
+        message: `Non-empty (${matched.subtreeOwners.length}) ` +
             `subtree owners for owner path '${CommonUtil.formatPath(parsedOwnerPath)}': ` +
             `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
@@ -1960,7 +1960,7 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_OWNER,
-        error_message: `${permission} ` +
+        message: `${permission} ` +
             `permission evaluated false: [${checkRes.permissionString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}' ` +
