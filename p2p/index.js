@@ -679,11 +679,9 @@ class P2pClient {
   }
 
   setPeerCandidate(jsonRpcUrl, address, queriedAt) {
-    if (CommonUtil.isArray(NodeConfigs.PEER_WHITELIST) &&
-        NodeConfigs.PEER_WHITELIST.includes(address)) {
-      this.peerCandidates.set(jsonRpcUrl, { queriedAt });
-    } else if (CommonUtil.isString(NodeConfigs.PEER_WHITELIST) &&
-        CommonUtil.isWildcard(NodeConfigs.PEER_WHITELIST)) {
+    if (CommonUtil.isWildcard(NodeConfigs.PEER_WHITELIST) ||
+        (CommonUtil.isArray(NodeConfigs.PEER_WHITELIST) &&
+            NodeConfigs.PEER_WHITELIST.includes(address))) {
       this.peerCandidates.set(jsonRpcUrl, { queriedAt });
     }
   }
