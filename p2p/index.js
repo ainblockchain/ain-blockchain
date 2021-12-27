@@ -55,14 +55,20 @@ class P2pClient {
   getConnectionStatus() {
     const incomingPeers = Object.keys(this.server.inbound);
     const outgoingPeers = Object.keys(this.outbound);
+    const peerConnectionsInProgress = Array.from(this.peerConnectionsInProgress.keys());
+    const peerCandidates = Array.from(this.peerCandidates.keys());
     return {
       state: this.p2pState,
       stateNumeric: Object.keys(P2pNetworkStates).indexOf(this.p2pState),
       maxInbound: NodeConfigs.MAX_NUM_INBOUND_CONNECTION,
       targetOutBound: NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
+      peerConnectionsInProgress: peerConnectionsInProgress,
+      peerCandidates: peerCandidates,
       numInbound: incomingPeers.length,
       numOutbound: outgoingPeers.length,
       numConnections: incomingPeers.length + outgoingPeers.length,
+      numPeerConnectionsInProgress: peerConnectionsInProgress.length,
+      numPeerCandidates: peerCandidates.length,
       incomingPeers: incomingPeers,
       outgoingPeers: outgoingPeers,
     };
