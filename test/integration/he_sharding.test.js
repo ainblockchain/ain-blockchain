@@ -29,10 +29,9 @@ const APP_SERVER = PROJECT_ROOT + "client/index.js"
 const ENV_VARIABLES = [
   {
     // For parent chain poc node
-    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/1-node',
+    BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/1-node', PORT: 8081, P2P_PORT: 5001,
     UNSAFE_PRIVATE_KEY: 'b22c95ffc4a5c096f7d7d0487ba963ce6ac945bdc91c79b64ce209de289bec96',
-    PEER_CANDIDATE_JSON_RPC_URL: '', ENABLE_EXPRESS_RATE_LIMIT: false, PORT: 8081, P2P_PORT: 5001,
-    ENABLE_GAS_FEE_WORKAROUND: true,
+    ENABLE_EXPRESS_RATE_LIMIT: false, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     // For shard chain tracker
@@ -41,7 +40,7 @@ const ENV_VARIABLES = [
   {
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard', PORT: 9091, P2P_PORT: 6001,
     UNSAFE_PRIVATE_KEY: 'd8f77aa2afe2580a858a8cc97b6056e10f888c6fd07ebb58755d8422b03da816',
-    PEER_CANDIDATE_JSON_RPC_URL: '', ENABLE_EXPRESS_RATE_LIMIT: false, ENABLE_GAS_FEE_WORKAROUND: true,
+    ENABLE_EXPRESS_RATE_LIMIT: false, ENABLE_GAS_FEE_WORKAROUND: true,
   },
   {
     BLOCKCHAIN_CONFIGS_DIR: 'blockchain-configs/he-shard', PORT: 9092, P2P_PORT: 6002,

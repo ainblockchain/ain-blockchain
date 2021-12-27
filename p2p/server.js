@@ -480,8 +480,8 @@ class P2pServer {
               };
               P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, url);
               const jsonRpcUrl = _.get(peerInfo, 'networkStatus.urls.jsonRpc.url');
-              if (!this.client.peerCandidates[jsonRpcUrl]) {
-                this.client.setPeerCandidates(jsonRpcUrl, null);
+              if (!this.client.peerCandidates.has(jsonRpcUrl)) {
+                this.client.setPeerCandidate(jsonRpcUrl, null);
               }
               const body = {
                 address: this.getNodeAddress(),
@@ -816,7 +816,8 @@ class P2pServer {
       let blockNumberToReport = lastReportedBlockNumberConfirmed + 1;
       const opList = [];
       const txBytesLimit = this.node.getBlockchainParam('resource/tx_bytes_limit');
-      while (blockNumberToReport <= lastFinalizedBlockNumber) {
+      const setOpListSizeLimit = this.node.getBlockchainParam('resource/set_op_list_size_limit');
+      while (blockNumberToReport <= lastFinalizedBlockNumber && opList.length < setOpListSizeLimit) {
         if (sizeof(opList) >= txBytesLimit * 0.9) {
           break;
         }
