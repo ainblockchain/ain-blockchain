@@ -329,7 +329,6 @@ class Consensus {
         resList.push(res);
       }
     }
-    tempDb.removeOldReceipts();
     // Once successfully executed txs (when submitted to tx pool) can become invalid
     // after some blocks are created. Remove those transactions from tx pool.
     this.node.tp.removeInvalidTxsFromPool(invalidTransactions);
@@ -696,7 +695,6 @@ class Consensus {
         level: 'error'
       });
     }
-    db.removeOldReceipts();
   }
 
   static validateStateProofHash(expectedStateProofHash, number, db, node, takeSnapshot) {
