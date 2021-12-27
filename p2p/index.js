@@ -55,14 +55,20 @@ class P2pClient {
   getConnectionStatus() {
     const incomingPeers = Object.keys(this.server.inbound);
     const outgoingPeers = Object.keys(this.outbound);
+    const peerConnectionsInProgress = Array.from(this.peerConnectionsInProgress.keys());
+    const peerCandidates = Array.from(this.peerCandidates.keys());
     return {
       state: this.p2pState,
       stateNumeric: Object.keys(P2pNetworkStates).indexOf(this.p2pState),
       maxInbound: NodeConfigs.MAX_NUM_INBOUND_CONNECTION,
       targetOutBound: NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
+      peerConnectionsInProgress: peerConnectionsInProgress,
+      peerCandidates: peerCandidates,
       numInbound: incomingPeers.length,
       numOutbound: outgoingPeers.length,
       numConnections: incomingPeers.length + outgoingPeers.length,
+      numPeerConnectionsInProgress: peerConnectionsInProgress.length,
+      numPeerCandidates: peerCandidates.length,
       incomingPeers: incomingPeers,
       outgoingPeers: outgoingPeers,
     };
@@ -663,7 +669,8 @@ class P2pClient {
             this.server.consensus.stakeTx = null;
           }
         } else {
-          logger.error('Address confirmation hasn\'t sent back. Close the socket connection');
+          logger.error(`Address confirmation hasn\'t sent back. ` +
+              `Close the socket(${socket.url}) connection`);
           this.clearPeerConnectionsInProgress(socket);
         }
     }, NodeConfigs.P2P_WAIT_FOR_ADDRESS_TIMEOUT_MS);
@@ -688,8 +695,12 @@ class P2pClient {
     }
   }
 
-  setPeerCandidate(jsonRpcUrl, queriedAt) {
-    this.peerCandidates.set(jsonRpcUrl, { queriedAt });
+  setPeerCandidate(jsonRpcUrl, address, queriedAt) {
+    if (CommonUtil.isWildcard(NodeConfigs.PEER_WHITELIST) ||
+        (CommonUtil.isArray(NodeConfigs.PEER_WHITELIST) &&
+            NodeConfigs.PEER_WHITELIST.includes(address))) {
+      this.peerCandidates.set(jsonRpcUrl, { queriedAt });
+    }
   }
 
   /**
@@ -716,19 +727,20 @@ class P2pClient {
     // NOTE(platfowner): As peerCandidateUrl can be a domain name url with multiple nodes,
     // use the json rpc url in response instead.
     const jsonRpcUrlFromResp = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
+    const address = _.get(peerCandidateInfo, 'address');
     if (!jsonRpcUrlFromResp) {
       logger.error(`Invalid peer candidate json rpc url from peer candidate url ` +
           `(${peerCandidateJsonRpcUrl}).`);
       return;
     }
     if (jsonRpcUrlFromResp !== myJsonRpcUrl) {
-      this.setPeerCandidate(jsonRpcUrlFromResp, Date.now());
+      this.setPeerCandidate(jsonRpcUrlFromResp, address, Date.now());
     }
     const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
     Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
       if (url !== myJsonRpcUrl && !this.peerCandidates.has(url) && this.isValidJsonRpcUrl(url) &&
           P2pUtil.checkPeerWhitelist(address)) {
-        this.setPeerCandidate(url, null);
+        this.setPeerCandidate(url, address, null);
       }
     });
     const newPeerP2pUrlList = _.get(peerCandidateInfo, 'newPeerP2pUrlList', []);
@@ -739,7 +751,6 @@ class P2pClient {
       .map(([, p2pUrl]) => p2pUrl);
     const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
     const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.urls.p2p.url');
-    const address = _.get(peerCandidateInfo, 'address');
     if (peerCandidateP2pUrl !== myP2pUrl && isAvailableForConnection && !this.outbound[address]) {
       // NOTE(minsulee2): Add a peer candidate up on the list if it is not connected.
       newPeerP2pUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
