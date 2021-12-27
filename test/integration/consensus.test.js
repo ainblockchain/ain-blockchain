@@ -386,7 +386,7 @@ describe('Consensus', () => {
       if (!(await waitUntilTxFinalized(serverList, claimTx.tx_hash))) {
         console.error(`Failed to check finalization of tx.`);
       }
-      claimTx.result.error_message = 'erased';
+      claimTx.result.message = 'erased';
       assert.deepEqual(claimTx.result, {
         "gas_amount_total": {
           "bandwidth": {
@@ -397,7 +397,7 @@ describe('Consensus', () => {
           }
         },
         "gas_cost_total": 0,
-        "error_message": "erased",
+        "message": "erased",
         "code": 12103,
         "bandwidth_gas_amount": 1,
         "gas_amount_charged": 1
