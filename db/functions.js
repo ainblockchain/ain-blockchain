@@ -92,12 +92,12 @@ class Functions {
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   matchAndTriggerFunctions(
       parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
-      accountRegistrationGasAmount, restFunctionCallGasAmount, options) {
+      blockchainParams, options) {
     const matchedFunction = this.db.matchFunctionForParsedPath(parsedValuePath);
     const triggerRes = this.triggerFunctions(
         matchedFunction.matchedFunction.path, matchedFunction.pathVars, matchedFunction.matchedFunction.config,
         parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
-        accountRegistrationGasAmount, restFunctionCallGasAmount);
+        blockchainParams);
     const subtreeFuncRes = {};
     for (const subtreeConfig of matchedFunction.subtreeFunctions) {
       const matchedPrevValues =
@@ -116,8 +116,7 @@ class Functions {
           const subtreeValuePathRes = this.triggerFunctions(
               subtreeFuncPath, pathVars, subtreeConfig.config,
               subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
-              transaction, blockNumber, blockTime,
-              accountRegistrationGasAmount, restFunctionCallGasAmount);
+              transaction, blockNumber, blockTime, blockchainParams);
           subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
         }
       }
@@ -136,7 +135,7 @@ class Functions {
             subtreeFuncPath, pathVars, subtreeConfig.config,
             subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
             transaction, blockNumber, blockTime,
-            accountRegistrationGasAmount, restFunctionCallGasAmount);
+            blockchainParams);
         subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
       }
       subtreeFuncRes[CommonUtil.formatPath(subtreeConfig.path)] = subtreeFuncPathRes;
@@ -149,8 +148,7 @@ class Functions {
 
   triggerFunctions(
       functionPath, pathVars, functionMap, valuePath, value, prevValue, auth, timestamp,
-      transaction, blockNumber, blockTime,
-      accountRegistrationGasAmount, restFunctionCallGasAmount) {
+      transaction, blockNumber, blockTime, blockchainParams) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const functionList = Functions.getFunctionList(functionMap);
@@ -210,7 +208,7 @@ class Functions {
                     auth: newAuth,
                     opResultList: [],
                     otherGasAmount: 0,
-                    accountRegistrationGasAmount,
+                    ...blockchainParams,
                   });
               funcResults[functionEntry.function_id] = result;
               if (DevFlags.enableRichFunctionLogging) {
@@ -273,7 +271,7 @@ class Functions {
             }));
             funcResults[functionEntry.function_id] = {
               code: FunctionResultCode.SUCCESS,
-              bandwidth_gas_amount: restFunctionCallGasAmount,
+              bandwidth_gas_amount: blockchainParams.restFunctionCallGasAmount,
             };
             triggerCount++;
           }
@@ -799,6 +797,16 @@ class Functions {
     }, context);
   }
 
+  getBlockRewardMultiplier(context) {
+    const { rewardType, rewardAnnualRate, epochMs } = context;
+    switch (rewardType) {
+      case 'FIXED':
+        const yearMs = 31557600000; // 365.25 * 24 * 60 * 60 * 1000
+        return Math.max(rewardAnnualRate * epochMs / yearMs, 0);
+    }
+    return 0;
+  }
+
   _distributeFee(value, context) {
     if (value === null) {
       // Does nothing for null value.
@@ -812,31 +820,31 @@ class Functions {
     if (blockNumber <= 1) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
+    const blockRewardMultiplier = this.getBlockRewardMultiplier(context);
     const lastConsensusRound = this.db.getValue(PathUtil.getConsensusNumberPath(blockNumber - 1));
     const gasCostTotal = lastConsensusRound.propose.gas_cost_total;
-    if (gasCostTotal <= 0) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    }
-    const proposer = lastConsensusRound.propose.proposer;
     const blockHash = lastConsensusRound.propose.block_hash;
     const votes = lastConsensusRound[blockHash].vote;
     const totalAtStake = Object.values(votes).reduce((acc, cur) => acc + cur.stake, 0);
     const validators = Object.keys(votes);
-    const proposerReward = gasCostTotal / 2;
-    const validatorRewardTotal = gasCostTotal - proposerReward;
-    this.incrementConsensusRewards(proposer, proposerReward, context);
-    let rewardSum = 0;
-    validators.forEach((validator, index) => {
-      const validatorStake = votes[validator].stake;
-      let validatorReward = 0;
-      if (index === validators.length - 1) {
-        validatorReward = validatorRewardTotal - rewardSum;
-      } else {
-        validatorReward = validatorRewardTotal * (validatorStake / totalAtStake);
-        rewardSum += validatorReward;
+    let txFeeSum = 0;
+    for (let index = 0; index < validators.length; index++) {
+      const validatorAddr = validators[index];
+      const validatorStake = votes[validatorAddr].stake;
+      const blockReward = blockRewardMultiplier * validatorStake;
+      let txFee = 0;
+      if (gasCostTotal > 0) {
+        if (index === validators.length - 1) {
+          txFee = gasCostTotal - txFeeSum;
+        } else {
+          txFee = gasCostTotal * (validatorStake / totalAtStake);
+          txFeeSum += txFee;
+        }
       }
-      this.incrementConsensusRewards(validator, validatorReward, context);
-    });
+      if (txFee + blockReward > 0) {
+        this.incrementConsensusRewards(validatorAddr, txFee + blockReward, context);
+      }
+    }
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 

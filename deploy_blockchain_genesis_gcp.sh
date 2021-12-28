@@ -174,6 +174,9 @@ NODE_3_TARGET_ADDR="${GCP_USER}@${SEASON}-node-3-iowa"
 NODE_4_TARGET_ADDR="${GCP_USER}@${SEASON}-node-4-netherlands"
 NODE_5_TARGET_ADDR="${GCP_USER}@${SEASON}-node-5-taiwan"
 NODE_6_TARGET_ADDR="${GCP_USER}@${SEASON}-node-6-oregon"
+NODE_7_TARGET_ADDR="${GCP_USER}@${SEASON}-node-7-singapore"
+NODE_8_TARGET_ADDR="${GCP_USER}@${SEASON}-node-8-iowa"
+NODE_9_TARGET_ADDR="${GCP_USER}@${SEASON}-node-9-netherlands"
 
 TRACKER_ZONE="asia-east1-b"
 NODE_0_ZONE="asia-east1-b"
@@ -183,6 +186,9 @@ NODE_3_ZONE="us-central1-a"
 NODE_4_ZONE="europe-west4-a"
 NODE_5_ZONE="asia-east1-b"
 NODE_6_ZONE="us-west1-b"
+NODE_7_ZONE="asia-southeast1-b"
+NODE_8_ZONE="us-central1-a"
+NODE_9_ZONE="europe-west4-a"
 
 if [[ $KILL_OPTION = "--skip-kill" ]]; then
     printf "\nSkipping process kill...\n"
@@ -197,6 +203,9 @@ else
     gcloud compute ssh $NODE_4_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_4_ZONE
     gcloud compute ssh $NODE_5_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_5_ZONE
     gcloud compute ssh $NODE_6_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_6_ZONE
+    gcloud compute ssh $NODE_7_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_7_ZONE
+    gcloud compute ssh $NODE_8_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_8_ZONE
+    gcloud compute ssh $NODE_9_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_9_ZONE
 
     if [[ $NUM_SHARDS -gt 0 ]]; then
         for i in $(seq $NUM_SHARDS)
@@ -240,6 +249,12 @@ if [[ $RESET_RESTART_OPTION = "" ]]; then
     gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_5_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_5_ZONE
     printf "\nDeploying files to parent node 6 (${NODE_6_TARGET_ADDR})...\n\n"
     gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_6_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_6_ZONE
+    printf "\nDeploying files to parent node 7 (${NODE_7_TARGET_ADDR})...\n\n"
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_7_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_7_ZONE
+    printf "\nDeploying files to parent node 8 (${NODE_8_TARGET_ADDR})...\n\n"
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_8_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_8_ZONE
+    printf "\nDeploying files to parent node 9 (${NODE_9_TARGET_ADDR})...\n\n"
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_9_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_9_ZONE
 fi
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
@@ -260,6 +275,12 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
     gcloud compute ssh $NODE_5_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_5_ZONE
     printf "\n\n##########################\n# Setting up parent node 6 #\n##########################\n\n"
     gcloud compute ssh $NODE_6_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_6_ZONE
+    printf "\n\n##########################\n# Setting up parent node 7 #\n##########################\n\n"
+    gcloud compute ssh $NODE_7_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_7_ZONE
+    printf "\n\n##########################\n# Setting up parent node 8 #\n##########################\n\n"
+    gcloud compute ssh $NODE_8_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_8_ZONE
+    printf "\n\n##########################\n# Setting up parent node 9 #\n##########################\n\n"
+    gcloud compute ssh $NODE_9_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_9_ZONE
 fi
 
 printf "\nStarting blockchain servers...\n\n"
@@ -294,7 +315,7 @@ START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRA
 printf "START_TRACKER_CMD=$START_TRACKER_CMD\n"
 eval $START_TRACKER_CMD
 
-NUM_NODES=7
+NUM_NODES=10
 node_index=0
 while [ $node_index -lt $NUM_NODES ]
 do
