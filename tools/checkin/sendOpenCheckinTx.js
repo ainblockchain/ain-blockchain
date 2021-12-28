@@ -10,7 +10,7 @@ function buildOpenCheckinTxBody(fromAddr, tokenAmount, checkinId) {
   // NOTE(liayoo): `sender_proof` is a signature of the stringified { ref, amount, sender, timestamp, nonce },
   //    signed with the sender key.
   const ref = `/checkin/requests/ETH/3/0xB16c0C80a81f73204d454426fC413CAe455525A7/${fromAddr}/${checkinId}`;
-  const timestamp = Date.now();
+  const timestamp = checkinId;
   const body = {
     ref,
     amount: tokenAmount,
