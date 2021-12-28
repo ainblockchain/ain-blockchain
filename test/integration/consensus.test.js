@@ -406,7 +406,7 @@ describe('Consensus', () => {
 
     it('can claim unclaimed rewards', async () => {
       const unclaimed = parseOrLog(syncRequest('GET',
-          server2 + `/get_value?ref=/consensus/rewards/${server1Addr}/unclaimed&is_final=true`).body.toString('utf-8')).result;
+          server1 + `/get_value?ref=/consensus/rewards/${server1Addr}/unclaimed&is_final=true`).body.toString('utf-8')).result;
       const claimTx = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
         ref: `/gas_fee/claim/${server1Addr}/1`,
         value: {
