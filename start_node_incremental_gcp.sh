@@ -317,7 +317,7 @@ if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
     printf "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH\n"
 fi
 
-MAX_OLD_SPACE_SIZE_MB=11000
+MAX_OLD_SPACE_SIZE_MB=55000
 
 # NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
 export CORS_WHITELIST='*'
