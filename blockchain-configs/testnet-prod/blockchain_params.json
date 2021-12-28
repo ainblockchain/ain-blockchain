@@ -59,7 +59,7 @@
     "genesis_addr": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc",
     "genesis_timestamp": 1571819318272,
     "num_genesis_accounts": 10,
-    "epoch_ms": 3000,
+    "epoch_ms": 20000,
     "chain_id": 0,
     "network_id": 0
   },
