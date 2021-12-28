@@ -159,6 +159,7 @@ function getGenesisValues() {
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_CONSENSUS]: BlockchainParams.consensus,
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_GENESIS]: BlockchainParams.genesis,
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_RESOURCE]: BlockchainParams.resource,
+    [PredefinedDbPaths.BLOCKCHAIN_PARAMS_REWARD]: BlockchainParams.reward,
     [PredefinedDbPaths.BLOCKCHAIN_PARAMS_SHARDING]: BlockchainParams.sharding,
   });
   return values;

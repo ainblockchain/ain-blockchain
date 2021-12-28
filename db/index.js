@@ -653,7 +653,7 @@ class DB {
     } else {
       return {
         code: TxResultCode.EVAL_OWNER_INVALID_PERMISSION,
-        error_message: `Invalid permission '${permission}' ` +
+        message: `Invalid permission '${permission}' ` +
             `for local path '${CommonUtil.formatPath(localPath)}' ` +
             `with auth '${JSON.stringify(auth)}'`,
         matched: null,
@@ -698,6 +698,12 @@ class DB {
   // TODO(platfowner): Add tests for op.fid.
   // NOTE(liayoo): This function is only for external uses (APIs).
   get(opList) {
+    if (!CommonUtil.isArray(opList)) {
+      return {
+        code: JsonRpcApiResultCode.GET_INVALID_OP_LIST,
+        message: `Invalid op_list given`
+      };
+    }
     if (CommonUtil.isNumber(NodeConfigs.GET_OP_LIST_SIZE_LIMIT) &&
       opList.length > NodeConfigs.GET_OP_LIST_SIZE_LIMIT) {
       return {
@@ -810,21 +816,21 @@ class DB {
     const parsedPath = CommonUtil.parsePath(valuePath);
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
-    const unitWriteGasLimit = DB.getBlockchainParam(
+    const unitWriteGasAmount = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
     const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_VALUE_INVALID_VALUE_PATH,
           `Invalid value path: ${isValidPath.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const isValidObj = isValidJsObjectForStates(value, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_VALUE_INVALID_VALUE_STATES,
           `Invalid object for states: ${isValidObj.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -832,14 +838,14 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SUCCESS,
           null,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, timestamp);
     if (CommonUtil.isFailedTxResultCode(ruleEvalRes.code)) {
       return CommonUtil.returnTxResult(
           ruleEvalRes.code,
-          ruleEvalRes.error_message,
-          unitWriteGasLimit);
+          ruleEvalRes.message,
+          unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);
@@ -848,12 +854,12 @@ class DB {
         // There is nothing to do.
         return CommonUtil.returnTxResult(
             TxResultCode.SUCCESS,
-            null, unitWriteGasLimit);
+            null, unitWriteGasAmount);
       } else {
         return CommonUtil.returnTxResult(
             TxResultCode.SET_VALUE_NO_WRITABLE_PATH_WITH_SHARD_CONFIG,
             `Non-writable path with shard config: ${isWritablePath.invalidPath}`,
-            unitWriteGasLimit);
+            unitWriteGasAmount);
       }
     }
     const prevValue = this.getValue(CommonUtil.formatPath(localPath));
@@ -871,16 +877,26 @@ class DB {
           'resource/account_registration_gas_amount', blockNumber, this.stateRoot);
       const restFunctionCallGasAmount = DB.getBlockchainParam(
           'resource/rest_function_call_gas_amount', blockNumber, this.stateRoot);
+      const rewardType = DB.getBlockchainParam('reward/type', blockNumber, this.stateRoot);
+      const rewardAnnualRate = DB.getBlockchainParam('reward/annual_rate', blockNumber, this.stateRoot);
+      const epochMs = DB.getBlockchainParam('genesis/epoch_ms', blockNumber, this.stateRoot);
+      const blockchainParams = {
+        accountRegistrationGasAmount,
+        restFunctionCallGasAmount,
+        rewardType,
+        rewardAnnualRate,
+        epochMs,
+      };
       const { func_results, subtree_func_results } = this.func.matchAndTriggerFunctions(
           localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime,
-          accountRegistrationGasAmount, restFunctionCallGasAmount, options);
+          blockchainParams, options);
       funcResults = func_results;
       subtreeFuncResults = subtree_func_results;
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
         return CommonUtil.returnTxResult(
             TxResultCode.SET_VALUE_TRIGGERED_FUNCTION_CALL_FAILED,
             `Triggered function call failed`,
-            unitWriteGasLimit,
+            unitWriteGasAmount,
             funcResults,
             subtreeFuncResults);
       }
@@ -888,7 +904,7 @@ class DB {
         return CommonUtil.returnTxResult(
             TxResultCode.SET_VALUE_TRIGGERED_SUBTREE_FUNCTION_CALL_FAILED,
             `Triggered subtree function call failed`,
-            unitWriteGasLimit,
+            unitWriteGasAmount,
             funcResults,
             subtreeFuncResults);
       }
@@ -904,7 +920,7 @@ class DB {
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
-        unitWriteGasLimit,
+        unitWriteGasAmount,
         funcResults,
         subtreeFuncResults);
   }
@@ -914,12 +930,12 @@ class DB {
     const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
-      const unitWriteGasLimit = DB.getBlockchainParam(
+      const unitWriteGasAmount = DB.getBlockchainParam(
           'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
       return CommonUtil.returnTxResult(
           TxResultCode.INC_VALUE_NOT_A_NUMBER_TYPE,
           `Not a number type: ${valueBefore} or ${delta}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) + delta;
     return this.setValue(
@@ -931,12 +947,12 @@ class DB {
     const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
-      const unitWriteGasLimit = DB.getBlockchainParam(
+      const unitWriteGasAmount = DB.getBlockchainParam(
           'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
       return CommonUtil.returnTxResult(
           TxResultCode.DEC_VALUE_NOT_A_NUMBER_TYPE,
           `Not a number type: ${valueBefore} or ${delta}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) - delta;
     return this.setValue(
@@ -947,14 +963,14 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
-    const unitWriteGasLimit = DB.getBlockchainParam(
+    const unitWriteGasAmount = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
     const isValidObj = isValidJsObjectForStates(func, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_FUNCTION_INVALID_FUNCTION_STATES,
           `Invalid object for states: ${isValidObj.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const parsedPath = CommonUtil.parsePath(functionPath);
     const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
@@ -962,14 +978,14 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_FUNCTION_INVALID_FUNCTION_PATH,
           `Invalid function path: ${isValidPath.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const isValidFunction = isValidFunctionTree(parsedPath, func);
     if (!isValidFunction.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_FUNCTION_INVALID_FUNCTION_TREE,
           `Invalid function tree: ${isValidFunction.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     if (!auth || !this.isConsensusAppAdmin(auth.addr)) {
       const ownerOnlyFid = this.func.hasOwnerOnlyFunction(func);
@@ -977,7 +993,7 @@ class DB {
         return CommonUtil.returnTxResult(
             TxResultCode.SET_FUNCTION_OWNER_ONLY_FUNCTION,
             `Trying to write owner-only function: ${ownerOnlyFid}`,
-            unitWriteGasLimit);
+            unitWriteGasAmount);
       }
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
@@ -986,7 +1002,7 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SUCCESS,
           null,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const curFunction = this.getFunction(CommonUtil.formatPath(localPath));
     const applyRes = applyFunctionChange(curFunction, func);
@@ -994,15 +1010,15 @@ class DB {
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
-          permCheckRes.error_message,
-          unitWriteGasLimit);
+          permCheckRes.message,
+          unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
     this.writeDatabase(fullPath, applyRes.funcConfig);
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
-        unitWriteGasLimit);
+        unitWriteGasAmount);
   }
 
   // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
@@ -1011,14 +1027,14 @@ class DB {
     const isGlobal = options && options.isGlobal;
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
-    const unitWriteGasLimit = DB.getBlockchainParam(
+    const unitWriteGasAmount = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
     const isValidObj = isValidJsObjectForStates(rule, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_RULE_INVALID_RULE_STATES,
           `Invalid object for states: ${isValidObj.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const parsedPath = CommonUtil.parsePath(rulePath);
     const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
@@ -1026,7 +1042,7 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_RULE_INVALID_RULE_PATH,
           `Invalid rule path: ${isValidPath.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const minGcNumSiblingsDeleted = DB.getBlockchainParam(
           'resource/min_gc_num_siblings_deleted', blockNumber, this.stateRoot);
@@ -1035,7 +1051,7 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_RULE_INVALID_RULE_TREE,
           `Invalid rule tree: ${isValidRule.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -1043,7 +1059,7 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SUCCESS,
           null,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const curRule = this.getRule(CommonUtil.formatPath(localPath));
     const applyRes = applyRuleChange(curRule, rule);
@@ -1051,29 +1067,29 @@ class DB {
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
-          permCheckRes.error_message,
-          unitWriteGasLimit);
+          permCheckRes.message,
+          unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
     this.writeDatabase(fullPath, applyRes.ruleConfig);
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
-        unitWriteGasLimit);
+        unitWriteGasAmount);
   }
 
   setOwner(ownerPath, owner, auth, blockNumber, options) {
     const isGlobal = options && options.isGlobal;
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
-    const unitWriteGasLimit = DB.getBlockchainParam(
+    const unitWriteGasAmount = DB.getBlockchainParam(
         'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
     const isValidObj = isValidJsObjectForStates(owner, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_OWNER_INVALID_OWNER_STATES,
           `Invalid object for states: ${isValidObj.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const parsedPath = CommonUtil.parsePath(ownerPath);
     const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
@@ -1081,14 +1097,14 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_OWNER_INVALID_OWNER_PATH,
           `Invalid owner path: ${isValidPath.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const isValidOwner = isValidOwnerTree(parsedPath, owner);
     if (!isValidOwner.isValid) {
       return CommonUtil.returnTxResult(
           TxResultCode.SET_OWNER_INVALID_OWNER_TREE,
           `Invalid owner tree: ${isValidOwner.invalidPath}`,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
@@ -1096,7 +1112,7 @@ class DB {
       return CommonUtil.returnTxResult(
           TxResultCode.SUCCESS,
           null,
-          unitWriteGasLimit);
+          unitWriteGasAmount);
     }
     const curOwner = this.getOwner(CommonUtil.formatPath(localPath));
     const applyRes = applyOwnerChange(curOwner, owner);
@@ -1104,15 +1120,15 @@ class DB {
     if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
       return CommonUtil.returnTxResult(
           permCheckRes.code,
-          permCheckRes.error_message,
-          unitWriteGasLimit);
+          permCheckRes.message,
+          unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
     this.writeDatabase(fullPath, applyRes.ownerConfig);
     return CommonUtil.returnTxResult(
         TxResultCode.SUCCESS,
         null,
-        unitWriteGasLimit);
+        unitWriteGasAmount);
   }
 
   /**
@@ -1183,12 +1199,12 @@ class DB {
         result = this.setOwner(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
         break;
       default:
-        const unitWriteGasLimit = DB.getBlockchainParam(
+        const unitWriteGasAmount = DB.getBlockchainParam(
             'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
         return CommonUtil.returnTxResult(
             TxResultCode.TX_INVALID_OPERATION_TYPE,
             `Invalid operation type: ${op.type}`,
-            unitWriteGasLimit);
+            unitWriteGasAmount);
     }
     return result;
   }
@@ -1199,7 +1215,7 @@ class DB {
     if (blockNumber > 0 && opList.length > setOpListSizeLimit) {
       return {
         code: JsonRpcApiResultCode.SET_EXCEEDS_OP_LIST_SIZE_LIMIT,
-        error_message: `The transaction exceeds the max op_list size limit: ` +
+        message: `The transaction exceeds the max op_list size limit: ` +
             `${opList.length} > ${setOpListSizeLimit}`
       };
     }
@@ -1233,12 +1249,12 @@ class DB {
       gas_cost_total: 0
     };
     if (!op) {
-      const unitWriteGasLimit = DB.getBlockchainParam(
+      const unitWriteGasAmount = DB.getBlockchainParam(
           'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
       Object.assign(result, CommonUtil.returnTxResult(
           TxResultCode.TX_INVALID_OPERATION,
           `Invalid operation: ${op}`,
-          unitWriteGasLimit));
+          unitWriteGasAmount));
       DB.updateGasAmountTotal(tx, gasAmountTotal, result);
       return result;
     }
@@ -1393,28 +1409,28 @@ class DB {
     if (serviceStateUsage[StateLabelProperties.TREE_BYTES] > budgets.serviceStateBudget) {
       return Object.assign(result, {
           code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_ALL_SERVICES,
-          error_message: `Exceeded state budget limit for services ` +
+          message: `Exceeded state budget limit for services ` +
               `(${serviceStateUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.serviceStateBudget})`
       });
     }
     if (allAppsStateUsage[StateLabelProperties.TREE_BYTES] > budgets.appsStateBudget) {
       return Object.assign(result, {
           code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_ALL_APPS,
-          error_message: `Exceeded state budget limit for apps ` +
+          message: `Exceeded state budget limit for apps ` +
               `(${allAppsStateUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.appsStateBudget})`
       });
     }
     if (serviceStateUsage[StateLabelProperties.TREE_SIZE] > budgets.serviceTreeSizeBudget) {
       return Object.assign(result, {
           code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_ALL_SERVICES,
-          error_message: `Exceeded state tree size limit for services ` +
+          message: `Exceeded state tree size limit for services ` +
               `(${serviceStateUsage[StateLabelProperties.TREE_SIZE]} > ${budgets.serviceTreeSizeBudget})`
       });
     }
     if (allAppsStateUsage[StateLabelProperties.TREE_SIZE] > budgets.appsTreeSizeBudget) {
       return Object.assign(result, {
           code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_ALL_APPS,
-          error_message: `Exceeded state tree size limit for apps ` +
+          message: `Exceeded state tree size limit for apps ` +
               `(${allAppsStateUsage[StateLabelProperties.TREE_SIZE]} > ${budgets.appsTreeSizeBudget})`
       });
     }
@@ -1429,14 +1445,14 @@ class DB {
         if (freeTierTreeBytesLimitReached) {
           return Object.assign(result, {
               code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_FREE_TIER,
-              error_message: `Exceeded state budget limit for free tier ` +
+              message: `Exceeded state budget limit for free tier ` +
                   `(${stateFreeTierUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.freeStateBudget})`
           });
         }
         if (freeTierTreeSizeLimitReached) {
           return Object.assign(result, {
             code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_FREE_TIER,
-            error_message: `Exceeded state tree size limit for free tier ` +
+            message: `Exceeded state tree size limit for free tier ` +
                 `(${stateFreeTierUsage[StateLabelProperties.TREE_SIZE]} > ${budgets.freeTreeSizeBudget})`
           });
         }
@@ -1447,14 +1463,14 @@ class DB {
         if (appStateUsage[StateLabelProperties.TREE_BYTES] > singleAppStateBudget) {
           return Object.assign(result, {
               code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_APP,
-              error_message: `Exceeded state budget limit for app ${appName} ` +
+              message: `Exceeded state budget limit for app ${appName} ` +
                   `(${appStateUsage[StateLabelProperties.TREE_BYTES]} > ${singleAppStateBudget})`
           });
         }
         if (appStateUsage[StateLabelProperties.TREE_SIZE] > singleAppTreeSizeBudget) {
           return Object.assign(result, {
               code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_APP,
-              error_message: `Exceeded state tree size limit for app ${appName} ` +
+              message: `Exceeded state tree size limit for app ${appName} ` +
                   `(${appStateUsage[StateLabelProperties.TREE_SIZE]} > ${singleAppTreeSizeBudget})`
           });
         }
@@ -1491,7 +1507,7 @@ class DB {
     if (balance < gasCost) {
       Object.assign(executionResult, {
         code: TxResultCode.FEE_BALANCE_TOO_LOW,
-        error_message: `Failed to collect gas fee: balance too low (${balance} / ${gasCost})`
+        message: `Failed to collect gas fee: balance too low (${balance} / ${gasCost})`
       });
       this.restoreDb(); // Revert changes made by the tx operations
       balance = this.getBalance(billedTo);
@@ -1509,7 +1525,7 @@ class DB {
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) { // Should not happend
       Object.assign(executionResult, {
         code: TxResultCode.FEE_FAILED_TO_COLLECT_GAS_FEE,
-        error_message: `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`
+        message: `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`
       });
     }
   }
@@ -1771,13 +1787,13 @@ class DB {
     if (treeHeight > stateTreeHeightLimit) {
       return {
         code: TxResultCode.TREE_OUT_OF_TREE_HEIGHT_LIMIT,
-        error_message: `Out of tree height limit (${treeHeight} > ${stateTreeHeightLimit})`
+        message: `Out of tree height limit (${treeHeight} > ${stateTreeHeightLimit})`
       };
     }
     if (treeSize > budgets.treeSizeBudget) {
       return {
         code: TxResultCode.TREE_OUT_OF_TREE_SIZE_LIMIT,
-        error_message: `Out of tree size budget (${treeSize} > ${budgets.treeSizeBudget})`
+        message: `Out of tree size budget (${treeSize} > ${budgets.treeSizeBudget})`
       };
     }
     return {
@@ -1810,7 +1826,7 @@ class DB {
       const subtreeRulePathList = this.getSubtreeConfigPathList(matchedWriteRules.subtreeRules);
       return {
         code: TxResultCode.EVAL_RULE_NON_EMPTY_SUBTREE_RULES,
-        error_message: `Non-empty (${matchedWriteRules.subtreeRules.length}) ` +
+        message: `Non-empty (${matchedWriteRules.subtreeRules.length}) ` +
             `subtree rules for value path '${CommonUtil.formatPath(parsedValuePath)}'': ` +
             `${JSON.stringify(subtreeRulePathList)}`,
         matched,
@@ -1827,7 +1843,7 @@ class DB {
             `timestamp: ${timestamp}\n`);
         return {
           code: TxResultCode.EVAL_RULE_FALSE_WRITE_RULE_EVAL,
-          error_message: `Write rule evaluated false: [${evalWriteRuleRes.ruleString}] ` +
+          message: `Write rule evaluated false: [${evalWriteRuleRes.ruleString}] ` +
               `at '${CommonUtil.formatPath(matchedWriteRules.closestRule.path)}' ` +
               `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
               `with path vars '${JSON.stringify(matchedWriteRules.pathVars)}', ` +
@@ -1844,7 +1860,7 @@ class DB {
             `newValue: ${JSON.stringify(newValue)}\n`);
         return {
           code: TxResultCode.EVAL_RULE_FALSE_STATE_RULE_EVAL,
-          error_message: `State rule evaluated false: [${evalStateRuleRes.ruleString}] ` +
+          message: `State rule evaluated false: [${evalStateRuleRes.ruleString}] ` +
               `at '${CommonUtil.formatPath(matchedStateRules.closestRule.path)}' ` +
               `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
               `with newValue '${JSON.stringify(newValue)}'`,
@@ -1858,7 +1874,7 @@ class DB {
           `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
       return {
         code: TxResultCode.EVAL_RULE_INTERNAL_ERROR,
-        error_message: `Internal error: ${JSON.stringify(err)}`,
+        message: `Internal error: ${JSON.stringify(err)}`,
         matched,
       };
     }
@@ -1874,7 +1890,7 @@ class DB {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_RULE,
-        error_message: `Non-empty (${matched.subtreeOwners.length}) ` +
+        message: `Non-empty (${matched.subtreeOwners.length}) ` +
             `subtree owners for rule path '${CommonUtil.formatPath(parsedRulePath)}': ` +
             `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
@@ -1885,7 +1901,7 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_RULE,
-        error_message: `${OwnerProperties.WRITE_RULE} ` +
+        message: `${OwnerProperties.WRITE_RULE} ` +
             `permission evaluated false: [${checkRes.permissionString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for rule path '${CommonUtil.formatPath(parsedRulePath)}' ` +
@@ -1906,7 +1922,7 @@ class DB {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_FUNCTION,
-        error_message: `Non-empty (${matched.subtreeOwners.length}) ` +
+        message: `Non-empty (${matched.subtreeOwners.length}) ` +
             `subtree owners for function path '${CommonUtil.formatPath(parsedFuncPath)}': ` +
             `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
@@ -1917,7 +1933,7 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_FUNCTION,
-        error_message: `${OwnerProperties.WRITE_FUNCTION} ` +
+        message: `${OwnerProperties.WRITE_FUNCTION} ` +
             `permission evaluated false: [${checkRes.permissionString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for function path '${CommonUtil.formatPath(parsedFuncPath)}' ` +
@@ -1938,7 +1954,7 @@ class DB {
       const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
       return {
         code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_OWNER,
-        error_message: `Non-empty (${matched.subtreeOwners.length}) ` +
+        message: `Non-empty (${matched.subtreeOwners.length}) ` +
             `subtree owners for owner path '${CommonUtil.formatPath(parsedOwnerPath)}': ` +
             `${JSON.stringify(subtreeOwnerPathList)}`,
         matched,
@@ -1950,7 +1966,7 @@ class DB {
     if (!checkRes.checkResult) {
       return {
         code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_OWNER,
-        error_message: `${permission} ` +
+        message: `${permission} ` +
             `permission evaluated false: [${checkRes.permissionString}] ` +
             `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
             `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}' ` +
