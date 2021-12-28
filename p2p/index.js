@@ -286,6 +286,8 @@ class P2pClient {
     const bidirectedConnections = Object.keys(this.outbound).filter(address => {
       return Object.keys(this.server.inbound).includes(address);
     });
+    // NOTE(minsulee2): ENABLE_JSON_RPC_API === true means API server nodes for now.
+    // TODO(minsulee2): Need to introduce a new flag which marks a 'bridge node' role.
     if (NodeConfigs.ENABLE_JSON_RPC_API) {
       const whitelist = this.server.node.db.getValue('/consensus/proposer_whitelist');
       const [whitelisted, notWhitelisted] =
