@@ -168,7 +168,7 @@ elif [[ $SEASON = 'summer' ]]; then
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$SEASON" = "sandbox" ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
-    if [[ $NODE_INDEX -lt 9 ]]; then
+    if [[ $NODE_INDEX -lt 10 ]]; then
         # Nodes 10 & above will use https://sandbox-api.ainetwork.ai/json-rpc.
         export PEER_CANDIDATE_JSON_RPC_URL="http://130.211.244.169:8080/json-rpc"
     fi
