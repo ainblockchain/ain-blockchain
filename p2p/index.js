@@ -639,14 +639,14 @@ class P2pClient {
     if (jsonRpcUrlFromResp !== myJsonRpcUrl) {
       this.peerCandidates[jsonRpcUrlFromResp] = { queriedAt: Date.now() };
     }
-    const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
-    peerCandidateJsonRpcUrlList.forEach((url) => {
+    const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', {});
+    Object.values(peerCandidateJsonRpcUrlList).forEach((url) => {
       if (url !== myJsonRpcUrl && !this.peerCandidates[url] && this.isValidJsonRpcUrl(url)) {
         this.peerCandidates[url] = { queriedAt: null };
       }
     });
     const newPeerP2pUrlList = _.get(peerCandidateInfo, 'newPeerP2pUrlList', []);
-    const newPeerP2pUrlListWithoutMyUrl = newPeerP2pUrlList.filter((url) => {
+    const newPeerP2pUrlListWithoutMyUrl = Object.values(newPeerP2pUrlList).filter((url) => {
       return url !== myP2pUrl;
     });
     const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
