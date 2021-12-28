@@ -24,7 +24,7 @@ function signAndSendTx(endpointUrl, txBody, privateKey) {
     const result = _.get(resp, 'data.result.result.result', {});
     console.log(`result: ${JSON.stringify(result, null, 2)}`);
     const success = !CommonUtil.isFailedTx(result);
-    return { txHash, signedTx, success, errMsg: result.error_message };
+    return { txHash, signedTx, success, errMsg: result.message };
   }).catch((err) => {
     console.log(`Failed to send transaction: ${err}`);
     return { txHash, signedTx, success: false, errMsg: err.message };

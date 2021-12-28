@@ -19,7 +19,7 @@ async function buildCloseCheckinTxBody(fromAddr, checkinId, failed = false) {
   };
   if (failed) {
     response.status = false;
-    response.error_message = 'Ethereum tx failed..'
+    response.message = 'Ethereum tx failed..'
   } else {
     response.status = true;
   }

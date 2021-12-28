@@ -499,7 +499,7 @@ describe('Native Function', () => {
           }}).body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 10404,
-            "error_message": "Trying to write owner-only function: _transfer",
+            "message": "Trying to write owner-only function: _transfer",
             "bandwidth_gas_amount": 1,
             "gas_amount_charged": 0,
             "gas_amount_total": {
@@ -534,10 +534,10 @@ describe('Native Function', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          body.result.result.func_results._saveLastTx.op_results['0'].result.error_message = 'erased';
+          body.result.result.func_results._saveLastTx.op_results['0'].result.message = 'erased';
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 10104,
-            "error_message": "Triggered function call failed",
+            "message": "Triggered function call failed",
             "func_results": {
               "_saveLastTx": {
                 "code": 20001,
@@ -547,7 +547,7 @@ describe('Native Function', () => {
                     "path": "/apps/test/test_function_triggering/not_allowed_path_with_fid/.last_tx/value",
                     "result": {
                       "code": 12103,
-                      "error_message": "erased",
+                      "message": "erased",
                       "bandwidth_gas_amount": 1,
                     }
                   }
@@ -642,10 +642,10 @@ describe('Native Function', () => {
             timestamp: Date.now(),
             nonce: -1,
           }}).body.toString('utf-8'));
-          body.result.result.func_results._saveLastTx.op_results['0'].result.error_message = 'erased';
+          body.result.result.func_results._saveLastTx.op_results['0'].result.message = 'erased';
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 10104,
-            "error_message": "Triggered function call failed",
+            "message": "Triggered function call failed",
             "func_results": {
               "_saveLastTx": {
                 "code": 20001,
@@ -655,7 +655,7 @@ describe('Native Function', () => {
                     "path": "/apps/test/test_function_triggering/not_allowed_path_with_fids/.last_tx/value",
                     "result": {
                       "code": 12103,
-                      "error_message": "erased",
+                      "message": "erased",
                       "bandwidth_gas_amount": 1,
                     }
                   }
@@ -752,7 +752,7 @@ describe('Native Function', () => {
           }}).body.toString('utf-8'));
           assert.deepEqual(_.get(body, 'result.result'), {
             "code": 10104,
-            "error_message": "Triggered function call failed",
+            "message": "Triggered function call failed",
             "func_results": {
               "_setOwnerConfig": {
                 "code": 20001,
@@ -762,7 +762,7 @@ describe('Native Function', () => {
                     "path": "/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value",
                     "result": {
                       "code": 12502,
-                      "error_message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_function\":false,\"write_owner\":false,\"write_rule\":false}] at '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid' for owner path '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value' with permission 'branch_owner', auth '{\"addr\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\",\"fid\":\"_setOwnerConfig\",\"fids\":[\"_setOwnerConfig\"]}'",
+                      "message": "branch_owner permission evaluated false: [{\"branch_owner\":false,\"write_function\":false,\"write_owner\":false,\"write_rule\":false}] at '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid' for owner path '/apps/test/test_function_triggering/set_owner_not_allowed_path_with_fid/value' with permission 'branch_owner', auth '{\"addr\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\",\"fid\":\"_setOwnerConfig\",\"fids\":[\"_setOwnerConfig\"]}'",
                       "bandwidth_gas_amount": 1,
                     }
                   }
@@ -872,7 +872,7 @@ describe('Native Function', () => {
         if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
-        body.result.result.error_message = 'erased';
+        body.result.result.message = 'erased';
         assert.deepEqual(body.result.result, {
           "gas_amount_total": {
             "bandwidth": {
@@ -883,7 +883,7 @@ describe('Native Function', () => {
             }
           },
           "gas_cost_total": 0,
-          "error_message": "erased",
+          "message": "erased",
           "code": 12103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
@@ -900,7 +900,7 @@ describe('Native Function', () => {
         if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
-        body.result.result.error_message = 'erased';
+        body.result.result.message = 'erased';
         assert.deepEqual(body.result.result, {
           "gas_amount_total": {
             "bandwidth": {
@@ -911,7 +911,7 @@ describe('Native Function', () => {
             }
           },
           "gas_cost_total": 0,
-          "error_message": "erased",
+          "message": "erased",
           "code": 12103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
@@ -992,7 +992,7 @@ describe('Native Function', () => {
           console.error(`Failed to check finalization of tx.`);
         }
 
-        body.result.result.error_message = 'erased';
+        body.result.result.message = 'erased';
         assert.deepEqual(body.result.result, {
           "gas_amount_total": {
             "bandwidth": {
@@ -1003,7 +1003,7 @@ describe('Native Function', () => {
             }
           },
           "gas_cost_total": 0,
-          "error_message": "erased",
+          "message": "erased",
           "code": 12103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
@@ -1051,7 +1051,7 @@ describe('Native Function', () => {
         if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
-        body.result.result.error_message = 'erased';
+        body.result.result.message = 'erased';
         assert.deepEqual(body.result.result, {
           "gas_amount_total": {
             "bandwidth": {
@@ -1062,7 +1062,7 @@ describe('Native Function', () => {
             }
           },
           "gas_cost_total": 0,
-          "error_message": "erased",
+          "message": "erased",
           "code": 12103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
@@ -1131,7 +1131,7 @@ describe('Native Function', () => {
         if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
         }
-        body.result.result.error_message = 'erased';
+        body.result.result.message = 'erased';
         assert.deepEqual(body.result.result, {
           "gas_amount_total": {
             "bandwidth": {
@@ -1142,7 +1142,7 @@ describe('Native Function', () => {
             }
           },
           "gas_cost_total": 0,
-          "error_message": "erased",
+          "message": "erased",
           "code": 12103,
           "bandwidth_gas_amount": 1,
           "gas_amount_charged": 1
@@ -1603,7 +1603,7 @@ describe('Native Function', () => {
         assert.deepEqual(createAppRes, {
           "result": {
             "code": 10104,
-            "error_message": "Triggered function call failed",
+            "message": "Triggered function call failed",
             "func_results": {
               "_createApp": {
                 "code": 20301,
@@ -2272,13 +2272,13 @@ describe('Native Function', () => {
           nonce: -1,
           timestamp: 1234567890000,
         }}).body.toString('utf-8'));
-        body.result.result.error_message = 'erased';
+        body.result.result.message = 'erased';
         assert.deepEqual(body, {
           "code": 40001,
           "result": {
             "result": {
               "code": 12103,
-              "error_message": "erased",
+              "message": "erased",
               "bandwidth_gas_amount": 1,
               "gas_amount_charged": 1,
               "gas_amount_total": {
@@ -4364,7 +4364,7 @@ describe('Native Function', () => {
               response: {
                 status: false,
                 tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c',
-                error_message: 'Ethereum tx failed'
+                message: 'Ethereum tx failed'
               }
             }
           },
@@ -5195,7 +5195,7 @@ describe('Native Function', () => {
               response: {
                 status: false,
                 tx_hash: '0x6af1ec8d4f0a55bac328cb20336ed0eff46fa6334ebd112147892f1b15aafc8c',
-                error_message: 'Ethereum tx failed'
+                message: 'Ethereum tx failed'
               }
             }
           },
