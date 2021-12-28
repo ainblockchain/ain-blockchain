@@ -327,7 +327,7 @@ describe('Consensus', () => {
   describe('Rewards', () => {
     it('consensus rewards are updated', async () => {
       const rewardsBefore = parseOrLog(syncRequest('GET',
-          server2 + `/get_value?ref=/consensus/rewards&is_final=true`).body.toString('utf-8')).result || {};
+          server1 + `/get_value?ref=/consensus/rewards&is_final=true`).body.toString('utf-8')).result || {};
       const txWithGasFee = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
         ref: `/transfer/${server1Addr}/${server2Addr}/0/value`,
         value: 1,
@@ -336,14 +336,14 @@ describe('Consensus', () => {
       if (!(await waitUntilTxFinalized(serverList, txWithGasFee.tx_hash))) {
         console.error(`Failed to check finalization of tx.`);
       }
-      await waitForNewBlocks(server2, 2); // Make sure 1 more block is finalized
+      await waitForNewBlocks(server1, 2); // Make sure 1 more block is finalized
       const rewardsAfter = parseOrLog(syncRequest('GET',
-          server2 + `/get_value?ref=/consensus/rewards&is_final=true`).body.toString('utf-8')).result;
+          server1 + `/get_value?ref=/consensus/rewards&is_final=true`).body.toString('utf-8')).result;
       const txInfo = parseOrLog(syncRequest('GET',
-          server2 + `/get_transaction?hash=${txWithGasFee.tx_hash}`).body.toString('utf-8')).result;
+          server1 + `/get_transaction?hash=${txWithGasFee.tx_hash}`).body.toString('utf-8')).result;
       const blockNumber = txInfo.number;
       const consensusRound = parseOrLog(syncRequest('GET',
-          server2 + `/get_value?ref=/consensus/number/${blockNumber}&is_final=true`).body.toString('utf-8')).result;
+          server1+ `/get_value?ref=/consensus/number/${blockNumber}&is_final=true`).body.toString('utf-8')).result;
       const blockRewardMultiplier =
           BlockchainParams.reward.annual_rate * BlockchainParams.genesis.epoch_ms / 31557600000; // 365.25 * 24 * 60 * 60 * 1000
       const blockHash = consensusRound.propose.block_hash;
@@ -376,7 +376,7 @@ describe('Consensus', () => {
 
     it('cannot claim more than unclaimed rewards', async () => {
       const unclaimed = parseOrLog(syncRequest('GET',
-          server2 + `/get_value?ref=/consensus/rewards/${server1Addr}/unclaimed&is_final=true`).body.toString('utf-8')).result;
+          server1 + `/get_value?ref=/consensus/rewards/${server1Addr}/unclaimed&is_final=true`).body.toString('utf-8')).result;
       const claimTx = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
         ref: `/gas_fee/claim/${server1Addr}/0`,
         value: {
