@@ -705,21 +705,32 @@ describe("state-util", () => {
       expect(isValidStateRule(false, params)).to.equal(false);
       expect(isValidStateRule({ "invalid_field": true }, params)).to.equal(false);
       expect(isValidStateRule({
-        "max_children": '123'
+        "max_children": -1
       }, params)).to.equal(false);
       expect(isValidStateRule({
-        "max_children": -1
+        "max_height": -1,
+      }, params)).to.equal(false);
+      expect(isValidStateRule({
+        "max_size": -1,
+      }, params)).to.equal(false);
+      expect(isValidStateRule({
+        "max_bytes": -1,
       }, params)).to.equal(false);
       expect(isValidStateRule({
         "max_children": 0
       }, params)).to.equal(false);
+      expect(isValidStateRule({
+        "max_height": 0,
+      }, params)).to.equal(false);
+      expect(isValidStateRule({
+        "max_size": 0,
+      }, params)).to.equal(false);
+      expect(isValidStateRule({
+        "max_bytes": 0,
+      }, params)).to.equal(false);
       // without gc_num_siblings_deleted
       expect(isValidStateRule({
         "gc_max_siblings": 1,
-      }, params)).to.equal(false);
-      expect(isValidStateRule({
-        "gc_max_siblings": '',
-        "gc_num_siblings_deleted": 20,
       }, params)).to.equal(false);
       expect(isValidStateRule({
         "gc_max_siblings": -1,
@@ -733,10 +744,6 @@ describe("state-util", () => {
         "max_children": 10,
         "gc_max_siblings": -1,
         "gc_num_siblings_deleted": 20,
-      }, params)).to.equal(false);
-      expect(isValidStateRule({
-        "gc_max_siblings": 20,
-        "gc_num_siblings_deleted": '10',
       }, params)).to.equal(false);
       expect(isValidStateRule({
         "gc_max_siblings": 20,
@@ -764,6 +771,15 @@ describe("state-util", () => {
     it('when valid input', () => {
       expect(isValidStateRule({
         "max_children": 10
+      }, params)).to.equal(true);
+      expect(isValidStateRule({
+        "max_height": 10,
+      }, params)).to.equal(true);
+      expect(isValidStateRule({
+        "max_size": 10,
+      }, params)).to.equal(true);
+      expect(isValidStateRule({
+        "max_bytes": 10,
       }, params)).to.equal(true);
       expect(isValidStateRule({
         "gc_max_siblings": 20,
@@ -878,6 +894,55 @@ describe("state-util", () => {
         "state": {
           "max_children": 123,
           "invalid_field": true
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        minGcNumSiblingsDeleted: 20,
+        configPath: [],
+      }, {
+        "state": {
+          "max_children": '123',
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        minGcNumSiblingsDeleted: 20,
+        configPath: [],
+      }, {
+        "state": {
+          "gc_max_siblings": '123',
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        minGcNumSiblingsDeleted: 20,
+        configPath: [],
+      }, {
+        "state": {
+          "gc_max_siblings": 100,
+          "gc_num_siblings_deleted": '123'
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        minGcNumSiblingsDeleted: 20,
+        configPath: [],
+      }, {
+        "state": {
+          "max_height": '123',
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        minGcNumSiblingsDeleted: 20,
+        configPath: [],
+      }, {
+        "state": {
+          "max_size": '123',
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        minGcNumSiblingsDeleted: 20,
+        configPath: [],
+      }, {
+        "state": {
+          "max_bytes": '123',
         }
       }), {isValid: false, invalidPath: '/'});
     })
