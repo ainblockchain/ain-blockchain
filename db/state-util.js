@@ -1090,6 +1090,24 @@ function verifyStateProof(proof, curLabels = []) {
   }
 }
 
+function getObjectHeightAndSize(value) {
+  if (CommonUtil.isEmpty(value) || !CommonUtil.isDict(value)) {
+    return { height: 0, size: 0 };
+  }
+  const result = { height: 1, size: 0 };
+  for (const key in value) {
+    if (!value.hasOwnProperty(key)) continue;
+    if (CommonUtil.isDict(value[key])) {
+      const { height, size } = getObjectHeightAndSize(value[key]);
+      result.height = Math.max(height + 1, result.height);
+      result.size += size + 1;
+    } else {
+      result.size += 1;
+    }
+  }
+  return result;
+}
+
 module.exports = {
   isEmptyNode,
   hasShardConfig,
@@ -1130,4 +1148,5 @@ module.exports = {
   getStateProofFromStateRoot,
   getProofHashFromStateRoot,
   verifyStateProof,
+  getObjectHeightAndSize,
 };
