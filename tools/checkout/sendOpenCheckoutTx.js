@@ -14,7 +14,7 @@ function buildOpenCheckoutTxBody(fromAddr, tokenAmount, checkoutId) {
       },
       is_global: true,
     },
-    timestamp: Date.now(),
+    timestamp: checkoutId,
     nonce: -1
   }
 }

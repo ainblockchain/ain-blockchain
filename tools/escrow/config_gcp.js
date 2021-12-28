@@ -1,5 +1,5 @@
 module.exports = {
-  endpointUrl: "http://dev-node.ainetwork.ai:8080",
+  endpointUrl: "https://dev-api.ainetwork.ai",
   sourceAddr: "0x07A43138CC760C85A5B1F115aa60eADEaa0bf417",
   sourcePrivateKey: "0e9876c7e7966fb0237892eb2e890b4738d0e50adfcfe089ef31f5a1579d65cd",
   targetAddr: "0x08Aed7AF9354435c38d52143EE50ac839D20696b",
