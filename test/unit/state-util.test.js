@@ -27,6 +27,7 @@ const {
   getStateProofFromStateRoot,
   getProofHashFromStateRoot,
   verifyStateProof,
+  getObjectHeightAndSize,
 } = require('../../db/state-util');
 const _ = require('lodash');
 const chai = require('chai');
@@ -3057,6 +3058,70 @@ describe("state-util", () => {
           "mismatchedProofHash": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60",
           "mismatchedProofHashComputed": "0x0c479cea57cfd0b5d2f6b0e91f30d802002deda19a26cc44581b56b1be882b6c",
         });
+      });
+    });
+
+    describe('getObjectHeightAndSize', () => {
+      it('when non-object', () => {
+        assert.deepEqual(getObjectHeightAndSize(null), { height: 0, size: 0 });
+        assert.deepEqual(getObjectHeightAndSize(undefined), { height: 0, size: 0 });
+        assert.deepEqual(getObjectHeightAndSize(1), { height: 0, size: 0 });
+        assert.deepEqual(getObjectHeightAndSize(''), { height: 0, size: 0 });
+        assert.deepEqual(getObjectHeightAndSize('123'), { height: 0, size: 0 });
+        assert.deepEqual(getObjectHeightAndSize([]), { height: 0, size: 0 });
+      });
+
+      it('when empty object', () => {
+        assert.deepEqual(getObjectHeightAndSize({}), { height: 0, size: 0 });
+      });
+
+      it('when non-empty object', () => {
+        assert.deepEqual(getObjectHeightAndSize({ a: 'a' }), { height: 1, size: 1 });
+        assert.deepEqual(getObjectHeightAndSize({
+          a: {
+            a: 'aa'
+          }
+        }), { height: 2, size: 2 });
+        assert.deepEqual(getObjectHeightAndSize({
+          a: {
+            a: 'aa',
+            b: 'ab'
+          }
+        }), { height: 2, size: 3 });
+        assert.deepEqual(getObjectHeightAndSize({
+          a: {
+            a: 'aa'
+          },
+          b: 'b'
+        }), { height: 2, size: 3 });
+        assert.deepEqual(getObjectHeightAndSize({
+          a: {
+            a: 'aa'
+          },
+          b: {
+            a: 'ba'
+          }
+        }), { height: 2, size: 4 });
+        assert.deepEqual(getObjectHeightAndSize({
+          a: {
+            a: 'aa'
+          },
+          b: {
+            a: 'ba',
+            b: 'bb',
+            c: 'bc'
+          }
+        }), { height: 2, size: 6 });
+        assert.deepEqual(getObjectHeightAndSize({
+          a: {
+            a: 'aa'
+          },
+          b: {
+            a: {
+              a: 'baa'
+            }
+          }
+        }), { height: 3, size: 5 });
       });
     });
   });
