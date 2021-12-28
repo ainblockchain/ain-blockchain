@@ -42,6 +42,7 @@ const {
   updateStateInfoForStateTree,
   getStateProofFromStateRoot,
   getProofHashFromStateRoot,
+  getObjectHeightAndSize,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -2356,7 +2357,7 @@ class DB {
         };
       }
     }
-    const { height, size } = CommonUtil.getObjectHeightAndSize(newValue);
+    const { height, size } = getObjectHeightAndSize(newValue);
     if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_HEIGHT)) {
       const maxHeightEvalResult = height <= stateRuleObj[RuleProperties.MAX_HEIGHT];
       if (!maxHeightEvalResult) {
