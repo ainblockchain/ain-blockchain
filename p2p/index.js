@@ -292,12 +292,10 @@ class P2pClient {
       const whitelist = this.server.node.db.getValue('/consensus/proposer_whitelist');
       const [whitelisted, notWhitelisted] =
           _.partition(bidirectedConnections, ((address) => whitelist[address]));
-      const whitelistDisconnectThreshold = Math.round(NodeConfigs.MAX_NUM_INBOUND_CONNECTION / 2);
-      if (whitelisted.length > whitelistDisconnectThreshold) {
-        const numDisconnectionCandidates = whitelisted.length - whitelistDisconnectThreshold;
-        const randomWhiteListed = _.shuffle(whitelisted).slice(0, numDisconnectionCandidates);
-        const disconnectionCandidates = _.concat(randomWhiteListed, notWhitelisted);
-        this.pickRandomPeerAndDisconnect(disconnectionCandidates);
+      const whitelistDisconnectThreshold = Math.floor(NodeConfigs.MAX_NUM_INBOUND_CONNECTION / 2);
+      // NOTE(minsulee2): Keep less than majority whitelisted.
+      if (whitelisted.length >= whitelistDisconnectThreshold) {
+        this.pickRandomPeerAndDisconnect(whitelisted);
       } else {
         this.pickRandomPeerAndDisconnect(notWhitelisted);
       }
