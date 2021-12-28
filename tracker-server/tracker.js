@@ -29,7 +29,7 @@ class Tracker {
 
   setBlockchainNode(peerInfo) {
     peerInfo.location = this.getNodeLocation(peerInfo.networkStatus.urls.ip);
-    this.blockchainNodes[peerInfo.address] = peerInfo;
+    this.blockchainNodes[peerInfo.address] = Object.assign({ isAlive: true }, peerInfo);
     logger.info(`Update from node [${abbrAddr(peerInfo.address)}]\n` +
     `  - p2pState: ${peerInfo.networkStatus.connectionStatus.state}\n` +
     `    - incomingPeers: ${JSON.stringify(peerInfo.networkStatus.connectionStatus.incomingPeers)}\n` +
@@ -43,10 +43,10 @@ class Tracker {
     let numAliveNodes = 0;
     for (const [address, nodeInfo] of Object.entries(this.blockchainNodes)) {
       if (isNodeAlive(nodeInfo)) {
-        this.blockchainNodes[address] = Object.assign({ isAlive: true }, this.blockchainNodes[address]);
+        this.blockchainNodes[address].isAlive = true;
         numAliveNodes++;
       } else {
-        this.blockchainNodes[address] = Object.assign({ isAlive: false }, this.blockchainNodes[address]);
+        this.blockchainNodes[address].isAlive = false;
       }
     }
     return numAliveNodes;
