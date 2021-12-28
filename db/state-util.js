@@ -203,15 +203,27 @@ function sanitizeRuleConfig(rule) {
     } else {
       if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
         CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.MAX_CHILDREN],
-            rule[RuleProperties.STATE][RuleProperties.MAX_CHILDREN]);
+            CommonUtil.numberOrZero(rule[RuleProperties.STATE][RuleProperties.MAX_CHILDREN]));
+      }
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.MAX_HEIGHT)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.MAX_HEIGHT],
+            CommonUtil.numberOrZero(rule[RuleProperties.STATE][RuleProperties.MAX_HEIGHT]));
+      }
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.MAX_SIZE)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.MAX_SIZE],
+            CommonUtil.numberOrZero(rule[RuleProperties.STATE][RuleProperties.MAX_SIZE]));
+      }
+      if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.MAX_BYTES)) {
+        CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.MAX_BYTES],
+            CommonUtil.numberOrZero(rule[RuleProperties.STATE][RuleProperties.MAX_BYTES]));
       }
       if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.GC_MAX_SIBLINGS)) {
         CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.GC_MAX_SIBLINGS],
-            rule[RuleProperties.STATE][RuleProperties.GC_MAX_SIBLINGS]);
+            CommonUtil.numberOrZero(rule[RuleProperties.STATE][RuleProperties.GC_MAX_SIBLINGS]));
       }
       if (rule[RuleProperties.STATE].hasOwnProperty(RuleProperties.GC_NUM_SIBLINGS_DELETED)) {
         CommonUtil.setJsObject(sanitized, [RuleProperties.STATE, RuleProperties.GC_NUM_SIBLINGS_DELETED],
-            rule[RuleProperties.STATE][RuleProperties.GC_NUM_SIBLINGS_DELETED]);
+            CommonUtil.numberOrZero(rule[RuleProperties.STATE][RuleProperties.GC_NUM_SIBLINGS_DELETED]));
       }
     }
   }
@@ -295,20 +307,37 @@ function isValidStateRule(stateRule, params) {
   }
   let hasValidProperty = false;
   if (stateRule.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
-    if (!CommonUtil.isNumber(stateRule[RuleProperties.MAX_CHILDREN]) ||
-        stateRule[RuleProperties.MAX_CHILDREN] <= 0) {
+    if (stateRule[RuleProperties.MAX_CHILDREN] <= 0) {
+      return false;
+    }
+    hasValidProperty = true;
+  }
+  if (stateRule.hasOwnProperty(RuleProperties.MAX_HEIGHT)) {
+    if (stateRule[RuleProperties.MAX_HEIGHT] <= 0) {
+      return false;
+    }
+    hasValidProperty = true;
+  }
+  if (stateRule.hasOwnProperty(RuleProperties.MAX_SIZE)) {
+    if (stateRule[RuleProperties.MAX_SIZE] <= 0) {
+      return false;
+    }
+    hasValidProperty = true;
+  }
+  if (stateRule.hasOwnProperty(RuleProperties.MAX_BYTES)) {
+    if (stateRule[RuleProperties.MAX_BYTES] <= 0) {
       return false;
     }
     hasValidProperty = true;
   }
   if (stateRule.hasOwnProperty(RuleProperties.GC_MAX_SIBLINGS)) {
-    if (!CommonUtil.isNumber(stateRule[RuleProperties.GC_MAX_SIBLINGS]) ||
-      stateRule[RuleProperties.GC_MAX_SIBLINGS] <= 0) {
+    if (stateRule[RuleProperties.GC_MAX_SIBLINGS] <= 0) {
       return false;
     }
-    // TODO(platfowner): Add '20' as a blockchain param.
-    if (!CommonUtil.isNumber(stateRule[RuleProperties.GC_NUM_SIBLINGS_DELETED]) ||
-      stateRule[RuleProperties.GC_NUM_SIBLINGS_DELETED] < params.minGcNumSiblingsDeleted) {
+    // NOTE(liayoo): must satisfy the following relationships:
+    //    (0 < ) min_gc_num_siblings_deleted <= gc_num_siblings_deleted <= gc_max_siblings
+    if (!stateRule.hasOwnProperty(RuleProperties.GC_NUM_SIBLINGS_DELETED) ||
+        stateRule[RuleProperties.GC_NUM_SIBLINGS_DELETED] < params.minGcNumSiblingsDeleted) {
       return false;
     }
     if (stateRule[RuleProperties.GC_NUM_SIBLINGS_DELETED] >

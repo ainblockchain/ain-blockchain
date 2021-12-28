@@ -1,6 +1,7 @@
 const logger = new (require('../logger'))('DATABASE');
 
 const _ = require('lodash');
+const sizeof = require('object-sizeof');
 const {
   DevFlags,
   NodeConfigs,
@@ -2317,26 +2318,66 @@ class DB {
   }
 
   evalStateRuleConfig(stateRuleConfig, newValue) {
-    if (!CommonUtil.isDict(stateRuleConfig) ||
-        !CommonUtil.isDict(newValue)) {
+    if (!CommonUtil.isDict(stateRuleConfig)) {
       return {
         ruleString: '',
         evalResult: true,
       };
     }
     const stateRuleObj = stateRuleConfig[RuleProperties.STATE];
-    if (CommonUtil.isEmpty(stateRuleObj) ||
-        !stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+    if (CommonUtil.isEmpty(stateRuleObj)) {
       return {
         ruleString: JSON.stringify(stateRuleObj),
         evalResult: true,
       };
     }
-    const maxChildren = stateRuleObj[RuleProperties.MAX_CHILDREN];
-    const maxChildrenEvalResult = Object.keys(newValue).length <= maxChildren;
+    if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_BYTES)) {
+      const maxBytesEvalResult = sizeof(newValue) <= stateRuleObj[RuleProperties.MAX_BYTES];
+      if (!maxBytesEvalResult) {
+        return {
+          ruleString: JSON.stringify(stateRuleObj),
+          evalResult: maxBytesEvalResult,
+        };
+      }
+    }
+    if (!CommonUtil.isDict(newValue)) {
+      return {
+        ruleString: '',
+        evalResult: true,
+      };
+    }
+    if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+      const maxChildren = stateRuleObj[RuleProperties.MAX_CHILDREN];
+      const maxChildrenEvalResult = Object.keys(newValue).length <= maxChildren;
+      if (!maxChildrenEvalResult) {
+        return {
+          ruleString: JSON.stringify(stateRuleObj),
+          evalResult: maxChildrenEvalResult,
+        };
+      }
+    }
+    const { height, size } = CommonUtil.getObjectHeightAndSize(newValue);
+    if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_HEIGHT)) {
+      const maxHeightEvalResult = height <= stateRuleObj[RuleProperties.MAX_HEIGHT];
+      if (!maxHeightEvalResult) {
+        return {
+          ruleString: JSON.stringify(stateRuleObj),
+          evalResult: maxHeightEvalResult,
+        };
+      }
+    }
+    if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_SIZE)) {
+      const maxSizeEvalResult = size <= stateRuleObj[RuleProperties.MAX_SIZE];
+      if (!maxSizeEvalResult) {
+        return {
+          ruleString: JSON.stringify(stateRuleObj),
+          evalResult: maxSizeEvalResult,
+        };
+      }
+    }
     return {
       ruleString: JSON.stringify(stateRuleObj),
-      evalResult: maxChildrenEvalResult,
+      evalResult: true,
     };
   }
 
