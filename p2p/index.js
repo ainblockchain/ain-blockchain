@@ -266,6 +266,17 @@ class P2pClient {
     this.updateP2pState();
   }
 
+  pickRandomPeerAndDisconnect(addressArray) {
+    if (addressArray.length === 0) {
+      return;
+    }
+    const randomPeerAddress = _.shuffle(addressArray)[0];
+    if (!this.outbound[randomPeerAddress]) {
+      return;
+    }
+    this.closeSocketWithP2pStateUpdate(this.outbound[randomPeerAddress].socket);
+  }
+
   disconnectRandomPeer() {
     if (Object.keys(this.outbound) === 0) {
       return;
@@ -275,8 +286,22 @@ class P2pClient {
     const bidirectedConnections = Object.keys(this.outbound).filter(address => {
       return Object.keys(this.server.inbound).includes(address);
     });
-    const randomPeerAddress = _.shuffle(bidirectedConnections)[0];
-    this.closeSocketWithP2pStateUpdate(this.outbound[randomPeerAddress].socket);
+    // NOTE(minsulee2): ENABLE_JSON_RPC_API === true means API server nodes for now.
+    // TODO(minsulee2): Need to introduce a new flag which marks a 'bridge node' role.
+    if (NodeConfigs.ENABLE_JSON_RPC_API) {
+      const whitelist = this.server.node.db.getValue('/consensus/proposer_whitelist');
+      const [whitelisted, notWhitelisted] =
+          _.partition(bidirectedConnections, ((address) => whitelist[address]));
+      const whitelistDisconnectThreshold = Math.floor(NodeConfigs.MAX_NUM_INBOUND_CONNECTION / 2);
+      // NOTE(minsulee2): Keep less than majority whitelisted.
+      if (whitelisted.length >= whitelistDisconnectThreshold) {
+        this.pickRandomPeerAndDisconnect(whitelisted);
+      } else {
+        this.pickRandomPeerAndDisconnect(notWhitelisted);
+      }
+    } else {
+      this.pickRandomPeerAndDisconnect(bidirectedConnections);
+    }
   }
 
   async tryReorgPeerConnections() {
