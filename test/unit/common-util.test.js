@@ -416,24 +416,24 @@ describe("CommonUtil", () => {
       expect(CommonUtil.isFailedTx('true')).to.equal(true);
       expect(CommonUtil.isFailedTx({})).to.equal(true);
       expect(CommonUtil.isFailedTx({
-        error_message: 'some message'
+        message: 'some message'
       })).to.equal(true);
     })
 
     it("when single set operation without function triggering", () => {
       expect(CommonUtil.isFailedTx({
         code: 0,
-        error_message: null
+        message: null
       })).to.equal(false);
 
       expect(CommonUtil.isFailedTx({
         code: 1,
-        error_message: null
+        message: null
       })).to.equal(true);
 
       expect(CommonUtil.isFailedTx({
         code: 10101,
-        error_message: 'some message'
+        message: 'some message'
       })).to.equal(true);
     });
 
@@ -505,7 +505,7 @@ describe("CommonUtil", () => {
           }
         },
         "code": 10201,  // The root operation failed
-        "error_message": "Not a number type: bar or 10",
+        "message": "Not a number type: bar or 10",
         "bandwidth_gas_amount": 1
       })).to.equal(true);
 
@@ -523,7 +523,7 @@ describe("CommonUtil", () => {
                           "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                           "result": {
                             "code": 10201,  // A sub-operation failed
-                            "error_message": "Not a number type: bar or 10",
+                            "message": "Not a number type: bar or 10",
                             "bandwidth_gas_amount": 1
                           }
                         }
@@ -754,7 +754,7 @@ describe("CommonUtil", () => {
           },
           "1": {
             "code": 10201,
-            "error_message": "Not a number type: bar or 10",
+            "message": "Not a number type: bar or 10",
             "bandwidth_gas_amount": 0
           },
           "2": {
@@ -855,7 +855,7 @@ describe("CommonUtil", () => {
           },
           "2": {
             "code": 10201,  // A root operation failed.
-            "error_message": "Not a number type: bar or 10",
+            "message": "Not a number type: bar or 10",
             "bandwidth_gas_amount": 1,
           },
         }
@@ -881,7 +881,7 @@ describe("CommonUtil", () => {
                               "path": "/apps/test/test_function_triggering/allowed_path/.last_tx/value",
                               "result": {
                                 "code": 10201,  // A sub-operation failed.
-                                "error_message": "Not a number type: bar or 10",
+                                "message": "Not a number type: bar or 10",
                                 "bandwidth_gas_amount": 1
                               }
                             }
