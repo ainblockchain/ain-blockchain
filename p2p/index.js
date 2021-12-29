@@ -367,9 +367,7 @@ class P2pClient {
   }
 
   broadcastConsensusMessage(consensusMessage, tags = []) {
-    if (DevFlags.enableP2pMessageTags) {
-      tags.push(this.server.node.account.address);
-    }
+    tags.push(this.server.node.account.address);
     const payload = P2pUtil.encapsulateMessage(MessageTypes.CONSENSUS, { message: consensusMessage, tags });
     if (!payload) {
       logger.error('The consensus msg cannot be broadcasted because of msg encapsulation failure.');
@@ -418,9 +416,7 @@ class P2pClient {
   }
 
   broadcastTransaction(transaction, tags = []) {
-    if (DevFlags.enableP2pMessageTags) {
-      tags.push(this.server.node.account.address);
-    }
+    tags.push(this.server.node.account.address);
     const payload = P2pUtil.encapsulateMessage(MessageTypes.TRANSACTION, { transaction, tags });
     if (!payload) {
       logger.error('The transaction cannot be broadcasted because of msg encapsulation failure.');

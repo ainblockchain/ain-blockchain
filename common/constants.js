@@ -24,8 +24,6 @@ const DevFlags = {
   enableTrafficMonitoring: true,
   // Enables winston logger. (default = bunyan)
   enableWinstonLogger: false,
-  // Enables p2p message tagging.
-  enableP2pMessageTags: true,
   // Enables ws compression.
   enableWsCompression: true,
   // Enables limits on tx broadcasting (max = 2).
