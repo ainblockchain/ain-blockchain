@@ -581,7 +581,7 @@ class Consensus {
     for (const vote of lastVotes) {
       blockPool.addSeenVote(vote);
     }
-    if (!blockPool.hashToBlockInfo[lastHash].notarized) {
+    if (!blockPool.hashToBlockInfo[lastHash] || !blockPool.hashToBlockInfo[lastHash].notarized) {
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_LAST_VOTES_STAKES,
         message: `Block's last_votes don't correctly notarize its previous block of number ` +
