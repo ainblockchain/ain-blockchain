@@ -161,8 +161,11 @@ class Consensus {
           try {
             const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
             logger.debug(`(Local Time - NTP Time) Delta = ${iNTPData.minimalNTPLatencyDelta} ms`);
-            this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
-            this.ntpData = { ...iNTPData, syncedAt: Date.now() };
+            if (Math.abs(iNTPData.minimalNTPLatencyDelta) < 10000) {
+              // Ignore if the value is too big/small.
+              this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
+              this.ntpData = { ...iNTPData, syncedAt: Date.now() };
+            }
           } catch (err) {
             logger.error(`ntpsync error: ${err} ${err.stack}`);
           }
