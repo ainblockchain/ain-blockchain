@@ -108,6 +108,7 @@ class P2pClient {
       runtimeInfo: this.server.getRuntimeInfo(),
       protocolInfo: this.server.getProtocolInfo(),
       config: this.getConfig(),
+      chainSyncInProgress: this.chainSyncInProgress,
     };
   }
 
