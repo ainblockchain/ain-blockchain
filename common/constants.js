@@ -26,8 +26,6 @@ const DevFlags = {
   enableWinstonLogger: false,
   // Enables ws compression.
   enableWsCompression: true,
-  // Enables limits on tx broadcasting (max = 2).
-  enableTxBroadcastLimit: false,
 };
 
 // ** Blockchain configs **
