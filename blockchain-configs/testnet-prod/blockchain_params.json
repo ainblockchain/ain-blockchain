@@ -24,7 +24,7 @@
     "min_stake_for_proposer": 10000000,
     "max_stake_for_proposer": 10000000,
     "min_num_validators": 5,
-    "max_num_validators": 15,
+    "max_num_validators": 20,
     "genesis_proposer_whitelist": {
       "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": true,
       "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d": true,
