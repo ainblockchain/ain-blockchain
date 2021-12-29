@@ -367,20 +367,28 @@ class P2pClient {
   }
 
   broadcastConsensusMessage(consensusMessage, tags = []) {
-    if (DevFlags.enableP2pMessageTags) {
-      tags.push(this.server.node.account.address);
-    }
+    tags.push(this.server.node.account.address);
     const payload = P2pUtil.encapsulateMessage(MessageTypes.CONSENSUS, { message: consensusMessage, tags });
     if (!payload) {
       logger.error('The consensus msg cannot be broadcasted because of msg encapsulation failure.');
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach((node) => {
-      if (_.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
-        node.socket.send(stringPayload);
-      }
-    });
+    if (DevFlags.enableP2pMessageTagsChecking) {
+      const tagSet = new Set(tags);
+      Object.entries(this.outbound).forEach(([address, node]) => {
+        if (!tagSet.has(address) &&
+            _.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
+          node.socket.send(stringPayload);
+        }
+      });
+    } else {
+      Object.values(this.outbound).forEach((node) => {
+        if (_.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
+          node.socket.send(stringPayload);
+        }
+      });
+    }
     logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
   }
 
@@ -418,21 +426,22 @@ class P2pClient {
   }
 
   broadcastTransaction(transaction, tags = []) {
-    if (DevFlags.enableP2pMessageTags) {
-      tags.push(this.server.node.account.address);
-    }
+    tags.push(this.server.node.account.address);
     const payload = P2pUtil.encapsulateMessage(MessageTypes.TRANSACTION, { transaction, tags });
     if (!payload) {
       logger.error('The transaction cannot be broadcasted because of msg encapsulation failure.');
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    if (DevFlags.enableTxBroadcastLimit) {
-      _.shuffle(Object.values(this.outbound)).slice(0, 2).forEach((node) => {
-        node.socket.send(stringPayload);
+    if (DevFlags.enableP2pMessageTagsChecking) {
+      const tagSet = new Set(tags);
+      Object.entries(this.outbound).forEach(([address, node]) => {
+        if (!tagSet.has(address)) {
+          node.socket.send(stringPayload);
+        }
       });
     } else {
-      Object.values(this.outbound).forEach((node) => {
+      Object.entries(this.outbound).forEach(([address, node]) => {
         node.socket.send(stringPayload);
       });
     }
@@ -786,6 +795,7 @@ class P2pClient {
   }
 
   connectToPeer(url) {
+    // TODO(*): Add maxPayload option (e.g. ~50MB)
     const socket = new Websocket(url);
     socket.on('open', async () => {
       logger.info(`Connected to peer (${url}),`);
