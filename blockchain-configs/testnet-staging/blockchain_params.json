@@ -1,5 +1,5 @@
 {
-  "_description": "Blockchain params for the testnet-staging on GCP.",
+  "_description": "Blockchain params for the testnet-staging on cloud.",
   "token": {
     "name": "AI Network",
     "symbol": "AIN",
