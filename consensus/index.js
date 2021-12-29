@@ -167,6 +167,12 @@ class Consensus {
           }
         }
         currentTime -= this.timeAdjustment;
+        if (currentTime < this.startingTime) {
+          logger.error(`[${LOG_HEADER}] currentTime is before the genesis_timestamp: ` +
+              `${currentTime} < ${this.startingTime}`);
+          this.server.stop();
+          return;
+        }
         const absEpoch = Math.floor((currentTime - this.startingTime) / epochMs);
         if (this.epoch + 1 < absEpoch) {
           logger.debug(`[${LOG_HEADER}] Epoch is too low: ${this.epoch} / ${absEpoch}`);
