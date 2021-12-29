@@ -1,5 +1,5 @@
 {
-  "_description": "Blockchain params for the testnet-dev on cloud.",
+  "_description": "Blockchain params for the mainnet-prod on cloud.",
   "token": {
     "name": "AI Network",
     "symbol": "AIN",
@@ -26,30 +26,30 @@
     "min_num_validators": 5,
     "max_num_validators": 20,
     "genesis_proposer_whitelist": {
-      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": true,
-      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": true,
-      "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": true,
-      "0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A": true,
-      "0x04A456C92A880cd59D7145C457475515a6f6E0f2": true
+      "0x000C63907F7Aeca56A72F5a4F7cd00EfFCF11c3A": true,
+      "0x001C3C9C4a5669eCD8b78946f6fa5549b33362F8": true,
+      "0x002C76f0aeA9Ba615428d9dF7fedEC6f8ed5369f": true,
+      "0x003C9d091584fEC96bC3bD8423c884680BEAaf4E": true,
+      "0x004C4328B6c2ABF7c4Df897a8124b36E3f00a2FC": true
     },
     "genesis_validators": {
-      "0x00ADEc28B6a845a085e03591bE7550dd68673C1C": {
+      "0x000C63907F7Aeca56A72F5a4F7cd00EfFCF11c3A": {
         "stake": 10000000,
         "proposal_right": true
       },
-      "0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204": {
+      "0x001C3C9C4a5669eCD8b78946f6fa5549b33362F8": {
         "stake": 10000000,
         "proposal_right": true
       },
-      "0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00": {
+      "0x002C76f0aeA9Ba615428d9dF7fedEC6f8ed5369f": {
         "stake": 10000000,
         "proposal_right": true
       },
-      "0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A": {
+      "0x003C9d091584fEC96bC3bD8423c884680BEAaf4E": {
         "stake": 10000000,
         "proposal_right": true
       },
-      "0x04A456C92A880cd59D7145C457475515a6f6E0f2": {
+      "0x004C4328B6c2ABF7c4Df897a8124b36E3f00a2FC": {
         "stake": 10000000,
         "proposal_right": true
       }
@@ -59,8 +59,8 @@
     "max_invalid_blocks_on_mem": 100
   },
   "genesis": {
-    "genesis_addr": "0xAAAf6f50A0304F12119D218b94bea8082642515B",
-    "genesis_timestamp": 1571819318272,
+    "genesis_addr": "0xCCCC7809e28DE89BE2AfeFbaa25f1Cee04C4f7a2",
+    "genesis_timestamp": 1640736000000,
     "num_genesis_accounts": 10,
     "epoch_ms": 20000,
     "chain_id": 0,
@@ -70,7 +70,7 @@
     "state_tree_height_limit": 30,
     "state_tree_bytes_limit": 5000000000,
     "state_label_length_limit": 150,
-    "bandwidth_budget_per_block": 1000000,
+    "bandwidth_budget_per_block": 10000,
     "service_state_budget_ratio": 0.5,
     "apps_state_budget_ratio": 0.495,
     "free_state_budget_ratio": 0.005,
