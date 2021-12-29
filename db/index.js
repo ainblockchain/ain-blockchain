@@ -882,12 +882,15 @@ class DB {
       const rewardType = DB.getBlockchainParam('reward/type', blockNumber, this.stateRoot);
       const rewardAnnualRate = DB.getBlockchainParam('reward/annual_rate', blockNumber, this.stateRoot);
       const epochMs = DB.getBlockchainParam('genesis/epoch_ms', blockNumber, this.stateRoot);
+      const stakeLockupExtension = DB.getBlockchainParam(
+          'consensus/stake_lockup_extension', blockNumber, this.stateRoot);
       const blockchainParams = {
         accountRegistrationGasAmount,
         restFunctionCallGasAmount,
         rewardType,
         rewardAnnualRate,
         epochMs,
+        stakeLockupExtension,
       };
       const { func_results, subtree_func_results } = this.func.matchAndTriggerFunctions(
           localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime,

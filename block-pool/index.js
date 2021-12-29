@@ -500,14 +500,14 @@ class BlockPool {
   // Remove everything that came before lastBlock.
   cleanUpAfterFinalization(lastBlock, recordedInvalidBlocks) {
     const targetNumber = lastBlock.number;
+    const maxInvalidBlocksOnMem = this.node.getBlockchainParam('consensus/max_invalid_blocks_on_mem');
     for (const blockNumber of Object.keys(this.numberToBlockSet)) {
       const number = Number(blockNumber);
       if (number < targetNumber) {
         const blockHashList = this.numberToBlockSet[blockNumber];
         for (const blockHash of blockHashList) {
           if (this.hashToInvalidBlockInfo[blockHash]) {
-            if (recordedInvalidBlocks.has(blockHash) ||
-                number < targetNumber - ConsensusConsts.MAX_INVALID_BLOCKS_ON_MEM) {
+            if (recordedInvalidBlocks.has(blockHash) || number < targetNumber - maxInvalidBlocksOnMem) {
               this.cleanUpForBlockHash(blockHash);
               this.numberToBlockSet[blockNumber].delete(blockHash);
             }
