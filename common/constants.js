@@ -16,22 +16,13 @@ const DevFlags = {
   enableRichTxSelectionLogging: false,
   // Enables state tree transfer.
   enableStateTreeTransfer: false,
-  // Enables receipts recording to the state.
-  enableReceiptsRecording: true,  // Some test cases assume this value true.
-  // Enables ntp-sync for global time syncing.
-  enableNtpSync: true,
   // Enables traffic monitoring.
   enableTrafficMonitoring: true,
   // Enables winston logger. (default = bunyan)
   enableWinstonLogger: false,
-  // Enables p2p message tagging.
-  enableP2pMessageTags: true,
   // Enables p2p message tags checking.
-  enableP2pMessageTagsChecking: true,
-  // Enables ws compression.
-  enableWsCompression: false,
-  // Enables limits on tx broadcasting (max = 2).
-  enableTxBroadcastLimit: false,
+  // TODO(liayoo): Add some security measures before turning this flag on.
+  enableP2pMessageTagsChecking: false,
 };
 
 // ** Blockchain configs **
@@ -348,9 +339,11 @@ const RuleProperties = {
   WRITE: 'write',
   STATE: 'state',
   MAX_CHILDREN: 'max_children',
+  MAX_HEIGHT: 'max_height',
+  MAX_SIZE: 'max_size',
+  MAX_BYTES: 'max_bytes',
   GC_MAX_SIBLINGS: 'gc_max_siblings',
   GC_NUM_SIBLINGS_DELETED: 'gc_num_siblings_deleted',
-  // TODO(liayoo): Add more properties (max_height, max_size, max_bytes)
 };
 
 /**

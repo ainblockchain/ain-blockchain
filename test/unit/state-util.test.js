@@ -27,6 +27,7 @@ const {
   getStateProofFromStateRoot,
   getProofHashFromStateRoot,
   verifyStateProof,
+  getObjectHeightAndSize,
 } = require('../../db/state-util');
 const _ = require('lodash');
 const chai = require('chai');
@@ -705,21 +706,32 @@ describe("state-util", () => {
       expect(isValidStateRule(false, params)).to.equal(false);
       expect(isValidStateRule({ "invalid_field": true }, params)).to.equal(false);
       expect(isValidStateRule({
-        "max_children": '123'
+        "max_children": -1
       }, params)).to.equal(false);
       expect(isValidStateRule({
-        "max_children": -1
+        "max_height": -1,
+      }, params)).to.equal(false);
+      expect(isValidStateRule({
+        "max_size": -1,
+      }, params)).to.equal(false);
+      expect(isValidStateRule({
+        "max_bytes": -1,
       }, params)).to.equal(false);
       expect(isValidStateRule({
         "max_children": 0
       }, params)).to.equal(false);
+      expect(isValidStateRule({
+        "max_height": 0,
+      }, params)).to.equal(false);
+      expect(isValidStateRule({
+        "max_size": 0,
+      }, params)).to.equal(false);
+      expect(isValidStateRule({
+        "max_bytes": 0,
+      }, params)).to.equal(false);
       // without gc_num_siblings_deleted
       expect(isValidStateRule({
         "gc_max_siblings": 1,
-      }, params)).to.equal(false);
-      expect(isValidStateRule({
-        "gc_max_siblings": '',
-        "gc_num_siblings_deleted": 20,
       }, params)).to.equal(false);
       expect(isValidStateRule({
         "gc_max_siblings": -1,
@@ -733,10 +745,6 @@ describe("state-util", () => {
         "max_children": 10,
         "gc_max_siblings": -1,
         "gc_num_siblings_deleted": 20,
-      }, params)).to.equal(false);
-      expect(isValidStateRule({
-        "gc_max_siblings": 20,
-        "gc_num_siblings_deleted": '10',
       }, params)).to.equal(false);
       expect(isValidStateRule({
         "gc_max_siblings": 20,
@@ -764,6 +772,15 @@ describe("state-util", () => {
     it('when valid input', () => {
       expect(isValidStateRule({
         "max_children": 10
+      }, params)).to.equal(true);
+      expect(isValidStateRule({
+        "max_height": 10,
+      }, params)).to.equal(true);
+      expect(isValidStateRule({
+        "max_size": 10,
+      }, params)).to.equal(true);
+      expect(isValidStateRule({
+        "max_bytes": 10,
       }, params)).to.equal(true);
       expect(isValidStateRule({
         "gc_max_siblings": 20,
@@ -878,6 +895,55 @@ describe("state-util", () => {
         "state": {
           "max_children": 123,
           "invalid_field": true
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        minGcNumSiblingsDeleted: 20,
+        configPath: [],
+      }, {
+        "state": {
+          "max_children": '123',
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        minGcNumSiblingsDeleted: 20,
+        configPath: [],
+      }, {
+        "state": {
+          "gc_max_siblings": '123',
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        minGcNumSiblingsDeleted: 20,
+        configPath: [],
+      }, {
+        "state": {
+          "gc_max_siblings": 100,
+          "gc_num_siblings_deleted": '123'
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        minGcNumSiblingsDeleted: 20,
+        configPath: [],
+      }, {
+        "state": {
+          "max_height": '123',
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        minGcNumSiblingsDeleted: 20,
+        configPath: [],
+      }, {
+        "state": {
+          "max_size": '123',
+        }
+      }), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidRuleConfig({
+        minGcNumSiblingsDeleted: 20,
+        configPath: [],
+      }, {
+        "state": {
+          "max_bytes": '123',
         }
       }), {isValid: false, invalidPath: '/'});
     })
@@ -2992,6 +3058,70 @@ describe("state-util", () => {
           "mismatchedProofHash": "0xb2c39ec5b2789b84b403930a9eee3307f71eaec029ea8fdb27917bca56fa9a60",
           "mismatchedProofHashComputed": "0x0c479cea57cfd0b5d2f6b0e91f30d802002deda19a26cc44581b56b1be882b6c",
         });
+      });
+    });
+
+    describe('getObjectHeightAndSize', () => {
+      it('when non-object', () => {
+        assert.deepEqual(getObjectHeightAndSize(null), { height: 0, size: 0 });
+        assert.deepEqual(getObjectHeightAndSize(undefined), { height: 0, size: 0 });
+        assert.deepEqual(getObjectHeightAndSize(1), { height: 0, size: 0 });
+        assert.deepEqual(getObjectHeightAndSize(''), { height: 0, size: 0 });
+        assert.deepEqual(getObjectHeightAndSize('123'), { height: 0, size: 0 });
+        assert.deepEqual(getObjectHeightAndSize([]), { height: 0, size: 0 });
+      });
+
+      it('when empty object', () => {
+        assert.deepEqual(getObjectHeightAndSize({}), { height: 0, size: 0 });
+      });
+
+      it('when non-empty object', () => {
+        assert.deepEqual(getObjectHeightAndSize({ a: 'a' }), { height: 1, size: 1 });
+        assert.deepEqual(getObjectHeightAndSize({
+          a: {
+            a: 'aa'
+          }
+        }), { height: 2, size: 2 });
+        assert.deepEqual(getObjectHeightAndSize({
+          a: {
+            a: 'aa',
+            b: 'ab'
+          }
+        }), { height: 2, size: 3 });
+        assert.deepEqual(getObjectHeightAndSize({
+          a: {
+            a: 'aa'
+          },
+          b: 'b'
+        }), { height: 2, size: 3 });
+        assert.deepEqual(getObjectHeightAndSize({
+          a: {
+            a: 'aa'
+          },
+          b: {
+            a: 'ba'
+          }
+        }), { height: 2, size: 4 });
+        assert.deepEqual(getObjectHeightAndSize({
+          a: {
+            a: 'aa'
+          },
+          b: {
+            a: 'ba',
+            b: 'bb',
+            c: 'bc'
+          }
+        }), { height: 2, size: 6 });
+        assert.deepEqual(getObjectHeightAndSize({
+          a: {
+            a: 'aa'
+          },
+          b: {
+            a: {
+              a: 'baa'
+            }
+          }
+        }), { height: 3, size: 5 });
       });
     });
   });

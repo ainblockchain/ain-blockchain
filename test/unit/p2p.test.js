@@ -170,6 +170,7 @@ describe("P2p", () => {
           state: 'STARTING',
           stateNumeric: 0,
           epoch: 1,
+          isInEpochTransition: false,
           longestNotarizedChainTipsSize: 0,
           globalTimeSyncStatus: {},
           validators: {}

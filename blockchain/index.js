@@ -173,8 +173,8 @@ class Blockchain {
     this.numberToBlockInfo[block.number] = {
       finalized_at: Date.now()
     };
-    if (block.number >= ConsensusConsts.MAX_FINALIZED_BLOCK_INFO_ON_MEM) {
-      delete this.numberToBlockInfo[block.number - ConsensusConsts.MAX_FINALIZED_BLOCK_INFO_ON_MEM];
+    if (block.number >= NodeConfigs.MAX_FINALIZED_BLOCK_INFO_ON_MEM) {
+      delete this.numberToBlockInfo[block.number - NodeConfigs.MAX_FINALIZED_BLOCK_INFO_ON_MEM];
     }
   }
 
