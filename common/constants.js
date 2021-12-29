@@ -20,6 +20,9 @@ const DevFlags = {
   enableTrafficMonitoring: true,
   // Enables winston logger. (default = bunyan)
   enableWinstonLogger: false,
+  // Enables p2p message tags checking.
+  // TODO(liayoo): Add some security measures before turning this flag on.
+  enableP2pMessageTagsChecking: false,
 };
 
 // ** Blockchain configs **
