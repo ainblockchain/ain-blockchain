@@ -346,9 +346,11 @@ const RuleProperties = {
   WRITE: 'write',
   STATE: 'state',
   MAX_CHILDREN: 'max_children',
+  MAX_HEIGHT: 'max_height',
+  MAX_SIZE: 'max_size',
+  MAX_BYTES: 'max_bytes',
   GC_MAX_SIBLINGS: 'gc_max_siblings',
   GC_NUM_SIBLINGS_DELETED: 'gc_num_siblings_deleted',
-  // TODO(liayoo): Add more properties (max_height, max_size, max_bytes)
 };
 
 /**
