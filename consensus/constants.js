@@ -1,6 +1,5 @@
 const ConsensusConsts = {
   MAJORITY: 2 / 3,
-  HEALTH_THRESHOLD_EPOCH: 10,
 };
 
 const ConsensusMessageTypes = {
