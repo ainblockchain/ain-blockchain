@@ -16,8 +16,6 @@ const DevFlags = {
   enableRichTxSelectionLogging: false,
   // Enables state tree transfer.
   enableStateTreeTransfer: false,
-  // Enables ntp-sync for global time syncing.
-  enableNtpSync: true,
   // Enables traffic monitoring.
   enableTrafficMonitoring: true,
   // Enables winston logger. (default = bunyan)
