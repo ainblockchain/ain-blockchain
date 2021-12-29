@@ -134,6 +134,7 @@ class Consensus {
       clearInterval(this.epochInterval);
     }
     const epochMs = this.node.getBlockchainParam('genesis/epoch_ms');
+    const healthThresholdEpoch = this.node.getBlockchainParam('consensus/health_threshold_epoch');
     this.epochInterval = setInterval(async () => {
       if (this.isInEpochTransition) {
         return;
@@ -142,7 +143,7 @@ class Consensus {
         const lastBlock = this.node.bc.lastBlock();
         if (lastBlock && lastBlock.number > 0 && !this.isConsensusHealthy(lastBlock) &&
             CommonUtil.timestampExceedsThreshold(
-                this.lastEpochTransitionRenewed, ConsensusConsts.HEALTH_THRESHOLD_EPOCH * epochMs)) {
+                this.lastEpochTransitionRenewed, healthThresholdEpoch * epochMs)) {
           const number = lastBlock ? lastBlock.number : -1;
           const epoch = lastBlock ? lastBlock.epoch : -1;
           logger.info(`[${LOG_HEADER}] Try restarting the epoch interval ` +
@@ -155,7 +156,7 @@ class Consensus {
         let currentTime = Date.now();
         if (NodeConfigs.HOSTING_ENV !== 'local' &&
             (this.epoch % 10 === 0 || CommonUtil.timestampExceedsThreshold(
-                this.ntpData.syncedAt, ConsensusConsts.HEALTH_THRESHOLD_EPOCH * epochMs))) {
+                this.ntpData.syncedAt, healthThresholdEpoch * epochMs))) {
           // adjust time
           try {
             const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
@@ -1306,7 +1307,8 @@ class Consensus {
 
   isConsensusHealthy(lastFinalizedBlock) {
     if (!lastFinalizedBlock) return false;
-    return (this.epoch - lastFinalizedBlock.epoch) < ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
+    const healthThresholdEpoch = this.node.getBlockchainParam('consensus/health_threshold_epoch');
+    return (this.epoch - lastFinalizedBlock.epoch) < healthThresholdEpoch;
   }
 
   /**

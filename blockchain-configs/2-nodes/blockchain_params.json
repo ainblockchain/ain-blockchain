@@ -39,6 +39,7 @@
         "proposal_right": true
       }
     },
+    "health_threshold_epoch": 10,
     "stake_lockup_extension": 2592000000,
     "max_invalid_blocks_on_mem": 100
   },
