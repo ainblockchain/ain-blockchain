@@ -771,6 +771,61 @@ describe("DB operations", () => {
           "bandwidth_gas_amount": 1
         });
       })
+
+      it("setValue to write value with more than max_height keys", () => {
+        expect(node.db.setRule("/apps/test/test_rule/some/path/max/height", {
+          ".rule": {
+            "state": {
+              "max_height": 1
+            }
+          }
+        }).code).to.equal(0);
+        assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/path/max/height", {
+            height1: {
+              height2: 0
+            }
+          }, { addr: 'abcd' },
+          null, { extra: { executed_at: 1234567890000 }}), {
+          "code": 12104,
+          "message": "State rule evaluated false: [{\"max_height\":1}] at '/apps/test/test_rule/some/path/max/height' for value path '/apps/test/test_rule/some/path/max/height' with newValue '{\"height1\":{\"height2\":0}}'",
+          "bandwidth_gas_amount": 1
+        });
+      })
+
+      it("setValue to write value with more than max_size keys", () => {
+        expect(node.db.setRule("/apps/test/test_rule/some/path/max/size", {
+          ".rule": {
+            "state": {
+              "max_size": 1
+            }
+          }
+        }).code).to.equal(0);
+        assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/path/max/size", {
+            size1: 1,
+            size2: 2
+          }, { addr: 'abcd' },
+          null, { extra: { executed_at: 1234567890000 }}), {
+          "code": 12104,
+          "message": "State rule evaluated false: [{\"max_size\":1}] at '/apps/test/test_rule/some/path/max/size' for value path '/apps/test/test_rule/some/path/max/size' with newValue '{\"size1\":1,\"size2\":2}'",
+          "bandwidth_gas_amount": 1
+        });
+      })
+
+      it("setValue to write value with more than max_bytes keys", () => {
+        expect(node.db.setRule("/apps/test/test_rule/some/path/max/bytes", {
+          ".rule": {
+            "state": {
+              "max_bytes": 7
+            }
+          }
+        }).code).to.equal(0);
+        assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/path/max/bytes", 1,
+          { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }}), {
+          "code": 12104,
+          "message": "State rule evaluated false: [{\"max_bytes\":7}] at '/apps/test/test_rule/some/path/max/bytes' for value path '/apps/test/test_rule/some/path/max/bytes' with newValue '1'",
+          "bandwidth_gas_amount": 1
+        });
+      })
     })
 
     describe("incValue:", () => {

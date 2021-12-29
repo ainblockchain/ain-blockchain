@@ -1,6 +1,7 @@
 const logger = new (require('../logger'))('DATABASE');
 
 const _ = require('lodash');
+const sizeof = require('object-sizeof');
 const {
   DevFlags,
   NodeConfigs,
@@ -41,6 +42,7 @@ const {
   updateStateInfoForStateTree,
   getStateProofFromStateRoot,
   getProofHashFromStateRoot,
+  getObjectHeightAndSize,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -880,12 +882,15 @@ class DB {
       const rewardType = DB.getBlockchainParam('reward/type', blockNumber, this.stateRoot);
       const rewardAnnualRate = DB.getBlockchainParam('reward/annual_rate', blockNumber, this.stateRoot);
       const epochMs = DB.getBlockchainParam('genesis/epoch_ms', blockNumber, this.stateRoot);
+      const stakeLockupExtension = DB.getBlockchainParam(
+          'consensus/stake_lockup_extension', blockNumber, this.stateRoot);
       const blockchainParams = {
         accountRegistrationGasAmount,
         restFunctionCallGasAmount,
         rewardType,
         rewardAnnualRate,
         epochMs,
+        stakeLockupExtension,
       };
       const { func_results, subtree_func_results } = this.func.matchAndTriggerFunctions(
           localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime,
@@ -1750,9 +1755,7 @@ class DB {
     }
     if (!skipFees) {
       this.collectFee(auth, timestamp, tx, blockNumber, executionResult);
-      if (DevFlags.enableReceiptsRecording) {
-        this.recordReceipt(auth, tx, blockNumber, executionResult);
-      }
+      this.recordReceipt(auth, tx, blockNumber, executionResult);
     }
     return executionResult;
   }
@@ -2317,26 +2320,66 @@ class DB {
   }
 
   evalStateRuleConfig(stateRuleConfig, newValue) {
-    if (!CommonUtil.isDict(stateRuleConfig) ||
-        !CommonUtil.isDict(newValue)) {
+    if (!CommonUtil.isDict(stateRuleConfig)) {
       return {
         ruleString: '',
         evalResult: true,
       };
     }
     const stateRuleObj = stateRuleConfig[RuleProperties.STATE];
-    if (CommonUtil.isEmpty(stateRuleObj) ||
-        !stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+    if (CommonUtil.isEmpty(stateRuleObj)) {
       return {
         ruleString: JSON.stringify(stateRuleObj),
         evalResult: true,
       };
     }
-    const maxChildren = stateRuleObj[RuleProperties.MAX_CHILDREN];
-    const maxChildrenEvalResult = Object.keys(newValue).length <= maxChildren;
+    if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_BYTES)) {
+      const maxBytesEvalResult = sizeof(newValue) <= stateRuleObj[RuleProperties.MAX_BYTES];
+      if (!maxBytesEvalResult) {
+        return {
+          ruleString: JSON.stringify(stateRuleObj),
+          evalResult: maxBytesEvalResult,
+        };
+      }
+    }
+    if (!CommonUtil.isDict(newValue)) {
+      return {
+        ruleString: '',
+        evalResult: true,
+      };
+    }
+    if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+      const maxChildren = stateRuleObj[RuleProperties.MAX_CHILDREN];
+      const maxChildrenEvalResult = Object.keys(newValue).length <= maxChildren;
+      if (!maxChildrenEvalResult) {
+        return {
+          ruleString: JSON.stringify(stateRuleObj),
+          evalResult: maxChildrenEvalResult,
+        };
+      }
+    }
+    const { height, size } = getObjectHeightAndSize(newValue);
+    if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_HEIGHT)) {
+      const maxHeightEvalResult = height <= stateRuleObj[RuleProperties.MAX_HEIGHT];
+      if (!maxHeightEvalResult) {
+        return {
+          ruleString: JSON.stringify(stateRuleObj),
+          evalResult: maxHeightEvalResult,
+        };
+      }
+    }
+    if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_SIZE)) {
+      const maxSizeEvalResult = size <= stateRuleObj[RuleProperties.MAX_SIZE];
+      if (!maxSizeEvalResult) {
+        return {
+          ruleString: JSON.stringify(stateRuleObj),
+          evalResult: maxSizeEvalResult,
+        };
+      }
+    }
     return {
       ruleString: JSON.stringify(stateRuleObj),
-      evalResult: maxChildrenEvalResult,
+      evalResult: true,
     };
   }
 

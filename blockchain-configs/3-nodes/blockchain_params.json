@@ -43,7 +43,10 @@
         "stake": 10000000,
         "proposal_right": true
       }
-    }
+    },
+    "health_threshold_epoch": 10,
+    "stake_lockup_extension": 2592000000,
+    "max_invalid_blocks_on_mem": 100
   },
   "genesis": {
     "genesis_addr": "0xAAAf6f50A0304F12119D218b94bea8082642515B",
