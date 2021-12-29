@@ -1752,9 +1752,7 @@ class DB {
     }
     if (!skipFees) {
       this.collectFee(auth, timestamp, tx, blockNumber, executionResult);
-      if (DevFlags.enableReceiptsRecording) {
-        this.recordReceipt(auth, tx, blockNumber, executionResult);
-      }
+      this.recordReceipt(auth, tx, blockNumber, executionResult);
     }
     return executionResult;
   }
