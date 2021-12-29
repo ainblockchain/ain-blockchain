@@ -24,8 +24,6 @@ const DevFlags = {
   enableTrafficMonitoring: true,
   // Enables winston logger. (default = bunyan)
   enableWinstonLogger: false,
-  // Enables ws compression.
-  enableWsCompression: true,
 };
 
 // ** Blockchain configs **
