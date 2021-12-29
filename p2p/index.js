@@ -374,8 +374,10 @@ class P2pClient {
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach((node) => {
-      if (_.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
+    const tagSet = new Set(tags);
+    Object.entries(this.outbound).forEach(([address, node]) => {
+      if (!tagSet.has(address) &&
+          _.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
         node.socket.send(stringPayload);
       }
     });
@@ -423,15 +425,12 @@ class P2pClient {
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    if (DevFlags.enableTxBroadcastLimit) {
-      _.shuffle(Object.values(this.outbound)).slice(0, 2).forEach((node) => {
+    const tagSet = new Set(tags);
+    Object.entries(this.outbound).forEach(([address, node]) => {
+      if (!tagSet.has(address)) {
         node.socket.send(stringPayload);
-      });
-    } else {
-      Object.values(this.outbound).forEach((node) => {
-        node.socket.send(stringPayload);
-      });
-    }
+      }
+    });
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
 
