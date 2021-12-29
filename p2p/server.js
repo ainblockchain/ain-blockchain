@@ -61,11 +61,12 @@ class P2pServer {
   }
 
   async listen() {
-    const wsOptions = { port: NodeConfigs.P2P_PORT };
-    if (DevFlags.enableWsCompression) {
+    // TODO(*): Add maxPayload option (e.g. ~50MB)
+    this.wsServer = new Websocket.Server({
+      port: NodeConfigs.P2P_PORT,
       // Enables server-side compression. For option details, see
       // https://github.com/websockets/ws/blob/master/doc/ws.md#new-websocketserveroptions-callback
-      wsOptions.perMessageDeflate = {
+      perMessageDeflate: {
         zlibDeflateOptions: {
           // See zlib defaults.
           chunkSize: 1024,
@@ -82,9 +83,8 @@ class P2pServer {
         // Below options specified as default values.
         concurrencyLimit: 10, // Limits zlib concurrency for perf.
         threshold: 1024 // Size (in bytes) below which messages should not be compressed.
-      };
-    }
-    this.wsServer = new Websocket.Server(wsOptions);
+      }
+    });
     this.wsServer.on('connection', (socket) => {
       const url = this.buildRemoteUrlFromSocket(socket);
       P2pUtil.addPeerConnection(this.peerConnectionsInProgress, url);
@@ -532,15 +532,13 @@ class P2pServer {
             const consensusTags = _.get(parsedMessage, 'data.tags', []);
             logger.debug(`[${LOG_HEADER}] Receiving a consensus message: ` +
                 `${JSON.stringify(consensusMessage)}`);
-            if (DevFlags.enableP2pMessageTags) {
-              logger.debug(`[${LOG_HEADER}] Tags attached to a consensus message: ` +
-                  `${JSON.stringify(consensusTags)}`);
-              trafficStatsManager.addEvent(
-                    TrafficEventTypes.P2P_TAG_CONSENSUS_LENGTH, consensusTags.length);
-              trafficStatsManager.addEvent(
-                  TrafficEventTypes.P2P_TAG_CONSENSUS_MAX_OCCUR,
-                  CommonUtil.countMaxOccurrences(consensusTags));
-            }
+            logger.debug(`[${LOG_HEADER}] Tags attached to a consensus message: ` +
+                `${JSON.stringify(consensusTags)}`);
+            trafficStatsManager.addEvent(
+                  TrafficEventTypes.P2P_TAG_CONSENSUS_LENGTH, consensusTags.length);
+            trafficStatsManager.addEvent(
+                TrafficEventTypes.P2P_TAG_CONSENSUS_MAX_OCCUR,
+                CommonUtil.countMaxOccurrences(consensusTags));
             if (this.node.state === BlockchainNodeStates.SERVING) {
               this.consensus.handleConsensusMessage(consensusMessage, consensusTags);
             } else {
@@ -564,12 +562,10 @@ class P2pServer {
             const tx = _.get(parsedMessage, 'data.transaction');
             const txTags = _.get(parsedMessage, 'data.tags', []);
             logger.debug(`[${LOG_HEADER}] Receiving a transaction: ${JSON.stringify(tx)}`);
-            if (DevFlags.enableP2pMessageTags) {
-              logger.debug(`[${LOG_HEADER}] Tags attached to a tx message: ${JSON.stringify(txTags)}`);
-              trafficStatsManager.addEvent(TrafficEventTypes.P2P_TAG_TX_LENGTH, txTags.length);
-              trafficStatsManager.addEvent(
-                  TrafficEventTypes.P2P_TAG_TX_MAX_OCCUR, CommonUtil.countMaxOccurrences(txTags));
-            }
+            logger.debug(`[${LOG_HEADER}] Tags attached to a tx message: ${JSON.stringify(txTags)}`);
+            trafficStatsManager.addEvent(TrafficEventTypes.P2P_TAG_TX_LENGTH, txTags.length);
+            trafficStatsManager.addEvent(
+                TrafficEventTypes.P2P_TAG_TX_MAX_OCCUR, CommonUtil.countMaxOccurrences(txTags));
             if (this.node.tp.transactionTracker[tx.hash]) {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               const latency = Date.now() - beginTime;

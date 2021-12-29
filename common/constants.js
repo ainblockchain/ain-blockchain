@@ -16,20 +16,13 @@ const DevFlags = {
   enableRichTxSelectionLogging: false,
   // Enables state tree transfer.
   enableStateTreeTransfer: false,
-  // Enables receipts recording to the state.
-  enableReceiptsRecording: true,  // Some test cases assume this value true.
-  // Enables ntp-sync for global time syncing.
-  enableNtpSync: true,
   // Enables traffic monitoring.
   enableTrafficMonitoring: true,
   // Enables winston logger. (default = bunyan)
   enableWinstonLogger: false,
-  // Enables p2p message tagging.
-  enableP2pMessageTags: true,
-  // Enables ws compression.
-  enableWsCompression: true,
-  // Enables limits on tx broadcasting (max = 2).
-  enableTxBroadcastLimit: false,
+  // Enables p2p message tags checking.
+  // TODO(liayoo): Add some security measures before turning this flag on.
+  enableP2pMessageTagsChecking: false,
 };
 
 // ** Blockchain configs **
