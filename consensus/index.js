@@ -140,7 +140,7 @@ class Consensus {
       }
       try {
         const lastBlock = this.node.bc.lastBlock();
-        if (lastBlock && lastBlock.number > 0 && !this.isHealthy(lastBlock) &&
+        if (lastBlock && lastBlock.number > 0 && !this.isConsensusHealthy(lastBlock) &&
             CommonUtil.timestampExceedsThreshold(
                 this.lastEpochTransitionRenewed, ConsensusConsts.HEALTH_THRESHOLD_EPOCH * epochMs)) {
           const number = lastBlock ? lastBlock.number : -1;
@@ -1304,7 +1304,7 @@ class Consensus {
     return result;
   }
 
-  isHealthy(lastFinalizedBlock) {
+  isConsensusHealthy(lastFinalizedBlock) {
     if (!lastFinalizedBlock) return false;
     return (this.epoch - lastFinalizedBlock.epoch) < ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
   }
@@ -1329,7 +1329,7 @@ class Consensus {
     }
 
     return {
-      health: this.isHealthy(this.node.bc.lastBlock()),
+      health: this.isConsensusHealthy(this.node.bc.lastBlock()),
       state: this.state,
       stateNumeric: Object.keys(ConsensusStates).indexOf(this.state),
       epoch: this.epoch,
