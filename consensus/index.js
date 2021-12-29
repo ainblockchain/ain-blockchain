@@ -140,7 +140,7 @@ class Consensus {
       this.isInEpochTransition = true;
       this.node.tryFinalizeChain();
       let currentTime = Date.now();
-      if (DevFlags.enableNtpSync && this.epoch % 100 === 0) {
+      if (NodeConfigs.HOSTING_ENV !== 'local' && this.epoch % 100 === 0) {
         // adjust time
         try {
           const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
