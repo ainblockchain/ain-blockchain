@@ -919,6 +919,11 @@ class CommonUtil {
     }
     return maxOccurrences;
   }
+
+  static timestampExceedsThreshold(timestamp, threshold) {
+    if (!timestamp) return true;
+    return Date.now() - timestamp > threshold;
+  }
 }
 
 module.exports = CommonUtil;

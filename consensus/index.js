@@ -10,7 +10,6 @@ const Transaction = require('../tx-pool/transaction');
 const DB = require('../db');
 const PushId = require('../db/push-id');
 const {
-  DevFlags,
   BlockchainConsts,
   NodeConfigs,
   WriteDbOperations,
@@ -63,6 +62,7 @@ class Consensus {
     this.consensusProtocolVersion = BlockchainConsts.CONSENSUS_PROTOCOL_VERSION;
     this.majorConsensusProtocolVersion = VersionUtil.toMajorVersion(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION);
     this.epochInterval = null;
+    this.lastEpochTransitionRenewed = null;
     this.startingTime = 0;
     this.timeAdjustment = 0;
     this.isInEpochTransition = false;
@@ -129,6 +129,7 @@ class Consensus {
 
   setEpochTransition() {
     const LOG_HEADER = 'setEpochTransition';
+    this.lastEpochTransitionRenewed = Date.now();
     if (this.epochInterval) {
       clearInterval(this.epochInterval);
     }
@@ -137,36 +138,54 @@ class Consensus {
       if (this.isInEpochTransition) {
         return;
       }
-      this.isInEpochTransition = true;
-      this.node.tryFinalizeChain();
-      let currentTime = Date.now();
-      if (DevFlags.enableNtpSync && this.epoch % 100 === 0) {
-        // adjust time
-        try {
-          const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
-          logger.debug(`(Local Time - NTP Time) Delta = ${iNTPData.minimalNTPLatencyDelta} ms`);
-          this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
-          this.ntpData = { ...iNTPData, syncedAt: Date.now() };
-        } catch (err) {
-          logger.error(`ntpsync error: ${err} ${err.stack}`);
+      try {
+        const lastBlock = this.node.bc.lastBlock();
+        if (lastBlock && lastBlock.number > 0 && !this.isHealthy(lastBlock) &&
+            CommonUtil.timestampExceedsThreshold(
+                this.lastEpochTransitionRenewed, ConsensusConsts.HEALTH_THRESHOLD_EPOCH * epochMs)) {
+          const number = lastBlock ? lastBlock.number : -1;
+          const epoch = lastBlock ? lastBlock.epoch : -1;
+          logger.info(`[${LOG_HEADER}] Try restarting the epoch interval ` +
+              `(${number} / ${epoch} / ${this.epoch} / ${this.lastEpochTransitionRenewed})`);
+          this.setEpochTransition();
+          return;
         }
+        this.isInEpochTransition = true;
+        this.node.tryFinalizeChain();
+        let currentTime = Date.now();
+        if (NodeConfigs.HOSTING_ENV !== 'local' &&
+            (this.epoch % 10 === 0 || CommonUtil.timestampExceedsThreshold(
+                this.ntpData.syncedAt, ConsensusConsts.HEALTH_THRESHOLD_EPOCH * epochMs))) {
+          // adjust time
+          try {
+            const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
+            logger.debug(`(Local Time - NTP Time) Delta = ${iNTPData.minimalNTPLatencyDelta} ms`);
+            this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
+            this.ntpData = { ...iNTPData, syncedAt: Date.now() };
+          } catch (err) {
+            logger.error(`ntpsync error: ${err} ${err.stack}`);
+          }
+        }
+        currentTime -= this.timeAdjustment;
+        const absEpoch = Math.floor((currentTime - this.startingTime) / epochMs);
+        if (this.epoch + 1 < absEpoch) {
+          logger.debug(`[${LOG_HEADER}] Epoch is too low: ${this.epoch} / ${absEpoch}`);
+        } else if (this.epoch + 1 > absEpoch) {
+          logger.debug(`[${LOG_HEADER}] Epoch is too high: ${this.epoch} / ${absEpoch}`);
+        }
+        logger.debug(
+            `[${LOG_HEADER}] Updating epoch at ${currentTime}: ${this.epoch} => ${absEpoch}`);
+        // re-adjust and update epoch
+        this.epoch = absEpoch;
+        if (this.epoch > 1) {
+          this.updateProposer();
+          this.tryPropose();
+        }
+      } catch (e) {
+        logger.error(`[${LOG_HEADER}] Error in epochInterval: ${e}`);
+      } finally {
+        this.isInEpochTransition = false;
       }
-      currentTime -= this.timeAdjustment;
-      const absEpoch = Math.floor((currentTime - this.startingTime) / epochMs);
-      if (this.epoch + 1 < absEpoch) {
-        logger.debug(`[${LOG_HEADER}] Epoch is too low: ${this.epoch} / ${absEpoch}`);
-      } else if (this.epoch + 1 > absEpoch) {
-        logger.debug(`[${LOG_HEADER}] Epoch is too high: ${this.epoch} / ${absEpoch}`);
-      }
-      logger.debug(
-          `[${LOG_HEADER}] Updating epoch at ${currentTime}: ${this.epoch} => ${absEpoch}`);
-      // re-adjust and update epoch
-      this.epoch = absEpoch;
-      if (this.epoch > 1) {
-        this.updateProposer();
-        this.tryPropose();
-      }
-      this.isInEpochTransition = false;
     }, epochMs);
   }
 
@@ -1279,6 +1298,11 @@ class Consensus {
     return result;
   }
 
+  isHealthy(lastFinalizedBlock) {
+    if (!lastFinalizedBlock) return false;
+    return (this.epoch - lastFinalizedBlock.epoch) < ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
+  }
+
   /**
    * Returns the basic status of consensus to see if blocks are being produced
    * {
@@ -1291,7 +1315,6 @@ class Consensus {
    * }
    */
   getStatus() {
-    const lastFinalizedBlock = this.node.bc.lastBlock();
     const validators = this.validators;
     const globalTimeSyncStatus = this.ntpData;
 
@@ -1299,17 +1322,12 @@ class Consensus {
       validatorInfo.voting_right = true;
     }
 
-    let health;
-    if (!lastFinalizedBlock) {
-      health = false;
-    } else {
-      health = (this.epoch - lastFinalizedBlock.epoch) < ConsensusConsts.HEALTH_THRESHOLD_EPOCH;
-    }
     return {
-      health,
+      health: this.isHealthy(this.node.bc.lastBlock()),
       state: this.state,
       stateNumeric: Object.keys(ConsensusStates).indexOf(this.state),
       epoch: this.epoch,
+      isInEpochTransition: this.isInEpochTransition,
       validators,
       globalTimeSyncStatus,
     };
