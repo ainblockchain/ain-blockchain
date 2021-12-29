@@ -17,7 +17,6 @@ const {
   buildRulePermission,
 } = require('../common/constants');
 const { FunctionResultCode } = require('../common/result-code');
-const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 
@@ -874,10 +873,10 @@ class Functions {
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
-  static getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses) {
+  static getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses, stakeLockupExtension) {
     let extension = 0;
     for (let n = updatedNumOffenses - numNewOffenses + 1; n <= updatedNumOffenses; n++) {
-      extension += ConsensusConsts.STAKE_LOCKUP_EXTENSION * Math.pow(2, n - 1);
+      extension += stakeLockupExtension * Math.pow(2, n - 1);
     }
     return extension;
   }
@@ -895,7 +894,8 @@ class Functions {
       const offenseRecordsPath = PathUtil.getConsensusOffenseRecordsAddrPath(offender);
       this.incValueOrLog(offenseRecordsPath, numNewOffenses, context);
       const updatedNumOffenses = this.db.getValue(offenseRecordsPath); // new # of offenses
-      const lockupExtension = Functions.getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses);
+      const lockupExtension = Functions.getLockupExtensionForNewOffenses(
+          numNewOffenses, updatedNumOffenses, context.stakeLockupExtension);
       if (lockupExtension > 0) {
         const expirationPath = PathUtil.getStakingExpirationPath(PredefinedDbPaths.CONSENSUS, offender, 0);
         const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), context.blockTime);

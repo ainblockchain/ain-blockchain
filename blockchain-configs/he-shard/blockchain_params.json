@@ -43,7 +43,9 @@
         "stake": 10000000,
         "proposal_right": true
       }
-    }
+    },
+    "stake_lockup_extension": 2592000000,
+    "max_invalid_blocks_on_mem": 100
   },
   "genesis": {
     "genesis_addr": "0xBBB2219cD5eACc54Ce95deF7a67dDe71C8241891",
