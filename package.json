@@ -72,6 +72,7 @@
     "ip-whitelist": "^1.2.2",
     "jayson": "^3.1.1",
     "json-diff": "^0.5.4",
+    "json-stream-stringify": "^2.0.4",
     "lodash": "^4.17.21",
     "match-url-wildcard": "^0.0.4",
     "moment": "^2.24.0",

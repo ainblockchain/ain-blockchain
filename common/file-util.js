@@ -5,6 +5,7 @@ const path = require('path');
 const zlib = require('zlib');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
+const JsonStreamStringify = require('json-stream-stringify');
 const { BlockchainConsts, NodeConfigs } = require('./constants');
 const CommonUtil = require('./common-util');
 const JSON_GZIP_FILE_EXTENSION = 'json.gz';
@@ -148,19 +149,29 @@ class FileUtil {
     return FileUtil.readCompressedJson(blockPath);
   }
 
-  // TODO(cshcomcom): Change to asynchronous.
   static writeBlockFile(chainPath, block) {
-    const LOG_HEADER = 'writeBlockFile';
+    return new Promise((resolve) => {
+      const LOG_HEADER = 'writeBlockFile';
 
-    const blockPath = FileUtil.getBlockPath(chainPath, block.number);
-    if (!fs.existsSync(blockPath)) {
+      const blockPath = FileUtil.getBlockPath(chainPath, block.number);
+      if (fs.existsSync(blockPath)) {
+        logger.debug(`[${LOG_HEADER}] ${blockPath} file already exists!`);
+        resolve();
+      }
       const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
       FileUtil.createDir(blockDirPath);
-      const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
-      fs.writeFileSync(blockPath, compressed);
-    } else {
-      logger.debug(`[${LOG_HEADER}] ${blockPath} file already exists!`);
-    }
+      new JsonStreamStringify(block)
+        .pipe(zlib.createGzip())
+        .pipe(fs.createWriteStream(blockPath, { flags: 'w' }))
+        .on('finish', () => {
+          logger.debug(`[${LOG_HEADER}] Block written at ${blockPath}`);
+          resolve();
+        })
+        .on('error', (e) => {
+          logger.error(`[${LOG_HEADER}] Failed to write block at ${blockPath}: ${e}`);
+          resolve();
+        });
+    });
   }
 
   static deleteBlockFile(chainPath, blockNumber) {
@@ -209,7 +220,7 @@ class FileUtil {
     }
   }
 
-  static writeSnapshot(snapshotPath, blockNumber, snapshot, isDebug = false) {
+  static async writeSnapshot(snapshotPath, blockNumber, snapshot, isDebug = false) {
     const LOG_HEADER = 'writeSnapshot';
 
     const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
@@ -222,8 +233,19 @@ class FileUtil {
         }
       }
     } else {
-      // TODO(liayoo): Change this operation to be asynchronous
-      fs.writeFileSync(filePath, zlib.gzipSync(Buffer.from(JSON.stringify(snapshot))));
+      return new Promise((resolve) => {
+        new JsonStreamStringify(snapshot)
+          .pipe(zlib.createGzip())
+          .pipe(fs.createWriteStream(filePath, { flags: 'w' }))
+          .on('finish', () => {
+            logger.debug(`[${LOG_HEADER}] Snapshot written at ${filePath}`);
+            resolve();
+          })
+          .on('error', (e) => {
+            logger.error(`[${LOG_HEADER}] Failed to write snapshot at ${filePath}: ${e}`);
+            resolve();
+          });
+      });
     }
   }
 

@@ -221,7 +221,7 @@ class BlockchainNode {
     return `http://${ipAddr}:${NodeConfigs.PORT}`;
   }
 
-  initNode(isFirstNode) {
+  async initNode(isFirstNode) {
     const LOG_HEADER = 'initNode';
 
     let latestSnapshot = null;
@@ -260,7 +260,7 @@ class BlockchainNode {
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
     const { wasBlockDirEmpty, isGenesisStart } =
-        this.bc.initBlockchain(isFirstNode, latestSnapshot);
+        await this.bc.initBlockchain(isFirstNode, latestSnapshot);
 
     // 4. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
@@ -651,6 +651,7 @@ class BlockchainNode {
 
     const numBlockFiles = this.bc.getNumBlockFiles();
     const fromBlockNumber = NodeConfigs.SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
+    logger.error(`[${LOG_HEADER}] numBlockFiles = ${numBlockFiles}, fromBlockNumber = ${fromBlockNumber}`)
     let nextBlock = null;
     let proposalTx = null;
     for (let number = fromBlockNumber; number < numBlockFiles; number++) {
