@@ -795,6 +795,7 @@ class P2pClient {
   }
 
   connectToPeer(url) {
+    // TODO(*): Add maxPayload option (e.g. ~50MB)
     const socket = new Websocket(url);
     socket.on('open', async () => {
       logger.info(`Connected to peer (${url}),`);

@@ -61,6 +61,7 @@ class P2pServer {
   }
 
   async listen() {
+    // TODO(*): Add maxPayload option (e.g. ~50MB)
     this.wsServer = new Websocket.Server({
       port: NodeConfigs.P2P_PORT,
       // Enables server-side compression. For option details, see
