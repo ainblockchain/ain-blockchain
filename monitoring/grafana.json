@@ -3991,7 +3991,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "prometheus"
           },
           "exemplar": true,
           "expr": "node_status:db_status:num_accounts",
