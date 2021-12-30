@@ -377,6 +377,7 @@ const StateLabelProperties = {
   HASH_DELIMITER: '#',  // Hash delimiter
   META_LABEL_PREFIX: '#',  // Prefix of all meta labels
   NEXT_SERIAL: '#next_serial',
+  NUM_CHILDREN: '#num_children',
   NUM_PARENTS: '#num_parents',
   RADIX_LABEL_PREFIX: '#radix:',
   RADIX_PROOF_HASH: '#radix_ph',
