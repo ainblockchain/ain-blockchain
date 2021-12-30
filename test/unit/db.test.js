@@ -1559,7 +1559,7 @@ describe("DB operations", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/test/test_rule/syntax/path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12105,
-          "message": "Rule syntax error: \"Unexpected token 'while'\" for rule [while(]",
+          "message": "Rule syntax error: \"Unexpected token 'while'\" in rule string: [while(]",
           "matched": "erased",
         });
       })
