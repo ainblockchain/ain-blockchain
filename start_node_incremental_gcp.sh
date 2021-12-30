@@ -318,8 +318,6 @@ fi
 
 MAX_OLD_SPACE_SIZE_MB=55000
 
-# NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
-export CORS_WHITELIST='*'
 printf "CORS_WHITELIST=$CORS_WHITELIST\n"
 export STAKE=100000
 printf "STAKE=$STAKE\n"
