@@ -291,7 +291,7 @@ class P2pClient {
     // NOTE(minsulee2): ENABLE_JSON_RPC_API === true means API server nodes for now.
     // TODO(minsulee2): Need to introduce a new flag which marks a 'bridge node' role.
     if (NodeConfigs.ENABLE_JSON_RPC_API) {
-      const whitelist = this.server.node.db.getValue('/consensus/proposer_whitelist');
+      const whitelist = this.server.node.db.getValue('/consensus/validator_whitelist');
       const [whitelisted, notWhitelisted] =
           _.partition(bidirectedConnections, ((address) => whitelist[address]));
       const whitelistDisconnectThreshold = Math.floor(NodeConfigs.MAX_NUM_INBOUND_CONNECTION / 2);
