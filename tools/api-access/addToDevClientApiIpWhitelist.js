@@ -36,7 +36,7 @@ async function addToDevClientApiIpWhitelist(endpointUrl, chainId, type, keystore
 }
 
 async function processArguments() {
-  if (process.argv.length !== 5 && process.argv.length !== 6) {
+  if (process.argv.length !== 6 && process.argv.length !== 7) {
     usage();
   }
   const endpointUrl = process.argv[2];
