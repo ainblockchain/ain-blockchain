@@ -649,45 +649,45 @@ describe("state-util", () => {
 
   describe("isValidWriteRule", () => {
     it('when invalid input', () => {
-      expect(isValidWriteRule([], undefined)).to.equal(false);
-      expect(isValidWriteRule([], {})).to.equal(false);
-      expect(isValidWriteRule([], [])).to.equal(false);
-      expect(isValidWriteRule([], [1, 2, 3])).to.equal(false);
-      expect(isValidWriteRule([], 0)).to.equal(false);
-      expect(isValidWriteRule([], 1)).to.equal(false);
-      expect(isValidWriteRule([], { "invalid_top_level_token": true })).to.equal(false);
-      expect(isValidWriteRule([], 'process.exit(0)')).to.equal(false);
+      expect(isValidWriteRule({}, undefined)).to.equal(false);
+      expect(isValidWriteRule({}, {})).to.equal(false);
+      expect(isValidWriteRule({}, [])).to.equal(false);
+      expect(isValidWriteRule({}, [1, 2, 3])).to.equal(false);
+      expect(isValidWriteRule({}, 0)).to.equal(false);
+      expect(isValidWriteRule({}, 1)).to.equal(false);
+      expect(isValidWriteRule({}, { "invalid_top_level_token": true })).to.equal(false);
+      expect(isValidWriteRule({}, 'process.exit(0)')).to.equal(false);
       // assignment
-      expect(isValidWriteRule([], "newData = 'some code'")).to.equal(false);
+      expect(isValidWriteRule({}, "newData = 'some code'")).to.equal(false);
       // assignment & invoke
-      expect(isValidWriteRule([], "newData = 'some code'; newData();")).to.equal(false);
+      expect(isValidWriteRule({}, "newData = 'some code'; newData();")).to.equal(false);
     })
 
     it('when valid input', () => {
-      expect(isValidWriteRule([], null)).to.equal(true);
-      expect(isValidWriteRule([], true)).to.equal(true);
-      expect(isValidWriteRule([], false)).to.equal(true);
+      expect(isValidWriteRule({}, null)).to.equal(true);
+      expect(isValidWriteRule({}, true)).to.equal(true);
+      expect(isValidWriteRule({}, false)).to.equal(true);
       // with whitelisted id tokens
-      expect(isValidWriteRule([], "data")).to.equal(true);
-      expect(isValidWriteRule([], "newData")).to.equal(true);
-      expect(isValidWriteRule([], "currentTime")).to.equal(true);
-      expect(isValidWriteRule([], "lastBlockNumber")).to.equal(true);
-      expect(isValidWriteRule([], "auth.fid == '_stake'")).to.equal(true);
-      expect(isValidWriteRule([], "auth.fid === '_stake'")).to.equal(true);
-      expect(isValidWriteRule([], "auth.addr === 'some addr'")).to.equal(true);
-      expect(isValidWriteRule([], "newData.proposer === auth.addr")).to.equal(true);
-      expect(isValidWriteRule([], "getValue('some path')")).to.equal(true);
-      expect(isValidWriteRule([], "Number('some string')")).to.equal(true);
+      expect(isValidWriteRule({}, "data")).to.equal(true);
+      expect(isValidWriteRule({}, "newData")).to.equal(true);
+      expect(isValidWriteRule({}, "currentTime")).to.equal(true);
+      expect(isValidWriteRule({}, "lastBlockNumber")).to.equal(true);
+      expect(isValidWriteRule({}, "auth.fid == '_stake'")).to.equal(true);
+      expect(isValidWriteRule({}, "auth.fid === '_stake'")).to.equal(true);
+      expect(isValidWriteRule({}, "auth.addr === 'some addr'")).to.equal(true);
+      expect(isValidWriteRule({}, "newData.proposer === auth.addr")).to.equal(true);
+      expect(isValidWriteRule({}, "getValue('some path')")).to.equal(true);
+      expect(isValidWriteRule({}, "Number('some string')")).to.equal(true);
       // with RuleUtil class properties
-      expect(isValidWriteRule([], "util.isBool('some expr')")).to.equal(true);
-      expect(isValidWriteRule([], "util.isServAcntName('some name')")).to.equal(true);
+      expect(isValidWriteRule({}, "util.isBool('some expr')")).to.equal(true);
+      expect(isValidWriteRule({}, "util.isServAcntName('some name')")).to.equal(true);
       // with varilable labels
       expect(isValidWriteRule(
-          ['transfer', '$from', '$to', '$key', 'value'],
+          {'transfer': true, '$from': true, '$to': true, '$key': true, 'value': true},
           "!getValue('transfer/' + $from + '/' + $to + '/' + $key)")).to.equal(true);
       // mixed
       expect(isValidWriteRule(
-          ['transfer', '$from', '$to', '$key', 'value'],
+          {'transfer': true, '$from': true, '$to': true, '$key': true, 'value': true},
           "(auth.addr === $from || auth.fid === '_stake') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && util.isServAcntName($from)"))
           .to.equal(true);
     })
@@ -806,59 +806,48 @@ describe("state-util", () => {
     it("when invalid input", () => {
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, null), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, undefined), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {}), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, []), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, [1, 2, 3]), {isValid: false, invalidPath: '/'});
       assert.deepEqual(
           isValidRuleConfig({}, ['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         undef: undefined 
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         empty_obj: {}
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         array: []
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         array: [1, 2, 3]
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         'a': {
           '.': 'x'
@@ -866,7 +855,6 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         'a': {
           '$': 'x'
@@ -874,7 +862,6 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         'a': {
           '*b': 'x'
@@ -882,7 +869,6 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         'a': {
           'b*': 'x'
@@ -890,7 +876,6 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         "state": {
           "max_children": 123,
@@ -899,7 +884,6 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         "state": {
           "max_children": '123',
@@ -907,7 +891,6 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         "state": {
           "gc_max_siblings": '123',
@@ -915,7 +898,6 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         "state": {
           "gc_max_siblings": 100,
@@ -924,7 +906,6 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         "state": {
           "max_height": '123',
@@ -932,7 +913,6 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         "state": {
           "max_size": '123',
@@ -940,7 +920,6 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/'});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         "state": {
           "max_bytes": '123',
@@ -951,25 +930,21 @@ describe("state-util", () => {
     it("when valid input", () => {
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, { "write": true }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, { "write": false }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, { "write": "auth.addr === 'abcd'" }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: ['transfer', '$from', '$to', '$key', 'value'],
+        variableLabels: {'$from': true, '$to': true, '$key': true},
       }, {
         "write": "(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_distributeFee') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from) || util.isCksumAddr($from)) && (util.isServAcntName($to) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && getValue(util.getBalancePath($from)) >= newData"
       }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         "state": {
           "max_children": 1
@@ -977,7 +952,6 @@ describe("state-util", () => {
       }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         "state": {
           "gc_max_siblings": 20,
@@ -986,7 +960,6 @@ describe("state-util", () => {
       }), {isValid: true, invalidPath: ''});
       assert.deepEqual(isValidRuleConfig({
         minGcNumSiblingsDeleted: 20,
-        configPath: [],
       }, {
         "write": "auth.addr === 'abcd'",
         "state": {
@@ -1034,7 +1007,7 @@ describe("state-util", () => {
       }, params), {isValid: false, invalidPath: '/some_key'});
     })
 
-    it("when invalid input with invalid rule config", () => {
+    it("when input of invalid rule config", () => {
       assert.deepEqual(isValidRuleTree([], {
         some_path: {
           '.rule': {
@@ -1049,6 +1022,38 @@ describe("state-util", () => {
           }
         }
       }, params), {isValid: false, invalidPath: '/some_path/.rule'});
+      // with variable label: case 1
+      assert.deepEqual(isValidRuleTree(['some_label1', '$var_label1', '$var_label1'], {
+        ['some_label1']: {
+          ['$var_label2']: {
+            '.rule': {
+              'write': "$var_label1 === 'name1' && $var_label2 === 'name2'"
+            }
+          }
+        }
+      }, params), {isValid: false, invalidPath: '/some_label1/$var_label1/$var_label1'});
+      // with variable label: case 2
+      assert.deepEqual(isValidRuleTree(['some_label1', '$var_label1'], {
+        ['some_label1']: {
+          ['$var_label1']: {
+            '.rule': {
+              'write': "$var_label1 === 'name1' && $var_label2 === 'name2'"
+            }
+          }
+        }
+      }, params), {isValid: false, invalidPath: '/some_label1/$var_label1/some_label1/$var_label1'});
+      // with variable label: case 3
+      assert.deepEqual(isValidRuleTree(['some_label1', '$var_label1'], {
+        ['$var_label2']: {
+          ['some_label1']: {
+            ['$var_label2']: {
+              '.rule': {
+                'write': "$var_label1 === 'name1' && $var_label2 === 'name2'"
+              }
+            }
+          }
+        }
+      }, params), {isValid: false, invalidPath: '/some_label1/$var_label1/$var_label2/some_label1/$var_label2'});
     })
 
     it("when valid input", () => {
@@ -1071,10 +1076,14 @@ describe("state-util", () => {
         }
       }, params), {isValid: true, invalidPath: ''});
       // with variable label
-      assert.deepEqual(isValidRuleTree(['$var_label1'], {
+      assert.deepEqual(isValidRuleTree(['some_label1', '$var_label1'], {
         ['$var_label2']: {
-          '.rule': {
-            'write': "$var_label1 === 'name1' && $var_label2 === 'name2'"
+          ['some_label1']: {
+            ['$var_label3']: {
+              '.rule': {
+                'write': "$var_label1 === 'name1' && $var_label2 === 'name2'"
+              }
+            }
           }
         }
       }, params), {isValid: true, invalidPath: ''});
@@ -1083,44 +1092,44 @@ describe("state-util", () => {
 
   describe("isValidFunctionConfig", () => {
     it("when invalid input", () => {
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, null), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, undefined), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {}), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, []), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, [1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig({}, null), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig({}, undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig({}, {}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig({}, []), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig({}, [1, 2, 3]), {isValid: false, invalidPath: '/'});
       assert.deepEqual(
-          isValidFunctionConfig({ configPath: [] }, ['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+          isValidFunctionConfig({}, ['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidFunctionConfig({}, {
         undef: undefined 
       }), {isValid: false, invalidPath: '/undef'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         empty_obj: {}
       }), {isValid: false, invalidPath: '/empty_obj'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         array: []
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         array: [1, 2, 3]
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/array'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         'a': {
           '.': 'x'
         }
       }), {isValid: false, invalidPath: '/a'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         'a': {
           '$': 'x'
         }
       }), {isValid: false, invalidPath: '/a'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         'a': {
           '*b': 'x'
         }
       }), {isValid: false, invalidPath: '/a'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         'a': {
           'b*': 'x'
         }
@@ -1128,41 +1137,41 @@ describe("state-util", () => {
     })
 
     it("when invalid input with deeper path", () => {
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         a_fid: {}
       }), {isValid: false, invalidPath: '/a_fid'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         a_fid: 'some string'
       }), {isValid: false, invalidPath: '/a_fid'});
     })
 
     it("when invalid input with NATIVE type", () => {
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         "_transfer": {
           // Missing function_type
           "function_id": "_transfer"
         }
       }), {isValid: false, invalidPath: '/_transfer'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         "_transfer": {
           "function_type": "NATIVE",
           // Missing function_id
         }
       }), {isValid: false, invalidPath: '/_transfer'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         "_transfer": {
           "function_type": "NATIVE",
           "function_id": "_transfer",
           "unknown_property": "some value"  // Unknown property
         }
       }), {isValid: false, invalidPath: '/_transfer'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         "_transfer": {
           "function_type": "unknown type",  // Unknown function_type
           "function_id": "_transfer"
         }
       }), {isValid: false, invalidPath: '/_transfer'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         "_transfer": {
           "function_type": "NATIVE",
           "function_id": "some other fid"  // Wrong function_id
@@ -1171,28 +1180,28 @@ describe("state-util", () => {
     })
 
     it("when invalid input with REST type", () => {
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         "0x11111": {
           // Missing function_type
           "function_id": "0x11111",
           "function_url": "https://events.ainetwork.ai/trigger",
         }
       }), {isValid: false, invalidPath: '/0x11111'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         "0x11111": {
           "function_type": "REST",
           // Missing function_id
           "function_url": "https://events.ainetwork.ai/trigger",
         }
       }), {isValid: false, invalidPath: '/0x11111'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
           // Missing function_url
         }
       }), {isValid: false, invalidPath: '/0x11111'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
@@ -1200,14 +1209,14 @@ describe("state-util", () => {
           "unknown_property": "some value"  // Unknown property
         }
       }), {isValid: false, invalidPath: '/0x11111'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         "0x11111": {
           "function_type": "REST",
           "function_id": "some other fid",  // Wrong function_id
           "function_url": "https://events.ainetwork.ai/trigger",
         }
       }), {isValid: false, invalidPath: '/0x11111/function_id'});
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         "0x11111": {
           "function_type": "REST",
           "function_id": "0x11111",
@@ -1217,7 +1226,7 @@ describe("state-util", () => {
     })
 
     it("when valid input", () => {
-      assert.deepEqual(isValidFunctionConfig({ configPath: [] }, {
+      assert.deepEqual(isValidFunctionConfig({}, {
         "_transfer": {
           "function_type": "NATIVE",
           "function_id": "_transfer",
@@ -1266,7 +1275,7 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/some_key'});
     })
 
-    it("when invalid input with invalid owner config", () => {
+    it("when input of invalid owner config", () => {
       assert.deepEqual(isValidFunctionTree([], {
         some_path: {
           '.function': {
@@ -1283,6 +1292,62 @@ describe("state-util", () => {
           '.function': undefined
         }
       }), {isValid: false, invalidPath: '/some_path/.function'});
+      // with variable label: case 1
+      assert.deepEqual(isValidFunctionTree(['some_label1', '$var_label1', '$var_label1'], {
+        ['some_label1']: {
+          ['$var_label2']: {
+            '.function': {
+              "_transfer": {
+                "function_type": "NATIVE",
+                "function_id": "_transfer",
+              },
+              "0x11111": {
+                "function_type": "REST",
+                "function_id": "0x11111",
+                "function_url": "https://events.ainetwork.ai/trigger",
+              }
+            }
+          }
+        }
+      }), {isValid: false, invalidPath: '/some_label1/$var_label1/$var_label1'});
+      // with variable label: case 2
+      assert.deepEqual(isValidFunctionTree(['some_label1', '$var_label1'], {
+        ['some_label1']: {
+          ['$var_label1']: {
+            '.function': {
+              "_transfer": {
+                "function_type": "NATIVE",
+                "function_id": "_transfer",
+              },
+              "0x11111": {
+                "function_type": "REST",
+                "function_id": "0x11111",
+                "function_url": "https://events.ainetwork.ai/trigger",
+              }
+            }
+          }
+        }
+      }), {isValid: false, invalidPath: '/some_label1/$var_label1/some_label1/$var_label1'});
+      // with variable label: case 3
+      assert.deepEqual(isValidFunctionTree(['some_label1', '$var_label1'], {
+        ['$var_label2']: {
+          ['some_label1']: {
+            ['$var_label2']: {
+              '.function': {
+                "_transfer": {
+                  "function_type": "NATIVE",
+                  "function_id": "_transfer",
+                },
+                "0x11111": {
+                  "function_type": "REST",
+                  "function_id": "0x11111",
+                  "function_url": "https://events.ainetwork.ai/trigger",
+                }
+              }
+            }
+          }
+        }
+      }), {isValid: false, invalidPath: '/some_label1/$var_label1/$var_label2/some_label1/$var_label2'});
     })
 
     it("when valid input", () => {
@@ -1328,49 +1393,69 @@ describe("state-util", () => {
           }
         }
       }), {isValid: true, invalidPath: ''});
+      // with variable label
+      assert.deepEqual(isValidFunctionTree(['some_label1', '$var_label1'], {
+        ['$var_label2']: {
+          ['some_label2']: {
+            ['$var_label3']: {
+              '.function': {
+                "_transfer": {
+                  "function_type": "NATIVE",
+                  "function_id": "_transfer",
+                },
+                "0x11111": {
+                  "function_type": "REST",
+                  "function_id": "0x11111",
+                  "function_url": "https://events.ainetwork.ai/trigger",
+                }
+              }
+            }
+          }
+        }
+      }), {isValid: true, invalidPath: ''});
     })
   })
 
   describe("isValidOwnerConfig", () => {
     it("when invalid input", () => {
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, null), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, undefined), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {}), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, []), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, [1, 2, 3]), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({}, null), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({}, undefined), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({}, {}), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({}, []), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({}, [1, 2, 3]), {isValid: false, invalidPath: '/'});
       assert.deepEqual(
-          isValidOwnerConfig({ configPath: [] }, ['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+          isValidOwnerConfig({}, ['a', 'b', 'c']), {isValid: false, invalidPath: '/'});
+      assert.deepEqual(isValidOwnerConfig({}, {
         undef: undefined 
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         empty_obj: {}
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         array: []
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         array: [1, 2, 3]
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         array: ['a', 'b', 'c']
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'a': {
           '.': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'a': {
           '$': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'a': {
           '*b': 'x'
         }
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'a': {
           'b*': 'x'
         }
@@ -1378,19 +1463,19 @@ describe("state-util", () => {
     })
 
     it("when invalid input with deeper path", () => {
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         some_key: {}
       }), {isValid: false, invalidPath: '/'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'owners': null
       }), {isValid: false, invalidPath: '/owners'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'owners': {}
       }), {isValid: false, invalidPath: '/owners'});
     })
 
     it("when invalid input with invalid owner (address or fid)", () => {
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'owners': {
           '0x0': {  // Invalid address
             "branch_owner": true,
@@ -1400,7 +1485,7 @@ describe("state-util", () => {
           }
         }
       }), {isValid: false, invalidPath: '/owners/0x0'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'owners': {
           '0x09a0d53fdf1c36a131938eb379b98910e55eefe1': {  // Non-checksum address
             "branch_owner": true,
@@ -1410,7 +1495,7 @@ describe("state-util", () => {
           }
         }
       }), {isValid: false, invalidPath: '/owners/0x09a0d53fdf1c36a131938eb379b98910e55eefe1'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'owners': {
           'fid:_invalidFid': {  // Invalid fid
             "branch_owner": true,
@@ -1423,7 +1508,7 @@ describe("state-util", () => {
     })
 
     it("when invalid input with invalid owner permissions", () => {
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'owners': {
           '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
             "branch_owner": true,
@@ -1433,7 +1518,7 @@ describe("state-util", () => {
           },
         }
       }), {isValid: false, invalidPath: '/owners/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'owners': {
           '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
             "branch_owner": true,
@@ -1444,7 +1529,7 @@ describe("state-util", () => {
           },
         }
       }), {isValid: false, invalidPath: '/owners/0x09A0d53FDf1c36A131938eb379b98910e55EEfe1'});
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'owners': {
           '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
             "branch_owner": true,
@@ -1457,7 +1542,7 @@ describe("state-util", () => {
     })
 
     it("when valid input", () => {
-      assert.deepEqual(isValidOwnerConfig({ configPath: [] }, {
+      assert.deepEqual(isValidOwnerConfig({}, {
         'owners': {
           '*': {
             "branch_owner": true,
