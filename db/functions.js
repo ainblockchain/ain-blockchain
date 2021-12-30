@@ -678,7 +678,7 @@ class Functions {
       return this.returnFuncResult(context, FunctionResultCode.INSUFFICIENT_BALANCE);
     }
     const toBalance = this.db.getValue(toBalancePath);
-    if (toBalance === null) {
+    if (toBalance === null) {  // for either an individual or a service account.
       extraGasAmount = context.accountRegistrationGasAmount;
     }
     const decResult = this.decValueOrLog(fromBalancePath, value, context);

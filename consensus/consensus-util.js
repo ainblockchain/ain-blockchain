@@ -13,12 +13,12 @@ const DB = require('../db');
 
 class ConsensusUtil {
   static isValidConsensusTx(tx) {
-    const executableTx = Transaction.toExecutable(tx);
+    const chainId = DB.getBlockchainParam('genesis/chain_id');
+    const executableTx = Transaction.toExecutable(tx, chainId);
     if (!Transaction.isExecutable(executableTx)) {
       return false;
     }
     if (!NodeConfigs.LIGHTWEIGHT) {
-      const chainId = DB.getBlockchainParam('genesis/chain_id');
       if (!Transaction.verifyTransaction(executableTx, chainId)) {
         return false;
       }

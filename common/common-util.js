@@ -56,7 +56,7 @@ class CommonUtil {
   /**
    * Gets address from hash and signature.
    */
-  static getAddressFromSignature(logger, hash, signature) {
+  static getAddressFromSignature(logger, hash, signature, chainId) {
     const LOG_HEADER = 'getAddressFromSignature';
     let address = '';
     try {
@@ -64,7 +64,7 @@ class CommonUtil {
       const len = sigBuffer.length;
       const lenHash = len - 65;
       const {r, s, v} = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
-      const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v);
+      const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v, chainId);
       address = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
           ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
     } catch (err) {
