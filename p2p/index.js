@@ -251,11 +251,17 @@ class P2pClient {
   }
 
   async discoverPeerWithGuardingFlag() {
+    const LOG_HEADER = 'discoverPeerWithGuardingFlag';
     if (!this.isConnectingToPeerCandidates) {
-      this.isConnectingToPeerCandidates = true;
-      const nextPeerCandidate = this.assignRandomPeerCandidate();
-      await this.connectWithPeerCandidateUrl(nextPeerCandidate);
-      this.isConnectingToPeerCandidates = false;
+      try {
+        this.isConnectingToPeerCandidates = true;
+        const nextPeerCandidate = this.assignRandomPeerCandidate();
+        await this.connectWithPeerCandidateUrl(nextPeerCandidate);
+      } catch (e) {
+        logger.error(`[${LOG_HEADER}] ${e}`);
+      } finally {
+        this.isConnectingToPeerCandidates = false;
+      }
     }
   }
 
