@@ -1,16 +1,18 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|spring|summer] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic] [--restart|--reset]\n"
+    printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--restart|--reset] [--kill-only|--skip-kill]\n"
     printf "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --setup --keystore\n"
     printf "\n"
     exit
 fi
 printf "\n[[[[[ deploy_blockchain_genesis_gcp.sh ]]]]]\n\n"
 
-if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]]; then
+if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
-    if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
+    if [[ "$1" = 'mainnet' ]]; then
+        PROJECT_ID="mainnet-prod-ground"
+    elif [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
         PROJECT_ID="testnet-prod-ground"
     else
         PROJECT_ID="testnet-$1-ground"
@@ -40,13 +42,19 @@ function parse_options() {
         SETUP_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ $option = '--private-key' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            printf "Multiple account injection options given\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
@@ -62,6 +70,18 @@ function parse_options() {
             exit
         fi
         RESET_RESTART_OPTION="$option"
+    elif [[ $option = '--kill-only' ]]; then
+        if [[ "$KILL_OPTION" ]]; then
+            printf "You cannot use both --skip-kill and --kill-only\n"
+            exit
+        fi
+        KILL_OPTION="$option"
+    elif [[ $option = '--skip-kill' ]]; then
+        if [[ "$KILL_OPTION" ]]; then
+            printf "You cannot use both --skip-kill and --kill-only\n"
+            exit
+        fi
+        KILL_OPTION="$option"
     else
         printf "Invalid options: $option\n"
         exit
@@ -72,6 +92,7 @@ function parse_options() {
 SETUP_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
 RESET_RESTART_OPTION=""
+KILL_OPTION=""
 
 ARG_INDEX=4
 while [ $ARG_INDEX -le $# ]
@@ -82,7 +103,12 @@ done
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "RESET_RESTART_OPTION=$RESET_RESTART_OPTION\n"
+printf "KILL_OPTION=$KILL_OPTION\n"
 
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
+    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
+    exit
+fi
 
 # Get confirmation.
 printf "\n"
@@ -93,47 +119,50 @@ then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
+# Read node ip addresses
+IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./ip_addresses/$SEASON.txt
 if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
     # Get keystore password
     printf "Enter password: "
     read -s PASSWORD
     printf "\n\n"
 
-    # Read node ip addresses
-    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
-
-    if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
+    if [[ "$SEASON" = "mainnet" ]]; then
+        KEYSTORE_DIR="mainnet_prod_keys/"
+    elif [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
         KEYSTORE_DIR="testnet_prod_keys/"
     else
         KEYSTORE_DIR="testnet_dev_staging_keys/"
     fi
 elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
-    # Read node ip addresses
-    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
-
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
 function inject_account() {
+    local node_index="$1"
+    local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
     if [[ "$ACCOUNT_INJECTION_OPTION" = "--keystore" ]]; then
-        local node_index="$1"
-        local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         printf "\n* >> Injecting an account for node $node_index ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
-
         echo $PASSWORD | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     elif [[ "$ACCOUNT_INJECTION_OPTION" = "--mnemonic" ]]; then
-        local node_index="$1"
-        local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         local MNEMONIC=${MNEMONIC_LIST[${node_index}]}
         printf "\n* >> Injecting an account for node $node_index ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
-
         {
             echo $MNEMONIC
             sleep 1
             echo 0
         } | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+    else
+        printf "\n* >> Injecting an account for node $node_index ********************\n\n"
+        printf "node_ip_addr='$node_ip_addr'\n"
+        local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
+        if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
+            GENESIS_ACCOUNTS_PATH="blockchain-configs/testnet-prod/genesis_accounts.json"
+        fi
+        PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others['$node_index'].private_key')
+        echo $PRIVATE_KEY | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     fi
 }
 
@@ -149,6 +178,9 @@ NODE_3_TARGET_ADDR="${GCP_USER}@${SEASON}-node-3-iowa"
 NODE_4_TARGET_ADDR="${GCP_USER}@${SEASON}-node-4-netherlands"
 NODE_5_TARGET_ADDR="${GCP_USER}@${SEASON}-node-5-taiwan"
 NODE_6_TARGET_ADDR="${GCP_USER}@${SEASON}-node-6-oregon"
+NODE_7_TARGET_ADDR="${GCP_USER}@${SEASON}-node-7-singapore"
+NODE_8_TARGET_ADDR="${GCP_USER}@${SEASON}-node-8-iowa"
+NODE_9_TARGET_ADDR="${GCP_USER}@${SEASON}-node-9-netherlands"
 
 TRACKER_ZONE="asia-east1-b"
 NODE_0_ZONE="asia-east1-b"
@@ -158,32 +190,48 @@ NODE_3_ZONE="us-central1-a"
 NODE_4_ZONE="europe-west4-a"
 NODE_5_ZONE="asia-east1-b"
 NODE_6_ZONE="us-west1-b"
+NODE_7_ZONE="asia-southeast1-b"
+NODE_8_ZONE="us-central1-a"
+NODE_9_ZONE="europe-west4-a"
 
-# kill any processes still alive
-gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
-gcloud compute ssh $NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_0_ZONE
-gcloud compute ssh $NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_1_ZONE
-gcloud compute ssh $NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
-gcloud compute ssh $NODE_3_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_3_ZONE
-gcloud compute ssh $NODE_4_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_4_ZONE
-gcloud compute ssh $NODE_5_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_5_ZONE
-gcloud compute ssh $NODE_6_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_6_ZONE
+if [[ $KILL_OPTION = "--skip-kill" ]]; then
+    printf "\nSkipping process kill...\n"
+else
+    # kill any processes still alive
+    printf "\nKilling all trackers and blockchain nodes...\n"
+    gcloud compute ssh $TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
+    gcloud compute ssh $NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_0_ZONE
+    gcloud compute ssh $NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_1_ZONE
+    gcloud compute ssh $NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
+    gcloud compute ssh $NODE_3_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_3_ZONE
+    gcloud compute ssh $NODE_4_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_4_ZONE
+    gcloud compute ssh $NODE_5_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_5_ZONE
+    gcloud compute ssh $NODE_6_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_6_ZONE
+    gcloud compute ssh $NODE_7_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_7_ZONE
+    gcloud compute ssh $NODE_8_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_8_ZONE
+    gcloud compute ssh $NODE_9_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_9_ZONE
 
-if [[ $NUM_SHARDS -gt 0 ]]; then
-    for i in $(seq $NUM_SHARDS)
-        do
-            printf "shard #$i\n"
+    if [[ $NUM_SHARDS -gt 0 ]]; then
+        for i in $(seq $NUM_SHARDS)
+            do
+                printf "shard #$i\n"
 
-            SHARD_TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
-            SHARD_NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan"
-            SHARD_NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon"
-            SHARD_NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore"
+                SHARD_TRACKER_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-tracker-taiwan"
+                SHARD_NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-0-taiwan"
+                SHARD_NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-1-oregon"
+                SHARD_NODE_2_TARGET_ADDR="${GCP_USER}@${SEASON}-shard-${i}-node-2-singapore"
 
-            gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
-            gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_0_ZONE
-            gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_1_ZONE
-            gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
-        done
+                gcloud compute ssh $SHARD_TRACKER_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $TRACKER_ZONE
+                gcloud compute ssh $SHARD_NODE_0_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_0_ZONE
+                gcloud compute ssh $SHARD_NODE_1_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_1_ZONE
+                gcloud compute ssh $SHARD_NODE_2_TARGET_ADDR --command "sudo killall node" --project $PROJECT_ID --zone $NODE_2_ZONE
+            done
+    fi
+fi
+
+# If --kill-only, do not proceed any further
+if [[ $KILL_OPTION = "--kill-only" ]]; then
+    exit
 fi
 
 # deploy files to GCP instances
@@ -205,6 +253,12 @@ if [[ $RESET_RESTART_OPTION = "" ]]; then
     gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_5_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_5_ZONE
     printf "\nDeploying files to parent node 6 (${NODE_6_TARGET_ADDR})...\n\n"
     gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_6_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_6_ZONE
+    printf "\nDeploying files to parent node 7 (${NODE_7_TARGET_ADDR})...\n\n"
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_7_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_7_ZONE
+    printf "\nDeploying files to parent node 8 (${NODE_8_TARGET_ADDR})...\n\n"
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_8_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_8_ZONE
+    printf "\nDeploying files to parent node 9 (${NODE_9_TARGET_ADDR})...\n\n"
+    gcloud compute scp --recurse $FILES_FOR_NODE ${NODE_9_TARGET_ADDR}:~/ --project $PROJECT_ID --zone $NODE_9_ZONE
 fi
 
 # ssh into each instance, set up the ubuntu VM instance (ONLY NEEDED FOR THE FIRST TIME)
@@ -225,6 +279,12 @@ if [[ $SETUP_OPTION = "--setup" ]]; then
     gcloud compute ssh $NODE_5_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_5_ZONE
     printf "\n\n##########################\n# Setting up parent node 6 #\n##########################\n\n"
     gcloud compute ssh $NODE_6_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_6_ZONE
+    printf "\n\n##########################\n# Setting up parent node 7 #\n##########################\n\n"
+    gcloud compute ssh $NODE_7_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_7_ZONE
+    printf "\n\n##########################\n# Setting up parent node 8 #\n##########################\n\n"
+    gcloud compute ssh $NODE_8_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_8_ZONE
+    printf "\n\n##########################\n# Setting up parent node 9 #\n##########################\n\n"
+    gcloud compute ssh $NODE_9_TARGET_ADDR --command ". setup_blockchain_ubuntu.sh" --project $PROJECT_ID --zone $NODE_9_ZONE
 fi
 
 printf "\nStarting blockchain servers...\n\n"
@@ -232,8 +292,8 @@ if [[ $RESET_RESTART_OPTION = "--reset" ]]; then
     # restart after removing chains, snapshots, and log files
     CHAINS_DIR=/home/ain_blockchain_data/chains
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-    START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_tracker_genesis_gcp.sh"
-    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_node_genesis_gcp.sh"
+    START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_tracker_genesis_gcp.sh"
+    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_genesis_gcp.sh"
     KEEP_CODE_OPTION="--keep-code"
 elif [[ $RESET_RESTART_OPTION = "--restart" ]]; then
     # restart
@@ -259,7 +319,7 @@ START_TRACKER_CMD="gcloud compute ssh $TRACKER_TARGET_ADDR --command '$START_TRA
 printf "START_TRACKER_CMD=$START_TRACKER_CMD\n"
 eval $START_TRACKER_CMD
 
-NUM_NODES=7
+NUM_NODES=10
 node_index=0
 while [ $node_index -lt $NUM_NODES ]
 do

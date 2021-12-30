@@ -5,14 +5,14 @@ const path = require('path');
 const zlib = require('zlib');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
-const { BlockchainConfigs } = require('./constants');
+const { BlockchainConsts, NodeConfigs } = require('./constants');
 const CommonUtil = require('./common-util');
 const JSON_GZIP_FILE_EXTENSION = 'json.gz';
 
 class FileUtil {
   static getBlockDirPath(chainPath, blockNumber) {
-    const n2bPrefix = Math.floor(blockNumber / BlockchainConfigs.CHAINS_N2B_MAX_NUM_FILES).toString();
-    return path.join(chainPath, BlockchainConfigs.CHAINS_N2B_DIR_NAME, n2bPrefix);
+    const n2bPrefix = Math.floor(blockNumber / NodeConfigs.CHAINS_N2B_MAX_NUM_FILES).toString();
+    return path.join(chainPath, BlockchainConsts.CHAINS_N2B_DIR_NAME, n2bPrefix);
   }
 
   static getBlockPath(chainPath, blockNumber) {
@@ -25,13 +25,13 @@ class FileUtil {
   static getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug = false) {
     return path.join(
         snapshotPath,
-        BlockchainConfigs.SNAPSHOTS_N2S_DIR_NAME,
+        BlockchainConsts.SNAPSHOTS_N2S_DIR_NAME,
         FileUtil.getSnapshotFilenameByNumber(blockNumber, isDebug));
   }
 
   static getH2nDirPath(chainPath, blockHash) {
-    const h2nPrefix = blockHash.substring(0, BlockchainConfigs.CHAINS_H2N_HASH_PREFIX_LENGTH);
-    return path.join(chainPath, BlockchainConfigs.CHAINS_H2N_DIR_NAME, h2nPrefix);
+    const h2nPrefix = blockHash.substring(0, NodeConfigs.CHAINS_H2N_HASH_PREFIX_LENGTH);
+    return path.join(chainPath, BlockchainConsts.CHAINS_H2N_DIR_NAME, h2nPrefix);
   }
 
   static getH2nPath(chainPath, blockHash) {
@@ -39,7 +39,7 @@ class FileUtil {
   }
 
   static getSnapshotFilenameByNumber(blockNumber, isDebug = false) {
-    const filenamePrefix = isDebug ? BlockchainConfigs.DEBUG_SNAPSHOT_FILE_PREFIX : '';
+    const filenamePrefix = isDebug ? BlockchainConsts.DEBUG_SNAPSHOT_FILE_PREFIX : '';
     return `${filenamePrefix}${blockNumber}.${JSON_GZIP_FILE_EXTENSION}`;
   }
 
@@ -54,7 +54,7 @@ class FileUtil {
   static getLatestSnapshotInfo(snapshotPath) {
     const LOG_HEADER = 'getLatestSnapshotInfo';
 
-    const snapshotPathPrefix = path.join(snapshotPath, BlockchainConfigs.SNAPSHOTS_N2S_DIR_NAME);
+    const snapshotPathPrefix = path.join(snapshotPath, BlockchainConsts.SNAPSHOTS_N2S_DIR_NAME);
     let latestSnapshotPath = null;
     let latestSnapshotBlockNumber = -1;
     let files = [];
@@ -66,7 +66,7 @@ class FileUtil {
     }
     for (const file of files) {
       // NOTE(platfowner): Skips the file if its name starts with debug snapshot file prefix.
-      if (_.startsWith(file, BlockchainConfigs.DEBUG_SNAPSHOT_FILE_PREFIX)) {
+      if (_.startsWith(file, BlockchainConsts.DEBUG_SNAPSHOT_FILE_PREFIX)) {
         logger.info(`[${LOG_HEADER}] Skipping debug snapshot file: ${file}`);
         continue;
       }
@@ -97,8 +97,8 @@ class FileUtil {
   }
 
   static createBlockchainDir(chainPath) {
-    const n2bPath = path.join(chainPath, BlockchainConfigs.CHAINS_N2B_DIR_NAME);
-    const h2nPath = path.join(chainPath, BlockchainConfigs.CHAINS_H2N_DIR_NAME);
+    const n2bPath = path.join(chainPath, BlockchainConsts.CHAINS_N2B_DIR_NAME);
+    const h2nPath = path.join(chainPath, BlockchainConsts.CHAINS_H2N_DIR_NAME);
     let isBlocksDirEmpty = true;
     FileUtil.createDir(chainPath);
     FileUtil.createDir(n2bPath);
@@ -111,7 +111,7 @@ class FileUtil {
 
   static createSnapshotDir(snapshotPath) {
     FileUtil.createDir(snapshotPath);
-    FileUtil.createDir(path.join(snapshotPath, BlockchainConfigs.SNAPSHOTS_N2S_DIR_NAME));
+    FileUtil.createDir(path.join(snapshotPath, BlockchainConsts.SNAPSHOTS_N2S_DIR_NAME));
   }
 
   static createDir(dirPath) {
@@ -247,7 +247,7 @@ class FileUtil {
       const blockDirPath = FileUtil.getBlockDirPath(chainPath, blockNumber);
       numFiles = FileUtil.getNumFiles(blockDirPath);
       numBlockFiles += numFiles;
-      blockNumber += BlockchainConfigs.CHAINS_N2B_MAX_NUM_FILES;
+      blockNumber += NodeConfigs.CHAINS_N2B_MAX_NUM_FILES;
     } while (numFiles > 0);
     return numBlockFiles;
   }

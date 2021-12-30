@@ -2,10 +2,11 @@ const logger = new (require('../logger'))('NETWORK-UTIL');
 
 const _ = require('lodash');
 const axios = require('axios');
-const { BlockchainConfigs } = require('../common/constants');
+const { BlockchainConsts, NodeConfigs } = require('../common/constants');
 const ip = require('ip');
 const extIp = require('ext-ip')();
 const CommonUtil = require('../common/common-util');
+const DB = require('../db');
 const GCP_EXTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
     '/network-interfaces/0/access-configs/0/external-ip';
 const GCP_INTERNAL_IP_URL = 'http://metadata.google.internal/computeMetadata/v1/instance' +
@@ -55,7 +56,7 @@ async function sendSignedTx(endpoint, params) {
   ).then((resp) => {
     const result = _.get(resp, 'data.result.result.result', {});
     const success = !CommonUtil.isFailedTx(result);
-    return { success, errMsg: result.error_message };
+    return { success, errMsg: result.message };
   }).catch((err) => {
     logger.error(`Failed to send transaction: ${err}`);
     return { success: false, errMsg: err.message };
@@ -64,7 +65,8 @@ async function sendSignedTx(endpoint, params) {
 
 // FIXME(minsulee2): this is duplicated function see: ./tools/util.js
 async function signAndSendTx(endpoint, tx, privateKey) {
-  const { txHash, signedTx } = CommonUtil.signTransaction(tx, privateKey, BlockchainConfigs.CHAIN_ID);
+  const { txHash, signedTx } = CommonUtil.signTransaction(
+      tx, privateKey, DB.getBlockchainParam('genesis/chain_id'));
   const result = await sendSignedTx(endpoint, signedTx);
   return Object.assign(result, { txHash });
 }
@@ -76,7 +78,7 @@ function sendGetRequest(endpoint, method, params) {
     endpoint,
     {
       method,
-      params: Object.assign(params, { protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION }),
+      params: Object.assign(params, { protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION }),
       jsonrpc: '2.0',
       id: 0
     }
@@ -91,7 +93,7 @@ function sendGetRequest(endpoint, method, params) {
 function getIpAddress(internal = false) {
   return Promise.resolve()
   .then(() => {
-    if (BlockchainConfigs.HOSTING_ENV === 'gcp') {
+    if (NodeConfigs.HOSTING_ENV === 'gcp') {
       return axios.get(internal ? GCP_INTERNAL_IP_URL : GCP_EXTERNAL_IP_URL, {
         headers: {'Metadata-Flavor': 'Google'},
         timeout: 3000
@@ -115,10 +117,15 @@ function getIpAddress(internal = false) {
   });
 }
 
+function convertIpv6ToIpv4(address) {
+  return address.replace('::ffff:', '');
+}
+
 module.exports = {
   sendTxAndWaitForFinalization,
   sendSignedTx,
   signAndSendTx,
   sendGetRequest,
   getIpAddress,
+  convertIpv6ToIpv4
 };

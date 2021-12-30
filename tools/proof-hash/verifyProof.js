@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const FileUtil = require('../../common/file-util');
 const {
   verifyStateProof,

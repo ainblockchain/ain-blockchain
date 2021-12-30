@@ -1,5 +1,6 @@
 const semver = require('semver');
-const { BlockchainConfigs } = require('../common/constants');
+const { BlockchainConsts } = require('../common/constants');
+const { DevClientApiResultCode } = require('../common/result-code');
 
 class VersionUtil {
   static isValidProtocolVersion(version) {
@@ -48,18 +49,18 @@ class VersionUtil {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({
-          code: 1,
+          code: DevClientApiResultCode.PROTO_VERSION_NOT_SPECIFIED,
           message: 'Protocol version not specified.',
-          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         })
         .end();
     } else if (!semver.valid(coercedVer)) {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({
-          code: 1,
+          code: DevClientApiResultCode.INVALID_PROTO_VERSION,
           message: 'Invalid protocol version.',
-          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         })
         .end();
     } else if (semver.lt(coercedVer, this.minProtocolVersion) ||
@@ -67,9 +68,9 @@ class VersionUtil {
       res.status(200)
         .set('Content-Type', 'application/json')
         .send({
-          code: 1,
+          code: DevClientApiResultCode.INCOMPATIBLE_PROTO_VERSION,
           message: 'Incompatible protocol version.',
-          protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION
+          protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION
         })
         .end();
     } else {

@@ -271,10 +271,10 @@ class BlockPool {
         });
         this.tryUpdateNotarized(blockHash);
       }
-      logger.info(
+      logger.debug(
           `[${LOG_HEADER}] Block added to the block pool: ${block.number} / ${block.epoch}`);
     } else {
-      logger.info(
+      logger.debug(
           `[${LOG_HEADER}] Block already in the block pool: ${block.number} / ${block.epoch}`);
     }
   }
@@ -289,10 +289,10 @@ class BlockPool {
     if (CommonUtil.isEmpty(blockInfo.block)) {
       this.hashToInvalidBlockInfo[blockHash].block = block;
       this.hashToInvalidBlockInfo[blockHash].proposal = proposalTx;
-      logger.info(
+      logger.debug(
           `[${LOG_HEADER}] Invalid block added to the block pool: ${block.number} / ${block.epoch}`);
     } else {
-      logger.info(
+      logger.debug(
           `[${LOG_HEADER}] Invalid block already in the block pool: ${block.number} / ${block.epoch}`);
     }
   }
@@ -361,9 +361,11 @@ class BlockPool {
   addSeenVote(voteTx) {
     const LOG_HEADER = 'addSeenVote';
     const blockHash = ConsensusUtil.getBlockHashFromConsensusTx(voteTx);
+    const blockNumber = ConsensusUtil.getBlockNumberFromConsensusTx(voteTx);
     const stake = ConsensusUtil.getStakeFromVoteTx(voteTx);
     logger.debug(`[${LOG_HEADER}] voteTx: ${JSON.stringify(voteTx, null, 2)}, ` +
-        `blockHash: ${blockHash}, stake: ${stake}`);
+        `blockHash: ${blockHash}, blockNumber: ${blockNumber}, stake: ${stake}`);
+    this.addToNumberToBlockSet({ number: blockNumber, hash: blockHash });
     if (ConsensusUtil.isProposalTx(voteTx)) {
       this.addProposal(voteTx, blockHash);
     } else if (ConsensusUtil.isAgainstVoteTx(voteTx)) {
@@ -435,6 +437,9 @@ class BlockPool {
       logger.info(`[${LOG_HEADER}] Current block is unavailable`);
       return;
     }
+    if (currentBlockInfo.notarized) {
+      return;
+    }
     if (currentBlockInfo.block.number === 0) {
       this.hashToBlockInfo[currentBlockInfo.block.hash].notarized = true;
       this.updateLongestNotarizedChains(this.hashToBlockInfo[currentBlockInfo.block.hash]);
@@ -468,6 +473,20 @@ class BlockPool {
   }
 
   cleanUpForBlockHash(blockHash) {
+    const block = _get(this.hashToBlockInfo[blockHash], 'block', null);
+    const blockProposal = _get(this.hashToBlockInfo[blockHash], 'proposal', null);
+    const blockConsensusTxs = _get(this.hashToBlockInfo[blockHash], 'votes', []);
+    if (blockProposal) {
+      blockConsensusTxs.push(blockProposal);
+    }
+    const invalidBlock = _get(this.hashToInvalidBlockInfo[blockHash], 'block', null);
+    const invalidBlockProposal = _get(this.hashToInvalidBlockInfo[blockHash], 'proposal', null);
+    const invalidBlockConsensusTxs = _get(this.hashToInvalidBlockInfo[blockHash], 'votes', []);
+    if (invalidBlockProposal) {
+      invalidBlockConsensusTxs.push(invalidBlockProposal);
+    }
+    this.node.tp.cleanUpConsensusTxs(block, blockConsensusTxs);
+    this.node.tp.cleanUpConsensusTxs(invalidBlock, invalidBlockConsensusTxs);
     delete this.hashToBlockInfo[blockHash];
     delete this.hashToInvalidBlockInfo[blockHash];
     delete this.hashToNextBlockSet[blockHash];
@@ -481,13 +500,14 @@ class BlockPool {
   // Remove everything that came before lastBlock.
   cleanUpAfterFinalization(lastBlock, recordedInvalidBlocks) {
     const targetNumber = lastBlock.number;
+    const maxInvalidBlocksOnMem = this.node.getBlockchainParam('consensus/max_invalid_blocks_on_mem');
     for (const blockNumber of Object.keys(this.numberToBlockSet)) {
-      if (blockNumber < targetNumber) {
+      const number = Number(blockNumber);
+      if (number < targetNumber) {
         const blockHashList = this.numberToBlockSet[blockNumber];
         for (const blockHash of blockHashList) {
           if (this.hashToInvalidBlockInfo[blockHash]) {
-            if (recordedInvalidBlocks.has(blockHash) ||
-                blockNumber < targetNumber - ConsensusConsts.MAX_CONSENSUS_LOGS_IN_STATES) {
+            if (recordedInvalidBlocks.has(blockHash) || number < targetNumber - maxInvalidBlocksOnMem) {
               this.cleanUpForBlockHash(blockHash);
               this.numberToBlockSet[blockNumber].delete(blockHash);
             }
@@ -502,7 +522,7 @@ class BlockPool {
       }
     }
     for (const epoch of Object.keys(this.epochToBlock)) {
-      if (epoch < lastBlock.epoch) {
+      if (Number(epoch) < lastBlock.epoch) {
         const blockHash = this.epochToBlock[epoch];
         this.cleanUpForBlockHash(blockHash);
         delete this.epochToBlock[epoch];
@@ -521,6 +541,7 @@ class BlockPool {
    */
   getValidLastVotes(lastBlock, blockNumber, blockTime, tempDb) {
     const LOG_HEADER = 'getValidLastVotes';
+    const chainId = this.node.getBlockchainParam('genesis/chain_id');
     const lastBlockInfo = this.hashToBlockInfo[lastBlock.hash];
     logger.debug(`[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
     // FIXME(minsulee2 or liayoo): When I am behind and a newly coming node is ahead of me,
@@ -537,7 +558,7 @@ class BlockPool {
     let tallied = 0;
     for (const vote of lastVotes) {
       if (CommonUtil.isFailedTx(tempDb.executeTransaction(
-          Transaction.toExecutable(vote), true, true, 0, blockTime))) {
+          Transaction.toExecutable(vote, chainId), true, true, 0, blockTime))) {
         logger.debug(`[${LOG_HEADER}] failed to execute last vote: ${JSON.stringify(vote, null, 2)}`);
       } else {
         tallied += _get(lastBlock.validators, `${vote.address}.stake`, 0);
@@ -566,6 +587,7 @@ class BlockPool {
     const LOG_HEADER = 'getOffensesAndEvidence';
     const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
     const blockNumber = baseDb.blockNumberSnapshot;
+    const chainId = this.node.getBlockchainParam('genesis/chain_id');
     let backupDb = this.node.createTempDb(
         baseDb.stateVersion, `${StateVersions.SNAP}:${blockNumber}`, blockNumber);
     const majority = totalAtStake * ConsensusConsts.MAJORITY;
@@ -589,7 +611,8 @@ class BlockPool {
       for (const vote of blockInfo.votes) {
         const stake = _get(validators, `${vote.address}.stake`, 0);
         if (stake > 0) {
-          const res = baseDb.executeTransaction(Transaction.toExecutable(vote), true, true, 0, blockTime);
+          const res = baseDb.executeTransaction(
+              Transaction.toExecutable(vote, chainId), true, true, 0, blockTime);
           if (CommonUtil.isFailedTx(res)) {
             logger.debug(`[${LOG_HEADER}] Failed to execute evidence vote:\n${JSON.stringify(vote, null, 2)}\n${JSON.stringify(res, null, 2)})`);
           } else {

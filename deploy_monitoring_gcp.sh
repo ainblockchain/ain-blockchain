@@ -1,16 +1,18 @@
 #!/bin/bash
 
 if [[ "$#" -lt 2 ]]; then
-    printf "Usage: bash deploy_monitoring_gcp.sh [dev|staging|sandbox|spring|summer] <GCP Username>  [--setup]\n"
+    printf "Usage: bash deploy_monitoring_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username>  [--setup]\n"
     printf "Example: bash deploy_monitoring_gcp.sh dev seo\n"
     printf "\n"
     exit
 fi
 printf "\n[[[[[ deploy_monitoring_gcp.sh ]]]]]\n\n"
 
-if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]]; then
+if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
-    if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
+    if [[ "$1" = 'mainnet' ]]; then
+        PROJECT_ID="mainnet-prod-ground"
+    elif [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
         PROJECT_ID="testnet-prod-ground"
     else
         PROJECT_ID="testnet-$1-ground"

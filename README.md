@@ -3,6 +3,17 @@
 ### [AI Network](https://ainetwork.ai) | [Whitepaper](https://c9ede755-23ca-410d-8a9d-e5b895cd95bb.filesusr.com/ugd/4f6eb2_482a2386addb4c3283ee6e26f8ad42e6.pdf) | [Documentation](https://docs.ainetwork.ai/)
 Official Javascript implementation of AI Network Blockchain.
 
+## Install Environment (Last update at 6th of Dec 2021)
+### OS
+
+- macOS 10.15 (macos-latest)
+- Ubuntu 20.04 (ubuntu-latest)
+
+### Node version
+
+- v16.x
+- v14.x
+
 ## Tracker
 
 Tracker server is required by new peers who wish to join the AIN network. Each peer is sent the ipaddress of 2 other nodes in the network. These nodes then gossip information through the network of all transactions and blocks.
@@ -14,7 +25,6 @@ NOTE: Tracker Server must be started first before starting any blockchain node i
 #### Local
 
 - Clone this repository and install yarn packages
-- Highly recommend to use node version >= 12
 ```
 git clone https://github.com/ainblockchain/ain-blockchain.git
 cd ain-blockchain/tracker-server/
@@ -89,7 +99,6 @@ Operates a single peer node instance of the AIN blockchain. A single blockchain 
 #### Local
 
 - Clone this repository and install yarn packages
-- Highly recommend to use node version >= 12
 ```
 git clone https://github.com/ainblockchain/ain-blockchain.git
 cd ain-blockchain/
@@ -97,9 +106,9 @@ yarn install
 ```
 - Run blockchain nodes
 ```
-ACCOUNT_INDEX=0 PEER_CANDIDATE_JSON_RPC_URL='' DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
-ACCOUNT_INDEX=1 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
-ACCOUNT_INDEX=2 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js 
+ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 You can override default port numbering system by setting `PORT` and `P2P_PORT` environment variables.
 Before starting node jobs, remove existing blockchain files and logs if necessary:
@@ -112,7 +121,7 @@ The default minimum size of the validator whitelist is 3. Change MIN_NUM_VALIDAT
 the blockchain-configs/base/genesis.json to change this value. You may also need to modify the GENESIS_WHITELIST and GENESIS_VALIDATORS accordingly.
 The genesis configs directory used is `blockchain-configs/base` by default and it can be altered using `BLOCKCHAIN_CONFIGS_DIR` env variable. For example, afan shard cluster can use the following command line:
 ```
-BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INDEX=0 DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_DEV_CLIENT_SET_API=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard MIN_NUM_VALIDATORS=1 ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore DEBUG=false STAKE=100000 CONSOLE_LOG=true ENABLE_GAS_FEE_WORKAROUND=true node client/index.js
 ```
 
 #### On Google Cloud Platform (GCP)
@@ -152,7 +161,7 @@ docker pull ainblockchain/blockchain-database
 ```
 - Run with Docker image
 ```
-docker run -e ACCOUNT_INDEX=0 --network="host" -d ainblockchain/ain-blockchain:latest
+docker run -e ACCOUNT_INJECTION_OPTION=keystore KEYSTORE_FILE_PATH=/path/to/keystore --network="host" -d ainblockchain/ain-blockchain:latest
 ```
 
 #### Enter Docker container and inspect blockchain files
@@ -171,8 +180,6 @@ cat logger/logs/8080/<log_file>
 -->
 
 ### How to run tests
-
-Please check your node version before running the below tests. Tests has passed node version 12.*
 
 How to run unit test and integration test all around.
 ```

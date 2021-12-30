@@ -1,4 +1,5 @@
 {
+  "_description": "Blockchain params for the testnet-spring and testnet-summer on cloud.",
   "token": {
     "name": "AI Network",
     "symbol": "AIN",
@@ -19,36 +20,31 @@
       }
     }
   },
-  "blockchain": {
-    "TRANSACTION_POOL_TIMEOUT_MS": 3600000,
-    "TRANSACTION_TRACKER_TIMEOUT_MS": 86400000,
-    "NETWORK_ID": 0,
-    "CHAIN_ID": 0,
-    "HOSTING_ENV": "gcp",
-    "TRACKER_UPDATE_JSON_RPC_URL": "",
-    "PEER_CANDIDATE_JSON_RPC_URL": "https://testnet-api.ainetwork.ai/json-rpc",
-    "MAX_SHARD_REPORT": 100,
-    "REST_FUNCTION_CALL_TIMEOUT_MS": 10000
-  },
-  "genesis": {
-    "GENESIS_ADDR": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc",
-    "GENESIS_TIMESTAMP": 1571819318272,
-    "NUM_GENESIS_ACCOUNTS": 10
-  },
   "consensus": {
-    "MIN_STAKE_PER_VALIDATOR": 10000000,
-    "MAX_STAKE_PER_VALIDATOR": 10000000,
-    "MIN_NUM_VALIDATORS": 5,
-    "MAX_NUM_VALIDATORS": 15,
-    "EPOCH_MS": 3000,
-    "GENESIS_WHITELIST": {
+    "min_stake_for_proposer": 10000000,
+    "max_stake_for_proposer": 10000000,
+    "min_num_validators": 5,
+    "max_num_validators": 20,
+    "genesis_proposer_whitelist": {
       "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": true,
       "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d": true,
       "0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211": true,
       "0x003AD6FdB06684175e7D95EcC36758B014517E4b": true,
       "0x004A2550661c8a306207C9dabb279d5701fFD66e": true
     },
-    "GENESIS_VALIDATORS": {
+    "genesis_validator_whitelist": {
+      "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": true,
+      "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d": true,
+      "0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211": true,
+      "0x003AD6FdB06684175e7D95EcC36758B014517E4b": true,
+      "0x004A2550661c8a306207C9dabb279d5701fFD66e": true,
+      "0x005A3c55EcE1A593b761D408B6E6BC778E0a638B": true,
+      "0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe": true,
+      "0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74": true,
+      "0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba": true,
+      "0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD": true
+    },
+    "genesis_validators": {
       "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": {
         "stake": 10000000,
         "proposal_right": true
@@ -69,26 +65,53 @@
         "stake": 10000000,
         "proposal_right": true
       }
-    }
+    },
+    "health_threshold_epoch": 10,
+    "stake_lockup_extension": 2592000000,
+    "max_invalid_blocks_on_mem": 100
   },
-  "network": {
-    "P2P_MESSAGE_TIMEOUT_MS": 600000,
-    "TARGET_NUM_OUTBOUND_CONNECTION": 3,
-    "MAX_NUM_INBOUND_CONNECTION": 6,
-    "REQUEST_BODY_SIZE_LIMIT": "100mb"
+  "genesis": {
+    "genesis_addr": "0xAAAAeEDFf1d2cD909465182165ccc267549554Fc",
+    "genesis_timestamp": 1571819318272,
+    "num_genesis_accounts": 10,
+    "epoch_ms": 20000,
+    "chain_id": 0,
+    "network_id": 0
   },
   "resource": {
-    "STATE_TREE_HEIGHT_LIMIT": 30,
-    "STATE_TREE_BYTES_LIMIT": 5000000000,
-    "STATE_LABEL_LENGTH_LIMIT": 150,
-    "TX_BYTES_LIMIT": 10000,
-    "BATCH_TX_LIST_SIZE_LIMIT": 50,
-    "TX_POOL_SIZE_LIMIT": 1000,
-    "TX_POOL_SIZE_LIMIT_PER_ACCOUNT": 100,
-    "BANDWIDTH_BUDGET_PER_BLOCK": 10000,
-    "MIN_STAKING_FOR_APP_TX": 0,
-    "MIN_BALANCE_FOR_SERVICE_TX": 0,
-    "MAX_FUNCTION_URLS_PER_DEVELOPER": 3
+    "state_tree_height_limit": 30,
+    "state_tree_bytes_limit": 5000000000,
+    "state_label_length_limit": 150,
+    "bandwidth_budget_per_block": 10000,
+    "service_state_budget_ratio": 0.5,
+    "apps_state_budget_ratio": 0.495,
+    "free_state_budget_ratio": 0.005,
+    "max_state_tree_size_per_byte": 0.01,
+    "state_gas_coefficient": 1,
+    "unit_write_gas_amount": 1,
+    "account_registration_gas_amount": 2000,
+    "rest_function_call_gas_amount": 100,
+    "gas_price_unit": 0.000001,
+    "service_bandwidth_budget_ratio": 0.5,
+    "apps_bandwidth_budget_ratio": 0.495,
+    "free_bandwidth_budget_ratio": 0.005,
+    "min_staking_for_app_tx": 0,
+    "min_balance_for_service_tx": 0,
+    "max_function_urls_per_developer": 3,
+    "default_developers_url_whitelist": {
+      "0": "https://*.ainetwork.ai",
+      "1": "https://*.ainize.ai",
+      "2": "https://*.afan.ai",
+      "3": "http://localhost:3000"
+    },
+    "tx_bytes_limit": 10000,
+    "batch_tx_list_size_limit": 50,
+    "set_op_list_size_limit": 50,
+    "min_gc_num_siblings_deleted": 100
+  },
+  "reward": {
+    "type": "FIXED",
+    "annual_rate": 0.08
   },
   "sharding": {
     "shard_owner": "",
@@ -96,6 +119,8 @@
     "sharding_protocol": "NONE",
     "sharding_path": "/",
     "parent_chain_poc": "",
-    "reporting_period": 0
+    "reporting_period": 0,
+    "max_shard_report": 100,
+    "num_shard_report_deleted": 100
   }
 }

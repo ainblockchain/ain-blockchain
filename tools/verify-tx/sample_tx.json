@@ -25,7 +25,7 @@
   },
   "receipt": {
     "code": 103,
-    "error_message": "No write permission on: /transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/3/value",
+    "message": "No write permission on: /transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/3/value",
     "gas_amount_charged": 1,
     "gas_cost_total": 0
   }

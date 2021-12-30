@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic|--private-key] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_incremental_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
     printf "\n"
     exit
@@ -16,16 +16,22 @@ function parse_options() {
         FULL_SYNC_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
             exit
         fi
-        ACCOUNT_INJECTION_OPTION="$option"
+        ACCOUNT_INJECTION_OPTION="keystore"
     elif [[ $option = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
             exit
         fi
-        ACCOUNT_INJECTION_OPTION="$option"
+        ACCOUNT_INJECTION_OPTION="mnemonic"
+    elif [[ $option = '--private-key' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            printf "Multiple account injection options given\n"
+            return 1
+        fi
+        ACCOUNT_INJECTION_OPTION="private_key"
     elif [[ $option = '--rest-func' ]]; then
         REST_FUNC_OPTION="$option"
     elif [[ $option = '--json-rpc' ]]; then
@@ -48,7 +54,7 @@ if ! [[ $3 =~ $number_re ]] ; then
     printf "Invalid <Node Index> argument: $3\n"
     exit
 fi
-if [[ "$3" -lt 0 ]] || [[ "$3" -gt 6 ]]; then
+if [[ "$3" -lt 0 ]] || [[ "$3" -gt 9 ]]; then
     printf "Invalid <Node Index> argument: $3\n"
     exit
 fi
@@ -77,38 +83,60 @@ printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
+    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
+    exit
+fi
+
 # 1. Configure env vars (BLOCKCHAIN_CONFIGS_DIR, TRACKER_UPDATE_JSON_RPC_URL, ...)
 printf "\n#### [Step 1] Configure env vars ####\n\n"
 
 KEYSTORE_DIR=testnet_dev_staging_keys
-if [[ $SEASON = 'spring' ]]; then
-    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
-    export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
-    if [[ $NODE_INDEX -gt 4 ]]; then
-        export PEER_CANDIDATE_JSON_RPC_URL="http://35.221.184.48:8080/json-rpc"
+
+if [[ $SEASON = 'mainnet' ]]; then
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet-prod
+    export TRACKER_UPDATE_JSON_RPC_URL=http://34.81.167.141:8080/json-rpc
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_CANDIDATE_JSON_RPC_URL="https://mainnet-api.ainetwork.ai/json-rpc"
+        export PEER_WHITELIST="0x000C63907F7Aeca56A72F5a4F7cd00EfFCF11c3A,0x001C3C9C4a5669eCD8b78946f6fa5549b33362F8,0x002C76f0aeA9Ba615428d9dF7fedEC6f8ed5369f,0x003C9d091584fEC96bC3bD8423c884680BEAaf4E,0x004C4328B6c2ABF7c4Df897a8124b36E3f00a2FC,0x005C99Db64845e5BF24cd152b22c932989479907,0x006C672861e9DBb09232307c17Be6554BC90687c,0x007C36bf5D0F77836eE138EEAc8df7051b43209b,0x008C287187a5626D0a25DbD67327B36AC55B998E,0x009C66DBce144003f8C4B859fFFce78F80fDD639"
     else
-        export PEER_CANDIDATE_JSON_RPC_URL="https://spring-api.ainetwork.ai/json-rpc"
+        export PEER_CANDIDATE_JSON_RPC_URL="http://104.199.237.250:8080/json-rpc"
     fi
-    KEYSTORE_DIR=testnet_prod_keys
+    KEYSTORE_DIR=mainnet_prod_keys
 elif [[ $SEASON = 'summer' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.172.106:8080/json-rpc
-    if [[ $NODE_INDEX -gt 4 ]]; then
-        export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.169.78:8080/json-rpc"
-    else
+    if [[ $NODE_INDEX -lt 5 ]]; then
         export PEER_CANDIDATE_JSON_RPC_URL="https://summer-api.ainetwork.ai/json-rpc"
+        export PEER_WHITELIST="0x000AF024FEDb636294867bEff390bCE6ef9C5fc4,0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d,0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211,0x003AD6FdB06684175e7D95EcC36758B014517E4b,0x004A2550661c8a306207C9dabb279d5701fFD66e,0x005A3c55EcE1A593b761D408B6E6BC778E0a638B,0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe,0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74,0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba,0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD"
+    else
+        export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.169.78:8080/json-rpc"
+    fi
+    KEYSTORE_DIR=testnet_prod_keys
+elif [[ $SEASON = 'spring' ]]; then
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
+    export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_CANDIDATE_JSON_RPC_URL="https://spring-api.ainetwork.ai/json-rpc"
+        export PEER_WHITELIST="0x000AF024FEDb636294867bEff390bCE6ef9C5fc4,0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d,0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211,0x003AD6FdB06684175e7D95EcC36758B014517E4b,0x004A2550661c8a306207C9dabb279d5701fFD66e,0x005A3c55EcE1A593b761D408B6E6BC778E0a638B,0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe,0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74,0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba,0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD"
+    else
+        export PEER_CANDIDATE_JSON_RPC_URL="http://35.221.184.48:8080/json-rpc"
     fi
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$SEASON" = "sandbox" ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
-    if [[ $NODE_INDEX -gt 4 ]]; then
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_WHITELIST="0x00ADEc28B6a845a085e03591bE7550dd68673C1C,0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204,0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00,0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A,0x04A456C92A880cd59D7145C457475515a6f6E0f2,0x05A1247A7400f0C2A893611adD1505743552c631,0x06AD9C8F611f1e9d9CACD4738167A51aA2e80a1A,0x07A43138CC760C85A5B1F115aa60eADEaa0bf417,0x08Aed7AF9354435c38d52143EE50ac839D20696b,0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
+    else
         export PEER_CANDIDATE_JSON_RPC_URL="http://130.211.244.169:8080/json-rpc"
     fi
     # NOTE(platfowner): For non-api-servers, the value in the blockchain configs
     # (https://sandbox-api.ainetwork.ai/json-rpc) is used.
 elif [[ $SEASON = 'staging' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging
-    if [[ $NODE_INDEX -gt 4 ]]; then
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_WHITELIST="0x00ADEc28B6a845a085e03591bE7550dd68673C1C,0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204,0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00,0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A,0x04A456C92A880cd59D7145C457475515a6f6E0f2,0x05A1247A7400f0C2A893611adD1505743552c631,0x06AD9C8F611f1e9d9CACD4738167A51aA2e80a1A,0x07A43138CC760C85A5B1F115aa60eADEaa0bf417,0x08Aed7AF9354435c38d52143EE50ac839D20696b,0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
+    else
         export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.139.219:8080/json-rpc"
     fi
     # NOTE(platfowner): For non-api-servers, the value in the blockchain configs
@@ -116,7 +144,9 @@ elif [[ $SEASON = 'staging' ]]; then
 elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
     if [[ $SHARD_INDEX = 0 ]]; then
-        if [[ $NODE_INDEX -gt 4 ]]; then
+        if [[ $NODE_INDEX -lt 5 ]]; then
+            export PEER_WHITELIST="0x00ADEc28B6a845a085e03591bE7550dd68673C1C,0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204,0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00,0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A,0x04A456C92A880cd59D7145C457475515a6f6E0f2,0x05A1247A7400f0C2A893611adD1505743552c631,0x06AD9C8F611f1e9d9CACD4738167A51aA2e80a1A,0x07A43138CC760C85A5B1F115aa60eADEaa0bf417,0x08Aed7AF9354435c38d52143EE50ac839D20696b,0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
+        else
             export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.235.180:8080/json-rpc"
         fi
         # NOTE(platfowner): For non-api-servers, the value in the blockchain configs
@@ -184,6 +214,7 @@ printf "TRACKER_UPDATE_JSON_RPC_URL=$TRACKER_UPDATE_JSON_RPC_URL\n"
 printf "BLOCKCHAIN_CONFIGS_DIR=$BLOCKCHAIN_CONFIGS_DIR\n"
 printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 printf "PEER_CANDIDATE_JSON_RPC_URL=$PEER_CANDIDATE_JSON_RPC_URL\n"
+printf "PEER_WHITELIST=$PEER_WHITELIST\n"
 
 if [[ $SEASON = "staging" ]]; then
   # for performance test pipeline
@@ -198,9 +229,9 @@ else
 fi
 export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
 if [[ $JSON_RPC_OPTION ]]; then
-  export ENABLE_JSON_RPC_TX_API=true
+  export ENABLE_JSON_RPC_API=true
 else
-  export ENABLE_JSON_RPC_TX_API=false
+  export ENABLE_JSON_RPC_API=false
 fi
 if [[ $REST_FUNC_OPTION ]]; then
   export ENABLE_REST_FUNCTION_CALL=true
@@ -208,14 +239,11 @@ else
   export ENABLE_REST_FUNCTION_CALL=false
 fi
 
-export DEBUG=false
-export CONSOLE_LOG=false
-export ENABLE_DEV_CLIENT_SET_API=false
-export ENABLE_TX_SIG_VERIF_WORKAROUND=false
-export ENABLE_GAS_FEE_WORKAROUND=true
-export LIGHTWEIGHT=false
-export STAKE=100000
-export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
+# NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
+if [[ $ACCOUNT_INJECTION_OPTION != "private_key" ]] && [[ "$SHARD_INDEX" -gt 0 ]]; then
+    printf 'Invalid account injection option\n'
+    exit
+fi
 
 # 2. Get currently used directory & new directory
 printf "\n#### [Step 2] Get currently used directory & new directory ####\n\n"
@@ -239,8 +267,9 @@ if [[ $KEEP_CODE_OPTION = "" ]]; then
 
     sudo chmod -R 777 $NEW_DIR_PATH
     mv * $NEW_DIR_PATH
-    sudo mkdir -p $BLOCKCHAIN_DATA_DIR
-    sudo chmod -R 777 $BLOCKCHAIN_DATA_DIR
+
+    sudo mkdir -p /home/ain_blockchain_data
+    sudo chmod -R 777 /home/ain_blockchain_data
 
     printf '\n'
     printf 'Installing node modules..\n'
@@ -276,35 +305,21 @@ fi
 # 6. Start a new node server
 printf "\n#### [Step 6] Start new node server ####\n\n"
 
-# NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
-if [[ $ACCOUNT_INJECTION_OPTION = "" ]] || [[ "$SHARD_INDEX" -gt 0 ]]; then
-    export ACCOUNT_INDEX="$NODE_INDEX"
-    printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
-    COMMAND_PREFIX=""
-elif [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
-    if [[ $NODE_INDEX = 0 ]]; then
-        KEYSTORE_FILENAME="keystore_node_0.json"
-    elif [[ $NODE_INDEX = 1 ]]; then
-        KEYSTORE_FILENAME="keystore_node_1.json"
-    elif [[ $NODE_INDEX = 2 ]]; then
-        KEYSTORE_FILENAME="keystore_node_2.json"
-    elif [[ $NODE_INDEX = 3 ]]; then
-        KEYSTORE_FILENAME="keystore_node_3.json"
-    else
-        KEYSTORE_FILENAME="keystore_node_4.json"
-    fi
+if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
+    KEYSTORE_FILENAME="keystore_node_$NODE_INDEX.json"
     printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
-    sudo mkdir -p $BLOCKCHAIN_DATA_DIR/keys/8080
-    sudo mv $NEW_DIR_PATH/$KEYSTORE_DIR/$KEYSTORE_FILENAME $BLOCKCHAIN_DATA_DIR/keys/8080/
-    export KEYSTORE_FILE_PATH=$BLOCKCHAIN_DATA_DIR/keys/8080/$KEYSTORE_FILENAME
+    if [[ $KEEP_CODE_OPTION = "" ]]; then
+        sudo mkdir -p /home/ain_blockchain_data/keys/8080
+        sudo mv $NEW_DIR_PATH/$KEYSTORE_DIR/$KEYSTORE_FILENAME /home/ain_blockchain_data/keys/8080/
+    fi
+    export KEYSTORE_FILE_PATH=/home/ain_blockchain_data/keys/8080/$KEYSTORE_FILENAME
     printf "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH\n"
 fi
 
-MAX_OLD_SPACE_SIZE_MB=11000
+export STAKE=100000
+printf "STAKE=$STAKE\n"
 
-# NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
-export CORS_WHITELIST='*'
-printf "CORS_WHITELIST=$CORS_WHITELIST\n"
+MAX_OLD_SPACE_SIZE_MB=55000
 
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
 printf "START_CMD=$START_CMD\n"

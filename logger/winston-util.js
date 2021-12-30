@@ -5,13 +5,13 @@ const winston = require('winston');
 const { LoggingWinston } = require('@google-cloud/logging-winston');
 const winstonDaily = require('winston-daily-rotate-file');
 const path = require('path');
-const { BlockchainConfigs } = require('../common/constants');
+const { NodeConfigs } = require('../common/constants');
 
 const { combine, timestamp, label, printf, colorize } = winston.format;
 
-const logDir = path.join(BlockchainConfigs.LOGS_DIR, String(BlockchainConfigs.PORT));
-// TODO(liayoo): Deprecate ACCOUNT_INDEX.
-const prefix = BlockchainConfigs.ACCOUNT_INDEX || BlockchainConfigs.ACCOUNT_INJECTION_OPTION ? `node-${BlockchainConfigs.PORT}` : `tracker-${BlockchainConfigs.PORT}`;
+const logDir = path.join(NodeConfigs.LOGS_DIR, String(NodeConfigs.PORT));
+const prefix = process.argv[1].includes('client') ?
+    `node-${NodeConfigs.PORT}` : `tracker-${NodeConfigs.PORT}`;
 const logFormat = printf(({level, message, label, timestamp}) => {
   return `${timestamp} [${label}] ${level}: ${message}`;
 });
@@ -42,7 +42,7 @@ const getWinstonColors = () => {
 const getWinstonConsoleTransport = () => {
   return new (winston.transports.Console)({
     name: 'debug-console-log',
-    level: BlockchainConfigs.DEBUG ? 'debug' : 'info',
+    level: NodeConfigs.DEBUG ? 'debug' : 'info',
     handleExceptions: true,
     json: false,
     colorize: true,
@@ -52,14 +52,13 @@ const getWinstonConsoleTransport = () => {
         timestamp(),
         logFormat
     ),
-    silent: !BlockchainConfigs.CONSOLE_LOG
   });
 };
 
 const getWinstonDailyCombinedFileTransport = () => {
   return new (winstonDaily)({
     name: 'daily-combined-log',
-    level: BlockchainConfigs.DEBUG ? 'debug' : 'info',
+    level: NodeConfigs.DEBUG ? 'debug' : 'info',
     filename: `${logDir}/${prefix}-combined-%DATE%.log`,
     handleExceptions: true,
     json: false,
@@ -93,14 +92,17 @@ const getWinstonDailyErrorFileTransport = () => {
 };
 
 const getWinstonTransports = () => {
-  const transports = BlockchainConfigs.LIGHTWEIGHT ? [getWinstonDailyErrorFileTransport()]
-      : [
-        getWinstonConsoleTransport(),
-        getWinstonDailyCombinedFileTransport(),
-        getWinstonDailyErrorFileTransport(),
-      ];
-  if (BlockchainConfigs.HOSTING_ENV === 'gcp') {
-    // Add Stackdriver Logging
+  if (NodeConfigs.LIGHTWEIGHT) {
+    return [getWinstonDailyErrorFileTransport()];
+  }
+  const transports = [
+    getWinstonDailyCombinedFileTransport(),
+    getWinstonDailyErrorFileTransport(),
+  ];
+  if (NodeConfigs.CONSOLE_LOG) {
+    transports.push(getWinstonConsoleTransport());
+  }
+  if (NodeConfigs.HOSTING_ENV === 'gcp') {
     transports.push(new LoggingWinston);
   }
   return transports;

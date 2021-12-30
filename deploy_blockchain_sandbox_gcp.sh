@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 6 ]]; then
-    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--restart|--reset]\n"
-    printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia 7 99 --setup\n"
+    printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--restart|--reset] [--kill-only|--skip-kill]\n"
+    printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia 10 99 --setup\n"
     printf "\n"
     exit
 fi
@@ -16,9 +16,16 @@ printf "PROJECT_ID=$PROJECT_ID\n"
 GCP_USER="$1"
 START_NODE_IDX="$2"
 END_NODE_IDX="$3"
+ACCOUNT_INJECTION_OPTION="--private-key" # always use the private keys
 printf "GCP_USER=$GCP_USER\n"
 printf "START_NODE_IDX=$START_NODE_IDX\n"
 printf "END_NODE_IDX=$END_NODE_IDX\n"
+printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
+
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
+    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
+    exit
+fi
 
 function parse_options() {
     local option="$1"
@@ -36,6 +43,18 @@ function parse_options() {
             exit
         fi
         RESET_RESTART_OPTION="$option"
+    elif [[ $option = '--kill-only' ]]; then
+        if [[ "$KILL_OPTION" ]]; then
+            printf "You cannot use both --skip-kill and --kill-only\n"
+            exit
+        fi
+        KILL_OPTION="$option"
+    elif [[ $option = '--skip-kill' ]]; then
+        if [[ "$KILL_OPTION" ]]; then
+            printf "You cannot use both --skip-kill and --kill-only\n"
+            exit
+        fi
+        KILL_OPTION="$option"
     else
         printf "Invalid options: $option\n"
         exit
@@ -45,6 +64,7 @@ function parse_options() {
 # Parse options.
 SETUP_OPTION=""
 RESET_RESTART_OPTION=""
+KILL_OPTION=""
 
 ARG_INDEX=4
 while [ $ARG_INDEX -le $# ]
@@ -54,6 +74,7 @@ do
 done
 printf "SETUP_OPTION=$SETUP_OPTION\n"
 printf "RESET_RESTART_OPTION=$RESET_RESTART_OPTION\n"
+printf "KILL_OPTION=$KILL_OPTION\n"
 
 
 # Get confirmation.
@@ -65,6 +86,19 @@ then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
+# Read node ip addresses
+IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./ip_addresses/$SEASON.txt
+
+function inject_account() {
+    local node_index="$1"
+    local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
+    local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
+    printf "\n* >> Injecting an account for node $node_index ********************\n\n"
+    printf "node_ip_addr='$node_ip_addr'\n"
+    PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others['$node_index'].private_key')
+    echo $PRIVATE_KEY | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+}
+
 # GCP node address
 # NODE_0_TARGET_ADDR="${GCP_USER}@${SEASON}-node-0-taiwan"
 # NODE_1_TARGET_ADDR="${GCP_USER}@${SEASON}-node-1-oregon"
@@ -73,9 +107,9 @@ fi
 # NODE_4_TARGET_ADDR="${GCP_USER}@${SEASON}-node-4-netherlands"
 # NODE_5_TARGET_ADDR="${GCP_USER}@${SEASON}-node-5-taiwan"
 # NODE_6_TARGET_ADDR="${GCP_USER}@${SEASON}-node-6-oregon"
-NODE_7_TARGET_ADDR="${GCP_USER}@${SEASON}-node-7-singapore"
-NODE_8_TARGET_ADDR="${GCP_USER}@${SEASON}-node-8-iowa"
-NODE_9_TARGET_ADDR="${GCP_USER}@${SEASON}-node-9-netherlands"
+# NODE_7_TARGET_ADDR="${GCP_USER}@${SEASON}-node-7-singapore"
+# NODE_8_TARGET_ADDR="${GCP_USER}@${SEASON}-node-8-iowa"
+# NODE_9_TARGET_ADDR="${GCP_USER}@${SEASON}-node-9-netherlands"
 NODE_10_TARGET_ADDR="${GCP_USER}@${SEASON}-node-10-taiwan"
 NODE_11_TARGET_ADDR="${GCP_USER}@${SEASON}-node-11-oregon"
 NODE_12_TARGET_ADDR="${GCP_USER}@${SEASON}-node-12-singapore"
@@ -175,9 +209,9 @@ NODE_99_TARGET_ADDR="${GCP_USER}@${SEASON}-node-99-netherlands"
 # NODE_4_ZONE="europe-west4-a"
 # NODE_5_ZONE="asia-east1-b"
 # NODE_6_ZONE="us-west1-b"
-NODE_7_ZONE="asia-southeast1-b"
-NODE_8_ZONE="us-central1-a"
-NODE_9_ZONE="europe-west4-a"
+# NODE_7_ZONE="asia-southeast1-b"
+# NODE_8_ZONE="us-central1-a"
+# NODE_9_ZONE="europe-west4-a"
 NODE_10_ZONE="asia-east1-b"
 NODE_11_ZONE="us-west1-b"
 NODE_12_ZONE="asia-southeast1-b"
@@ -282,26 +316,35 @@ spinner() {
     sleep .1
 }
 
-# kill any processes still alive
-printf "\nKilling all blockchain nodes...\n"
-index=$START_NODE_IDX
-while [ $index -le $END_NODE_IDX ]
-do
-    NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
-    NODE_ZONE=NODE_${index}_ZONE
+if [[ $KILL_OPTION = "--skip-kill" ]]; then
+    printf "\nSkipping process kill...\n"
+else
+    # kill any processes still alive
+    printf "\nKilling all blockchain nodes...\n"
+    index=$START_NODE_IDX
+    while [ $index -le $END_NODE_IDX ]
+    do
+        NODE_TARGET_ADDR=NODE_${index}_TARGET_ADDR
+        NODE_ZONE=NODE_${index}_ZONE
 
-    KILL_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command 'sudo killall node' --project $PROJECT_ID --zone ${!NODE_ZONE}"
-    # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
-    # printf "KILL_NODE_CMD=$KILL_NODE_CMD\n"
-    if [[ $index < "$(($NUM_NODES - 1))" ]]; then
-        eval $KILL_NODE_CMD &> /dev/null &
-    else
-        eval $KILL_NODE_CMD &> /dev/null
-    fi
-    ((index++))
-    spinner
-done
-printf "Kill all processes done.\n\n";
+        KILL_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command 'sudo killall node' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+        # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
+        # printf "KILL_NODE_CMD=$KILL_NODE_CMD\n"
+        if [[ $index < "$(($NUM_NODES - 1))" ]]; then
+            eval $KILL_NODE_CMD &> /dev/null &
+        else
+            eval $KILL_NODE_CMD &> /dev/null
+        fi
+        ((index++))
+        spinner
+    done
+    printf "Kill all processes done.\n\n";
+fi
+
+# If --kill-only, do not proceed any further
+if [[ $KILL_OPTION = "--kill-only" ]]; then
+    exit
+fi
 
 # deploy files to GCP instances
 if [[ $RESET_RESTART_OPTION = "" ]]; then
@@ -354,7 +397,7 @@ if [[ $RESET_RESTART_OPTION = "--reset" ]]; then
     # restart after removing chains, snapshots, and log files
     CHAINS_DIR=/home/ain_blockchain_data/chains
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_node_genesis_gcp.sh"
+    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_genesis_gcp.sh"
     KEEP_CODE_OPTION="--keep-code"
 elif [[ $RESET_RESTART_OPTION = "--restart" ]]; then
     # restart
@@ -388,10 +431,11 @@ do
     printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
     printf "\n"
-    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
+    START_NODE_CMD="gcloud compute ssh ${!NODE_TARGET_ADDR} --command '$START_NODE_CMD_BASE $SEASON 0 $node_index $KEEP_CODE_OPTION $JSON_RPC_OPTION $REST_FUNC_OPTION $ACCOUNT_INJECTION_OPTION' --project $PROJECT_ID --zone ${!NODE_ZONE}"
     # NOTE(minsulee2): Keep printf for extensibility experiment debugging purpose
     # printf "START_NODE_CMD=$START_NODE_CMD\n"
     eval $START_NODE_CMD
+    inject_account "$node_index"
     ((node_index++))
     sleep 1
 done
