@@ -212,7 +212,14 @@ describe("DB operations", () => {
             }
           }
         }
-      }
+      },
+      "syntax": {
+        "path": {
+          ".rule": {
+            "write": "while(",
+          }
+        }
+      },
     };
     node.db.setRulesForTesting("/apps/test/test_rule", dbRules);
 
@@ -1222,6 +1229,9 @@ describe("DB operations", () => {
           "some": {
             "#state_ph": "0x2be40be7d05dfe5a88319f6aa0f1a7eb61691f8f5fae8c7c993f10892cd29038"
           },
+          "syntax": {
+            "#state_ph": "0x9bf58fc0d77ba1ec1271522dbaab398ebe0e8ea002bb43f6bd860b665e53b732"
+          }
         });
       });
     })
@@ -1541,6 +1551,15 @@ describe("DB operations", () => {
             "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, timestamp)), {
           "code": 12101,
           "message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'': [\"/deeper/path\"]",
+          "matched": "erased",
+        });
+      })
+
+      it("evalRule to evaluate a non-variable path rule", () => {
+        assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
+            "/apps/test/test_rule/syntax/path", 'value', { addr: 'abcd' }, timestamp)), {
+          "code": 12105,
+          "message": "Rule syntax error: \"Unexpected token 'while'\" for rule [while(]",
           "matched": "erased",
         });
       })
