@@ -1,16 +1,18 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic|--private-key] [--restart|--reset]\n"
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic|--private-key] [--restart|--reset]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 --setup --canary --full-sync --keystore\n"
     printf "\n"
     exit
 fi
 printf "\n[[[[[ deploy_blockchain_incremental_gcp.sh ]]]]]\n\n"
 
-if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]]; then
+if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
-    if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
+    if [[ "$1" = 'mainnet' ]]; then
+        PROJECT_ID="mainnet-prod-ground"
+    elif [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
         PROJECT_ID="testnet-prod-ground"
     else
         PROJECT_ID="testnet-$1-ground"
@@ -111,13 +113,15 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 # Read node ip addresses
-IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
+IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./ip_addresses/$SEASON.txt
 if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
     # Get keystore password
     printf "Enter password: "
     read -s PASSWORD
     printf "\n\n"
-    if [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
+    if [[ $SEASON = "mainnet" ]]; then
+        KEYSTORE_DIR="mainnet_prod_keys/"
+    elif [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
         KEYSTORE_DIR="testnet_prod_keys/"
     else
         KEYSTORE_DIR="testnet_dev_staging_keys/"
