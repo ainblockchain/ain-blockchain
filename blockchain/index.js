@@ -8,7 +8,6 @@ const {
   NodeConfigs,
   BlockchainSnapshotProperties,
 } = require('../common/constants');
-const { ConsensusConsts } = require('../consensus/constants');
 const CommonUtil = require('../common/common-util');
 
 class Blockchain {
@@ -38,7 +37,7 @@ class Blockchain {
   /**
    * Initializes the blockchain and returns whether there are block files to load.
    */
-  initBlockchain(isFirstNode, snapshot) {
+  async initBlockchain(isFirstNode, snapshot) {
     if (snapshot) {
       this.addBlockToChain(snapshot[BlockchainSnapshotProperties.BLOCK]);
     }
@@ -52,7 +51,7 @@ class Blockchain {
         logger.info('############################################################');
         logger.info('\n');
         // Copy the genesis block from the genesis configs dir to the blockchain dir.
-        this.writeBlock(this.genesisBlock);
+        await this.writeBlock(this.genesisBlock);
         isGenesisStart = true;
       } else {
         logger.info('\n');
@@ -226,8 +225,8 @@ class Blockchain {
     return true;
   }
 
-  writeBlock(block) {
-    FileUtil.writeBlockFile(this.blockchainPath, block);
+  async writeBlock(block) {
+    await FileUtil.writeBlockFile(this.blockchainPath, block);
     FileUtil.writeH2nFile(this.blockchainPath, block.hash, block.number);
   }
 
