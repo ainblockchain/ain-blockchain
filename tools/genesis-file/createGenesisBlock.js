@@ -391,7 +391,8 @@ function executeGenesisTxsAndGetData(genesisTxs) {
   const resList = [];
   for (const tx of genesisTxs) {
     const res = tempGenesisDb.executeTransaction(
-        Transaction.toExecutable(tx), true, false, 0, BlockchainParams.genesis.genesis_timestamp);
+        Transaction.toExecutable(tx, BlockchainParams.genesis.chain_id), true, false, 0,
+        BlockchainParams.genesis.genesis_timestamp);
     if (CommonUtil.isFailedTx(res)) {
       console.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
           `\nRESULT: ${JSON.stringify(res)}`)
@@ -455,7 +456,7 @@ function usage() {
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/3-nodes node createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard node createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/he-shard node tools/genesis-file/createGenesisBlock.js');
-  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet-prod node tools/genesis-file/createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard node tools/genesis-file/createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev node tools/genesis-file/createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod node tools/genesis-file/createGenesisBlock.js');
