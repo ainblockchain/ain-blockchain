@@ -11,8 +11,7 @@
     "https://afan\\.ai",
     "\\.ainetwork\\.ai$",
     "\\.ainize\\.ai$",
-    "\\.afan\\.ai$",
-    "http://localhost:3000"
+    "\\.afan\\.ai$"
   ],
   "DEBUG": false,
   "DEV_CLIENT_API_IP_WHITELIST": [],
