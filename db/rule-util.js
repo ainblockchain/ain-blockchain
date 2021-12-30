@@ -335,7 +335,7 @@ class RuleUtil {
         newData.amount <= this.getBalance(from, getValue);
   }
 
-  validateConsensusProposalData(newData, userAddr, blockNumber, lastBlockNumber, getValue) {
+  validateConsensusProposalData(newData, userAddr, blockNumber, getValue) {
     const PathUtil = require('../common/path-util');
     if (!this.isDict(newData) || Number(blockNumber) !== newData.number ||
         !this.isNumber(newData.gas_cost_total)) {
@@ -349,7 +349,7 @@ class RuleUtil {
     return stake >= this.getMinStakeAmount(getValue) && stake <= this.getMaxStakeAmount(getValue);
   }
 
-  validateConsensusVoteData(newData, userAddr, blockHash, lastBlockNumber, getValue) {
+  validateConsensusVoteData(newData, userAddr, blockHash, getValue) {
     const PathUtil = require('../common/path-util');
     if (getValue(PathUtil.getConsensusValidatorWhitelistAddrPath(userAddr)) !== true &&
         getValue(PathUtil.getConsensusProposerWhitelistAddrPath(userAddr)) !== true) {

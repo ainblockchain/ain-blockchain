@@ -136,14 +136,14 @@
         },
         "propose": {
           ".rule": {
-            "write": "util.validateConsensusProposalData(newData, auth.addr, $number, lastBlockNumber, getValue) === true"
+            "write": "util.validateConsensusProposalData(newData, auth.addr, $number, getValue) === true"
           }
         },
         "$block_hash": {
           "vote": {
             "$user_addr": {
               ".rule": {
-                "write": "auth.addr === $user_addr && data === null && util.validateConsensusVoteData(newData, auth.addr, $block_hash, lastBlockNumber, getValue) === true"
+                "write": "auth.addr === $user_addr && data === null && util.validateConsensusVoteData(newData, auth.addr, $block_hash, getValue) === true"
               }
             }
           }
