@@ -31,7 +31,7 @@ async function getAccountPrivateKey(type, keystoreFilePath) {
       });
       break;
     case 'keystore':
-      if (!keystoreFilePath || fs.existsSync(keystoreFilePath)) {
+      if (!keystoreFilePath || !fs.existsSync(keystoreFilePath)) {
         throw Error(`Invalid keystore file path: ${keystoreFilePath}`);
       }
       const password = await new Promise((resolve) => {
