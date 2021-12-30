@@ -767,6 +767,7 @@ describe('Blockchain Node', () => {
             infoBody, {
               code: 0,
               result: {
+                "#num_children": 2,
                 "#state_ph": "erased",
                 "#tree_bytes": 0,
                 "#tree_height": 2,
@@ -1186,6 +1187,7 @@ describe('Blockchain Node', () => {
           stateInfo['#state_ph'] = 'erased';
           stateInfo['#version'] = 'erased';
           assert.deepEqual(stateInfo, {
+            "#num_children": 2,
             "#state_ph": "erased",
             "#tree_height": 2,
             "#tree_size": 5,
