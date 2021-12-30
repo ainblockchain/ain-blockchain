@@ -55,6 +55,10 @@ describe("Consensus", () => {
 
   it("Staked nodes can vote", () => {
     const addr = node2.account.address; // Staked node without producing rights
+    let lastBlock = node1.bc.lastBlock();
+    const tempDb = node1.createTempDb(node1.db.stateVersion, 'CONSENSUS_UNIT_TEST', lastBlock.number);
+    tempDb.setValuesForTesting(`/consensus/validator_whitelist/${addr}`, true);
+    node1.cloneAndFinalizeVersion(tempDb.stateVersion, -1); // Bypass already existing final state version
     const stakeTx = getTransaction(node2, {
         operation: { 
           type: 'SET_VALUE', 
@@ -66,7 +70,7 @@ describe("Consensus", () => {
       }
     );
     addBlock(node1, [stakeTx], [], {});
-    const lastBlock = node1.bc.lastBlock();
+    lastBlock = node1.bc.lastBlock();
     const timestamp = lastBlock.timestamp + 1;
     const voteTx = getTransaction(node2, {
         operation: {
