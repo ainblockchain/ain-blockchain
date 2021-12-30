@@ -541,6 +541,7 @@ class BlockPool {
    */
   getValidLastVotes(lastBlock, blockNumber, blockTime, tempDb) {
     const LOG_HEADER = 'getValidLastVotes';
+    const chainId = this.node.getBlockchainParam('genesis/chain_id');
     const lastBlockInfo = this.hashToBlockInfo[lastBlock.hash];
     logger.debug(`[${LOG_HEADER}] lastBlockInfo: ${JSON.stringify(lastBlockInfo, null, 2)}`);
     // FIXME(minsulee2 or liayoo): When I am behind and a newly coming node is ahead of me,
@@ -557,7 +558,7 @@ class BlockPool {
     let tallied = 0;
     for (const vote of lastVotes) {
       if (CommonUtil.isFailedTx(tempDb.executeTransaction(
-          Transaction.toExecutable(vote), true, true, 0, blockTime))) {
+          Transaction.toExecutable(vote, chainId), true, true, 0, blockTime))) {
         logger.debug(`[${LOG_HEADER}] failed to execute last vote: ${JSON.stringify(vote, null, 2)}`);
       } else {
         tallied += _get(lastBlock.validators, `${vote.address}.stake`, 0);
@@ -586,6 +587,7 @@ class BlockPool {
     const LOG_HEADER = 'getOffensesAndEvidence';
     const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
     const blockNumber = baseDb.blockNumberSnapshot;
+    const chainId = this.node.getBlockchainParam('genesis/chain_id');
     let backupDb = this.node.createTempDb(
         baseDb.stateVersion, `${StateVersions.SNAP}:${blockNumber}`, blockNumber);
     const majority = totalAtStake * ConsensusConsts.MAJORITY;
@@ -609,7 +611,8 @@ class BlockPool {
       for (const vote of blockInfo.votes) {
         const stake = _get(validators, `${vote.address}.stake`, 0);
         if (stake > 0) {
-          const res = baseDb.executeTransaction(Transaction.toExecutable(vote), true, true, 0, blockTime);
+          const res = baseDb.executeTransaction(
+              Transaction.toExecutable(vote, chainId), true, true, 0, blockTime);
           if (CommonUtil.isFailedTx(res)) {
             logger.debug(`[${LOG_HEADER}] Failed to execute evidence vote:\n${JSON.stringify(vote, null, 2)}\n${JSON.stringify(res, null, 2)})`);
           } else {
