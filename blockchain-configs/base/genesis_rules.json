@@ -136,14 +136,14 @@
         },
         "propose": {
           ".rule": {
-            "write": "util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/proposer_whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || (getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount(getValue) && getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') <= util.getMaxStakeAmount(getValue))) && util.isNumber(newData.gas_cost_total)"
+            "write": "util.validateConsensusProposalData(newData, auth.addr, $number, getValue) === true"
           }
         },
         "$block_hash": {
           "vote": {
             "$user_addr": {
               ".rule": {
-                "write": "auth.addr === $user_addr && data === null && util.validateConsensusVoteData(newData, auth.addr, $block_hash, lastBlockNumber, getValue) === true"
+                "write": "auth.addr === $user_addr && data === null && util.validateConsensusVoteData(newData, auth.addr, $block_hash, getValue) === true"
               }
             }
           }
@@ -153,7 +153,14 @@
     "proposer_whitelist": {
       "$user_addr": {
         ".rule": {
-          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusProposerWhitelistSize() > util.getMinNumValidators(getValue)))"
+          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusProposerWhitelistSize(getValue) > 1))"
+        }
+      }
+    },
+    "validator_whitelist": {
+      "$user_addr": {
+        ".rule": {
+          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusValidatorWhitelistSize(getValue) > util.getMinNumValidators(getValue)))"
         }
       }
     },

@@ -53,6 +53,13 @@ class RuleUtil {
     return [];
   }
 
+  values(value) {
+    if (this.isDict(value)) {
+      return Object.values(value);
+    }
+    return [];
+  }
+
   length(value) {
     if (this.isString(value) || this.isArray(value)) {
       return value.length;
@@ -215,7 +222,14 @@ class RuleUtil {
 
   getConsensusProposerWhitelistSize(getValue) {
     const PathUtil = require('../common/path-util');
-    this.length(this.values(getValue(PathUtil.getConsensusProposerWhitelistPath())).filter((x) => x === true));
+    const whitelist = getValue(PathUtil.getConsensusProposerWhitelistPath()) || {};
+    return this.length(this.values(whitelist).filter((x) => x === true));
+  }
+
+  getConsensusValidatorWhitelistSize(getValue) {
+    const PathUtil = require('../common/path-util');
+    const whitelist = getValue(PathUtil.getConsensusValidatorWhitelistPath()) || {};
+    return this.length(this.values(whitelist).filter((x) => x === true));
   }
 
   getTokenBridgeConfig(networkName, chainId, tokenId, getValue) {
@@ -321,7 +335,26 @@ class RuleUtil {
         newData.amount <= this.getBalance(from, getValue);
   }
 
-  validateConsensusVoteData(newData, userAddr, blockHash, lastBlockNumber, getValue) {
+  validateConsensusProposalData(newData, userAddr, blockNumber, getValue) {
+    const PathUtil = require('../common/path-util');
+    if (!this.isDict(newData) || Number(blockNumber) !== newData.number ||
+        !this.isNumber(newData.gas_cost_total)) {
+      return false;
+    }
+    if (newData.proposer !== userAddr ||
+        getValue(PathUtil.getConsensusProposerWhitelistAddrPath(userAddr)) !== true) {
+      return false;
+    }
+    const stake = this.getConsensusStakeBalance(userAddr, getValue);
+    return stake >= this.getMinStakeAmount(getValue) && stake <= this.getMaxStakeAmount(getValue);
+  }
+
+  validateConsensusVoteData(newData, userAddr, blockHash, getValue) {
+    const PathUtil = require('../common/path-util');
+    if (getValue(PathUtil.getConsensusValidatorWhitelistAddrPath(userAddr)) !== true &&
+        getValue(PathUtil.getConsensusProposerWhitelistAddrPath(userAddr)) !== true) {
+      return false;
+    }
     if (!this.isDict(newData) || !this.isBool(newData.is_against) || !this.isNumber(newData.stake)
         || newData.block_hash !== blockHash) {
       return false;
@@ -329,7 +362,7 @@ class RuleUtil {
     if (newData.is_against && !this.isValidatorOffenseType(newData.offense_type)) {
       return false;
     }
-    return lastBlockNumber < 1 || this.getConsensusStakeBalance(userAddr, getValue) === newData.stake;
+    return this.getConsensusStakeBalance(userAddr, getValue) === newData.stake;
   }
 
   isValidatorOffenseType(type) {
