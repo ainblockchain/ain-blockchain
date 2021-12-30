@@ -6,8 +6,8 @@
     "total_supply": 700000000,
     "bridge": {
       "ETH": {
-        "3": {
-          "0xB16c0C80a81f73204d454426fC413CAe455525A7": {
+        "1": {
+          "0x3A810ff7211b40c4fA76205a14efe161615d0385": {
             "token_pool": "0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
             "min_checkout_per_request": 10000,
             "max_checkout_per_request": 100000,
