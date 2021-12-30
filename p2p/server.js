@@ -26,6 +26,7 @@ const {
   FunctionProperties,
   FunctionTypes,
   NativeFunctionIds,
+  StateLabelProperties,
   TrafficEventTypes,
   trafficStatsManager,
 } = require('../common/constants');
@@ -173,6 +174,8 @@ class P2pServer {
   }
 
   getNodeStatus() {
+    const accountsStateInfo = this.node.db.getStateInfo(
+        `/${PredefinedDbPaths.VALUES_ROOT}/${PredefinedDbPaths.ACCOUNTS}`);
     return {
       health: this.getNodeHealth(),
       address: this.getNodeAddress(),
@@ -182,6 +185,7 @@ class P2pServer {
       dbStatus: {
         rootStateInfo: this.node.db.getStateInfo('/'),
         rootStateProof: this.node.db.getStateProof('/'),
+        numAccounts: _.get(accountsStateInfo, StateLabelProperties.NUM_CHILDREN),
       },
       stateVersionStatus: this.getStateVersionStatus(),
     };
