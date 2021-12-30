@@ -79,8 +79,9 @@ class P2pUtil {
     if (!P2pUtil._isValidMessage(message)) {
       return null;
     } else {
+      const chainId = DB.getBlockchainParam('genesis/chain_id');
       const hashedMessage = ainUtil.hashMessage(JSON.stringify(message.data.body));
-      return CommonUtil.getAddressFromSignature(logger, hashedMessage, message.data.signature);
+      return CommonUtil.getAddressFromSignature(logger, hashedMessage, message.data.signature, chainId);
     }
   }
 

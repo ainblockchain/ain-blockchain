@@ -602,7 +602,8 @@ class BlockchainNode {
           TxResultCode.BLOCKCHAIN_NODE_NOT_SERVING,
           `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
-    const executableTx = Transaction.toExecutable(tx);
+    const chainId = this.getBlockchainParam('genesis/chain_id');
+    const executableTx = Transaction.toExecutable(tx, chainId);
     if (!Transaction.isExecutable(executableTx)) {
       return CommonUtil.logAndReturnTxResult(
           logger,
@@ -610,7 +611,6 @@ class BlockchainNode {
           `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
     }
     if (!NodeConfigs.LIGHTWEIGHT) {
-      const chainId = this.getBlockchainParam('genesis/chain_id');
       if (!Transaction.verifyTransaction(executableTx, chainId)) {
         return CommonUtil.logAndReturnTxResult(
             logger,

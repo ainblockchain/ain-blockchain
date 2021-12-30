@@ -579,10 +579,11 @@ class P2pServer {
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
               return;
             }
+            const chainId = this.node.getBlockchainParam('genesis/chain_id');
             if (Transaction.isBatchTransaction(tx)) {
               const newTxList = [];
               for (const subTx of tx.tx_list) {
-                const createdTx = Transaction.create(subTx.tx_body, subTx.signature);
+                const createdTx = Transaction.create(subTx.tx_body, subTx.signature, chainId);
                 if (!createdTx) {
                   logger.info(`[${LOG_HEADER}] Failed to create a transaction for subTx: ` +
                       `${JSON.stringify(subTx, null, 2)}`);
@@ -594,7 +595,7 @@ class P2pServer {
                 this.executeAndBroadcastTransaction({ tx_list: newTxList }, txTags);
               }
             } else {
-              const createdTx = Transaction.create(tx.tx_body, tx.signature);
+              const createdTx = Transaction.create(tx.tx_body, tx.signature, chainId);
               if (!createdTx) {
                 logger.info(`[${LOG_HEADER}] Failed to create a transaction for tx: ` +
                     `${JSON.stringify(tx, null, 2)}`);

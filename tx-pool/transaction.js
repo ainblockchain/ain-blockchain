@@ -25,7 +25,7 @@ class Transaction {
     logger.debug(`CREATED TRANSACTION: ${JSON.stringify(this)}`);
   }
 
-  static create(txBody, signature) {
+  static create(txBody, signature, chainId) {
     if (!Transaction.isValidTxBody(txBody)) {
       return null;
     }
@@ -38,7 +38,7 @@ class Transaction {
       address = txBody.address;
       skipVerif = true;
     } else {
-      address = CommonUtil.getAddressFromSignature(logger, hash.slice(2), signature);
+      address = CommonUtil.getAddressFromSignature(logger, hash.slice(2), signature, chainId);
     }
     const createdAt = Date.now();
     return new Transaction(txBody, signature, hash, address, skipVerif, createdAt);
@@ -58,18 +58,18 @@ class Transaction {
       }
       signature = sig;
     }
-    return Transaction.create(txBody, signature);
+    return Transaction.create(txBody, signature, chainId);
   }
 
   static isExecutable(tx) {
     return tx instanceof Transaction;
   }
 
-  static toExecutable(tx) {
+  static toExecutable(tx, chainId) {
     if (this.isExecutable(tx)) {
       return tx;
     }
-    return Transaction.create(tx.tx_body, tx.signature);
+    return Transaction.create(tx.tx_body, tx.signature, chainId);
   }
 
   static toJsObject(tx) {
