@@ -63,8 +63,8 @@
     "genesis_timestamp": 1640736000000,
     "num_genesis_accounts": 10,
     "epoch_ms": 20000,
-    "chain_id": 0,
-    "network_id": 0
+    "chain_id": 1,
+    "network_id": 1
   },
   "resource": {
     "state_tree_height_limit": 30,
