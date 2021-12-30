@@ -3931,7 +3931,7 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -3944,8 +3944,8 @@
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "never",
-            "spanNulls": true,
+            "showPoints": "auto",
+            "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "none"
@@ -3967,8 +3967,7 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "short"
+          }
         },
         "overrides": []
       },
@@ -3978,7 +3977,7 @@
         "x": 0,
         "y": 185
       },
-      "id": 38,
+      "id": 158,
       "options": {
         "legend": {
           "calcs": [],
@@ -3989,17 +3988,19 @@
           "mode": "single"
         }
       },
-      "pluginVersion": "8.3.3",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+          },
           "exemplar": true,
-          "expr": "disk_status:usage_percent",
+          "expr": "node_status:db_status:num_accounts",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "title": "disk_status:usage_percent",
+      "title": "num_accounts",
       "type": "timeseries"
     },
     {
@@ -4146,6 +4147,88 @@
         "x": 0,
         "y": 193
       },
+      "id": 38,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "pluginVersion": "8.3.3",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "disk_status:usage_percent",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "disk_status:usage_percent",
+      "type": "timeseries"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 201
+      },
       "id": 12,
       "options": {
         "legend": {
@@ -4226,7 +4309,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 201
+        "y": 209
       },
       "id": 32,
       "options": {
@@ -4308,7 +4391,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 209
+        "y": 217
       },
       "id": 50,
       "options": {
@@ -4393,7 +4476,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 217
+        "y": 225
       },
       "id": 58,
       "options": {
@@ -4478,7 +4561,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 225
+        "y": 233
       },
       "id": 44,
       "options": {
@@ -4563,7 +4646,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 233
+        "y": 241
       },
       "id": 60,
       "options": {
@@ -4608,6 +4691,6 @@
   "timezone": "",
   "title": "Blockchain Servers",
   "uid": "M6YpMSyMz",
-  "version": 41,
+  "version": 4,
   "weekStart": ""
 }
