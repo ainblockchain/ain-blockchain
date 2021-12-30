@@ -574,7 +574,7 @@ describe('Consensus', () => {
       assert.deepEqual(offenseRecordsAfter, offenseRecordsBefore + 1);
       assert.deepEqual(
         stakeExpirationAfter,
-        stakeExpirationBefore + Functions.getLockupExtensionForNewOffenses(1, offenseRecordsAfter)
+        stakeExpirationBefore + Functions.getLockupExtensionForNewOffenses(1, offenseRecordsAfter, BlockchainParams.consensus.stake_lockup_extension)
       );
     });
   });

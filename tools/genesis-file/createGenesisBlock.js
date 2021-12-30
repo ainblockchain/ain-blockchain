@@ -95,6 +95,17 @@ function getConsensusProposerWhitelistOwner() {
   };
 }
 
+function getConsensusValidatorWhitelistOwner() {
+  return {
+    [PredefinedDbPaths.DOT_OWNER]: {
+      [OwnerProperties.OWNERS]: {
+        [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
+        [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+      }
+    }
+  };
+}
+
 function getDevelopersValue() {
   const ownerAddress = GenesisAccounts.owner.address;
   return {
@@ -151,6 +162,11 @@ function getGenesisValues() {
   );
   CommonUtil.setJsObject(
     values,
+    [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_VALIDATOR_WHITELIST],
+    BlockchainParams.consensus.genesis_validator_whitelist
+  );
+  CommonUtil.setJsObject(
+    values,
     [PredefinedDbPaths.DEVELOPERS],
     getDevelopersValue()
   );
@@ -180,6 +196,11 @@ function getGenesisOwners() {
     owners,
     [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST],
     getConsensusProposerWhitelistOwner()
+  );
+  CommonUtil.setJsObject(
+    owners,
+    [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_VALIDATOR_WHITELIST],
+    getConsensusValidatorWhitelistOwner()
   );
   CommonUtil.setJsObject(
     owners,
