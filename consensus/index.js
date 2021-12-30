@@ -1155,6 +1155,14 @@ class Consensus {
     return whitelist || {};
   }
 
+  getValidatorWhitelist(stateVersion) {
+    const LOG_HEADER = 'getValidatorWhitelist';
+    const stateRoot = this.node.stateManager.getRoot(stateVersion);
+    const whitelist = DB.getValueFromStateRoot(stateRoot, PathUtil.getConsensusValidatorWhitelistPath());
+    logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
+    return whitelist || {};
+  }
+
   getValidators(blockHash, blockNumber, stateVersion) {
     const LOG_HEADER = 'getValidators';
     let candidates = [];
@@ -1174,6 +1182,7 @@ class Consensus {
       throw Error(err);
     }
     const proposerWhitelist = this.getProposerWhitelist(stateVersion);
+    const validatorWhitelist = this.getValidatorWhitelist(stateVersion);
     const stateRoot = this.node.stateManager.getRoot(stateVersion);
     const allStakeInfo = DB.getValueFromStateRoot(
         stateRoot, PathUtil.getStakingServicePath(PredefinedDbPaths.CONSENSUS)) || {};
@@ -1189,7 +1198,7 @@ class Consensus {
               proposal_right: true,
             });
           }
-        } else {
+        } else if (validatorWhitelist[address] === true) {
           candidates.push({
             address,
             stake,
