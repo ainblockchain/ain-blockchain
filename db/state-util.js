@@ -235,7 +235,24 @@ function makeWriteRuleCodeSnippet(ruleString) {
 }
 
 function getVariableLabels(parsedRulePath) {
-  return parsedRulePath.filter((label) => CommonUtil.isVariableLabel(label));
+  const variableLabels = {};
+  for (let i = 0; i < parsedRulePath.length; i++) {
+    const label = parsedRulePath[i];
+    if (CommonUtil.isVariableLabel(label)) {
+      if (variableLabels[label] !== undefined) {
+        return {
+          isValid: false,
+          invalidPath: CommonUtil.formatPath(parsedRulePath.slice(0, i + 1)),
+        };
+      } else {
+        variableLabels[label] = true;
+      }
+    }
+  }
+  return {
+    isValid: true,
+    variableLabels,
+  };
 }
 
 /**
@@ -258,14 +275,14 @@ function getPuncTokens(tokenList) {
   return tokenList.filter((token) => token.type === 'Punctuator').map((token) => token.value);
 }
 
-function isValidWriteRule(parsedRulePath, ruleString) {
+function isValidWriteRule(variableLabels, ruleString) {
   const LOG_HEADER = 'isValidWriteRule';
 
   if (ruleString !== null && !CommonUtil.isBool(ruleString) && !CommonUtil.isString(ruleString)) {
     return false;
   }
   if (CommonUtil.isString(ruleString)) {
-    const variableLabelList = getVariableLabels(parsedRulePath);
+    const variableLabelList = CommonUtil.isDict(variableLabels) ? Object.keys(variableLabels) : [];
     const idTokenWhitelistSet = new Set([
       ...WRITE_RULE_ID_TOKEN_WHITELIST_BASE,
       ...variableLabelList,
@@ -373,7 +390,7 @@ function isValidRuleConfig(params, ruleConfigObj) {
   }
   const writeRule = sanitized[RuleProperties.WRITE];
   if (sanitized.hasOwnProperty(RuleProperties.WRITE) &&
-      !isValidWriteRule(params.configPath, writeRule)) {
+      !isValidWriteRule(params.variableLabels, writeRule)) {
     return { isValid: false, invalidPath: CommonUtil.formatPath([RuleProperties.WRITE]) };
   }
   const stateRule = sanitized[RuleProperties.STATE];
@@ -564,10 +581,22 @@ function isValidConfigTreeRecursive(
 
   for (const label in stateTreeObj) {
     subtreePath.push(label);
+    if (CommonUtil.isVariableLabel(label)) {
+      if (!params.variableLabels) {
+        params.variableLabels = {};
+      }
+      if (params.variableLabels[label] !== undefined) {
+        return {
+          isValid: false,
+          invalidPath: CommonUtil.formatPath([...treePath, ...subtreePath]),
+        };
+      } else {
+        params.variableLabels[label] = true;
+      }
+    }
     const subtree = stateTreeObj[label];
     if (label === configLabel) {
-      const newParams = Object.assign({}, params, { configPath: [...treePath, ...subtreePath] });
-      const isValidConfig = stateConfigValidator(newParams, subtree);
+      const isValidConfig = stateConfigValidator(params, subtree);
       if (!isValidConfig.isValid) {
         return {
           isValid: false,
@@ -582,6 +611,9 @@ function isValidConfigTreeRecursive(
       }
     }
     subtreePath.pop();
+    if (params.variableLabels && params.variableLabels[label] !== undefined) {
+      delete params.variableLabels[label];
+    }
   }
 
   return { isValid: true, invalidPath: '' };
@@ -595,8 +627,13 @@ function isValidRuleTree(treePath, ruleTreeObj, params) {
     return { isValid: true, invalidPath: '' };
   }
 
+  const varLabelsRes = getVariableLabels(treePath);
+  if (!varLabelsRes.isValid) {
+    return varLabelsRes;
+  }
+  const newParams = Object.assign({}, params, { variableLabels: varLabelsRes.variableLabels });
   return isValidConfigTreeRecursive(
-      treePath, ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig, params);
+      treePath, ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig, newParams);
 }
 
 /**
@@ -607,8 +644,14 @@ function isValidFunctionTree(treePath, functionTreeObj) {
     return { isValid: true, invalidPath: '' };
   }
 
+  const varLabelsRes = getVariableLabels(treePath);
+  if (!varLabelsRes.isValid) {
+    return varLabelsRes;
+  }
+  const newParams = { variableLabels: varLabelsRes.variableLabels };
   return isValidConfigTreeRecursive(
-      treePath, functionTreeObj, [], PredefinedDbPaths.DOT_FUNCTION, isValidFunctionConfig);
+      treePath, functionTreeObj, [], PredefinedDbPaths.DOT_FUNCTION, isValidFunctionConfig,
+      newParams);
 }
 
 /**
