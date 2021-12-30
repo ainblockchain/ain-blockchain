@@ -8,7 +8,7 @@
       "ETH": {
         "1": {
           "0x3A810ff7211b40c4fA76205a14efe161615d0385": {
-            "token_pool": "0x20ADd3d38405ebA6338CB9e57a0510DEB8f8e000",
+            "token_pool": "0x00CC0491CdA2dA91385C9c424852Ae096B7AbD89",
             "min_checkout_per_request": 10000,
             "max_checkout_per_request": 100000,
             "max_checkout_per_day": 1000000,
