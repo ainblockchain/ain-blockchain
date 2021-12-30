@@ -539,6 +539,7 @@ class DB {
       return null;
     }
     return {
+      [StateLabelProperties.NUM_CHILDREN]: stateNode.numChildren(),
       [StateLabelProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
       [StateLabelProperties.TREE_SIZE]: stateNode.getTreeSize(),
       [StateLabelProperties.TREE_BYTES]: stateNode.getTreeBytes(),

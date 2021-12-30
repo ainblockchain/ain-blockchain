@@ -144,6 +144,7 @@ class StateNode {
         }
         if (includeTreeInfo) {
           obj[`${StateLabelProperties.NUM_PARENTS}:${label}`] = childNode.numParents();
+          obj[`${StateLabelProperties.NUM_CHILDREN}:${label}`] = childNode.numChildren();
           obj[`${StateLabelProperties.TREE_HEIGHT}:${label}`] = childNode.getTreeHeight();
           obj[`${StateLabelProperties.TREE_SIZE}:${label}`] = childNode.getTreeSize();
           obj[`${StateLabelProperties.TREE_BYTES}:${label}`] = childNode.getTreeBytes();
@@ -162,6 +163,7 @@ class StateNode {
     }
     if (includeTreeInfo) {
       obj[`${StateLabelProperties.NUM_PARENTS}`] = this.numParents();
+      obj[`${StateLabelProperties.NUM_CHILDREN}`] = this.numChildren();
       obj[`${StateLabelProperties.TREE_HEIGHT}`] = this.getTreeHeight();
       obj[`${StateLabelProperties.TREE_SIZE}`] = this.getTreeSize();
       obj[`${StateLabelProperties.TREE_BYTES}`] = this.getTreeBytes();
