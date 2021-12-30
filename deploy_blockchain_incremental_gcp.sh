@@ -1,16 +1,18 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 9 ]]; then
-    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic] [--restart|--reset]\n"
+    printf "Usage: bash deploy_blockchain_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--canary] [--full-sync] [--keystore|--mnemonic|--private-key] [--restart|--reset]\n"
     printf "Example: bash deploy_blockchain_incremental_gcp.sh dev lia 0 --setup --canary --full-sync --keystore\n"
     printf "\n"
     exit
 fi
 printf "\n[[[[[ deploy_blockchain_incremental_gcp.sh ]]]]]\n\n"
 
-if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]]; then
+if [[ "$1" = 'dev' ]] || [[ "$1" = 'staging' ]] || [[ "$1" = 'sandbox' ]] || [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]] || [[ "$1" = 'mainnet' ]]; then
     SEASON="$1"
-    if [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
+    if [[ "$1" = 'mainnet' ]]; then
+        PROJECT_ID="mainnet-prod-ground"
+    elif [[ "$1" = 'spring' ]] || [[ "$1" = 'summer' ]]; then
         PROJECT_ID="testnet-prod-ground"
     else
         PROJECT_ID="testnet-$1-ground"
@@ -43,13 +45,19 @@ function parse_options() {
         FULL_SYNC_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
     elif [[ $option = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
+            exit
+        fi
+        ACCOUNT_INJECTION_OPTION="$option"
+    elif [[ $option = '--private-key' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            printf "Multiple account injection options given\n"
             exit
         fi
         ACCOUNT_INJECTION_OPTION="$option"
@@ -91,6 +99,11 @@ printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "RESET_RESTART_OPTION=$RESET_RESTART_OPTION\n"
 
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
+    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
+    exit
+fi
+
 # Get confirmation.
 printf "\n"
 read -p "Do you want to proceed? >> (y/N) " -n 1 -r
@@ -99,31 +112,28 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 # handle exits from shell or function but don't exit interactive shell
 fi
 
+# Read node ip addresses
+IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./ip_addresses/$SEASON.txt
 if [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
     # Get keystore password
     printf "Enter password: "
     read -s PASSWORD
     printf "\n\n"
-
-    # Read node ip addresses
-    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
-
-    if [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
+    if [[ $SEASON = "mainnet" ]]; then
+        KEYSTORE_DIR="mainnet_prod_keys/"
+    elif [[ $SEASON = "spring" ]] || [[ $SEASON = "summer" ]]; then
         KEYSTORE_DIR="testnet_prod_keys/"
     else
         KEYSTORE_DIR="testnet_dev_staging_keys/"
     fi
 elif [[ $ACCOUNT_INJECTION_OPTION = "--mnemonic" ]]; then
-    # Read node ip addresses
-    IFS=$'\n' read -d '' -r -a IP_ADDR_LIST < ./testnet_ip_addresses/$SEASON.txt
-
     IFS=$'\n' read -d '' -r -a MNEMONIC_LIST < ./testnet_mnemonics/$SEASON.txt
 fi
 
 FILES_FOR_TRACKER="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ logger/ tracker-server/ traffic/ package.json setup_blockchain_ubuntu.sh start_tracker_genesis_gcp.sh start_tracker_incremental_gcp.sh"
 FILES_FOR_NODE="blockchain/ blockchain-configs/ block-pool/ client/ common/ consensus/ db/ event-handler/ json_rpc/ logger/ node/ p2p/ tools/ traffic/ tx-pool/ $KEYSTORE_DIR package.json setup_blockchain_ubuntu.sh start_node_genesis_gcp.sh start_node_incremental_gcp.sh wait_until_node_sync_gcp.sh"
 
-NUM_PARENT_NODES=7
+NUM_PARENT_NODES=10
 NUM_SHARD_NODES=3
 
 TRACKER_ZONE="asia-east1-b"
@@ -135,6 +145,9 @@ NODE_ZONE_LIST=(
     "europe-west4-a" \
     "asia-east1-b" \
     "us-west1-b" \
+    "asia-southeast1-b" \
+    "us-central1-a" \
+    "europe-west4-a" \
 )
 
 function deploy_tracker() {
@@ -239,6 +252,15 @@ function deploy_node() {
             sleep 1
             echo 0
         } | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
+    else
+        printf "\n* >> Injecting an account for node $node_index ********************\n\n"
+        printf "node_ip_addr='$node_ip_addr'\n"
+        local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
+        if [[ "$SEASON" = "spring" ]] || [[ "$SEASON" = "summer" ]]; then
+            GENESIS_ACCOUNTS_PATH="blockchain-configs/testnet-prod/genesis_accounts.json"
+        fi
+        PRIVATE_KEY=$(cat $GENESIS_ACCOUNTS_PATH | jq -r '.others['$node_index'].private_key')
+        echo $PRIVATE_KEY | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     fi
 
     #5. Wait until node is synced
@@ -261,6 +283,9 @@ NODE_TARGET_ADDR_LIST=(
     "${GCP_USER}@${SEASON}-node-4-netherlands" \
     "${GCP_USER}@${SEASON}-node-5-taiwan" \
     "${GCP_USER}@${SEASON}-node-6-oregon" \
+    "${GCP_USER}@${SEASON}-node-7-singapore" \
+    "${GCP_USER}@${SEASON}-node-8-iowa" \
+    "${GCP_USER}@${SEASON}-node-9-netherlands" \
 )
 
 printf "\nStarting blockchain servers...\n\n"
@@ -268,8 +293,8 @@ if [[ $RESET_RESTART_OPTION = "--reset" ]]; then
     # restart after removing chains, snapshots, and log files
     CHAINS_DIR=/home/ain_blockchain_data/chains
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
-    START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_tracker_incremental_gcp.sh"
-    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && sudo rm -rf ./logs/ && . start_node_incremental_gcp.sh"
+    START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_tracker_incremental_gcp.sh"
+    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR && cd \$(find /home/ain-blockchain* -maxdepth 0 -type d) && . start_node_incremental_gcp.sh"
     KEEP_CODE_OPTION="--keep-code"
 elif [[ $RESET_RESTART_OPTION = "--restart" ]]; then
     # restart

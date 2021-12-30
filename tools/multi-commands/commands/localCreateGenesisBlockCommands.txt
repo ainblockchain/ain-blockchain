@@ -1,0 +1,24 @@
+rm ./blockchain-configs/1-node/genesis_block.json.gz
+rm ./blockchain-configs/2-nodes/genesis_block.json.gz
+rm ./blockchain-configs/3-nodes/genesis_block.json.gz
+rm ./blockchain-configs/afan-shard/genesis_block.json.gz
+rm ./blockchain-configs/base/genesis_block.json.gz
+rm ./blockchain-configs/he-shard/genesis_block.json.gz
+rm ./blockchain-configs/sim-shard/genesis_block.json.gz
+rm ./blockchain-configs/testnet-dev/genesis_block.json.gz
+rm ./blockchain-configs/testnet-prod/genesis_block.json.gz
+rm ./blockchain-configs/testnet-sandbox/genesis_block.json.gz
+rm ./blockchain-configs/testnet-staging/genesis_block.json.gz
+rm ./blockchain-configs/token-bridge/genesis_block.json.gz
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/1-node node tools/genesis-file/createGenesisBlock.js 
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/2-nodes node tools/genesis-file/createGenesisBlock.js 
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/3-nodes node tools/genesis-file/createGenesisBlock.js 
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard node tools/genesis-file/createGenesisBlock.js 
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/base node tools/genesis-file/createGenesisBlock.js 
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/he-shard node tools/genesis-file/createGenesisBlock.js 
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard node tools/genesis-file/createGenesisBlock.js 
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev BLOCKCHAIN_DATA_DIR=./ain_blockchain_data node tools/genesis-file/createGenesisBlock.js 
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod BLOCKCHAIN_DATA_DIR=./ain_blockchain_data node tools/genesis-file/createGenesisBlock.js 
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox BLOCKCHAIN_DATA_DIR=./ain_blockchain_data node tools/genesis-file/createGenesisBlock.js 
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging BLOCKCHAIN_DATA_DIR=./ain_blockchain_data node tools/genesis-file/createGenesisBlock.js 
+BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/token-bridge node tools/genesis-file/createGenesisBlock.js 

@@ -8,7 +8,7 @@ class TrafficStatsManager {
     this.trafficDbMap = new Map();
   }
 
-  addEvent(eventType, latencyMs, currentTimeMs = null) {
+  addEvent(eventType, metricValue, currentTimeMs = null) {
     if (!this.enabled) {
       return;
     }
@@ -17,7 +17,7 @@ class TrafficStatsManager {
       this.trafficDbMap.set(eventType, newTrafficDb);
     }
     const trafficDb = this.trafficDbMap.get(eventType);
-    trafficDb.addEvent(latencyMs, currentTimeMs);
+    trafficDb.addEvent(metricValue, currentTimeMs);
   }
 
   getEventSums(eventType, periodMs, currentTimeMs = null) {
@@ -41,10 +41,10 @@ class TrafficStatsManager {
         const sums = this.getEventSums(eventType, periodSec * 1000, currentTimeMs);
         if (sums && sums.countSum > 0) {
           const rate = sums.countSum / periodSec;
-          const latency = sums.latencySum / sums.countSum;
+          const metric = sums.metricSum / sums.countSum;
           stats[eventType] = {
             rate,
-            latency,
+            metric,
           };
         }
       }

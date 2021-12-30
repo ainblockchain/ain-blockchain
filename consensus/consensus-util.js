@@ -1,26 +1,36 @@
 const _get = require('lodash/get');
 const {
-  BlockchainConfigs,
+  NodeConfigs,
   WriteDbOperations,
   PredefinedDbPaths,
+  TrafficEventTypes,
+  trafficStatsManager,
 } = require('../common/constants');
+const { ConsensusErrorCodeSetToVoteAgainst } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
-const { ConsensusErrorCodesToVoteAgainst } = require('./constants');
 const Transaction = require('../tx-pool/transaction');
+const DB = require('../db');
 
 class ConsensusUtil {
   static isValidConsensusTx(tx) {
-    const executableTx = Transaction.toExecutable(tx);
+    const chainId = DB.getBlockchainParam('genesis/chain_id');
+    const executableTx = Transaction.toExecutable(tx, chainId);
     if (!Transaction.isExecutable(executableTx)) {
       return false;
     }
-    if (!BlockchainConfigs.LIGHTWEIGHT) {
-      if (!Transaction.verifyTransaction(executableTx)) {
+    if (!NodeConfigs.LIGHTWEIGHT) {
+      if (!Transaction.verifyTransaction(executableTx, chainId)) {
         return false;
       }
     }
+    const nonce = _get(tx, 'tx_body.nonce');
+    if (nonce !== -1) {
+      return false;
+    }
     const op = _get(tx, 'tx_body.operation');
-    if (!op) return false;
+    if (!op) {
+      return false;
+    }
     const consensusTxPrefix = CommonUtil.formatPath(
         [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_NUMBER]);
     if (op.type === WriteDbOperations.SET_VALUE) { // vote tx
@@ -107,7 +117,7 @@ class ConsensusUtil {
   }
 
   static isVoteAgainstBlockError(errorCode) {
-    return ConsensusErrorCodesToVoteAgainst.has(errorCode);
+    return ConsensusErrorCodeSetToVoteAgainst.has(errorCode);
   }
 
   static getInvalidBlockHashesFromBlock(block) {
@@ -121,6 +131,20 @@ class ConsensusUtil {
       }
     }
     return invalidBlockHashList;
+  }
+
+  static addTrafficEventsForProposalTx(proposalTx) {
+    const txTimestamp = proposalTx.tx_body.timestamp;
+    const currentTime = Date.now();
+    trafficStatsManager.addEvent(
+        TrafficEventTypes.PROPOSE_P2P_MESSAGE, currentTime - txTimestamp, currentTime);
+  }
+
+  static addTrafficEventsForVoteTx(voteTx) {
+    const txTimestamp = voteTx.tx_body.timestamp;
+    const currentTime = Date.now();
+    trafficStatsManager.addEvent(
+        TrafficEventTypes.VOTE_P2P_MESSAGE, currentTime - txTimestamp, currentTime);
   }
 }
 

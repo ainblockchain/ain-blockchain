@@ -3,22 +3,26 @@ const logger = new (require('../logger'))('NODE');
 
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
+const sizeof = require('object-sizeof');
 const path = require('path');
+const stringify = require('fast-json-stable-stringify');
 const {
   DevFlags,
-  BlockchainConfigs,
+  NodeConfigs,
   BlockchainNodeStates,
   PredefinedDbPaths,
   BlockchainSnapshotProperties,
+  StateLabelProperties,
   ShardingProperties,
   ShardingProtocols,
-  GenesisAccounts,
-  GenesisSharding,
   TransactionStates,
   StateVersions,
   SyncModeOptions,
-  EventTypes,
+  WriteDbOperations,
+  TrafficEventTypes,
+  trafficStatsManager,
 } = require('../common/constants');
+const { TxResultCode } = require('../common/result-code');
 const { ValidatorOffenseTypes } = require('../consensus/constants');
 const FileUtil = require('../common/file-util');
 const CommonUtil = require('../common/common-util');
@@ -30,12 +34,13 @@ const Transaction = require('../tx-pool/transaction');
 const Consensus = require('../consensus');
 const BlockPool = require('../block-pool');
 const ConsensusUtil = require('../consensus/consensus-util');
+const PathUtil = require('../common/path-util');
 
 class BlockchainNode {
   constructor(account = null, eventHandler = null) {
-    this.keysDir = path.resolve(BlockchainConfigs.KEYS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
+    this.keysDir = path.resolve(NodeConfigs.KEYS_ROOT_DIR, `${NodeConfigs.PORT}`);
     FileUtil.createDir(this.keysDir);
-    this.snapshotDir = path.resolve(BlockchainConfigs.SNAPSHOTS_ROOT_DIR, `${BlockchainConfigs.PORT}`);
+    this.snapshotDir = path.resolve(NodeConfigs.SNAPSHOTS_ROOT_DIR, `${NodeConfigs.PORT}`);
     FileUtil.createSnapshotDir(this.snapshotDir);
 
     this.account = account;
@@ -46,7 +51,7 @@ class BlockchainNode {
     this.urlExternal = null;
 
     this.eh = eventHandler;
-    this.bc = new Blockchain(String(BlockchainConfigs.PORT));
+    this.bc = new Blockchain(String(NodeConfigs.PORT));
     this.tp = new TransactionPool(this);
     this.bp = new BlockPool(this);
     this.stateManager = new StateManager();
@@ -68,14 +73,30 @@ class BlockchainNode {
 
   initAccount() {
     const LOG_HEADER = 'initAccount';
-    if (BlockchainConfigs.ACCOUNT_INDEX !== null) { // TODO(liayoo): Deprecate ACCOUNT_INDEX.
-      this.setAccountAndInitShardSetting(GenesisAccounts.others[BlockchainConfigs.ACCOUNT_INDEX]);
-    } else if (BlockchainConfigs.ACCOUNT_INJECTION_OPTION !== null) {
-      // Create a bootstrap account & wait for the account injection
-      this.bootstrapAccount = ainUtil.createAccount();
-    } else {
-      throw Error(`[${LOG_HEADER}] Must specify either ACCOUNT_INJECTION_OPTION or ACCOUNT_INDEX.`);
+    switch (NodeConfigs.ACCOUNT_INJECTION_OPTION) {
+      case 'keystore':
+        if (!NodeConfigs.KEYSTORE_FILE_PATH) {
+          throw Error(
+              `[${LOG_HEADER}] Must specify KEYSTORE_FILE_PATH as a process env or in node_params.json`);
+        }
+        break;
+      case 'mnemonic':
+      case 'private_key':
+        // NOTE(liayoo): An account should be injected using APIs.
+        break;
+      case null:
+        if (NodeConfigs.UNSAFE_PRIVATE_KEY) {
+          const account = ainUtil.privateToAccount(Buffer.from(NodeConfigs.UNSAFE_PRIVATE_KEY, 'hex'));
+          this.setAccountAndInitShardSetting(account);
+          return;
+        }
+      default:
+        throw Error(
+            `[${LOG_HEADER}] Must specify UNSAFE_PRIVATE_KEY or ACCOUNT_INJECTION_OPTION as a ` +
+            `process env or in node_params.json (options: keystore, mnemonic, private_key)`);
     }
+    // Create a bootstrap account & wait for the account injection
+    this.bootstrapAccount = ainUtil.createAccount();
   }
 
   setAccountAndInitShardSetting(account) {
@@ -89,6 +110,26 @@ class BlockchainNode {
     this.initShardSetting();
   }
 
+  async injectAccountFromPrivateKey(encryptedPrivateKey) {
+    const LOG_HEADER = 'injectAccountFromPrivateKey';
+    if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
+      return false;
+    }
+    try {
+      const privateKey = await ainUtil.decryptWithPrivateKey(
+          this.bootstrapAccount.private_key, encryptedPrivateKey);
+      const accountFromPrivateKey = ainUtil.privateToAccount(Buffer.from(privateKey, 'hex'));
+      if (accountFromPrivateKey !== null) {
+        this.setAccountAndInitShardSetting(accountFromPrivateKey)
+        return true;
+      }
+      return false;
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Failed to inject an account: ${err.stack}`);
+      return false;
+    }
+  }
+
   async injectAccountFromKeystore(encryptedPassword) {
     const LOG_HEADER = 'injectAccountFromKeystore';
     if (!this.bootstrapAccount || this.account || this.state !== BlockchainNodeStates.STARTING) {
@@ -97,7 +138,7 @@ class BlockchainNode {
     try {
       const password = await ainUtil.decryptWithPrivateKey(
           this.bootstrapAccount.private_key, encryptedPassword);
-      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(BlockchainConfigs.KEYSTORE_FILE_PATH, password);
+      const accountFromKeystore = FileUtil.getAccountFromKeystoreFile(NodeConfigs.KEYSTORE_FILE_PATH, password);
       if (accountFromKeystore !== null) {
         this.setAccountAndInitShardSetting(accountFromKeystore)
         return true;
@@ -126,12 +167,38 @@ class BlockchainNode {
     }
   }
 
+  verifyNodeAccountSignature(message, signature) {
+    const LOG_HEADER = 'verifyNodeAccountSignature';
+    if (!CommonUtil.isDict(message)) {
+      logger.debug(`[${LOG_HEADER}] Invalid message: ${JSON.stringify(message)}`);
+      return false;
+    }
+    if (!this.account) {
+      logger.debug(`[${LOG_HEADER}] Node account is not initialized: ${JSON.stringify(this.account)}`);
+      return false;
+    }
+    if (!CommonUtil.isNumber(message.timestamp) || message.timestamp < Date.now() - 10 * 60 * 1000) { // 10 min
+      logger.debug(`[${LOG_HEADER}] Stale message: ${JSON.stringify(message)}`);
+      return false;
+    }
+    try {
+      return ainUtil.ecVerifySig(
+          stringify(message), signature, this.account.address, this.getBlockchainParam('genesis/chain_id'));
+    } catch (e) {
+      logger.debug(
+          `[${LOG_HEADER}] Invalid signature: ${JSON.stringify(message)}, ${signature}, ` +
+          `${this.account.address}, ${this.getBlockchainParam('genesis/chain_id')}`);
+      return false;
+    }
+  }
+
   initShardSetting() {
-    this.isShardChain = GenesisSharding[ShardingProperties.SHARDING_PROTOCOL] !== ShardingProtocols.NONE;
+    const shardingProtocol = this.getBlockchainParam('sharding/sharding_protocol');
+    const shardReporter = this.getBlockchainParam('sharding/shard_reporter');
+    this.isShardChain = shardingProtocol !== ShardingProtocols.NONE;
     this.isShardReporter =
         this.isShardChain &&
-        CommonUtil.areSameAddrs(
-            GenesisSharding[ShardingProperties.SHARD_REPORTER], this.account.address);
+        CommonUtil.areSameAddrs(shardReporter, this.account.address);
   }
 
   // For testing purpose only.
@@ -151,7 +218,7 @@ class BlockchainNode {
   }
 
   static getNodeUrl(ipAddr) {
-    return `http://${ipAddr}:${BlockchainConfigs.PORT}`;
+    return `http://${ipAddr}:${NodeConfigs.PORT}`;
   }
 
   initNode(isFirstNode) {
@@ -162,7 +229,7 @@ class BlockchainNode {
     let latestSnapshotBlockNumber = -1;
 
     // 1. Get the latest snapshot if in the "fast" sync mode.
-    if (BlockchainConfigs.SYNC_MODE === SyncModeOptions.FAST) {
+    if (NodeConfigs.SYNC_MODE === SyncModeOptions.FAST) {
       logger.info(`[${LOG_HEADER}] Initializing node in 'fast' mode..`);
       const latestSnapshotInfo = FileUtil.getLatestSnapshotInfo(this.snapshotDir);
       latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
@@ -260,14 +327,14 @@ class BlockchainNode {
       logger.error(`[${LOG_HEADER}] Failed to finalize version: ${newFinalVersion}`);
     }
     if (DevFlags.enableStateTreeTransfer) {
-      logger.info(`[${LOG_HEADER}] Transfering state tree: ${version} -> ${newFinalVersion}`);
+      logger.debug(`[${LOG_HEADER}] Transfering state tree: ${version} -> ${newFinalVersion}`);
       if (!this.stateManager.transferStateTree(version, newFinalVersion)) {
         logger.error(
             `[${LOG_HEADER}] Failed to transfer state tree: ${version} -> ${newFinalVersion}`);
       }
     }
     if (oldFinalVersion) {
-      logger.info(`[${LOG_HEADER}] Deleting previous final version: ${oldFinalVersion}`);
+      logger.debug(`[${LOG_HEADER}] Deleting previous final version: ${oldFinalVersion}`);
       if (!this.stateManager.deleteVersion(oldFinalVersion)) {
         logger.error(`[${LOG_HEADER}] Failed to delete previous final version: ${oldFinalVersion}`);
       }
@@ -278,12 +345,12 @@ class BlockchainNode {
   }
 
   updateSnapshots(blockNumber) {
-    if (blockNumber % BlockchainConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
+    if (blockNumber % NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
       FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
       FileUtil.writeSnapshot(
           this.snapshotDir,
-          blockNumber - BlockchainConfigs.MAX_NUM_SNAPSHOTS * BlockchainConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
+          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
   }
 
@@ -331,6 +398,7 @@ class BlockchainNode {
   }
 
   getNonce(fromPending = true) {
+    if (!this.account) return null;
     return this.getNonceForAddr(this.account.address, fromPending);
   }
 
@@ -376,21 +444,88 @@ class BlockchainNode {
     return shardingInfo;
   }
 
-  getStateUsage(appName) {
+  static calcUnstakeableAmount(stateBudget, freeStateBudget, appUsage, freeTierUsage, appStake, totalStake) {
+    if (!totalStake) return appStake;
+    if (!appStake || stateBudget <= appUsage) return 0;
+    // NOTE(liayoo): stateUsage <= (appStake - unstakeable) / (totalStake - unstakeable) * stateBudget
+    const unstakeable = (stateBudget * appStake - appUsage * totalStake) / (stateBudget - appUsage);
+    if (unstakeable < 0) return 0;
+    if (unstakeable >= appStake) {
+      if (appUsage + freeTierUsage > freeStateBudget) { // Cannot use free tier
+        return Math.max(appStake - 1, 0);
+      }
+      return appStake;
+    }
+    return unstakeable;
+  }
+
+  getStateUsageWithStakingInfo(appName) {
     if (!appName) return null;
-    return this.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
+    const stateTreeHeightLimit = this.getBlockchainParam('resource/state_tree_height_limit');
+    const appStakesTotal = this.db.getAppStakesTotal();
+    const appStake = this.db.getAppStake(appName);
+    const appStakeRatio = appStakesTotal > 0 ? appStake / appStakesTotal : 1;
+    const {
+      appsStateBudget,
+      appsTreeSizeBudget,
+      freeStateBudget,
+      freeTreeSizeBudget,
+    } = DB.getStateBudgets(this.bc.lastBlockNumber(), this.stateManager.getFinalRoot());
+    const freeTierUsage = this.db.getStateFreeTierUsage();
+    const freeTierTreeSize = !CommonUtil.isEmpty(freeTierUsage) ? freeTierUsage[StateLabelProperties.TREE_SIZE] : 0;
+    const freeTierTreeBytes = !CommonUtil.isEmpty(freeTierUsage) ? freeTierUsage[StateLabelProperties.TREE_BYTES] : 0;
+    const rawUsage = this.db.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
+    const usage = {
+      tree_height: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_HEIGHT] : 0,
+      tree_size: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_SIZE] : 0,
+      tree_bytes: !CommonUtil.isEmpty(rawUsage) ? rawUsage[StateLabelProperties.TREE_BYTES] : 0,
+    };
+    const available = {
+      tree_height: stateTreeHeightLimit,
+      tree_size: Math.max(0, (appsTreeSizeBudget * appStakeRatio) - usage.tree_size),
+      tree_bytes: Math.max(0, (appsStateBudget * appStakeRatio) - usage.tree_bytes),
+    };
+    const staking = {
+      app: appStake,
+      total: appStakesTotal,
+      unstakeable: Math.min(
+        BlockchainNode.calcUnstakeableAmount(
+            appsTreeSizeBudget, freeTreeSizeBudget, usage.tree_size, freeTierTreeSize, appStake, appStakesTotal),
+        BlockchainNode.calcUnstakeableAmount(
+            appsStateBudget, freeStateBudget, usage.tree_bytes, freeTierTreeBytes, appStake, appStakesTotal),
+      ),
+    };
+    return {
+      usage,
+      available,
+      staking,
+    };
   }
 
   getTxPoolSizeUtilization(address) {
     const result = {};
     if (address) { // Per account
-      result.limit = BlockchainConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
+      result.limit = NodeConfigs.TX_POOL_SIZE_LIMIT_PER_ACCOUNT;
       result.used = this.tp.getPerAccountPoolSize(address);
     } else { // Total
-      result.limit = BlockchainConfigs.TX_POOL_SIZE_LIMIT;
+      result.limit = NodeConfigs.TX_POOL_SIZE_LIMIT;
       result.used = this.tp.getPoolSize();
     }
     return result;
+  }
+
+  // TODO(liayoo): Rename lastBlockNumber to finalBlockNumber.
+  getBlockchainParam(paramName, blockNumber = null, stateVersion = null) {
+    return DB.getBlockchainParam(
+      paramName,
+      blockNumber !== null ? blockNumber : this.bc.lastBlockNumber(),
+      stateVersion !== null ? this.stateManager.getRoot(stateVersion) : this.stateManager.getFinalRoot()
+    );
+  }
+
+  getAllBlockchainParamsFromState() {
+    return DB.getValueFromStateRoot(
+        this.stateManager.getFinalRoot(), PathUtil.getBlockchainParamsRootPath()) || {};
   }
 
   /**
@@ -436,7 +571,8 @@ class BlockchainNode {
     if (txBody.gas_price === undefined) {
       txBody.gas_price = 0;
     }
-    return Transaction.fromTxBody(txBody, this.account.private_key);
+    return Transaction.fromTxBody(
+        txBody, this.account.private_key, this.getBlockchainParam('genesis/chain_id'));
   }
 
   /**
@@ -450,33 +586,43 @@ class BlockchainNode {
     }
     if (!this.tp.hasRoomForNewTransaction()) {
       return CommonUtil.logAndReturnTxResult(
-          logger, 3,
+          logger,
+          TxResultCode.TX_POOL_NOT_ENOUGH_ROOM,
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${this.tp.getPoolSize()}).`);
     }
     if (this.tp.isNotEligibleTransaction(tx)) {
       return CommonUtil.logAndReturnTxResult(
-          logger, 1,
+          logger,
+          TxResultCode.TX_ALREADY_RECEIVED,
           `[${LOG_HEADER}] Already received transaction: ${JSON.stringify(tx, null, 2)}`);
     }
     if (this.state !== BlockchainNodeStates.SERVING) {
       return CommonUtil.logAndReturnTxResult(
-          logger, 2, `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
+          logger,
+          TxResultCode.BLOCKCHAIN_NODE_NOT_SERVING,
+          `[${LOG_HEADER}] Blockchain node is NOT in SERVING mode: ${this.state}`, 0);
     }
-    const executableTx = Transaction.toExecutable(tx);
+    const chainId = this.getBlockchainParam('genesis/chain_id');
+    const executableTx = Transaction.toExecutable(tx, chainId);
     if (!Transaction.isExecutable(executableTx)) {
       return CommonUtil.logAndReturnTxResult(
-          logger, 5,
+          logger,
+          TxResultCode.TX_INVALID,
           `[${LOG_HEADER}] Invalid transaction: ${JSON.stringify(executableTx, null, 2)}`);
     }
-    if (!BlockchainConfigs.LIGHTWEIGHT) {
-      if (!Transaction.verifyTransaction(executableTx)) {
-        return CommonUtil.logAndReturnTxResult(logger, 6, `[${LOG_HEADER}] Invalid signature`);
+    if (!NodeConfigs.LIGHTWEIGHT) {
+      if (!Transaction.verifyTransaction(executableTx, chainId)) {
+        return CommonUtil.logAndReturnTxResult(
+            logger,
+            TxResultCode.TX_INVALID_SIGNATURE,
+            `[${LOG_HEADER}] Invalid signature`);
       }
     }
     if (!this.tp.hasPerAccountRoomForNewTransaction(executableTx.address)) {
       const perAccountPoolSize = this.tp.getPerAccountPoolSize(executableTx.address);
       return CommonUtil.logAndReturnTxResult(
-          logger, 4,
+          logger,
+          TxResultCode.TX_POOL_NOT_ENOUGH_ROOM_FOR_ACCOUNT,
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
           `for account: ${executableTx.address}`);
     }
@@ -504,7 +650,7 @@ class BlockchainNode {
     const LOG_HEADER = 'loadAndExecuteChainOnDb';
 
     const numBlockFiles = this.bc.getNumBlockFiles();
-    const fromBlockNumber = BlockchainConfigs.SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
+    const fromBlockNumber = NodeConfigs.SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
     let nextBlock = null;
     let proposalTx = null;
     for (let number = fromBlockNumber; number < numBlockFiles; number++) {
@@ -519,7 +665,7 @@ class BlockchainNode {
       }
       logger.info(`[${LOG_HEADER}] Successfully loaded block: ${block.number} / ${block.epoch}`);
       try {
-        if (latestSnapshotBlockNumber === number && BlockchainConfigs.SYNC_MODE === SyncModeOptions.FAST) {
+        if (latestSnapshotBlockNumber === number && NodeConfigs.SYNC_MODE === SyncModeOptions.FAST) {
           // TODO(liayoo): Deal with the case where block corresponding to the latestSnapshot doesn't exist.
           if (!this.bp.addSeenBlock(block, proposalTx)) {
             return false;
@@ -591,6 +737,73 @@ class BlockchainNode {
     return 0; // Successfully merged
   }
 
+  addTrafficEventsForVoteTxList(txList, blockTimestamp) {
+    let proposeTimestamp = null;
+    for (let i = 0; i < txList.length; i++) {
+      const tx = txList[i];
+      if (i === 0) {
+        proposeTimestamp = tx.tx_body.timestamp;
+        trafficStatsManager.addEvent(
+            TrafficEventTypes.PROPOSE_BEFORE_BLOCK, blockTimestamp - proposeTimestamp,
+            blockTimestamp);
+      } else {
+        const voteTimestamp = tx.tx_body.timestamp;
+        trafficStatsManager.addEvent(
+            TrafficEventTypes.VOTE_BEFORE_BLOCK, blockTimestamp - voteTimestamp, blockTimestamp);
+        trafficStatsManager.addEvent(
+            TrafficEventTypes.VOTE_AFTER_PROPOSE, voteTimestamp - proposeTimestamp, blockTimestamp);
+      }
+    }
+  }
+
+  addTrafficEventsForTx(tx, receipt, blockTimestamp) {
+    const opType = _.get(tx, 'tx_body.operation.type', null);
+    if (opType === WriteDbOperations.SET) {
+      const opList =_.get(tx, 'tx_body.operation.op_list', []);
+      trafficStatsManager.addEvent(TrafficEventTypes.TX_OP_SIZE, opList.length, blockTimestamp);
+    } else {
+      trafficStatsManager.addEvent(TrafficEventTypes.TX_OP_SIZE, 1, blockTimestamp);
+    }
+    trafficStatsManager.addEvent(TrafficEventTypes.TX_BYTES, sizeof(tx), blockTimestamp);
+    trafficStatsManager.addEvent(TrafficEventTypes.TX_GAS_AMOUNT, receipt.gas_amount_charged, blockTimestamp);
+    trafficStatsManager.addEvent(TrafficEventTypes.TX_GAS_COST, receipt.gas_cost_total, blockTimestamp);
+  }
+
+  addTrafficEventsForBlock(block) {
+    const currentTime = Date.now();
+    const blockTimestamp = block.timestamp;
+
+    trafficStatsManager.addEvent(
+        TrafficEventTypes.BLOCK_GAS_AMOUNT, block.gas_amount_total, blockTimestamp);
+    trafficStatsManager.addEvent(
+        TrafficEventTypes.BLOCK_GAS_COST, block.gas_cost_total, blockTimestamp);
+    trafficStatsManager.addEvent(
+        TrafficEventTypes.BLOCK_LAST_VOTES, block.last_votes.length, blockTimestamp);
+    trafficStatsManager.addEvent(
+        TrafficEventTypes.BLOCK_SIZE, block.size, blockTimestamp);
+    trafficStatsManager.addEvent(
+        TrafficEventTypes.BLOCK_TXS, block.transactions.length, blockTimestamp);
+    trafficStatsManager.addEvent(
+        TrafficEventTypes.BLOCK_EVIDENCE, Object.keys(block.evidence).length, blockTimestamp);
+    // Exclude genesis block
+    if (block.number > 0) {
+      trafficStatsManager.addEvent(
+          TrafficEventTypes.BLOCK_FINALIZED, currentTime - blockTimestamp, currentTime);
+    }
+
+    // NOTE(platfowner): We use block timestamp instead of tx timestamp to have
+    // monotonic increasing values.
+    this.addTrafficEventsForVoteTxList(block.last_votes, blockTimestamp);
+
+    for (let i = 0; i < Math.min(block.transactions.length, block.receipts.length); i++) {
+      const tx = block.transactions[i];
+      const receipt = block.receipts[i];
+      // NOTE(platfowner): We use block timestamp instead of tx timestamp to have
+      // monotonic increasing values.
+      this.addTrafficEventsForTx(tx, receipt, blockTimestamp);
+    }
+  }
+
   tryFinalizeChain(isGenesisStart = false) {
     const LOG_HEADER = 'tryFinalizeChain';
     const finalizableChain = this.bp.getFinalizableChain(isGenesisStart);
@@ -626,6 +839,7 @@ class BlockchainNode {
         if (this.eh) {
           this.eh.emitBlockFinalized(blockToFinalize.number);
         }
+        this.addTrafficEventsForBlock(blockToFinalize);
       } else {
         logger.error(`[${LOG_HEADER}] Failed to finalize a block: ` +
             `${JSON.stringify(blockToFinalize, null, 2)}`);

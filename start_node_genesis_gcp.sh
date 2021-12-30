@@ -2,7 +2,7 @@
 
 # NOTE(minsulee2): Since exit really exits terminals, those are replaced to return 1.
 if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
-    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|spring|summer] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic] [--json-rpc] [--rest-func]\n"
+    printf "Usage: bash start_node_genesis_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic|--private-key] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_genesis_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
     printf "\n"
     return 1
@@ -17,16 +17,22 @@ function parse_options() {
         FULL_SYNC_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
             return 1
         fi
-        ACCOUNT_INJECTION_OPTION="$option"
+        ACCOUNT_INJECTION_OPTION="keystore"
     elif [[ $option = '--mnemonic' ]]; then
         if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
-            printf "You cannot use both keystore and mnemonic\n"
+            printf "Multiple account injection options given\n"
             return 1
         fi
-        ACCOUNT_INJECTION_OPTION="$option"
+        ACCOUNT_INJECTION_OPTION="mnemonic"
+    elif [[ $option = '--private-key' ]]; then
+        if [[ "$ACCOUNT_INJECTION_OPTION" ]]; then
+            printf "Multiple account injection options given\n"
+            return 1
+        fi
+        ACCOUNT_INJECTION_OPTION="private_key"
     elif [[ $option = '--json-rpc' ]]; then
         JSON_RPC_OPTION="$option"
     elif [[ $option = '--rest-func' ]]; then
@@ -79,27 +85,38 @@ printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
 printf "REST_FUNC_OPTION=$REST_FUNC_OPTION\n"
 
+# NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
+if [[ $ACCOUNT_INJECTION_OPTION != "private_key" ]] && [[ "$SHARD_INDEX" -gt 0 ]]; then
+    printf 'Invalid account injection option\n'
+    return 1
+fi
+
+if [[ "$ACCOUNT_INJECTION_OPTION" = "" ]]; then
+    printf "Must provide an ACCOUNT_INJECTION_OPTION\n"
+    return 1
+fi
+
 if [[ $SEASON = "staging" ]]; then
-  # for performance test pipeline
-  export ENABLE_EXPRESS_RATE_LIMIT=false
+    # for performance test pipeline
+    export ENABLE_EXPRESS_RATE_LIMIT=false
 else
-  export ENABLE_EXPRESS_RATE_LIMIT=true
+    export ENABLE_EXPRESS_RATE_LIMIT=true
 fi
 if [[ $FULL_SYNC_OPTION = "" ]]; then
-  export SYNC_MODE=fast
+    export SYNC_MODE=fast
 else
-  export SYNC_MODE=full
+    export SYNC_MODE=full
 fi
 export ACCOUNT_INJECTION_OPTION="$ACCOUNT_INJECTION_OPTION"
 if [[ $JSON_RPC_OPTION ]]; then
-  export ENABLE_JSON_RPC_TX_API=true
+    export ENABLE_JSON_RPC_API=true
 else
-  export ENABLE_JSON_RPC_TX_API=false
+    export ENABLE_JSON_RPC_API=false
 fi
 if [[ $REST_FUNC_OPTION ]]; then
-  export ENABLE_REST_FUNCTION_CALL=true
+    export ENABLE_REST_FUNCTION_CALL=true
 else
-  export ENABLE_REST_FUNCTION_CALL=false
+    export ENABLE_REST_FUNCTION_CALL=false
 fi
 
 printf '\n'
@@ -113,6 +130,7 @@ if [[ $KEEP_CODE_OPTION = "" ]]; then
     sudo rm -rf /home/ain_blockchain_data
     sudo mkdir /home/ain_blockchain_data
     sudo chmod -R 777 /home/ain_blockchain_data
+
     sudo rm -rf ../ain-blockchain*
     sudo mkdir ../ain-blockchain
     sudo chmod -R 777 ../ain-blockchain
@@ -133,72 +151,98 @@ fi
 
 
 KEYSTORE_DIR=testnet_dev_staging_keys
-if [[ $SEASON = 'spring' ]]; then
-    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
-    export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
-    export PEER_CANDIDATE_JSON_RPC_URL="http://35.221.184.48:8080/json-rpc"
-    KEYSTORE_DIR=testnet_prod_keys
+if [[ $SEASON = 'mainnet' ]]; then
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet-prod
+    export TRACKER_UPDATE_JSON_RPC_URL=http://34.81.167.141:8080/json-rpc
+    export PEER_CANDIDATE_JSON_RPC_URL="http://104.199.237.250:8080/json-rpc"
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_WHITELIST="0x000C63907F7Aeca56A72F5a4F7cd00EfFCF11c3A,0x001C3C9C4a5669eCD8b78946f6fa5549b33362F8,0x002C76f0aeA9Ba615428d9dF7fedEC6f8ed5369f,0x003C9d091584fEC96bC3bD8423c884680BEAaf4E,0x004C4328B6c2ABF7c4Df897a8124b36E3f00a2FC,0x005C99Db64845e5BF24cd152b22c932989479907,0x006C672861e9DBb09232307c17Be6554BC90687c,0x007C36bf5D0F77836eE138EEAc8df7051b43209b,0x008C287187a5626D0a25DbD67327B36AC55B998E,0x009C66DBce144003f8C4B859fFFce78F80fDD639"
+    fi
+    KEYSTORE_DIR=mainnet_prod_keys
 elif [[ $SEASON = 'summer' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
     export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.172.106:8080/json-rpc
     export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.169.78:8080/json-rpc"
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_WHITELIST="0x000AF024FEDb636294867bEff390bCE6ef9C5fc4,0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d,0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211,0x003AD6FdB06684175e7D95EcC36758B014517E4b,0x004A2550661c8a306207C9dabb279d5701fFD66e,0x005A3c55EcE1A593b761D408B6E6BC778E0a638B,0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe,0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74,0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba,0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD"
+    fi
+    KEYSTORE_DIR=testnet_prod_keys
+elif [[ $SEASON = 'spring' ]]; then
+    export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod
+    export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.137.80:8080/json-rpc
+    export PEER_CANDIDATE_JSON_RPC_URL="http://35.221.184.48:8080/json-rpc"
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_WHITELIST="0x000AF024FEDb636294867bEff390bCE6ef9C5fc4,0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d,0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211,0x003AD6FdB06684175e7D95EcC36758B014517E4b,0x004A2550661c8a306207C9dabb279d5701fFD66e,0x005A3c55EcE1A593b761D408B6E6BC778E0a638B,0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe,0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74,0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba,0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD"
+    fi
     KEYSTORE_DIR=testnet_prod_keys
 elif [[ "$SEASON" = "sandbox" ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-sandbox
-    export PEER_CANDIDATE_JSON_RPC_URL="http://130.211.244.169:8080/json-rpc"
+    if [[ $NODE_INDEX -lt 10 ]]; then
+        # Nodes 10 & above will use https://sandbox-api.ainetwork.ai/json-rpc.
+        export PEER_CANDIDATE_JSON_RPC_URL="http://130.211.244.169:8080/json-rpc"
+    fi
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_WHITELIST="0x00ADEc28B6a845a085e03591bE7550dd68673C1C,0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204,0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00,0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A,0x04A456C92A880cd59D7145C457475515a6f6E0f2,0x05A1247A7400f0C2A893611adD1505743552c631,0x06AD9C8F611f1e9d9CACD4738167A51aA2e80a1A,0x07A43138CC760C85A5B1F115aa60eADEaa0bf417,0x08Aed7AF9354435c38d52143EE50ac839D20696b,0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
+    fi
 elif [[ $SEASON = 'staging' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-staging
     export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.139.219:8080/json-rpc"
+    if [[ $NODE_INDEX -lt 5 ]]; then
+        export PEER_WHITELIST="0x00ADEc28B6a845a085e03591bE7550dd68673C1C,0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204,0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00,0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A,0x04A456C92A880cd59D7145C457475515a6f6E0f2,0x05A1247A7400f0C2A893611adD1505743552c631,0x06AD9C8F611f1e9d9CACD4738167A51aA2e80a1A,0x07A43138CC760C85A5B1F115aa60eADEaa0bf417,0x08Aed7AF9354435c38d52143EE50ac839D20696b,0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
+    fi
 elif [[ $SEASON = 'dev' ]]; then
     export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev
     if [[ $SHARD_INDEX = 0 ]]; then
-      export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.235.180:8080/json-rpc"
+        export PEER_CANDIDATE_JSON_RPC_URL="http://35.194.235.180:8080/json-rpc"
+        if [[ $NODE_INDEX -lt 5 ]]; then
+            export PEER_WHITELIST="0x00ADEc28B6a845a085e03591bE7550dd68673C1C,0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204,0x02A2A1DF4f630d760c82BE07F18e5065d103Fa00,0x03AAb7b6f16A92A1dfe018Fe34ee420eb098B98A,0x04A456C92A880cd59D7145C457475515a6f6E0f2,0x05A1247A7400f0C2A893611adD1505743552c631,0x06AD9C8F611f1e9d9CACD4738167A51aA2e80a1A,0x07A43138CC760C85A5B1F115aa60eADEaa0bf417,0x08Aed7AF9354435c38d52143EE50ac839D20696b,0x09A0d53FDf1c36A131938eb379b98910e55EEfe1"
+        fi
     elif [[ $SHARD_INDEX = 1 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.187.153.22:8080/json-rpc  # dev-shard-1-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.187.153.22:8080/json-rpc  # dev-shard-1-tracker-ip
     elif [[ $SHARD_INDEX = 2 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.203.104:8080/json-rpc  # dev-shard-2-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.203.104:8080/json-rpc  # dev-shard-2-tracker-ip
     elif [[ $SHARD_INDEX = 3 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.189.174.17:8080/json-rpc  # dev-shard-3-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.189.174.17:8080/json-rpc  # dev-shard-3-tracker-ip
     elif [[ $SHARD_INDEX = 4 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.164.158:8080/json-rpc  # dev-shard-4-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.164.158:8080/json-rpc  # dev-shard-4-tracker-ip
     elif [[ $SHARD_INDEX = 5 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.46.65:8080/json-rpc  # dev-shard-5-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.46.65:8080/json-rpc  # dev-shard-5-tracker-ip
     elif [[ $SHARD_INDEX = 6 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.210.171:8080/json-rpc  # dev-shard-6-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.210.171:8080/json-rpc  # dev-shard-6-tracker-ip
     elif [[ $SHARD_INDEX = 7 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.222.121:8080/json-rpc  # dev-shard-7-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.222.121:8080/json-rpc  # dev-shard-7-tracker-ip
     elif [[ $SHARD_INDEX = 8 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.200.95:8080/json-rpc  # dev-shard-8-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.221.200.95:8080/json-rpc  # dev-shard-8-tracker-ip
     elif [[ $SHARD_INDEX = 9 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.216.199:8080/json-rpc  # dev-shard-9-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.216.199:8080/json-rpc  # dev-shard-9-tracker-ip
     elif [[ $SHARD_INDEX = 10 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.161.85:8080/json-rpc  # dev-shard-10-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.161.85:8080/json-rpc  # dev-shard-10-tracker-ip
     elif [[ $SHARD_INDEX = 11 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.239.169:8080/json-rpc  # dev-shard-11-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.194.239.169:8080/json-rpc  # dev-shard-11-tracker-ip
     elif [[ $SHARD_INDEX = 12 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.185.156.22:8080/json-rpc  # dev-shard-12-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.185.156.22:8080/json-rpc  # dev-shard-12-tracker-ip
     elif [[ $SHARD_INDEX = 13 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.247.143:8080/json-rpc  # dev-shard-13-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.247.143:8080/json-rpc  # dev-shard-13-tracker-ip
     elif [[ $SHARD_INDEX = 14 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.226.47:8080/json-rpc  # dev-shard-14-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.226.47:8080/json-rpc  # dev-shard-14-tracker-ip
     elif [[ $SHARD_INDEX = 15 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.61.23:8080/json-rpc  # dev-shard-15-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.61.23:8080/json-rpc  # dev-shard-15-tracker-ip
     elif [[ $SHARD_INDEX = 16 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.66.41:8080/json-rpc  # dev-shard-16-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.66.41:8080/json-rpc  # dev-shard-16-tracker-ip
     elif [[ $SHARD_INDEX = 17 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.143.18:8080/json-rpc  # dev-shard-17-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.229.143.18:8080/json-rpc  # dev-shard-17-tracker-ip
     elif [[ $SHARD_INDEX = 18 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.58.137:8080/json-rpc  # dev-shard-18-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.234.58.137:8080/json-rpc  # dev-shard-18-tracker-ip
     elif [[ $SHARD_INDEX = 19 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.249.104:8080/json-rpc  # dev-shard-19-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://34.80.249.104:8080/json-rpc  # dev-shard-19-tracker-ip
     elif [[ $SHARD_INDEX = 20 ]]; then
-      export TRACKER_UPDATE_JSON_RPC_URL=http://35.201.248.92:8080/json-rpc  # dev-shard-20-tracker-ip
+        export TRACKER_UPDATE_JSON_RPC_URL=http://35.201.248.92:8080/json-rpc  # dev-shard-20-tracker-ip
     else
-      printf "Invalid shard ID argument: $SHARD_INDEX\n"
-      return 1
+        printf "Invalid shard ID argument: $SHARD_INDEX\n"
+        return 1
     fi
     if [[ $SHARD_INDEX -gt 0 ]]; then
-      export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard
+        export BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard
     fi
 else
     printf "Invalid season argument: $SEASON\n"
@@ -210,49 +254,23 @@ printf "TRACKER_UPDATE_JSON_RPC_URL=$TRACKER_UPDATE_JSON_RPC_URL\n"
 printf "BLOCKCHAIN_CONFIGS_DIR=$BLOCKCHAIN_CONFIGS_DIR\n"
 printf "KEYSTORE_DIR=$KEYSTORE_DIR\n"
 printf "PEER_CANDIDATE_JSON_RPC_URL=$PEER_CANDIDATE_JSON_RPC_URL\n"
+printf "PEER_WHITELIST=$PEER_WHITELIST\n"
 
-# NOTE(liayoo): Currently this script supports [--keystore|--mnemonic] option only for the parent chain.
-if [[ $ACCOUNT_INJECTION_OPTION = "" ]] || [[ "$SHARD_INDEX" -gt 0 ]]; then
-    export ACCOUNT_INDEX="$NODE_INDEX"
-    printf "ACCOUNT_INDEX=$ACCOUNT_INDEX\n"
-elif [[ $ACCOUNT_INJECTION_OPTION = "--keystore" ]]; then
-    if [[ $NODE_INDEX = 0 ]]; then
-        KEYSTORE_FILENAME="keystore_node_0.json"
-    elif [[ $NODE_INDEX = 1 ]]; then
-        KEYSTORE_FILENAME="keystore_node_1.json"
-    elif [[ $NODE_INDEX = 2 ]]; then
-        KEYSTORE_FILENAME="keystore_node_2.json"
-    elif [[ $NODE_INDEX = 3 ]]; then
-        KEYSTORE_FILENAME="keystore_node_3.json"
-    elif [[ $NODE_INDEX = 4 ]]; then
-        KEYSTORE_FILENAME="keystore_node_4.json"
-    elif [[ $NODE_INDEX = 5 ]]; then
-        KEYSTORE_FILENAME="keystore_node_5.json"
-    elif [[ $NODE_INDEX = 6 ]]; then
-        KEYSTORE_FILENAME="keystore_node_6.json"
-    fi
+if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
+    KEYSTORE_FILENAME="keystore_node_$NODE_INDEX.json"
     printf "KEYSTORE_FILENAME=$KEYSTORE_FILENAME\n"
     if [[ $KEEP_CODE_OPTION = "" ]]; then
-        sudo mkdir -p ../ain_blockchain_data/keys/8080
-        sudo mv ./$KEYSTORE_DIR/$KEYSTORE_FILENAME ../ain_blockchain_data/keys/8080/
+        sudo mkdir -p /home/ain_blockchain_data/keys/8080
+        sudo mv ./$KEYSTORE_DIR/$KEYSTORE_FILENAME /home/ain_blockchain_data/keys/8080/
     fi
     export KEYSTORE_FILE_PATH=/home/ain_blockchain_data/keys/8080/$KEYSTORE_FILENAME
     printf "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH\n"
 fi
 
-export DEBUG=false
-export CONSOLE_LOG=false 
-export ENABLE_DEV_CLIENT_SET_API=false 
-export ENABLE_TX_SIG_VERIF_WORKAROUND=false
-export ENABLE_GAS_FEE_WORKAROUND=true
-export LIGHTWEIGHT=false
 export STAKE=100000
-export BLOCKCHAIN_DATA_DIR="/home/ain_blockchain_data"
-# NOTE(liayoo): This is a temporary setting. Remove once domain is set up for afan metaverse related services.
-export CORS_WHITELIST='*'
-printf "CORS_WHITELIST=$CORS_WHITELIST\n"
+printf "STAKE=$STAKE\n"
 
-MAX_OLD_SPACE_SIZE_MB=11000
+MAX_OLD_SPACE_SIZE_MB=55000
 
 printf "\nStarting up Blockchain Node server..\n\n"
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"

@@ -4,7 +4,7 @@ const ws = require('ws');
 const { getIpAddress } = require('../common/network-util');
 const {
   BlockchainEventMessageTypes,
-  BlockchainConfigs,
+  NodeConfigs,
 } = require('../common/constants');
 
 class EventChannelManager {
@@ -16,19 +16,21 @@ class EventChannelManager {
   }
 
   async getNetworkInfo() {
-    const ipAddr = await getIpAddress(BlockchainConfigs.HOSTING_ENV === 'comcom' || BlockchainConfigs.HOSTING_ENV === 'local');
-    const eventHandlerUrl = new URL(`ws://${ipAddr}:${BlockchainConfigs.EVENT_HANDLER_PORT}`);
+    const ipAddr = await getIpAddress(NodeConfigs.HOSTING_ENV === 'comcom' || NodeConfigs.HOSTING_ENV === 'local');
+    const eventHandlerUrl = new URL(`ws://${ipAddr}:${NodeConfigs.EVENT_HANDLER_PORT}`);
     return {
       url: eventHandlerUrl.toString(),
-      port: BlockchainConfigs.EVENT_HANDLER_PORT,
+      port: NodeConfigs.EVENT_HANDLER_PORT,
     }
   }
 
   startListening() {
     this.wsServer = new ws.Server({
-      port: BlockchainConfigs.EVENT_HANDLER_PORT,
+      port: NodeConfigs.EVENT_HANDLER_PORT,
     });
-    this.wsServer.on('connection', this.handleConnection);
+    this.wsServer.on('connection', (ws) => {
+      this.handleConnection(ws);
+    });
   }
 
   handleConnection(webSocket) {
@@ -98,9 +100,9 @@ class EventChannelManager {
     };
   }
 
-  transmitEvent(channel, event) {
-    channel.webSocket.send(this.makeMessage(BlockchainEventMessageTypes.EMIT_EVENT,
-        JSON.stringify(event.toObject())));
+  transmitEvent(channel, eventObj) {
+    const eventMessage = this.makeMessage(BlockchainEventMessageTypes.EMIT_EVENT, eventObj);
+    channel.webSocket.send(JSON.stringify(eventMessage));
   }
 
   transmitEventByEventFilterId(eventFilterId, event) {
@@ -110,7 +112,10 @@ class EventChannelManager {
       logger.error(`Can't find channel by event filter id (eventFilterId: ${eventFilterId})`);
       return;
     }
-    this.transmitEvent(channel, event);
+    const eventObj = event.toObject();
+    const clientFilterId = this.eventHandler.getClientFilterIdFromGlobalFilterId(eventFilterId);
+    Object.assign(eventObj, { filter_id: clientFilterId });
+    this.transmitEvent(channel, eventObj);
   }
 
   close() {

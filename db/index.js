@@ -1,21 +1,23 @@
 const logger = new (require('../logger'))('DATABASE');
 
 const _ = require('lodash');
+const sizeof = require('object-sizeof');
 const {
   DevFlags,
-  BlockchainConfigs,
+  NodeConfigs,
   ReadDbOperations,
   WriteDbOperations,
   PredefinedDbPaths,
   OwnerProperties,
   RuleProperties,
-  StateInfoProperties,
+  StateLabelProperties,
   BlockchainSnapshotProperties,
   ShardingProperties,
-  GenesisSharding,
   StateVersions,
   buildOwnerPermissions,
+  BlockchainParams,
 } = require('../common/constants');
+const { TxResultCode, JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const Transaction = require('../tx-pool/transaction');
 const StateNode = require('./state-node');
@@ -40,6 +42,7 @@ const {
   updateStateInfoForStateTree,
   getStateProofFromStateRoot,
   getProofHashFromStateRoot,
+  getObjectHeightAndSize,
 } = require('./state-util');
 const Functions = require('./functions');
 const RuleUtil = require('./rule-util');
@@ -53,12 +56,11 @@ class DB {
     this.stateVersion = stateVersion;
     this.backupStateRoot = null;
     this.backupStateVersion = null;
-    this.setShardingPath(GenesisSharding[ShardingProperties.SHARDING_PATH]);
+    this.setShardingPath(BlockchainParams.sharding[ShardingProperties.SHARDING_PATH]);
     this.func = new Functions(this);
     this.bc = bc;
     this.blockNumberSnapshot = blockNumberSnapshot;
     this.stateManager = stateManager;
-    this.ownerAddress = BlockchainConfigs.GENESIS_ADDR;
     this.restFunctionsUrlWhitelistCache = { hash: null, whitelist: [] };
     this.updateRestFunctionsUrlWhitelistCache();
   }
@@ -294,8 +296,7 @@ class DB {
     this.deleteBackupStateVersion();
   }
 
-  static create(
-      baseVersion, newVersion, bc, finalizeVersion, blockNumberSnapshot, stateManager) {
+  static create(baseVersion, newVersion, bc, finalizeVersion, blockNumberSnapshot, stateManager) {
     const LOG_HEADER = 'create';
 
     logger.debug(`[${LOG_HEADER}] Creating a new DB by cloning state version: ` +
@@ -328,29 +329,32 @@ class DB {
 
   // For testing purpose only.
   setOwnersForTesting(ownersPath, owners) {
-    this.writeDatabase([PredefinedDbPaths.OWNERS_ROOT, ...CommonUtil.parsePath(ownersPath)], owners);
+    this.writeDatabase(
+        [PredefinedDbPaths.OWNERS_ROOT, ...CommonUtil.parsePath(ownersPath)], owners);
   }
 
   // For testing purpose only.
   setRulesForTesting(rulesPath, rules) {
-    this.writeDatabase([PredefinedDbPaths.RULES_ROOT, ...CommonUtil.parsePath(rulesPath)], rules);
+    this.writeDatabase(
+        [PredefinedDbPaths.RULES_ROOT, ...CommonUtil.parsePath(rulesPath)], rules);
   }
 
   // For testing purpose only.
   setFunctionsForTesting(functionsPath, functions) {
-    this.writeDatabase([PredefinedDbPaths.FUNCTIONS_ROOT,
-      ...CommonUtil.parsePath(functionsPath)], functions);
+    this.writeDatabase(
+        [PredefinedDbPaths.FUNCTIONS_ROOT, ...CommonUtil.parsePath(functionsPath)], functions);
   }
 
   // For testing purpose only.
   setValuesForTesting(valuesPath, values) {
-    this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...CommonUtil.parsePath(valuesPath)], values);
+    this.writeDatabase(
+        [PredefinedDbPaths.VALUES_ROOT, ...CommonUtil.parsePath(valuesPath)], values);
   }
 
   // For testing purpose only.
   setShardingForTesting(sharding) {
     this.setValuesForTesting(
-        CommonUtil.formatPath([PredefinedDbPaths.SHARDING, PredefinedDbPaths.SHARDING_CONFIG]),
+        CommonUtil.formatPath([PredefinedDbPaths.BLOCKCHAIN_PARAMS, PredefinedDbPaths.BLOCKCHAIN_PARAMS_SHARDING]),
         sharding);
     this.setShardingPath(sharding[ShardingProperties.SHARDING_PATH]);
   }
@@ -437,7 +441,7 @@ class DB {
 
   static writeToStateRoot(stateRoot, stateVersion, fullPath, stateObj) {
     const tree = StateNode.fromStateSnapshot(stateObj, stateVersion);
-    if (!BlockchainConfigs.LIGHTWEIGHT) {
+    if (!NodeConfigs.LIGHTWEIGHT) {
       updateStateInfoForStateTree(tree);
     }
     if (fullPath.length === 0) {
@@ -469,6 +473,12 @@ class DB {
     const stateNode = DB.getRefForReadingFromStateRoot(stateRoot, fullPath);
     if (stateNode === null) {
       return null;
+    }
+    if (options && options.fromApi) {
+      const limitChecked = DB.checkRespTreeLimits(stateNode);
+      if (limitChecked !== true) {
+        return limitChecked;
+      }
     }
     return stateNode.toStateSnapshot(options);
   }
@@ -529,12 +539,38 @@ class DB {
       return null;
     }
     return {
-      [StateInfoProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
-      [StateInfoProperties.TREE_SIZE]: stateNode.getTreeSize(),
-      [StateInfoProperties.TREE_BYTES]: stateNode.getTreeBytes(),
-      [StateInfoProperties.STATE_PROOF_HASH]: stateNode.getProofHash(),
-      [StateInfoProperties.VERSION]: stateNode.getVersion(),
+      [StateLabelProperties.NUM_CHILDREN]: stateNode.numChildren(),
+      [StateLabelProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
+      [StateLabelProperties.TREE_SIZE]: stateNode.getTreeSize(),
+      [StateLabelProperties.TREE_BYTES]: stateNode.getTreeBytes(),
+      [StateLabelProperties.STATE_PROOF_HASH]: stateNode.getProofHash(),
+      [StateLabelProperties.VERSION]: stateNode.getVersion(),
     };
+  }
+
+  static getBlockchainParam(paramName, blockNumber = 0, stateRoot = null) {
+    const LOG_HEADER = 'getBlockchainParam';
+    const split = paramName.split('/');
+    if (split.length !== 2) {
+      logger.error(`[${LOG_HEADER}] Invalid paramName: ${paramName}`);
+      return null;
+    }
+    const category = split[0];
+    const name = split[1];
+    // NOTE(liayoo): For certain parameters such as network params, we might need them before we
+    // have the genesis block and the params in the state.
+    if (blockNumber <= 0) {
+      return BlockchainParams[category][name];
+    }
+    return DB.getValueFromStateRoot(stateRoot, PathUtil.getSingleBlockchainParamPath(category, name));
+  }
+
+  isConsensusAppAdmin(address) {
+    const admins = this.getValue(PathUtil.getManageAppConfigAdminPath('consensus'));
+    if (admins === null) {
+      return address === DB.getBlockchainParam('genesis/genesis_addr');
+    }
+    return admins[address] === true;
   }
 
   matchFunction(funcPath, options) {
@@ -545,6 +581,9 @@ class DB {
       // No matched local path.
       return null;
     }
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.FUNCTIONS_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
     return this.convertFunctionMatch(
         this.matchFunctionForParsedPath(localPath), isGlobal);
   }
@@ -557,6 +596,9 @@ class DB {
       // No matched local path.
       return null;
     }
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.RULES_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
     const matched = this.matchRuleForParsedPath(localPath);
     return {
       write: this.convertRuleMatch(matched.write, isGlobal),
@@ -572,8 +614,10 @@ class DB {
       // No matched local path.
       return null;
     }
-    return this.convertOwnerMatch(
-        this.matchOwnerForParsedPath(localPath), isGlobal);
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.OWNERS_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
+    return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
   evalRule(valuePath, value, auth, timestamp, options) {
@@ -584,10 +628,13 @@ class DB {
       // No matched local path.
       return null;
     }
-    const permissions = this.getPermissionForValue(localPath, value, auth, timestamp);
-    return permissions.writePermission && permissions.statePermission;
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.RULES_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
+    return this.getPermissionForValue(localPath, value, auth, timestamp);
   }
 
+  // TODO(platfowner): Consider allowing the callers to specify target config.
   evalOwner(refPath, permission, auth, options) {
     const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(refPath);
@@ -596,14 +643,80 @@ class DB {
       // No matched local path.
       return null;
     }
-    const matched = this.matchOwnerForParsedPath(localPath);
-    return this.checkPermission(matched.closestOwner.config, auth, permission);
+    const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
+        PredefinedDbPaths.OWNERS_ROOT, localPath, options);
+    if (limitChecked !== true) return limitChecked;
+    if (permission === OwnerProperties.WRITE_RULE) {
+      return this.getPermissionForRule(localPath, auth, options && options.isMerge);
+    } else if (permission === OwnerProperties.WRITE_FUNCTION) {
+      return this.getPermissionForFunction(localPath, auth, options && options.isMerge);
+    } else if (permission === OwnerProperties.WRITE_OWNER ||
+        permission === OwnerProperties.BRANCH_OWNER) {
+      return this.getPermissionForOwner(localPath, auth, options && options.isMerge);
+    } else {
+      return {
+        code: TxResultCode.EVAL_OWNER_INVALID_PERMISSION,
+        message: `Invalid permission '${permission}' ` +
+            `for local path '${CommonUtil.formatPath(localPath)}' ` +
+            `with auth '${JSON.stringify(auth)}'`,
+        matched: null,
+      };
+    }
+  }
+
+  // TODO(liayoo): Apply stricter limits to rule/function/owner state budgets
+  static checkRespTreeLimits(stateNode) {
+    if (stateNode.numChildren() > NodeConfigs.GET_RESP_MAX_SIBLINGS) {
+      return {
+        code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_SIBLINGS,
+        message: `The data exceeds the max sibling limit of the requested node: ` +
+            `${stateNode.numChildren()} > ${NodeConfigs.GET_RESP_MAX_SIBLINGS}`
+      };
+    }
+    if (stateNode.getTreeBytes() > NodeConfigs.GET_RESP_BYTES_LIMIT) {
+      return {
+        code: JsonRpcApiResultCode.GET_EXCEEDS_MAX_BYTES,
+        message: `The data exceeds the max byte limit of the requested node: ` +
+            `${stateNode.getTreeBytes()} > ${NodeConfigs.GET_RESP_BYTES_LIMIT}`
+      };
+    }
+    return true;
+  }
+
+  checkRespTreeLimitsForEvalOrMatch(rootLabel, localPath, options) {
+    if (options && options.fromApi) {
+    const targetStateRoot = options.isFinal ? this.stateManager.getFinalRoot() : this.stateRoot;
+      const fullPath = DB.getFullPath(localPath, rootLabel);
+      const stateNode = DB.getRefForReadingFromStateRoot(targetStateRoot, fullPath);
+      if (stateNode !== null) {
+        const limitChecked = DB.checkRespTreeLimits(stateNode);
+        if (limitChecked !== true) {
+          return limitChecked;
+        }
+      }
+    }
+    return true;
   }
 
   // TODO(platfowner): Add tests for op.fid.
+  // NOTE(liayoo): This function is only for external uses (APIs).
   get(opList) {
+    if (!CommonUtil.isArray(opList)) {
+      return {
+        code: JsonRpcApiResultCode.GET_INVALID_OP_LIST,
+        message: `Invalid op_list given`
+      };
+    }
+    if (CommonUtil.isNumber(NodeConfigs.GET_OP_LIST_SIZE_LIMIT) &&
+      opList.length > NodeConfigs.GET_OP_LIST_SIZE_LIMIT) {
+      return {
+        code: JsonRpcApiResultCode.GET_EXCEEDS_OP_LIST_SIZE_LIMIT,
+        message: `The request exceeds the max op_list size limit of the requested node: ` +
+            `${opList.length} > ${NodeConfigs.GET_OP_LIST_SIZE_LIMIT}`
+      };
+    }
     const resultList = [];
-    opList.forEach((op) => {
+    for (const op of opList) {
       if (op.type === undefined || op.type === ReadDbOperations.GET_VALUE) {
         resultList.push(this.getValue(op.ref, CommonUtil.toGetOptions(op)));
       } else if (op.type === ReadDbOperations.GET_RULE) {
@@ -640,7 +753,7 @@ class DB {
         resultList.push(this.evalOwner(
             op.ref, op.permission, auth, CommonUtil.toMatchOrEvalOptions(op)));
       }
-    });
+    }
     return resultList;
   }
 
@@ -698,67 +811,108 @@ class DB {
     return DB.getAppStakeFromStateRoot(this.stateRoot, appName);
   }
 
-  // TODO(platfowner): Define error code explicitly.
   // TODO(platfowner): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
   //                   and setOwner() as well.
   setValue(valuePath, value, auth, timestamp, transaction, blockNumber, blockTime, options) {
     const LOG_HEADER = 'setValue';
     const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(valuePath);
-    const isValidPath = isValidPathForStates(parsedPath);
+    const stateLabelLengthLimit = DB.getBlockchainParam(
+        'resource/state_label_length_limit', blockNumber, this.stateRoot);
+    const unitWriteGasAmount = DB.getBlockchainParam(
+        'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
+    const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(
-          102, `Invalid path: ${isValidPath.invalidPath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SET_VALUE_INVALID_VALUE_PATH,
+          `Invalid value path: ${isValidPath.invalidPath}`,
+          unitWriteGasAmount);
     }
-    const isValidObj = isValidJsObjectForStates(value);
+    const isValidObj = isValidJsObjectForStates(value, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
-          101, `Invalid object for states: ${isValidObj.invalidPath}`,
-          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SET_VALUE_INVALID_VALUE_STATES,
+          `Invalid object for states: ${isValidObj.invalidPath}`,
+          unitWriteGasAmount);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+      return CommonUtil.returnTxResult(
+          TxResultCode.SUCCESS,
+          null,
+          unitWriteGasAmount);
     }
     const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, timestamp);
-    if (!ruleEvalRes.writePermission) {
+    if (CommonUtil.isFailedTxResultCode(ruleEvalRes.code)) {
       return CommonUtil.returnTxResult(
-          103, `No write permission on: ${valuePath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
-    }
-    if (!ruleEvalRes.statePermission) {
-      return CommonUtil.returnTxResult(
-          106, `No state permission on: ${valuePath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          ruleEvalRes.code,
+          ruleEvalRes.message,
+          unitWriteGasAmount);
     }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.VALUES_ROOT);
     const isWritablePath = isWritablePathWithSharding(fullPath, this.stateRoot);
     if (!isWritablePath.isValid) {
       if (isGlobal) {
         // There is nothing to do.
-        return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+        return CommonUtil.returnTxResult(
+            TxResultCode.SUCCESS,
+            null, unitWriteGasAmount);
       } else {
         return CommonUtil.returnTxResult(
-            104, `Non-writable path with shard config: ${isWritablePath.invalidPath}`,
-            BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+            TxResultCode.SET_VALUE_NO_WRITABLE_PATH_WITH_SHARD_CONFIG,
+            `Non-writable path with shard config: ${isWritablePath.invalidPath}`,
+            unitWriteGasAmount);
       }
     }
-    const prevValue = this.getValue(valuePath, { isShallow: false, isGlobal });
-    const prevValueCopy =
-        CommonUtil.isDict(prevValue) ? JSON.parse(JSON.stringify(prevValue)) : prevValue;
+    const prevValue = this.getValue(CommonUtil.formatPath(localPath));
+    const prevValueCopy = CommonUtil.isDict(prevValue) ?
+        JSON.parse(JSON.stringify(prevValue)) : prevValue;
     const valueCopy = CommonUtil.isDict(value) ? JSON.parse(JSON.stringify(value)) : value;
     this.writeDatabase(fullPath, valueCopy);
     let funcResults = null;
+    let subtreeFuncResults = null;
     if (auth && (auth.addr || auth.fid)) {
       if (blockTime === null) {
         blockTime = this.lastBlockTimestamp();
       }
-      const { func_results } = this.func.triggerFunctions(
-          localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime);
+      const accountRegistrationGasAmount = DB.getBlockchainParam(
+          'resource/account_registration_gas_amount', blockNumber, this.stateRoot);
+      const restFunctionCallGasAmount = DB.getBlockchainParam(
+          'resource/rest_function_call_gas_amount', blockNumber, this.stateRoot);
+      const rewardType = DB.getBlockchainParam('reward/type', blockNumber, this.stateRoot);
+      const rewardAnnualRate = DB.getBlockchainParam('reward/annual_rate', blockNumber, this.stateRoot);
+      const epochMs = DB.getBlockchainParam('genesis/epoch_ms', blockNumber, this.stateRoot);
+      const stakeLockupExtension = DB.getBlockchainParam(
+          'consensus/stake_lockup_extension', blockNumber, this.stateRoot);
+      const blockchainParams = {
+        accountRegistrationGasAmount,
+        restFunctionCallGasAmount,
+        rewardType,
+        rewardAnnualRate,
+        epochMs,
+        stakeLockupExtension,
+      };
+      const { func_results, subtree_func_results } = this.func.matchAndTriggerFunctions(
+          localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime,
+          blockchainParams, options);
       funcResults = func_results;
+      subtreeFuncResults = subtree_func_results;
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
         return CommonUtil.returnTxResult(
-            105, `Triggered function call failed`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT,
-            funcResults);
+            TxResultCode.SET_VALUE_TRIGGERED_FUNCTION_CALL_FAILED,
+            `Triggered function call failed`,
+            unitWriteGasAmount,
+            funcResults,
+            subtreeFuncResults);
+      }
+      if (CommonUtil.isFailedSubtreeFuncTrigger(subtreeFuncResults)) {
+        return CommonUtil.returnTxResult(
+            TxResultCode.SET_VALUE_TRIGGERED_SUBTREE_FUNCTION_CALL_FAILED,
+            `Triggered subtree function call failed`,
+            unitWriteGasAmount,
+            funcResults,
+            subtreeFuncResults);
       }
     }
     if (value !== null) {
@@ -769,17 +923,25 @@ class DB {
           `[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
     }
 
-    return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT, funcResults);
+    return CommonUtil.returnTxResult(
+        TxResultCode.SUCCESS,
+        null,
+        unitWriteGasAmount,
+        funcResults,
+        subtreeFuncResults);
   }
 
   incValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
     const isGlobal = options && options.isGlobal;
-    const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
+    const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
+      const unitWriteGasAmount = DB.getBlockchainParam(
+          'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
       return CommonUtil.returnTxResult(
-          201, `Not a number type: ${valueBefore} or ${delta}`,
-          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.INC_VALUE_NOT_A_NUMBER_TYPE,
+          `Not a number type: ${valueBefore} or ${delta}`,
+          unitWriteGasAmount);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) + delta;
     return this.setValue(
@@ -788,136 +950,191 @@ class DB {
 
   decValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
     const isGlobal = options && options.isGlobal;
-    const valueBefore = this.getValue(valuePath, { isShallow: false, isGlobal });
+    const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
+      const unitWriteGasAmount = DB.getBlockchainParam(
+          'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
       return CommonUtil.returnTxResult(
-          301, `Not a number type: ${valueBefore} or ${delta}`,
-          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.DEC_VALUE_NOT_A_NUMBER_TYPE,
+          `Not a number type: ${valueBefore} or ${delta}`,
+          unitWriteGasAmount);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) - delta;
     return this.setValue(
         valuePath, valueAfter, auth, timestamp, transaction, blockNumber, blockTime, options);
   }
 
-  setFunction(functionPath, func, auth, options) {
+  setFunction(functionPath, func, auth, blockNumber, options) {
     const isGlobal = options && options.isGlobal;
-    const isValidObj = isValidJsObjectForStates(func);
+    const stateLabelLengthLimit = DB.getBlockchainParam(
+        'resource/state_label_length_limit', blockNumber, this.stateRoot);
+    const unitWriteGasAmount = DB.getBlockchainParam(
+        'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
+    const isValidObj = isValidJsObjectForStates(func, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
-          401, `Invalid object for states: ${isValidObj.invalidPath}`,
-          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SET_FUNCTION_INVALID_FUNCTION_STATES,
+          `Invalid object for states: ${isValidObj.invalidPath}`,
+          unitWriteGasAmount);
     }
     const parsedPath = CommonUtil.parsePath(functionPath);
-    const isValidPath = isValidPathForStates(parsedPath);
+    const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(
-          402, `Invalid path: ${isValidPath.invalidPath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SET_FUNCTION_INVALID_FUNCTION_PATH,
+          `Invalid function path: ${isValidPath.invalidPath}`,
+          unitWriteGasAmount);
     }
     const isValidFunction = isValidFunctionTree(parsedPath, func);
     if (!isValidFunction.isValid) {
       return CommonUtil.returnTxResult(
-          405, `Invalid function tree: ${isValidFunction.invalidPath}`,
-          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SET_FUNCTION_INVALID_FUNCTION_TREE,
+          `Invalid function tree: ${isValidFunction.invalidPath}`,
+          unitWriteGasAmount);
     }
-    if (!auth || auth.addr !== this.ownerAddress) {
+    if (!auth || !this.isConsensusAppAdmin(auth.addr)) {
       const ownerOnlyFid = this.func.hasOwnerOnlyFunction(func);
       if (ownerOnlyFid !== null) {
         return CommonUtil.returnTxResult(
-            403, `Trying to write owner-only function: ${ownerOnlyFid}`,
-            BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+            TxResultCode.SET_FUNCTION_OWNER_ONLY_FUNCTION,
+            `Trying to write owner-only function: ${ownerOnlyFid}`,
+            unitWriteGasAmount);
       }
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
-    }
-    if (!this.getPermissionForFunction(localPath, auth)) {
       return CommonUtil.returnTxResult(
-          404, `No write_function permission on: ${functionPath}`,
-          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SUCCESS,
+          null,
+          unitWriteGasAmount);
     }
-    const curFunction = this.getFunction(functionPath, { isShallow: false, isGlobal });
-    const newFunction = applyFunctionChange(curFunction, func);
+    const curFunction = this.getFunction(CommonUtil.formatPath(localPath));
+    const applyRes = applyFunctionChange(curFunction, func);
+    const permCheckRes = this.getPermissionForFunction(localPath, auth, applyRes.isMerge);
+    if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
+      return CommonUtil.returnTxResult(
+          permCheckRes.code,
+          permCheckRes.message,
+          unitWriteGasAmount);
+    }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.FUNCTIONS_ROOT);
-    this.writeDatabase(fullPath, newFunction);
-    return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+    this.writeDatabase(fullPath, applyRes.funcConfig);
+    return CommonUtil.returnTxResult(
+        TxResultCode.SUCCESS,
+        null,
+        unitWriteGasAmount);
   }
 
   // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
   //                   multiple path variables).
-  setRule(rulePath, rule, auth, options) {
+  setRule(rulePath, rule, auth, blockNumber, options) {
     const isGlobal = options && options.isGlobal;
-    const isValidObj = isValidJsObjectForStates(rule);
+    const stateLabelLengthLimit = DB.getBlockchainParam(
+        'resource/state_label_length_limit', blockNumber, this.stateRoot);
+    const unitWriteGasAmount = DB.getBlockchainParam(
+        'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
+    const isValidObj = isValidJsObjectForStates(rule, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
-          501, `Invalid object for states: ${isValidObj.invalidPath}`,
-          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SET_RULE_INVALID_RULE_STATES,
+          `Invalid object for states: ${isValidObj.invalidPath}`,
+          unitWriteGasAmount);
     }
     const parsedPath = CommonUtil.parsePath(rulePath);
-    const isValidPath = isValidPathForStates(parsedPath);
+    const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(
-          502, `Invalid path: ${isValidPath.invalidPath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SET_RULE_INVALID_RULE_PATH,
+          `Invalid rule path: ${isValidPath.invalidPath}`,
+          unitWriteGasAmount);
     }
-    const isValidRule = isValidRuleTree(parsedPath, rule);
+    const minGcNumSiblingsDeleted = DB.getBlockchainParam(
+          'resource/min_gc_num_siblings_deleted', blockNumber, this.stateRoot);
+    const isValidRule = isValidRuleTree(parsedPath, rule, { minGcNumSiblingsDeleted });
     if (!isValidRule.isValid) {
       return CommonUtil.returnTxResult(
-          504, `Invalid rule tree: ${isValidRule.invalidPath}`,
-          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SET_RULE_INVALID_RULE_TREE,
+          `Invalid rule tree: ${isValidRule.invalidPath}`,
+          unitWriteGasAmount);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
-    }
-    if (!this.getPermissionForRule(localPath, auth)) {
       return CommonUtil.returnTxResult(
-          503, `No write_rule permission on: ${rulePath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SUCCESS,
+          null,
+          unitWriteGasAmount);
     }
-    const curRule = this.getRule(rulePath, { isShallow: false, isGlobal });
-    const newRule = applyRuleChange(curRule, rule);
+    const curRule = this.getRule(CommonUtil.formatPath(localPath));
+    const applyRes = applyRuleChange(curRule, rule);
+    const permCheckRes = this.getPermissionForRule(localPath, auth, applyRes.isMerge);
+    if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
+      return CommonUtil.returnTxResult(
+          permCheckRes.code,
+          permCheckRes.message,
+          unitWriteGasAmount);
+    }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.RULES_ROOT);
-    this.writeDatabase(fullPath, newRule);
-    return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+    this.writeDatabase(fullPath, applyRes.ruleConfig);
+    return CommonUtil.returnTxResult(
+        TxResultCode.SUCCESS,
+        null,
+        unitWriteGasAmount);
   }
 
-  setOwner(ownerPath, owner, auth, options) {
+  setOwner(ownerPath, owner, auth, blockNumber, options) {
     const isGlobal = options && options.isGlobal;
-    const isValidObj = isValidJsObjectForStates(owner);
+    const stateLabelLengthLimit = DB.getBlockchainParam(
+        'resource/state_label_length_limit', blockNumber, this.stateRoot);
+    const unitWriteGasAmount = DB.getBlockchainParam(
+        'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
+    const isValidObj = isValidJsObjectForStates(owner, stateLabelLengthLimit);
     if (!isValidObj.isValid) {
       return CommonUtil.returnTxResult(
-          601, `Invalid object for states: ${isValidObj.invalidPath}`,
-          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SET_OWNER_INVALID_OWNER_STATES,
+          `Invalid object for states: ${isValidObj.invalidPath}`,
+          unitWriteGasAmount);
     }
     const parsedPath = CommonUtil.parsePath(ownerPath);
-    const isValidPath = isValidPathForStates(parsedPath);
+    const isValidPath = isValidPathForStates(parsedPath, stateLabelLengthLimit);
     if (!isValidPath.isValid) {
       return CommonUtil.returnTxResult(
-          602, `Invalid path: ${isValidPath.invalidPath}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SET_OWNER_INVALID_OWNER_PATH,
+          `Invalid owner path: ${isValidPath.invalidPath}`,
+          unitWriteGasAmount);
     }
     const isValidOwner = isValidOwnerTree(parsedPath, owner);
     if (!isValidOwner.isValid) {
       return CommonUtil.returnTxResult(
-          604, `Invalid owner tree: ${isValidOwner.invalidPath}`,
-          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SET_OWNER_INVALID_OWNER_TREE,
+          `Invalid owner tree: ${isValidOwner.invalidPath}`,
+          unitWriteGasAmount);
     }
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
     if (localPath === null) {
       // There is nothing to do.
-      return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
-    }
-    if (!this.getPermissionForOwner(localPath, auth)) {
       return CommonUtil.returnTxResult(
-          603, `No write_owner or branch_owner permission on: ${ownerPath}`,
-          BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+          TxResultCode.SUCCESS,
+          null,
+          unitWriteGasAmount);
     }
-    const curOwner = this.getOwner(ownerPath, { isShallow: false, isGlobal });
-    const newOwner = applyOwnerChange(curOwner, owner);
+    const curOwner = this.getOwner(CommonUtil.formatPath(localPath));
+    const applyRes = applyOwnerChange(curOwner, owner);
+    const permCheckRes = this.getPermissionForOwner(localPath, auth, applyRes.isMerge);
+    if (CommonUtil.isFailedTxResultCode(permCheckRes.code)) {
+      return CommonUtil.returnTxResult(
+          permCheckRes.code,
+          permCheckRes.message,
+          unitWriteGasAmount);
+    }
     const fullPath = DB.getFullPath(localPath, PredefinedDbPaths.OWNERS_ROOT);
-    this.writeDatabase(fullPath, newOwner);
-    return CommonUtil.returnTxResult(0, null, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+    this.writeDatabase(fullPath, applyRes.ownerConfig);
+    return CommonUtil.returnTxResult(
+        TxResultCode.SUCCESS,
+        null,
+        unitWriteGasAmount);
   }
 
   /**
@@ -979,22 +1196,35 @@ class DB {
             CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_FUNCTION:
-        result = this.setFunction(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
+        result = this.setFunction(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_RULE:
-        result = this.setRule(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
+        result = this.setRule(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
         break;
       case WriteDbOperations.SET_OWNER:
-        result = this.setOwner(op.ref, op.value, auth, CommonUtil.toSetOptions(op));
+        result = this.setOwner(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
         break;
       default:
+        const unitWriteGasAmount = DB.getBlockchainParam(
+            'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
         return CommonUtil.returnTxResult(
-            14, `Invalid operation type: ${op.type}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT);
+            TxResultCode.TX_INVALID_OPERATION_TYPE,
+            `Invalid operation type: ${op.type}`,
+            unitWriteGasAmount);
     }
     return result;
   }
 
   executeMultiSetOperation(opList, auth, timestamp, tx, blockNumber, blockTime) {
+    const setOpListSizeLimit = DB.getBlockchainParam(
+        'resource/set_op_list_size_limit', blockNumber, this.stateRoot);
+    if (blockNumber > 0 && opList.length > setOpListSizeLimit) {
+      return {
+        code: JsonRpcApiResultCode.SET_EXCEEDS_OP_LIST_SIZE_LIMIT,
+        message: `The transaction exceeds the max op_list size limit: ` +
+            `${opList.length} > ${setOpListSizeLimit}`
+      };
+    }
     const resultList = {};
     for (let i = 0; i < opList.length; i++) {
       const op = opList[i];
@@ -1025,8 +1255,12 @@ class DB {
       gas_cost_total: 0
     };
     if (!op) {
+      const unitWriteGasAmount = DB.getBlockchainParam(
+          'resource/unit_write_gas_amount', blockNumber, this.stateRoot);
       Object.assign(result, CommonUtil.returnTxResult(
-          11, `Invalid operation: ${op}`, BlockchainConfigs.UNIT_WRITE_GAS_AMOUNT));
+          TxResultCode.TX_INVALID_OPERATION,
+          `Invalid operation: ${op}`,
+          unitWriteGasAmount));
       DB.updateGasAmountTotal(tx, gasAmountTotal, result);
       return result;
     }
@@ -1043,7 +1277,8 @@ class DB {
     const stateUsagePerAppAfter = this.getStateUsagePerApp(op);
     DB.updateGasAmountTotal(tx, gasAmountTotal, result);
     if (!CommonUtil.isFailedTx(result)) {
-      const heightCheck = this.checkTreeHeightAndSize();
+      const budgets = DB.getStateBudgets(blockNumber, this.stateRoot);
+      const heightCheck = this.checkTreeHeightAndSize(budgets, blockNumber);
       if (CommonUtil.isFailedTx(heightCheck)) {
         return Object.assign(result, heightCheck);
       }
@@ -1052,9 +1287,9 @@ class DB {
       const allStateUsageAfter = this.getAllStateUsages();
       DB.updateStateGasAmount(
           tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore,
-          stateUsagePerAppAfter);
+          stateUsagePerAppAfter, blockNumber, this.stateRoot);
       const stateGasBudgetCheck = this.checkStateGasBudgets(
-          op, allStateUsageAfter.apps, allStateUsageAfter.service, result);
+          op, allStateUsageAfter.apps, allStateUsageAfter.service, result, budgets);
       if (stateGasBudgetCheck !== true) {
         return stateGasBudgetCheck;
       }
@@ -1067,21 +1302,23 @@ class DB {
 
   static updateStateGasAmount(
       tx, result, allStateUsageBefore, allStateUsageAfter, stateUsagePerAppBefore,
-      stateUsagePerAppAfter) {
+      stateUsagePerAppAfter, blockNumber, stateRoot) {
     const LOG_HEADER = 'updateStateGasAmounts';
+    const stateGasCoefficient = DB.getBlockchainParam(
+        'resource/state_gas_coefficient', blockNumber, stateRoot);
     const serviceTreeBytesDelta =
-        _.get(allStateUsageAfter, `service.${StateInfoProperties.TREE_BYTES}`, 0) -
-        _.get(allStateUsageBefore, `service.${StateInfoProperties.TREE_BYTES}`, 0);
+        _.get(allStateUsageAfter, `service.${StateLabelProperties.TREE_BYTES}`, 0) -
+        _.get(allStateUsageBefore, `service.${StateLabelProperties.TREE_BYTES}`, 0);
     const appStateGasAmount = Object.keys(stateUsagePerAppAfter).reduce((acc, appName) => {
-      const delta = stateUsagePerAppAfter[appName][StateInfoProperties.TREE_BYTES] -
-          stateUsagePerAppBefore[appName][StateInfoProperties.TREE_BYTES];
+      const delta = stateUsagePerAppAfter[appName][StateLabelProperties.TREE_BYTES] -
+          stateUsagePerAppBefore[appName][StateLabelProperties.TREE_BYTES];
       if (delta > 0) {
-        acc[appName] = delta * BlockchainConfigs.STATE_GAS_COEFFICIENT;
+        acc[appName] = delta * stateGasCoefficient;
       }
       return acc;
     }, {});
     const stateGasAmount = {
-      service: Math.max(serviceTreeBytesDelta, 0) * BlockchainConfigs.STATE_GAS_COEFFICIENT
+      service: Math.max(serviceTreeBytesDelta, 0) * stateGasCoefficient
     };
     if (!CommonUtil.isEmpty(appStateGasAmount)) {
       stateGasAmount.app = appStateGasAmount;
@@ -1122,8 +1359,8 @@ class DB {
       CommonUtil.mergeNumericJsObjects(acc, cur);
       return acc;
     }, {});
-    delete usage[StateInfoProperties.VERSION];
-    delete usage[StateInfoProperties.STATE_PROOF_HASH];
+    delete usage[StateLabelProperties.VERSION];
+    delete usage[StateLabelProperties.STATE_PROOF_HASH];
     return usage;
   }
 
@@ -1131,8 +1368,8 @@ class DB {
     const root = this.getStateUsageAtPath('/');
     const apps = this.getStateUsageAtPath(PredefinedDbPaths.APPS);
     const service = {
-      [StateInfoProperties.TREE_BYTES]: root[StateInfoProperties.TREE_BYTES] - apps[StateInfoProperties.TREE_BYTES],
-      [StateInfoProperties.TREE_SIZE]: root[StateInfoProperties.TREE_SIZE] - apps[StateInfoProperties.TREE_SIZE]
+      [StateLabelProperties.TREE_BYTES]: root[StateLabelProperties.TREE_BYTES] - apps[StateLabelProperties.TREE_BYTES],
+      [StateLabelProperties.TREE_SIZE]: root[StateLabelProperties.TREE_SIZE] - apps[StateLabelProperties.TREE_SIZE]
     };
     return { root, apps, service };
   }
@@ -1145,38 +1382,67 @@ class DB {
     }, {});
   }
 
-  checkStateGasBudgets(op, allAppsStateUsage, serviceStateUsage, result) {
-    if (serviceStateUsage[StateInfoProperties.TREE_BYTES] > BlockchainConfigs.SERVICE_STATE_BUDGET) {
+  static getStateBudgets(blockNumber, stateRoot) {
+    const stateTreeBytesLimit = DB.getBlockchainParam(
+        'resource/state_tree_bytes_limit', blockNumber, stateRoot);
+    const serviceStateBudgetRatio = DB.getBlockchainParam(
+        'resource/service_state_budget_ratio', blockNumber, stateRoot);
+    const appsStateBudgetRatio = DB.getBlockchainParam(
+        'resource/apps_state_budget_ratio', blockNumber, stateRoot);
+    const freeStateBudgetRatio = DB.getBlockchainParam(
+        'resource/free_state_budget_ratio', blockNumber, stateRoot);
+    const maxStateTreeSizePerByte = DB.getBlockchainParam(
+        'resource/max_state_tree_size_per_byte', blockNumber, stateRoot);
+    const serviceStateBudget = stateTreeBytesLimit * serviceStateBudgetRatio;
+    const appsStateBudget = stateTreeBytesLimit * appsStateBudgetRatio;
+    const freeStateBudget = stateTreeBytesLimit * freeStateBudgetRatio;
+    const treeSizeBudget = stateTreeBytesLimit * maxStateTreeSizePerByte;
+    const serviceTreeSizeBudget = serviceStateBudget * maxStateTreeSizePerByte;
+    const appsTreeSizeBudget = appsStateBudget * maxStateTreeSizePerByte;
+    const freeTreeSizeBudget = freeStateBudget * maxStateTreeSizePerByte;
+    return {
+      serviceStateBudget,
+      appsStateBudget,
+      freeStateBudget,
+      treeSizeBudget,
+      serviceTreeSizeBudget,
+      appsTreeSizeBudget,
+      freeTreeSizeBudget,
+    };
+  }
+
+  checkStateGasBudgets(op, allAppsStateUsage, serviceStateUsage, result, budgets) {
+    if (serviceStateUsage[StateLabelProperties.TREE_BYTES] > budgets.serviceStateBudget) {
       return Object.assign(result, {
-          code: 25,
-          error_message: `Exceeded state budget limit for services ` +
-            `(${serviceStateUsage[StateInfoProperties.TREE_BYTES]} > ${BlockchainConfigs.SERVICE_STATE_BUDGET})`
+          code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_ALL_SERVICES,
+          message: `Exceeded state budget limit for services ` +
+              `(${serviceStateUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.serviceStateBudget})`
       });
     }
-    if (allAppsStateUsage[StateInfoProperties.TREE_BYTES] > BlockchainConfigs.APPS_STATE_BUDGET) {
+    if (allAppsStateUsage[StateLabelProperties.TREE_BYTES] > budgets.appsStateBudget) {
       return Object.assign(result, {
-          code: 26,
-          error_message: `Exceeded state budget limit for apps ` +
-            `(${allAppsStateUsage[StateInfoProperties.TREE_BYTES]} > ${BlockchainConfigs.APPS_STATE_BUDGET})`
+          code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_ALL_APPS,
+          message: `Exceeded state budget limit for apps ` +
+              `(${allAppsStateUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.appsStateBudget})`
       });
     }
-    if (serviceStateUsage[StateInfoProperties.TREE_SIZE] > BlockchainConfigs.SERVICE_TREE_SIZE_BUDGET) {
+    if (serviceStateUsage[StateLabelProperties.TREE_SIZE] > budgets.serviceTreeSizeBudget) {
       return Object.assign(result, {
-          code: 27,
-          error_message: `Exceeded state tree size limit for services ` +
-            `(${serviceStateUsage[StateInfoProperties.TREE_SIZE]} > ${BlockchainConfigs.SERVICE_TREE_SIZE_BUDGET})`
+          code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_ALL_SERVICES,
+          message: `Exceeded state tree size limit for services ` +
+              `(${serviceStateUsage[StateLabelProperties.TREE_SIZE]} > ${budgets.serviceTreeSizeBudget})`
       });
     }
-    if (allAppsStateUsage[StateInfoProperties.TREE_SIZE] > BlockchainConfigs.APPS_TREE_SIZE_BUDGET) {
+    if (allAppsStateUsage[StateLabelProperties.TREE_SIZE] > budgets.appsTreeSizeBudget) {
       return Object.assign(result, {
-          code: 28,
-          error_message: `Exceeded state tree size limit for apps ` +
-            `(${allAppsStateUsage[StateInfoProperties.TREE_SIZE]} > ${BlockchainConfigs.APPS_TREE_SIZE_BUDGET})`
+          code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_ALL_APPS,
+          message: `Exceeded state tree size limit for apps ` +
+              `(${allAppsStateUsage[StateLabelProperties.TREE_SIZE]} > ${budgets.appsTreeSizeBudget})`
       });
     }
     const stateFreeTierUsage = this.getStateFreeTierUsage();
-    const freeTierTreeBytesLimitReached = stateFreeTierUsage[StateInfoProperties.TREE_BYTES] >= BlockchainConfigs.FREE_STATE_BUDGET;
-    const freeTierTreeSizeLimitReached = stateFreeTierUsage[StateInfoProperties.TREE_SIZE] >= BlockchainConfigs.FREE_TREE_SIZE_BUDGET;
+    const freeTierTreeBytesLimitReached = stateFreeTierUsage[StateLabelProperties.TREE_BYTES] >= budgets.freeStateBudget;
+    const freeTierTreeSizeLimitReached = stateFreeTierUsage[StateLabelProperties.TREE_SIZE] >= budgets.freeTreeSizeBudget;
     const appStakesTotal = this.getAppStakesTotal();
     for (const appName of CommonUtil.getAppNameList(op, this.shardingPath)) {
       const appStateUsage = this.getStateUsageAtPath(`${PredefinedDbPaths.APPS}/${appName}`);
@@ -1184,34 +1450,34 @@ class DB {
       if (appStake === 0) {
         if (freeTierTreeBytesLimitReached) {
           return Object.assign(result, {
-              code: 29,
-              error_message: `Exceeded state budget limit for free tier ` +
-                `(${stateFreeTierUsage[StateInfoProperties.TREE_BYTES]} > ${BlockchainConfigs.FREE_STATE_BUDGET})`
+              code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_FREE_TIER,
+              message: `Exceeded state budget limit for free tier ` +
+                  `(${stateFreeTierUsage[StateLabelProperties.TREE_BYTES]} > ${budgets.freeStateBudget})`
           });
         }
         if (freeTierTreeSizeLimitReached) {
           return Object.assign(result, {
-            code: 30,
-            error_message: `Exceeded state tree size limit for free tier ` +
-              `(${stateFreeTierUsage[StateInfoProperties.TREE_SIZE]} > ${BlockchainConfigs.FREE_TREE_SIZE_BUDGET})`
+            code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_FREE_TIER,
+            message: `Exceeded state tree size limit for free tier ` +
+                `(${stateFreeTierUsage[StateLabelProperties.TREE_SIZE]} > ${budgets.freeTreeSizeBudget})`
           });
         }
         // else, we allow apps without stakes
       } else {
-        const appStateBudget = BlockchainConfigs.APPS_STATE_BUDGET * appStake / appStakesTotal;
-        const appTreeSizeBudget = BlockchainConfigs.APPS_TREE_SIZE_BUDGET * appStake / appStakesTotal;
-        if (appStateUsage[StateInfoProperties.TREE_BYTES] > appStateBudget) {
+        const singleAppStateBudget = budgets.appsStateBudget * appStake / appStakesTotal;
+        const singleAppTreeSizeBudget = budgets.appsStateBudget * appStake / appStakesTotal;
+        if (appStateUsage[StateLabelProperties.TREE_BYTES] > singleAppStateBudget) {
           return Object.assign(result, {
-              code: 31,
-              error_message: `Exceeded state budget limit for app ${appName} ` +
-                `(${appStateUsage[StateInfoProperties.TREE_BYTES]} > ${appStateBudget})`
+              code: TxResultCode.GAS_EXCEED_STATE_BUDGET_LIMIT_FOR_APP,
+              message: `Exceeded state budget limit for app ${appName} ` +
+                  `(${appStateUsage[StateLabelProperties.TREE_BYTES]} > ${singleAppStateBudget})`
           });
         }
-        if (appStateUsage[StateInfoProperties.TREE_SIZE] > appTreeSizeBudget) {
+        if (appStateUsage[StateLabelProperties.TREE_SIZE] > singleAppTreeSizeBudget) {
           return Object.assign(result, {
-              code: 32,
-              error_message: `Exceeded state tree size limit for app ${appName} ` +
-                `(${appStateUsage[StateInfoProperties.TREE_SIZE]} > ${appTreeSizeBudget})`
+              code: TxResultCode.GAS_EXCEED_STATE_TREE_SIZE_LIMIT_FOR_APP,
+              message: `Exceeded state tree size limit for app ${appName} ` +
+                  `(${appStateUsage[StateLabelProperties.TREE_SIZE]} > ${singleAppTreeSizeBudget})`
           });
         }
       }
@@ -1220,6 +1486,7 @@ class DB {
   }
 
   collectFee(auth, timestamp, tx, blockNumber, executionResult) {
+    const gasPriceUnit = DB.getBlockchainParam('resource/gas_price_unit', blockNumber, this.stateRoot);
     const gasPrice = tx.tx_body.gas_price;
     // Use only the service gas amount total
     const serviceBandwidthGasAmount = _.get(tx, 'extra.gas.bandwidth.service', 0);
@@ -1229,7 +1496,7 @@ class DB {
     if (gasAmountChargedByTransfer <= 0 || gasPrice === 0) { // No fees to collect
       executionResult.gas_amount_charged = gasAmountChargedByTransfer;
       executionResult.gas_cost_total =
-          CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer);
+          CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit);
       return;
     }
     const billing = tx.tx_body.billing;
@@ -1242,11 +1509,11 @@ class DB {
       }
     }
     let balance = this.getBalance(billedTo);
-    const gasCost = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer);
+    const gasCost = CommonUtil.getTotalGasCost(gasPrice, gasAmountChargedByTransfer, gasPriceUnit);
     if (balance < gasCost) {
       Object.assign(executionResult, {
-        code: 36,
-        error_message: `Failed to collect gas fee: balance too low (${balance} / ${gasCost})`
+        code: TxResultCode.FEE_BALANCE_TOO_LOW,
+        message: `Failed to collect gas fee: balance too low (${balance} / ${gasCost})`
       });
       this.restoreDb(); // Revert changes made by the tx operations
       balance = this.getBalance(billedTo);
@@ -1254,7 +1521,7 @@ class DB {
     }
     executionResult.gas_amount_charged = gasAmountChargedByTransfer;
     executionResult.gas_cost_total =
-        CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged);
+        CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged, gasPriceUnit);
     if (executionResult.gas_cost_total <= 0) return;
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(blockNumber, billedTo, tx.hash);
     const gasFeeCollectRes = this.setValue(
@@ -1263,8 +1530,8 @@ class DB {
         auth, timestamp, tx, blockNumber, null);
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) { // Should not happend
       Object.assign(executionResult, {
-        code: 18,
-        error_message: `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`
+        code: TxResultCode.FEE_FAILED_TO_COLLECT_GAS_FEE,
+        message: `Failed to collect gas fee: ${JSON.stringify(gasFeeCollectRes, null, 2)}`
       });
     }
   }
@@ -1272,7 +1539,6 @@ class DB {
   static trimExecutionResult(executionResult) {
     const trimmed = _.pick(executionResult, [
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
-      PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_AMOUNT_CHARGED,
       PredefinedDbPaths.RECEIPTS_EXEC_RESULT_GAS_COST_TOTAL,
     ]);
@@ -1282,7 +1548,6 @@ class DB {
           executionResult[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST])) {
         trimmed[PredefinedDbPaths.RECEIPTS_EXEC_RESULT_RESULT_LIST][key] = _.pick(val, [
           PredefinedDbPaths.RECEIPTS_EXEC_RESULT_CODE,
-          PredefinedDbPaths.RECEIPTS_EXEC_RESULT_ERROR_MESSAGE,
         ]);
       }
     }
@@ -1290,6 +1555,8 @@ class DB {
   }
 
   recordReceipt(auth, tx, blockNumber, executionResult) {
+    const LOG_HEADER = 'recordReceipt';
+
     const receiptPath = PathUtil.getReceiptPath(tx.hash);
     const receipt = {
       [PredefinedDbPaths.RECEIPTS_ADDRESS]: auth.addr,
@@ -1303,17 +1570,13 @@ class DB {
     //               and collectFee().
     const parsedPath = CommonUtil.parsePath(receiptPath);
     this.writeDatabase([PredefinedDbPaths.VALUES_ROOT, ...parsedPath], receipt);
-  }
 
-  removeOldReceipts() {
-    const LOG_HEADER = 'removeOldReceipts';
-    const receiptsPath = [PredefinedDbPaths.RECEIPTS, 'a']; // dummy value to garbage-collect at /receipts/$tx_hash.
-    const matchedStateRule = this.matchRulePath(receiptsPath, RuleProperties.STATE);
+    const matchedStateRule = this.matchRulePath(parsedPath, RuleProperties.STATE);
     const closestRule = {
       path: matchedStateRule.matchedRulePath.slice(0, matchedStateRule.closestConfigDepth),
       config: getRuleConfig(matchedStateRule.closestConfigNode)
     };
-    const applyStateGcRuleRes = this.applyStateGarbageCollectionRule({ closestRule }, receiptsPath);
+    const applyStateGcRuleRes = this.applyStateGarbageCollectionRule({ closestRule }, parsedPath);
     logger.debug(`[${LOG_HEADER}] applyStateGcRuleRes: deleted ${applyStateGcRuleRes} child nodes`);
   }
 
@@ -1324,19 +1587,25 @@ class DB {
 
   precheckNonceAndTimestamp(nonce, timestamp, addr) {
     if (!CommonUtil.isNumber(nonce)) {
-      return CommonUtil.returnTxResult(19, `Invalid nonce value: ${nonce}`);
+      return CommonUtil.returnTxResult(
+          TxResultCode.TX_NON_NUMERIC_NONCE,
+          `Non-numeric nonce value: ${nonce}`);
     }
     if (!CommonUtil.isNumber(timestamp)) {
-      return CommonUtil.returnTxResult(20, `Invalid timestamp value: ${timestamp}`);
+      return CommonUtil.returnTxResult(
+          TxResultCode.TX_NON_NUMERIC_TIMESTAMP,
+          `Non-numeric timestamp value: ${timestamp}`);
     }
     const { nonce: accountNonce, timestamp: accountTimestamp } = this.getAccountNonceAndTimestamp(addr);
     if (nonce >= 0 && nonce !== accountNonce) {
       return CommonUtil.returnTxResult(
-          12, `Invalid nonce: ${nonce} !== ${accountNonce}`);
+          TxResultCode.TX_INVALID_NONCE_FOR_ACCOUNT,
+          `Invalid nonce: ${nonce} !== ${accountNonce}`);
     }
     if (nonce === -2 && timestamp <= accountTimestamp) {
       return CommonUtil.returnTxResult(
-          13, `Invalid timestamp: ${timestamp} <= ${accountTimestamp}`);
+          TxResultCode.TX_INVALID_TIMESTAMP_FOR_ACCOUNT,
+          `Invalid timestamp: ${timestamp} <= ${accountTimestamp}`);
     }
     return true;
   }
@@ -1348,22 +1617,32 @@ class DB {
     }
     const billingParsed = CommonUtil.parseServAcntName(billing);
     if (billingParsed[0] === null || billingParsed[1] === null || billingParsed[2] !== null) {
-      return CommonUtil.logAndReturnTxResult(logger, 15, `[${LOG_HEADER}] Invalid billing param`);
+      return CommonUtil.logAndReturnTxResult(
+          logger,
+          TxResultCode.BILLING_INVALID_PARAM,
+          `[${LOG_HEADER}] Invalid billing param`);
     }
     if (!this.isBillingUser(billingParsed[0], billingParsed[1], addr)) {
       return CommonUtil.logAndReturnTxResult(
-        logger, 33, `[${LOG_HEADER}] User doesn't have permission to the billing account`);
+          logger,
+          TxResultCode.BILLING_NO_ACCOUNT_PERMISSION,
+          `[${LOG_HEADER}] User doesn't have permission to the billing account`);
     }
     const appNameList = CommonUtil.getServiceDependentAppNameList(op);
     if (appNameList.length > 1) {
       // More than 1 apps are involved. Cannot charge an app-related billing account.
       return CommonUtil.logAndReturnTxResult(
-        logger, 16, `[${LOG_HEADER}] Multiple app-dependent service operations for a billing account`);
+          logger,
+          TxResultCode.BILLING_MULTI_APP_DEPENDENCY,
+          `[${LOG_HEADER}] Multiple app-dependent service operations for a billing account`);
     }
     if (appNameList.length === 1) {
       if (appNameList[0] !== billingParsed[0]) {
         // Tx app name doesn't match the billing account.
-        return CommonUtil.logAndReturnTxResult(logger, 17, `[${LOG_HEADER}] Invalid billing account`);
+        return CommonUtil.logAndReturnTxResult(
+            logger,
+            TxResultCode.BILLING_INVALID_BILLING_ACCOUNT,
+            `[${LOG_HEADER}] Invalid billing account`);
       }
       // App name matches the billing account.
     }
@@ -1383,17 +1662,25 @@ class DB {
     const billedTo = billing ? CommonUtil.toBillingAccountName(billing) : addr;
     if (CommonUtil.hasServiceOp(op)) {
       const balance = this.getBalance(billedTo);
-      if (balance < BlockchainConfigs.MIN_BALANCE_FOR_SERVICE_TX) {
+      const minBalanceForServiceTx = DB.getBlockchainParam(
+          'resource/min_balance_for_service_tx', blockNumber, this.stateRoot);
+      if (balance < minBalanceForServiceTx) {
         return CommonUtil.logAndReturnTxResult(
-          logger, 34, `[${LOG_HEADER}] Balance too low (${balance} < ${BlockchainConfigs.MIN_BALANCE_FOR_SERVICE_TX})`);
+            logger,
+            TxResultCode.BILLING_BALANCE_TOO_LOW,
+            `[${LOG_HEADER}] Balance too low (${balance} < ${minBalanceForServiceTx})`);
       }
     }
+    const minStakingForAppTx = DB.getBlockchainParam(
+        'resource/min_staking_for_app_tx', blockNumber, this.stateRoot);
     const appNameList = CommonUtil.getAppNameList(op, this.shardingPath);
     appNameList.forEach((appName) => {
       const appStake = this.getAppStake(appName);
-      if (appStake < BlockchainConfigs.MIN_STAKING_FOR_APP_TX) {
+      if (appStake < minStakingForAppTx) {
         return CommonUtil.logAndReturnTxResult(
-          logger, 35, `[${LOG_HEADER}] App stake too low (${appStake} < ${BlockchainConfigs.MIN_STAKING_FOR_APP_TX})`);
+            logger,
+            TxResultCode.BILLING_APP_STAKE_TOO_LOW,
+            `[${LOG_HEADER}] App stake too low (${appStake} < ${minStakingForAppTx})`);
       }
     });
     return true;
@@ -1405,12 +1692,15 @@ class DB {
     //                   before being executed.
     if (!Transaction.isExecutable(tx)) {
       return CommonUtil.logAndReturnTxResult(
-          logger, 21,
+          logger,
+          TxResultCode.TX_NOT_EXECUTABLE,
           `[${LOG_HEADER}] Not executable transaction: ${JSON.stringify(tx)}`, 0);
     }
     if (!tx.tx_body) {
       return CommonUtil.logAndReturnTxResult(
-          logger, 22, `[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx)}`, 0);
+          logger,
+          TxResultCode.TX_NO_TX_BODY,
+          `[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx)}`, 0);
     }
     const billing = tx.tx_body.billing;
     const op = tx.tx_body.operation;
@@ -1443,7 +1733,9 @@ class DB {
     if (restoreIfFails) {
       if (!this.backupDb()) {
         return CommonUtil.logAndReturnTxResult(
-          logger, 3, `[${LOG_HEADER}] Failed to backup db for tx: ${tx.hash}`, 0);
+          logger,
+          TxResultCode.DB_FAILED_TO_BACKUP_DB,
+          `[${LOG_HEADER}] Failed to backup db for tx: ${tx.hash}`, 0);
       }
     }
     // Record when the tx was executed.
@@ -1464,9 +1756,7 @@ class DB {
     }
     if (!skipFees) {
       this.collectFee(auth, timestamp, tx, blockNumber, executionResult);
-      if (DevFlags.enableReceiptsRecording) {
-        this.recordReceipt(auth, tx, blockNumber, executionResult);
-      }
+      this.recordReceipt(auth, tx, blockNumber, executionResult);
     }
     return executionResult;
   }
@@ -1476,7 +1766,7 @@ class DB {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
-      const executableTx = Transaction.toExecutable(tx);
+      const executableTx = Transaction.toExecutable(tx, DB.getBlockchainParam('genesis/chain_id'));
       const res =
         this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime);
       if (CommonUtil.isFailedTx(res)) {
@@ -1491,21 +1781,23 @@ class DB {
     return resList;
   }
 
-  checkTreeHeightAndSize() {
+  checkTreeHeightAndSize(budgets, blockNumber) {
     const {
-      [StateInfoProperties.TREE_HEIGHT]: treeHeight,
-      [StateInfoProperties.TREE_SIZE]: treeSize,
+      [StateLabelProperties.TREE_HEIGHT]: treeHeight,
+      [StateLabelProperties.TREE_SIZE]: treeSize,
     } = this.getStateInfo('/');
-    if (treeHeight > BlockchainConfigs.STATE_TREE_HEIGHT_LIMIT) {
+    const stateTreeHeightLimit = DB.getBlockchainParam(
+        'resource/state_tree_height_limit', blockNumber, this.stateRoot);
+    if (treeHeight > stateTreeHeightLimit) {
       return {
-        code: 23,
-        error_message: `Out of tree height limit (${treeHeight} > ${BlockchainConfigs.STATE_TREE_HEIGHT_LIMIT})`
+        code: TxResultCode.TREE_OUT_OF_TREE_HEIGHT_LIMIT,
+        message: `Out of tree height limit (${treeHeight} > ${stateTreeHeightLimit})`
       };
     }
-    if (treeSize > BlockchainConfigs.TREE_SIZE_BUDGET) {
+    if (treeSize > budgets.treeSizeBudget) {
       return {
-        code: 24,
-        error_message: `Out of tree size budget (${treeSize} > ${BlockchainConfigs.TREE_SIZE_BUDGET})`
+        code: TxResultCode.TREE_OUT_OF_TREE_SIZE_LIMIT,
+        message: `Out of tree size budget (${treeSize} > ${budgets.treeSizeBudget})`
       };
     }
     return {
@@ -1522,7 +1814,6 @@ class DB {
     return newValue;
   }
 
-  // TODO(platfowner): Eval subtree rules.
   getPermissionForValue(parsedValuePath, newValue, auth, timestamp) {
     const LOG_HEADER = 'getPermissionForValue';
     // Evaluate write rules and return matched configs
@@ -1534,58 +1825,177 @@ class DB {
         this.addPathToValue(value, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
     const newData =
         this.addPathToValue(newValue, matchedWriteRules.matchedValuePath, matchedWriteRules.closestRule.path.length);
-    let evalWriteRuleRes = false;
-    let evalStateRuleRes = false;
+    // NOTE(platfowner): Value write operations with non-empty subtree write rules are not allowed.
+    if (matchedWriteRules.subtreeRules && matchedWriteRules.subtreeRules.length > 0) {
+      const subtreeRulePathList = this.getSubtreeConfigPathList(matchedWriteRules.subtreeRules);
+      return {
+        code: TxResultCode.EVAL_RULE_NON_EMPTY_SUBTREE_RULES,
+        message: `Non-empty (${matchedWriteRules.subtreeRules.length}) ` +
+            `subtree rules for value path '${CommonUtil.formatPath(parsedValuePath)}'': ` +
+            `${JSON.stringify(subtreeRulePathList)}`,
+        matched,
+      };
+    }
     try {
-      evalWriteRuleRes = !!this.evalWriteRuleConfig(
+      const evalWriteRuleRes = this.evalWriteRuleConfig(
         matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
-      if (!evalWriteRuleRes) {
-        logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${evalWriteRuleRes}, ` +
-            `matched: ${JSON.stringify(matchedWriteRules, null, 2)}, data: ${JSON.stringify(data)}, ` +
+      if (evalWriteRuleRes.code) {
+        return {
+          code: evalWriteRuleRes.code,
+          message: evalWriteRuleRes.message,
+          matched,
+        };
+      }
+      if (!evalWriteRuleRes.evalResult) {
+        logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${JSON.stringify(evalWriteRuleRes, null, 2)}, ` +
+            `matchedWriteRules: ${JSON.stringify(matchedWriteRules, null, 2)}, ` +
+            `data: ${JSON.stringify(data)}, ` +
             `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
             `timestamp: ${timestamp}\n`);
+        return {
+          code: TxResultCode.EVAL_RULE_FALSE_WRITE_RULE_EVAL,
+          message: `Write rule evaluated false: [${evalWriteRuleRes.ruleString}] ` +
+              `at '${CommonUtil.formatPath(matchedWriteRules.closestRule.path)}' ` +
+              `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
+              `with path vars '${JSON.stringify(matchedWriteRules.pathVars)}', ` +
+              `data '${JSON.stringify(data)}', newData '${JSON.stringify(newData)}', ` +
+              `auth '${JSON.stringify(auth)}', timestamp '${timestamp}'`,
+          matched,
+        };
       }
-      evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
-      if (!evalStateRuleRes) {
+      const evalStateRuleRes = this.evalStateRuleConfig(matchedStateRules.closestRule.config, newValue);
+      if (!evalStateRuleRes.evalResult) {
         logger.debug(`[${LOG_HEADER}] evalStateRuleRes ${evalStateRuleRes}, ` +
-            `matched: ${JSON.stringify(matchedStateRules, null, 2)}, parsedValuePath: ${parsedValuePath}, ` +
+            `matchedStateRules: ${JSON.stringify(matchedStateRules, null, 2)}, ` +
+            `parsedValuePath: ${parsedValuePath}, ` +
             `newValue: ${JSON.stringify(newValue)}\n`);
+        return {
+          code: TxResultCode.EVAL_RULE_FALSE_STATE_RULE_EVAL,
+          message: `State rule evaluated false: [${evalStateRuleRes.ruleString}] ` +
+              `at '${CommonUtil.formatPath(matchedStateRules.closestRule.path)}' ` +
+              `for value path '${CommonUtil.formatPath(parsedValuePath)}' ` +
+              `with newValue '${JSON.stringify(newValue)}'`,
+          matched,
+        };
       }
     } catch (err) {
       logger.error(`[${LOG_HEADER}] Failed to eval rule.\n` +
           `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
           `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
-          `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
+          `timestamp: ${timestamp}\nError: ${err.message} ${err.stack}`);
+      return {
+        code: TxResultCode.EVAL_RULE_INTERNAL_ERROR,
+        message: `Internal error: ${JSON.stringify(err)}`,
+        matched,
+      };
     }
-    return { writePermission: evalWriteRuleRes, statePermission: evalStateRuleRes, matched };
+    return {
+      code: TxResultCode.SUCCESS,
+      matched,
+    };
   }
 
-  getPermissionForRule(parsedRulePath, auth) {
+  getPermissionForRule(parsedRulePath, auth, isMerge) {
     const matched = this.matchOwnerForParsedPath(parsedRulePath);
-    return this.checkPermission(matched.closestOwner.config, auth, OwnerProperties.WRITE_RULE);
-  }
-
-  getPermissionForFunction(parsedFuncPath, auth) {
-    const matched = this.matchOwnerForParsedPath(parsedFuncPath);
-    return this.checkPermission(
-        matched.closestOwner.config, auth, OwnerProperties.WRITE_FUNCTION);
-  }
-
-  getPermissionForOwner(parsedOwnerPath, auth) {
-    const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
-    if (matched.closestOwner.path.length === parsedOwnerPath.length) {
-      return this.checkPermission(
-          matched.closestOwner.config, auth, OwnerProperties.WRITE_OWNER);
-    } else {
-      return this.checkPermission(
-          matched.closestOwner.config, auth, OwnerProperties.BRANCH_OWNER);
+    if (!isMerge && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+      const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
+      return {
+        code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_RULE,
+        message: `Non-empty (${matched.subtreeOwners.length}) ` +
+            `subtree owners for rule path '${CommonUtil.formatPath(parsedRulePath)}': ` +
+            `${JSON.stringify(subtreeOwnerPathList)}`,
+        matched,
+      };
     }
+    const permission = OwnerProperties.WRITE_RULE;
+    const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
+    if (!checkRes.checkResult) {
+      return {
+        code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_RULE,
+        message: `${OwnerProperties.WRITE_RULE} ` +
+            `permission evaluated false: [${checkRes.permissionString}] ` +
+            `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
+            `for rule path '${CommonUtil.formatPath(parsedRulePath)}' ` +
+            `with permission '${permission}', ` +
+            `auth '${JSON.stringify(auth)}'`,
+        matched,
+      };
+    }
+    return {
+      code: TxResultCode.SUCCESS,
+      matched,
+    };
+  }
+
+  getPermissionForFunction(parsedFuncPath, auth, isMerge) {
+    const matched = this.matchOwnerForParsedPath(parsedFuncPath);
+    if (!isMerge && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+      const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
+      return {
+        code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_FUNCTION,
+        message: `Non-empty (${matched.subtreeOwners.length}) ` +
+            `subtree owners for function path '${CommonUtil.formatPath(parsedFuncPath)}': ` +
+            `${JSON.stringify(subtreeOwnerPathList)}`,
+        matched,
+      };
+    }
+    const permission = OwnerProperties.WRITE_FUNCTION;
+    const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
+    if (!checkRes.checkResult) {
+      return {
+        code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_FUNCTION,
+        message: `${OwnerProperties.WRITE_FUNCTION} ` +
+            `permission evaluated false: [${checkRes.permissionString}] ` +
+            `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
+            `for function path '${CommonUtil.formatPath(parsedFuncPath)}' ` +
+            `with permission '${permission}', ` +
+            `auth '${JSON.stringify(auth)}'`,
+        matched,
+      };
+    }
+    return {
+      code: TxResultCode.SUCCESS,
+      matched,
+    };
+  }
+
+  getPermissionForOwner(parsedOwnerPath, auth, isMerge) {
+    const matched = this.matchOwnerForParsedPath(parsedOwnerPath);
+    if (!isMerge && matched.subtreeOwners && matched.subtreeOwners.length > 0) {
+      const subtreeOwnerPathList = this.getSubtreeConfigPathList(matched.subtreeOwners);
+      return {
+        code: TxResultCode.EVAL_OWNER_NON_EMPTY_SUBTREE_OWNERS_FOR_OWNER,
+        message: `Non-empty (${matched.subtreeOwners.length}) ` +
+            `subtree owners for owner path '${CommonUtil.formatPath(parsedOwnerPath)}': ` +
+            `${JSON.stringify(subtreeOwnerPathList)}`,
+        matched,
+      };
+    }
+    const permission = matched.closestOwner.path.length === parsedOwnerPath.length ?
+        OwnerProperties.WRITE_OWNER : OwnerProperties.BRANCH_OWNER;
+    const checkRes = this.checkPermission(matched.closestOwner.config, auth, permission);
+    if (!checkRes.checkResult) {
+      return {
+        code: TxResultCode.EVAL_OWNER_FALSE_PERMISSION_CHECK_FOR_OWNER,
+        message: `${permission} ` +
+            `permission evaluated false: [${checkRes.permissionString}] ` +
+            `at '${CommonUtil.formatPath(matched.closestOwner.path)}' ` +
+            `for owner path '${CommonUtil.formatPath(parsedOwnerPath)}' ` +
+            `with permission '${permission}', ` +
+            `auth '${JSON.stringify(auth)}'`,
+        matched,
+      };
+    }
+    return {
+      code: TxResultCode.SUCCESS,
+      matched,
+    };
   }
 
   static getVariableLabel(node) {
     if (!node.getIsLeaf()) {
       for (const label of node.getChildLabels()) {
-        if (label.startsWith(BlockchainConfigs.VARIABLE_LABEL_PREFIX)) {
+        if (CommonUtil.isVariableLabel(label)) {
           // It's assumed that there is at most one variable (i.e., with '$') child node.
           return label;
         }
@@ -1624,7 +2034,7 @@ class DB {
         matched.matchedFunctionPath.unshift(varLabel);
         if (matched.pathVars[varLabel] !== undefined) {
           // This should not happen!
-          logger.error('Duplicated path variables that should NOT happen!')
+          logger.error(`Duplicated function path variables [${varLabel}] that should NOT happen!`)
         } else {
           matched.pathVars[varLabel] = parsedValuePath[depth];
         }
@@ -1765,7 +2175,7 @@ class DB {
         matched.matchedRulePath.unshift(varLabel);
         if (matched.pathVars[varLabel] !== undefined) {
           // This should not happen!
-          logger.error('Duplicated path variables that should NOT happen!')
+          logger.error(`Duplicated rule path variables [${varLabel}] that should NOT happen!`)
         } else {
           matched.pathVars[varLabel] = parsedValuePath[depth];
         }
@@ -1781,7 +2191,7 @@ class DB {
       matchedValuePath: [],
       matchedRulePath: [],
       pathVars: {},
-      matchedRuleNode: curRuleNode,
+      matchedRuleNode: null,
       closestConfigNode: hasRuleConfigWithProp(curRuleNode, ruleProp) ? curRuleNode : null,
       closestConfigDepth: hasRuleConfigWithProp(curRuleNode, ruleProp) ? depth : 0,
     };
@@ -1834,7 +2244,8 @@ class DB {
     const matchedWriteRule = this.matchRulePath(parsedValuePath, RuleProperties.WRITE);
     const matchedStateRule = this.matchRulePath(parsedValuePath, RuleProperties.STATE);
     // Only write rules matched for the subtree
-    const subtreeRules = this.getSubtreeRules(matchedWriteRule.matchedRuleNode, RuleProperties.WRITE);
+    const subtreeRules = matchedWriteRule.matchedRuleNode ?
+        this.getSubtreeRules(matchedWriteRule.matchedRuleNode, RuleProperties.WRITE) : [];
     return {
       write: {
         matchedValuePath: matchedWriteRule.matchedValuePath,
@@ -1887,38 +2298,105 @@ class DB {
 
   evalWriteRuleConfig(writeRuleConfig, pathVars, data, newData, auth, timestamp) {
     if (!CommonUtil.isDict(writeRuleConfig)) {
-      return false;
+      return {
+        ruleString: '',
+        evalResult: false,
+      };
     }
-    const writeRuleString = writeRuleConfig[RuleProperties.WRITE];
-    if (typeof writeRuleString === 'boolean') {
-      return writeRuleString;
-    } else if (typeof writeRuleString !== 'string') {
-      return false;
+    const ruleString = writeRuleConfig[RuleProperties.WRITE];
+    if (CommonUtil.isBool(ruleString)) {
+      return {
+        ruleString: String(ruleString),
+        evalResult: ruleString,
+      };
+    } else if (!CommonUtil.isString(ruleString)) {
+      return {
+        ruleString: String(ruleString),
+        evalResult: false,
+      };
     }
-    const writeRuleCodeSnippet = makeWriteRuleCodeSnippet(writeRuleString);
-    const writeRuleEvalFunc = DB.makeWriteRuleEvalFunction(writeRuleCodeSnippet, pathVars);
-    return writeRuleEvalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
+    let writeRuleEvalFunc = null;
+    try {
+      const writeRuleCodeSnippet = makeWriteRuleCodeSnippet(ruleString);
+      writeRuleEvalFunc = DB.makeWriteRuleEvalFunction(writeRuleCodeSnippet, pathVars);
+    } catch (err) {
+      return {
+        code: TxResultCode.EVAL_RULE_SYNTAX_ERROR,
+        message: `Rule syntax error: \"${err.message}\" in write rule: [${String(ruleString)}]`,
+      };
+    }
+    const evalResult = !!writeRuleEvalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
         this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
         this.evalRule.bind(this), this.evalOwner.bind(this),
         new RuleUtil(), this.lastBlockNumber(), ...Object.values(pathVars));
+    return {
+      ruleString,
+      evalResult,
+    };
   }
 
   evalStateRuleConfig(stateRuleConfig, newValue) {
     if (!CommonUtil.isDict(stateRuleConfig)) {
-      return true;
-    }
-    if (!CommonUtil.isDict(newValue)) {
-      return true;
+      return {
+        ruleString: '',
+        evalResult: true,
+      };
     }
     const stateRuleObj = stateRuleConfig[RuleProperties.STATE];
     if (CommonUtil.isEmpty(stateRuleObj)) {
-      return true;
+      return {
+        ruleString: JSON.stringify(stateRuleObj),
+        evalResult: true,
+      };
     }
-    if (!stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
-      return true;
+    if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_BYTES)) {
+      const maxBytesEvalResult = sizeof(newValue) <= stateRuleObj[RuleProperties.MAX_BYTES];
+      if (!maxBytesEvalResult) {
+        return {
+          ruleString: JSON.stringify(stateRuleObj),
+          evalResult: maxBytesEvalResult,
+        };
+      }
     }
-    const maxChildren = stateRuleObj[RuleProperties.MAX_CHILDREN];
-    return Object.keys(newValue).length <= maxChildren;
+    if (!CommonUtil.isDict(newValue)) {
+      return {
+        ruleString: '',
+        evalResult: true,
+      };
+    }
+    if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_CHILDREN)) {
+      const maxChildren = stateRuleObj[RuleProperties.MAX_CHILDREN];
+      const maxChildrenEvalResult = Object.keys(newValue).length <= maxChildren;
+      if (!maxChildrenEvalResult) {
+        return {
+          ruleString: JSON.stringify(stateRuleObj),
+          evalResult: maxChildrenEvalResult,
+        };
+      }
+    }
+    const { height, size } = getObjectHeightAndSize(newValue);
+    if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_HEIGHT)) {
+      const maxHeightEvalResult = height <= stateRuleObj[RuleProperties.MAX_HEIGHT];
+      if (!maxHeightEvalResult) {
+        return {
+          ruleString: JSON.stringify(stateRuleObj),
+          evalResult: maxHeightEvalResult,
+        };
+      }
+    }
+    if (stateRuleObj.hasOwnProperty(RuleProperties.MAX_SIZE)) {
+      const maxSizeEvalResult = size <= stateRuleObj[RuleProperties.MAX_SIZE];
+      if (!maxSizeEvalResult) {
+        return {
+          ruleString: JSON.stringify(stateRuleObj),
+          evalResult: maxSizeEvalResult,
+        };
+      }
+    }
+    return {
+      ruleString: JSON.stringify(stateRuleObj),
+      evalResult: true,
+    };
   }
 
   applyStateGarbageCollectionRule(matchedRules, parsedValuePath) {
@@ -1927,10 +2405,12 @@ class DB {
       return 0;
     }
     const stateRuleObj = stateRuleConfig[RuleProperties.STATE];
-    if (CommonUtil.isEmpty(stateRuleObj) || !stateRuleObj[RuleProperties.GC_MAX_SIBLINGS]) {
+    if (CommonUtil.isEmpty(stateRuleObj) || !stateRuleObj[RuleProperties.GC_MAX_SIBLINGS] ||
+        !stateRuleObj[RuleProperties.GC_NUM_SIBLINGS_DELETED]) {
       return 0;
     }
     const gcMaxSiblings = stateRuleObj[RuleProperties.GC_MAX_SIBLINGS];
+    const gcNumSiblingsDeleted = stateRuleObj[RuleProperties.GC_NUM_SIBLINGS_DELETED];
     // Check the number of children of the parent
     const parentPathLen = matchedRules.closestRule.path.length - 1;
     if (parentPathLen < 0) {
@@ -1946,8 +2426,7 @@ class DB {
     }
     let numDeleted = 0;
     const childLabelList = stateNodeForReading.getChildLabels();
-    const numChildren = childLabelList.length;
-    while (numChildren - numDeleted > gcMaxSiblings) {
+    while (numDeleted < gcNumSiblingsDeleted) {
       const childLabel = childLabelList[numDeleted++];
       this.writeDatabase([...parentPath, childLabel], null);
     }
@@ -1966,6 +2445,7 @@ class DB {
     // Maximum depth reached.
     if (depth === parsedRefPath.length) {
       return {
+        matchedOwnerNode: curOwnerNode,
         matchedDepth: depth,
         closestConfigNode: hasOwnerConfig(curOwnerNode) ? curOwnerNode : null,
         closestConfigDepth: hasOwnerConfig(curOwnerNode) ? depth : 0,
@@ -1984,6 +2464,7 @@ class DB {
     }
     // No match with child nodes.
     return {
+      matchedOwnerNode: null,
       matchedDepth: depth,
       closestConfigNode: hasOwnerConfig(curOwnerNode) ? curOwnerNode : null,
       closestConfigDepth: hasOwnerConfig(curOwnerNode) ? depth : 0,
@@ -1995,26 +2476,60 @@ class DB {
         parsedRefPath, 0, this.stateRoot.getChild(PredefinedDbPaths.OWNERS_ROOT));
   }
 
+  getSubtreeOwnersRecursive(depth, curOwnerNode) {
+    const owners = [];
+    if (depth !== 0 && hasOwnerConfig(curOwnerNode)) {
+      owners.push({
+        path: [],
+        config: getOwnerConfig(curOwnerNode),
+      })
+    }
+    if (curOwnerNode && !curOwnerNode.getIsLeaf()) {
+      // Traverse child nodes.
+      for (const label of curOwnerNode.getChildLabels()) {
+        const nextOwnerNode = curOwnerNode.getChild(label);
+        const subtreeOwners = this.getSubtreeOwnersRecursive(depth + 1, nextOwnerNode);
+        subtreeOwners.forEach((entry) => {
+          entry.path.unshift(label);
+          owners.push(entry);
+        });
+      }
+    }
+    return owners;
+  }
+
+  getSubtreeOwners(ownerNode) {
+    return this.getSubtreeOwnersRecursive(0, ownerNode);
+  }
+
   matchOwnerForParsedPath(parsedRefPath) {
     const matched = this.matchOwnerPath(parsedRefPath);
+    const subtreeOwners = matched.matchedOwnerNode ?
+        this.getSubtreeOwners(matched.matchedOwnerNode) : [];
     return {
       matchedOwnerPath: parsedRefPath.slice(0, matched.matchedDepth),
       closestOwner: {
         path: parsedRefPath.slice(0, matched.closestConfigDepth),
         config: getOwnerConfig(matched.closestConfigNode),
       },
+      subtreeOwners,
     }
   }
 
   convertOwnerMatch(matched, isGlobal) {
     const ownerPath = isGlobal ?
         this.toGlobalPath(matched.matchedOwnerPath) : matched.matchedOwnerPath;
-    return {
+    const converted = {
       matched_path: {
         target_path: CommonUtil.formatPath(ownerPath),
       },
       matched_config: this.convertPathAndConfig(matched.closestOwner, isGlobal),
     };
+    if (matched.subtreeOwners) {
+      converted.subtree_configs = matched.subtreeOwners.map((entry) =>
+          this.convertPathAndConfig(entry, false));
+    }
+    return converted;
   }
 
   getOwnerPermissions(config, auth) {
@@ -2050,8 +2565,16 @@ class DB {
   }
 
   checkPermission(config, auth, permission) {
-    const permissions = this.getOwnerPermissions(config, auth);
-    return !!(permissions && permissions[permission] === true);
+    const permissionObj = this.getOwnerPermissions(config, auth);
+    const checkResult = !!(permissionObj && permissionObj[permission] === true);
+    return {
+      permissionString: JSON.stringify(permissionObj),
+      checkResult,
+    };
+  }
+
+  getSubtreeConfigPathList(subtreeConfigs) {
+    return subtreeConfigs.map((config) => CommonUtil.formatPath(config.path));
   }
 }
 

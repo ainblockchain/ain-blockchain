@@ -3,20 +3,20 @@ const logger = new (require('../logger'))('FUNCTIONS');
 const axios = require('axios');
 const _ = require('lodash');
 const matchUrl = require('match-url-wildcard');
+const Accounts = require('web3-eth-accounts');
+const stringify = require('fast-json-stable-stringify');
 const {
   DevFlags,
-  BlockchainConfigs,
+  NodeConfigs,
   PredefinedDbPaths,
   FunctionTypes,
-  FunctionResultCode,
   NativeFunctionIds,
   WriteDbOperations,
-  TokenBridgeProperties,
   OwnerProperties,
   buildOwnerPermissions,
   buildRulePermission,
 } = require('../common/constants');
-const { ConsensusConsts } = require('../consensus/constants');
+const { FunctionResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 
@@ -48,6 +48,8 @@ class Functions {
         func: this._distributeFee.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.ERASE_VALUE]: {
         func: this._eraseValue.bind(this), ownerOnly: false, extraGasAmount: 0 },
+      [NativeFunctionIds.FAIL]: {
+        func: this._fail.bind(this), ownerOnly: false, extraGasAmount: 0 },
       [NativeFunctionIds.HANDLE_OFFENSES]: {
         func: this._handleOffenses.bind(this), ownerOnly: true, extraGasAmount: 0 },
       [NativeFunctionIds.HOLD]: {
@@ -87,16 +89,69 @@ class Functions {
    * @param {Object} transaction transaction
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
-  // TODO(platfowner): Trigger subtree functions.
+  matchAndTriggerFunctions(
+      parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
+      blockchainParams, options) {
+    const matchedFunction = this.db.matchFunctionForParsedPath(parsedValuePath);
+    const triggerRes = this.triggerFunctions(
+        matchedFunction.matchedFunction.path, matchedFunction.pathVars, matchedFunction.matchedFunction.config,
+        parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
+        blockchainParams);
+    const subtreeFuncRes = {};
+    for (const subtreeConfig of matchedFunction.subtreeFunctions) {
+      const matchedPrevValues =
+          Functions.matchValueWithFunctionPath(prevValue, subtreeConfig.path);
+      const matchedValues = Functions.matchValueWithFunctionPath(value, subtreeConfig.path);
+      const subtreeFuncPathRes = {};
+      // Step 1: (implicit deletion) Trigger functions with matched prev values being deleted.
+      for (const pathKey of Object.keys(matchedPrevValues)) {
+        if (matchedValues[pathKey] === undefined) {  // For only paths of values being deleted.
+          const matchedPrevValue = matchedPrevValues[pathKey];
+          const subtreeFuncPath = [...matchedFunction.matchedFunction.path, ...subtreeConfig.path];
+          const pathVars = Object.assign({}, matchedFunction.pathVars, matchedPrevValue.pathVars);
+          const subtreeValuePath = [...parsedValuePath, ...matchedPrevValue.path];
+          const subtreeValue = null;  // Trigger with value = null.
+          const substreePrevValue = matchedPrevValue.value;
+          const subtreeValuePathRes = this.triggerFunctions(
+              subtreeFuncPath, pathVars, subtreeConfig.config,
+              subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
+              transaction, blockNumber, blockTime, blockchainParams);
+          subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
+        }
+      }
+      // Step 2: Trigger functions with matched values.
+      for (const pathKey of Object.keys(matchedValues)) {
+        const matchedValue = matchedValues[pathKey];
+        const subtreeFuncPath = [...matchedFunction.matchedFunction.path, ...subtreeConfig.path];
+        const pathVars = Object.assign({}, matchedFunction.pathVars, matchedValue.pathVars);
+        const subtreeValuePath = [...parsedValuePath, ...matchedValue.path];
+        const subtreeValue = matchedValue.value;
+        // NOTE(platfowner): this.db.getValue() cannot be used
+        // as the previous value is already overwritten.
+        const substreePrevValue =
+            Functions.matchValueWithValuePath(prevValue, matchedValue.path);
+        const subtreeValuePathRes = this.triggerFunctions(
+            subtreeFuncPath, pathVars, subtreeConfig.config,
+            subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
+            transaction, blockNumber, blockTime,
+            blockchainParams);
+        subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
+      }
+      subtreeFuncRes[CommonUtil.formatPath(subtreeConfig.path)] = subtreeFuncPathRes;
+    }
+    if (Object.keys(subtreeFuncRes).length > 0) {
+      Object.assign(triggerRes, { subtree_func_results: subtreeFuncRes });
+    }
+    return triggerRes;
+  }
+
   triggerFunctions(
-      parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime) {
+      functionPath, pathVars, functionMap, valuePath, value, prevValue, auth, timestamp,
+      transaction, blockNumber, blockTime, blockchainParams) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
-    const matched = this.db.matchFunctionForParsedPath(parsedValuePath);
-    const functionPath = matched.matchedFunction.path;
-    const functionMap = matched.matchedFunction.config;
     const functionList = Functions.getFunctionList(functionMap);
-    const params = Functions.convertPathVars2Params(matched.pathVars);
+    const params = Functions.convertPathVars2Params(pathVars);
     let triggerCount = 0;
     let failCount = 0;
     const promises = [];
@@ -104,7 +159,7 @@ class Functions {
 
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
-          parsedValuePath, functionPath, timestamp, executedAt, params, value, prevValue,
+          valuePath, functionPath, timestamp, executedAt, params, value, prevValue,
           transaction, blockTime);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
@@ -122,7 +177,7 @@ class Functions {
           if (nativeFunction) {
             // Execute the matched native function.
             this.pushCall(
-                CommonUtil.formatPath(parsedValuePath), value, CommonUtil.formatPath(functionPath),
+                CommonUtil.formatPath(valuePath), value, CommonUtil.formatPath(functionPath),
                 functionEntry.function_id, nativeFunction);
             if (DevFlags.enableRichFunctionLogging) {
               logger.info(
@@ -138,18 +193,21 @@ class Functions {
                   value,
                   {
                     fid: functionEntry.function_id,
-                    valuePath: parsedValuePath,
+                    function: functionEntry,
+                    valuePath,
                     functionPath,
+                    value,
                     prevValue,
                     params,
                     timestamp,
                     executedAt,
                     transaction,
-                    blockNumber, 
+                    blockNumber,
                     blockTime,
                     auth: newAuth,
                     opResultList: [],
                     otherGasAmount: 0,
+                    ...blockchainParams,
                   });
               funcResults[functionEntry.function_id] = result;
               if (DevFlags.enableRichFunctionLogging) {
@@ -173,7 +231,7 @@ class Functions {
             }
           }
         } else if (functionEntry.function_type === FunctionTypes.REST) {
-          if (BlockchainConfigs.ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
+          if (NodeConfigs.ENABLE_REST_FUNCTION_CALL && functionEntry.function_url &&
             matchUrl(functionEntry.function_url, this.db.getRestFunctionsUrlWhitelist())) {
             if (DevFlags.enableRichFunctionLogging) {
               logger.info(
@@ -181,11 +239,24 @@ class Functions {
                   `function_url '${functionEntry.function_url}' with:\n` +
                   formattedParams);
             }
+            const newAuth = Object.assign(
+                {}, auth, { fid: functionEntry.function_id, fids: this.getFids() });
             promises.push(axios.post(functionEntry.function_url, {
+              fid: functionEntry.function_id,
               function: functionEntry,
+              valuePath,
+              functionPath,
+              value,
+              prevValue,
+              params,
+              timestamp,
+              executedAt,
               transaction,
+              blockNumber,
+              blockTime,
+              auth: newAuth,
             }, {
-              timeout: BlockchainConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
+              timeout: NodeConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
             }).catch((error) => {
               if (DevFlags.enableRichFunctionLogging) {
                 logger.error(
@@ -199,14 +270,14 @@ class Functions {
             }));
             funcResults[functionEntry.function_id] = {
               code: FunctionResultCode.SUCCESS,
-              bandwidth_gas_amount: BlockchainConfigs.REST_FUNCTION_CALL_GAS_AMOUNT,
+              bandwidth_gas_amount: blockchainParams.restFunctionCallGasAmount,
             };
             triggerCount++;
           }
         }
       }
     }
-    const promiseResults = Promise.all(promises).then(() => {
+    const funcPromises = Promise.all(promises).then(() => {
       return {
         func_count: functionList ? functionList.length : 0,
         trigger_count: triggerCount,
@@ -215,7 +286,7 @@ class Functions {
     });
     return {
       func_results: funcResults,
-      promise_results: promiseResults,
+      func_promises: funcPromises,
     };
   }
 
@@ -329,6 +400,67 @@ class Functions {
     return params;
   }
 
+  static matchValueWithFunctionPathRecursive(
+      valueObj, parsedValuePath, parsedFunctionPath, depth, pathVars) {
+    const matched = {};
+    if (depth == parsedFunctionPath.length) {
+      matched[CommonUtil.formatPath(parsedValuePath)] = {
+        path: parsedValuePath,
+        pathVars,
+        value: JSON.parse(JSON.stringify(valueObj)),
+      };
+      return matched;
+    }
+    if (!CommonUtil.isDict(valueObj)) {
+      // Avoid some special cases like string.
+      return matched;
+    }
+    const label = parsedFunctionPath[depth];
+    if (CommonUtil.isVariableLabel(label)) {
+      for (const valueLabel of Object.keys(valueObj)) {
+        const pathVarsCopy = JSON.parse(JSON.stringify(pathVars));
+        if (pathVarsCopy[label] !== undefined) {
+          // This should not happen!
+          logger.error(`Duplicated path variables [${label}] that should NOT happen!`)
+        } else {
+          pathVarsCopy[label] = valueLabel;
+        }
+        const matchedRecur = Functions.matchValueWithFunctionPathRecursive(
+            valueObj[valueLabel], [...parsedValuePath, valueLabel], parsedFunctionPath,
+            depth + 1, pathVarsCopy);
+        Object.assign(matched, matchedRecur);
+      }
+    } else {
+      if (valueObj[label] !== undefined) {
+        const matchedRecur = Functions.matchValueWithFunctionPathRecursive(
+            valueObj[label], [...parsedValuePath, label], parsedFunctionPath,
+            depth + 1, pathVars);
+        Object.assign(matched, matchedRecur);
+      }
+    }
+
+    return matched;
+  }
+
+  static matchValueWithFunctionPath(value, parsedFunctionPath) {
+    return Functions.matchValueWithFunctionPathRecursive(value, [], parsedFunctionPath, 0, {});
+  }
+
+  static matchValueWithValuePath(value, parsedValuePath) {
+    let valueObj = value;
+    for (const label of parsedValuePath) {
+      if (!CommonUtil.isDict(valueObj)) {
+        return null;
+      }
+      if (valueObj[label] === undefined) {
+        return null;
+      }
+      valueObj = valueObj[label];
+    }
+
+    return CommonUtil.isDict(valueObj) ? JSON.parse(JSON.stringify(valueObj)) : valueObj;
+  }
+
   setValueOrLog(valuePath, value, context) {
     const timestamp = context.timestamp;
     const transaction = context.transaction;
@@ -390,7 +522,8 @@ class Functions {
 
   setOwnerOrLog(ownerPath, owner, context) {
     const auth = context.auth;
-    const result = this.db.setOwner(ownerPath, owner, auth);
+    const blockNumber = context.blockNumber;
+    const result = this.db.setOwner(ownerPath, owner, auth, blockNumber);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setOwner on '${ownerPath}' with error: ${JSON.stringify(result)}`);
@@ -401,7 +534,8 @@ class Functions {
 
   setRuleOrLog(rulePath, rule, context) {
     const auth = context.auth;
-    const result = this.db.setRule(rulePath, rule, auth);
+    const blockNumber = context.blockNumber;
+    const result = this.db.setRule(rulePath, rule, auth, blockNumber);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setRule on '${rulePath}' with error: ${JSON.stringify(result)}`);
@@ -449,6 +583,10 @@ class Functions {
    * This is often used for testing purposes.
    */
   _saveLastTx(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const transaction = context.transaction;
     const parsedValuePath = context.valuePath;
     if (parsedValuePath.length === 0) {
@@ -473,6 +611,10 @@ class Functions {
    * This is often used for testing purposes.
    */
   _eraseValue(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const parsedValuePath = context.valuePath;
     const result = this.setValueOrLog(CommonUtil.formatPath(parsedValuePath), 'erased', context);
     if (!CommonUtil.isFailedTx(result)) {
@@ -483,10 +625,26 @@ class Functions {
   }
 
   /**
+   * Does nothing except always fails.
+   * This is often used for testing purposes.
+   */
+  _fail(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
+    return this.returnFuncResult(context, FunctionResultCode.FAILURE);
+  }
+
+  /**
    * Sets owner config on the path.
    * This is often used for testing purposes.
    */
   _setOwnerConfig(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const parsedValuePath = context.valuePath;
     const auth = context.auth;
     const owner = {
@@ -506,6 +664,10 @@ class Functions {
   }
 
   _transfer(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const from = context.params.from;
     const to = context.params.to;
     const fromBalancePath = CommonUtil.getBalancePath(from);
@@ -516,8 +678,8 @@ class Functions {
       return this.returnFuncResult(context, FunctionResultCode.INSUFFICIENT_BALANCE);
     }
     const toBalance = this.db.getValue(toBalancePath);
-    if (toBalance === null) {
-      extraGasAmount = BlockchainConfigs.ACCOUNT_REGISTRATION_GAS_AMOUNT;
+    if (toBalance === null) {  // for either an individual or a service account.
+      extraGasAmount = context.accountRegistrationGasAmount;
     }
     const decResult = this.decValueOrLog(fromBalancePath, value, context);
     if (CommonUtil.isFailedTx(decResult)) {
@@ -565,6 +727,10 @@ class Functions {
   }
 
   _createApp(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const { isValidServiceName } = require('./state-util');
     const appName = context.params.app_name;
     if (!isValidServiceName(appName)) {
@@ -604,6 +770,10 @@ class Functions {
   }
 
   _collectFee(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const from = context.params.from;
     const gasFeeServiceAccountName = CommonUtil.toServiceAccountName(
         PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE, PredefinedDbPaths.GAS_FEE_UNCLAIMED);
@@ -626,7 +796,21 @@ class Functions {
     }, context);
   }
 
+  getBlockRewardMultiplier(context) {
+    const { rewardType, rewardAnnualRate, epochMs } = context;
+    switch (rewardType) {
+      case 'FIXED':
+        const yearMs = 31557600000; // 365.25 * 24 * 60 * 60 * 1000
+        return Math.max(rewardAnnualRate * epochMs / yearMs, 0);
+    }
+    return 0;
+  }
+
   _distributeFee(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const blockNumber = context.params.number;
     // NOTE(liayoo): Because we need to have the votes to determine which validators to give the
     //               rewards to, we're distributing the rewards from the (N-1)th block when a
@@ -635,35 +819,39 @@ class Functions {
     if (blockNumber <= 1) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
+    const blockRewardMultiplier = this.getBlockRewardMultiplier(context);
     const lastConsensusRound = this.db.getValue(PathUtil.getConsensusNumberPath(blockNumber - 1));
     const gasCostTotal = lastConsensusRound.propose.gas_cost_total;
-    if (gasCostTotal <= 0) {
-      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
-    }
-    const proposer = lastConsensusRound.propose.proposer;
     const blockHash = lastConsensusRound.propose.block_hash;
     const votes = lastConsensusRound[blockHash].vote;
     const totalAtStake = Object.values(votes).reduce((acc, cur) => acc + cur.stake, 0);
     const validators = Object.keys(votes);
-    const proposerReward = gasCostTotal / 2;
-    const validatorRewardTotal = gasCostTotal - proposerReward;
-    this.incrementConsensusRewards(proposer, proposerReward, context);
-    let rewardSum = 0;
-    validators.forEach((validator, index) => {
-      const validatorStake = votes[validator].stake;
-      let validatorReward = 0;
-      if (index === validators.length - 1) {
-        validatorReward = validatorRewardTotal - rewardSum;
-      } else {
-        validatorReward = validatorRewardTotal * (validatorStake / totalAtStake);
-        rewardSum += validatorReward;
+    let txFeeSum = 0;
+    for (let index = 0; index < validators.length; index++) {
+      const validatorAddr = validators[index];
+      const validatorStake = votes[validatorAddr].stake;
+      const blockReward = blockRewardMultiplier * validatorStake;
+      let txFee = 0;
+      if (gasCostTotal > 0) {
+        if (index === validators.length - 1) {
+          txFee = gasCostTotal - txFeeSum;
+        } else {
+          txFee = gasCostTotal * (validatorStake / totalAtStake);
+          txFeeSum += txFee;
+        }
       }
-      this.incrementConsensusRewards(validator, validatorReward, context);
-    });
+      if (txFee + blockReward > 0) {
+        this.incrementConsensusRewards(validatorAddr, txFee + blockReward, context);
+      }
+    }
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
   _claimReward(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const addr = context.params.user_addr;
     const unclaimedRewardsPath = PathUtil.getConsensusRewardsUnclaimedPath(addr);
     const unclaimedRewards = this.db.getValue(unclaimedRewardsPath) || 0;
@@ -685,15 +873,19 @@ class Functions {
     return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
   }
 
-  static getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses) {
+  static getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses, stakeLockupExtension) {
     let extension = 0;
     for (let n = updatedNumOffenses - numNewOffenses + 1; n <= updatedNumOffenses; n++) {
-      extension += ConsensusConsts.STAKE_LOCKUP_EXTENSION * Math.pow(2, n - 1);
+      extension += stakeLockupExtension * Math.pow(2, n - 1);
     }
     return extension;
   }
 
   _handleOffenses(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     if (CommonUtil.isEmpty(value.offenses)) {
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
@@ -702,7 +894,8 @@ class Functions {
       const offenseRecordsPath = PathUtil.getConsensusOffenseRecordsAddrPath(offender);
       this.incValueOrLog(offenseRecordsPath, numNewOffenses, context);
       const updatedNumOffenses = this.db.getValue(offenseRecordsPath); // new # of offenses
-      const lockupExtension = Functions.getLockupExtensionForNewOffenses(numNewOffenses, updatedNumOffenses);
+      const lockupExtension = Functions.getLockupExtensionForNewOffenses(
+          numNewOffenses, updatedNumOffenses, context.stakeLockupExtension);
       if (lockupExtension > 0) {
         const expirationPath = PathUtil.getStakingExpirationPath(PredefinedDbPaths.CONSENSUS, offender, 0);
         const currentExpiration = Math.max(Number(this.db.getValue(expirationPath)), context.blockTime);
@@ -713,6 +906,10 @@ class Functions {
   }
 
   _stake(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const stakingKey = context.params.staking_key;
@@ -745,6 +942,10 @@ class Functions {
   }
 
   _unstake(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const stakingKey = context.params.staking_key;
@@ -769,6 +970,10 @@ class Functions {
   }
 
   _pay(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
@@ -788,6 +993,10 @@ class Functions {
   }
 
   _claim(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const serviceName = context.params.service_name;
     const user = context.params.user_addr;
     const paymentKey = context.params.payment_key;
@@ -827,6 +1036,10 @@ class Functions {
   }
 
   _hold(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const sourceAccount = context.params.source_account;
     const targetAccount = context.params.target_account;
     const escrowKey = context.params.escrow_key;
@@ -847,6 +1060,10 @@ class Functions {
   }
 
   _release(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const sourceAccount = context.params.source_account;
     const targetAccount = context.params.target_account;
     const escrowKey = context.params.escrow_key;
@@ -885,6 +1102,10 @@ class Functions {
   }
 
   _updateLatestShardReport(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const blockNumberReported = Number(context.params.block_number);
     const parsedValuePath = context.valuePath;
     if (!CommonUtil.isArray(context.functionPath)) {
@@ -960,6 +1181,25 @@ class Functions {
     return FunctionResultCode.INVALID_SENDER;
   }
 
+  validateCheckinSenderProof(ref, amount, sender, senderProof, tx) {
+    try {
+      const body = {
+        ref,
+        amount,
+        sender,
+        timestamp: _.get(tx, 'tx_body.timestamp'),
+        nonce: _.get(tx, 'tx_body.nonce'),
+      };
+      const ethAccounts = new Accounts();
+      if (ethAccounts.recover(ethAccounts.hashMessage(stringify(body)), senderProof) !== sender) {
+        return FunctionResultCode.INVALID_SENDER_PROOF;
+      }
+      return true;
+    } catch (e) {
+      return FunctionResultCode.INVALID_SENDER_PROOF;
+    }
+  }
+
   validateCheckinAmount(networkName, chainId, tokenId, sender, amount, tokenPool) {
     // NOTE(liayoo): pending amounts do NOT include the request's amount yet.
     const pendingSender = this.db.getValue(
@@ -978,7 +1218,8 @@ class Functions {
 
   _openCheckin(value, context) {
     if (value === null) {
-      // NOTE(liayoo): It's not a SET_VALUE for a request, but for a cancellation. A request should 
+      // Does nothing for null value.
+      // NOTE(liayoo): It's not a SET_VALUE for a request, but for a cancellation. A request should
       // only happen if the value is NOT null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
@@ -986,15 +1227,17 @@ class Functions {
     const chainId = context.params.chain_id;
     const tokenId = context.params.token_id;
     // NOTE(liayoo): `sender` is the address on `networkName` that will send `tokenId` tokens to the pool.
-    // For example, with the Eth token bridge, it will be an Ethereum address that will send ETH to the pool.
-    const { amount, sender } = value;
+    //    For example, with the Eth token bridge, it will be an Ethereum address that will send ETH to the pool.
+    // NOTE(liayoo): `sender_proof` is a signature of the stringified { ref, amount, sender, timestamp, nonce },
+    //    signed with the sender key.
+    const { amount, sender, sender_proof: senderProof } = value;
     const {
-      [TokenBridgeProperties.TOKEN_POOL]: tokenPool,
-      [TokenBridgeProperties.MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
-      [TokenBridgeProperties.MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
-      [TokenBridgeProperties.MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
-      [TokenBridgeProperties.TOKEN_EXCH_RATE]: tokenExchangeRate,
-      [TokenBridgeProperties.TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_POOL]: tokenPool,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_EXCH_RATE]: tokenExchangeRate,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
     // Perform checks
     const tokenBridgeValidated = this.validateTokenBridgeConfig(
@@ -1006,6 +1249,11 @@ class Functions {
     const senderValidated = this.validateCheckinSender(sender, networkName);
     if (senderValidated !== true) {
       return this.returnFuncResult(context, senderValidated);
+    }
+    const senderProofValidated = this.validateCheckinSenderProof(
+        CommonUtil.formatPath(context.valuePath), amount, sender, senderProof, context.transaction);
+    if (senderProofValidated !== true) {
+      return this.returnFuncResult(context, senderProofValidated);
     }
     const amountValidated = this.validateCheckinAmount(
         networkName, chainId, tokenId, sender, amount, tokenPool);
@@ -1023,6 +1271,7 @@ class Functions {
 
   _cancelCheckin(value, context) {
     if (value !== null) {
+      // Does nothing for non-null value.
       // NOTE(liayoo): It's not a SET_VALUE for a cancel, but for a request. A cancel should only 
       // happen if the value is null.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
@@ -1035,7 +1284,7 @@ class Functions {
     const chainId = context.params.chain_id;
     const tokenId = context.params.token_id;
     const {
-      [TokenBridgeProperties.TOKEN_POOL]: tokenPool
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_POOL]: tokenPool
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
     // Decrease pending amounts
     const decPendingResultCode = this.updateStatsForPendingCheckin(
@@ -1048,6 +1297,10 @@ class Functions {
   }
 
   _closeCheckin(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const networkName = context.params.network_name;
     const chainId = context.params.chain_id;
     const tokenId = context.params.token_id;
@@ -1055,9 +1308,9 @@ class Functions {
     const checkinId = context.params.checkin_id;
     const { request, response } = value;
     const {
-      [TokenBridgeProperties.TOKEN_POOL]: tokenPool
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_POOL]: tokenPool
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
-    if (response.status === FunctionResultCode.SUCCESS) {
+    if (response.status === true) {
       // Increase complete amounts
       const updateStatsResultCode = this.updateStatsForCompleteCheckin(user, request.amount, context);
       if (updateStatsResultCode !== true) {
@@ -1156,6 +1409,7 @@ class Functions {
 
   _openCheckout(value, context) {
     if (value === null) {
+      // Does nothing for null value.
       return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
     }
     const networkName = context.params.network_name;
@@ -1169,13 +1423,13 @@ class Functions {
       return this.returnFuncResult(context, incPendingResultCode);
     }
     const {
-      [TokenBridgeProperties.TOKEN_POOL]: tokenPool,
-      [TokenBridgeProperties.MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
-      [TokenBridgeProperties.MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
-      [TokenBridgeProperties.MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
-      [TokenBridgeProperties.CHECKOUT_FEE_RATE]: checkoutFeeRate,
-      [TokenBridgeProperties.TOKEN_EXCH_RATE]: tokenExchangeRate,
-      [TokenBridgeProperties.TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_POOL]: tokenPool,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_MIN_CHECKOUT_PER_REQUEST]: minCheckoutPerRequest,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_MAX_CHECKOUT_PER_REQUEST]: maxCheckoutPerRequest,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_MAX_CHECKOUT_PER_DAY]: maxCheckoutPerDay,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_CHECKOUT_FEE_RATE]: checkoutFeeRate,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_EXCH_RATE]: tokenExchangeRate,
+      [PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_EXCH_SCHEME]: tokenExchangeScheme,
     } = this.db.getValue(PathUtil.getTokenBridgeConfigPath(networkName, chainId, tokenId));
     // Perform checks
     const tokenBridgeValidated = this.validateTokenBridgeConfig(
@@ -1206,13 +1460,17 @@ class Functions {
   }
 
   _closeCheckout(value, context) {
+    if (value === null) {
+      // Does nothing for null value.
+      return this.returnFuncResult(context, FunctionResultCode.SUCCESS);
+    }
     const networkName = context.params.network_name;
     const chainId = context.params.chain_id;
     const tokenId = context.params.token_id;
     const user = context.params.user_addr;
     const checkoutId = context.params.checkout_id;
     const { request, response } = value;
-    if (response.status === FunctionResultCode.SUCCESS) {
+    if (response.status === true) {
       // Increase complete amounts
       const updateStatsResultCode = this.updateStatsForCompleteCheckout(request.amount, context.blockTime, context);
       if (updateStatsResultCode !== true) {
@@ -1227,7 +1485,7 @@ class Functions {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);
       }
       const setRefundRes = this.setValueOrLog(
-          PathUtil.getCheckoutHistoryRefundPath(networkName, chainId, tokenId, user, checkoutId),
+          PathUtil.getCheckoutRefundPath(networkName, chainId, tokenId, user, checkoutId),
           PathUtil.getTransferPath(tokenPool, user, context.timestamp), context);
       if (CommonUtil.isFailedTx(setRefundRes)) {
         return this.returnFuncResult(context, FunctionResultCode.FAILURE);

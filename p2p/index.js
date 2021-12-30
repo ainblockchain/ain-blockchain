@@ -1,7 +1,6 @@
 /* eslint no-mixed-operators: "off" */
 const logger = new (require('../logger'))('P2P_CLIENT');
 const _ = require('lodash');
-const axios = require('axios');
 const P2pServer = require('./server');
 const Websocket = require('ws');
 const { ConsensusStates } = require('../consensus/constants');
@@ -9,50 +8,30 @@ const VersionUtil = require('../common/version-util');
 const CommonUtil = require('../common/common-util');
 const {
   DevFlags,
-  BlockchainConfigs,
+  BlockchainConsts,
+  NodeConfigs,
   MessageTypes,
   BlockchainNodeStates,
   P2pNetworkStates,
   TrafficEventTypes,
   trafficStatsManager,
-  BlockchainParams,
+  getEnvVariables,
 } = require('../common/constants');
-const {
-  getAddressFromSocket,
-  removeSocketConnectionIfExists,
-  signMessage,
-  getAddressFromMessage,
-  verifySignedMessage,
-  checkTimestamp,
-  closeSocketSafe,
-  encapsulateMessage,
-  isValidNetworkId
-} = require('./util');
+const P2pUtil = require('./p2p-util');
 const {
   sendGetRequest
 } = require('../common/network-util');
-
-// NOTE(minsulee2): consider updating TRACKER_UPDATE_INTERVAL_MS to 2.5 minutes.
-const TRACKER_UPDATE_INTERVAL_MS = 15 * 1000;  // 15 seconds
-const PEER_CANDIDATES_CONNECTION_INTERVAL_MS = 20 * 1000;  // 20 seconds
-const HEARTBEAT_INTERVAL_MS = 15 * 1000;  // 15 seconds
-const WAIT_FOR_ADDRESS_TIMEOUT_MS = 10 * 1000; // 10 seconds
-const TRAFFIC_STATS_PERIOD_SECS_LIST = {
-  '1m': 60,  // 1 minutes
-  '5m': 300,  // 5 minutes
-  '10m': 600,  // 10 minutes
-  '1h': 3600,  // 1 hour
-};
 
 class P2pClient {
   constructor(node, minProtocolVersion, maxProtocolVersion) {
     this.server = new P2pServer(
         this, node, minProtocolVersion, maxProtocolVersion);
-    this.peerCandidates = {};
+    this.peerCandidates = new Map();
     this.isConnectingToPeerCandidates = false;
+    this.steadyIntervalCount = 0;
     this.outbound = {};
     this.p2pState = P2pNetworkStates.STARTING;
-    this.peerConnectionsInProgress = {};
+    this.peerConnectionsInProgress = new Map();
     this.chainSyncInProgress = null;
     logger.info(`Now p2p network in STARTING state!`);
     this.startHeartbeat();
@@ -61,30 +40,36 @@ class P2pClient {
   async run() {
     if (CommonUtil.isEmpty(this.server.node.account)) return;
     await this.server.listen();
-    if (BlockchainConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.setIntervalForTrackerUpdate();
+    if (NodeConfigs.ENABLE_STATUS_REPORT_TO_TRACKER) this.setIntervalForTrackerUpdate();
     if (this.server.node.state === BlockchainNodeStates.STARTING) {
-      if (!BlockchainConfigs.PEER_CANDIDATE_JSON_RPC_URL ||
-          BlockchainConfigs.PEER_CANDIDATE_JSON_RPC_URL === '' ||
-          BlockchainConfigs.PEER_CANDIDATE_JSON_RPC_URL === _.get(this.server.urls, 'jsonRpc.url', '')) {
+      if (P2pUtil.areIdenticalUrls(NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL,
+          _.get(this.server.urls, 'jsonRpc.url', ''))) {
         await this.startBlockchainNode(0);
-        return;
       } else {
         await this.startBlockchainNode(1);
       }
     }
-    this.connectWithPeerCandidateUrl(BlockchainConfigs.PEER_CANDIDATE_JSON_RPC_URL);
+    await this.discoverPeerWithGuardingFlag();
     this.setIntervalForPeerCandidatesConnection();
   }
 
   getConnectionStatus() {
     const incomingPeers = Object.keys(this.server.inbound);
     const outgoingPeers = Object.keys(this.outbound);
+    const peerConnectionsInProgress = Array.from(this.peerConnectionsInProgress.keys());
+    const peerCandidates = Array.from(this.peerCandidates.keys());
     return {
-      p2pState: this.p2pState,
-      maxInbound: BlockchainConfigs.MAX_NUM_INBOUND_CONNECTION,
-      targetOutBound: BlockchainConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
+      state: this.p2pState,
+      stateNumeric: Object.keys(P2pNetworkStates).indexOf(this.p2pState),
+      maxInbound: NodeConfigs.MAX_NUM_INBOUND_CONNECTION,
+      targetOutBound: NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
+      peerConnectionsInProgress: peerConnectionsInProgress,
+      peerCandidates: peerCandidates,
       numInbound: incomingPeers.length,
       numOutbound: outgoingPeers.length,
+      numConnections: incomingPeers.length + outgoingPeers.length,
+      numPeerConnectionsInProgress: peerConnectionsInProgress.length,
+      numPeerCandidates: peerCandidates.length,
       incomingPeers: incomingPeers,
       outgoingPeers: outgoingPeers,
     };
@@ -92,7 +77,8 @@ class P2pClient {
 
   getTrafficStats() {
     const stats = {};
-    for (const [periodName, periodSecs] of Object.entries(TRAFFIC_STATS_PERIOD_SECS_LIST)) {
+    for (const [periodName, periodSecs] of
+        Object.entries(NodeConfigs.TRAFFIC_STATS_PERIOD_SECS_LIST)) {
       stats[periodName] = trafficStatsManager.getEventStats(periodSecs)
     }
     return stats;
@@ -123,15 +109,17 @@ class P2pClient {
       runtimeInfo: this.server.getRuntimeInfo(),
       protocolInfo: this.server.getProtocolInfo(),
       config: this.getConfig(),
+      chainSyncInProgress: this.chainSyncInProgress,
     };
   }
 
   getConfig() {
     return {
-      blockchainParams: BlockchainParams,
-      env: process.env,
+      blockchainParams: this.server.node.getAllBlockchainParamsFromState(),
+      env: getEnvVariables(),
       devFlags: DevFlags,
-      blockchainConfigs: BlockchainConfigs,
+      blockchainConsts: BlockchainConsts,
+      nodeConfigs: NodeConfigs,
     };
   }
 
@@ -139,32 +127,36 @@ class P2pClient {
    * Returns json rpc urls.
    */
   getPeerCandidateJsonRpcUrlList() {
-    return Object.values(this.outbound).map((peer) => {
+    const outboundEntries = Object.entries(this.outbound).map(([address, peer]) => {
       const jsonRpcUrl = _.get(peer, 'peerInfo.networkStatus.urls.jsonRpc.url');
-      if (jsonRpcUrl) {
-        return jsonRpcUrl;
-      }
+      return [address, jsonRpcUrl];
     });
+    return Object.fromEntries(outboundEntries);
   }
 
   /**
    * Returns P2p endpoint urls.
    */
   getPeerP2pUrlList() {
-    return Object.values(this.outbound)
-      .filter((peer) => {
+    const outboundEntries = Object.entries(this.outbound)
+      .filter(([, peer]) => {
         const incomingPeers =
             _.get(peer, 'peerInfo.networkStatus.connectionStatus.incomingPeers', []);
         const maxInbound = _.get(peer, 'peerInfo.networkStatus.connectionStatus.maxInbound', 0);
         return incomingPeers.length < maxInbound;
       })
-      .map((peer) => peer.peerInfo.networkStatus.urls.p2p.url);
+      .map(([address, peer]) => {
+        const p2pUrl = _.get(peer, 'peerInfo.networkStatus.urls.p2p.url');
+        return [address, p2pUrl];
+      });
+    return Object.fromEntries(outboundEntries);
   }
 
   getPeerCandidateInfo() {
     return {
+      address: this.server.getNodeAddress(),
       isAvailableForConnection:
-          BlockchainConfigs.MAX_NUM_INBOUND_CONNECTION > Object.keys(this.server.inbound).length,
+          NodeConfigs.MAX_NUM_INBOUND_CONNECTION > Object.keys(this.server.inbound).length,
       networkStatus: this.server.getNetworkStatus(),
       peerCandidateJsonRpcUrlList: this.getPeerCandidateJsonRpcUrlList(),
       newPeerP2pUrlList: this.getPeerP2pUrlList()
@@ -178,17 +170,18 @@ class P2pClient {
     try {
       const peerInfo = this.getStatus();
       Object.assign(peerInfo, { updatedAt: Date.now() });
-      await sendGetRequest(BlockchainConfigs.TRACKER_UPDATE_JSON_RPC_URL, 'updateNodeInfo', peerInfo);
+      await sendGetRequest(NodeConfigs.TRACKER_UPDATE_JSON_RPC_URL, 'updateNodeInfo', peerInfo);
     } catch (error) {
       logger.error(error);
     }
   }
 
+  // TODO(minsulee2): Update TRACKER_UPDATE_INTERVAL_MS to a longer value (e.g. 1 min) for mainnet.
   setIntervalForTrackerUpdate() {
     this.updateNodeInfoToTracker();
     this.intervalTrackerUpdate = setInterval(() => {
       this.updateNodeInfoToTracker();
-    }, TRACKER_UPDATE_INTERVAL_MS);
+    }, NodeConfigs.TRACKER_UPDATE_INTERVAL_MS);
   }
 
   clearIntervalForTrackerUpdate() {
@@ -200,7 +193,8 @@ class P2pClient {
    * Returns either true or false and also set p2pState.
    */
   updateP2pState() {
-    if (Object.keys(this.outbound).length < BlockchainConfigs.TARGET_NUM_OUTBOUND_CONNECTION) {
+    if (Object.keys(this.outbound).length + this.peerConnectionsInProgress.size <
+        NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION) {
       this.p2pState = P2pNetworkStates.EXPANDING;
     } else {
       this.p2pState = P2pNetworkStates.STEADY;
@@ -208,7 +202,8 @@ class P2pClient {
   }
 
   /**
-   * Use the existing peer or, if the peer is unavailable, randomly assign a peer for syncing the chain.
+   * Use the existing peer or, if the peer is unavailable, randomly assign a peer for syncing
+   * the chain.
    * @returns {Object|Null} The socket of the peer.
    */
   assignRandomPeerForChainSync() {
@@ -238,31 +233,102 @@ class P2pClient {
    * 3) Use PEER_CANDIDATE_JSON_RPC_URL if there are no peerCandidates at all.
    */
   assignRandomPeerCandidate() {
-    const peerCandidatesEntries = Object.entries(this.peerCandidates);
-    if (peerCandidatesEntries.length === 0) {
-      return BlockchainConfigs.PEER_CANDIDATE_JSON_RPC_URL;
+    if (this.peerCandidates.size === 0) {
+      return NodeConfigs.PEER_CANDIDATE_JSON_RPC_URL;
     } else {
-      const notQueriedCandidateEntries = peerCandidatesEntries.filter(([, value]) => {
-        return value.queriedAt === null;
+      const notQueriedCandidateEntries = [...this.peerCandidates.entries()].filter(([, value]) => {
+        // NOTE(minsulee2): this gets stuck if the never queried node gets offline. To avoid this,
+        // the node which queried more than 5 minutes ago can also be considered as notQueried.
+        return value.queriedAt === null ? true :
+            Date.now() - value.queriedAt > NodeConfigs.PEER_CANDIDATE_RETRY_THRESHOLD_MS;
       });
       if (notQueriedCandidateEntries.length > 0) {
         return _.shuffle(notQueriedCandidateEntries)[0][0];
       } else {
-        return _.shuffle(peerCandidatesEntries)[0][0];
+        return _.shuffle(this.peerCandidates.keys())[0];
       }
+    }
+  }
+
+  async discoverPeerWithGuardingFlag() {
+    if (!this.isConnectingToPeerCandidates) {
+      this.isConnectingToPeerCandidates = true;
+      const nextPeerCandidate = this.assignRandomPeerCandidate();
+      await this.connectWithPeerCandidateUrl(nextPeerCandidate);
+      this.isConnectingToPeerCandidates = false;
+    }
+  }
+
+  closeSocketWithP2pStateUpdate(socket) {
+    P2pUtil.closeSocketSafe(this.outbound, socket);
+    const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
+    if (address in this.server.inbound) {
+      P2pUtil.closeSocketSafeByAddress(this.server.inbound, address);
+    }
+    this.updateP2pState();
+  }
+
+  pickRandomPeerAndDisconnect(addressArray) {
+    if (addressArray.length === 0) {
+      return;
+    }
+    const randomPeerAddress = _.shuffle(addressArray)[0];
+    if (!this.outbound[randomPeerAddress]) {
+      return;
+    }
+    this.closeSocketWithP2pStateUpdate(this.outbound[randomPeerAddress].socket);
+  }
+
+  disconnectRandomPeer() {
+    if (Object.keys(this.outbound) === 0) {
+      return;
+    }
+    // NOTE(minsulee2): To avoid breaking connections between ADDRESS_REQUEST and ADDRESS_RESPONSE,
+    // bidirectionally connected peers are picked to disconnect.
+    const bidirectedConnections = Object.keys(this.outbound).filter(address => {
+      return Object.keys(this.server.inbound).includes(address);
+    });
+    // NOTE(minsulee2): ENABLE_JSON_RPC_API === true means API server nodes for now.
+    // TODO(minsulee2): Need to introduce a new flag which marks a 'bridge node' role.
+    if (NodeConfigs.ENABLE_JSON_RPC_API) {
+      const whitelist = this.server.node.db.getValue('/consensus/proposer_whitelist');
+      const [whitelisted, notWhitelisted] =
+          _.partition(bidirectedConnections, ((address) => whitelist[address]));
+      const whitelistDisconnectThreshold = Math.floor(NodeConfigs.MAX_NUM_INBOUND_CONNECTION / 2);
+      // NOTE(minsulee2): Keep less than majority whitelisted.
+      if (whitelisted.length >= whitelistDisconnectThreshold) {
+        this.pickRandomPeerAndDisconnect(whitelisted);
+      } else {
+        this.pickRandomPeerAndDisconnect(notWhitelisted);
+      }
+    } else {
+      this.pickRandomPeerAndDisconnect(bidirectedConnections);
+    }
+  }
+
+  async tryReorgPeerConnections() {
+    if (Object.keys(this.outbound).length < NodeConfigs.PEER_REORG_MIN_OUTBOUND) {
+      return;
+    }
+    if (this.steadyIntervalCount < NodeConfigs.PEER_REORG_STEADY_INTERVAL_COUNT) {
+      this.steadyIntervalCount++;
+    } else {
+      this.steadyIntervalCount = 0;
+      this.disconnectRandomPeer();
+      this.updateP2pState();
+      await this.discoverPeerWithGuardingFlag();
     }
   }
 
   setIntervalForPeerCandidatesConnection() {
     this.intervalPeerCandidatesConnection = setInterval(async () => {
       this.updateP2pState();
-      if (this.p2pState === P2pNetworkStates.EXPANDING && !this.isConnectingToPeerCandidates) {
-        this.isConnectingToPeerCandidates = true;
-        const nextPeerCandidate = this.assignRandomPeerCandidate();
-        await this.connectWithPeerCandidateUrl(nextPeerCandidate);
-        this.isConnectingToPeerCandidates = false;
+      if (this.p2pState === P2pNetworkStates.EXPANDING) {
+        await this.discoverPeerWithGuardingFlag();
+      } else if (this.p2pState === P2pNetworkStates.STEADY) {
+        await this.tryReorgPeerConnections();
       }
-    }, PEER_CANDIDATES_CONNECTION_INTERVAL_MS);
+    }, NodeConfigs.PEER_CANDIDATES_CONNECTION_INTERVAL_MS);
   }
 
   clearIntervalForPeerCandidateConnection() {
@@ -302,18 +368,29 @@ class P2pClient {
     }
   }
 
-  broadcastConsensusMessage(consensusMessage) {
-    const payload = encapsulateMessage(MessageTypes.CONSENSUS, { message: consensusMessage });
+  broadcastConsensusMessage(consensusMessage, tags = []) {
+    tags.push(this.server.node.account.address);
+    const payload = P2pUtil.encapsulateMessage(MessageTypes.CONSENSUS, { message: consensusMessage, tags });
     if (!payload) {
       logger.error('The consensus msg cannot be broadcasted because of msg encapsulation failure.');
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach((node) => {
-      if (_.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
-        node.socket.send(stringPayload);
-      }
-    });
+    if (DevFlags.enableP2pMessageTagsChecking) {
+      const tagSet = new Set(tags);
+      Object.entries(this.outbound).forEach(([address, node]) => {
+        if (!tagSet.has(address) &&
+            _.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
+          node.socket.send(stringPayload);
+        }
+      });
+    } else {
+      Object.values(this.outbound).forEach((node) => {
+        if (_.get(node, 'peerInfo.consensusStatus.state') === ConsensusStates.RUNNING) {
+          node.socket.send(stringPayload);
+        }
+      });
+    }
     logger.debug(`SENDING: ${JSON.stringify(consensusMessage)}`);
   }
 
@@ -334,30 +411,42 @@ class P2pClient {
       return;
     }
     const lastBlockNumber = this.server.node.bc.lastBlockNumber();
+    const epochMs = this.server.node.getBlockchainParam('genesis/epoch_ms');
     if (this.chainSyncInProgress.lastBlockNumber >= lastBlockNumber &&
-        this.chainSyncInProgress.updatedAt > Date.now() - BlockchainConfigs.EPOCH_MS) { // time buffer
+        this.chainSyncInProgress.updatedAt > Date.now() - epochMs) { // time buffer
       logger.info(`[${LOG_HEADER}] Already sent a request with the same/higher lastBlockNumber`);
       return;
     }
-    const payload = encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
+    const payload = P2pUtil.encapsulateMessage(MessageTypes.CHAIN_SEGMENT_REQUEST, { lastBlockNumber });
     if (!payload) {
-      logger.error(`[${LOG_HEADER}] The request chainSegment cannot be sent because of msg encapsulation failure.`);
+      logger.error(`[${LOG_HEADER}] The request chainSegment cannot be sent because ` +
+          `of msg encapsulation failure.`);
       return;
     }
     this.updateChainSyncPeer(lastBlockNumber);
     socket.send(JSON.stringify(payload));
   }
 
-  broadcastTransaction(transaction) {
-    const payload = encapsulateMessage(MessageTypes.TRANSACTION, { transaction: transaction });
+  broadcastTransaction(transaction, tags = []) {
+    tags.push(this.server.node.account.address);
+    const payload = P2pUtil.encapsulateMessage(MessageTypes.TRANSACTION, { transaction, tags });
     if (!payload) {
       logger.error('The transaction cannot be broadcasted because of msg encapsulation failure.');
       return;
     }
     const stringPayload = JSON.stringify(payload);
-    Object.values(this.outbound).forEach(node => {
-      node.socket.send(stringPayload);
-    });
+    if (DevFlags.enableP2pMessageTagsChecking) {
+      const tagSet = new Set(tags);
+      Object.entries(this.outbound).forEach(([address, node]) => {
+        if (!tagSet.has(address)) {
+          node.socket.send(stringPayload);
+        }
+      });
+    } else {
+      Object.entries(this.outbound).forEach(([address, node]) => {
+        node.socket.send(stringPayload);
+      });
+    }
     logger.debug(`SENDING: ${JSON.stringify(transaction)}`);
   }
 
@@ -369,12 +458,12 @@ class P2pClient {
       timestamp: Date.now(),
       // TODO(minsulee2): Implement sessionToken: token
     };
-    const signature = signMessage(body, this.server.getNodePrivateKey());
+    const signature = P2pUtil.signMessage(body, this.server.getNodePrivateKey());
     if (!signature) {
       logger.error('The signaure is not correctly generated. Discard the message!');
       return false;
     }
-    const payload = encapsulateMessage(MessageTypes.ADDRESS_REQUEST,
+    const payload = P2pUtil.encapsulateMessage(MessageTypes.ADDRESS_REQUEST,
         { body: body, signature: signature });
     if (!payload) {
       logger.error('The peerInfo message cannot be sent because of msg encapsulation failure.');
@@ -385,17 +474,22 @@ class P2pClient {
     return true;
   }
 
+  clearPeerConnectionsInProgress(socket) {
+    P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, socket.url);
+    this.closeSocketWithP2pStateUpdate(socket);
+  }
+
   setClientSidePeerEventHandlers(socket) {
     const LOG_HEADER = 'setClientSidePeerEventHandlers';
     socket.on('message', (message) => {
       const beginTime = Date.now();
       const parsedMessage = JSON.parse(message);
-      const networkId = _.get(parsedMessage, 'networkId');
-      const address = getAddressFromSocket(this.outbound, socket);
-      if (!isValidNetworkId(networkId)) {
-        logger.error(`The given network ID(${networkId}) of the node(${address}) is MISSING or ` +
-          `DIFFERENT from mine(${BlockchainConfigs.NETWORK_ID}). Disconnect the connection.`);
-        closeSocketSafe(this.outbound, socket);
+      const peerNetworkId = _.get(parsedMessage, 'networkId');
+      const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
+      if (peerNetworkId !== this.server.node.getBlockchainParam('genesis/network_id')) {
+        logger.error(`The given network ID(${peerNetworkId}) of the node(${address}) is MISSING ` +
+            `or DIFFERENT from mine. Disconnect the connection.`);
+        this.clearPeerConnectionsInProgress(socket);
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
         return;
@@ -403,13 +497,13 @@ class P2pClient {
       const dataProtoVer = _.get(parsedMessage, 'dataProtoVer');
       if (!VersionUtil.isValidProtocolVersion(dataProtoVer)) {
         logger.error(`The data protocol version of the node(${address}) is MISSING or ` +
-              `INAPPROPRIATE. Disconnect the connection.`);
-        closeSocketSafe(this.outbound, socket);
+            `INAPPROPRIATE. Disconnect the connection.`);
+        this.clearPeerConnectionsInProgress(socket);
         const latency = Date.now() - beginTime;
         trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
         return;
       }
-      if (!checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
+      if (!P2pUtil.checkTimestamp(_.get(parsedMessage, 'timestamp'))) {
         logger.error(`[${LOG_HEADER}] The message from the node(${address}) is stale. ` +
             `Discard the message.`);
         logger.debug(`[${LOG_HEADER}] The detail is as follows: ${parsedMessage}`);
@@ -434,32 +528,31 @@ class P2pClient {
           if (!address) {
             logger.error(`[${LOG_HEADER}] Providing an address is compulsary when initiating ` +
                 `p2p communication.`);
-            closeSocketSafe(this.outbound, socket);
+            this.clearPeerConnectionsInProgress(socket);
             const latency = Date.now() - beginTime;
             trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
             return;
           } else if (!_.get(parsedMessage, 'data.signature')) {
             logger.error(`[${LOG_HEADER}] A sinature of the peer(${address}) is missing during ` +
                 `p2p communication. Cannot proceed the further communication.`);
-            // NOTE(minsulee2): Strictly close socket necessary??
-            closeSocketSafe(this.outbound, socket);
+            this.clearPeerConnectionsInProgress(socket);
             const latency = Date.now() - beginTime;
             trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
             return;
           } else {
-            const addressFromSig = getAddressFromMessage(parsedMessage);
+            const addressFromSig = P2pUtil.getAddressFromMessage(parsedMessage);
             if (addressFromSig !== address) {
               logger.error(`[${LOG_HEADER}] The addresses(${addressFromSig} and ${address}) are ` +
                   `not the same!!`);
-              closeSocketSafe(this.outbound, socket);
+              this.clearPeerConnectionsInProgress(socket);
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
               return;
             }
-            if (!verifySignedMessage(parsedMessage, addressFromSig)) {
+            if (!P2pUtil.verifySignedMessage(parsedMessage, addressFromSig)) {
               logger.error(`[${LOG_HEADER}] The message is not correctly signed. ` +
                   `Discard the message!!`);
-              closeSocketSafe(this.outbound, socket);
+              this.clearPeerConnectionsInProgress(socket);
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_CLIENT, latency);
               return;
@@ -470,7 +563,7 @@ class P2pClient {
               peerInfo: _.get(parsedMessage, 'data.body.peerInfo')
             };
             Object.assign(this.outbound[address], { version: dataProtoVer });
-            this.removePeerConnection(socket.url);
+            P2pUtil.removeFromPeerConnectionsInProgress(this.peerConnectionsInProgress, socket.url);
             this.updateNodeInfoToTracker();
           }
           break;
@@ -512,20 +605,27 @@ class P2pClient {
     });
 
     socket.on('pong', () => {
-      const address = getAddressFromSocket(this.outbound, socket);
-      logger.info(`The peer(${address}) is alive.`);
+      const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
+      logger.debug(`The peer (${address}) is alive.`);
     });
 
     socket.on('close', () => {
-      const address = getAddressFromSocket(this.outbound, socket);
-      removeSocketConnectionIfExists(this.outbound, address);
+      const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
       if (_.get(this.chainSyncInProgress, 'address') === address) {
         this.resetChainSyncPeer();
       }
-      logger.info(`Disconnected from a peer: ${address || 'unknown'}`);
+      this.clearPeerConnectionsInProgress(socket);
+      if (address in this.server.inbound) {
+        P2pUtil.closeSocketSafeByAddress(this.server.inbound, address);
+      }
+      logger.info(`Disconnected from a peer: ${address || socket.url}`);
     });
 
-    // TODO(minsulee2): needs to update socket.on('error').
+    socket.on('error', () => {
+      const address = P2pUtil.getAddressFromSocket(this.inbound, socket);
+      logger.error(`Error in communication with peer ${address}: ` +
+          `${JSON.stringify(error, null, 2)}`);
+    });
   }
 
   tryInitProcesses(number) {
@@ -547,8 +647,9 @@ class P2pClient {
 
   handleChainSegment(number, chainSegment, catchUpInfo, socket) {
     const LOG_HEADER = 'handleChainSegment';
-    const address = getAddressFromSocket(this.outbound, socket);
-    if (_.get(this.chainSyncInProgress, 'address') !== address) { // Received from a peer that I didn't request from
+    const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
+    // Received from a peer that I didn't request from
+    if (_.get(this.chainSyncInProgress, 'address') !== address) {
       return;
     }
     if (this.tryInitProcesses(number)) { // Already caught up
@@ -578,7 +679,7 @@ class P2pClient {
 
   setTimerForPeerAddressResponse(socket) {
     setTimeout(() => {
-      const address = getAddressFromSocket(this.outbound, socket);
+      const address = P2pUtil.getAddressFromSocket(this.outbound, socket);
         if (address) {
           logger.info(`Received address: ${address}`);
           this.requestChainSegment();
@@ -587,11 +688,11 @@ class P2pClient {
             this.server.consensus.stakeTx = null;
           }
         } else {
-          logger.error('Address confirmation hasn\'t sent back. Close the socket connection');
-          this.removePeerConnection(socket.url);
-          closeSocketSafe(this.outbound, socket);
+          logger.error(`Address confirmation hasn\'t sent back. ` +
+              `Close the socket(${socket.url}) connection`);
+          this.clearPeerConnectionsInProgress(socket);
         }
-    }, WAIT_FOR_ADDRESS_TIMEOUT_MS);
+    }, NodeConfigs.P2P_WAIT_FOR_ADDRESS_TIMEOUT_MS);
   }
 
   /**
@@ -608,62 +709,73 @@ class P2pClient {
     if (!urlWithoutJsonRpc) {
       return urlWithoutJsonRpc;
     } else {
-      return BlockchainConfigs.HOSTING_ENV === 'local' ? CommonUtil.isValidPrivateUrl(urlWithoutJsonRpc) :
+      return NodeConfigs.HOSTING_ENV === 'local' ? CommonUtil.isValidPrivateUrl(urlWithoutJsonRpc) :
           CommonUtil.isValidUrl(urlWithoutJsonRpc);
+    }
+  }
+
+  setPeerCandidate(jsonRpcUrl, address, queriedAt) {
+    if (CommonUtil.isWildcard(NodeConfigs.PEER_WHITELIST) ||
+        (CommonUtil.isArray(NodeConfigs.PEER_WHITELIST) &&
+            NodeConfigs.PEER_WHITELIST.includes(address))) {
+      this.peerCandidates.set(jsonRpcUrl, { queriedAt });
     }
   }
 
   /**
    * Tries to connect multiple peer candidates via the given peer candidate url.
-   * @param {string} peerCandidateJsonRpcUrl should be something like http(s)://xxx.xxx.xxx.xxx/json-rpc
+   * @param {string} peerCandidateJsonRpcUrl should be something like
+   * http(s)://xxx.xxx.xxx.xxx/json-rpc
    */
   async connectWithPeerCandidateUrl(peerCandidateJsonRpcUrl) {
+    const LOG_HEADER = 'connectWithPeerCandidateUrl';
     const myP2pUrl = _.get(this.server.urls, 'p2p.url', '');
     const myJsonRpcUrl = _.get(this.server.urls, 'jsonRpc.url', '');
-    if (!peerCandidateJsonRpcUrl || peerCandidateJsonRpcUrl === '' || peerCandidateJsonRpcUrl === myJsonRpcUrl) {
+    if (!peerCandidateJsonRpcUrl || peerCandidateJsonRpcUrl === '' ||
+        P2pUtil.areIdenticalUrls(peerCandidateJsonRpcUrl, myJsonRpcUrl)) {
+      this.peerCandidates.delete(peerCandidateJsonRpcUrl);
       return;
     }
     const resp = await sendGetRequest(peerCandidateJsonRpcUrl, 'p2p_getPeerCandidateInfo', { });
     const peerCandidateInfo = _.get(resp, 'data.result.result');
     if (!peerCandidateInfo) {
-      logger.error(`Invalid peer candidate info from peer candidate url (${peerCandidateJsonRpcUrl}).`);
+      logger.error(`Invalid peer candidate info from peer candidate url ` +
+          `(${peerCandidateJsonRpcUrl}).`);
       return;
     }
     // NOTE(platfowner): As peerCandidateUrl can be a domain name url with multiple nodes,
     // use the json rpc url in response instead.
     const jsonRpcUrlFromResp = _.get(peerCandidateInfo, 'networkStatus.urls.jsonRpc.url');
+    const address = _.get(peerCandidateInfo, 'address');
     if (!jsonRpcUrlFromResp) {
-      logger.error(`Invalid peer candidate json rpc url from peer candidate url (${peerCandidateJsonRpcUrl}).`);
+      logger.error(`Invalid peer candidate json rpc url from peer candidate url ` +
+          `(${peerCandidateJsonRpcUrl}).`);
       return;
     }
     if (jsonRpcUrlFromResp !== myJsonRpcUrl) {
-      this.peerCandidates[jsonRpcUrlFromResp] = { queriedAt: Date.now() };
+      this.setPeerCandidate(jsonRpcUrlFromResp, address, Date.now());
     }
     const peerCandidateJsonRpcUrlList = _.get(peerCandidateInfo, 'peerCandidateJsonRpcUrlList', []);
-    peerCandidateJsonRpcUrlList.forEach((url) => {
-      if (url !== myJsonRpcUrl && !this.peerCandidates[url] && this.isValidJsonRpcUrl(url)) {
-        this.peerCandidates[url] = { queriedAt: null };
+    Object.entries(peerCandidateJsonRpcUrlList).forEach(([address, url]) => {
+      if (url !== myJsonRpcUrl && !this.peerCandidates.has(url) && this.isValidJsonRpcUrl(url) &&
+          P2pUtil.checkPeerWhitelist(address)) {
+        this.setPeerCandidate(url, address, null);
       }
     });
     const newPeerP2pUrlList = _.get(peerCandidateInfo, 'newPeerP2pUrlList', []);
-    const newPeerP2pUrlListWithoutMyUrl = newPeerP2pUrlList.filter((url) => {
-      return url !== myP2pUrl;
-    });
+    const newPeerP2pUrlListWithoutMyUrl = Object.entries(newPeerP2pUrlList)
+      .filter(([address, p2pUrl]) => {
+        return P2pUtil.checkPeerWhitelist(address) && p2pUrl !== myP2pUrl;
+      })
+      .map(([, p2pUrl]) => p2pUrl);
     const isAvailableForConnection = _.get(peerCandidateInfo, 'isAvailableForConnection');
     const peerCandidateP2pUrl = _.get(peerCandidateInfo, 'networkStatus.urls.p2p.url');
-    if (peerCandidateP2pUrl !== myP2pUrl && isAvailableForConnection && !this.outbound[peerCandidateP2pUrl]) {
+    if (peerCandidateP2pUrl !== myP2pUrl && isAvailableForConnection && !this.outbound[address]) {
       // NOTE(minsulee2): Add a peer candidate up on the list if it is not connected.
       newPeerP2pUrlListWithoutMyUrl.push(peerCandidateP2pUrl);
     }
+    logger.info(`[${LOG_HEADER}] Try to connect(${JSON.stringify(newPeerP2pUrlListWithoutMyUrl)})`);
     this.connectWithPeerUrlList(_.shuffle(newPeerP2pUrlListWithoutMyUrl));
-  }
-
-  addPeerConnection(url) {
-    this.peerConnectionsInProgress[url] = true;
-  }
-
-  removePeerConnection(url) {
-    delete this.peerConnectionsInProgress[url];
   }
 
   setChainSyncPeer(address) {
@@ -685,13 +797,15 @@ class P2pClient {
   }
 
   connectToPeer(url) {
+    // TODO(*): Add maxPayload option (e.g. ~50MB)
     const socket = new Websocket(url);
     socket.on('open', async () => {
       logger.info(`Connected to peer (${url}),`);
-      this.setClientSidePeerEventHandlers(socket);
+      this.setClientSidePeerEventHandlers(socket, url);
       const isMessageSent = this.sendPeerInfo(socket);
       if (isMessageSent) {
-        this.addPeerConnection(url);
+        P2pUtil.addPeerConnection(this.peerConnectionsInProgress, url);
+        this.updateP2pState();
         this.setTimerForPeerAddressResponse(socket);
       }
     });
@@ -709,8 +823,8 @@ class P2pClient {
 
   getMaxNumberOfNewPeers() {
     const totalConnections =
-        Object.keys(this.outbound).length + Object.keys(this.peerConnectionsInProgress).length;
-    return Math.max(0, BlockchainConfigs.TARGET_NUM_OUTBOUND_CONNECTION - totalConnections);
+        Object.keys(this.outbound).length + this.peerConnectionsInProgress.size;
+    return Math.max(0, NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION - totalConnections);
   }
 
   connectWithPeerUrlList(newPeerP2pUrlList) {
@@ -720,25 +834,26 @@ class P2pClient {
       if (address) {
         logger.debug(`Node ${address}(${url}) is already a managed peer.`);
       } else {
-        logger.info(`Connecting to peer ${address}(${url})`);
+        logger.info(`Connecting to peer(${url})`);
         this.connectToPeer(url);
       }
     });
   }
 
   disconnectFromPeers() {
-    Object.values(this.outbound).forEach(node => {
+    Object.values(this.outbound).forEach((node) => {
       node.socket.close();
     });
   }
 
   setIntervalForShardProofHashReports() {
     if (!this.shardReportInterval && this.server.node.isShardReporter) {
+      const epochMs = this.server.node.getBlockchainParam('genesis/epoch_ms');
       this.shardReportInterval = setInterval(() => {
         if (this.server.consensus.isRunning()) {
           this.server.reportShardProofHashes();
         }
-      }, BlockchainConfigs.EPOCH_MS);
+      }, epochMs);
     }
   }
 
@@ -758,7 +873,7 @@ class P2pClient {
   }
 
   updateStatusToPeer(socket, address) {
-    const payload = encapsulateMessage(MessageTypes.PEER_INFO_UPDATE, this.getStatus());
+    const payload = P2pUtil.encapsulateMessage(MessageTypes.PEER_INFO_UPDATE, this.getStatus());
     if (!payload) {
       logger.error('The message cannot be sent because of msg encapsulation failure.');
       return;
@@ -774,16 +889,15 @@ class P2pClient {
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
         const socket = _.get(node, 'socket');
         if (socket.readyState !== 1) {
-          const address = getAddressFromSocket(this.outbound, socket);
-          removeSocketConnectionIfExists(this.outbound, address);
-          logger.info(`A peer(${address}) is not ready to communicate with. ` +
+          logger.info(`A peer(${node.peerInfo.address}) is not ready to communicate with. ` +
               `The readyState is(${socket.readyState})`);
+          this.closeSocketWithP2pStateUpdate(socket);
         } else {
           socket.ping();
           this.updateStatusToPeer(socket, node.peerInfo.address);
         }
       });
-    }, HEARTBEAT_INTERVAL_MS);
+    }, NodeConfigs.P2P_HEARTBEAT_INTERVAL_MS);
   }
 
   stopHeartbeat() {

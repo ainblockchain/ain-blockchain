@@ -38,14 +38,15 @@ class PathUtil {
 
   static getTokenBridgeConfigPath(networkName, chainId, tokenId) {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE, networkName, chainId, tokenId]);
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS, PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN,
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_BRIDGE, networkName, chainId, tokenId]);
   }
 
   static getTokenBridgeTokenPoolPath(networkName, chainId, tokenId) {
     return CommonUtil.formatPath([
-      PredefinedDbPaths.TOKEN, PredefinedDbPaths.TOKEN_BRIDGE, networkName, chainId, tokenId,
-      PredefinedDbPaths.TOKEN_BRIDGE_TOKEN_POOL
-    ]);
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS, PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN,
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_BRIDGE, networkName, chainId, tokenId,
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_POOL]);
   }
 
   static getTransferPath(from, to, key) {
@@ -231,10 +232,10 @@ class PathUtil {
         tokenId, address, checkoutId]);
   }
 
-  static getCheckoutHistoryRefundPath(networkName, chainId, tokenId, address, checkoutId) {
-    return CommonUtil.appendPath(
-        PathUtil.getCheckoutHistoryPath(networkName, chainId, tokenId, address, checkoutId),
-        PredefinedDbPaths.CHECKOUT_HISTORY_REFUND);
+  static getCheckoutRefundPath(networkName, chainId, tokenId, address, checkoutId) {
+    return CommonUtil.formatPath([
+      PredefinedDbPaths.CHECKOUT, PredefinedDbPaths.CHECKOUT_REFUNDS, networkName, chainId,
+      tokenId, address, checkoutId]);
   }
 
   static getCheckoutPendingAmountTotalPath() {
@@ -269,12 +270,20 @@ class PathUtil {
     return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_OFFENSE_RECORDS, address]);
   }
 
-  static getConsensusWhitelistPath() {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST]);
+  static getConsensusProposerWhitelistPath() {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST]);
   }
 
-  static getConsensusWhitelistAddrPath(address) {
-    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_WHITELIST, address]);
+  static getConsensusProposerWhitelistAddrPath(address) {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST, address]);
+  }
+
+  static getConsensusValidatorWhitelistPath() {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_VALIDATOR_WHITELIST]);
+  }
+
+  static getConsensusValidatorWhitelistAddrPath(address) {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_VALIDATOR_WHITELIST, address]);
   }
 
   static getConsensusStakingAccountPath(address) {
@@ -343,11 +352,18 @@ class PathUtil {
         PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_USER_WHITELIST, address]);
   }
 
-  static getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath() {
+  static getBlockchainParamsMaxUrlsPerDeveloperPath() {
     return CommonUtil.formatPath([
-        PredefinedDbPaths.DEVELOPERS, PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS,
-        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_PARAMS,
-        PredefinedDbPaths.DEVELOPERS_REST_FUNCTIONS_MAX_URLS_PER_DEVELOPER]);
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS, PredefinedDbPaths.BLOCKCHAIN_PARAMS_RESOURCE,
+        PredefinedDbPaths.BLOCKCHAIN_PARAMS_MAX_FUNCTION_URLS_PER_DEVELOPER]);
+  }
+
+  static getBlockchainParamsRootPath() {
+    return CommonUtil.formatPath([PredefinedDbPaths.BLOCKCHAIN_PARAMS]);
+  }
+
+  static getSingleBlockchainParamPath(category, name) {
+    return CommonUtil.formatPath([PredefinedDbPaths.BLOCKCHAIN_PARAMS, category, name]);
   }
 }
 

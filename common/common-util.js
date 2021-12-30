@@ -2,6 +2,11 @@ const stringify = require('fast-json-stable-stringify');
 const jsonDiff = require('json-diff');
 const ainUtil = require('@ainblockchain/ain-util');
 const _ = require('lodash');
+const {
+  FailedTxPrecheckCodeSet,
+  FunctionResultCode,
+  TxResultCode,
+} = require('../common/result-code');
 const RuleUtil = require('../db/rule-util');
 const ruleUtil = new RuleUtil();
 
@@ -21,7 +26,7 @@ class CommonUtil {
   }
 
   static signTransaction(txBody, privateKey, chainId) {
-    const { BlockchainConfigs } = require('../common/constants');
+    const { BlockchainConsts } = require('../common/constants');
     if (!privateKey) {
       return null;
     }
@@ -36,7 +41,7 @@ class CommonUtil {
       signedTx: {
         tx_body: txBody,
         signature: sig,
-        protoVer: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+        protoVer: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
       }
     };
   }
@@ -51,7 +56,7 @@ class CommonUtil {
   /**
    * Gets address from hash and signature.
    */
-  static getAddressFromSignature(logger, hash, signature) {
+  static getAddressFromSignature(logger, hash, signature, chainId) {
     const LOG_HEADER = 'getAddressFromSignature';
     let address = '';
     try {
@@ -59,7 +64,7 @@ class CommonUtil {
       const len = sigBuffer.length;
       const lenHash = len - 65;
       const {r, s, v} = ainUtil.ecSplitSig(sigBuffer.slice(lenHash, len));
-      const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v);
+      const publicKey = ainUtil.ecRecoverPub(Buffer.from(hash, 'hex'), r, s, v, chainId);
       address = ainUtil.toChecksumAddress(ainUtil.bufferToHex(
           ainUtil.pubToAddress(publicKey, publicKey.length === 65)));
     } catch (err) {
@@ -141,6 +146,10 @@ class CommonUtil {
     return ruleUtil.isValidPrivateUrl(url);
   }
 
+  static isWildcard(value) {
+    return value === '*';
+  }
+
   static boolOrFalse(value) {
     return ruleUtil.boolOrFalse(value);
   }
@@ -218,7 +227,7 @@ class CommonUtil {
     return ruleUtil.toEscrowAccountName(source, target, escrowKey);
   }
 
-  static toGetOptions(args) {
+  static toGetOptions(args, fromApi = false) {
     const options = {};
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
@@ -238,13 +247,22 @@ class CommonUtil {
     if (args.include_proof !== undefined) {
       options.includeProof = CommonUtil.toBool(args.include_proof);
     }
+    if (fromApi) {
+      options.fromApi = true;
+    }
     return options;
   }
 
-  static toMatchOrEvalOptions(args) {
+  static toMatchOrEvalOptions(args, fromApi = false) {
     const options = {};
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    if (args.is_merge !== undefined) {
+      options.isMerge = CommonUtil.toBool(args.is_merge);
+    }
+    if (fromApi) {
+      options.fromApi = true;
     }
     return options;
   }
@@ -273,6 +291,9 @@ class CommonUtil {
 
   static parsePath(path) {
     if (!path) {
+      return [];
+    }
+    if (!CommonUtil.isString(path)) {
       return [];
     }
     return path.split('/').filter((node) => {
@@ -305,6 +326,15 @@ class CommonUtil {
 
   static getBalancePath(addrOrServAcnt) {
     return ruleUtil.getBalancePath(addrOrServAcnt);
+  }
+
+  static isPrefixedLabel(label, prefix) {
+    return _.startsWith(label, prefix);
+  }
+
+  static isVariableLabel(label) {
+    const { StateLabelProperties } = require('../common/constants');
+    return CommonUtil.isPrefixedLabel(label, StateLabelProperties.VARIABLE_LABEL_PREFIX)
   }
 
   static getJsObject(obj, path) {
@@ -385,8 +415,7 @@ class CommonUtil {
    * after executeOperation().
    */
   static txPrecheckFailed(result) {
-    const precheckFailureCode = [21, 22, 3, 15, 33, 16, 17, 34, 35];
-    return precheckFailureCode.includes(result.code);
+    return FailedTxPrecheckCodeSet.has(result.code);
   }
 
   /**
@@ -406,6 +435,11 @@ class CommonUtil {
             return true;
           }
         }
+        if (subResult.subtree_func_results) {
+          if (CommonUtil.isFailedSubtreeFuncTrigger(subResult.subtree_func_results)) {
+            return true;
+          }
+        }
       }
       return false;
     }
@@ -417,11 +451,16 @@ class CommonUtil {
         return true;
       }
     }
+    if (result.subtree_func_results) {
+      if (CommonUtil.isFailedSubtreeFuncTrigger(result.subtree_func_results)) {
+        return true;
+      }
+    }
     return false;
   }
 
   static isFailedTxResultCode(code) {
-    return code !== 0;
+    return code !== TxResultCode.SUCCESS;
   }
 
   /**
@@ -446,11 +485,28 @@ class CommonUtil {
     return false;
   }
 
+  /**
+   * Returns true if the given result is from a failed subtree function trigger.
+   */
+  static isFailedSubtreeFuncTrigger(result) {
+    if (CommonUtil.isDict(result)) {
+      for (const functionPath in result) {
+        const funcPathResult = result[functionPath];
+        for (const valuePath in funcPathResult) {
+          const valuePathResult = funcPathResult[valuePath];
+          const funcResult = valuePathResult.func_results;
+          if (CommonUtil.isFailedFuncTrigger(funcResult)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   // TODO(platfowner): Consider some code (e.g. IN_LOCKUP_PERIOD, INSUFFICIENT_BALANCE) no failure
   // so that their transactions are not reverted.
   static isFailedFuncResultCode(code) {
-    const { FunctionResultCode } = require('../common/constants');
-
     return code !== FunctionResultCode.SUCCESS;
   }
 
@@ -543,27 +599,68 @@ class CommonUtil {
     return gasAmount;
   }
 
+  static getFuncResultsBandwidthGasAmount(triggeringPath, resultObj) {
+    const gasAmount = { service: 0 };
+
+    for (const funcRes of Object.values(resultObj)) {
+      if (!CommonUtil.isEmpty(funcRes.op_results)) {
+        for (const opRes of Object.values(funcRes.op_results)) {
+          CommonUtil.mergeNumericJsObjects(
+            gasAmount,
+            CommonUtil.getTotalBandwidthGasAmountInternal(CommonUtil.parsePath(opRes.path), opRes.result)
+          );
+        }
+      }
+      // Follow the tx type of the triggering tx.
+      CommonUtil.mergeNumericJsObjects(
+        gasAmount,
+        CommonUtil.getSingleOpBandwidthGasAmount(triggeringPath, funcRes.bandwidth_gas_amount)
+      );
+    }
+
+    return gasAmount;
+  }
+
+  static getSubtreeFuncResultsBandwidthGasAmount(triggeringPath, resultObj) {
+    const gasAmount = { service: 0 };
+
+    if (CommonUtil.isDict(resultObj)) {
+      for (const functionPath in resultObj) {
+        const funcPathResult = resultObj[functionPath];
+        for (const valuePath in funcPathResult) {
+          const valuePathResult = funcPathResult[valuePath];
+          const funcResult = valuePathResult.func_results;
+          CommonUtil.mergeNumericJsObjects(
+            gasAmount,
+            CommonUtil.getFuncResultsBandwidthGasAmount(
+                [...triggeringPath, ...CommonUtil.parsePath(valuePath)], funcResult)
+          );
+        }
+      }
+    }
+
+    return gasAmount;
+  }
+
   static getTotalBandwidthGasAmountInternal(triggeringPath, resultObj) {
     const gasAmount = { service: 0 };
+
     if (!resultObj) return gasAmount;
     if (resultObj.result_list) return gasAmount; // NOTE: Assume nested SET is not allowed
 
     if (resultObj.func_results) {
-      for (const funcRes of Object.values(resultObj.func_results)) {
-        if (!CommonUtil.isEmpty(funcRes.op_results)) {
-          for (const opRes of Object.values(funcRes.op_results)) {
-            CommonUtil.mergeNumericJsObjects(
-              gasAmount,
-              CommonUtil.getTotalBandwidthGasAmountInternal(CommonUtil.parsePath(opRes.path), opRes.result)
-            );
-          }
-        }
-        // Follow the tx type of the triggering tx.
-        CommonUtil.mergeNumericJsObjects(
-          gasAmount,
-          CommonUtil.getSingleOpBandwidthGasAmount(triggeringPath, funcRes.bandwidth_gas_amount)
-        );
-      }
+      CommonUtil.mergeNumericJsObjects(
+        gasAmount,
+        CommonUtil.getFuncResultsBandwidthGasAmount(triggeringPath, resultObj.func_results)
+      );
+    }
+
+    if (resultObj.subtree_func_results) {
+      CommonUtil.mergeNumericJsObjects(
+        gasAmount,
+        CommonUtil.getSubtreeFuncResultsBandwidthGasAmount(
+            triggeringPath, resultObj.subtree_func_results)
+      );
     }
 
     if (resultObj.bandwidth_gas_amount) {
@@ -582,6 +679,7 @@ class CommonUtil {
    */
   static getTotalBandwidthGasAmount(op, result) {
     const gasAmount = { service: 0 };
+
     if (!op || !result) return gasAmount;
     if (result.result_list) {
       for (const [index, res] of Object.entries(result.result_list)) {
@@ -609,34 +707,49 @@ class CommonUtil {
    * @param {Object} gasAmount gas amount
    * @returns
    */
-  static getTotalGasCost(gasPrice, gasAmount) {
-    const { BlockchainConfigs } = require('./constants');
+  static getTotalGasCost(gasPrice, gasAmount, gasPriceUnit) {
     if (!CommonUtil.isNumber(gasPrice)) {
       gasPrice = 0; // Default gas price = 0 microain
     }
     if (!CommonUtil.isNumber(gasAmount)) {
       gasAmount = 0; // Default gas amount = 0
     }
-    return gasPrice * BlockchainConfigs.MICRO_AIN * gasAmount;
+    return gasPrice * gasPriceUnit * gasAmount;
   }
 
-  static getServiceGasCostTotalFromTxList(txList, resList) {
+  static getServiceGasCostTotalFromTxList(txList, resList, gasPriceUnit) {
     return resList.reduce((acc, cur, index) => {
       const tx = txList[index];
       return CommonUtil.mergeNumericJsObjects(acc, {
         gasAmountTotal: cur.gas_amount_charged,
-        gasCostTotal: CommonUtil.getTotalGasCost(tx.tx_body.gas_price, cur.gas_amount_charged)
+        gasCostTotal: CommonUtil.getTotalGasCost(tx.tx_body.gas_price, cur.gas_amount_charged, gasPriceUnit)
       });
     }, { gasAmountTotal: 0, gasCostTotal: 0 });
   }
 
-  static returnTxResult(code, message = null, bandwidthGasAmount = 0, funcResults = null) {
+  static deleteSubtreeFuncResFuncPromises(res) {
+    const deleted = JSON.parse(JSON.stringify(res));
+    for (const subtreeFuncPath in res) {
+      const subtreeFuncPathRes = res[subtreeFuncPath];
+      for (const subtreeValuePath in subtreeFuncPathRes) {
+        _.unset(deleted, `${subtreeFuncPath}.${subtreeValuePath}.func_promises`);
+      }
+    }
+    return deleted;
+  }
+
+  static returnTxResult(
+      code, message = null, bandwidthGasAmount = 0, funcResults = null, subtreeFuncResults = null) {
     const result = {};
     if (message) {
-      result.error_message = message;
+      result.message = message;
     }
     if (!CommonUtil.isEmpty(funcResults)) {
       result.func_results = funcResults;
+    }
+    if (!CommonUtil.isEmpty(subtreeFuncResults)) {
+      result.subtree_func_results =
+          CommonUtil.deleteSubtreeFuncResFuncPromises(subtreeFuncResults);
     }
     result.code = code;
     result.bandwidth_gas_amount = bandwidthGasAmount;
@@ -786,6 +899,30 @@ class CommonUtil {
       regexpList.push(new RegExp(str));
     }
     return regexpList;
+  }
+
+  static getWhitelistFromString(value) {
+    return CommonUtil.isWildcard(value) ? value : value.split(',');
+  }
+
+  static countMaxOccurrences(list) {
+    if (!CommonUtil.isArray(list)) {
+      return 0;
+    }
+    let maxOccurrences = 0;
+    const counts = {};
+    for (const item of list) {
+      counts[item] = (counts[item] || 0) + 1;
+      if (maxOccurrences < counts[item]) {
+        maxOccurrences = counts[item];
+      }
+    }
+    return maxOccurrences;
+  }
+
+  static timestampExceedsThreshold(timestamp, threshold) {
+    if (!timestamp) return true;
+    return Date.now() - timestamp > threshold;
   }
 }
 

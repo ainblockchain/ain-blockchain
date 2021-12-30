@@ -1,0 +1,125 @@
+{
+  "_description": "Blockchain params for the mainnet-prod on cloud.",
+  "token": {
+    "name": "AI Network",
+    "symbol": "AIN",
+    "total_supply": 700000000,
+    "bridge": {
+      "ETH": {
+        "1": {
+          "0x3A810ff7211b40c4fA76205a14efe161615d0385": {
+            "token_pool": "0x00CC0491CdA2dA91385C9c424852Ae096B7AbD89",
+            "min_checkout_per_request": 10000,
+            "max_checkout_per_request": 100000,
+            "max_checkout_per_day": 1000000,
+            "checkout_fee_rate": 0.001,
+            "token_exchange_rate": 1,
+            "token_exchange_scheme": "FIXED"
+          }
+        }
+      }
+    }
+  },
+  "consensus": {
+    "min_stake_for_proposer": 10000000,
+    "max_stake_for_proposer": 10000000,
+    "min_num_validators": 5,
+    "max_num_validators": 20,
+    "genesis_proposer_whitelist": {
+      "0x000C63907F7Aeca56A72F5a4F7cd00EfFCF11c3A": true,
+      "0x001C3C9C4a5669eCD8b78946f6fa5549b33362F8": true,
+      "0x002C76f0aeA9Ba615428d9dF7fedEC6f8ed5369f": true,
+      "0x003C9d091584fEC96bC3bD8423c884680BEAaf4E": true,
+      "0x004C4328B6c2ABF7c4Df897a8124b36E3f00a2FC": true
+    },
+    "genesis_validator_whitelist": {
+      "0x000C63907F7Aeca56A72F5a4F7cd00EfFCF11c3A": true,
+      "0x001C3C9C4a5669eCD8b78946f6fa5549b33362F8": true,
+      "0x002C76f0aeA9Ba615428d9dF7fedEC6f8ed5369f": true,
+      "0x003C9d091584fEC96bC3bD8423c884680BEAaf4E": true,
+      "0x004C4328B6c2ABF7c4Df897a8124b36E3f00a2FC": true,
+      "0x005C99Db64845e5BF24cd152b22c932989479907": true,
+      "0x006C672861e9DBb09232307c17Be6554BC90687c": true,
+      "0x007C36bf5D0F77836eE138EEAc8df7051b43209b": true,
+      "0x008C287187a5626D0a25DbD67327B36AC55B998E": true,
+      "0x009C66DBce144003f8C4B859fFFce78F80fDD639": true
+    },
+    "genesis_validators": {
+      "0x000C63907F7Aeca56A72F5a4F7cd00EfFCF11c3A": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x001C3C9C4a5669eCD8b78946f6fa5549b33362F8": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x002C76f0aeA9Ba615428d9dF7fedEC6f8ed5369f": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x003C9d091584fEC96bC3bD8423c884680BEAaf4E": {
+        "stake": 10000000,
+        "proposal_right": true
+      },
+      "0x004C4328B6c2ABF7c4Df897a8124b36E3f00a2FC": {
+        "stake": 10000000,
+        "proposal_right": true
+      }
+    },
+    "health_threshold_epoch": 10,
+    "stake_lockup_extension": 2592000000,
+    "max_invalid_blocks_on_mem": 100
+  },
+  "genesis": {
+    "genesis_addr": "0xCCCC7809e28DE89BE2AfeFbaa25f1Cee04C4f7a2",
+    "genesis_timestamp": 1640736000000,
+    "num_genesis_accounts": 10,
+    "epoch_ms": 20000,
+    "chain_id": 1,
+    "network_id": 1
+  },
+  "resource": {
+    "state_tree_height_limit": 30,
+    "state_tree_bytes_limit": 5000000000,
+    "state_label_length_limit": 150,
+    "bandwidth_budget_per_block": 10000,
+    "service_state_budget_ratio": 0.5,
+    "apps_state_budget_ratio": 0.495,
+    "free_state_budget_ratio": 0.005,
+    "max_state_tree_size_per_byte": 0.01,
+    "state_gas_coefficient": 1,
+    "unit_write_gas_amount": 1,
+    "account_registration_gas_amount": 2000,
+    "rest_function_call_gas_amount": 100,
+    "gas_price_unit": 0.000001,
+    "service_bandwidth_budget_ratio": 0.5,
+    "apps_bandwidth_budget_ratio": 0.495,
+    "free_bandwidth_budget_ratio": 0.005,
+    "min_staking_for_app_tx": 0,
+    "min_balance_for_service_tx": 0,
+    "max_function_urls_per_developer": 3,
+    "default_developers_url_whitelist": {
+      "0": "https://*.ainetwork.ai",
+      "1": "https://*.ainize.ai",
+      "2": "https://*.afan.ai"
+    },
+    "tx_bytes_limit": 10000,
+    "batch_tx_list_size_limit": 50,
+    "set_op_list_size_limit": 50,
+    "min_gc_num_siblings_deleted": 100
+  },
+  "reward": {
+    "type": "FIXED",
+    "annual_rate": 0.08
+  },
+  "sharding": {
+    "shard_owner": "",
+    "shard_reporter": "",
+    "sharding_protocol": "NONE",
+    "sharding_path": "/",
+    "parent_chain_poc": "",
+    "reporting_period": 0,
+    "max_shard_report": 100,
+    "num_shard_report_deleted": 100
+  }
+}

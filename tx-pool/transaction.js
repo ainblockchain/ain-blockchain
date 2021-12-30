@@ -3,7 +3,7 @@ const logger = new (require('../logger'))('TRANSACTION');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const {
-  BlockchainConfigs,
+  NodeConfigs,
   WriteDbOperations,
 } = require('../common/constants');
 const CommonUtil = require('../common/common-util');
@@ -25,7 +25,7 @@ class Transaction {
     logger.debug(`CREATED TRANSACTION: ${JSON.stringify(this)}`);
   }
 
-  static create(txBody, signature) {
+  static create(txBody, signature, chainId) {
     if (!Transaction.isValidTxBody(txBody)) {
       return null;
     }
@@ -34,42 +34,42 @@ class Transaction {
     let address = null;
     let skipVerif = false;
     // A devel method for bypassing the signature verification.
-    if (BlockchainConfigs.ENABLE_TX_SIG_VERIF_WORKAROUND && txBody.address !== undefined) {
+    if (NodeConfigs.ENABLE_TX_SIG_VERIF_WORKAROUND && txBody.address !== undefined) {
       address = txBody.address;
       skipVerif = true;
     } else {
-      address = CommonUtil.getAddressFromSignature(logger, hash.slice(2), signature);
+      address = CommonUtil.getAddressFromSignature(logger, hash.slice(2), signature, chainId);
     }
     const createdAt = Date.now();
     return new Transaction(txBody, signature, hash, address, skipVerif, createdAt);
   }
 
-  static fromTxBody(txBody, privateKey) {
+  static fromTxBody(txBody, privateKey, chainId) {
     if (!Transaction.isValidTxBody(txBody)) {
       return null;
     }
     // A devel method for bypassing the transaction verification.
     let signature = '';
     if (!txBody.address) {
-      const signed = CommonUtil.signTransaction(txBody, privateKey, BlockchainConfigs.CHAIN_ID);
+      const signed = CommonUtil.signTransaction(txBody, privateKey, chainId);
       const sig = _.get(signed, 'signedTx.signature', null);
       if (!sig) {
         return null;
       }
       signature = sig;
     }
-    return Transaction.create(txBody, signature);
+    return Transaction.create(txBody, signature, chainId);
   }
 
   static isExecutable(tx) {
     return tx instanceof Transaction;
   }
 
-  static toExecutable(tx) {
+  static toExecutable(tx, chainId) {
     if (this.isExecutable(tx)) {
       return tx;
     }
-    return Transaction.create(tx.tx_body, tx.signature);
+    return Transaction.create(tx.tx_body, tx.signature, chainId);
   }
 
   static toJsObject(tx) {
@@ -180,7 +180,7 @@ class Transaction {
     return sanitized;
   }
 
-  static verifyTransaction(tx) {
+  static verifyTransaction(tx, chainId) {
     if (!tx || !Transaction.isValidTxBody(tx.tx_body)) {
       logger.info(`Invalid transaction body: ${JSON.stringify(tx, null, 2)}`);
       return false;
@@ -190,7 +190,7 @@ class Transaction {
       logger.info('Skip verifying signature for transaction: ' + JSON.stringify(tx, null, 2));
       return true;
     }
-    return ainUtil.ecVerifySig(tx.tx_body, tx.signature, tx.address);
+    return ainUtil.ecVerifySig(tx.tx_body, tx.signature, tx.address, chainId);
   }
 
   static isValidTxBody(txBody) {
@@ -227,7 +227,7 @@ class Transaction {
 
   static isValidGasPrice(gasPrice) {
     // NOTE(platfowner): Allow 'undefined' value for backward compatibility.
-    return gasPrice > 0 || BlockchainConfigs.ENABLE_GAS_FEE_WORKAROUND && (gasPrice === undefined || gasPrice === 0);
+    return gasPrice > 0 || NodeConfigs.ENABLE_GAS_FEE_WORKAROUND && (gasPrice === undefined || gasPrice === 0);
   }
 
   static isValidBilling(billing) {

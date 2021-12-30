@@ -51,8 +51,6 @@ else
 fi
 
 
-export CONSOLE_LOG=false 
-
 printf "\nStarting up Blockchain Tracker server..\n\n"
 START_CMD="nohup node --async-stack-traces tracker-server/index.js >/dev/null 2>error_logs.txt &"
 printf "START_CMD=$START_CMD\n"

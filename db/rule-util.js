@@ -53,6 +53,13 @@ class RuleUtil {
     return [];
   }
 
+  values(value) {
+    if (this.isDict(value)) {
+      return Object.values(value);
+    }
+    return [];
+  }
+
   length(value) {
     if (this.isString(value) || this.isArray(value)) {
       return value.length;
@@ -195,23 +202,34 @@ class RuleUtil {
     return getValue(PathUtil.getConsensusStakingAccountBalancePath(address)) || 0;
   }
 
-  getMinStakeAmount() {
-    const { BlockchainConfigs } = require('../common/constants');
-    return BlockchainConfigs.MIN_STAKE_PER_VALIDATOR;
+  getMinStakeAmount(getValue) {
+    const PathUtil = require('../common/path-util');
+    return getValue(
+        PathUtil.getSingleBlockchainParamPath('consensus', 'min_stake_for_proposer'));
   }
 
-  getMaxStakeAmount() {
-    const { BlockchainConfigs } = require('../common/constants');
-    return BlockchainConfigs.MAX_STAKE_PER_VALIDATOR;
+  getMaxStakeAmount(getValue) {
+    const PathUtil = require('../common/path-util');
+    return getValue(
+        PathUtil.getSingleBlockchainParamPath('consensus', 'max_stake_for_proposer'));
   }
 
-  getMinNumValidators() {
-    const { BlockchainConfigs } = require('../common/constants');
-    return BlockchainConfigs.MIN_NUM_VALIDATORS;
+  getMinNumValidators(getValue) {
+    const PathUtil = require('../common/path-util');
+    return getValue(
+        PathUtil.getSingleBlockchainParamPath('consensus', 'min_num_validators'));
   }
 
-  getConsensusWhitelistSize() {
-    this.length(this.values(getValue(PathUtil.getConsensusWhitelistPath())).filter((x) => x === true));
+  getConsensusProposerWhitelistSize(getValue) {
+    const PathUtil = require('../common/path-util');
+    const whitelist = getValue(PathUtil.getConsensusProposerWhitelistPath()) || {};
+    return this.length(this.values(whitelist).filter((x) => x === true));
+  }
+
+  getConsensusValidatorWhitelistSize(getValue) {
+    const PathUtil = require('../common/path-util');
+    const whitelist = getValue(PathUtil.getConsensusValidatorWhitelistPath()) || {};
+    return this.length(this.values(whitelist).filter((x) => x === true));
   }
 
   getTokenBridgeConfig(networkName, chainId, tokenId, getValue) {
@@ -224,17 +242,37 @@ class RuleUtil {
     return getValue(PathUtil.getTokenBridgeTokenPoolPath(networkName, chainId, tokenId));
   }
 
-  validateCheckoutRequestData(networkName, chainId, tokenId, newData, getValue) {
-    const { TokenBridgeProperties } = require('../common/constants');
+  validateCheckoutRefundData(networkName, chainId, tokenId, userAddr, checkoutId, auth, newData, getValue) {
+    const PathUtil = require('../common/path-util');
+    if (!this.isString(newData)) {
+      return false;
+    }
+    if (auth.fid !== '_closeCheckout' && auth.addr !== this.getTokenPoolAddr(networkName, chainId, tokenId, getValue)) {
+      return false;
+    }
+    if (!getValue(PathUtil.getCheckoutHistoryPath(networkName, chainId, tokenId, userAddr, checkoutId))) {
+      return false;
+    }
+    return true;
+  }
+
+  validateCheckoutRequestData(networkName, chainId, tokenId, userAddr, checkoutId, newData, currentTime, getValue) {
+    const { PredefinedDbPaths } = require('../common/constants');
+    const PathUtil = require('../common/path-util');
+    // NOTE(liayoo): checkoutId should be the same as the transaction's timestamp to prevent duplicates.
     if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
-        !this.isString(newData.recipient) || !this.isNumber(newData.fee_rate)) {
+        !this.isString(newData.recipient) || !this.isNumber(newData.fee_rate) ||
+        Number(checkoutId) !== currentTime) {
       return false;
     }
     const tokenBridgeConfig = this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue);
     if (!this.isDict(tokenBridgeConfig)) {
       return false;
     }
-    if (tokenBridgeConfig[TokenBridgeProperties.CHECKOUT_FEE_RATE] !== newData.fee_rate) {
+    if (tokenBridgeConfig[PredefinedDbPaths.BLOCKCHAIN_PARAMS_TOKEN_CHECKOUT_FEE_RATE] !== newData.fee_rate) {
+      return false;
+    }
+    if (getValue(PathUtil.getCheckoutHistoryPath(networkName, chainId, tokenId, userAddr, checkoutId))) {
       return false;
     }
     return true;
@@ -242,7 +280,6 @@ class RuleUtil {
 
   validateCheckoutHistoryData(networkName, chainId, tokenId, userAddr, checkoutId, newData, getValue) {
     const PathUtil = require('../common/path-util');
-    const { FunctionResultCode } = require('../common/constants');
     const request = getValue(
         PathUtil.getCheckoutRequestPath(networkName, chainId, tokenId, userAddr, checkoutId));
     if (!request || !this.isDict(request) || !this.isDict(newData)) {
@@ -251,14 +288,20 @@ class RuleUtil {
     if (!_.isEqual(request, newData.request)) {
       return false;
     }
-    return this.isDict(newData.response) && this.isValidHash(newData.response.tx_hash) &&
-        (newData.response.status === FunctionResultCode.SUCCESS ||
-        newData.response.status === FunctionResultCode.FAILURE);
+    // NOTE(liayoo): tx_hash could be undefined if the checkout failed/rejected without a tx generated.
+    return this.isDict(newData.response) && this.isBool(newData.response.status) &&
+        (newData.response.tx_hash === undefined || this.isValidHash(newData.response.tx_hash));
   }
 
-  validateCheckinRequestData(networkName, chainId, tokenId, newData, getValue) {
+  validateCheckinRequestData(networkName, chainId, tokenId, userAddr, checkinId, newData, currentTime, getValue) {
+    const PathUtil = require('../common/path-util');
+    // NOTE(liayoo): checkinId should be the same as the transaction's timestamp to prevent duplicates.
     if (!this.isDict(newData) || !this.isNumber(newData.amount) || newData.amount <= 0 ||
-        !this.isString(newData.sender)) {
+        !this.isString(newData.sender) || !this.isString(newData.sender_proof) ||
+        Number(checkinId) !== currentTime) {
+      return false;
+    }
+    if (getValue(PathUtil.getCheckinHistoryPath(networkName, chainId, tokenId, userAddr, checkinId))) {
       return false;
     }
     return this.isDict(this.getTokenBridgeConfig(networkName, chainId, tokenId, getValue));
@@ -266,7 +309,6 @@ class RuleUtil {
 
   validateCheckinHistoryData(networkName, chainId, tokenId, userAddr, checkinId, newData, getValue) {
     const PathUtil = require('../common/path-util');
-    const { FunctionResultCode } = require('../common/constants');
     const request = getValue(
         PathUtil.getCheckinRequestPath(networkName, chainId, tokenId, userAddr, checkinId));
     if (!request || !this.isDict(request) || !this.isDict(newData)) {
@@ -276,8 +318,7 @@ class RuleUtil {
       return false;
     }
     return this.isDict(newData.response) && this.isValidHash(newData.response.tx_hash) &&
-        (newData.response.status === FunctionResultCode.SUCCESS ||
-        newData.response.status === FunctionResultCode.FAILURE);
+        this.isBool(newData.response.status);
   }
 
   validateClaimRewardData(userAddr, newData, getValue) {
@@ -294,7 +335,26 @@ class RuleUtil {
         newData.amount <= this.getBalance(from, getValue);
   }
 
-  validateConsensusVoteData(newData, userAddr, blockHash, lastBlockNumber, getValue) {
+  validateConsensusProposalData(newData, userAddr, blockNumber, getValue) {
+    const PathUtil = require('../common/path-util');
+    if (!this.isDict(newData) || Number(blockNumber) !== newData.number ||
+        !this.isNumber(newData.gas_cost_total)) {
+      return false;
+    }
+    if (newData.proposer !== userAddr ||
+        getValue(PathUtil.getConsensusProposerWhitelistAddrPath(userAddr)) !== true) {
+      return false;
+    }
+    const stake = this.getConsensusStakeBalance(userAddr, getValue);
+    return stake >= this.getMinStakeAmount(getValue) && stake <= this.getMaxStakeAmount(getValue);
+  }
+
+  validateConsensusVoteData(newData, userAddr, blockHash, getValue) {
+    const PathUtil = require('../common/path-util');
+    if (getValue(PathUtil.getConsensusValidatorWhitelistAddrPath(userAddr)) !== true &&
+        getValue(PathUtil.getConsensusProposerWhitelistAddrPath(userAddr)) !== true) {
+      return false;
+    }
     if (!this.isDict(newData) || !this.isBool(newData.is_against) || !this.isNumber(newData.stake)
         || newData.block_hash !== blockHash) {
       return false;
@@ -302,7 +362,7 @@ class RuleUtil {
     if (newData.is_against && !this.isValidatorOffenseType(newData.offense_type)) {
       return false;
     }
-    return lastBlockNumber < 1 || this.getConsensusStakeBalance(userAddr, getValue) === newData.stake;
+    return this.getConsensusStakeBalance(userAddr, getValue) === newData.stake;
   }
 
   isValidatorOffenseType(type) {
@@ -328,7 +388,7 @@ class RuleUtil {
   }
 
   isValidPrivateUrl(url) {
-    const privateUrlRegex = /^(https?:\/\/)?(((127\.)|(10\.))((?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])\.){2}(?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])|((192\.168\.)|(172\.1[6-9]\.)|(172\.2[0-9]\.)|(172\.3[0-1]\.))((?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])\.)(?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])|(::1$)|([fF][cCdD]))(:(6553[0-5]|655[0-2](\d)|65[0-4](\d){2}|6[0-4](\d){3}|[1-5](\d){4}|[1-9](\d){0,3}))?$/;
+    const privateUrlRegex = /^(https?:\/\/)?(((127\.)|(10\.))((?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])\.){2}(?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])|((192\.168\.)|(172\.1[6-9]\.)|(172\.2[0-9]\.)|(172\.3[0-1]\.))((?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])\.)(?:1\d{2}|2[0-4]\d|[1-9]?\d|25[0-5])|(::1$)|([fF][cCdD])|localhost)(:(6553[0-5]|655[0-2](\d)|65[0-4](\d){2}|6[0-4](\d){3}|[1-5](\d){4}|[1-9](\d){0,3}))?$/;
     return this.isString(url) ? privateUrlRegex.test(url) : false;
   }
 
@@ -340,7 +400,7 @@ class RuleUtil {
     if (newData !== null && !this.isValidUrlWhitelistItem(newData)) {
       return false;
     }
-    const maxUrlsPerDeveloper = getValue(PathUtil.getDevelopersRestFunctionsParamsMaxUrlsPerDeveloperPath());
+    const maxUrlsPerDeveloper = getValue(PathUtil.getBlockchainParamsMaxUrlsPerDeveloperPath());
     const existingUrls = getValue(PathUtil.getDevelopersRestFunctionsUrlWhitelistUserPath(userAddr)) || {};
     return data !== null || newData === null ||
         Object.keys(existingUrls).length < maxUrlsPerDeveloper;

@@ -8,24 +8,51 @@ const {
   abbrAddr,
   isNodeAlive
 } = require('./util');
-const { BlockchainConfigs } = require('../common/constants');
+const {
+  BlockchainConsts,
+  getEnvVariables,
+} = require('../common/constants');
 
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
+
+const NODE_INFO_REPORT_INTERVAL_MS = 60 * 1000;
 
 class Tracker {
   constructor() {
     this.blockchainNodes = {};
+    this.setIntervalForNodeInfoRecord();
+  }
+
+  setIntervalForNodeInfoRecord() {
+    setInterval(() => {
+      // NOTE(minsulee2): This will be turned into logger.debug();
+      logger.info(`${JSON.stringify(this.blockchainNodes, null, 2)}`);
+    }, NODE_INFO_REPORT_INTERVAL_MS);
   }
 
   setBlockchainNode(peerInfo) {
-    peerInfo.location = this.getNodeLocation(peerInfo.networkStatus.ip);
-    this.blockchainNodes[peerInfo.address] = peerInfo;
-    logger.info(`Update from node [${abbrAddr(peerInfo.address)}]`);
-    logger.debug(`: ${JSON.stringify(peerInfo, null, 2)}`);
+    peerInfo.location = this.getNodeLocation(peerInfo.networkStatus.urls.ip);
+    this.blockchainNodes[peerInfo.address] = Object.assign({ isAlive: true }, peerInfo);
+    logger.info(`Update from node [${abbrAddr(peerInfo.address)}]\n` +
+    `  - p2pState: ${peerInfo.networkStatus.connectionStatus.state}\n` +
+    `    - incomingPeers: ${JSON.stringify(peerInfo.networkStatus.connectionStatus.incomingPeers)}\n` +
+    `    - outgoingPeers: ${JSON.stringify(peerInfo.networkStatus.connectionStatus.outgoingPeers)}\n` +
+    `  - consensusState: ${peerInfo.consensusStatus.state}\n` +
+    `  - nodeState: ${peerInfo.nodeStatus.state}`);
   }
 
+  // Updates the aliveness status of the nodes and returns the number of alive nodes.
   getNumNodesAlive() {
-    return Object.values(this.blockchainNodes).filter(nodeInfo => isNodeAlive(nodeInfo)).length;
+    let numAliveNodes = 0;
+    for (const [address, nodeInfo] of Object.entries(this.blockchainNodes)) {
+      if (isNodeAlive(nodeInfo)) {
+        this.blockchainNodes[address].isAlive = true;
+        numAliveNodes++;
+      } else {
+        this.blockchainNodes[address].isAlive = false;
+      }
+    }
+    return numAliveNodes;
   }
 
   getNodeLocation(ip) {
@@ -135,23 +162,13 @@ class Tracker {
         // version: os.version(),
         uptime: os.uptime(),
       },
-      env: {
-        NETWORK_OPTIMIZATION: process.env.NETWORK_OPTIMIZATION,
-        BLOCKCHAIN_CONFIGS_DIR: process.env.BLOCKCHAIN_CONFIGS_DIR,
-        MIN_NUM_VALIDATORS: process.env.MIN_NUM_VALIDATORS,
-        MAX_NUM_VALIDATORS: process.env.MAX_NUM_VALIDATORS,
-        ACCOUNT_INDEX: process.env.ACCOUNT_INDEX,
-        P2P_PORT: process.env.P2P_PORT,
-        PORT: process.env.PORT,
-        HOSTING_ENV: process.env.HOSTING_ENV,
-        DEBUG: process.env.DEBUG,
-      },
+      env: getEnvVariables(),
     };
   }
 
   getProtocolInfo() {
     return {
-      currentVersion: BlockchainConfigs.CURRENT_PROTOCOL_VERSION,
+      currentVersion: BlockchainConsts.CURRENT_PROTOCOL_VERSION,
     };
   }
 }

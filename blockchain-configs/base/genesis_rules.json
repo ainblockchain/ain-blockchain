@@ -11,6 +11,11 @@
       }
     }
   },
+  "blockchain_params": {
+    ".rule": {
+      "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true"
+    }
+  },
   "checkin": {
     "history": {
       "$network_name": {
@@ -20,7 +25,8 @@
               "$checkin_id": {
                 ".rule": {
                   "state": {
-                    "gc_max_siblings": 100
+                    "gc_max_siblings": 200,
+                    "gc_num_siblings_deleted": 100
                   },
                   "write": "data === null && util.validateCheckinHistoryData($network_name, $chain_id, $token_id, $user_addr, $checkin_id, newData, getValue) && auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue)"
                 }
@@ -37,7 +43,7 @@
             "$user_addr": {
               "$checkin_id": {
                 ".rule": {
-                  "write": "((auth.fid === '_closeCheckin' || auth.addr === $user_addr) && data !== null && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckinRequestData($network_name, $chain_id, $token_id, newData, getValue))"
+                  "write": "((auth.fid === '_closeCheckin' || auth.addr === $user_addr) && data !== null && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckinRequestData($network_name, $chain_id, $token_id, auth.addr, $checkin_id, newData, currentTime, getValue))"
                 }
               }
             }
@@ -60,14 +66,29 @@
               "$checkout_id": {
                 ".rule": {
                   "state": {
-                    "gc_max_siblings": 100
+                    "gc_max_siblings": 200,
+                    "gc_num_siblings_deleted": 100
                   },
                   "write": "data === null && util.validateCheckoutHistoryData($network_name, $chain_id, $token_id, $user_addr, $checkout_id, newData, getValue) && auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue)"
-                },
-                "refund": {
-                  ".rule": {
-                    "write": "data === null && util.isString(newData) && (auth.fid === '_closeCheckout' || auth.addr === util.getTokenPoolAddr($network_name, $chain_id, $token_id, getValue))"
-                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "refunds": {
+      "$network_name": {
+        "$chain_id": {
+          "$token_id": {
+            "$user_addr": {
+              "$checkout_id": {
+                ".rule": {
+                  "state": {
+                    "gc_max_siblings": 200,
+                    "gc_num_siblings_deleted": 100
+                  },
+                  "write": "util.validateCheckoutRefundData($network_name, $chain_id, $token_id, $user_addr, $checkout_id, auth, newData, getValue)"
                 }
               }
             }
@@ -82,7 +103,7 @@
             "$user_addr": {
               "$checkout_id": {
                 ".rule": {
-                  "write": "(auth.fid === '_closeCheckout' && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckoutRequestData($network_name, $chain_id, $token_id, newData, getValue))"
+                  "write": "(auth.fid === '_closeCheckout' && newData === null) || (data === null && auth.addr === $user_addr && util.validateCheckoutRequestData($network_name, $chain_id, $token_id, auth.addr, $checkout_id, newData, currentTime, getValue))"
                 }
               }
             }
@@ -108,23 +129,38 @@
       "$number": {
         ".rule": {
           "state": {
-            "gc_max_siblings": 1000
+            "gc_max_siblings": 1000,
+            "gc_num_siblings_deleted": 200
           },
           "write": "newData === null && !!getValue('/consensus/number/' + (Number($number) + 1000))"
         },
         "propose": {
           ".rule": {
-            "write": "util.isDict(newData) && newData.proposer === auth.addr && Number($number) === newData.number && getValue('/consensus/whitelist/' + auth.addr) === true && (lastBlockNumber < 1 || (getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') >= util.getMinStakeAmount() && getValue('/service_accounts/staking/consensus/' + auth.addr + '|0/balance') <= util.getMaxStakeAmount())) && util.isNumber(newData.gas_cost_total)"
+            "write": "util.validateConsensusProposalData(newData, auth.addr, $number, getValue) === true"
           }
         },
         "$block_hash": {
           "vote": {
             "$user_addr": {
               ".rule": {
-                "write": "auth.addr === $user_addr && data === null && util.validateConsensusVoteData(newData, auth.addr, $block_hash, lastBlockNumber, getValue) === true"
+                "write": "auth.addr === $user_addr && data === null && util.validateConsensusVoteData(newData, auth.addr, $block_hash, getValue) === true"
               }
             }
           }
+        }
+      }
+    },
+    "proposer_whitelist": {
+      "$user_addr": {
+        ".rule": {
+          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusProposerWhitelistSize(getValue) > 1))"
+        }
+      }
+    },
+    "validator_whitelist": {
+      "$user_addr": {
+        ".rule": {
+          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusValidatorWhitelistSize(getValue) > util.getMinNumValidators(getValue)))"
         }
       }
     },
@@ -134,11 +170,20 @@
           "write": "auth.fid === '_distributeFee' || auth.fid === '_claimReward'"
         }
       }
-    },
-    "whitelist": {
-      "$user_addr": {
-        ".rule": {
-          "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true && (newData === true || (newData === null && util.getConsensusWhitelistSize() > util.getMinNumValidators()))"
+    }
+  },
+  "developers": {
+    "rest_functions": {
+      ".rule": {
+        "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true"
+      },
+      "url_whitelist":{
+        "$user_addr": {
+          "$key": {
+            ".rule": {
+              "write": "util.isAppAdmin('consensus', auth.addr, getValue) === true || (auth.addr === $user_addr && util.validateRestFunctionsUrlWhitelistData(auth.addr, data, newData, getValue) === true)"
+            }
+          }
         }
       }
     }
@@ -156,7 +201,8 @@
             "$record_id": {
               ".rule": {
                 "state": {
-                  "gc_max_siblings": 100
+                  "gc_max_siblings": 200,
+                  "gc_num_siblings_deleted": 100
                 },
                 "write": "((util.isServAcntName($source_account) && util.isAppAdminFromServAcntName($source_account, auth.addr, getValue) === true) || (util.isCksumAddr($source_account) && $source_account === auth.addr)) && getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config') !== null && data === null && util.isDict(newData)"
               }
@@ -166,7 +212,8 @@
             "$record_id": {
               ".rule": {
                 "state": {
-                  "gc_max_siblings": 100
+                  "gc_max_siblings": 200,
+                  "gc_num_siblings_deleted": 100
                 },
                 "write": "getValue('/escrow/' + $source_account + '/' + $target_account + '/' + $escrow_key + '/config/admin/' + auth.addr) === true && data === null && util.isDict(newData) && util.isNumber(newData.ratio) && 0 <= newData.ratio && newData.ratio <= 1"
               }
@@ -182,7 +229,8 @@
         "$record_id": {
           ".rule": {
             "state": {
-              "gc_max_siblings": 100
+              "gc_max_siblings": 200,
+              "gc_num_siblings_deleted": 100
             },
             "write": "auth.addr === $user_addr && util.validateClaimRewardData(auth.addr, newData, getValue) === true"
           }
@@ -193,7 +241,8 @@
       "$block_number": {
         ".rule": {
           "state": {
-            "gc_max_siblings": 1000
+            "gc_max_siblings": 1000,
+            "gc_num_siblings_deleted": 200
           }
         },
         "$from": {
@@ -230,7 +279,8 @@
             "$record_id": {
               ".rule": {
                 "state": {
-                  "gc_max_siblings": 100
+                  "gc_max_siblings": 200,
+                  "gc_num_siblings_deleted": 100
                 },
                 "write": "util.isAppAdmin($service_name, auth.addr, getValue) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0 && (util.isCksumAddr(newData.target) || util.isServAcntName(newData.target))"
               }
@@ -240,7 +290,8 @@
             "$record_id": {
               ".rule": {
                 "state": {
-                  "gc_max_siblings": 100
+                  "gc_max_siblings": 200,
+                  "gc_num_siblings_deleted": 100
                 },
                 "write": "util.isAppAdmin($service_name, auth.addr, getValue) === true && data === null && util.isDict(newData) && util.isNumber(newData.amount) && newData.amount > 0"
               }
@@ -254,7 +305,8 @@
     "$tx_hash": {
       ".rule": {
         "state": {
-          "gc_max_siblings": 1000
+          "gc_max_siblings": 1000,
+          "gc_num_siblings_deleted": 200
         }
       }
     }
@@ -302,7 +354,8 @@
             "$record_id": {
               ".rule": {
                 "state": {
-                  "gc_max_siblings": 100
+                  "gc_max_siblings": 200,
+                  "gc_num_siblings_deleted": 100
                 }
               },
               "value": {
@@ -316,7 +369,8 @@
             "$record_id": {
               ".rule": {
                 "state": {
-                  "gc_max_siblings": 100
+                  "gc_max_siblings": 200,
+                  "gc_num_siblings_deleted": 100
                 }
               },
               "value": {
@@ -336,7 +390,8 @@
         "$key": {
           ".rule": {
             "state": {
-              "gc_max_siblings": 100
+              "gc_max_siblings": 200,
+              "gc_num_siblings_deleted": 100
             }
           },
           "value": {
