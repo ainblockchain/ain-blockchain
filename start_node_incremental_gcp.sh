@@ -316,11 +316,10 @@ if [[ $ACCOUNT_INJECTION_OPTION = "keystore" ]]; then
     printf "KEYSTORE_FILE_PATH=$KEYSTORE_FILE_PATH\n"
 fi
 
-MAX_OLD_SPACE_SIZE_MB=55000
-
-printf "CORS_WHITELIST=$CORS_WHITELIST\n"
 export STAKE=100000
 printf "STAKE=$STAKE\n"
+
+MAX_OLD_SPACE_SIZE_MB=55000
 
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
 printf "START_CMD=$START_CMD\n"
