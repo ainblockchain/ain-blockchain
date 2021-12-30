@@ -653,6 +653,32 @@ const APP_DEPENDENT_SERVICE_TYPES = [
   PredefinedDbPaths.STAKING,
 ];
 
+const EXPOSED_ENV_VARIABLE_LIST = [
+  'BLOCKCHAIN_CONFIGS_DIR',
+  'HOSTING_ENV',
+  'DEBUG',
+  'PORT',
+  'STAKE',
+  'SYNC_MODE',
+];
+
+function getEnvVariables() {
+  const envs = {};
+  for (const envName of Object.keys(NodeParams)) {
+    const envValue = process.env[envName];
+    if (envValue !== undefined) {
+      envs[envName] = envValue;
+    }
+  }
+  for (const envName of EXPOSED_ENV_VARIABLE_LIST) {
+    const envValue = process.env[envName];
+    if (envValue !== undefined) {
+      envs[envName] = envValue;
+    }
+  }
+  return envs;
+}
+
 function isAppDependentServiceType(type) {
   return APP_DEPENDENT_SERVICE_TYPES.includes(type);
 }
@@ -728,6 +754,7 @@ module.exports = {
   BlockchainEventMessageTypes,
   isServiceType,
   isServiceAccountServiceType,
+  getEnvVariables,
   isAppDependentServiceType,
   buildOwnerPermissions,
   buildRulePermission,

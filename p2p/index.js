@@ -15,6 +15,7 @@ const {
   P2pNetworkStates,
   TrafficEventTypes,
   trafficStatsManager,
+  getEnvVariables,
 } = require('../common/constants');
 const P2pUtil = require('./p2p-util');
 const {
@@ -115,7 +116,7 @@ class P2pClient {
   getConfig() {
     return {
       blockchainParams: this.server.node.getAllBlockchainParamsFromState(),
-      env: process.env,
+      env: getEnvVariables(),
       devFlags: DevFlags,
       blockchainConsts: BlockchainConsts,
       nodeConfigs: NodeConfigs,
