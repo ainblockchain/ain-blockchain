@@ -8,7 +8,10 @@ const {
   abbrAddr,
   isNodeAlive
 } = require('./util');
-const { BlockchainConsts } = require('../common/constants');
+const {
+  BlockchainConsts,
+  getEnvVariables,
+} = require('../common/constants');
 
 const DISK_USAGE_PATH = os.platform() === 'win32' ? 'c:' : '/';
 
@@ -159,14 +162,7 @@ class Tracker {
         // version: os.version(),
         uptime: os.uptime(),
       },
-      env: {
-        BLOCKCHAIN_CONFIGS_DIR: process.env.BLOCKCHAIN_CONFIGS_DIR,
-        ACCOUNT_INJECTION_OPTION: process.env.ACCOUNT_INJECTION_OPTION,
-        P2P_PORT: process.env.P2P_PORT,
-        PORT: process.env.PORT,
-        HOSTING_ENV: process.env.HOSTING_ENV,
-        DEBUG: process.env.DEBUG,
-      },
+      env: getEnvVariables(),
     };
   }
 
