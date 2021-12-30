@@ -30,6 +30,11 @@
       "0x01B6B108bE3FEE00d3661777053175421D806Ea6": true,
       "0x02B3a185C6a9DCd643255329d3eB8603E3D0d743": true
     },
+    "genesis_validator_whitelist": {
+      "0x00Ba0Cb2B1157882963024E0CF837E773d11535d": true,
+      "0x01B6B108bE3FEE00d3661777053175421D806Ea6": true,
+      "0x02B3a185C6a9DCd643255329d3eB8603E3D0d743": true
+    },
     "genesis_validators": {
       "0x00Ba0Cb2B1157882963024E0CF837E773d11535d": {
         "stake": 10000000,
