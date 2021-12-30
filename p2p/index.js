@@ -33,6 +33,7 @@ class P2pClient {
     this.p2pState = P2pNetworkStates.STARTING;
     this.peerConnectionsInProgress = new Map();
     this.chainSyncInProgress = null;
+    this.peerConnectionStartedAt = null;
     logger.info(`Now p2p network in STARTING state!`);
     this.startHeartbeat();
   }
@@ -58,9 +59,14 @@ class P2pClient {
     const outgoingPeers = Object.keys(this.outbound);
     const peerConnectionsInProgress = Array.from(this.peerConnectionsInProgress.keys());
     const peerCandidates = Array.from(this.peerCandidates.keys());
+    const peerConnectionElapsedTime = this.peerConnectionStartedAt === null ? 0 :
+        Date.now() - this.peerConnectionStartedAt;
     return {
       state: this.p2pState,
       stateNumeric: Object.keys(P2pNetworkStates).indexOf(this.p2pState),
+      isConnectingToPeerCandidates: this.isConnectingToPeerCandidates,
+      peerConnectionStartedAt: this.peerConnectionStartedAt,
+      peerConnectionElapsedTime: peerConnectionElapsedTime,
       maxInbound: NodeConfigs.MAX_NUM_INBOUND_CONNECTION,
       targetOutBound: NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
       peerConnectionsInProgress: peerConnectionsInProgress,
@@ -253,6 +259,7 @@ class P2pClient {
   async discoverPeerWithGuardingFlag() {
     const LOG_HEADER = 'discoverPeerWithGuardingFlag';
     if (!this.isConnectingToPeerCandidates) {
+      this.peerConnectionStartedAt = Date.now();
       try {
         this.isConnectingToPeerCandidates = true;
         const nextPeerCandidate = this.assignRandomPeerCandidate();
