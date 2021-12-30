@@ -2322,7 +2322,7 @@ class DB {
     } catch (err) {
       return {
         code: TxResultCode.EVAL_RULE_SYNTAX_ERROR,
-        message: `Rule syntax error: \"${err.message}\" in rule string: [${String(ruleString)}]`,
+        message: `Rule syntax error: \"${err.message}\" in write rule: [${String(ruleString)}]`,
       };
     }
     const evalResult = !!writeRuleEvalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
