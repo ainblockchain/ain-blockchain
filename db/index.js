@@ -1765,7 +1765,7 @@ class DB {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
-      const executableTx = Transaction.toExecutable(tx);
+      const executableTx = Transaction.toExecutable(tx, DB.getBlockchainParam('genesis/chain_id'));
       const res =
         this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime);
       if (CommonUtil.isFailedTx(res)) {
