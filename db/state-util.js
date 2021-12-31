@@ -234,17 +234,11 @@ function makeWriteRuleCodeSnippet(ruleString) {
   return WRITE_RULE_CODE_SNIPPET_PREFIX + ruleString;
 }
 
-function getVariableLabels(parsedRulePath, allowVariableLabels) {
+function getVariableLabels(parsedRulePath) {
   const variableLabels = {};
   for (let i = 0; i < parsedRulePath.length; i++) {
     const label = parsedRulePath[i];
     if (CommonUtil.isVariableLabel(label)) {
-      if (!allowVariableLabels) {
-        return {
-          isValid: false,
-          invalidPath: CommonUtil.formatPath(parsedRulePath.slice(0, i + 1)),
-        };
-      }
       if (variableLabels[label] !== undefined) {
         return {
           isValid: false,
@@ -588,12 +582,6 @@ function isValidConfigTreeRecursive(
   for (const label in stateTreeObj) {
     subtreePath.push(label);
     if (CommonUtil.isVariableLabel(label)) {
-      if (!params.allowVariableLabels) {
-        return {
-          isValid: false,
-          invalidPath: CommonUtil.formatPath([...treePath, ...subtreePath]),
-        };
-      }
       if (!params.variableLabels) {
         params.variableLabels = {};
       }
@@ -639,12 +627,11 @@ function isValidRuleTree(treePath, ruleTreeObj, params) {
     return { isValid: true, invalidPath: '' };
   }
 
-  const varLabelsRes = getVariableLabels(treePath, true);
+  const varLabelsRes = getVariableLabels(treePath);
   if (!varLabelsRes.isValid) {
     return varLabelsRes;
   }
   const newParams = Object.assign({}, params, {
-    allowVariableLabels: true,
     variableLabels: varLabelsRes.variableLabels,
   });
   return isValidConfigTreeRecursive(
@@ -659,12 +646,11 @@ function isValidFunctionTree(treePath, functionTreeObj) {
     return { isValid: true, invalidPath: '' };
   }
 
-  const varLabelsRes = getVariableLabels(treePath, true);
+  const varLabelsRes = getVariableLabels(treePath);
   if (!varLabelsRes.isValid) {
     return varLabelsRes;
   }
   const newParams = {
-    allowVariableLabels: true,
     variableLabels: varLabelsRes.variableLabels,
   };
   return isValidConfigTreeRecursive(
@@ -680,11 +666,13 @@ function isValidOwnerTree(treePath, ownerTreeObj) {
     return { isValid: true, invalidPath: '' };
   }
 
-  const varLabelsRes = getVariableLabels(treePath, false);
+  const varLabelsRes = getVariableLabels(treePath);
   if (!varLabelsRes.isValid) {
     return varLabelsRes;
   }
-  const newParams = { allowVariableLabels: false };
+  const newParams = {
+    variableLabels: varLabelsRes.variableLabels,
+  };
   return isValidConfigTreeRecursive(
       treePath, ownerTreeObj, [], PredefinedDbPaths.DOT_OWNER, isValidOwnerConfig,
       newParams);
