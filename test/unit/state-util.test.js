@@ -1022,7 +1022,7 @@ describe("state-util", () => {
           }
         }
       }, params), {isValid: false, invalidPath: '/some_path/.rule'});
-      // with variable label: case 1
+      // with variable labels: case 1
       assert.deepEqual(isValidRuleTree(['some_label1', '$var_label1', '$var_label1'], {
         ['some_label1']: {
           ['$var_label2']: {
@@ -1032,7 +1032,7 @@ describe("state-util", () => {
           }
         }
       }, params), {isValid: false, invalidPath: '/some_label1/$var_label1/$var_label1'});
-      // with variable label: case 2
+      // with variable labels: case 2
       assert.deepEqual(isValidRuleTree(['some_label1', '$var_label1'], {
         ['some_label1']: {
           ['$var_label1']: {
@@ -1042,7 +1042,7 @@ describe("state-util", () => {
           }
         }
       }, params), {isValid: false, invalidPath: '/some_label1/$var_label1/some_label1/$var_label1'});
-      // with variable label: case 3
+      // with variable labels: case 3
       assert.deepEqual(isValidRuleTree(['some_label1', '$var_label1'], {
         ['$var_label2']: {
           ['some_label1']: {
@@ -1076,11 +1076,11 @@ describe("state-util", () => {
         }
       }, params), {isValid: true, invalidPath: ''});
       // with dup non-variable labels and no-dup variable labels
-      assert.deepEqual(isValidRuleTree(['some_label1', '$var_label1', 'some_label1'], {
+      assert.deepEqual(isValidRuleTree(['some_label1', '$var_label1', 'some_label1', '$var_label2'], {
         ['some_label1']: {
-          ['$var_label2']: {
+          ['$var_label3']: {
             ['some_label1']: {
-              ['$var_label3']: {
+              ['$var_label4']: {
                 '.rule': {
                   'write': "$var_label1 === 'name1' && $var_label2 === 'name2'"
                 }
@@ -1294,7 +1294,7 @@ describe("state-util", () => {
           '.function': undefined
         }
       }), {isValid: false, invalidPath: '/some_path/.function'});
-      // with variable label: case 1
+      // with variable labels: case 1
       assert.deepEqual(isValidFunctionTree(['some_label1', '$var_label1', '$var_label1'], {
         ['some_label1']: {
           ['$var_label2']: {
@@ -1312,7 +1312,7 @@ describe("state-util", () => {
           }
         }
       }), {isValid: false, invalidPath: '/some_label1/$var_label1/$var_label1'});
-      // with variable label: case 2
+      // with variable labels: case 2
       assert.deepEqual(isValidFunctionTree(['some_label1', '$var_label1'], {
         ['some_label1']: {
           ['$var_label1']: {
@@ -1330,7 +1330,7 @@ describe("state-util", () => {
           }
         }
       }), {isValid: false, invalidPath: '/some_label1/$var_label1/some_label1/$var_label1'});
-      // with variable label: case 3
+      // with variable labels: case 3
       assert.deepEqual(isValidFunctionTree(['some_label1', '$var_label1'], {
         ['$var_label2']: {
           ['some_label1']: {
@@ -1396,11 +1396,11 @@ describe("state-util", () => {
         }
       }), {isValid: true, invalidPath: ''});
       // with dup non-variable labels and no-dup variable labels
-      assert.deepEqual(isValidFunctionTree(['some_label1', '$var_label1', 'some_label1'], {
+      assert.deepEqual(isValidFunctionTree(['some_label1', '$var_label1', 'some_label1', '$var_label2'], {
         ['some_label1']: {
-          ['$var_label2']: {
+          ['$var_label3']: {
             ['some_label1']: {
-              ['$var_label3']: {
+              ['$var_label4']: {
                 '.function': {
                   "_transfer": {
                     "function_type": "NATIVE",
@@ -1623,9 +1623,9 @@ describe("state-util", () => {
         }
       }), {isValid: false, invalidPath: '/some_path/.owner'});
       // with variable labels: case 1
-      assert.deepEqual(isValidOwnerTree(['some_label1', '$var_label1'], {
+      assert.deepEqual(isValidOwnerTree(['some_label1', '$var_label1', '$var_label1'], {
         ['some_label1']: {
-          ['some_label1']: {
+          ['$var_label2']: {
             '.owner': {
               'owners': {
                 '*': {
@@ -1651,9 +1651,9 @@ describe("state-util", () => {
             }
           }
         }
-      }), {isValid: false, invalidPath: '/some_label1/$var_label1'});
+      }), {isValid: false, invalidPath: '/some_label1/$var_label1/$var_label1'});
       // with variable labels: case 2
-      assert.deepEqual(isValidOwnerTree(['some_label1', 'some_label1'], {
+      assert.deepEqual(isValidOwnerTree(['some_label1', '$var_label1'], {
         ['some_label1']: {
           ['$var_label1']: {
             '.owner': {
@@ -1681,7 +1681,39 @@ describe("state-util", () => {
             }
           }
         }
-      }), {isValid: false, invalidPath: '/some_label1/some_label1/some_label1/$var_label1'});
+      }), {isValid: false, invalidPath: '/some_label1/$var_label1/some_label1/$var_label1'});
+      // with variable labels: case 3
+      assert.deepEqual(isValidOwnerTree(['some_label1', '$var_label1'], {
+        ['$var_label2']: {
+          ['some_label1']: {
+            ['$var_label2']: {
+              '.owner': {
+                'owners': {
+                  '*': {
+                    "branch_owner": true,
+                    "write_function": false,
+                    "write_owner": false,
+                    "write_rule": false,
+                  },
+                  '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                    "branch_owner": true,
+                    "write_function": false,
+                    "write_owner": false,
+                    "write_rule": false,
+                  },
+                  'fid:_createApp': {
+                    "branch_owner": true,
+                    "write_function": false,
+                    "write_owner": false,
+                    "write_rule": false,
+                  },
+                  '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
+                }
+              }
+            }
+          }
+        }
+      }), {isValid: false, invalidPath: '/some_label1/$var_label1/$var_label2/some_label1/$var_label2'});
     })
 
     it("when valid input", () => {
@@ -1763,31 +1795,35 @@ describe("state-util", () => {
           }
         }
       }), {isValid: true, invalidPath: ''});
-      // with dup non-variable labels
-      assert.deepEqual(isValidOwnerTree(['some_label1', 'some_label1'], {
+      // with dup non-variable labels and no-dup variable labels
+      assert.deepEqual(isValidOwnerTree(['some_label1', '$var_label1', 'some_label1', '$var_label2'], {
         ['some_label1']: {
-          ['some_label1']: {
-            '.owner': {
-              'owners': {
-                '*': {
-                  "branch_owner": true,
-                  "write_function": false,
-                  "write_owner": false,
-                  "write_rule": false,
-                },
-                '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
-                  "branch_owner": true,
-                  "write_function": false,
-                  "write_owner": false,
-                  "write_rule": false,
-                },
-                'fid:_createApp': {
-                  "branch_owner": true,
-                  "write_function": false,
-                  "write_owner": false,
-                  "write_rule": false,
-                },
-                '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
+          ['$var_label3']: {
+            ['some_label1']: {
+              ['$var_label4']: {
+                '.owner': {
+                  'owners': {
+                    '*': {
+                      "branch_owner": true,
+                      "write_function": false,
+                      "write_owner": false,
+                      "write_rule": false,
+                    },
+                    '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                      "branch_owner": true,
+                      "write_function": false,
+                      "write_owner": false,
+                      "write_rule": false,
+                    },
+                    'fid:_createApp': {
+                      "branch_owner": true,
+                      "write_function": false,
+                      "write_owner": false,
+                      "write_rule": false,
+                    },
+                    '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
+                  }
+                }
               }
             }
           }
