@@ -23,7 +23,7 @@ describe('TransactionPool', () => {
 
   beforeEach(async () => {
     node = new BlockchainNode();
-    setNodeForTesting(node);
+    await setNodeForTesting(node);
     transaction = getTransaction(node, {
       operation: {
         type: 'SET_VALUE',
@@ -95,11 +95,11 @@ describe('TransactionPool', () => {
           shuffleSeed.shuffle(node.tp.transactions[node.account.address]);
 
       node2 = new BlockchainNode();
-      setNodeForTesting(node2, 1);
+      await setNodeForTesting(node2, 1);
       node3 = new BlockchainNode();
-      setNodeForTesting(node3, 2);
+      await setNodeForTesting(node3, 2);
       node4 = new BlockchainNode();
-      setNodeForTesting(node4, 3);
+      await setNodeForTesting(node4, 3);
       const nodes = [node2, node3, node4];
       for (let j = 0; j < nodes.length; j++) {
         const curNode = nodes[j];
@@ -629,11 +629,11 @@ describe('TransactionPool', () => {
 
     before(async () => {
       node2 = new BlockchainNode();
-      setNodeForTesting(node2, 1);
+      await setNodeForTesting(node2, 1);
       node3 = new BlockchainNode();
-      setNodeForTesting(node3, 2);
+      await setNodeForTesting(node3, 2);
       node4 = new BlockchainNode();
-      setNodeForTesting(node4, 3);
+      await setNodeForTesting(node4, 3);
       nodes = [node2, node3, node4];
     });
 

@@ -24,11 +24,11 @@ const {
 describe("DB initialization", () => {
   let node;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
-    setNodeForTesting(node, 0, true);
+    await setNodeForTesting(node, 0, true);
   })
 
   afterEach(() => {
@@ -93,11 +93,11 @@ describe("DB initialization", () => {
 describe("DB operations", () => {
   let node, dbValues, dbFuncs, dbRules, dbOwners;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
-    setNodeForTesting(node);
+    await setNodeForTesting(node);
 
     dbValues = {
       "ai": {
@@ -3715,11 +3715,11 @@ describe("DB operations", () => {
     let executableTx;
     let objectTx;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       rimraf.sync(NodeConfigs.CHAINS_DIR);
 
       node = new BlockchainNode();
-      setNodeForTesting(node);
+      await setNodeForTesting(node);
       node.db.setValuesForTesting(`/staking/test/balance_total`, 1);
 
       txBody = {
@@ -4266,13 +4266,13 @@ describe("DB operations", () => {
 describe("DB rule config", () => {
   let node1, node2, dbValues;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node1 = new BlockchainNode();
-    setNodeForTesting(node1, 0);
+    await setNodeForTesting(node1, 0);
     node2 = new BlockchainNode();
-    setNodeForTesting(node2, 1);
+    await setNodeForTesting(node2, 1);
     dbValues = {
       "comcom": "unreadable value",
       "unspecified": {
@@ -4426,11 +4426,11 @@ describe("DB rule config", () => {
 describe("DB owner config", () => {
   let node;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
-    setNodeForTesting(node);
+    await setNodeForTesting(node);
     result = node.db.setOwnersForTesting("/apps/test/test_owner/mixed/true/true/true", {
       ".owner": {
         "owners": {
@@ -4890,11 +4890,11 @@ describe("DB owner config", () => {
 describe("DB sharding config", () => {
   let node;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
-    setNodeForTesting(node, 0, false, false);
+    await setNodeForTesting(node, 0, false, false);
 
     dbValues = {
       "some": {
@@ -5742,11 +5742,11 @@ describe("DB sharding config", () => {
 describe("State info", () => {
   let node, valuesObject;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
-    setNodeForTesting(node);
+    await setNodeForTesting(node);
 
     valuesObject = {
       level0: {
@@ -5880,11 +5880,11 @@ describe("State info", () => {
 describe("State info - getStateInfo", () => {
   let node, valuesObject;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
-    setNodeForTesting(node);
+    await setNodeForTesting(node);
 
     valuesObject = {
       label1: {
@@ -6082,11 +6082,11 @@ describe("State version handling", () => {
   let node;
   let dbValues;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
-    setNodeForTesting(node);
+    await setNodeForTesting(node);
 
     dbValues = {
       "child_1": {
