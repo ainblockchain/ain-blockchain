@@ -95,7 +95,8 @@ module.exports = function getTransactionApis(node, p2pServer) {
           }
         }));
       } else {
-        const createdTx = Transaction.create(args.tx_body, args.signature);
+        const chainId = node.getBlockchainParam('genesis/chain_id');
+        const createdTx = Transaction.create(args.tx_body, args.signature, chainId);
         if (!createdTx) {
           const latency = Date.now() - beginTime;
           trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
@@ -137,6 +138,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
         }));
       } else {
         const txBytesLimit = node.getBlockchainParam('resource/tx_bytes_limit');
+        const chainId = node.getBlockchainParam('genesis/chain_id');
         const txList = [];
         for (let i = 0; i < args.tx_list.length; i++) {
           const tx = args.tx_list[i];
@@ -161,7 +163,7 @@ module.exports = function getTransactionApis(node, p2pServer) {
             }));
             return;
           }
-          const createdTx = Transaction.create(tx.tx_body, tx.signature);
+          const createdTx = Transaction.create(tx.tx_body, tx.signature, chainId);
           if (!createdTx) {
             const latency = Date.now() - beginTime;
             trafficStatsManager.addEvent(TrafficEventTypes.JSON_RPC_SET, latency);
