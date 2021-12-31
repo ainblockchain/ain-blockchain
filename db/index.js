@@ -1700,6 +1700,14 @@ class DB {
           TxResultCode.TX_NO_TX_BODY,
           `[${LOG_HEADER}] Missing tx_body: ${JSON.stringify(tx)}`, 0);
     }
+    const gasPrice = tx.tx_body.gas_price;
+    const minGasPrice = DB.getBlockchainParam('resource/min_gas_price', blockNumber, this.stateRoot);
+    if (!CommonUtil.isInteger(gasPrice) || (gasPrice !== 0 && (gasPrice < 0 || gasPrice < minGasPrice))) {
+      return CommonUtil.logAndReturnTxResult(
+          logger,
+          TxResultCode.TX_INVALID_GAS_PRICE,
+          `[${LOG_HEADER}] Invalid gas_price: ${JSON.stringify(tx)}`, 0);
+    }
     const billing = tx.tx_body.billing;
     const op = tx.tx_body.operation;
     const addr = tx.address;
