@@ -12,9 +12,9 @@ class ObjectUtil {
       let isEmpty = false;
       if (currentSize >= chunkSize) {
         chunkList.push({
-          path: stringify(path),
-          size: originalSize,
-          data: stringify(obj),
+          path: JSON.parse(JSON.stringify(path)),
+          size: currentSize,
+          data: JSON.parse(JSON.stringify(obj)),
         });
         currentSize = 0;
         isEmpty = true;
@@ -45,9 +45,9 @@ class ObjectUtil {
     const originalSize = currentSize;
     if (currentSize >= chunkSize) {
       chunkList.push({
-        path: stringify(path),
+        path: JSON.parse(JSON.stringify(path)),
         size: currentSize,
-        data: stringify(obj),
+        data: JSON.parse(JSON.stringify(obj)),
       });
       currentSize = 0;
       isEmpty = true;
@@ -75,9 +75,9 @@ class ObjectUtil {
     if (!res.isEmpty) {
       let currentSize = sizeof(obj);
       chunkList.push({
-        path: stringify(path),
+        path: JSON.parse(JSON.stringify(path)),
         size: currentSize,
-        data: stringify(obj),
+        data: JSON.parse(JSON.stringify(obj)),
       });
     }
     return chunkList.reverse();
@@ -115,9 +115,7 @@ class ObjectUtil {
   static fromChunks(chunkList) {
     let obj = null;
     for (const chunk of chunkList) {
-      const path = JSON.parse(chunk.path);
-      const data = JSON.parse(chunk.data);
-      obj = ObjectUtil.mergeDataToObject(path, data, obj);
+      obj = ObjectUtil.mergeDataToObject(chunk.path, chunk.data, obj);
     }
 
     return obj;
