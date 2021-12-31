@@ -651,7 +651,6 @@ class BlockchainNode {
 
     const numBlockFiles = this.bc.getNumBlockFiles();
     const fromBlockNumber = NodeConfigs.SYNC_MODE === SyncModeOptions.FAST ? Math.max(latestSnapshotBlockNumber, 0) : 0;
-    logger.error(`[${LOG_HEADER}] numBlockFiles = ${numBlockFiles}, fromBlockNumber = ${fromBlockNumber}`)
     let nextBlock = null;
     let proposalTx = null;
     for (let number = fromBlockNumber; number < numBlockFiles; number++) {
