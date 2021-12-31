@@ -5,8 +5,11 @@ const path = require('path');
 const zlib = require('zlib');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
+const JsonStreamStringify = require('json-stream-stringify');
+const JSONStream = require('JSONStream');
 const { BlockchainConsts, NodeConfigs } = require('./constants');
 const CommonUtil = require('./common-util');
+const ObjectUtil = require('./object-util');
 const JSON_GZIP_FILE_EXTENSION = 'json.gz';
 
 class FileUtil {
@@ -124,43 +127,85 @@ class FileUtil {
     return _.endsWith(filePath, '.gz');
   }
 
-  // TODO(cshcomcom): Change to asynchronous.
-  static readCompressedJson(filePath) {
+  static async readChunkedJsonAsync(filePath) {
+    const LOG_HEADER = 'readChunkedJsonAsync';
     try {
-      const zippedFs = fs.readFileSync(filePath);
-      return JSON.parse(zlib.gunzipSync(zippedFs).toString());
+      return new Promise((resolve) => {
+        const transformStream = JSONStream.parse('docs.*');
+        const chunks = [];
+        fs.createReadStream(filePath)
+          .pipe(zlib.createGunzip())
+          .pipe(transformStream)
+          .on('data', (data) => {
+            logger.debug(`${LOG_HEADER} Read data: ${JSON.stringify(data)}`);
+            chunks.push(data);
+          })
+          .on('end', () => {
+            logger.debug(`${LOG_HEADER} Reading done: ${JSON.stringify(chunks)}`);
+            resolve(ObjectUtil.fromChunks(chunks));
+          })
+          .on('error', (e) => {
+            logger.error(`${LOG_HEADER} Error while reading ${filePath}: ${e}`);
+            resolve(null);
+          });
+      });
     } catch (err) {
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
       return null;
     }
   }
 
-  static readJson(filePath) {
+  static readChunkedJsonSync(filePath) {
+    const LOG_HEADER = 'readChunkedJsonSync';
+    try {
+      const zippedFs = fs.readFileSync(filePath);
+      return ObjectUtil.fromChunks(JSON.parse(zlib.gunzipSync(zippedFs).toString()).docs);
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
+      return null;
+    }
+  }
+
+  static readCompressedJsonSync(filePath) {
+    const LOG_HEADER = 'readCompressedJsonSync';
+    try {
+      const zippedFs = fs.readFileSync(filePath);
+      return JSON.parse(zlib.gunzipSync(zippedFs).toString());
+    } catch (err) {
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
+      return null;
+    }
+  }
+
+  static readJsonSync(filePath) {
+    const LOG_HEADER = 'readJsonSync';
     try {
       const fileStr = fs.readFileSync(filePath);
       return JSON.parse(fileStr);
     } catch (err) {
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
       return null;
     }
   }
 
   static readBlockByNumber(chainPath, blockNumber) {
     const blockPath = FileUtil.getBlockPath(chainPath, blockNumber);
-    return FileUtil.readCompressedJson(blockPath);
+    return FileUtil.readCompressedJsonSync(blockPath);
   }
 
-  // TODO(cshcomcom): Change to asynchronous.
   static writeBlockFile(chainPath, block) {
     const LOG_HEADER = 'writeBlockFile';
 
     const blockPath = FileUtil.getBlockPath(chainPath, block.number);
-    if (!fs.existsSync(blockPath)) {
-      const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
-      FileUtil.createDir(blockDirPath);
-      const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
-      fs.writeFileSync(blockPath, compressed);
-    } else {
+    if (fs.existsSync(blockPath)) {
       logger.debug(`[${LOG_HEADER}] ${blockPath} file already exists!`);
+      return;
     }
+    const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
+    FileUtil.createDir(blockDirPath);
+    const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
+    fs.writeFileSync(blockPath, compressed);
+    logger.debug(`[${LOG_HEADER}] Block written at ${blockPath}`);
   }
 
   static deleteBlockFile(chainPath, blockNumber) {
@@ -201,15 +246,17 @@ class FileUtil {
   }
 
   static readH2nFile(chainPath, blockHash) {
+    const LOG_HEADER = 'readH2nFile';
     try {
       const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
       return Number(fs.readFileSync(h2nPath).toString());
     } catch (err) {
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
       return -1;
     }
   }
 
-  static writeSnapshot(snapshotPath, blockNumber, snapshot, isDebug = false) {
+  static async writeSnapshot(snapshotPath, blockNumber, snapshot, snapshotChunkSize, isDebug = false) {
     const LOG_HEADER = 'writeSnapshot';
 
     const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
@@ -218,12 +265,23 @@ class FileUtil {
         try {
           fs.unlinkSync(filePath);
         } catch (err) {
-          logger.debug(`[${LOG_HEADER}] Failed to delete ${filePath}: ${err.stack}`);
+          logger.error(`[${LOG_HEADER}] Failed to delete ${filePath}: ${err.stack}`);
         }
       }
     } else {
-      // TODO(liayoo): Change this operation to be asynchronous
-      fs.writeFileSync(filePath, zlib.gzipSync(Buffer.from(JSON.stringify(snapshot))));
+      return new Promise((resolve) => {
+        new JsonStreamStringify({ docs: ObjectUtil.toChunks(snapshot, snapshotChunkSize) })
+          .pipe(zlib.createGzip())
+          .pipe(fs.createWriteStream(filePath, { flags: 'w' }))
+          .on('finish', () => {
+            logger.debug(`[${LOG_HEADER}] Snapshot written at ${filePath}`);
+            resolve();
+          })
+          .on('error', (e) => {
+            logger.error(`[${LOG_HEADER}] Failed to write snapshot at ${filePath}: ${e}`);
+            resolve();
+          });
+      });
     }
   }
 
