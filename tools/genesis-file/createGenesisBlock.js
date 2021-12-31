@@ -252,7 +252,7 @@ function buildDbSetupTx() {
   const txBody = {
     nonce: -1,
     timestamp: BlockchainParams.genesis.genesis_timestamp,
-    gas_price: 1,
+    gas_price: 0,
     operation: {
       type: 'SET',
       op_list: opList,
@@ -299,7 +299,7 @@ function buildAccountsSetupTx() {
   const txBody = {
     nonce: -1,
     timestamp: BlockchainParams.genesis.genesis_timestamp,
-    gas_price: 1,
+    gas_price: 0,
     operation: {
       type: 'SET',
       op_list: transferOps
@@ -323,7 +323,7 @@ function buildConsensusAppTx() {
   const txBody = {
     nonce: -1,
     timestamp: BlockchainParams.genesis.genesis_timestamp,
-    gas_price: 1,
+    gas_price: 0,
     operation: {
       type: 'SET_VALUE',
       ref: PathUtil.getCreateAppRecordPath(PredefinedDbPaths.CONSENSUS, BlockchainParams.genesis.genesis_timestamp),
@@ -357,7 +357,7 @@ function buildGenesisStakingTxs() {
     const txBody = {
       nonce: -1,
       timestamp: BlockchainParams.genesis.genesis_timestamp,
-      gas_price: 1,
+      gas_price: 0,
       operation: {
         type: 'SET_VALUE',
         ref: PathUtil.getStakingStakeRecordValuePath(
