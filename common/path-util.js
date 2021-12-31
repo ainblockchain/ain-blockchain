@@ -278,6 +278,14 @@ class PathUtil {
     return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST, address]);
   }
 
+  static getConsensusValidatorWhitelistPath() {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_VALIDATOR_WHITELIST]);
+  }
+
+  static getConsensusValidatorWhitelistAddrPath(address) {
+    return CommonUtil.formatPath([PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_VALIDATOR_WHITELIST, address]);
+  }
+
   static getConsensusStakingAccountPath(address) {
     return PathUtil.getServiceAccountPath(PredefinedDbPaths.STAKING, PredefinedDbPaths.CONSENSUS, `${address}|0`);
   }

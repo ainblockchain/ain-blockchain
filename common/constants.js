@@ -192,15 +192,16 @@ const PredefinedDbPaths = {
   CONSENSUS_PROPOSAL_RIGHT: 'proposal_right',
   CONSENSUS_PROPOSE: 'propose',
   CONSENSUS_PROPOSER: 'proposer',
+  CONSENSUS_PROPOSER_WHITELIST: 'proposer_whitelist',
   CONSENSUS_REWARDS: 'rewards',
   CONSENSUS_REWARDS_UNCLAIMED: 'unclaimed',
   CONSENSUS_REWARDS_CUMULATIVE: 'cumulative',
   CONSENSUS_STAKE: 'stake',
   CONSENSUS_TOTAL_AT_STAKE: 'total_at_stake',
   CONSENSUS_VALIDATORS: 'validators',
+  CONSENSUS_VALIDATOR_WHITELIST: 'validator_whitelist',
   CONSENSUS_VOTE: 'vote',
   CONSENSUS_VOTE_NONCE: 'vote_nonce',
-  CONSENSUS_PROPOSER_WHITELIST: 'proposer_whitelist',
   // Developers
   DEVELOPERS: 'developers',
   DEVELOPERS_REST_FUNCTIONS: 'rest_functions',
@@ -377,6 +378,7 @@ const StateLabelProperties = {
   HASH_DELIMITER: '#',  // Hash delimiter
   META_LABEL_PREFIX: '#',  // Prefix of all meta labels
   NEXT_SERIAL: '#next_serial',
+  NUM_CHILDREN: '#num_children',
   NUM_PARENTS: '#num_parents',
   RADIX_LABEL_PREFIX: '#radix:',
   RADIX_PROOF_HASH: '#radix_ph',
@@ -651,6 +653,32 @@ const APP_DEPENDENT_SERVICE_TYPES = [
   PredefinedDbPaths.STAKING,
 ];
 
+const EXPOSED_ENV_VARIABLE_LIST = [
+  'BLOCKCHAIN_CONFIGS_DIR',
+  'HOSTING_ENV',
+  'DEBUG',
+  'PORT',
+  'STAKE',
+  'SYNC_MODE',
+];
+
+function getEnvVariables() {
+  const envs = {};
+  for (const envName of Object.keys(NodeParams)) {
+    const envValue = process.env[envName];
+    if (envValue !== undefined) {
+      envs[envName] = envValue;
+    }
+  }
+  for (const envName of EXPOSED_ENV_VARIABLE_LIST) {
+    const envValue = process.env[envName];
+    if (envValue !== undefined) {
+      envs[envName] = envValue;
+    }
+  }
+  return envs;
+}
+
 function isAppDependentServiceType(type) {
   return APP_DEPENDENT_SERVICE_TYPES.includes(type);
 }
@@ -726,6 +754,7 @@ module.exports = {
   BlockchainEventMessageTypes,
   isServiceType,
   isServiceAccountServiceType,
+  getEnvVariables,
   isAppDependentServiceType,
   buildOwnerPermissions,
   buildRulePermission,
