@@ -161,8 +161,11 @@ class Consensus {
           try {
             const iNTPData = await ntpsync.ntpLocalClockDeltaPromise();
             logger.debug(`(Local Time - NTP Time) Delta = ${iNTPData.minimalNTPLatencyDelta} ms`);
-            this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
-            this.ntpData = { ...iNTPData, syncedAt: Date.now() };
+            if (Math.abs(iNTPData.minimalNTPLatencyDelta) < 10000) {
+              // Ignore if the value is too big/small.
+              this.timeAdjustment = iNTPData.minimalNTPLatencyDelta;
+              this.ntpData = { ...iNTPData, syncedAt: Date.now() };
+            }
           } catch (err) {
             logger.error(`ntpsync error: ${err} ${err.stack}`);
           }
@@ -346,7 +349,9 @@ class Consensus {
     const invalidTransactions = [];
     const resList = [];
     for (const tx of candidates) {
-      const res = tempDb.executeTransaction(Transaction.toExecutable(tx), false, true, blockNumber, blockTime);
+      const res = tempDb.executeTransaction(
+          Transaction.toExecutable(tx, this.node.getBlockchainParam('genesis/chain_id')), false,
+          true, blockNumber, blockTime);
       if (CommonUtil.txPrecheckFailed(res)) {
         logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
         invalidTransactions.push(tx);
@@ -454,7 +459,7 @@ class Consensus {
    * Proposal block and transaction validation functions
    */
 
-  static validateProposalTx(proposalTx, proposer, hash) {
+  static validateProposalTx(proposalTx, proposer, validators, hash) {
     if (proposalTx) {
       if (!ConsensusUtil.isValidConsensusTx(proposalTx)) {
         throw new ConsensusError({
@@ -470,12 +475,30 @@ class Consensus {
           level: 'error'
         });
       }
-      const blockHashFromTx = ConsensusUtil.getBlockHashFromConsensusTx(proposalTx);
-      if (blockHashFromTx !== hash) {
+      const proposalValue = _.get(proposalTx, 'tx_body.operation.op_list.0.value', {});
+      if (proposalValue.block_hash !== hash) {
         throw new ConsensusError({
           code: ConsensusErrorCode.BLOCK_HASH_MISMATCH,
-          message: `The block_hash value in proposalTx (${blockHashFromTx}) and ` +
+          message: `The block_hash value in proposalTx (${proposalValue.block_hash}) and ` +
               `the actual proposalBlock's hash (${hash}) don't match`,
+          level: 'error'
+        });
+      }
+      if (!_.isEqual(proposalValue.validators, validators)) {
+        throw new ConsensusError({
+          code: ConsensusErrorCode.VALIDATORS_MISMATCH,
+          message: `The validators value in proposalTx and the actual proposalBlock's validators don't match`,
+          level: 'error'
+        });
+      }
+      const stakeSum = Object.values(validators).reduce((acc, cur) => {
+        return acc + _.get(cur, 'stake', 0);
+      }, 0);
+      if (proposalValue.total_at_stake !== stakeSum) {
+        throw new ConsensusError({
+          code: ConsensusErrorCode.TOTAL_AT_STAKE_MISMATCH,
+          message: `The total_at_stake value in proposalTx (${proposalValue.total_at_stake}) ` +
+              `and the actual sum of validator stakes (${stakeSum}) don't match`,
           level: 'error'
         });
       }
@@ -742,7 +765,7 @@ class Consensus {
 
   static executeProposalTx(proposalTx, number, blockTime, db, node) {
     if (!proposalTx) return;
-    const executableTx = Transaction.toExecutable(proposalTx);
+    const executableTx = Transaction.toExecutable(proposalTx, node.getBlockchainParam('genesis/chain_id'));
     if (!executableTx) {
       throw new ConsensusError({
         code: ConsensusErrorCode.ILL_FORMED_PROPOSAL_TX,
@@ -798,7 +821,7 @@ class Consensus {
     }
     const { hash, number, epoch, timestamp, transactions, receipts, gas_amount_total, gas_cost_total,
         proposer, validators, last_votes, evidence, last_hash, state_proof_hash } = block;
-    Consensus.validateProposalTx(proposalTx, proposer, hash);
+    Consensus.validateProposalTx(proposalTx, proposer, validators, hash);
 
     const prevBlockInfo = Consensus.getPrevBlockInfo(number, last_hash, node.bc.lastBlock(), node.bp);
     const prevBlock = prevBlockInfo.block;
@@ -880,7 +903,7 @@ class Consensus {
       logger.info(`[${LOG_HEADER}] Invalid timestamp in vote: ${JSON.stringify(voteTx)}`);
       return false;
     }
-    const executableTx = Transaction.toExecutable(voteTx);
+    const executableTx = Transaction.toExecutable(voteTx, this.node.getBlockchainParam('genesis/chain_id'));
     if (!executableTx) {
       logger.error(`[${LOG_HEADER}] Ill-formed vote tx: ${JSON.stringify(voteTx, null, 2)}`);
       return false;
@@ -1152,6 +1175,14 @@ class Consensus {
     return whitelist || {};
   }
 
+  getValidatorWhitelist(stateVersion) {
+    const LOG_HEADER = 'getValidatorWhitelist';
+    const stateRoot = this.node.stateManager.getRoot(stateVersion);
+    const whitelist = DB.getValueFromStateRoot(stateRoot, PathUtil.getConsensusValidatorWhitelistPath());
+    logger.debug(`[${LOG_HEADER}] whitelist: ${JSON.stringify(whitelist, null, 2)}`);
+    return whitelist || {};
+  }
+
   getValidators(blockHash, blockNumber, stateVersion) {
     const LOG_HEADER = 'getValidators';
     let candidates = [];
@@ -1171,6 +1202,7 @@ class Consensus {
       throw Error(err);
     }
     const proposerWhitelist = this.getProposerWhitelist(stateVersion);
+    const validatorWhitelist = this.getValidatorWhitelist(stateVersion);
     const stateRoot = this.node.stateManager.getRoot(stateVersion);
     const allStakeInfo = DB.getValueFromStateRoot(
         stateRoot, PathUtil.getStakingServicePath(PredefinedDbPaths.CONSENSUS)) || {};
@@ -1186,7 +1218,7 @@ class Consensus {
               proposal_right: true,
             });
           }
-        } else {
+        } else if (validatorWhitelist[address] === true) {
           candidates.push({
             address,
             stake,

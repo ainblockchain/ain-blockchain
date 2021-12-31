@@ -539,6 +539,7 @@ class DB {
       return null;
     }
     return {
+      [StateLabelProperties.NUM_CHILDREN]: stateNode.numChildren(),
       [StateLabelProperties.TREE_HEIGHT]: stateNode.getTreeHeight(),
       [StateLabelProperties.TREE_SIZE]: stateNode.getTreeSize(),
       [StateLabelProperties.TREE_BYTES]: stateNode.getTreeBytes(),
@@ -1765,7 +1766,7 @@ class DB {
     const LOG_HEADER = 'executeTransactionList';
     const resList = [];
     for (const tx of txList) {
-      const executableTx = Transaction.toExecutable(tx);
+      const executableTx = Transaction.toExecutable(tx, DB.getBlockchainParam('genesis/chain_id'));
       const res =
         this.executeTransaction(executableTx, skipFees, restoreIfFails, blockNumber, blockTime);
       if (CommonUtil.isFailedTx(res)) {
@@ -1838,6 +1839,13 @@ class DB {
     try {
       const evalWriteRuleRes = this.evalWriteRuleConfig(
         matchedWriteRules.closestRule.config, matchedWriteRules.pathVars, data, newData, auth, timestamp);
+      if (evalWriteRuleRes.code) {
+        return {
+          code: evalWriteRuleRes.code,
+          message: evalWriteRuleRes.message,
+          matched,
+        };
+      }
       if (!evalWriteRuleRes.evalResult) {
         logger.debug(`[${LOG_HEADER}] evalWriteRuleRes ${JSON.stringify(evalWriteRuleRes, null, 2)}, ` +
             `matchedWriteRules: ${JSON.stringify(matchedWriteRules, null, 2)}, ` +
@@ -1874,7 +1882,7 @@ class DB {
       logger.error(`[${LOG_HEADER}] Failed to eval rule.\n` +
           `matched: ${JSON.stringify(matched, null, 2)}, data: ${JSON.stringify(data)}, ` +
           `newData: ${JSON.stringify(newData)}, auth: ${JSON.stringify(auth)}, ` +
-          `timestamp: ${timestamp}\nError: ${err} ${err.stack}`);
+          `timestamp: ${timestamp}\nError: ${err.message} ${err.stack}`);
       return {
         code: TxResultCode.EVAL_RULE_INTERNAL_ERROR,
         message: `Internal error: ${JSON.stringify(err)}`,
@@ -2307,8 +2315,16 @@ class DB {
         evalResult: false,
       };
     }
-    const writeRuleCodeSnippet = makeWriteRuleCodeSnippet(ruleString);
-    const writeRuleEvalFunc = DB.makeWriteRuleEvalFunction(writeRuleCodeSnippet, pathVars);
+    let writeRuleEvalFunc = null;
+    try {
+      const writeRuleCodeSnippet = makeWriteRuleCodeSnippet(ruleString);
+      writeRuleEvalFunc = DB.makeWriteRuleEvalFunction(writeRuleCodeSnippet, pathVars);
+    } catch (err) {
+      return {
+        code: TxResultCode.EVAL_RULE_SYNTAX_ERROR,
+        message: `Rule syntax error: \"${err.message}\" in write rule: [${String(ruleString)}]`,
+      };
+    }
     const evalResult = !!writeRuleEvalFunc(auth, data, newData, timestamp, this.getValue.bind(this),
         this.getRule.bind(this), this.getFunction.bind(this), this.getOwner.bind(this),
         this.evalRule.bind(this), this.evalOwner.bind(this),

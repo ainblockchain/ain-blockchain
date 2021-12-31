@@ -599,6 +599,9 @@ describe("state-node", () => {
 
       // includeTreeInfo = true
       assert.deepEqual(stateTree.toStateSnapshot({ includeTreeInfo: true }), {
+        "#num_children": 4,
+        "#num_children:a": 0,
+        "#num_children:b": 0,
         "#num_parents": 0,
         "#num_parents:a": 1,
         "#num_parents:b": 1,
@@ -614,6 +617,9 @@ describe("state-node", () => {
         "a": "str_a",
         "b": 200,
         "c": {
+          "#num_children": 2,
+          "#num_children:ca": 0,
+          "#num_children:cb": 0,
           "#num_parents": 1,
           "#num_parents:ca": 1,
           "#num_parents:cb": 1,
@@ -630,6 +636,9 @@ describe("state-node", () => {
           "cb": 1200,
         },
         "d": {
+          "#num_children": 2,
+          "#num_children:da": 0,
+          "#num_children:db": 0,
           "#num_parents": 1,
           "#num_parents:da": 1,
           "#num_parents:db": 1,

@@ -1,5 +1,5 @@
 {
-  "_description": "Blockchain params for the testnet-spring and testnet-summer on GCP.",
+  "_description": "Blockchain params for the testnet-spring and testnet-summer on cloud.",
   "token": {
     "name": "AI Network",
     "symbol": "AIN",
@@ -31,6 +31,18 @@
       "0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211": true,
       "0x003AD6FdB06684175e7D95EcC36758B014517E4b": true,
       "0x004A2550661c8a306207C9dabb279d5701fFD66e": true
+    },
+    "genesis_validator_whitelist": {
+      "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": true,
+      "0x001Ac309EFFFF6d307CbC2d09C811aCD7dD8A35d": true,
+      "0x002A273ECd3aAEc4d8748f4E06eAdE3b34d83211": true,
+      "0x003AD6FdB06684175e7D95EcC36758B014517E4b": true,
+      "0x004A2550661c8a306207C9dabb279d5701fFD66e": true,
+      "0x005A3c55EcE1A593b761D408B6E6BC778E0a638B": true,
+      "0x006Af719E197bC81BBb75d2fec7Ea217D1750bAe": true,
+      "0x007Ac58EAc5F0D0bDd10Af8b90799BcF849c2E74": true,
+      "0x008AeBc041B7ceABc53A4cf393ccF16c10c29dba": true,
+      "0x009A97c0cF07fdbbcdA1197aE11792258b6EcedD": true
     },
     "genesis_validators": {
       "0x000AF024FEDb636294867bEff390bCE6ef9C5fc4": {

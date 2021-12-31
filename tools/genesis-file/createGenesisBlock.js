@@ -95,6 +95,17 @@ function getConsensusProposerWhitelistOwner() {
   };
 }
 
+function getConsensusValidatorWhitelistOwner() {
+  return {
+    [PredefinedDbPaths.DOT_OWNER]: {
+      [OwnerProperties.OWNERS]: {
+        [GenesisAccounts.owner.address]: buildOwnerPermissions(false, true, true, true),
+        [OwnerProperties.ANYONE]: buildOwnerPermissions(false, false, false, false),
+      }
+    }
+  };
+}
+
 function getDevelopersValue() {
   const ownerAddress = GenesisAccounts.owner.address;
   return {
@@ -151,6 +162,11 @@ function getGenesisValues() {
   );
   CommonUtil.setJsObject(
     values,
+    [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_VALIDATOR_WHITELIST],
+    BlockchainParams.consensus.genesis_validator_whitelist
+  );
+  CommonUtil.setJsObject(
+    values,
     [PredefinedDbPaths.DEVELOPERS],
     getDevelopersValue()
   );
@@ -180,6 +196,11 @@ function getGenesisOwners() {
     owners,
     [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_PROPOSER_WHITELIST],
     getConsensusProposerWhitelistOwner()
+  );
+  CommonUtil.setJsObject(
+    owners,
+    [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_VALIDATOR_WHITELIST],
+    getConsensusValidatorWhitelistOwner()
   );
   CommonUtil.setJsObject(
     owners,
@@ -370,7 +391,8 @@ function executeGenesisTxsAndGetData(genesisTxs) {
   const resList = [];
   for (const tx of genesisTxs) {
     const res = tempGenesisDb.executeTransaction(
-        Transaction.toExecutable(tx), true, false, 0, BlockchainParams.genesis.genesis_timestamp);
+        Transaction.toExecutable(tx, BlockchainParams.genesis.chain_id), true, false, 0,
+        BlockchainParams.genesis.genesis_timestamp);
     if (CommonUtil.isFailedTx(res)) {
       console.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +
           `\nRESULT: ${JSON.stringify(res)}`)
@@ -434,7 +456,7 @@ function usage() {
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/3-nodes node createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/afan-shard node createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/he-shard node tools/genesis-file/createGenesisBlock.js');
-  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet node tools/genesis-file/createGenesisBlock.js');
+  console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/mainnet-prod node tools/genesis-file/createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/sim-shard node tools/genesis-file/createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-dev node tools/genesis-file/createGenesisBlock.js');
   console.log('  BLOCKCHAIN_CONFIGS_DIR=blockchain-configs/testnet-prod node tools/genesis-file/createGenesisBlock.js');

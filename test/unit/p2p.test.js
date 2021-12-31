@@ -191,10 +191,10 @@ describe("P2p", () => {
     describe("getNodeStatus", () => {
       it("gets initial node status", () => {
         const actual = p2pServer.getNodeStatus();
-        actual.dbStatus.stateInfo['#tree_size'] = 'erased';
-        actual.dbStatus.stateInfo['#tree_bytes'] = 'erased';
-        actual.dbStatus.stateInfo['#state_ph'] = 'erased';
-        actual.dbStatus.stateProof['#state_ph'] = 'erased';
+        actual.dbStatus.rootStateInfo['#tree_size'] = 'erased';
+        actual.dbStatus.rootStateInfo['#tree_bytes'] = 'erased';
+        actual.dbStatus.rootStateInfo['#state_ph'] = 'erased';
+        actual.dbStatus.rootStateProof['#state_ph'] = 'erased';
         actual.stateVersionStatus.versionList = 'erased';
         assert.deepEqual(actual, {
           health: false,
@@ -203,16 +203,18 @@ describe("P2p", () => {
           stateNumeric: 1,
           nonce: 0,
           dbStatus: {
-            stateInfo: {
+            rootStateInfo: {
+              "#num_children": 4,
               "#state_ph": 'erased',
               "#tree_bytes": 'erased',
               "#tree_height": 11,
               "#tree_size": 'erased',
               "#version": "NODE:0",
             },
-            stateProof: {
+            rootStateProof: {
               "#state_ph": 'erased'
-            }
+            },
+            numAccounts: 11,
           },
           stateVersionStatus: {
             numVersions: 5,

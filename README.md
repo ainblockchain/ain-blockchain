@@ -13,7 +13,6 @@ Official Javascript implementation of AI Network Blockchain.
 
 - v16.x
 - v14.x
-- v12.x (will be deprecated)
 
 ## Tracker
 
