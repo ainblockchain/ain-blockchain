@@ -1075,13 +1075,15 @@ describe("state-util", () => {
           }
         }
       }, params), {isValid: true, invalidPath: ''});
-      // with variable label
-      assert.deepEqual(isValidRuleTree(['some_label1', '$var_label1'], {
-        ['$var_label2']: {
-          ['some_label1']: {
-            ['$var_label3']: {
-              '.rule': {
-                'write': "$var_label1 === 'name1' && $var_label2 === 'name2'"
+      // with dup non-variable labels and no-dup variable labels
+      assert.deepEqual(isValidRuleTree(['some_label1', '$var_label1', 'some_label1'], {
+        ['some_label1']: {
+          ['$var_label2']: {
+            ['some_label1']: {
+              ['$var_label3']: {
+                '.rule': {
+                  'write': "$var_label1 === 'name1' && $var_label2 === 'name2'"
+                }
               }
             }
           }
@@ -1393,20 +1395,22 @@ describe("state-util", () => {
           }
         }
       }), {isValid: true, invalidPath: ''});
-      // with variable label
-      assert.deepEqual(isValidFunctionTree(['some_label1', '$var_label1'], {
-        ['$var_label2']: {
-          ['some_label2']: {
-            ['$var_label3']: {
-              '.function': {
-                "_transfer": {
-                  "function_type": "NATIVE",
-                  "function_id": "_transfer",
-                },
-                "0x11111": {
-                  "function_type": "REST",
-                  "function_id": "0x11111",
-                  "function_url": "https://events.ainetwork.ai/trigger",
+      // with dup non-variable labels and no-dup variable labels
+      assert.deepEqual(isValidFunctionTree(['some_label1', '$var_label1', 'some_label1'], {
+        ['some_label1']: {
+          ['$var_label2']: {
+            ['some_label1']: {
+              ['$var_label3']: {
+                '.function': {
+                  "_transfer": {
+                    "function_type": "NATIVE",
+                    "function_id": "_transfer",
+                  },
+                  "0x11111": {
+                    "function_type": "REST",
+                    "function_id": "0x11111",
+                    "function_url": "https://events.ainetwork.ai/trigger",
+                  }
                 }
               }
             }
@@ -1601,7 +1605,7 @@ describe("state-util", () => {
       }), {isValid: false, invalidPath: '/some_key'});
     })
 
-    it("when invalid input with invalid owner config", () => {
+    it("when input of invalid owner config", () => {
       assert.deepEqual(isValidOwnerTree([], {
         some_path: {
           '.owner': {
@@ -1618,6 +1622,66 @@ describe("state-util", () => {
           '.owner': undefined
         }
       }), {isValid: false, invalidPath: '/some_path/.owner'});
+      // with variable labels: case 1
+      assert.deepEqual(isValidOwnerTree(['some_label1', '$var_label1'], {
+        ['some_label1']: {
+          ['some_label1']: {
+            '.owner': {
+              'owners': {
+                '*': {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": false,
+                  "write_rule": false,
+                },
+                '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": false,
+                  "write_rule": false,
+                },
+                'fid:_createApp': {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": false,
+                  "write_rule": false,
+                },
+                '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
+              }
+            }
+          }
+        }
+      }), {isValid: false, invalidPath: '/some_label1/$var_label1'});
+      // with variable labels: case 2
+      assert.deepEqual(isValidOwnerTree(['some_label1', 'some_label1'], {
+        ['some_label1']: {
+          ['$var_label1']: {
+            '.owner': {
+              'owners': {
+                '*': {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": false,
+                  "write_rule": false,
+                },
+                '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": false,
+                  "write_rule": false,
+                },
+                'fid:_createApp': {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": false,
+                  "write_rule": false,
+                },
+                '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
+              }
+            }
+          }
+        }
+      }), {isValid: false, invalidPath: '/some_label1/some_label1/some_label1/$var_label1'});
     })
 
     it("when valid input", () => {
@@ -1695,6 +1759,36 @@ describe("state-util", () => {
                 "write_rule": false,
               },
               '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
+            }
+          }
+        }
+      }), {isValid: true, invalidPath: ''});
+      // with dup non-variable labels
+      assert.deepEqual(isValidOwnerTree(['some_label1', 'some_label1'], {
+        ['some_label1']: {
+          ['some_label1']: {
+            '.owner': {
+              'owners': {
+                '*': {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": false,
+                  "write_rule": false,
+                },
+                '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1': {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": false,
+                  "write_rule": false,
+                },
+                'fid:_createApp': {
+                  "branch_owner": true,
+                  "write_function": false,
+                  "write_owner": false,
+                  "write_rule": false,
+                },
+                '0x08Aed7AF9354435c38d52143EE50ac839D20696b': null
+              }
             }
           }
         }

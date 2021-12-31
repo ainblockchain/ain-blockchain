@@ -234,11 +234,17 @@ function makeWriteRuleCodeSnippet(ruleString) {
   return WRITE_RULE_CODE_SNIPPET_PREFIX + ruleString;
 }
 
-function getVariableLabels(parsedRulePath) {
+function getVariableLabels(parsedRulePath, allowVariableLabels) {
   const variableLabels = {};
   for (let i = 0; i < parsedRulePath.length; i++) {
     const label = parsedRulePath[i];
     if (CommonUtil.isVariableLabel(label)) {
+      if (!allowVariableLabels) {
+        return {
+          isValid: false,
+          invalidPath: CommonUtil.formatPath(parsedRulePath.slice(0, i + 1)),
+        };
+      }
       if (variableLabels[label] !== undefined) {
         return {
           isValid: false,
@@ -582,6 +588,12 @@ function isValidConfigTreeRecursive(
   for (const label in stateTreeObj) {
     subtreePath.push(label);
     if (CommonUtil.isVariableLabel(label)) {
+      if (!params.allowVariableLabels) {
+        return {
+          isValid: false,
+          invalidPath: CommonUtil.formatPath([...treePath, ...subtreePath]),
+        };
+      }
       if (!params.variableLabels) {
         params.variableLabels = {};
       }
@@ -627,11 +639,14 @@ function isValidRuleTree(treePath, ruleTreeObj, params) {
     return { isValid: true, invalidPath: '' };
   }
 
-  const varLabelsRes = getVariableLabels(treePath);
+  const varLabelsRes = getVariableLabels(treePath, true);
   if (!varLabelsRes.isValid) {
     return varLabelsRes;
   }
-  const newParams = Object.assign({}, params, { variableLabels: varLabelsRes.variableLabels });
+  const newParams = Object.assign({}, params, {
+    allowVariableLabels: true,
+    variableLabels: varLabelsRes.variableLabels,
+  });
   return isValidConfigTreeRecursive(
       treePath, ruleTreeObj, [], PredefinedDbPaths.DOT_RULE, isValidRuleConfig, newParams);
 }
@@ -644,11 +659,14 @@ function isValidFunctionTree(treePath, functionTreeObj) {
     return { isValid: true, invalidPath: '' };
   }
 
-  const varLabelsRes = getVariableLabels(treePath);
+  const varLabelsRes = getVariableLabels(treePath, true);
   if (!varLabelsRes.isValid) {
     return varLabelsRes;
   }
-  const newParams = { variableLabels: varLabelsRes.variableLabels };
+  const newParams = {
+    allowVariableLabels: true,
+    variableLabels: varLabelsRes.variableLabels,
+  };
   return isValidConfigTreeRecursive(
       treePath, functionTreeObj, [], PredefinedDbPaths.DOT_FUNCTION, isValidFunctionConfig,
       newParams);
@@ -662,8 +680,14 @@ function isValidOwnerTree(treePath, ownerTreeObj) {
     return { isValid: true, invalidPath: '' };
   }
 
+  const varLabelsRes = getVariableLabels(treePath, false);
+  if (!varLabelsRes.isValid) {
+    return varLabelsRes;
+  }
+  const newParams = { allowVariableLabels: false };
   return isValidConfigTreeRecursive(
-      treePath, ownerTreeObj, [], PredefinedDbPaths.DOT_OWNER, isValidOwnerConfig);
+      treePath, ownerTreeObj, [], PredefinedDbPaths.DOT_OWNER, isValidOwnerConfig,
+      newParams);
 }
 
 /**
