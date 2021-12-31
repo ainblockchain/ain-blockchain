@@ -150,33 +150,40 @@ class FileUtil {
           });
       });
     } catch (err) {
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
       return null;
     }
   }
 
   static readChunkedJsonSync(filePath) {
+    const LOG_HEADER = 'readChunkedJsonSync';
     try {
       const zippedFs = fs.readFileSync(filePath);
       return ObjectUtil.fromChunks(JSON.parse(zlib.gunzipSync(zippedFs).toString()).docs);
     } catch (err) {
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
       return null;
     }
   }
 
   static readCompressedJsonSync(filePath) {
+    const LOG_HEADER = 'readCompressedJsonSync';
     try {
       const zippedFs = fs.readFileSync(filePath);
       return JSON.parse(zlib.gunzipSync(zippedFs).toString());
     } catch (err) {
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
       return null;
     }
   }
 
   static readJsonSync(filePath) {
+    const LOG_HEADER = 'readJsonSync';
     try {
       const fileStr = fs.readFileSync(filePath);
       return JSON.parse(fileStr);
     } catch (err) {
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
       return null;
     }
   }
@@ -239,10 +246,12 @@ class FileUtil {
   }
 
   static readH2nFile(chainPath, blockHash) {
+    const LOG_HEADER = 'readH2nFile';
     try {
       const h2nPath = FileUtil.getH2nPath(chainPath, blockHash);
       return Number(fs.readFileSync(h2nPath).toString());
     } catch (err) {
+      logger.error(`[${LOG_HEADER}] Error while reading ${filePath}: ${err}`);
       return -1;
     }
   }
@@ -256,7 +265,7 @@ class FileUtil {
         try {
           fs.unlinkSync(filePath);
         } catch (err) {
-          logger.debug(`[${LOG_HEADER}] Failed to delete ${filePath}: ${err.stack}`);
+          logger.error(`[${LOG_HEADER}] Failed to delete ${filePath}: ${err.stack}`);
         }
       }
     } else {
