@@ -37,7 +37,7 @@ class Blockchain {
   /**
    * Initializes the blockchain and returns whether there are block files to load.
    */
-  async initBlockchain(isFirstNode, snapshot) {
+  initBlockchain(isFirstNode, snapshot) {
     if (snapshot) {
       this.addBlockToChain(snapshot[BlockchainSnapshotProperties.BLOCK]);
     }
