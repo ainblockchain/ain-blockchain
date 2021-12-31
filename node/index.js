@@ -259,8 +259,7 @@ class BlockchainNode {
 
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
-    const { wasBlockDirEmpty, isGenesisStart } =
-        await this.bc.initBlockchain(isFirstNode, latestSnapshot);
+    const { wasBlockDirEmpty, isGenesisStart } = this.bc.initBlockchain(isFirstNode, latestSnapshot);
 
     // 4. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);

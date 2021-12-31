@@ -50,7 +50,7 @@ async function verifyBlock(snapshotFile, blockFileList) {
   };
   const node = new BlockchainNode(account);
   node.db.initDb(snapshot);
-  await node.bc.initBlockchain(true, snapshot);
+  node.bc.initBlockchain(true, snapshot);
   const snapshotProposalTx = ConsensusUtil.filterProposalFromVotes(blockList[0].last_votes);
   node.bp.addSeenBlock(snapshotBlock, snapshotProposalTx);
   const latestDb = node.createTempDb(
