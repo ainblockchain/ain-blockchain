@@ -11,13 +11,13 @@ const { setNodeForTesting, getTransaction, txsToDummyReceipts  } = require('../t
 describe('Blockchain', () => {
   let node1, node2;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node1 = new BlockchainNode();
-    setNodeForTesting(node1, 0);
+    await setNodeForTesting(node1, 0);
     node2 = new BlockchainNode();
-    setNodeForTesting(node2, 1);
+    await setNodeForTesting(node2, 1);
   });
 
   afterEach(() => {
@@ -47,7 +47,7 @@ describe('Blockchain', () => {
   describe('with lots of blocks', () => {
     let blocks; let blockHash;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       blocks = [];
       const validators = {
         [node1.account.address]: { stake: 10, proposal_right: true }
@@ -74,7 +74,7 @@ describe('Blockchain', () => {
           blockHash = block.hash;
         }
         blocks.push(block);
-        node1.bc.addBlockToChainAndWriteToDisk(block, true);
+        await node1.bc.addBlockToChainAndWriteToDisk(block, true);
       }
     });
 
