@@ -23,7 +23,7 @@ class Blockchain {
 
   setGenesisBlock() {
     const genesisBlockPath = path.join(NodeConfigs.GENESIS_BLOCK_DIR, 'genesis_block.json.gz');
-    const block = Block.parse(FileUtil.readCompressedJson(genesisBlockPath));
+    const block = Block.parse(FileUtil.readCompressedJsonSync(genesisBlockPath));
     if (!block) {
       throw Error(`Missing genesis block at ${genesisBlockPath}`);
     }
@@ -95,7 +95,7 @@ class Blockchain {
     if (!blockPath) {
       return this.chain.find((block) => block.hash === hash);
     } else {
-      return Block.parse(FileUtil.readCompressedJson(blockPath));
+      return Block.parse(FileUtil.readCompressedJsonSync(blockPath));
     }
   }
 
@@ -114,7 +114,7 @@ class Blockchain {
     if (!blockPath || blockNumber > this.lastBlockNumber() - NodeConfigs.ON_MEMORY_CHAIN_LENGTH) {
       return this.chain.find((block) => block.number === blockNumber);
     } else {
-      return Block.parse(FileUtil.readCompressedJson(blockPath));
+      return Block.parse(FileUtil.readCompressedJsonSync(blockPath));
     }
   }
 
@@ -277,7 +277,7 @@ class Blockchain {
     if (!fs.existsSync(blockPath)) {
       return null;
     }
-    return Block.parse(FileUtil.readCompressedJson(blockPath));
+    return Block.parse(FileUtil.readCompressedJsonSync(blockPath));
   }
 
   /**
@@ -310,7 +310,7 @@ class Blockchain {
     }
     const blockPaths = FileUtil.getBlockPathList(this.blockchainPath, from, to - from);
     blockPaths.forEach((blockPath) => {
-      blockList.push(Block.parse(FileUtil.readCompressedJson(blockPath)));
+      blockList.push(Block.parse(FileUtil.readCompressedJsonSync(blockPath)));
     });
     return blockList;
   }

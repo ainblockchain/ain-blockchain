@@ -235,7 +235,9 @@ class BlockchainNode {
       latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
       if (latestSnapshotPath) {
         try {
-          latestSnapshot = FileUtil.readCompressedJson(latestSnapshotPath);
+          latestSnapshot = DevFlags.enableSnapshotChunks ?
+              await FileUtil.readCompressedJson(latestSnapshotPath)
+              : FileUtil.readCompressedJsonSync(latestSnapshotPath);
           latestSnapshotBlockNumber = latestSnapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
         } catch (err) {
           CommonUtil.finishWithStackTrace(
@@ -344,11 +346,11 @@ class BlockchainNode {
     this.updateSnapshots(blockNumber);
   }
 
-  updateSnapshots(blockNumber) {
+  async updateSnapshots(blockNumber) {
     if (blockNumber % NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
-      FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
-      FileUtil.writeSnapshot(
+      await FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
+      await FileUtil.writeSnapshot(
           this.snapshotDir,
           blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
     }
@@ -359,13 +361,26 @@ class BlockchainNode {
     const stateSnapshot = stateRoot.toStateSnapshot({ includeVersion: true });
     const radixSnapshot = stateRoot.toRadixSnapshot();
     const rootProofHash = stateRoot.getProofHash();
+    if (DevFlags.enableSnapshotChunks) {
+      return {
+        docs: [
+          {
+            [BlockchainSnapshotProperties.BLOCK_NUMBER]: blockNumber,
+            [BlockchainSnapshotProperties.BLOCK]: block,
+            [BlockchainSnapshotProperties.STATE_SNAPSHOT]: stateSnapshot,
+            [BlockchainSnapshotProperties.RADIX_SNAPSHOT]: radixSnapshot,
+            [BlockchainSnapshotProperties.ROOT_PROOF_HASH]: rootProofHash
+          },
+        ]
+      };
+    }
     return {
       [BlockchainSnapshotProperties.BLOCK_NUMBER]: blockNumber,
       [BlockchainSnapshotProperties.BLOCK]: block,
       [BlockchainSnapshotProperties.STATE_SNAPSHOT]: stateSnapshot,
       [BlockchainSnapshotProperties.RADIX_SNAPSHOT]: radixSnapshot,
-      [BlockchainSnapshotProperties.ROOT_PROOF_HASH]: rootProofHash,
-    }
+      [BlockchainSnapshotProperties.ROOT_PROOF_HASH]: rootProofHash
+    };
   }
 
   getTransactionByHash(hash) {
