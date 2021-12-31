@@ -73,7 +73,7 @@ class ObjectUtil {
     const res = ObjectUtil.toChunksRecursive(obj, chunkSize, path)
     const chunkList = res.chunks;
     if (!res.isEmpty) {
-      let currentSize = sizeof(obj);
+      const currentSize = sizeof(obj);
       chunkList.push({
         path: JSON.parse(JSON.stringify(path)),
         size: currentSize,
