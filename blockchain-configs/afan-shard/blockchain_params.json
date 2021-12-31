@@ -91,8 +91,8 @@
     "batch_tx_list_size_limit": 50,
     "set_op_list_size_limit": 50,
     "min_gc_num_siblings_deleted": 100,
-    "block_chunk_size": 100000000,
-    "snapshot_chunk_size": 100000000,
+    "block_chunk_size": 1000000,
+    "snapshot_chunk_size": 1000000,
     "min_gas_price": 1
   },
   "reward": {
