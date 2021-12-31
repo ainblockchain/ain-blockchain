@@ -393,7 +393,7 @@ class Consensus {
       type: WriteDbOperations.SET,
       op_list: [proposeOp]
     };
-    return this.node.createTransaction({ operation: setOp, nonce: -1, gas_price: 1 });
+    return this.node.createTransaction({ operation: setOp, nonce: -1, gas_price: 0 });
   }
 
   // proposing for block #N :
@@ -999,7 +999,7 @@ class Consensus {
         [PredefinedDbPaths.CONSENSUS_VOTE_NONCE]: timestamp,
       }
     };
-    const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1, timestamp });
+    const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 0, timestamp });
     const consensusMsg = this.encapsulateConsensusMessage(
         Transaction.toJsObject(voteTx), ConsensusMessageTypes.VOTE);
     this.handleConsensusMessage(consensusMsg);
@@ -1033,7 +1033,7 @@ class Consensus {
         [PredefinedDbPaths.CONSENSUS_VOTE_NONCE]: timestamp,
       }
     };
-    const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1, timestamp });
+    const voteTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 0, timestamp });
     const consensusMsg = this.encapsulateConsensusMessage(
         Transaction.toJsObject(voteTx), ConsensusMessageTypes.VOTE);
     this.handleConsensusMessage(consensusMsg);
@@ -1286,7 +1286,8 @@ class Consensus {
           PredefinedDbPaths.CONSENSUS, this.node.account.address, 0, PushId.generate()),
       value: amount
     };
-    const stakeTx = this.node.createTransaction({ operation, nonce: -1, gas_price: 1 });
+    const gasPrice = this.node.getBlockchainParam('resource/min_gas_price');
+    const stakeTx = this.node.createTransaction({ operation, nonce: -1, gas_price: gasPrice });
     return stakeTx;
   }
 
