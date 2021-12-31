@@ -47,7 +47,7 @@ describe('Blockchain', () => {
   describe('with lots of blocks', () => {
     let blocks; let blockHash;
 
-    beforeEach(async () => {
+    beforeEach(() => {
       blocks = [];
       const validators = {
         [node1.account.address]: { stake: 10, proposal_right: true }
@@ -74,7 +74,7 @@ describe('Blockchain', () => {
           blockHash = block.hash;
         }
         blocks.push(block);
-        await node1.bc.addBlockToChainAndWriteToDisk(block, true);
+        node1.bc.addBlockToChainAndWriteToDisk(block, true);
       }
     });
 
