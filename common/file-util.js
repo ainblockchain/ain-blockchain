@@ -172,7 +172,7 @@ class FileUtil {
     }
   }
 
-  static async readJsonSync(filePath) {
+  static readJsonSync(filePath) {
     try {
       const fileStr = fs.readFileSync(filePath);
       return JSON.parse(fileStr);
