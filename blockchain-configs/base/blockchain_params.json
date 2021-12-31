@@ -55,7 +55,7 @@
   },
   "genesis": {
     "genesis_addr": "0xAAAf6f50A0304F12119D218b94bea8082642515B",
-    "genesis_timestamp": 1571819318272,
+    "genesis_timestamp": 1640995199999,
     "num_genesis_accounts": 10,
     "epoch_ms": 20000,
     "chain_id": 0,
