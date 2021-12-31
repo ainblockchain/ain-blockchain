@@ -1027,8 +1027,6 @@ class DB {
         unitWriteGasAmount);
   }
 
-  // TODO(platfowner): Add rule config sanitization logic (e.g. dup path variables,
-  //                   multiple path variables).
   setRule(rulePath, rule, auth, blockNumber, options) {
     const isGlobal = options && options.isGlobal;
     const stateLabelLengthLimit = DB.getBlockchainParam(
