@@ -6,6 +6,7 @@ const zlib = require('zlib');
 const _ = require('lodash');
 const ainUtil = require('@ainblockchain/ain-util');
 const JsonStreamStringify = require('json-stream-stringify');
+const JSONStream = require('JSONStream');
 const { BlockchainConsts, NodeConfigs } = require('./constants');
 const CommonUtil = require('./common-util');
 const JSON_GZIP_FILE_EXTENSION = 'json.gz';
@@ -125,8 +126,34 @@ class FileUtil {
     return _.endsWith(filePath, '.gz');
   }
 
-  // TODO(cshcomcom): Change to asynchronous.
-  static readCompressedJson(filePath) {
+  static async readCompressedJson(filePath) {
+    const LOG_HEADER = 'readCompressedJson';
+    try {
+      return new Promise((resolve) => {
+        const transformStream = JSONStream.parse('docs.*');
+        const res = [];
+        fs.createReadStream(filePath)
+          .pipe(zlib.createGunzip())
+          .pipe(transformStream)
+          .on('data', (data) => {
+            logger.debug(`${LOG_HEADER} Read data: ${JSON.stringify(data)}`);
+            res.push(data);
+          })
+          .on('end', () => {
+            logger.debug(`${LOG_HEADER} Reading done: ${JSON.stringify(res)}`);
+            resolve(res);
+          })
+          .on('error', (e) => {
+            logger.error(`${LOG_HEADER} Error while reading ${filePath}: ${e}`);
+            resolve(null);
+          });
+      });
+    } catch (err) {
+      return null;
+    }
+  }
+
+  static readCompressedJsonSync(filePath) {
     try {
       const zippedFs = fs.readFileSync(filePath);
       return JSON.parse(zlib.gunzipSync(zippedFs).toString());
@@ -135,7 +162,7 @@ class FileUtil {
     }
   }
 
-  static readJson(filePath) {
+  static async readJsonSync(filePath) {
     try {
       const fileStr = fs.readFileSync(filePath);
       return JSON.parse(fileStr);
@@ -146,7 +173,7 @@ class FileUtil {
 
   static readBlockByNumber(chainPath, blockNumber) {
     const blockPath = FileUtil.getBlockPath(chainPath, blockNumber);
-    return FileUtil.readCompressedJson(blockPath);
+    return FileUtil.readCompressedJsonSync(blockPath);
   }
 
   static writeBlockFile(chainPath, block) {
