@@ -811,8 +811,6 @@ class DB {
     return DB.getAppStakeFromStateRoot(this.stateRoot, appName);
   }
 
-  // TODO(platfowner): Apply .shard (isWritablePathWithSharding()) to setFunction(), setRule(),
-  //                   and setOwner() as well.
   setValue(valuePath, value, auth, timestamp, transaction, blockNumber, blockTime, options) {
     const LOG_HEADER = 'setValue';
     const isGlobal = options && options.isGlobal;
