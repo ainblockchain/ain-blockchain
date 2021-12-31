@@ -345,6 +345,9 @@ describe("P2p", () => {
           outgoingPeers: [],
           peerCandidates: [],
           peerConnectionsInProgress: [],
+          isConnectingToPeerCandidates: false,
+          peerConnectionElapsedTime: 0,
+          peerConnectionStartedAt: null
         });
       });
     });
