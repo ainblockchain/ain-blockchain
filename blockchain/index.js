@@ -177,7 +177,7 @@ class Blockchain {
     }
   }
 
-  addBlockToChainAndWriteToDisk(block, writeToDisk) {
+  async addBlockToChainAndWriteToDisk(block, writeToDisk) {
     const LOG_HEADER = 'addBlockToChainAndWriteToDisk';
 
     if (!(block instanceof Block)) {
@@ -194,7 +194,7 @@ class Blockchain {
     this.addBlockToChain(block);
     this.updateNumberToBlockInfo(block);
     if (writeToDisk) {
-      this.writeBlock(block);
+      await this.writeBlock(block);
     }
     return true;
   }

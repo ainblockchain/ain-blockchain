@@ -31,11 +31,11 @@ describe("Functions", () => {
       epochMs,
     };
 
-    before(() => {
+    before(async () => {
       rimraf.sync(NodeConfigs.CHAINS_DIR);
 
       node = new BlockchainNode();
-      setNodeForTesting(node);
+      await setNodeForTesting(node);
       functions = new Functions(node.db);
     })
 
