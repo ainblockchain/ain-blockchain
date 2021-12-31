@@ -235,9 +235,7 @@ class BlockchainNode {
       latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
       if (latestSnapshotPath) {
         try {
-          latestSnapshot = DevFlags.enableSnapshotChunks ?
-              await FileUtil.readCompressedJson(latestSnapshotPath)
-              : FileUtil.readCompressedJsonSync(latestSnapshotPath);
+          latestSnapshot = await FileUtil.readChunkedJsonAsync(latestSnapshotPath);
           latestSnapshotBlockNumber = latestSnapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
         } catch (err) {
           CommonUtil.finishWithStackTrace(
@@ -343,16 +341,19 @@ class BlockchainNode {
     }
     const nodeVersion = `${StateVersions.NODE}:${blockNumber}`;
     this.syncDbAndNonce(nodeVersion);
+    // NOTE(liayoo): This write is not awaited.
     this.updateSnapshots(blockNumber);
   }
 
   async updateSnapshots(blockNumber) {
     if (blockNumber % NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
-      await FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
+      const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
+      await FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
       await FileUtil.writeSnapshot(
           this.snapshotDir,
-          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
+          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
+          null, snapshotChunkSize);
     }
   }
 
@@ -361,19 +362,6 @@ class BlockchainNode {
     const stateSnapshot = stateRoot.toStateSnapshot({ includeVersion: true });
     const radixSnapshot = stateRoot.toRadixSnapshot();
     const rootProofHash = stateRoot.getProofHash();
-    if (DevFlags.enableSnapshotChunks) {
-      return {
-        docs: [
-          {
-            [BlockchainSnapshotProperties.BLOCK_NUMBER]: blockNumber,
-            [BlockchainSnapshotProperties.BLOCK]: block,
-            [BlockchainSnapshotProperties.STATE_SNAPSHOT]: stateSnapshot,
-            [BlockchainSnapshotProperties.RADIX_SNAPSHOT]: radixSnapshot,
-            [BlockchainSnapshotProperties.ROOT_PROOF_HASH]: rootProofHash
-          },
-        ]
-      };
-    }
     return {
       [BlockchainSnapshotProperties.BLOCK_NUMBER]: blockNumber,
       [BlockchainSnapshotProperties.BLOCK]: block,

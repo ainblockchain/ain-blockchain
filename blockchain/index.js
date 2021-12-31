@@ -51,7 +51,7 @@ class Blockchain {
         logger.info('############################################################');
         logger.info('\n');
         // Copy the genesis block from the genesis configs dir to the blockchain dir.
-        await this.writeBlock(this.genesisBlock);
+        this.writeBlock(this.genesisBlock);
         isGenesisStart = true;
       } else {
         logger.info('\n');
@@ -225,8 +225,8 @@ class Blockchain {
     return true;
   }
 
-  async writeBlock(block) {
-    await FileUtil.writeBlockFile(this.blockchainPath, block);
+  writeBlock(block) {
+    FileUtil.writeBlockFile(this.blockchainPath, block);
     FileUtil.writeH2nFile(this.blockchainPath, block.hash, block.number);
   }
 
@@ -309,9 +309,9 @@ class Blockchain {
       to = from + NodeConfigs.CHAIN_SEGMENT_LENGTH;
     }
     const blockPaths = FileUtil.getBlockPathList(this.blockchainPath, from, to - from);
-    blockPaths.forEach((blockPath) => {
+    for (const blockPath of blockPaths) {
       blockList.push(Block.parse(FileUtil.readCompressedJsonSync(blockPath)));
-    });
+    }
     return blockList;
   }
 }

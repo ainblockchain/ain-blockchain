@@ -9,6 +9,7 @@ const JsonStreamStringify = require('json-stream-stringify');
 const JSONStream = require('JSONStream');
 const { BlockchainConsts, NodeConfigs } = require('./constants');
 const CommonUtil = require('./common-util');
+const ObjectUtil = require('./object-util');
 const JSON_GZIP_FILE_EXTENSION = 'json.gz';
 
 class FileUtil {
@@ -126,28 +127,37 @@ class FileUtil {
     return _.endsWith(filePath, '.gz');
   }
 
-  static async readCompressedJson(filePath) {
-    const LOG_HEADER = 'readCompressedJson';
+  static async readChunkedJsonAsync(filePath) {
+    const LOG_HEADER = 'readChunkedJsonAsync';
     try {
       return new Promise((resolve) => {
         const transformStream = JSONStream.parse('docs.*');
-        const res = [];
+        const chunks = [];
         fs.createReadStream(filePath)
           .pipe(zlib.createGunzip())
           .pipe(transformStream)
           .on('data', (data) => {
             logger.debug(`${LOG_HEADER} Read data: ${JSON.stringify(data)}`);
-            res.push(data);
+            chunks.push(data);
           })
           .on('end', () => {
-            logger.debug(`${LOG_HEADER} Reading done: ${JSON.stringify(res)}`);
-            resolve(res);
+            logger.debug(`${LOG_HEADER} Reading done: ${JSON.stringify(chunks)}`);
+            resolve(ObjectUtil.fromChunks(chunks));
           })
           .on('error', (e) => {
             logger.error(`${LOG_HEADER} Error while reading ${filePath}: ${e}`);
             resolve(null);
           });
       });
+    } catch (err) {
+      return null;
+    }
+  }
+
+  static readChunkedJsonSync(filePath) {
+    try {
+      const zippedFs = fs.readFileSync(filePath);
+      return ObjectUtil.fromChunks(JSON.parse(zlib.gunzipSync(zippedFs).toString()).docs);
     } catch (err) {
       return null;
     }
@@ -177,28 +187,18 @@ class FileUtil {
   }
 
   static writeBlockFile(chainPath, block) {
-    return new Promise((resolve) => {
-      const LOG_HEADER = 'writeBlockFile';
+    const LOG_HEADER = 'writeBlockFile';
 
-      const blockPath = FileUtil.getBlockPath(chainPath, block.number);
-      if (fs.existsSync(blockPath)) {
-        logger.debug(`[${LOG_HEADER}] ${blockPath} file already exists!`);
-        resolve();
-      }
-      const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
-      FileUtil.createDir(blockDirPath);
-      new JsonStreamStringify(block)
-        .pipe(zlib.createGzip())
-        .pipe(fs.createWriteStream(blockPath, { flags: 'w' }))
-        .on('finish', () => {
-          logger.debug(`[${LOG_HEADER}] Block written at ${blockPath}`);
-          resolve();
-        })
-        .on('error', (e) => {
-          logger.error(`[${LOG_HEADER}] Failed to write block at ${blockPath}: ${e}`);
-          resolve();
-        });
-    });
+    const blockPath = FileUtil.getBlockPath(chainPath, block.number);
+    if (fs.existsSync(blockPath)) {
+      logger.debug(`[${LOG_HEADER}] ${blockPath} file already exists!`);
+      return;
+    }
+    const blockDirPath = FileUtil.getBlockDirPath(chainPath, block.number);
+    FileUtil.createDir(blockDirPath);
+    const compressed = zlib.gzipSync(Buffer.from(JSON.stringify(block)));
+    fs.writeFileSync(blockPath, compressed);
+    logger.debug(`[${LOG_HEADER}] Block written at ${blockPath}`);
   }
 
   static deleteBlockFile(chainPath, blockNumber) {
@@ -247,7 +247,7 @@ class FileUtil {
     }
   }
 
-  static async writeSnapshot(snapshotPath, blockNumber, snapshot, isDebug = false) {
+  static async writeSnapshot(snapshotPath, blockNumber, snapshot, snapshotChunkSize, isDebug = false) {
     const LOG_HEADER = 'writeSnapshot';
 
     const filePath = FileUtil.getSnapshotPathByBlockNumber(snapshotPath, blockNumber, isDebug);
@@ -261,7 +261,7 @@ class FileUtil {
       }
     } else {
       return new Promise((resolve) => {
-        new JsonStreamStringify(snapshot)
+        new JsonStreamStringify({ docs: ObjectUtil.toChunks(snapshot, snapshotChunkSize) })
           .pipe(zlib.createGzip())
           .pipe(fs.createWriteStream(filePath, { flags: 'w' }))
           .on('finish', () => {
