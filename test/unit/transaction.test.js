@@ -24,11 +24,11 @@ describe('Transaction', () => {
   let txBodyForNode;
   let txForNode;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
-    setNodeForTesting(node);
+    await setNodeForTesting(node);
     node.db.setValuesForTesting(`/staking/app_a/balance_total`, 1);
     node.db.setValuesForTesting(`/staking/test/balance_total`, 1);
 

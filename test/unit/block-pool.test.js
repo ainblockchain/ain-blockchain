@@ -15,11 +15,11 @@ const { setNodeForTesting, getTransaction } = require('../test-util')
 describe("BlockPool", () => {
   let node1;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node1 = new BlockchainNode();
-    setNodeForTesting(node1, 0, true);
+    await setNodeForTesting(node1, 0, true);
   });
 
   afterEach(() => {
