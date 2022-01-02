@@ -24,7 +24,7 @@ function readConfigFile(filePath) {
   return JSON.parse(fs.readFileSync(filePath));
 }
 
-function setNodeForTesting(
+async function setNodeForTesting(
     node, accountIndex = 0, skipTestingConfig = false, skipShardingConfig = true) {
   const accountsFile = path.resolve(__dirname, './data/accounts_for_testing.json');
   if (!fs.existsSync(accountsFile)) {
@@ -33,7 +33,7 @@ function setNodeForTesting(
   const accounts = readConfigFile(accountsFile);
   node.setAccountForTesting(accounts.others[accountIndex]);
 
-  node.initNode(true);
+  await node.initNode(true);
 
   if (!skipTestingConfig) {
     const ownersFile = path.resolve(__dirname, './data/owners_for_testing.json');

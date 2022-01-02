@@ -11,13 +11,13 @@ const { setNodeForTesting, getTransaction, txsToDummyReceipts  } = require('../t
 describe('Blockchain', () => {
   let node1, node2;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node1 = new BlockchainNode();
-    setNodeForTesting(node1, 0);
+    await setNodeForTesting(node1, 0);
     node2 = new BlockchainNode();
-    setNodeForTesting(node2, 1);
+    await setNodeForTesting(node2, 1);
   });
 
   afterEach(() => {

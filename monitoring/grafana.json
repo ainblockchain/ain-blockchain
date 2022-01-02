@@ -2672,14 +2672,17 @@
       "pluginVersion": "8.3.3",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus"
+          },
           "exemplar": true,
-          "expr": "node_status:db_status:state_info:tree_bytes",
+          "expr": "node_status:db_status:root_state_info:tree_bytes",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "title": "state_info:tree_bytes",
+      "title": "root_state_info:tree_bytes",
       "type": "timeseries"
     },
     {
@@ -2837,13 +2840,17 @@
       "pluginVersion": "8.3.3",
       "targets": [
         {
-          "expr": "node_status:db_status:state_info:tree_size",
+          "datasource": {
+            "type": "prometheus"
+          },
+          "exemplar": true,
+          "expr": "node_status:db_status:root_state_info:tree_size",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "title": "state_info:tree_size",
+      "title": "root_state_info:tree_size",
       "type": "timeseries"
     },
     {
@@ -3991,7 +3998,7 @@
       "targets": [
         {
           "datasource": {
-            "type": "prometheus",
+            "type": "prometheus"
           },
           "exemplar": true,
           "expr": "node_status:db_status:num_accounts",
@@ -4691,6 +4698,6 @@
   "timezone": "",
   "title": "Blockchain Servers",
   "uid": "M6YpMSyMz",
-  "version": 4,
+  "version": 6,
   "weekStart": ""
 }

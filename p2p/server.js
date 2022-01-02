@@ -764,7 +764,6 @@ class P2pServer {
     return false;
   }
 
-  // TODO(platfowner): Set .shard config for functions, rules, and owners as well.
   async setUpDbForSharding() {
     const LOG_HEADER = 'setUpDbForSharding';
     const shardingConfig = this.node.getAllBlockchainParamsFromState().sharding;
