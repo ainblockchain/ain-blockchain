@@ -221,7 +221,7 @@ class BlockchainNode {
     return `http://${ipAddr}:${NodeConfigs.PORT}`;
   }
 
-  initNode(isFirstNode) {
+  async initNode(isFirstNode) {
     const LOG_HEADER = 'initNode';
 
     let latestSnapshot = null;
@@ -235,7 +235,7 @@ class BlockchainNode {
       latestSnapshotPath = latestSnapshotInfo.latestSnapshotPath;
       if (latestSnapshotPath) {
         try {
-          latestSnapshot = FileUtil.readCompressedJson(latestSnapshotPath);
+          latestSnapshot = await FileUtil.readChunkedJsonAsync(latestSnapshotPath);
           latestSnapshotBlockNumber = latestSnapshot[BlockchainSnapshotProperties.BLOCK_NUMBER];
         } catch (err) {
           CommonUtil.finishWithStackTrace(
@@ -259,8 +259,7 @@ class BlockchainNode {
 
     // 3. Initialize the blockchain, starting from `latestSnapshotBlockNumber`.
     logger.info(`[${LOG_HEADER}] Initializing blockchain..`);
-    const { wasBlockDirEmpty, isGenesisStart } =
-        this.bc.initBlockchain(isFirstNode, latestSnapshot);
+    const { wasBlockDirEmpty, isGenesisStart } = this.bc.initBlockchain(isFirstNode, latestSnapshot);
 
     // 4. Execute the chain on the DB and finalize it.
     logger.info(`[${LOG_HEADER}] Executing chains on DB if needed..`);
@@ -341,16 +340,19 @@ class BlockchainNode {
     }
     const nodeVersion = `${StateVersions.NODE}:${blockNumber}`;
     this.syncDbAndNonce(nodeVersion);
+    // NOTE(liayoo): This write is not awaited.
     this.updateSnapshots(blockNumber);
   }
 
-  updateSnapshots(blockNumber) {
+  async updateSnapshots(blockNumber) {
     if (blockNumber % NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER === 0) {
       const snapshot = this.buildBlockchainSnapshot(blockNumber, this.stateManager.getFinalRoot());
-      FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot);
-      FileUtil.writeSnapshot(
+      const snapshotChunkSize = this.getBlockchainParam('resource/snapshot_chunk_size');
+      await FileUtil.writeSnapshot(this.snapshotDir, blockNumber, snapshot, snapshotChunkSize);
+      await FileUtil.writeSnapshot(
           this.snapshotDir,
-          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER, null);
+          blockNumber - NodeConfigs.MAX_NUM_SNAPSHOTS * NodeConfigs.SNAPSHOTS_INTERVAL_BLOCK_NUMBER,
+          null, snapshotChunkSize);
     }
   }
 
@@ -364,8 +366,8 @@ class BlockchainNode {
       [BlockchainSnapshotProperties.BLOCK]: block,
       [BlockchainSnapshotProperties.STATE_SNAPSHOT]: stateSnapshot,
       [BlockchainSnapshotProperties.RADIX_SNAPSHOT]: radixSnapshot,
-      [BlockchainSnapshotProperties.ROOT_PROOF_HASH]: rootProofHash,
-    }
+      [BlockchainSnapshotProperties.ROOT_PROOF_HASH]: rootProofHash
+    };
   }
 
   getTransactionByHash(hash) {

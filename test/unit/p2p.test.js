@@ -28,7 +28,7 @@ describe("P2p", () => {
     rimraf.sync(NodeConfigs.CHAINS_DIR);
 
     node = new BlockchainNode();
-    setNodeForTesting(node, 0, true, true);
+    await setNodeForTesting(node, 0, true, true);
     p2pClient = new P2pClient(node, minProtocolVersion, maxProtocolVersion);
     p2pServer = p2pClient.server;
     await p2pServer.listen();
@@ -345,6 +345,9 @@ describe("P2p", () => {
           outgoingPeers: [],
           peerCandidates: [],
           peerConnectionsInProgress: [],
+          isConnectingToPeerCandidates: false,
+          peerConnectionElapsedTime: 0,
+          peerConnectionStartedAt: null
         });
       });
     });
