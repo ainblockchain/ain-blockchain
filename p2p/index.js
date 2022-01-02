@@ -33,6 +33,7 @@ class P2pClient {
     this.p2pState = P2pNetworkStates.STARTING;
     this.peerConnectionsInProgress = new Map();
     this.chainSyncInProgress = null;
+    this.peerConnectionStartedAt = null;
     logger.info(`Now p2p network in STARTING state!`);
     this.startHeartbeat();
   }
@@ -58,9 +59,14 @@ class P2pClient {
     const outgoingPeers = Object.keys(this.outbound);
     const peerConnectionsInProgress = Array.from(this.peerConnectionsInProgress.keys());
     const peerCandidates = Array.from(this.peerCandidates.keys());
+    const peerConnectionElapsedTime = this.peerConnectionStartedAt === null ? 0 :
+        Date.now() - this.peerConnectionStartedAt;
     return {
       state: this.p2pState,
       stateNumeric: Object.keys(P2pNetworkStates).indexOf(this.p2pState),
+      isConnectingToPeerCandidates: this.isConnectingToPeerCandidates,
+      peerConnectionStartedAt: this.peerConnectionStartedAt,
+      peerConnectionElapsedTime: peerConnectionElapsedTime,
       maxInbound: NodeConfigs.MAX_NUM_INBOUND_CONNECTION,
       targetOutBound: NodeConfigs.TARGET_NUM_OUTBOUND_CONNECTION,
       peerConnectionsInProgress: peerConnectionsInProgress,
@@ -251,11 +257,18 @@ class P2pClient {
   }
 
   async discoverPeerWithGuardingFlag() {
+    const LOG_HEADER = 'discoverPeerWithGuardingFlag';
     if (!this.isConnectingToPeerCandidates) {
-      this.isConnectingToPeerCandidates = true;
-      const nextPeerCandidate = this.assignRandomPeerCandidate();
-      await this.connectWithPeerCandidateUrl(nextPeerCandidate);
-      this.isConnectingToPeerCandidates = false;
+      this.peerConnectionStartedAt = Date.now();
+      try {
+        this.isConnectingToPeerCandidates = true;
+        const nextPeerCandidate = this.assignRandomPeerCandidate();
+        await this.connectWithPeerCandidateUrl(nextPeerCandidate);
+      } catch (e) {
+        logger.error(`[${LOG_HEADER}] ${e}`);
+      } finally {
+        this.isConnectingToPeerCandidates = false;
+      }
     }
   }
 
@@ -291,7 +304,7 @@ class P2pClient {
     // NOTE(minsulee2): ENABLE_JSON_RPC_API === true means API server nodes for now.
     // TODO(minsulee2): Need to introduce a new flag which marks a 'bridge node' role.
     if (NodeConfigs.ENABLE_JSON_RPC_API) {
-      const whitelist = this.server.node.db.getValue('/consensus/proposer_whitelist');
+      const whitelist = this.server.node.db.getValue('/consensus/validator_whitelist');
       const [whitelisted, notWhitelisted] =
           _.partition(bidirectedConnections, ((address) => whitelist[address]));
       const whitelistDisconnectThreshold = Math.floor(NodeConfigs.MAX_NUM_INBOUND_CONNECTION / 2);
@@ -340,7 +353,7 @@ class P2pClient {
 
     if (numLivePeers === 0) {
       logger.info(`[${LOG_HEADER}] Starting blockchain node without peers..`);
-      if (!this.server.node.initNode(true)) {
+      if (!(await this.server.node.initNode(true))) {
         this.server.node.state = BlockchainNodeStates.STOPPED;
         logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
         return;
@@ -359,7 +372,7 @@ class P2pClient {
     } else {
       // Consensus will be initialized after syncing with peers
       logger.info(`[${LOG_HEADER}] Starting blockchain node with ${numLivePeers} peers..`);
-      if (!this.server.node.initNode(false)) {
+      if (!(await this.server.node.initNode(false))) {
         this.server.node.state = BlockchainNodeStates.STOPPED;
         logger.error(`[${LOG_HEADER}] Failed to initialize blockchain node!`);
         return;

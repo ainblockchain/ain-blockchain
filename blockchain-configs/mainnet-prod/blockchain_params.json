@@ -72,7 +72,7 @@
   },
   "genesis": {
     "genesis_addr": "0xCCCC7809e28DE89BE2AfeFbaa25f1Cee04C4f7a2",
-    "genesis_timestamp": 1640736000000,
+    "genesis_timestamp": 1640995199999,
     "num_genesis_accounts": 10,
     "epoch_ms": 20000,
     "chain_id": 1,
@@ -106,7 +106,9 @@
     "tx_bytes_limit": 10000,
     "batch_tx_list_size_limit": 50,
     "set_op_list_size_limit": 50,
-    "min_gc_num_siblings_deleted": 100
+    "min_gc_num_siblings_deleted": 100,
+    "snapshot_chunk_size": 1000000,
+    "min_gas_price": 500
   },
   "reward": {
     "type": "FIXED",
