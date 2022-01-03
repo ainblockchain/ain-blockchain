@@ -56,7 +56,9 @@ class BlockPool {
 
   updateLongestNotarizedChains() {
     const LOG_HEADER = 'updateLongestNotarizedChains';
-    const currentLongest = this.getLongestNotarizedChainHeight();
+    const currentLongest = this.longestNotarizedChainTips.length ?
+        _get(this.hashToBlockInfo.get(this.longestNotarizedChainTips[0]), 'block.number')
+        : this.node.bc.lastBlockNumber();
     if (currentLongest == undefined) {
       logger.error(`[${LOG_HEADER}] Notarized block's info is missing: ` +
           `${this.longestNotarizedChainTips[0]}`);
@@ -167,7 +169,7 @@ class BlockPool {
     }
     const lastFinalized = { block: this.node.bc.lastBlock(), notarized: true };
     const chain = this.dfsFinalizable(lastFinalized, []);
-    if (chain.length === 0 && this.node.bc.lastBlockNumber() < 0 && this.hashToBlockInfo.get(genesisBlockHash)) {
+    if (chain.length === 0 && this.node.bc.lastBlockNumber() < 0 && this.hashToBlockInfo.has(genesisBlockHash)) {
       // When node first started (fetching from peers or loading from disk)
       return chainWithGenesisBlock;
     }
@@ -508,29 +510,27 @@ class BlockPool {
   cleanUpAfterFinalization(lastBlock, recordedInvalidBlocks) {
     const targetNumber = lastBlock.number;
     const maxInvalidBlocksOnMem = this.node.getBlockchainParam('consensus/max_invalid_blocks_on_mem');
-    for (const blockNumber of this.numberToBlockSet.keys()) {
+    for (const [blockNumber, blockHashSet] of this.numberToBlockSet.entries()) {
       const number = Number(blockNumber);
       if (number < targetNumber) {
-        const blockHashList = this.numberToBlockSet[blockNumber];
-        for (const blockHash of blockHashList) {
+        for (const blockHash of blockHashSet) {
           if (this.hashToInvalidBlockInfo.has(blockHash)) {
             if (recordedInvalidBlocks.has(blockHash) || number < targetNumber - maxInvalidBlocksOnMem) {
               this.cleanUpForBlockHash(blockHash);
-              this.numberToBlockSet.get(blockNumber).delete(blockHash);
+              blockHashSet.delete(blockHash);
             }
           } else {
             this.cleanUpForBlockHash(blockHash);
-            this.numberToBlockSet.get(blockNumber).delete(blockHash);
+            blockHashSet.delete(blockHash);
           }
         }
-        if (!this.numberToBlockSet.get(blockNumber).size) {
+        if (!blockHashSet.size) {
           this.numberToBlockSet.delete(blockNumber);
         }
       }
     }
-    for (const epoch of this.epochToBlock.keys()) {
+    for (const [epoch, blockHash] of this.epochToBlock.entries()) {
       if (Number(epoch) < lastBlock.epoch) {
-        const blockHash = this.epochToBlock.get(epoch);
         this.cleanUpForBlockHash(blockHash);
         this.epochToBlock.delete(epoch);
       }
