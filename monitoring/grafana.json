@@ -1946,7 +1946,7 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 10,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -1959,8 +1959,8 @@
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "never",
-            "spanNulls": true,
+            "showPoints": "auto",
+            "spanNulls": false,
             "stacking": {
               "group": "A",
               "mode": "none"
@@ -1982,8 +1982,7 @@
                 "value": 80
               }
             ]
-          },
-          "unit": "short"
+          }
         },
         "overrides": []
       },
@@ -1993,7 +1992,7 @@
         "x": 0,
         "y": 89
       },
-      "id": 24,
+      "id": 170,
       "options": {
         "legend": {
           "calcs": [],
@@ -2004,16 +2003,19 @@
           "mode": "single"
         }
       },
-      "pluginVersion": "8.3.3",
       "targets": [
         {
-          "expr": "consensus_status:health",
+          "datasource": {
+            "type": "prometheus"
+          },
+          "exemplar": true,
+          "expr": "consensus_status:rewards:cumulative",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "title": "consensus_status:health",
+      "title": "rewards:cumulative",
       "type": "timeseries"
     },
     {
@@ -2157,7 +2159,7 @@
         "x": 0,
         "y": 97
       },
-      "id": 20,
+      "id": 24,
       "options": {
         "legend": {
           "calcs": [],
@@ -2171,13 +2173,13 @@
       "pluginVersion": "8.3.3",
       "targets": [
         {
-          "expr": "consensus_status:state_numeric",
+          "expr": "consensus_status:health",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "title": "consensus_status:state_numeric",
+      "title": "consensus_status:health",
       "type": "timeseries"
     },
     {
@@ -2274,7 +2276,7 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 10,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -2287,8 +2289,8 @@
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "auto",
-            "spanNulls": false,
+            "showPoints": "never",
+            "spanNulls": true,
             "stacking": {
               "group": "A",
               "mode": "none"
@@ -2310,7 +2312,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "short"
         },
         "overrides": []
       },
@@ -2320,7 +2323,7 @@
         "x": 0,
         "y": 105
       },
-      "id": 170,
+      "id": 20,
       "options": {
         "legend": {
           "calcs": [],
@@ -2331,19 +2334,16 @@
           "mode": "single"
         }
       },
+      "pluginVersion": "8.3.3",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "exemplar": true,
-          "expr": "consensus_status:rewards:cumulative",
+          "expr": "consensus_status:state_numeric",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         }
       ],
-      "title": "rewards:cumulative",
+      "title": "consensus_status:state_numeric",
       "type": "timeseries"
     },
     {
@@ -5196,6 +5196,6 @@
   "timezone": "",
   "title": "Blockchain Servers",
   "uid": "M6YpMSyMz",
-  "version": 44,
+  "version": 45,
   "weekStart": ""
 }
