@@ -173,20 +173,28 @@ class P2pServer {
         consensusStatus.health === true;
   }
 
-  getNodeStatus() {
+  getDbStatus() {
+    const dbStatus = {
+      rootStateInfo: this.node.db.getStateInfo('/'),
+      rootStateProof: this.node.db.getStateProof('/'),
+    };
     const accountsStateInfo = this.node.db.getStateInfo(
         `/${PredefinedDbPaths.VALUES_ROOT}/${PredefinedDbPaths.ACCOUNTS}`);
+    dbStatus.numAccounts = _.get(accountsStateInfo, StateLabelProperties.NUM_CHILDREN, null);
+    const appsStateInfo = this.node.db.getStateInfo(
+        `/${PredefinedDbPaths.VALUES_ROOT}/${PredefinedDbPaths.MANAGE_APP}`);
+    dbStatus.numApps = _.get(appsStateInfo, StateLabelProperties.NUM_CHILDREN, null);
+    return dbStatus;
+  }
+
+  getNodeStatus() {
     return {
       health: this.getNodeHealth(),
       address: this.getNodeAddress(),
       state: this.node.state,
       stateNumeric: Object.keys(BlockchainNodeStates).indexOf(this.node.state),
       nonce: this.node.getNonce(),
-      dbStatus: {
-        rootStateInfo: this.node.db.getStateInfo('/'),
-        rootStateProof: this.node.db.getStateProof('/'),
-        numAccounts: _.get(accountsStateInfo, StateLabelProperties.NUM_CHILDREN),
-      },
+      dbStatus: this.getDbStatus(),
       stateVersionStatus: this.getStateVersionStatus(),
     };
   }
