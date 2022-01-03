@@ -508,7 +508,7 @@ class Consensus {
   static getPrevBlockInfo(number, lastHash, lastFinalizedBlock, bp) {
     if (number === 0) return { block: null };
     const prevBlockInfo = lastFinalizedBlock && number === lastFinalizedBlock.number + 1 ?
-        { block: lastFinalizedBlock } : bp.hashToBlockInfo[lastHash];
+        { block: lastFinalizedBlock } : bp.hashToBlockInfo.get(lastHash);
     if (!prevBlockInfo || !prevBlockInfo.block) {
       throw new ConsensusError({
         code: ConsensusErrorCode.MISSING_PREV_BLOCK,
@@ -630,17 +630,18 @@ class Consensus {
     for (const vote of lastVotes) {
       blockPool.addSeenVote(vote);
     }
-    if (!blockPool.hashToBlockInfo[lastHash] || !blockPool.hashToBlockInfo[lastHash].notarized) {
+    const lastBlockInfo = blockPool.hashToBlockInfo.get(lastHash);
+    if (!lastBlockInfo || !lastBlockInfo.notarized) {
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_LAST_VOTES_STAKES,
         message: `Block's last_votes don't correctly notarize its previous block of number ` +
             `${number - 1} with hash ${lastHash}:\n` +
-            `${JSON.stringify(blockPool.hashToBlockInfo[lastHash], null, 2)}`,
+            `${JSON.stringify(lastBlockInfo, null, 2)}`,
         level: 'error'
       });
     }
     const prevBlockProposal = ConsensusUtil.filterProposalFromVotes(lastVotes);
-    if (number > 1 && (!prevBlockProposal || !blockPool.hashToBlockInfo[lastHash].proposal)) { // No proposalTx for the genesis block.
+    if (number > 1 && (!prevBlockProposal || !lastBlockInfo.proposal)) { // No proposalTx for the genesis block.
       throw new ConsensusError({
         code: ConsensusErrorCode.MISSING_PROPOSAL_IN_LAST_VOTES,
         message: `Proposal block is missing its prev block's proposal in last_votes`,
@@ -887,8 +888,8 @@ class Consensus {
     const blockHash = ConsensusUtil.getBlockHashFromConsensusTx(voteTx);
     const isAgainst = ConsensusUtil.isAgainstVoteTx(voteTx);
     const voteTimestamp = ConsensusUtil.getTimestampFromVoteTx(voteTx);
-    const blockInfo = this.node.bp.hashToBlockInfo[blockHash] ||
-        this.node.bp.hashToInvalidBlockInfo[blockHash];
+    const blockInfo = this.node.bp.hashToBlockInfo.get(blockHash) ||
+        this.node.bp.hashToInvalidBlockInfo.get(blockHash);
     let block;
     if (blockInfo && blockInfo.block) {
       block = blockInfo.block;
@@ -953,7 +954,7 @@ class Consensus {
     const epoch = this.epoch;
     if (this.votedForEpoch(epoch)) {
       logger.debug(
-          `[${LOG_HEADER}] Already voted for ${this.node.bp.epochToBlock[epoch]} ` +
+          `[${LOG_HEADER}] Already voted for ${this.node.bp.epochToBlock.get(epoch)} ` +
           `at epoch ${epoch} but trying to propose at the same epoch`);
       return;
     }
@@ -1095,7 +1096,7 @@ class Consensus {
     logger.debug(`[${LOG_HEADER}] longestNotarizedChainTips: ` +
         `${JSON.stringify(this.node.bp.longestNotarizedChainTips, null, 2)}`);
     this.node.bp.longestNotarizedChainTips.forEach((chainTip) => {
-      const block = _.get(this.node.bp.hashToBlockInfo[chainTip], 'block');
+      const block = _.get(this.node.bp.hashToBlockInfo.get(chainTip), 'block');
       if (!block) return;
       if (block.epoch > candidate.epoch) candidate = block;
     });
@@ -1124,7 +1125,7 @@ class Consensus {
         !this.node.bp.hashToDb.has(blockHash)) {
       chain.unshift(currBlock);
       // previous block of currBlock
-      currBlock = _.get(this.node.bp.hashToBlockInfo[currBlock.last_hash], 'block');
+      currBlock = _.get(this.node.bp.hashToBlockInfo.get(currBlock.last_hash), 'block');
       if (!currBlock) {
         currBlock = this.node.bc.getBlockByHash(blockHash);
       }
@@ -1153,7 +1154,7 @@ class Consensus {
 
   getValidatorsVotedFor(blockHash) {
     const LOG_HEADER = 'getValidatorsVotedFor';
-    const blockInfo = this.node.bp.hashToBlockInfo[blockHash];
+    const blockInfo = this.node.bp.hashToBlockInfo.get(blockHash);
     if (!blockInfo || !blockInfo.votes || !blockInfo.votes.length) {
       logger.error(`[${LOG_HEADER}] No validators voted`);
       throw Error('No validators voted');
@@ -1258,16 +1259,17 @@ class Consensus {
   }
 
   votedForEpoch(epoch) {
-    const blockHash = this.node.bp.epochToBlock[epoch];
+    const blockHash = this.node.bp.epochToBlock.get(epoch);
     if (!blockHash) return false;
-    const blockInfo = this.node.bp.hashToBlockInfo[blockHash];
+    const blockInfo = this.node.bp.hashToBlockInfo.get(blockHash);
     if (!blockInfo || !blockInfo.votes) return false;
     const myAddr = this.node.account.address;
     return blockInfo.votes.find((vote) => vote.address === myAddr) !== undefined;
   }
 
   votedForBlock(blockHash) {
-    const blockInfo = this.node.bp.hashToBlockInfo[blockHash] || this.node.bp.hashToInvalidBlockInfo[blockHash];
+    const blockInfo = this.node.bp.hashToBlockInfo.get(blockHash) ||
+        this.node.bp.hashToInvalidBlockInfo.get(blockHash);
     if (!blockInfo || !blockInfo.votes) return false;
     const myAddr = this.node.account.address;
     return blockInfo.votes.find((vote) => vote.address === myAddr) !== undefined;
@@ -1325,15 +1327,15 @@ class Consensus {
         Object.assign({}, { epoch: this.epoch, proposer: this.proposer }, { state: this.state });
     if (this.node.bp) {
       result.block_pool = {
-        hashToBlockInfo: this.node.bp.hashToBlockInfo,
-        hashToInvalidBlockInfo: this.node.bp.hashToInvalidBlockInfo,
+        hashToBlockInfo: Object.fromEntries(this.node.bp.hashToBlockInfo),
+        hashToInvalidBlockInfo: Object.fromEntries(this.node.bp.hashToInvalidBlockInfo),
         hashToDb: Array.from(this.node.bp.hashToDb.keys()),
-        hashToNextBlockSet: Object.keys(this.node.bp.hashToNextBlockSet)
+        hashToNextBlockSet: Array.from(this.node.bp.hashToNextBlockSet.keys())
           .reduce((acc, curr) => {
-            return Object.assign(acc, {[curr]: [...this.node.bp.hashToNextBlockSet[curr]]})
+            return Object.assign(acc, {[curr]: [...this.node.bp.hashToNextBlockSet.get(curr)]})
           }, {}),
-        epochToBlock: Object.keys(this.node.bp.epochToBlock),
-        numberToBlockSet: Object.keys(this.node.bp.numberToBlockSet),
+        epochToBlock: Array.from(this.node.bp.epochToBlock.keys()),
+        numberToBlockSet: Array.from(this.node.bp.numberToBlockSet.keys()),
         longestNotarizedChainTips: this.node.bp.longestNotarizedChainTips
       }
     }
