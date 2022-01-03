@@ -103,10 +103,10 @@ class TransactionPool {
         excludeTransactions = excludeTransactions.concat(block.transactions);
       })
     }
-    for (const address of addrToTxList.keys()) {
+    for (const [address, txList] of addrToTxList.entries()) {
       // exclude transactions in excludeBlockList
       let filteredTransactions = _.differenceWith(
-          addrToTxList.get(address),
+          txList,
           excludeTransactions,
           (a, b) => {
             return a.hash === b.hash;
@@ -353,16 +353,15 @@ class TransactionPool {
   removeTimedOutTxsFromPool(blockTimestamp) {
     // Get timed-out transactions.
     const timedOutTxs = new Set();
-    for (const address of this.transactions.keys()) {
-      this.transactions.get(address).forEach((tx) => {
+    for (const txList of this.transactions.values()) {
+      txList.forEach((tx) => {
         if (this.isTimedOutFromPool(tx.extra.created_at, blockTimestamp)) {
           timedOutTxs.add(tx.hash);
         }
       });
     }
     // Remove transactions from the pool.
-    for (const address of this.transactions.keys()) {
-      const txList = this.transactions.get(address);
+    for (const [address, txList] of this.transactions.entries()) {
       const sizeBefore = txList.length;
       this.transactions.set(address, txList.filter((tx) => !timedOutTxs.has(tx.hash)));
       const sizeAfter = this.transactions.get(address).length;
@@ -374,8 +373,7 @@ class TransactionPool {
   removeTimedOutTxsFromTracker(blockTimestamp) {
     // Remove transactions from transactionTracker.
     let removed = false;
-    for (const hash of this.transactionTracker.keys()) {
-      const txData = this.transactionTracker.get(hash);
+    for (const [hash, txData] of this.transactionTracker.entries()) {
       if (this.isTimedOutFromTracker(txData.tracked_at, blockTimestamp)) {
         this.transactionTracker.delete(hash);
         removed = true;
@@ -397,8 +395,7 @@ class TransactionPool {
         tracked.state = TransactionStates.FAILED;
       }
     });
-    for (const address of addrToTxSet.keys()) {
-      const txList = this.transactions.get(address);
+    for (const [address, txList] of addrToTxSet.entries()) {
       const sizeBefore = txList ? txList.length : 0;
       if (txList) {
         this.transactions.set(address, txList.filter((tx) => !addrToTxSet.get(address).has(tx.hash)));
@@ -425,11 +422,10 @@ class TransactionPool {
   }
 
   updateTxPoolWithTxHashSet(txHashSet, addrToNonce, addrToTimestamp) {
-    for (const address of this.transactions.keys()) {
+    for (const [address, txList] of this.transactions.entries()) {
       // Remove transactions from the pool.
       const lastNonce = addrToNonce[address];
       const lastTimestamp = addrToTimestamp[address];
-      const txList = this.transactions.get(address);
       const sizeBefore = txList.length;
       this.transactions.set(address, txList.filter((tx) => {
         if (lastNonce !== undefined && tx.tx_body.nonce >= 0 && tx.tx_body.nonce <= lastNonce) {
