@@ -516,6 +516,11 @@ class BlockchainNode {
     return result;
   }
 
+  getRewards() {
+    return this.db.getValue(CommonUtil.formatPath(
+        [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_REWARDS, this.account.address]));
+  }
+
   // TODO(liayoo): Rename lastBlockNumber to finalBlockNumber.
   getBlockchainParam(paramName, blockNumber = null, stateVersion = null) {
     return DB.getBlockchainParam(

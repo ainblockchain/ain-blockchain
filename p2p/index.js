@@ -310,17 +310,25 @@ class P2pClient {
       const whitelistDisconnectThreshold = Math.floor(NodeConfigs.MAX_NUM_INBOUND_CONNECTION / 2);
       // NOTE(minsulee2): Keep less than majority whitelisted.
       if (whitelisted.length >= whitelistDisconnectThreshold) {
+        trafficStatsManager.addEvent(
+            TrafficEventTypes.PEER_REORG_CANDIDATES_WHITELISTED, whitelisted.length);
         this.pickRandomPeerAndDisconnect(whitelisted);
       } else {
+        trafficStatsManager.addEvent(
+            TrafficEventTypes.PEER_REORG_CANDIDATES_NOT_WHITELISTED, notWhitelisted.length);
         this.pickRandomPeerAndDisconnect(notWhitelisted);
       }
     } else {
+      trafficStatsManager.addEvent(
+          TrafficEventTypes.PEER_REORG_CANDIDATES_BIDIRECTED, bidirectedConnections.length);
       this.pickRandomPeerAndDisconnect(bidirectedConnections);
     }
   }
 
   async tryReorgPeerConnections() {
-    if (Object.keys(this.outbound).length < NodeConfigs.PEER_REORG_MIN_OUTBOUND) {
+    const numOutbound = Object.keys(this.outbound).length;
+    if (numOutbound < NodeConfigs.PEER_REORG_MIN_OUTBOUND) {
+      trafficStatsManager.addEvent(TrafficEventTypes.PEER_REORG_BELOW_MIN_OUTBOUND, numOutbound);
       return;
     }
     if (this.steadyIntervalCount < NodeConfigs.PEER_REORG_STEADY_INTERVAL_COUNT) {

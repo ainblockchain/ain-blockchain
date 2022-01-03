@@ -568,6 +568,11 @@ const TrafficEventTypes = {
   P2P_TAG_CONSENSUS_MAX_OCCUR: 'p2p_tag_consensus_max_occur',
   P2P_TAG_TX_LENGTH: 'p2p_tag_tx_length',
   P2P_TAG_TX_MAX_OCCUR: 'p2p_tag_tx_max_occur',
+  // Peer reorg
+  PEER_REORG_BELOW_MIN_OUTBOUND: 'peer_reorg_below_min_outbound',
+  PEER_REORG_CANDIDATES_BIDIRECTED: 'peer_reorg_candidates_bidirected',
+  PEER_REORG_CANDIDATES_WHITELISTED: 'peer_reorg_candidates_whitelisted',
+  PEER_REORG_CANDIDATES_NOT_WHITELISTED: 'peer_reorg_candidates_not_whitelisted',
   // Access control
   ACCESS_CONTROL_GET: 'access_control_get',
   ACCESS_CONTROL_SET: 'access_control_set',
