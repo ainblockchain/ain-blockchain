@@ -34,8 +34,11 @@ class BlockPool {
   }
 
   getLongestNotarizedChainHeight() {
+    if (this.longestNotarizedChainTips.length === 0) {
+      return this.node.bc.lastBlockNumber();
+    }
     const blockInfo = this.hashToBlockInfo.get(this.longestNotarizedChainTips[0]);
-    if (this.longestNotarizedChainTips.length <= 0 || !blockInfo || !blockInfo.block) {
+    if (!blockInfo || !blockInfo.block) {
       return this.node.bc.lastBlockNumber();
     }
     return blockInfo.block.number;
