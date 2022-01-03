@@ -284,7 +284,7 @@ class Consensus {
         logger.error(`[${LOG_HEADER}] Proposal is missing required fields: ${msg.value}`);
         return;
       }
-      if (this.node.tp.transactionTracker[proposalTx.hash]) {
+      if (this.node.tp.transactionTracker.has(proposalTx.hash)) {
         logger.debug(`[${LOG_HEADER}] Already have the proposal in my tx tracker`);
         return;
       }
@@ -322,7 +322,7 @@ class Consensus {
       this.server.client.broadcastConsensusMessage(msg, tags);
       this.tryVoteForValidBlock(proposalBlock);
     } else if (msg.type === ConsensusMessageTypes.VOTE) {
-      if (this.node.tp.transactionTracker[msg.value.hash]) {
+      if (this.node.tp.transactionTracker.has(msg.value.hash)) {
         logger.debug(`[${LOG_HEADER}] Already have the vote in my tx tracker`);
         return;
       }

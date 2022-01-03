@@ -274,7 +274,7 @@ class P2pServer {
   getTxStatus() {
     return {
       txPoolSize: this.node.tp.getPoolSize(),
-      txTrackerSize: Object.keys(this.node.tp.transactionTracker).length,
+      txTrackerSize: this.node.tp.transactionTracker.size,
     };
   }
 
@@ -578,7 +578,7 @@ class P2pServer {
             trafficStatsManager.addEvent(TrafficEventTypes.P2P_TAG_TX_LENGTH, txTags.length);
             trafficStatsManager.addEvent(
                 TrafficEventTypes.P2P_TAG_TX_MAX_OCCUR, CommonUtil.countMaxOccurrences(txTags));
-            if (this.node.tp.transactionTracker[tx.hash]) {
+            if (this.node.tp.transactionTracker.has(tx.hash)) {
               logger.debug(`[${LOG_HEADER}] Already have the transaction in my tx tracker`);
               const latency = Date.now() - beginTime;
               trafficStatsManager.addEvent(TrafficEventTypes.P2P_MESSAGE_SERVER, latency);
