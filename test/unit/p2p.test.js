@@ -215,6 +215,7 @@ describe("P2p", () => {
               "#state_ph": 'erased'
             },
             numAccounts: 11,
+            numApps: 1,
           },
           stateVersionStatus: {
             numVersions: 5,
