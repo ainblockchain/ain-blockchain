@@ -418,7 +418,7 @@ app.get('/last_block', (req, res, next) => {
 
 app.get('/tx_pool', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.tp.transactions;
+  const result = Object.fromEntries(node.tp.transactions);
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)
@@ -429,7 +429,7 @@ app.get('/tx_pool', (req, res, next) => {
 
 app.get('/tx_tracker', (req, res, next) => {
   const beginTime = Date.now();
-  const result = node.tp.transactionTracker;
+  const result = Object.fromEntries(node.tp.transactionTracker);
   const latency = Date.now() - beginTime;
   trafficStatsManager.addEvent(TrafficEventTypes.CLIENT_API_GET, latency);
   res.status(200)

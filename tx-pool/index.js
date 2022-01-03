@@ -15,8 +15,8 @@ const Transaction = require('./transaction');
 class TransactionPool {
   constructor(node) {
     this.node = node;
-    this.transactions = {};
-    this.transactionTracker = {};
+    this.transactions = new Map();
+    this.transactionTracker = new Map();
     this.txCountTotal = 0;
   }
 
@@ -27,21 +27,21 @@ class TransactionPool {
       logger.error(`Not executable transaction: ${JSON.stringify(tx)}`);
       return false;
     }
-    if (!(tx.address in this.transactions)) {
-      this.transactions[tx.address] = [];
+    if (!this.transactions.has(tx.address)) {
+      this.transactions.set(tx.address, []);
     }
-    this.transactions[tx.address].push(tx);
-    this.transactionTracker[tx.hash] = {
+    this.transactions.get(tx.address).push(tx);
+    this.transactionTracker.set(tx.hash, {
       state: isExecutedTx ? TransactionStates.EXECUTED : TransactionStates.PENDING,
       address: tx.address,
-      index: this.transactions[tx.address].length - 1,
+      index: this.transactions.get(tx.address).length - 1,
       timestamp: tx.tx_body.timestamp,
       is_executed: isExecutedTx,
       is_finalized: false,
       finalized_at: -1,
       tracked_at: tx.extra.created_at,
       executed_at: tx.extra.executed_at,
-    };
+    });
     this.txCountTotal++;
     logger.debug(`ADDING(${this.getPoolSize()}): ${JSON.stringify(tx)}`);
     return true;
@@ -71,9 +71,9 @@ class TransactionPool {
   }
 
   isNotEligibleTransaction(tx) {
-    return (tx.address in this.transactions &&
-        this.transactions[tx.address].find((trans) => trans.hash === tx.hash) !== undefined) ||
-        tx.hash in this.transactionTracker;
+    return (this.transactions.has(tx.address) &&
+        this.transactions.get(tx.address).find((trans) => trans.hash === tx.hash) !== undefined) ||
+        this.transactionTracker.has(tx.hash);
   }
 
   static isCorrectlyNoncedOrTimestamped(txNonce, txTimestamp, accountNonce, accountTimestamp) {
@@ -103,10 +103,10 @@ class TransactionPool {
         excludeTransactions = excludeTransactions.concat(block.transactions);
       })
     }
-    for (const address in addrToTxList) {
+    for (const address of addrToTxList.keys()) {
       // exclude transactions in excludeBlockList
       let filteredTransactions = _.differenceWith(
-          addrToTxList[address],
+          addrToTxList.get(address),
           excludeTransactions,
           (a, b) => {
             return a.hash === b.hash;
@@ -114,11 +114,11 @@ class TransactionPool {
       // exclude consensus transactions
       filteredTransactions = TransactionPool.excludeConsensusTransactions(filteredTransactions);
       if (!filteredTransactions.length) {
-        delete addrToTxList[address];
+        addrToTxList.delete(address);
       } else {
-        addrToTxList[address] = filteredTransactions;
+        addrToTxList.set(address, filteredTransactions);
         // sort transactions
-        addrToTxList[address].sort((a, b) => {
+        addrToTxList.get(address).sort((a, b) => {
           if (a.tx_body.nonce === b.tx_body.nonce) {
             if (a.tx_body.nonce >= 0) { // both with numbered nonces
               return 0;
@@ -148,10 +148,10 @@ class TransactionPool {
       return null;
     }
 
-    const addrToTxList = JSON.parse(JSON.stringify(this.transactions));
+    const addrToTxList = _.cloneDeep(this.transactions);
     TransactionPool.filterAndSortTransactions(addrToTxList, excludeBlockList);
     // Remove incorrectly nonced / timestamped transactions
-    for (const [addr, txList] of Object.entries(addrToTxList)) {
+    for (const [addr, txList] of addrToTxList.entries()) {
       const newTxList = [];
       for (let index = 0; index < txList.length; index++) {
         const tx = txList[index];
@@ -165,12 +165,12 @@ class TransactionPool {
           tempDb.updateAccountNonceAndTimestamp(addr, txNonce, txTimestamp);
         }
       }
-      addrToTxList[addr] = newTxList;
+      addrToTxList.set(addr, newTxList);
     }
 
     // Merge lists of transactions while ordering by gas price and timestamp.
     // Initial ordering by nonce is preserved.
-    const merged = TransactionPool.mergeMultipleSortedArrays(Object.values(addrToTxList));
+    const merged = TransactionPool.mergeMultipleSortedArrays(Array.from(addrToTxList.values()));
     const checkedTxs = this.performBandwidthChecks(merged, tempDb);
     tempDb.destroyDb();
     return checkedTxs;
@@ -353,20 +353,19 @@ class TransactionPool {
   removeTimedOutTxsFromPool(blockTimestamp) {
     // Get timed-out transactions.
     const timedOutTxs = new Set();
-    for (const address in this.transactions) {
-      this.transactions[address].forEach((tx) => {
+    for (const address of this.transactions.keys()) {
+      this.transactions.get(address).forEach((tx) => {
         if (this.isTimedOutFromPool(tx.extra.created_at, blockTimestamp)) {
           timedOutTxs.add(tx.hash);
         }
       });
     }
     // Remove transactions from the pool.
-    for (const address in this.transactions) {
-      const sizeBefore = this.transactions[address].length;
-      this.transactions[address] = this.transactions[address].filter((tx) => {
-        return !timedOutTxs.has(tx.hash);
-      });
-      const sizeAfter = this.transactions[address].length;
+    for (const address of this.transactions.keys()) {
+      const txList = this.transactions.get(address);
+      const sizeBefore = txList.length;
+      this.transactions.set(address, txList.filter((tx) => !timedOutTxs.has(tx.hash)));
+      const sizeAfter = this.transactions.get(address).length;
       this.txCountTotal += sizeAfter - sizeBefore;
     }
     return timedOutTxs.size > 0;
@@ -375,10 +374,10 @@ class TransactionPool {
   removeTimedOutTxsFromTracker(blockTimestamp) {
     // Remove transactions from transactionTracker.
     let removed = false;
-    for (const hash in this.transactionTracker) {
-      const txData = this.transactionTracker[hash];
+    for (const hash of this.transactionTracker.keys()) {
+      const txData = this.transactionTracker.get(hash);
       if (this.isTimedOutFromTracker(txData.tracked_at, blockTimestamp)) {
-        delete this.transactionTracker[hash];
+        this.transactionTracker.delete(hash);
         removed = true;
       }
     }
@@ -386,26 +385,25 @@ class TransactionPool {
   }
 
   removeInvalidTxsFromPool(txs) {
-    const addrToTxSet = {};
+    const addrToTxSet = new Map();
     txs.forEach((tx) => {
       const {address, hash} = tx;
-      if (!addrToTxSet[address]) {
-        addrToTxSet[address] = new Set();
+      if (!addrToTxSet.has(address)) {
+        addrToTxSet.set(address, new Set());
       }
-      addrToTxSet[address].add(hash);
-      const tracked = this.transactionTracker[hash];
+      addrToTxSet.get(address).add(hash);
+      const tracked = this.transactionTracker.get(hash);
       if (tracked && tracked.state !== TransactionStates.FINALIZED) {
-        this.transactionTracker[hash].state = TransactionStates.FAILED;
+        tracked.state = TransactionStates.FAILED;
       }
     });
-    for (const address in addrToTxSet) {
-      const sizeBefore = this.transactions[address].length;
-      if (this.transactions[address]) {
-        this.transactions[address] = this.transactions[address].filter((tx) => {
-          return !(addrToTxSet[address].has(tx.hash));
-        })
+    for (const address of addrToTxSet.keys()) {
+      const txList = this.transactions.get(address);
+      const sizeBefore = txList ? txList.length : 0;
+      if (txList) {
+        this.transactions.set(address, txList.filter((tx) => !addrToTxSet.get(address).has(tx.hash)));
       }
-      const sizeAfter = this.transactions[address].length;
+      const sizeAfter = this.transactions.get(address).length;
       this.txCountTotal += sizeAfter - sizeBefore;
     }
   }
@@ -427,12 +425,13 @@ class TransactionPool {
   }
 
   updateTxPoolWithTxHashSet(txHashSet, addrToNonce, addrToTimestamp) {
-    for (const address in this.transactions) {
+    for (const address of this.transactions.keys()) {
       // Remove transactions from the pool.
       const lastNonce = addrToNonce[address];
       const lastTimestamp = addrToTimestamp[address];
-      const sizeBefore = this.transactions[address].length;
-      this.transactions[address] = this.transactions[address].filter((tx) => {
+      const txList = this.transactions.get(address);
+      const sizeBefore = txList.length;
+      this.transactions.set(address, txList.filter((tx) => {
         if (lastNonce !== undefined && tx.tx_body.nonce >= 0 && tx.tx_body.nonce <= lastNonce) {
           return false;
         }
@@ -440,11 +439,11 @@ class TransactionPool {
           return false;
         }
         return !txHashSet.has(tx.hash);
-      });
-      const sizeAfter = this.transactions[address].length;
+      }));
+      const sizeAfter = this.transactions.get(address).length;
       this.txCountTotal += sizeAfter - sizeBefore;
-      if (this.transactions[address].length === 0) {
-        delete this.transactions[address];
+      if (sizeAfter === 0) {
+        this.transactions.delete(address);
       }
     }
   }
@@ -470,7 +469,7 @@ class TransactionPool {
     for (const voteTx of block.last_votes) {
       const txTimestamp = voteTx.tx_body.timestamp;
       // voting txs with ordered nonces.
-      this.transactionTracker[voteTx.hash] = {
+      this.transactionTracker.set(voteTx.hash, {
         state: TransactionStates.FINALIZED,
         number: block.number,
         index: -1,
@@ -480,7 +479,7 @@ class TransactionPool {
         is_finalized: true,
         finalized_at: finalizedAt,
         tracked_at: finalizedAt,
-      };
+      });
       inBlockTxs.add(voteTx.hash);
     }
     this.addEvidenceTxsToTxHashSet(inBlockTxs, block.evidence);
@@ -489,7 +488,7 @@ class TransactionPool {
       const txNonce = tx.tx_body.nonce;
       const txTimestamp = tx.tx_body.timestamp;
       // Update transaction tracker.
-      this.transactionTracker[tx.hash] = {
+      this.transactionTracker.set(tx.hash, {
         state: TransactionStates.FINALIZED,
         number: block.number,
         index: i,
@@ -499,7 +498,7 @@ class TransactionPool {
         is_finalized: true,
         finalized_at: finalizedAt,
         tracked_at: finalizedAt,
-      };
+      });
       inBlockTxs.add(tx.hash);
       const lastNonce = addrToNonce[tx.address];
       const lastTimestamp = addrToTimestamp[tx.address];
@@ -521,7 +520,7 @@ class TransactionPool {
   }
 
   getPerAccountPoolSize(address) {
-    return this.transactions[address] ? this.transactions[address].length : 0;
+    return this.transactions.has(address) ? this.transactions.get(address).length : 0;
   }
 }
 

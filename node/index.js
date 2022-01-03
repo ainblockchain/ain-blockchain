@@ -372,7 +372,7 @@ class BlockchainNode {
 
   getTransactionByHash(hash) {
     const LOG_HEADER = 'getTransactionByHash';
-    const transactionInfo = this.tp.transactionTracker[hash];
+    const transactionInfo = this.tp.transactionTracker.get(hash);
     if (!transactionInfo) {
       return null;
     }
@@ -394,7 +394,7 @@ class BlockchainNode {
         transactionInfo.state === TransactionStates.PENDING) {
       const address = transactionInfo.address;
       transactionInfo.transaction =
-          _.find(this.tp.transactions[address], (tx) => tx.hash === hash) || null;
+          _.find(this.tp.transactions.get(address), (tx) => tx.hash === hash) || null;
     }
     return transactionInfo;
   }
