@@ -1347,15 +1347,7 @@ class Consensus {
   }
 
   /**
-   * Returns the basic status of consensus to see if blocks are being produced
-   * {
-   *   health,
-   *   state,
-   *   stateNumeric,
-   *   epoch,
-   *   validators,
-   *   globalTimeSyncStatus
-   * }
+   * Returns the basic status of consensus process.
    */
   getStatus() {
     const validators = this.validators;
@@ -1365,7 +1357,7 @@ class Consensus {
       validatorInfo.voting_right = true;
     }
 
-    return {
+    const status = {
       health: this.isConsensusHealthy(this.node.bc.lastBlock()),
       state: this.state,
       stateNumeric: Object.keys(ConsensusStates).indexOf(this.state),
@@ -1374,6 +1366,12 @@ class Consensus {
       validators,
       globalTimeSyncStatus,
     };
+    const rewards = this.node.getRewards();
+    if (rewards) {
+      status.rewards = rewards;
+    }
+
+    return status;
   }
 
   encapsulateConsensusMessage(value, type) {
