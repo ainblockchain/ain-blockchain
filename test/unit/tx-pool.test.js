@@ -56,7 +56,7 @@ describe('TransactionPool', () => {
 
     it('add a pending transaction', () => {
       node.tp.addTransaction(txToAdd);
-      const addedTx = node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash);
+      const addedTx = node.tp.transactions.get(node.account.address).find((t) => t.hash === txToAdd.hash);
       assert.deepEqual(eraseTxCreatedAt(addedTx), eraseTxCreatedAt(txToAdd));
       const txInfo = node.getTransactionByHash(txToAdd.hash);
       expect(txInfo.state).to.equal(TransactionStates.PENDING);
@@ -64,7 +64,7 @@ describe('TransactionPool', () => {
 
     it('add an executed transaction', () => {
       node.tp.addTransaction(txToAdd, true);
-      const addedTx = node.tp.transactions[node.account.address].find((t) => t.hash === txToAdd.hash);
+      const addedTx = node.tp.transactions.get(node.account.address).find((t) => t.hash === txToAdd.hash);
       assert.deepEqual(eraseTxCreatedAt(addedTx), eraseTxCreatedAt(txToAdd));
       const txInfo = node.getTransactionByHash(txToAdd.hash);
       expect(txInfo.state).to.equal(TransactionStates.EXECUTED);
@@ -91,8 +91,9 @@ describe('TransactionPool', () => {
       }
       // NOTE: Shuffle transactions and see if the transaction-pool can re-sort them according to
       // their proper ordering
-      node.tp.transactions[node.account.address] =
-          shuffleSeed.shuffle(node.tp.transactions[node.account.address]);
+      node.tp.transactions.set(
+          node.account.address,
+          shuffleSeed.shuffle(node.tp.transactions.get(node.account.address)));
 
       node2 = new BlockchainNode();
       await setNodeForTesting(node2, 1);
@@ -119,8 +120,9 @@ describe('TransactionPool', () => {
         }
         // NOTE: Shuffle transactions and see if the transaction-pool can re-sort them according to
         // their proper ordering
-        node.tp.transactions[nodes[j].account.address] =
-            shuffleSeed.shuffle(node.tp.transactions[nodes[j].account.address]);
+        node.tp.transactions.set(
+            nodes[j].account.address,
+            shuffleSeed.shuffle(node.tp.transactions.get(nodes[j].account.address)));
       }
     });
 
@@ -661,7 +663,7 @@ describe('TransactionPool', () => {
         node.tp.addTransaction(newTransactions[node.account.address][i]);
       }
       node.tp.cleanUpForNewBlock(block);
-      assert.deepEqual(newTransactions, node.tp.transactions);
+      assert.deepEqual(newTransactions, Object.fromEntries(node.tp.transactions));
     });
 
     it('cleanUpConsensusTxs()', async () => {
@@ -719,7 +721,7 @@ describe('TransactionPool', () => {
         }]
       }
       for (const tx of [...lastVotes, evidenceTx, invalidProposal]) {
-        expect(node.tp.transactions[tx.address].includes(tx)).to.equal(true);
+        expect(node.tp.transactions.get(tx.address).includes(tx)).to.equal(true);
       }
       const receipts = txsToDummyReceipts(transactions);
       const block = Block.create(
@@ -727,8 +729,8 @@ describe('TransactionPool', () => {
           node.account.address, {}, 0, 0);
       node.tp.cleanUpConsensusTxs(block);
       for (const tx of [...lastVotes, evidenceTx, invalidProposal]) {
-        if (node.tp.transactions[tx.address]) {
-          expect(node.tp.transactions[tx.address].includes(tx)).to.equal(false);
+        if (node.tp.transactions.has(tx.address)) {
+          expect(node.tp.transactions.get(tx.address).includes(tx)).to.equal(false);
         }
       }
     });

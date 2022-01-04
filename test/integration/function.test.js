@@ -926,6 +926,7 @@ describe('Native Function', () => {
             ref: `/developers/rest_functions/user_whitelist/${serviceUser}`,
             value: true
           },
+          gas_price: 0,
           timestamp: 1628255843548,
           nonce: -1
         };
@@ -4178,6 +4179,7 @@ describe('Native Function', () => {
             ref: `${checkoutHistoryBasePath}/${serviceUser}/1628255843548`,
             value: null,
           },
+          gas_price: 0,
           timestamp: 1628255843548,
           nonce: -1
         };
@@ -4220,6 +4222,7 @@ describe('Native Function', () => {
               }
             }
           },
+          gas_price: 0,
           timestamp: 1628255843548,
           nonce: -1
         };
@@ -4368,6 +4371,7 @@ describe('Native Function', () => {
               }
             }
           },
+          gas_price: 0,
           timestamp: 1628255843550,
           nonce: -1
         };
@@ -4971,6 +4975,7 @@ describe('Native Function', () => {
             ref: `${checkinHistoryBasePath}/${serviceUser}/1628255843548`,
             value: null,
           },
+          gas_price: 0,
           timestamp,
           nonce: -1
         };
@@ -5016,6 +5021,7 @@ describe('Native Function', () => {
               }
             }
           },
+          gas_price: 0,
           timestamp,
           nonce: -1
         };
@@ -5199,6 +5205,7 @@ describe('Native Function', () => {
               }
             }
           },
+          gas_price: 0,
           timestamp: 1628255843548,
           nonce: -1
         };
