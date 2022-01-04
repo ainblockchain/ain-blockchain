@@ -186,6 +186,7 @@ describe('Consensus', () => {
           ref: `/blockchain_params/consensus/max_num_validators`,
           value: MAX_NUM_VALIDATORS
         },
+        gas_price: 0,
         timestamp: Date.now(),
         nonce: -1
       };
