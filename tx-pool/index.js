@@ -383,25 +383,26 @@ class TransactionPool {
   }
 
   removeInvalidTxsFromPool(txs) {
-    const addrToTxSet = new Map();
+    const addrToInvalidTxSet = new Map();
     txs.forEach((tx) => {
-      const {address, hash} = tx;
-      if (!addrToTxSet.has(address)) {
-        addrToTxSet.set(address, new Set());
+      const { address, hash } = tx;
+      if (!addrToInvalidTxSet.has(address)) {
+        addrToInvalidTxSet.set(address, new Set());
       }
-      addrToTxSet.get(address).add(hash);
+      addrToInvalidTxSet.get(address).add(hash);
       const tracked = this.transactionTracker.get(hash);
       if (tracked && tracked.state !== TransactionStates.FINALIZED) {
         tracked.state = TransactionStates.FAILED;
       }
     });
-    for (const [address, txList] of addrToTxSet.entries()) {
-      const sizeBefore = txList ? txList.length : 0;
-      if (txList) {
-        this.transactions.set(address, txList.filter((tx) => !addrToTxSet.get(address).has(tx.hash)));
+    for (const [address, invalidTxSet] of addrToInvalidTxSet.entries()) {
+      if (this.transactions.has(address)) {
+        const txList = this.transactions.get(address);
+        const sizeBefore = txList.length;
+        this.transactions.set(address, txList.filter((tx) => !invalidTxSet.has(tx.hash)));
+        const sizeAfter = this.transactions.get(address).length;
+        this.txCountTotal += sizeAfter - sizeBefore;
       }
-      const sizeAfter = this.transactions.get(address).length;
-      this.txCountTotal += sizeAfter - sizeBefore;
     }
   }
 
