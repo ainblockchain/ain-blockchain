@@ -524,7 +524,7 @@ class BlockPool {
             blockHashSet.delete(blockHash);
           }
         }
-        if (!blockHashSet.size) {
+        if (blockHashSet.size === 0) {
           this.numberToBlockSet.delete(blockNumber);
         }
       }
