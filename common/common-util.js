@@ -924,6 +924,24 @@ class CommonUtil {
     if (!timestamp) return true;
     return Date.now() - timestamp > threshold;
   }
+
+  static hasTimerFlagEnabled(timerFlags, flagName, blockNumber) {
+    const flag = timerFlags[flagName];
+    if (!flag) {
+      return false;
+    }
+    const enabledBlock = flag['enabled_block'];
+    if (enabledBlock === undefined || !CommonUtil.isNumber(enabledBlock) ||
+        blockNumber < enabledBlock) {
+      return false;
+    }
+    const disabledBlock = flag['disabled_block'];
+    if (disabledBlock === undefined || !CommonUtil.isNumber(disabledBlock) ||
+        blockNumber < disabledBlock) {
+      return true;
+    }
+    return false;
+  }
 }
 
 module.exports = CommonUtil;

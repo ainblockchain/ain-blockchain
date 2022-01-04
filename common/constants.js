@@ -55,7 +55,13 @@ if (!semver.valid(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for CONSENSUS_PROTOCOL_VERSION');
 }
 
-// ** Blockchain Params **
+// ** Timer flags **
+const TimerFlags = getBlockchainConfig('timer_flags.json');
+function isEnabledTimerFlag(flagName, blockNumber) {
+  return CommonUtil.hasTimerFlagEnabled(TimerFlags, flagName, blockNumber);
+}
+
+// ** Blockchain params **
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
 
 // ** Node configs, set for individual nodes by env vars **
@@ -731,6 +737,9 @@ const trafficStatsManager = new TrafficStatsManager(
 module.exports = {
   DevFlags,
   BlockchainConsts,
+  TimerFlags,
+  isEnabledTimerFlag,
+  BlockchainParams,
   NodeConfigs,
   MessageTypes,
   BlockchainNodeStates,
@@ -763,6 +772,5 @@ module.exports = {
   isAppDependentServiceType,
   buildOwnerPermissions,
   buildRulePermission,
-  BlockchainParams,
   trafficStatsManager,
 };
