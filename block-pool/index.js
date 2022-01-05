@@ -565,7 +565,7 @@ class BlockPool {
     let tallied = 0;
     for (const vote of lastVotes) {
       if (CommonUtil.isFailedTx(tempDb.executeTransaction(
-          Transaction.toExecutable(vote, chainId), true, true, 0, blockTime))) {
+          Transaction.toExecutable(vote, chainId), true, true, blockNumber - 1, blockTime))) {
         logger.debug(`[${LOG_HEADER}] failed to execute last vote: ${JSON.stringify(vote, null, 2)}`);
       } else {
         tallied += _get(lastBlock.validators, `${vote.address}.stake`, 0);
@@ -590,13 +590,13 @@ class BlockPool {
    * @param {DB} baseDb The DB instance should be the base of where evidence votes should be executed on.
    * @returns { offenses, evidence }
    */
-  getOffensesAndEvidence(validators, recordedInvalidBlockHashSet, blockTime, baseDb) {
+  getOffensesAndEvidence(validators, recordedInvalidBlockHashSet, blockNumber, blockTime, baseDb) {
     const LOG_HEADER = 'getOffensesAndEvidence';
     const totalAtStake = ConsensusUtil.getTotalAtStake(validators);
-    const blockNumber = baseDb.blockNumberSnapshot;
+    const baseBlockNumber = baseDb.blockNumberSnapshot;
     const chainId = this.node.getBlockchainParam('genesis/chain_id');
     let backupDb = this.node.createTempDb(
-        baseDb.stateVersion, `${StateVersions.SNAP}:${blockNumber}`, blockNumber);
+        baseDb.stateVersion, `${StateVersions.SNAP}:${baseBlockNumber}`, baseBlockNumber);
     const majority = totalAtStake * ConsensusConsts.MAJORITY;
     const evidence = {};
     const offenses = {};
@@ -619,7 +619,7 @@ class BlockPool {
         const stake = _get(validators, `${vote.address}.stake`, 0);
         if (stake > 0) {
           const res = baseDb.executeTransaction(
-              Transaction.toExecutable(vote, chainId), true, true, 0, blockTime);
+              Transaction.toExecutable(vote, chainId), true, true, blockNumber - 1, blockTime);
           if (CommonUtil.isFailedTx(res)) {
             logger.debug(`[${LOG_HEADER}] Failed to execute evidence vote:\n${JSON.stringify(vote, null, 2)}\n${JSON.stringify(res, null, 2)})`);
           } else {
@@ -647,11 +647,11 @@ class BlockPool {
         offenses[offender][ValidatorOffenseTypes.INVALID_PROPOSAL] += 1;
       } else {
         const newBackupDb = this.node.createTempDb(
-            backupDb.stateVersion, `${StateVersions.SNAP}:${blockNumber}`, blockNumber);
+            backupDb.stateVersion, `${StateVersions.SNAP}:${baseBlockNumber}`, baseBlockNumber);
         baseDb.setStateVersion(newBackupDb.stateVersion, newBackupDb.stateRoot);
         backupDb.destroyDb();
         backupDb = this.node.createTempDb(
-            baseDb.stateVersion, `${StateVersions.SNAP}:${blockNumber}`, blockNumber);
+            baseDb.stateVersion, `${StateVersions.SNAP}:${baseBlockNumber}`, baseBlockNumber);
       }
     }
     backupDb.destroyDb();
