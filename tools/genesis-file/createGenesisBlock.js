@@ -391,7 +391,7 @@ function executeGenesisTxsAndGetData(genesisTxs) {
   const resList = [];
   for (const tx of genesisTxs) {
     const res = tempGenesisDb.executeTransaction(
-        Transaction.toExecutable(tx, BlockchainParams.genesis.chain_id), true, false, 0,
+        Transaction.toExecutable(tx, BlockchainParams.genesis.chain_id), true, false, -1,
         BlockchainParams.genesis.genesis_timestamp);
     if (CommonUtil.isFailedTx(res)) {
       console.error(`Genesis transaction failed:\n${JSON.stringify(tx, null, 2)}` +

@@ -3744,7 +3744,7 @@ describe("DB operations", () => {
       it("returns code 0 for executable transaction", () => {
         expect(executableTx.extra).to.not.equal(undefined);
         expect(executableTx.extra.executed_at).to.equal(null);
-        assert.deepEqual(node.db.executeTransaction(executableTx, false, true, node.bc.lastBlockNumber() + 1), {
+        assert.deepEqual(node.db.executeTransaction(executableTx, false, true, node.bc.lastBlockNumber()), {
           code: 0,
           gas_amount_charged: 8,
           bandwidth_gas_amount: 1,
@@ -3769,7 +3769,7 @@ describe("DB operations", () => {
       });
 
       it("returns error code for object transaction", () => {
-        assert.deepEqual(node.db.executeTransaction(objectTx, false, true, node.bc.lastBlockNumber() + 1), {
+        assert.deepEqual(node.db.executeTransaction(objectTx, false, true, node.bc.lastBlockNumber()), {
           code: 10707,
           message: "[precheckTransaction] Not executable transaction: {\"tx_body\":{\"operation\":{\"type\":\"SET_VALUE\",\"ref\":\"/apps/test/some/path/for/tx\",\"value\":\"some value\"},\"gas_price\":1000000,\"nonce\":-1,\"timestamp\":1568798344000},\"signature\":\"0x8b07b9ba72d969396c460faee6959b1b89b61fa049e116fd81686224fffd4fb19a879b401552e0c07bc211a7ba7cbb99e2ac32922e6f3c118caf183c2b351a7527ad5322e51d5f8405b2751255ca012008894a7e2e7673232fba1490a9fb35671b\",\"hash\":\"0x8b07b9ba72d969396c460faee6959b1b89b61fa049e116fd81686224fffd4fb1\",\"address\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}",
           bandwidth_gas_amount: 0
@@ -3789,7 +3789,7 @@ describe("DB operations", () => {
           timestamp: 1568798344000,
         };
         const maxHeightTx = Transaction.fromTxBody(maxHeightTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(maxHeightTx, false, true, node.bc.lastBlockNumber() + 1), {
+        assert.deepEqual(node.db.executeTransaction(maxHeightTx, false, true, node.bc.lastBlockNumber()), {
           code: 0,
           gas_amount_charged: 8,
           bandwidth_gas_amount: 1,
@@ -3821,7 +3821,7 @@ describe("DB operations", () => {
           timestamp: 1568798344000,
         };
         const overHeightTx = Transaction.fromTxBody(overHeightTxBody, node.account.private_key);
-        assert.deepEqual(node.db.executeTransaction(overHeightTx, false, true, node.bc.lastBlockNumber() + 1), {
+        assert.deepEqual(node.db.executeTransaction(overHeightTx, false, true, node.bc.lastBlockNumber()), {
           code: 11101,
           message: "Out of tree height limit (31 > 30)",
           gas_amount_charged: 0,
@@ -3890,7 +3890,7 @@ describe("DB operations", () => {
           });
         }
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
+        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber());
         assert.deepEqual(res.code, 10901);
         assert.deepEqual(res.message.includes("Exceeded state budget limit for services"), true);
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);
@@ -3916,7 +3916,7 @@ describe("DB operations", () => {
           timestamp: 1568798344000,
         };
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
+        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber());
         assert.deepEqual(res.code, 10902);
         assert.deepEqual(res.message.includes("Exceeded state budget limit for apps"), true);
         assert.deepEqual(res.gas_amount_total, {
@@ -3940,7 +3940,7 @@ describe("DB operations", () => {
             nonce: -1,
             timestamp: timestamp++,
           }, node.account.private_key);
-          const stakeRes = node.db.executeTransaction(stakeTx, false, true, node.bc.lastBlockNumber() + 1);
+          const stakeRes = node.db.executeTransaction(stakeTx, false, true, node.bc.lastBlockNumber());
           assert.deepEqual(stakeRes.code, 0);
           const createAppTx = Transaction.fromTxBody({
             operation: {
@@ -3952,7 +3952,7 @@ describe("DB operations", () => {
             nonce: -1,
             timestamp: timestamp++,
           }, node.account.private_key);
-          const createAppRes = node.db.executeTransaction(createAppTx, false, true, node.bc.lastBlockNumber() + 1);
+          const createAppRes = node.db.executeTransaction(createAppTx, false, true, node.bc.lastBlockNumber());
           assert.deepEqual(createAppRes.code, 0);
         }
         // Send 1/10 + 1 budget tx for one of them
@@ -3974,7 +3974,7 @@ describe("DB operations", () => {
           timestamp
         };
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
+        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber());
         assert.deepEqual(res.code, 10907);
         assert.deepEqual(res.message.includes("Exceeded state budget limit for app app_0"), true);
         assert.deepEqual(res.gas_amount_total, {
@@ -3996,7 +3996,7 @@ describe("DB operations", () => {
           nonce: -1,
           timestamp: 1568798344000
         }, node.account.private_key);
-        const createAppRes = node.db.executeTransaction(createAppTx, false, true, node.bc.lastBlockNumber() + 1);
+        const createAppRes = node.db.executeTransaction(createAppTx, false, true, node.bc.lastBlockNumber());
         assert.deepEqual(createAppRes.code, 0);
         // Send over 10% budget tx
         const overSizeTree = {};
@@ -4017,7 +4017,7 @@ describe("DB operations", () => {
           timestamp: 1568798344001
         };
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
+        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber());
         assert.deepEqual(res.code, 10905);
         assert.deepEqual(res.message.includes("Exceeded state budget limit for free tier"), true);
         assert.deepEqual(res.gas_amount_total, {
