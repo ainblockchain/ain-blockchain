@@ -5,6 +5,7 @@ const _ = require('lodash');
 const espree = require('espree');
 const CommonUtil = require('../common/common-util');
 const {
+  isEnabledTimerFlag,
   PredefinedDbPaths,
   FunctionProperties,
   FunctionTypes,
@@ -125,6 +126,11 @@ function hasVarNamePattern(name) {
   return CommonUtil.isString(name) ? varNameRegex.test(name) : false;
 }
 
+function hasServiceNamePattern(name) {
+  const varNameRegex = /^[a-z_]+[a-z0-9_]*$/gm;
+  return CommonUtil.isString(name) ? varNameRegex.test(name) : false;
+}
+
 function hasReservedChar(label) {
   const reservedCharRegex = /[\/\.\$\*#\{\}\[\]<>'"` \x00-\x1F\x7F]/gm;
   return CommonUtil.isString(label) ? reservedCharRegex.test(label) : false;
@@ -137,7 +143,11 @@ function hasAllowedPattern(label) {
       (wildCardPatternRegex.test(label) || configPatternRegex.test(label)) : false;
 }
 
-function isValidServiceName(name) {
+function isValidServiceName(name, blockNumber = null) {
+  if (CommonUtil.isNumber(blockNumber) &&
+      isEnabledTimerFlag('allow_lower_case_app_names_only', blockNumber)) {
+    return hasServiceNamePattern(name);
+  }
   return hasVarNamePattern(name);
 }
 
