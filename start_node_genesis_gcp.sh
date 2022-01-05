@@ -270,7 +270,11 @@ fi
 export STAKE=100000
 printf "STAKE=$STAKE\n"
 
-MAX_OLD_SPACE_SIZE_MB=55000
+if [[ "$SEASON" = "sandbox" ]]; then
+    MAX_OLD_SPACE_SIZE_MB=11000
+else
+    MAX_OLD_SPACE_SIZE_MB=55000
+fi
 
 printf "\nStarting up Blockchain Node server..\n\n"
 START_CMD="nohup node --async-stack-traces --max-old-space-size=$MAX_OLD_SPACE_SIZE_MB client/index.js >/dev/null 2>error_logs.txt &"
