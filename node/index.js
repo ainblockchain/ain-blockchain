@@ -358,11 +358,13 @@ class BlockchainNode {
 
   buildBlockchainSnapshot(blockNumber, stateRoot) {
     const block = this.bc.getBlockByNumber(blockNumber);
+    const blockTimestamp = block.timestamp;
     const stateSnapshot = stateRoot.toStateSnapshot({ includeVersion: true });
     const radixSnapshot = stateRoot.toRadixSnapshot();
     const rootProofHash = stateRoot.getProofHash();
     return {
       [BlockchainSnapshotProperties.BLOCK_NUMBER]: blockNumber,
+      [BlockchainSnapshotProperties.BLOCK_TIMESTAMP]: blockTimestamp,
       [BlockchainSnapshotProperties.BLOCK]: block,
       [BlockchainSnapshotProperties.STATE_SNAPSHOT]: stateSnapshot,
       [BlockchainSnapshotProperties.RADIX_SNAPSHOT]: radixSnapshot,
