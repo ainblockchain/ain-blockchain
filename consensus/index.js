@@ -351,9 +351,6 @@ class Consensus {
     for (const tx of candidates) {
       const res = tempDb.executeTransaction(
           Transaction.toExecutable(tx, this.node.getBlockchainParam('genesis/chain_id')), false,
-          /*
-          true, blockNumber - 1, blockTime);
-          */
           true, blockNumber, blockTime);
       if (CommonUtil.txPrecheckFailed(res)) {
         logger.debug(`[${LOG_HEADER}] failed to execute transaction:\n${JSON.stringify(tx, null, 2)}\n${JSON.stringify(res, null, 2)})`);
@@ -593,11 +590,11 @@ class Consensus {
     }
   }
 
-  static validateValidators(validators, baseBlockNumber, baseVersion, node) {
+  static validateValidators(validators, number, baseVersion, node) {
     const minNumValidators = node.getBlockchainParam(
-        'consensus/min_num_validators', baseBlockNumber, baseVersion);
+        'consensus/min_num_validators', number, baseVersion);
     const maxNumValidators = node.getBlockchainParam(
-        'consensus/max_num_validators', baseBlockNumber, baseVersion);
+        'consensus/max_num_validators', number, baseVersion);
     if (Object.keys(validators).length < minNumValidators || Object.keys(validators).length > maxNumValidators) {
       throw new ConsensusError({
         code: ConsensusErrorCode.INVALID_VALIDATORS_SIZE,
@@ -623,7 +620,7 @@ class Consensus {
 
   static validateAndExecuteLastVotes(lastVotes, lastHash, number, blockTime, db, blockPool) {
     if (number === 0) return;
-    if (!db.executeTransactionList(lastVotes, true, false, number - 1, blockTime)) {
+    if (!db.executeTransactionList(lastVotes, true, false, number, blockTime)) {
       throw new ConsensusError({
         code: ConsensusErrorCode.EXECUTING_LAST_VOTES_FAILURE,
         message: `Failed to execute last votes`,
@@ -689,7 +686,7 @@ class Consensus {
             level: 'error'
           });
         }
-        const txsRes = db.executeTransactionList(evidenceForOffense.votes, true, false, number - 1, blockTime);
+        const txsRes = db.executeTransactionList(evidenceForOffense.votes, true, false, number, blockTime);
         if (!txsRes) {
           throw new ConsensusError({
             code: ConsensusErrorCode.EXECUTING_EVIDENCE_VOTES_FAILURE,
@@ -716,9 +713,6 @@ class Consensus {
 
   static validateAndExecuteTransactions(
       transactions, receipts, number, blockTime, expectedGasAmountTotal, expectedGasCostTotal, db, node) {
-    /*
-    const txsRes = db.executeTransactionList(transactions, number === 0, true, number - 1, blockTime);
-    */
     const txsRes = db.executeTransactionList(transactions, number === 0, true, number, blockTime);
     if (!txsRes) {
       throw new ConsensusError({
@@ -792,10 +786,7 @@ class Consensus {
       });
     }
     // Try executing the proposal tx on the proposal block's db state
-    /*
-    const proposalTxExecRes = tempDb.executeTransaction(executableTx, true, false, number - 1, blockTime);
-    */
-    const proposalTxExecRes = tempDb.executeTransaction(executableTx, true, false, 0, blockTime);
+    const proposalTxExecRes = tempDb.executeTransaction(executableTx, true, false, number, blockTime);
     tempDb.destroyDb();
     if (CommonUtil.isFailedTx(proposalTxExecRes)) {
       throw new ConsensusError({
@@ -921,6 +912,7 @@ class Consensus {
       return false;
     }
     let tempDb;
+    let blockNumber;
     if (isAgainst) {
       const offenseType = ConsensusUtil.getOffenseTypeFromVoteTx(voteTx);
       if (!CommonUtil.isValidatorOffenseType(offenseType)) {
@@ -931,6 +923,7 @@ class Consensus {
       tempDb = this.node.createTempDb(
           this.node.stateManager.getFinalVersion(),
           `${StateVersions.SNAP}:${lastBlock.number}`, lastBlock.number);
+      blockNumber = this.node.bc.lastBlockNumber();
     } else {
       const snapDb = this.getSnapDb(block);
       if (!snapDb) {
@@ -939,17 +932,15 @@ class Consensus {
         return false;
       }
       tempDb = this.node.createTempDb(
-          snapDb.stateVersion, `${StateVersions.SNAP}:${block.number - 1}`, block.number - 1);
+          snapDb.stateVersion, `${StateVersions.SNAP}:${block.number}`, block.number);
+      blockNumber = block.number;
     }
     if (!tempDb) {
       logger.info(
           `[${LOG_HEADER}] Failed to create a temp state snapshot for vote ${JSON.stringify(executableTx)}`);
       return false;
     }
-    /*
-    const voteTxRes = tempDb.executeTransaction(executableTx, true, false, number - 1, block.timestamp);
-    */
-    const voteTxRes = tempDb.executeTransaction(executableTx, true, false, 0, block.timestamp);
+    const voteTxRes = tempDb.executeTransaction(executableTx, true, false, blockNumber + 1, block.timestamp);
     tempDb.destroyDb();
     if (CommonUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);
