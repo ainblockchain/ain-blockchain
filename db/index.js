@@ -3,7 +3,6 @@ const logger = new (require('../logger'))('DATABASE');
 const _ = require('lodash');
 const sizeof = require('object-sizeof');
 const {
-  DevFlags,
   NodeConfigs,
   ReadDbOperations,
   WriteDbOperations,
@@ -620,7 +619,7 @@ class DB {
     return this.convertOwnerMatch(this.matchOwnerForParsedPath(localPath), isGlobal);
   }
 
-  evalRule(valuePath, value, auth, timestamp, options) {
+  evalRule(valuePath, value, auth, options) {
     const isGlobal = options && options.isGlobal;
     const parsedPath = CommonUtil.parsePath(valuePath);
     const localPath = isGlobal ? DB.toLocalPath(parsedPath, this.shardingPath) : parsedPath;
@@ -631,7 +630,7 @@ class DB {
     const limitChecked = this.checkRespTreeLimitsForEvalOrMatch(
         PredefinedDbPaths.RULES_ROOT, localPath, options);
     if (limitChecked !== true) return limitChecked;
-    return this.getPermissionForValue(localPath, value, auth, timestamp);
+    return this.getPermissionForValue(localPath, value, auth, options);
   }
 
   // TODO(platfowner): Consider allowing the callers to specify target config.
@@ -740,8 +739,8 @@ class DB {
           auth.fid = op.fid;
         }
         const timestamp = op.timestamp || Date.now();
-        resultList.push(this.evalRule(
-            op.ref, op.value, auth, timestamp, CommonUtil.toMatchOrEvalOptions(op)));
+        const options = Object.assign(CommonUtil.toMatchOrEvalOptions(op), { timestamp });
+        resultList.push(this.evalRule(op.ref, op.value, auth, options));
       } else if (op.type === ReadDbOperations.EVAL_OWNER) {
         const auth = {};
         if (op.address) {
@@ -841,7 +840,7 @@ class DB {
           null,
           unitWriteGasAmount);
     }
-    const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, timestamp);
+    const ruleEvalRes = this.getPermissionForValue(localPath, value, auth, options);
     if (CommonUtil.isFailedTxResultCode(ruleEvalRes.code)) {
       return CommonUtil.returnTxResult(
           ruleEvalRes.code,
@@ -1180,31 +1179,33 @@ class DB {
 
   executeSingleSetOperation(op, auth, timestamp, tx, blockNumber, blockTime) {
     let result;
+    const options = Object.assign(CommonUtil.toSetOptions(op), {
+      timestamp,
+      blockNumber,
+      blockTime,
+    });
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
         result = this.setValue(
-            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime,
-            CommonUtil.toSetOptions(op));
+            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime, options);
         break;
       case WriteDbOperations.INC_VALUE:
         result = this.incValue(
-            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime,
-            CommonUtil.toSetOptions(op));
+            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime, options);
         break;
       case WriteDbOperations.DEC_VALUE:
         result = this.decValue(
-            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime,
-            CommonUtil.toSetOptions(op));
+            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime, options);
         break;
       case WriteDbOperations.SET_FUNCTION:
-        result = this.setFunction(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
+        result = this.setFunction(op.ref, op.value, auth, blockNumber, options);
         break;
       case WriteDbOperations.SET_RULE:
-        result = this.setRule(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
+        result = this.setRule(op.ref, op.value, auth, blockNumber, options);
         break;
       case WriteDbOperations.SET_OWNER:
-        result = this.setOwner(op.ref, op.value, auth, blockNumber, CommonUtil.toSetOptions(op));
+        result = this.setOwner(op.ref, op.value, auth, blockNumber, options);
         break;
       default:
         const unitWriteGasAmount = DB.getBlockchainParam(
@@ -1824,8 +1825,10 @@ class DB {
     return newValue;
   }
 
-  getPermissionForValue(parsedValuePath, newValue, auth, timestamp) {
+  getPermissionForValue(parsedValuePath, newValue, auth, options) {
     const LOG_HEADER = 'getPermissionForValue';
+
+    const timestamp = (options && options.timestamp !== undefined) ? options.timestamp : null;
     // Evaluate write rules and return matched configs
     const matched = this.matchRuleForParsedPath(parsedValuePath);
     const matchedWriteRules = matched.write;
