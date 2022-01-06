@@ -20,6 +20,8 @@ const { FunctionResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
 const PathUtil = require('../common/path-util');
 
+axios.defaults.timeout = NodeConfigs.DEFAULT_AXIOS_REQUEST_TIMEOUT;
+
 /**
  * Built-in functions with function paths.
  */
