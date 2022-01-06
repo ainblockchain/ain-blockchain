@@ -22,6 +22,8 @@ const WRITE_RULE_CODE_SNIPPET_PREFIX = '"use strict"; return ';
 const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
   // 1) from parameters
   'auth',
+  'blockNumber',
+  'blockTime',
   'currentTime',
   'data',
   'evalOwner',
