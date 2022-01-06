@@ -81,8 +81,8 @@ function addBlock(node, txs, votes, validators) {
   const finalDb = DB.create(
       node.stateManager.getFinalVersion(), `${StateVersions.FINAL}:${lastBlock.number + 1}`,
       node.bc, true, lastBlock.number, node.stateManager, BlockchainParams.genesis.genesis_addr);
-  finalDb.executeTransactionList(votes, true, false, lastBlock.number, lastBlock.timestamp);
-  finalDb.executeTransactionList(txs, false, true, lastBlock.number, lastBlock.timestamp);
+  finalDb.executeTransactionList(votes, true, false, lastBlock.number + 1, lastBlock.timestamp);
+  finalDb.executeTransactionList(txs, false, true, lastBlock.number + 1, lastBlock.timestamp);
   node.syncDbAndNonce(`${StateVersions.NODE}:${lastBlock.number + 1}`);
   const receipts = txsToDummyReceipts(txs);
   node.bc.addBlockToChain(Block.create(

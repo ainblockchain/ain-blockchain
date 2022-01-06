@@ -565,7 +565,7 @@ class BlockPool {
     let tallied = 0;
     for (const vote of lastVotes) {
       if (CommonUtil.isFailedTx(tempDb.executeTransaction(
-          Transaction.toExecutable(vote, chainId), true, true, blockNumber - 1, blockTime))) {
+          Transaction.toExecutable(vote, chainId), true, true, blockNumber, blockTime))) {
         logger.debug(`[${LOG_HEADER}] failed to execute last vote: ${JSON.stringify(vote, null, 2)}`);
       } else {
         tallied += _get(lastBlock.validators, `${vote.address}.stake`, 0);
@@ -619,7 +619,7 @@ class BlockPool {
         const stake = _get(validators, `${vote.address}.stake`, 0);
         if (stake > 0) {
           const res = baseDb.executeTransaction(
-              Transaction.toExecutable(vote, chainId), true, true, blockNumber - 1, blockTime);
+              Transaction.toExecutable(vote, chainId), true, true, blockNumber, blockTime);
           if (CommonUtil.isFailedTx(res)) {
             logger.debug(`[${LOG_HEADER}] Failed to execute evidence vote:\n${JSON.stringify(vote, null, 2)}\n${JSON.stringify(res, null, 2)})`);
           } else {
