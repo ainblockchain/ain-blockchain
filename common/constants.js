@@ -406,6 +406,7 @@ const StateLabelProperties = {
 const BlockchainSnapshotProperties = {
   BLOCK: 'block',
   BLOCK_NUMBER: 'block_number',
+  BLOCK_TIMESTAMP: 'block_timestamp',
   RADIX_SNAPSHOT: 'radix_snapshot',
   ROOT_PROOF_HASH: 'root_proof_hash',
   STATE_SNAPSHOT: 'state_snapshot',
