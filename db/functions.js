@@ -499,8 +499,7 @@ class Functions {
       blockNumber,
       blockTime,
     };
-    const result = this.db.incValue(
-        valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, newOptions);
+    const result = this.db.incValue(valuePath, delta, auth, transaction, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -520,8 +519,7 @@ class Functions {
       blockNumber,
       blockTime,
     };
-    const result = this.db.decValue(
-        valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, newOptions);
+    const result = this.db.decValue(valuePath, delta, auth, transaction, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to decValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -551,7 +549,7 @@ class Functions {
       blockNumber,
       blockTime,
     };
-    const result = this.db.setOwner(ownerPath, owner, auth, blockNumber, newOptions);
+    const result = this.db.setOwner(ownerPath, owner, auth, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setOwner on '${ownerPath}' with error: ${JSON.stringify(result)}`);
@@ -570,7 +568,7 @@ class Functions {
       blockNumber,
       blockTime,
     };
-    const result = this.db.setRule(rulePath, rule, auth, blockNumber, newOptions);
+    const result = this.db.setRule(rulePath, rule, auth, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setRule on '${rulePath}' with error: ${JSON.stringify(result)}`);
