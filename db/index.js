@@ -813,9 +813,8 @@ class DB {
   setValue(valuePath, value, auth, transaction, options) {
     const LOG_HEADER = 'setValue';
     const isGlobal = options && options.isGlobal;
-    const timestamp = (options && options.timestamp !== undefined) ? options.timestamp : null;
-    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
-    let blockTime = (options && options.blockTime !== undefined) ? options.blockTime : null;
+    const blockNumber = _.get(options, 'blockNumber', null);
+    let blockTime = _.get(options, 'blockTime', null);
     if (!blockTime) {
       blockTime = this.lastBlockTimestamp();
     }
@@ -938,7 +937,7 @@ class DB {
 
   incValue(valuePath, delta, auth, transaction, options) {
     const isGlobal = options && options.isGlobal;
-    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
+    const blockNumber = _.get(options, 'blockNumber', null);
     const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
@@ -955,7 +954,7 @@ class DB {
 
   decValue(valuePath, delta, auth, transaction, options) {
     const isGlobal = options && options.isGlobal;
-    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
+    const blockNumber = _.get(options, 'blockNumber', null);
     const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
@@ -972,7 +971,7 @@ class DB {
 
   setFunction(functionPath, func, auth, options) {
     const isGlobal = options && options.isGlobal;
-    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
+    const blockNumber = _.get(options, 'blockNumber', null);
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasAmount = DB.getBlockchainParam(
@@ -1035,7 +1034,7 @@ class DB {
 
   setRule(rulePath, rule, auth, options) {
     const isGlobal = options && options.isGlobal;
-    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
+    const blockNumber = _.get(options, 'blockNumber', null);
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasAmount = DB.getBlockchainParam(
@@ -1091,7 +1090,7 @@ class DB {
 
   setOwner(ownerPath, owner, auth, options) {
     const isGlobal = options && options.isGlobal;
-    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
+    const blockNumber = _.get(options, 'blockNumber', null);
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasAmount = DB.getBlockchainParam(
@@ -1834,7 +1833,7 @@ class DB {
   getPermissionForValue(parsedValuePath, newValue, auth, options) {
     const LOG_HEADER = 'getPermissionForValue';
 
-    const timestamp = (options && options.timestamp !== undefined) ? options.timestamp : null;
+    const timestamp = _.get(options, 'timestamp', null);
     // Evaluate write rules and return matched configs
     const matched = this.matchRuleForParsedPath(parsedValuePath);
     const matchedWriteRules = matched.write;
