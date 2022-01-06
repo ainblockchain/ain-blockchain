@@ -1,6 +1,7 @@
 {
   "ACCOUNT_INJECTION_OPTION": null,
   "BLOCKCHAIN_DATA_DIR": "./ain_blockchain_data",
+  "BLOCKCHAIN_GUIDE_URL": "https://docs.ainetwork.ai",
   "CHAIN_SEGMENT_LENGTH": 20,
   "CHAINS_H2N_HASH_PREFIX_LENGTH": 5,
   "CHAINS_N2B_MAX_NUM_FILES": 100000,

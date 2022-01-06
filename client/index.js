@@ -17,10 +17,10 @@ const VersionUtil = require('../common/version-util');
 const { convertIpv6ToIpv4 } = require('../common/network-util');
 const {
   BlockchainConsts,
+  NodeConfigs,
   WriteDbOperations,
   TrafficEventTypes,
   trafficStatsManager,
-  NodeConfigs,
 } = require('../common/constants');
 const { DevClientApiResultCode } = require('../common/result-code');
 
@@ -73,9 +73,10 @@ app.post(
 );
 
 app.get('/', (req, res, next) => {
+  const welcome = `[Welcome to AIN Blockchain Node]\n\n- CURRENT_PROTOCOL_VERSION: ${BlockchainConsts.CURRENT_PROTOCOL_VERSION}\n- DATA_PROTOCOL_VERSION: ${BlockchainConsts.DATA_PROTOCOL_VERSION}\n- CONSENSUS_PROTOCOL_VERSION: ${BlockchainConsts.CONSENSUS_PROTOCOL_VERSION}\n\nDevelopers Guide: ${NodeConfigs.BLOCKCHAIN_GUIDE_URL}`;
   res.status(200)
     .set('Content-Type', 'text/plain')
-    .send('Welcome to AIN Blockchain Node')
+    .send(welcome)
     .end();
 });
 

@@ -3,6 +3,10 @@ const logger = new (require('../logger'))('TRACKER_SERVER');
 const express = require('express');
 const jayson = require('jayson');
 
+const {
+  BlockchainConsts,
+  NodeConfigs,
+} = require('../common/constants');
 const { getGraphData } = require('./network-topology');
 const CommonUtil = require('../common/common-util');
 const Tracker = require('./tracker');
@@ -19,9 +23,10 @@ app.set('view engine', 'html');
 app.post('/json-rpc', jayson.server(jsonRpcMethods).middleware());
 
 app.get('/', (req, res, next) => {
+  const welcome = `[Welcome to AIN Blockchain Node]\n\n- CURRENT_PROTOCOL_VERSION: ${BlockchainConsts.CURRENT_PROTOCOL_VERSION}\n\nDevelopers Guide: ${NodeConfigs.BLOCKCHAIN_GUIDE_URL}`;
   res.status(200)
       .set('Content-Type', 'text/plain')
-      .send('Welcome to AIN Blockchain Tracker')
+      .send(welcome)
       .end();
 });
 
