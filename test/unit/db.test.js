@@ -1467,13 +1467,13 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a variable path rule", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/some/var_path", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 12103,
           "message": "Write rule evaluated false: [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, timestamp)), {
+            "/apps/test/test_rule/some/var_path", 'value', { addr: 'other' }, { timestamp })), {
           "code": 0,
           "matched": "erased",
         });
@@ -1481,23 +1481,23 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a non-variable path rule", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/some/path", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 0,
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/path", 'value', { addr: 'other' }, timestamp)), {
+            "/apps/test/test_rule/some/path", 'value', { addr: 'other' }, { timestamp })), {
           "code": 12103,
           "message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'ijkl' }, timestamp)), {
+            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'ijkl' }, { timestamp })), {
           "code": 0,
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'other' }, timestamp)), {
+            "/apps/test/test_rule/some/upper/path/deeper/path", 'value', { addr: 'other' }, { timestamp })), {
           "code": 12103,
           "message": "Write rule evaluated false: [auth.addr === 'ijkl'] at '/apps/test/test_rule/some/upper/path/deeper/path' for value path '/apps/test/test_rule/some/upper/path/deeper/path' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
@@ -1506,13 +1506,13 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a closest variable path rule", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 12103,
           "message": "Write rule evaluated false: [auth.addr !== 'abcd'] at '/apps/test/test_rule/some/$var_path' for value path '/apps/test/test_rule/some/var_path/subpath' with path vars '{\"$var_path\":\"var_path\"}', data 'null', newData '\"value\"', auth '{\"addr\":\"abcd\"}', timestamp '1234567890000'",
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'other' }, timestamp)), {
+            "/apps/test/test_rule/some/var_path/subpath", 'value', { addr: 'other' }, { timestamp })), {
           "code": 0,
           "matched": "erased",
         });
@@ -1520,12 +1520,12 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a closest non-variable rule", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 0,
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'other' }, timestamp)), {
+            "/apps/test/test_rule/some/path/subpath", 'value', { addr: 'other' }, { timestamp })), {
           "code": 12103,
           "message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/path' for value path '/apps/test/test_rule/some/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
@@ -1534,12 +1534,12 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a rule without subtree rules", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 0,
           "matched": "erased",
         });
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'other' }, timestamp)), {
+            "/apps/test/test_rule/some/upper/path/subpath", 'value', { addr: 'other' }, { timestamp })), {
           "code": 12103,
           "message": "Write rule evaluated false: [auth.addr === 'abcd'] at '/apps/test/test_rule/some/upper/path' for value path '/apps/test/test_rule/some/upper/path/subpath' with path vars '{}', data 'null', newData '\"value\"', auth '{\"addr\":\"other\"}', timestamp '1234567890000'",
           "matched": "erased",
@@ -1548,7 +1548,7 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a rule with subtree rules", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/some/upper/path", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 12101,
           "message": "Non-empty (1) subtree rules for value path '/apps/test/test_rule/some/upper/path'': [\"/deeper/path\"]",
           "matched": "erased",
@@ -1557,7 +1557,7 @@ describe("DB operations", () => {
 
       it("evalRule to evaluate a non-variable path rule", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
-            "/apps/test/test_rule/syntax/path", 'value', { addr: 'abcd' }, timestamp)), {
+            "/apps/test/test_rule/syntax/path", 'value', { addr: 'abcd' }, { timestamp })), {
           "code": 12105,
           "message": "Rule syntax error: \"Unexpected token 'while'\" in write rule: [while(]",
           "matched": "erased",
@@ -4312,18 +4312,18 @@ describe("DB rule config", () => {
 
   it("only allows certain users to write certain info if balance is greater than 0", () => {
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
-        `/apps/test/users/${node2.account.address}/balance`, 0, null, null)), {
+        `/apps/test/users/${node2.account.address}/balance`, 0, null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
-        `/apps/test/users/${node2.account.address}/balance`, -1, null, null)), {
+        `/apps/test/users/${node2.account.address}/balance`, -1, null, { timestamp: null })), {
       "code": 12103,
       "message": "Write rule evaluated false: [typeof newData === 'number' && newData >= 0] at '/apps/test/users/$uid/balance' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/balance' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data '50', newData '-1', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        `/apps/test/users/${node1.account.address}/balance`, 1, null, null)), {
+        `/apps/test/users/${node1.account.address}/balance`, 1, null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
@@ -4331,19 +4331,19 @@ describe("DB rule config", () => {
 
   it("only allows certain users to write certain info if data exists", () => {
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        `/apps/test/users/${node1.account.address}/info`, "something", null, null)), {
+        `/apps/test/users/${node1.account.address}/info`, "something", null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
-        `/apps/test/users/${node2.account.address}/info`, "something else", null, null)), {
+        `/apps/test/users/${node2.account.address}/info`, "something else", null, { timestamp: null })), {
       "code": 12103,
       "message": "Write rule evaluated false: [data !== null] at '/apps/test/users/$uid/info' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/info' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data 'null', newData '\"something else\"', auth 'null', timestamp 'null'",
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/new_info`, "something",
-        { addr: node2.account.address }, null)), {
+        { addr: node2.account.address }, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
@@ -4352,13 +4352,13 @@ describe("DB rule config", () => {
   it("apply the closest ancestor's rule config if not exists", () => {
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/users/${node1.account.address}/child/grandson`, "something",
-        { addr: node1.account.address }, null)), {
+        { addr: node1.account.address }, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/users/${node2.account.address}/child/grandson`, "something",
-        { addr: node1.account.address }, null)), {
+        { addr: node1.account.address }, { timestamp: null })), {
       "code": 12103,
       "message": "Write rule evaluated false: [auth.addr === $uid] at '/apps/test/users/$uid' for value path '/apps/test/users/0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204/child/grandson' with path vars '{\"$uid\":\"0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204\"}', data 'null', newData '\"something\"', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', timestamp 'null'",
       "matched": "erased",
@@ -4367,12 +4367,12 @@ describe("DB rule config", () => {
 
   it("only allows certain users to write certain info if data at other locations exists", () => {
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
-        `/apps/test/users/${node2.account.address}/balance_info`, "something", null, null)), {
+        `/apps/test/users/${node2.account.address}/balance_info`, "something", null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        `/apps/test/users/${node1.account.address}/balance_info`, "something", null, null)), {
+        `/apps/test/users/${node1.account.address}/balance_info`, "something", null, { timestamp: null })), {
       "code": 12103,
       "message": "Write rule evaluated false: [getValue('/apps/test/billing_keys/update_billing/' + $uid) !== null] at '/apps/test/users/$uid/balance_info' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/balance_info' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '\"something\"', auth 'null', timestamp 'null'",
       "matched": "erased",
@@ -4381,12 +4381,12 @@ describe("DB rule config", () => {
 
   it("validates old data and new data together", () => {
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        `/apps/test/users/${node1.account.address}/next_counter`, 11, null,  null)), {
+        `/apps/test/users/${node1.account.address}/next_counter`, 11, null,  { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        `/apps/test/users/${node1.account.address}/next_counter`, 12, null, null)), {
+        `/apps/test/users/${node1.account.address}/next_counter`, 12, null, { timestamp: null })), {
       "code": 12103,
       "message": "Write rule evaluated false: [typeof newData === 'number' && newData === data + 1] at '/apps/test/users/$uid/next_counter' for value path '/apps/test/users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter' with path vars '{\"$uid\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data '10', newData '12', auth 'null', timestamp 'null'",
       "matched": "erased",
@@ -4396,13 +4396,13 @@ describe("DB rule config", () => {
   it("can handle nested path variables", () => {
     assert.deepEqual(eraseEvalResMatched(node2.db.evalRule(
         `/apps/test/second_users/${node2.account.address}/${node2.account.address}`,
-        "some value", null, null)), {
+        "some value", null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
         `/apps/test/second_users/${node1.account.address}/next_counter`,
-        "some other value", null, null)), {
+        "some other value", null, { timestamp: null })), {
       "code": 12103,
       "message": "Write rule evaluated false: [$wcard1 == $wcard2] at '/apps/test/second_users/$wcard1/$wcard2' for value path '/apps/test/second_users/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/next_counter' with path vars '{\"$wcard2\":\"next_counter\",\"$wcard1\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '\"some other value\"', auth 'null', timestamp 'null'",
       "matched": "erased",
@@ -4411,12 +4411,12 @@ describe("DB rule config", () => {
 
   it("duplicated path variables", () => {
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        '/apps/test/no_dup_key/aaa/bbb', "some value", null, null)), {
+        '/apps/test/no_dup_key/aaa/bbb', "some value", null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
     assert.deepEqual(eraseEvalResMatched(node1.db.evalRule(
-        '/apps/test/dup_key/aaa/bbb', "some value", null, null)), {
+        '/apps/test/dup_key/aaa/bbb', "some value", null, { timestamp: null })), {
       "code": 0,
       "matched": "erased",
     });
@@ -5552,7 +5552,7 @@ describe("DB sharding config", () => {
       it("evalRule with isGlobal = true", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/afan/apps/test/test_sharding/some/path/to", newValue,
-            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true })), {
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })), {
           "code": 0,
           "matched": "erased",
         });
@@ -5561,7 +5561,7 @@ describe("DB sharding config", () => {
       it("evalRule with isGlobal = true and non-existing path", () => {
         assert.deepEqual(eraseEvalResMatched(node.db.evalRule(
             "/apps/some/non-existing/path", newValue,
-            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, null, { isGlobal: true })),
+            { addr: "0x09A0d53FDf1c36A131938eb379b98910e55EEfe1" }, { isGlobal: true })),
             null);
       })
     });

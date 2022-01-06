@@ -334,6 +334,7 @@ describe("Functions", () => {
                 "path",
                 "rest",
               ],
+              "options": {},
               "params": {},
               "prevValue": "prev value",
               "timestamp": 1234567890000,
@@ -425,6 +426,7 @@ describe("Functions", () => {
                 "$var_path",
                 "rest",
               ],
+              "options": {},
               "params": {
                 "var_path": "arbitrary"
               },
@@ -522,6 +524,7 @@ describe("Functions", () => {
                 "path",
                 "rest_multi",
               ],
+              "options": {},
               "params": {},
               "prevValue": "prev value",
               "timestamp": 1234567890000,
@@ -576,6 +579,7 @@ describe("Functions", () => {
                 "path",
                 "rest_multi",
               ],
+              "options": {},
               "params": {},
               "prevValue": "prev value",
               "timestamp": 1234567890000,
@@ -731,6 +735,7 @@ describe("Functions", () => {
                 "path",
                 "rest_with_subtree",
               ],
+              "options": {},
               "params": {},
               "prevValue": null,
               "timestamp": 1234567890000,
@@ -813,6 +818,7 @@ describe("Functions", () => {
                 "path",
                 "rest_with_subtree",
               ],
+              "options": {},
               "params": {},
               "prevValue": null,
               "timestamp": 1234567890000,
@@ -897,6 +903,7 @@ describe("Functions", () => {
                 "deep",
                 "path",
               ],
+              "options": {},
               "params": {},
               "prevValue": null,
               "timestamp": 1234567890000,
@@ -971,6 +978,7 @@ describe("Functions", () => {
                 "deep",
                 "path",
               ],
+              "options": {},
               "params": {},
               "prevValue": null,
               "timestamp": 1234567890000,
@@ -1045,6 +1053,7 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
+              "options": {},
               "params": {
                 "var_path": "path"
               },
@@ -1119,6 +1128,7 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
+              "options": {},
               "params": {
                 "var_path": "other_path"
               },
@@ -1195,6 +1205,7 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
+              "options": {},
               "params": {
                 "var_path": "path"
               },
@@ -1269,6 +1280,7 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
+              "options": {},
               "params": {
                 "var_path": "other_path"
               },
@@ -1488,6 +1500,7 @@ describe("Functions", () => {
                 "path",
                 "rest_with_subtree",
               ],
+              "options": {},
               "params": {},
               "prevValue": {  // non-null prevValue case only!
                 "deep": {
@@ -1583,6 +1596,7 @@ describe("Functions", () => {
                 "path",
                 "rest_with_subtree",
               ],
+              "options": {},
               "params": {},
               "prevValue": {  // non-null prevValue case only!
                 "deep": {
@@ -1680,6 +1694,7 @@ describe("Functions", () => {
                 "deep",
                 "path",
               ],
+              "options": {},
               "params": {},
               "prevValue": {  // non-null prevValue case only!
                 "to": "PREVIOUS: deep path to value"
@@ -1756,6 +1771,7 @@ describe("Functions", () => {
                 "deep",
                 "path",
               ],
+              "options": {},
               "params": {},
               "prevValue": {  // non-null prevValue case only!
                 "to": "PREVIOUS: deep path to value"
@@ -1832,6 +1848,7 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
+              "options": {},
               "params": {
                 "var_path": "existing_path"
               },
@@ -1910,6 +1927,7 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
+              "options": {},
               "params": {
                 "var_path": "path"
               },
@@ -1986,6 +2004,7 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
+              "options": {},
               "params": {
                 "var_path": "other_path"
               },
@@ -2062,6 +2081,7 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
+              "options": {},
               "params": {
                 "var_path": "existing_path"
               },
@@ -2140,6 +2160,7 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
+              "options": {},
               "params": {
                 "var_path": "path"
               },
@@ -2216,6 +2237,7 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
+              "options": {},
               "params": {
                 "var_path": "other_path"
               },
@@ -2294,6 +2316,7 @@ describe("Functions", () => {
                 "to",
                 "$var_path2",
               ],
+              "options": {},
               "params": {
                 "var_path": "existing_path",
                 "var_path2": "existing_path2",
@@ -2375,6 +2398,7 @@ describe("Functions", () => {
                 "to",
                 "$var_path2",
               ],
+              "options": {},
               "params": {
                 "var_path": "existing_path",
                 "var_path2": "existing_path2",
