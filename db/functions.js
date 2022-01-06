@@ -151,9 +151,9 @@ class Functions {
     const executedAt = transaction.extra.executed_at;
     const functionList = Functions.getFunctionList(functionMap);
     const params = Functions.convertPathVars2Params(pathVars);
-    const timestamp = (options && options.timestamp !== undefined) ? options.timestamp : null;
-    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
-    const blockTime = (options && options.blockTime !== undefined) ? options.blockTime : null;
+    const timestamp = _.get(options, 'timestamp', null);
+    const blockNumber = _.get(options, 'blockNumber', null);
+    const blockTime = _.get(options, 'blockTime', null);
     let triggerCount = 0;
     let failCount = 0;
     const promises = [];
@@ -161,8 +161,8 @@ class Functions {
 
     if (functionList && functionList.length > 0) {
       const formattedParams = Functions.formatFunctionParams(
-          valuePath, functionPath, timestamp, executedAt, params, value, prevValue,
-          transaction, blockTime);
+          valuePath, functionPath, timestamp, executedAt, params, value, prevValue, transaction,
+          blockNumber, blockTime, options);
       for (const functionEntry of functionList) {
         if (!functionEntry || !functionEntry.function_type) {
           continue;  // Does nothing.
@@ -346,7 +346,8 @@ class Functions {
   }
 
   static formatFunctionParams(
-      parsedValuePath, functionPath, timestamp, executedAt, params, value, prevValue, transaction, blockTime) {
+      parsedValuePath, functionPath, timestamp, executedAt, params, value, prevValue, transaction,
+      blockNumber, blockTime, options) {
     return `valuePath: '${CommonUtil.formatPath(parsedValuePath)}', ` +
       `functionPath: '${CommonUtil.formatPath(functionPath)}', ` +
       `timestamp: '${timestamp}', executedAt: '${executedAt}', ` +
@@ -354,7 +355,8 @@ class Functions {
       `value: '${JSON.stringify(value, null, 2)}', ` +
       `prevValue: '${JSON.stringify(prevValue, null, 2)}'` +
       `transaction: ${JSON.stringify(transaction, null, 2)}, ` +
-      `blockTime: ${blockTime}`;
+      `blockNumber: ${blockNumber}, blockTime: ${blockTime}` +
+      `options: ${JSON.stringify(options, null, 2)}`;
   }
 
   static getFunctionList(functionMap) {
