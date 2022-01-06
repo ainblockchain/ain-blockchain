@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
-    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <Shard Index> <Node Index> [--keep-code] [--full-sync] [--keystore|--mnemonic|--private-key] [--json-rpc] [--rest-func]\n"
+    printf "Usage: bash start_node_incremental_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <Shard Index> <Node Index> [--keep-code] [--keep-data] [--full-sync] [--keystore|--mnemonic|--private-key] [--json-rpc] [--rest-func]\n"
     printf "Example: bash start_node_incremental_gcp.sh spring 0 0 --keep-code --full-sync --keystore\n"
     printf "\n"
     exit
@@ -12,6 +12,8 @@ function parse_options() {
     local option="$1"
     if [[ $option = '--keep-code' ]]; then
         KEEP_CODE_OPTION="$option"
+    elif [[ $option = '--keep-data' ]]; then
+        KEEP_DATA_OPTION="$option"
     elif [[ $option = '--full-sync' ]]; then
         FULL_SYNC_OPTION="$option"
     elif [[ $option = '--keystore' ]]; then
@@ -61,6 +63,7 @@ fi
 NODE_INDEX="$3"
 
 KEEP_CODE_OPTION=""
+KEEP_DATA_OPTION=""
 FULL_SYNC_OPTION=""
 ACCOUNT_INJECTION_OPTION=""
 JSON_RPC_OPTION=""
@@ -78,6 +81,7 @@ printf "SHARD_INDEX=$SHARD_INDEX\n"
 printf "NODE_INDEX=$NODE_INDEX\n"
 
 printf "KEEP_CODE_OPTION=$KEEP_CODE_OPTION\n"
+printf "KEEP_DATA_OPTION=$KEEP_DATA_OPTION\n"
 printf "FULL_SYNC_OPTION=$FULL_SYNC_OPTION\n"
 printf "ACCOUNT_INJECTION_OPTION=$ACCOUNT_INJECTION_OPTION\n"
 printf "JSON_RPC_OPTION=$JSON_RPC_OPTION\n"
@@ -258,6 +262,18 @@ printf "NEW_DIR_PATH=$NEW_DIR_PATH\n"
 
 # 3. Set up working directory & install modules
 printf "\n#### [Step 3] Set up working directory & install modules ####\n\n"
+if [[ $KEEP_DATA_OPTION = "" ]]; then
+    printf '\n'
+    printf 'Removing old data..\n'
+    sudo rm -rf /home/ain_blockchain_data/chains
+    sudo rm -rf /home/ain_blockchain_data/snapshots
+    sudo rm -rf /home/ain_blockchain_data/logs
+    sudo mkdir -p /home/ain_blockchain_data
+    sudo chmod -R 777 /home/ain_blockchain_data
+else
+    sudo mkdir -p /home/ain_blockchain_data
+    sudo chmod -R 777 /home/ain_blockchain_data
+fi
 if [[ $KEEP_CODE_OPTION = "" ]]; then
     printf '\n'
     printf 'Creating new working directory..\n'
@@ -267,9 +283,6 @@ if [[ $KEEP_CODE_OPTION = "" ]]; then
 
     sudo chmod -R 777 $NEW_DIR_PATH
     mv * $NEW_DIR_PATH
-
-    sudo mkdir -p /home/ain_blockchain_data
-    sudo chmod -R 777 /home/ain_blockchain_data
 
     printf '\n'
     printf 'Installing node modules..\n'
