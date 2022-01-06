@@ -367,6 +367,7 @@ class P2pClient {
         return;
       }
       logger.info(`[${LOG_HEADER}] Trying to initializing shard..`);
+      // TODO(liayoo): Move this to after node account is injected.
       if (await this.server.tryInitializeShard()) {
         logger.info(`[${LOG_HEADER}] Shard initialization done!`);
       } else {
