@@ -478,8 +478,7 @@ class Functions {
       blockNumber,
       blockTime,
     };
-    const result = this.db.setValue(
-        valuePath, value, auth, timestamp, transaction, blockNumber, blockTime, newOptions);
+    const result = this.db.setValue(valuePath, value, auth, transaction, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);

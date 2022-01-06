@@ -771,12 +771,12 @@ describe("DB operations", () => {
         // Set 100 children
         for (let i = 0; i < 100; i++) {
           expect(node.db.setValue(`/apps/test/test_rule/some/path/more/than/max/child_${i}`, i, { addr: 'abcd' },
-              null, { extra: { executed_at: 1234567890000 + i }}).code).to.equal(0);
+              { extra: { executed_at: 1234567890000 + i }}).code).to.equal(0);
         }
         assert.deepEqual(Object.keys(node.db.getValue("/apps/test/test_rule/some/path/more/than/max")).length, 100);
         // Set 101'st child
         expect(node.db.setValue("/apps/test/test_rule/some/path/more/than/max/child_100", 100, { addr: 'abcd' },
-            null, { extra: { executed_at: 1234567890000 + 100 }}).code).to.equal(0);
+            { extra: { executed_at: 1234567890000 + 100 }}).code).to.equal(0);
         // 100 children removed
         assert.deepEqual(Object.keys(node.db.getValue("/apps/test/test_rule/some/path/more/than/max")).length, 1);
       })
@@ -793,7 +793,7 @@ describe("DB operations", () => {
             child1: 1,
             child2: 2
           }, { addr: 'abcd' },
-          null, { extra: { executed_at: 1234567890000 }}), {
+          { extra: { executed_at: 1234567890000 }}), {
           "code": 12104,
           "message": "State rule evaluated false: [{\"max_children\":1}] at '/apps/test/test_rule/some/path/more/than/max' for value path '/apps/test/test_rule/some/path/more/than/max' with newValue '{\"child1\":1,\"child2\":2}'",
           "bandwidth_gas_amount": 1
@@ -813,7 +813,7 @@ describe("DB operations", () => {
               height2: 0
             }
           }, { addr: 'abcd' },
-          null, { extra: { executed_at: 1234567890000 }}), {
+          { extra: { executed_at: 1234567890000 }}), {
           "code": 12104,
           "message": "State rule evaluated false: [{\"max_height\":1}] at '/apps/test/test_rule/some/path/max/height' for value path '/apps/test/test_rule/some/path/max/height' with newValue '{\"height1\":{\"height2\":0}}'",
           "bandwidth_gas_amount": 1
@@ -832,7 +832,7 @@ describe("DB operations", () => {
             size1: 1,
             size2: 2
           }, { addr: 'abcd' },
-          null, { extra: { executed_at: 1234567890000 }}), {
+          { extra: { executed_at: 1234567890000 }}), {
           "code": 12104,
           "message": "State rule evaluated false: [{\"max_size\":1}] at '/apps/test/test_rule/some/path/max/size' for value path '/apps/test/test_rule/some/path/max/size' with newValue '{\"size1\":1,\"size2\":2}'",
           "bandwidth_gas_amount": 1
@@ -848,7 +848,7 @@ describe("DB operations", () => {
           }
         }).code).to.equal(0);
         assert.deepEqual(node.db.setValue("/apps/test/test_rule/some/path/max/bytes", 1,
-          { addr: 'abcd' }, null, { extra: { executed_at: 1234567890000 }}), {
+          { addr: 'abcd' }, { extra: { executed_at: 1234567890000 }}), {
           "code": 12104,
           "message": "State rule evaluated false: [{\"max_bytes\":7}] at '/apps/test/test_rule/some/path/max/bytes' for value path '/apps/test/test_rule/some/path/max/bytes' with newValue '1'",
           "bandwidth_gas_amount": 1
@@ -5039,7 +5039,7 @@ describe("DB sharding config", () => {
         expect(node.db.setValue(
             "/apps/test/test_sharding/some/path/to/value", newValue,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}).code)
+            { extra: { executed_at: 1234567890000 }}).code)
             .to.equal(0);
         expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(newValue);
       })
@@ -5048,7 +5048,7 @@ describe("DB sharding config", () => {
         expect(node.db.setValue(
             "/apps/afan/apps/test/test_sharding/some/path/to/value", newValue,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { extra: { executed_at: 1234567890000 }},
             { isGlobal: true }).code)
             .to.equal(0);
         expect(node.db.getValue("/apps/test/test_sharding/some/path/to/value")).to.equal(newValue);
@@ -5058,7 +5058,7 @@ describe("DB sharding config", () => {
         expect(node.db.setValue(
             "/apps/some/non-existing/path", newValue,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { extra: { executed_at: 1234567890000 }},
             { isGlobal: true }).code)
             .to.equal(0);
       })
@@ -5075,8 +5075,7 @@ describe("DB sharding config", () => {
       it("setValue with isGlobal = true and non-writable path with sharding", () => {
         expect(node.db.setValue(
             "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path", 20,
-            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', null, null,
-            100, 1234567890000, { isGlobal: true }).code)
+            '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', null, { isGlobal: true }).code)
             .to.equal(0);
         expect(node.db.getValue(
             "/apps/afan/apps/test/test_sharding/shards/enabled_shard/path",
@@ -5095,7 +5094,7 @@ describe("DB sharding config", () => {
         expect(node.db.setValue(
             "apps/afan/apps/test/test_sharding/shards/disabled_shard/path", 20,
             { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' },
-            null, { extra: { executed_at: 1234567890000 }}, 100, 1234567890000,
+            { extra: { executed_at: 1234567890000 }},
             { isGlobal: true }).code)
             .to.equal(0);
         expect(node.db.getValue(

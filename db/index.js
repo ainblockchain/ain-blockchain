@@ -810,9 +810,15 @@ class DB {
     return DB.getAppStakeFromStateRoot(this.stateRoot, appName);
   }
 
-  setValue(valuePath, value, auth, timestamp, transaction, blockNumber, blockTime, options) {
+  setValue(valuePath, value, auth, transaction, options) {
     const LOG_HEADER = 'setValue';
     const isGlobal = options && options.isGlobal;
+    const timestamp = (options && options.timestamp !== undefined) ? options.timestamp : null;
+    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
+    let blockTime = (options && options.blockTime !== undefined) ? options.blockTime : null;
+    if (!blockTime) {
+      blockTime = this.lastBlockTimestamp();
+    }
     const parsedPath = CommonUtil.parsePath(valuePath);
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
@@ -870,9 +876,6 @@ class DB {
     let funcResults = null;
     let subtreeFuncResults = null;
     if (auth && (auth.addr || auth.fid)) {
-      if (blockTime === null) {
-        blockTime = this.lastBlockTimestamp();
-      }
       const accountRegistrationGasAmount = DB.getBlockchainParam(
           'resource/account_registration_gas_amount', blockNumber, this.stateRoot);
       const restFunctionCallGasAmount = DB.getBlockchainParam(
@@ -936,9 +939,7 @@ class DB {
 
   incValue(valuePath, delta, auth, transaction, options) {
     const isGlobal = options && options.isGlobal;
-    const timestamp = (options && options.timestamp !== undefined) ? options.timestamp : null;
     const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
-    const blockTime = (options && options.blockTime !== undefined) ? options.blockTime : null;
     const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
@@ -950,15 +951,12 @@ class DB {
           unitWriteGasAmount);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) + delta;
-    return this.setValue(
-        valuePath, valueAfter, auth, timestamp, transaction, blockNumber, blockTime, options);
+    return this.setValue(valuePath, valueAfter, auth, transaction, options);
   }
 
   decValue(valuePath, delta, auth, transaction, options) {
     const isGlobal = options && options.isGlobal;
-    const timestamp = (options && options.timestamp !== undefined) ? options.timestamp : null;
     const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
-    const blockTime = (options && options.blockTime !== undefined) ? options.blockTime : null;
     const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
@@ -970,8 +968,7 @@ class DB {
           unitWriteGasAmount);
     }
     const valueAfter = CommonUtil.numberOrZero(valueBefore) - delta;
-    return this.setValue(
-        valuePath, valueAfter, auth, timestamp, transaction, blockNumber, blockTime, options);
+    return this.setValue(valuePath, valueAfter, auth, transaction, options);
   }
 
   setFunction(functionPath, func, auth, options) {
@@ -1196,8 +1193,7 @@ class DB {
     switch (op.type) {
       case undefined:
       case WriteDbOperations.SET_VALUE:
-        result = this.setValue(
-            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime, options);
+        result = this.setValue(op.ref, op.value, auth, tx, options);
         break;
       case WriteDbOperations.INC_VALUE:
         result = this.incValue(op.ref, op.value, auth, tx, options);
@@ -1495,7 +1491,7 @@ class DB {
     return true;
   }
 
-  collectFee(auth, timestamp, tx, blockNumber, executionResult) {
+  collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult) {
     const gasPriceUnit = DB.getBlockchainParam('resource/gas_price_unit', blockNumber, this.stateRoot);
     const gasPrice = tx.tx_body.gas_price;
     // Use only the service gas amount total
@@ -1534,10 +1530,13 @@ class DB {
         CommonUtil.getTotalGasCost(gasPrice, executionResult.gas_amount_charged, gasPriceUnit);
     if (executionResult.gas_cost_total <= 0) return;
     const gasFeeCollectPath = PathUtil.getGasFeeCollectPath(blockNumber, billedTo, tx.hash);
+    const newOptions = {
+      timestamp,
+      blockNumber,
+      blockTime,
+    };
     const gasFeeCollectRes = this.setValue(
-        gasFeeCollectPath,
-        { amount: executionResult.gas_cost_total },
-        auth, timestamp, tx, blockNumber, null);
+        gasFeeCollectPath, { amount: executionResult.gas_cost_total }, auth, tx, newOptions);
     if (CommonUtil.isFailedTx(gasFeeCollectRes)) { // Should not happend
       Object.assign(executionResult, {
         code: TxResultCode.FEE_FAILED_TO_COLLECT_GAS_FEE,
@@ -1743,6 +1742,7 @@ class DB {
 
   executeTransaction(tx, skipFees = false, restoreIfFails = false, blockNumber = 0, blockTime = null) {
     const LOG_HEADER = 'executeTransaction';
+
     const precheckResult = this.precheckTransaction(tx, skipFees, blockNumber);
     if (precheckResult !== true) {
       logger.debug(`[${LOG_HEADER}] Pre-check failed`);
@@ -1773,7 +1773,7 @@ class DB {
       }
     }
     if (!skipFees) {
-      this.collectFee(auth, timestamp, tx, blockNumber, executionResult);
+      this.collectFee(auth, tx, timestamp, blockNumber, blockTime, executionResult);
       this.recordReceipt(auth, tx, blockNumber, executionResult);
     }
     return executionResult;
