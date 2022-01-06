@@ -767,7 +767,7 @@ class Functions {
     }
     const { isValidServiceName } = require('./state-util');
     const appName = context.params.app_name;
-    if (!isValidServiceName(appName)) {
+    if (!isValidServiceName(appName, context.blockNumber)) {
       return this.returnFuncResult(context, FunctionResultCode.INVALID_SERVICE_NAME);
     }
     const { sanitizedVal, errorCode } = this.sanitizeCreateAppConfig(value);
