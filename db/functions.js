@@ -92,13 +92,11 @@ class Functions {
    */
   // NOTE(platfowner): Validity checks on individual addresses are done by .write rules.
   matchAndTriggerFunctions(
-      parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
-      blockchainParams, options) {
+      parsedValuePath, value, prevValue, auth, transaction, blockchainParams, options) {
     const matchedFunction = this.db.matchFunctionForParsedPath(parsedValuePath);
     const triggerRes = this.triggerFunctions(
         matchedFunction.matchedFunction.path, matchedFunction.pathVars, matchedFunction.matchedFunction.config,
-        parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
-        blockchainParams, options);
+        parsedValuePath, value, prevValue, auth, transaction, blockchainParams, options);
     const subtreeFuncRes = {};
     for (const subtreeConfig of matchedFunction.subtreeFunctions) {
       const matchedPrevValues =
@@ -116,8 +114,8 @@ class Functions {
           const substreePrevValue = matchedPrevValue.value;
           const subtreeValuePathRes = this.triggerFunctions(
               subtreeFuncPath, pathVars, subtreeConfig.config,
-              subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
-              transaction, blockNumber, blockTime, blockchainParams, options);
+              subtreeValuePath, subtreeValue, substreePrevValue, auth, transaction,
+              blockchainParams, options);
           subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
         }
       }
@@ -134,8 +132,7 @@ class Functions {
             Functions.matchValueWithValuePath(prevValue, matchedValue.path);
         const subtreeValuePathRes = this.triggerFunctions(
             subtreeFuncPath, pathVars, subtreeConfig.config,
-            subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
-            transaction, blockNumber, blockTime,
+            subtreeValuePath, subtreeValue, substreePrevValue, auth, transaction,
             blockchainParams, options);
         subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
       }
@@ -148,12 +145,15 @@ class Functions {
   }
 
   triggerFunctions(
-      functionPath, pathVars, functionMap, valuePath, value, prevValue, auth, timestamp,
-      transaction, blockNumber, blockTime, blockchainParams, options) {
+      functionPath, pathVars, functionMap, valuePath, value, prevValue, auth, transaction,
+      blockchainParams, options) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const functionList = Functions.getFunctionList(functionMap);
     const params = Functions.convertPathVars2Params(pathVars);
+    const timestamp = (options && options.timestamp !== undefined) ? options.timestamp : null;
+    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
+    const blockTime = (options && options.blockTime !== undefined) ? options.blockTime : null;
     let triggerCount = 0;
     let failCount = 0;
     const promises = [];
@@ -468,8 +468,8 @@ class Functions {
   }
 
   setValueOrLog(valuePath, value, context) {
-    const timestamp = context.timestamp;
     const transaction = context.transaction;
+    const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
     const blockTime = context.blockTime;
     const auth = context.auth;
@@ -488,8 +488,8 @@ class Functions {
   }
 
   incValueOrLog(valuePath, delta, context) {
-    const timestamp = context.timestamp;
     const transaction = context.transaction;
+    const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
     const blockTime = context.blockTime;
     const auth = context.auth;
@@ -508,8 +508,8 @@ class Functions {
   }
 
   decValueOrLog(valuePath, delta, context) {
-    const timestamp = context.timestamp;
     const transaction = context.transaction;
+    const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
     const blockTime = context.blockTime;
     const auth = context.auth;

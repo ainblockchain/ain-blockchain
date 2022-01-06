@@ -900,8 +900,7 @@ class DB {
         networkId,
       };
       const { func_results, subtree_func_results } = this.func.matchAndTriggerFunctions(
-          localPath, valueCopy, prevValueCopy, auth, timestamp, transaction, blockNumber, blockTime,
-          blockchainParams, options);
+          localPath, valueCopy, prevValueCopy, auth, transaction, blockchainParams, options);
       funcResults = func_results;
       subtreeFuncResults = subtree_func_results;
       if (CommonUtil.isFailedFuncTrigger(funcResults)) {
