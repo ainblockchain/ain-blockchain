@@ -930,6 +930,9 @@ class CommonUtil {
     if (!flag) {
       return false;
     }
+    if (!CommonUtil.isNumber(blockNumber)) {
+      return false;
+    }
     const enabledBlock = flag['enabled_block'];
     if (enabledBlock === undefined || !CommonUtil.isNumber(enabledBlock) ||
         blockNumber < enabledBlock) {
