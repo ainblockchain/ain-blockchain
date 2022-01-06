@@ -519,8 +519,8 @@ class BlockchainNode {
   }
 
   getRewards() {
-    return this.db.getValue(CommonUtil.formatPath(
-        [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_REWARDS, this.account.address]));
+    return this.account ? this.db.getValue(CommonUtil.formatPath(
+        [PredefinedDbPaths.CONSENSUS, PredefinedDbPaths.CONSENSUS_REWARDS, this.account.address])) : null;
   }
 
   // TODO(liayoo): Rename lastBlockNumber to finalBlockNumber.
@@ -571,6 +571,7 @@ class BlockchainNode {
   }
 
   createSingleTransaction(txBody) {
+    if (!this.account) return null;
     if (txBody.nonce === undefined) {
       txBody.nonce = this.getNonce();
     }
