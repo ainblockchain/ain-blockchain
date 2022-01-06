@@ -912,7 +912,8 @@ class Consensus {
       return false;
     }
     let tempDb;
-    let blockNumber;
+    let prevBlockNumber;
+    let prevBlockTime;
     if (isAgainst) {
       const offenseType = ConsensusUtil.getOffenseTypeFromVoteTx(voteTx);
       if (!CommonUtil.isValidatorOffenseType(offenseType)) {
@@ -923,7 +924,8 @@ class Consensus {
       tempDb = this.node.createTempDb(
           this.node.stateManager.getFinalVersion(),
           `${StateVersions.SNAP}:${lastBlock.number}`, lastBlock.number);
-      blockNumber = this.node.bc.lastBlockNumber();
+      prevBlockNumber = this.node.bc.lastBlockNumber();
+      prevBlockTime = this.node.bc.lastBlockTimestamp();
     } else {
       const snapDb = this.getSnapDb(block);
       if (!snapDb) {
@@ -933,14 +935,15 @@ class Consensus {
       }
       tempDb = this.node.createTempDb(
           snapDb.stateVersion, `${StateVersions.SNAP}:${block.number}`, block.number);
-      blockNumber = block.number;
+      prevBlockNumber = block.number;
+      prevBlockTime = block.timestamp;
     }
     if (!tempDb) {
       logger.info(
           `[${LOG_HEADER}] Failed to create a temp state snapshot for vote ${JSON.stringify(executableTx)}`);
       return false;
     }
-    const voteTxRes = tempDb.executeTransaction(executableTx, true, false, blockNumber + 1, block.timestamp);
+    const voteTxRes = tempDb.executeTransaction(executableTx, true, false, prevBlockNumber + 1, prevBlockTime);
     tempDb.destroyDb();
     if (CommonUtil.isFailedTx(voteTxRes)) {
       logger.error(`[${LOG_HEADER}] Failed to execute the voting tx: ${JSON.stringify(voteTxRes)}`);
