@@ -2186,4 +2186,155 @@ describe("CommonUtil", () => {
       ]);
     });
   })
+
+  describe('hasTimerFlagEnabled', () => { 
+    it("when invalid input", () => {
+      expect(CommonUtil.hasTimerFlagEnabled({}, 'some_flag', 0)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled({}, 'some_flag', -1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled({}, 'some_flag', 100)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled({
+        'some_flag': null
+      }, 'some_flag', 100)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled({
+        'some_flag': {
+          'enabled_block': true,
+        }
+      }, 'some_flag', 100)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled({
+        'some_flag': {
+          'enabled_block': true,
+          'disabled_block': true,
+        }
+      }, 'some_flag', 100)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled({
+        'some_flag': {
+          'enabled_block': '0',
+          'disabled_block': '200',
+        }
+      }, 'some_flag', 100)).to.equal(false);
+    });
+
+    it("when valid input", () => {
+      const timerFlags = {
+        'flag_a': {
+        },
+        'flag_b': {
+          'enabled_block': null,
+        },
+        'flag_c': {
+          'enabled_block': null,
+          'disabled_block': null,
+        },
+        'flag_d': {
+          'enabled_block': 100,
+        },
+        'flag_e': {
+          'enabled_block': 200,
+          'disabled_block': null,
+        },
+        'flag_f': {
+          'enabled_block': 300,
+          'disabled_block': 350,
+        },
+        'flag_g': {
+          'enabled_block': 400,
+          'disabled_block': 401,
+        },
+        'flag_h': {
+          'enabled_block': 500,
+          'disabled_block': 500,
+        },
+        'flag_i': {
+          'enabled_block': 600,
+          'disabled_block': 550,
+        },
+      };
+
+      // without enabled_block no disabled_block
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_a', undefined)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_a', null)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_a', -1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_a', 0)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_a', 1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(
+          timerFlags, 'flag_a', Number.MAX_SAFE_INTEGER)).to.equal(false);
+      // with null enabled_block and without disabled_block
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_b', undefined)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_b', null)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_b', -1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_b', 0)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_b', 1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(
+          timerFlags, 'flag_b', Number.MAX_SAFE_INTEGER)).to.equal(false);
+      // with null enabled_block and disabled_block
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_c', undefined)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_c', null)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_c', -1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_c', 0)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_c', 1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(
+          timerFlags, 'flag_c', Number.MAX_SAFE_INTEGER)).to.equal(false);
+      // without disabled_block
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_d', undefined)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_d', null)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_d', -1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_d', 0)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_d', 99)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_d', 100)).to.equal(true);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_d', 150)).to.equal(true);
+      expect(CommonUtil.hasTimerFlagEnabled(
+          timerFlags, 'flag_d', Number.MAX_SAFE_INTEGER)).to.equal(true);
+      // with null disabled_block
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_e', undefined)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_e', null)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_e', -1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_e', 0)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_e', 199)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_e', 200)).to.equal(true);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_e', 250)).to.equal(true);
+      expect(CommonUtil.hasTimerFlagEnabled(
+          timerFlags, 'flag_e', Number.MAX_SAFE_INTEGER)).to.equal(true);
+      // with numeric disabled_block
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_f', undefined)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_f', null)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_f', -1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_f', 0)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_f', 299)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_f', 300)).to.equal(true);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_f', 349)).to.equal(true);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_f', 350)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(
+          timerFlags, 'flag_f', Number.MAX_SAFE_INTEGER)).to.equal(false);
+      // with tight disabled_block
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_g', undefined)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_g', null)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_g', -1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_g', 0)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_g', 399)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_g', 400)).to.equal(true);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_g', 401)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(
+          timerFlags, 'flag_g', Number.MAX_SAFE_INTEGER)).to.equal(false);
+      // with equal disabled_block
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_h', undefined)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_h', null)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_h', -1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_h', 0)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_h', 499)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_h', 500)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_h', 501)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(
+          timerFlags, 'flag_h', Number.MAX_SAFE_INTEGER)).to.equal(false);
+      // with smaller disabled_block
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_i', undefined)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_i', null)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_i', -1)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_i', 0)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_i', 699)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_i', 600)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(timerFlags, 'flag_i', 601)).to.equal(false);
+      expect(CommonUtil.hasTimerFlagEnabled(
+          timerFlags, 'flag_i', Number.MAX_SAFE_INTEGER)).to.equal(false);
+    });
+  })
 })

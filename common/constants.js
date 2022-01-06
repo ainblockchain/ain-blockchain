@@ -55,7 +55,13 @@ if (!semver.valid(BlockchainConsts.CONSENSUS_PROTOCOL_VERSION)) {
   throw Error('Wrong data version format is specified for CONSENSUS_PROTOCOL_VERSION');
 }
 
-// ** Blockchain Params **
+// ** Timer flags **
+const TimerFlags = getBlockchainConfig('timer_flags.json');
+function isEnabledTimerFlag(flagName, blockNumber) {
+  return CommonUtil.hasTimerFlagEnabled(TimerFlags, flagName, blockNumber);
+}
+
+// ** Blockchain params **
 const BlockchainParams = getBlockchainConfig('blockchain_params.json');
 
 // ** Node configs, set for individual nodes by env vars **
@@ -611,12 +617,12 @@ const BlockchainEventMessageTypes = {
   EMIT_EVENT: 'EMIT_EVENT',
 };
 
-// ** Lists **
+// ** Lists & Sets **
 
 /**
  * Root labels of service paths.
  */
-const SERVICE_TYPES = [
+const SERVICE_TYPE_SET = new Set([
   PredefinedDbPaths.ACCOUNTS,
   PredefinedDbPaths.CHECKIN,
   PredefinedDbPaths.CHECKOUT,
@@ -628,36 +634,46 @@ const SERVICE_TYPES = [
   PredefinedDbPaths.SHARDING,
   PredefinedDbPaths.STAKING,
   PredefinedDbPaths.TRANSFER,
-];
+]);
 
 function isServiceType(type) {
-  return SERVICE_TYPES.includes(type);
+  return SERVICE_TYPE_SET.has(type);
 }
 
 /**
- * Service types allowed to create service accounts.
+ * Set of service types allowed to create service accounts.
  */
-const SERVICE_ACCOUNT_SERVICE_TYPES = [
+const SERVICE_ACCOUNT_SERVICE_TYPE_SET = new Set([
   PredefinedDbPaths.GAS_FEE_BILLING,
   PredefinedDbPaths.ESCROW,
   PredefinedDbPaths.GAS_FEE,
   PredefinedDbPaths.PAYMENTS,
   PredefinedDbPaths.STAKING,
-];
+]);
 
 function isServiceAccountServiceType(type) {
-  return SERVICE_ACCOUNT_SERVICE_TYPES.includes(type);
+  return SERVICE_ACCOUNT_SERVICE_TYPE_SET.has(type);
 }
 
 /**
- * Service types that are app-dependent.
+ * Set of app-dependent service types.
  */
-const APP_DEPENDENT_SERVICE_TYPES = [
+const APP_DEPENDENT_SERVICE_TYPE_SET = new Set([
   PredefinedDbPaths.MANAGE_APP,
   PredefinedDbPaths.PAYMENTS,
   PredefinedDbPaths.STAKING,
-];
+]);
 
+/**
+ * Set of reserved service (or app) names.
+ */
+const RESERVED_SERVICE_NAME_SET = new Set([
+  'balance_total_sum',
+]);
+
+/**
+ * List of exposed env variables.
+ */
 const EXPOSED_ENV_VARIABLE_LIST = [
   'BLOCKCHAIN_CONFIGS_DIR',
   'HOSTING_ENV',
@@ -685,7 +701,11 @@ function getEnvVariables() {
 }
 
 function isAppDependentServiceType(type) {
-  return APP_DEPENDENT_SERVICE_TYPES.includes(type);
+  return APP_DEPENDENT_SERVICE_TYPE_SET.has(type);
+}
+
+function isReservedServiceName(name) {
+  return RESERVED_SERVICE_NAME_SET.has(name);
 }
 
 function getBlockchainConfig(filename) {
@@ -731,6 +751,9 @@ const trafficStatsManager = new TrafficStatsManager(
 module.exports = {
   DevFlags,
   BlockchainConsts,
+  TimerFlags,
+  isEnabledTimerFlag,
+  BlockchainParams,
   NodeConfigs,
   MessageTypes,
   BlockchainNodeStates,
@@ -759,10 +782,10 @@ module.exports = {
   BlockchainEventMessageTypes,
   isServiceType,
   isServiceAccountServiceType,
+  isReservedServiceName,
   getEnvVariables,
   isAppDependentServiceType,
   buildOwnerPermissions,
   buildRulePermission,
-  BlockchainParams,
   trafficStatsManager,
 };
