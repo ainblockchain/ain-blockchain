@@ -295,7 +295,7 @@ if [[ $KEEP_DATA_OPTION = "" ]]; then
     SNAPSHOTS_DIR=/home/ain_blockchain_data/snapshots
     LOGS_DIR=/home/ain_blockchain_data/logs
     START_TRACKER_CMD_BASE="sudo rm -rf /home/ain_blockchain_data/ && $GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
-    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && cd $GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_gcp.sh"
+    START_NODE_CMD_BASE="sudo rm -rf $CHAINS_DIR $SNAPSHOTS_DIR $LOGS_DIR && $GO_TO_PROJECT_ROOT_CMD && . start_node_incremental_gcp.sh"
 else
     # restart with existing chains, snapshots, and log files
     START_TRACKER_CMD_BASE="$GO_TO_PROJECT_ROOT_CMD && . start_tracker_incremental_gcp.sh"
