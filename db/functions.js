@@ -255,6 +255,8 @@ class Functions {
               blockNumber,
               blockTime,
               auth: newAuth,
+              chainId: blockchainParams.chainId,
+              networkId: blockchainParams.networkId,
             }, {
               timeout: NodeConfigs.REST_FUNCTION_CALL_TIMEOUT_MS
             }).catch((error) => {
