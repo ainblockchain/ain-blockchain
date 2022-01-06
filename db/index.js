@@ -934,8 +934,11 @@ class DB {
         subtreeFuncResults);
   }
 
-  incValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
+  incValue(valuePath, delta, auth, transaction, options) {
     const isGlobal = options && options.isGlobal;
+    const timestamp = (options && options.timestamp !== undefined) ? options.timestamp : null;
+    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
+    const blockTime = (options && options.blockTime !== undefined) ? options.blockTime : null;
     const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
@@ -951,8 +954,11 @@ class DB {
         valuePath, valueAfter, auth, timestamp, transaction, blockNumber, blockTime, options);
   }
 
-  decValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, options) {
+  decValue(valuePath, delta, auth, transaction, options) {
     const isGlobal = options && options.isGlobal;
+    const timestamp = (options && options.timestamp !== undefined) ? options.timestamp : null;
+    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
+    const blockTime = (options && options.blockTime !== undefined) ? options.blockTime : null;
     const valueBefore = this.getValue(valuePath, { isGlobal });
     logger.debug(`VALUE BEFORE:  ${JSON.stringify(valueBefore)}`);
     if ((valueBefore !== null && !CommonUtil.isNumber(valueBefore)) || !CommonUtil.isNumber(delta)) {
@@ -968,8 +974,9 @@ class DB {
         valuePath, valueAfter, auth, timestamp, transaction, blockNumber, blockTime, options);
   }
 
-  setFunction(functionPath, func, auth, blockNumber, options) {
+  setFunction(functionPath, func, auth, options) {
     const isGlobal = options && options.isGlobal;
+    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasAmount = DB.getBlockchainParam(
@@ -1030,8 +1037,9 @@ class DB {
         unitWriteGasAmount);
   }
 
-  setRule(rulePath, rule, auth, blockNumber, options) {
+  setRule(rulePath, rule, auth, options) {
     const isGlobal = options && options.isGlobal;
+    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasAmount = DB.getBlockchainParam(
@@ -1085,8 +1093,9 @@ class DB {
         unitWriteGasAmount);
   }
 
-  setOwner(ownerPath, owner, auth, blockNumber, options) {
+  setOwner(ownerPath, owner, auth, options) {
     const isGlobal = options && options.isGlobal;
+    const blockNumber = (options && options.blockNumber !== undefined) ? options.blockNumber : null;
     const stateLabelLengthLimit = DB.getBlockchainParam(
         'resource/state_label_length_limit', blockNumber, this.stateRoot);
     const unitWriteGasAmount = DB.getBlockchainParam(
@@ -1191,21 +1200,19 @@ class DB {
             op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime, options);
         break;
       case WriteDbOperations.INC_VALUE:
-        result = this.incValue(
-            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime, options);
+        result = this.incValue(op.ref, op.value, auth, tx, options);
         break;
       case WriteDbOperations.DEC_VALUE:
-        result = this.decValue(
-            op.ref, op.value, auth, timestamp, tx, blockNumber, blockTime, options);
+        result = this.decValue(op.ref, op.value, auth, tx, options);
         break;
       case WriteDbOperations.SET_FUNCTION:
-        result = this.setFunction(op.ref, op.value, auth, blockNumber, options);
+        result = this.setFunction(op.ref, op.value, auth, options);
         break;
       case WriteDbOperations.SET_RULE:
-        result = this.setRule(op.ref, op.value, auth, blockNumber, options);
+        result = this.setRule(op.ref, op.value, auth, options);
         break;
       case WriteDbOperations.SET_OWNER:
-        result = this.setOwner(op.ref, op.value, auth, blockNumber, options);
+        result = this.setOwner(op.ref, op.value, auth, options);
         break;
       default:
         const unitWriteGasAmount = DB.getBlockchainParam(

@@ -298,7 +298,7 @@ app.post('/eval_rule', (req, res, next) => {
   if (body.fid) {
     auth.fid = body.fid;
   }
-  const timestamp = op.timestamp || Date.now();
+  const timestamp = body.timestamp || Date.now();
   const options = Object.assign(CommonUtil.toMatchOrEvalOptions(body, true), { timestamp });
   const result = node.db.evalRule(body.ref, body.value, auth, options);
   const latency = Date.now() - beginTime;
