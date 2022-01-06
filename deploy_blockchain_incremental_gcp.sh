@@ -248,6 +248,7 @@ function deploy_node() {
             echo 0
         } | node inject_account_gcp.js $node_ip_addr $ACCOUNT_INJECTION_OPTION
     else
+        local node_ip_addr=${IP_ADDR_LIST[${node_index}]}
         printf "\n* >> Injecting an account for node $node_index ********************\n\n"
         printf "node_ip_addr='$node_ip_addr'\n"
         local GENESIS_ACCOUNTS_PATH="blockchain-configs/base/genesis_accounts.json"
