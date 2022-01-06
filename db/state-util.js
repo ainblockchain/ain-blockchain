@@ -14,6 +14,7 @@ const {
   OwnerProperties,
   ShardingProperties,
   StateLabelProperties,
+  isReservedServiceName,
 } = require('../common/constants');
 
 const WRITE_RULE_ECMA_VERSION = 12;
@@ -144,6 +145,9 @@ function hasAllowedPattern(label) {
 }
 
 function isValidServiceName(name, blockNumber = null) {
+  if (isReservedServiceName(name)) {
+    return false;
+  }
   if (CommonUtil.isNumber(blockNumber) &&
       isEnabledTimerFlag('allow_lower_case_app_names_only', blockNumber)) {
     return hasServiceNamePattern(name);

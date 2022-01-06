@@ -389,6 +389,11 @@ describe("state-util", () => {
       expect(isValidServiceName('collaborative_ai', 1)).to.equal(true);
       expect(isValidServiceName('_a_dapp', 1)).to.equal(true);
     })
+
+    it("when reserved service name input returning false", () => {
+      expect(isValidServiceName('balance_total_sum', 0)).to.equal(false);
+      expect(isValidServiceName('balance_total_sum', 1)).to.equal(false);
+    })
   })
 
   describe("isValidStateLabel", () => {
