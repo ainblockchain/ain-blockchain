@@ -273,7 +273,7 @@ class BlockchainNode {
     logger.info(`[${LOG_HEADER}] Executing the transaction from the tx pool..`);
     this.db.executeTransactionList(
         this.tp.getValidTransactions(null, this.stateManager.getFinalVersion()), false, true,
-        this.bc.lastBlockNumber() + 1);
+        this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp());
 
     // 6. Node status changed: STARTING -> SYNCING.
     this.state = BlockchainNodeStates.SYNCING;
@@ -635,7 +635,8 @@ class BlockchainNode {
           `[${LOG_HEADER}] Tx pool does NOT have enough room (${perAccountPoolSize}) ` +
           `for account: ${executableTx.address}`);
     }
-    const result = this.db.executeTransaction(executableTx, false, true, this.bc.lastBlockNumber() + 1);
+    const result = this.db.executeTransaction(
+        executableTx, false, true, this.bc.lastBlockNumber() + 1, this.bc.lastBlockTimestamp());
     if (CommonUtil.isFailedTx(result)) {
       if (DevFlags.enableRichTransactionLogging) {
         logger.error(
