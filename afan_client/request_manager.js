@@ -1,6 +1,9 @@
 const _ = require('lodash');
 const Ref = require('./ref');
 const axios = require('axios');
+const { NodeConfigs } = require('../common/constants');
+
+axios.defaults.timeout = NodeConfigs.DEFAULT_AXIOS_REQUEST_TIMEOUT;
 
 class RequestManager {
   constructor(endpoint, root) {
