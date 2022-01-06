@@ -85,6 +85,7 @@ class RuleUtil {
     return this.isValAddr(addr) && addr === ainUtil.toChecksumAddress(addr);
   }
 
+  // TODO(platfowner): Update related write rule and pass blockNumber as a parameter.
   isServAcntName(name) {
     const { isServiceAccountServiceType } = require('../common/constants');
     const { isValidServiceName } = require('./state-util');
