@@ -538,7 +538,7 @@ class Consensus {
 
   static getNewDbForProposal(number, baseVersion, stateVersionPrefix, node) {
     const newDb = node.createTempDb(
-        baseVersion, `${stateVersionPrefix}:${number - 1}:${number}`, number - 1);
+        baseVersion, `${stateVersionPrefix}:${number - 1}:${number}`, number);
     if (!newDb) {
       throw new ConsensusError({
         code: ConsensusErrorCode.TEMP_DB_CREATION_FAILURE,
@@ -796,7 +796,6 @@ class Consensus {
       });
     }
     node.tp.addTransaction(executableTx);
-    db.blockNumberSnapshot += 1;
   }
 
   static addBlockToBlockPool(block, proposalTx, db, blockPool) {
