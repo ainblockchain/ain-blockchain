@@ -484,8 +484,10 @@ class BlockchainNode {
     };
     const available = {
       tree_height: stateTreeHeightLimit,
-      tree_size: Math.max(0, (appsTreeSizeBudget * appStakeRatio) - usage.tree_size),
-      tree_bytes: Math.max(0, (appsStateBudget * appStakeRatio) - usage.tree_bytes),
+      tree_size: appStake > 0 ? Math.max(0, appsTreeSizeBudget * appStakeRatio - usage.tree_size)
+          : Math.max(0, freeTreeSizeBudget - freeTierTreeSize),
+      tree_bytes: appStake > 0 ? Math.max(0, appsStateBudget * appStakeRatio - usage.tree_bytes)
+          : Math.max(0, freeStateBudget - freeTierTreeBytes),
     };
     const staking = {
       app: appStake,
