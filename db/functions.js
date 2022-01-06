@@ -98,7 +98,7 @@ class Functions {
     const triggerRes = this.triggerFunctions(
         matchedFunction.matchedFunction.path, matchedFunction.pathVars, matchedFunction.matchedFunction.config,
         parsedValuePath, value, prevValue, auth, timestamp, transaction, blockNumber, blockTime,
-        blockchainParams);
+        blockchainParams, options);
     const subtreeFuncRes = {};
     for (const subtreeConfig of matchedFunction.subtreeFunctions) {
       const matchedPrevValues =
@@ -117,7 +117,7 @@ class Functions {
           const subtreeValuePathRes = this.triggerFunctions(
               subtreeFuncPath, pathVars, subtreeConfig.config,
               subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
-              transaction, blockNumber, blockTime, blockchainParams);
+              transaction, blockNumber, blockTime, blockchainParams, options);
           subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
         }
       }
@@ -136,7 +136,7 @@ class Functions {
             subtreeFuncPath, pathVars, subtreeConfig.config,
             subtreeValuePath, subtreeValue, substreePrevValue, auth, timestamp,
             transaction, blockNumber, blockTime,
-            blockchainParams);
+            blockchainParams, options);
         subtreeFuncPathRes[pathKey] = subtreeValuePathRes;
       }
       subtreeFuncRes[CommonUtil.formatPath(subtreeConfig.path)] = subtreeFuncPathRes;
@@ -149,7 +149,7 @@ class Functions {
 
   triggerFunctions(
       functionPath, pathVars, functionMap, valuePath, value, prevValue, auth, timestamp,
-      transaction, blockNumber, blockTime, blockchainParams) {
+      transaction, blockNumber, blockTime, blockchainParams, options) {
     // NOTE(platfowner): It is assumed that the given transaction is in an executable form.
     const executedAt = transaction.extra.executed_at;
     const functionList = Functions.getFunctionList(functionMap);
@@ -206,6 +206,7 @@ class Functions {
                     transaction,
                     blockNumber,
                     blockTime,
+                    options,
                     auth: newAuth,
                     opResultList: [],
                     otherGasAmount: 0,
@@ -256,6 +257,7 @@ class Functions {
               transaction,
               blockNumber,
               blockTime,
+              options,
               auth: newAuth,
               chainId: blockchainParams.chainId,
               networkId: blockchainParams.networkId,
@@ -471,8 +473,13 @@ class Functions {
     const blockNumber = context.blockNumber;
     const blockTime = context.blockTime;
     const auth = context.auth;
-    const result =
-        this.db.setValue(valuePath, value, auth, timestamp, transaction, blockNumber, blockTime);
+    const newOptions = {
+      timestamp,
+      blockNumber,
+      blockTime,
+    };
+    const result = this.db.setValue(
+        valuePath, value, auth, timestamp, transaction, blockNumber, blockTime, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -487,8 +494,13 @@ class Functions {
     const blockNumber = context.blockNumber;
     const blockTime = context.blockTime;
     const auth = context.auth;
-    const result =
-        this.db.incValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime);
+    const newOptions = {
+      timestamp,
+      blockNumber,
+      blockTime,
+    };
+    const result = this.db.incValue(
+        valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to incValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -503,8 +515,13 @@ class Functions {
     const blockNumber = context.blockNumber;
     const blockTime = context.blockTime;
     const auth = context.auth;
-    const result =
-        this.db.decValue(valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime);
+    const newOptions = {
+      timestamp,
+      blockNumber,
+      blockTime,
+    };
+    const result = this.db.decValue(
+        valuePath, delta, auth, timestamp, transaction, blockNumber, blockTime, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to decValue on '${valuePath}' with error: ${JSON.stringify(result)}`);
@@ -526,8 +543,15 @@ class Functions {
 
   setOwnerOrLog(ownerPath, owner, context) {
     const auth = context.auth;
+    const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
-    const result = this.db.setOwner(ownerPath, owner, auth, blockNumber);
+    const blockTime = context.blockTime;
+    const newOptions = {
+      timestamp,
+      blockNumber,
+      blockTime,
+    };
+    const result = this.db.setOwner(ownerPath, owner, auth, blockNumber, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setOwner on '${ownerPath}' with error: ${JSON.stringify(result)}`);
@@ -538,8 +562,15 @@ class Functions {
 
   setRuleOrLog(rulePath, rule, context) {
     const auth = context.auth;
+    const timestamp = context.timestamp;
     const blockNumber = context.blockNumber;
-    const result = this.db.setRule(rulePath, rule, auth, blockNumber);
+    const blockTime = context.blockTime;
+    const newOptions = {
+      timestamp,
+      blockNumber,
+      blockTime,
+    };
+    const result = this.db.setRule(rulePath, rule, auth, blockNumber, newOptions);
     if (CommonUtil.isFailedTx(result)) {
       logger.error(
           `  ==> Failed to setRule on '${rulePath}' with error: ${JSON.stringify(result)}`);
