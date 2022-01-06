@@ -3890,7 +3890,8 @@ describe("DB operations", () => {
           });
         }
         const overSizeTx = Transaction.fromTxBody(overSizeTxBody, node.account.private_key);
-        const res = node.db.executeTransaction(overSizeTx, false, true, node.bc.lastBlockNumber() + 1);
+        const res = node.db.executeTransaction(
+            overSizeTx, false, true, node.bc.lastBlockNumber() + 1, node.bc.lastBlockTimestamp());
         assert.deepEqual(res.code, 10901);
         assert.deepEqual(res.message.includes("Exceeded state budget limit for services"), true);
         assert.deepEqual(res.gas_amount_total, expectedGasAmountTotal);

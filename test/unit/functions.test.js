@@ -296,7 +296,11 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRest), value, "prev value", { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
+            tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         assert.deepEqual(triggerRes.func_results, {
           "0x00001": {
             "code": 0,
@@ -334,7 +338,11 @@ describe("Functions", () => {
                 "path",
                 "rest",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {},
               "prevValue": "prev value",
               "timestamp": 1234567890000,
@@ -388,7 +396,11 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestVarPath), value, "prev value", { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
+            tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         assert.deepEqual(triggerRes.func_results, {
           "0x10001": {
             "code": 0,
@@ -426,7 +438,11 @@ describe("Functions", () => {
                 "$var_path",
                 "rest",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "arbitrary"
               },
@@ -482,7 +498,11 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestMulti), value, "prev value", { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
+            tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         assert.deepEqual(triggerRes.func_results, {
           "0x20001": {
             "code": 0,
@@ -524,7 +544,11 @@ describe("Functions", () => {
                 "path",
                 "rest_multi",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {},
               "prevValue": "prev value",
               "timestamp": 1234567890000,
@@ -579,7 +603,11 @@ describe("Functions", () => {
                 "path",
                 "rest_multi",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {},
               "prevValue": "prev value",
               "timestamp": 1234567890000,
@@ -648,7 +676,11 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestWithSubtree), value, prevValue, { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
+            tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         assert.deepEqual(triggerRes.func_results, {
           "0x30001": {
             "code": 0,
@@ -735,7 +767,11 @@ describe("Functions", () => {
                 "path",
                 "rest_with_subtree",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {},
               "prevValue": null,
               "timestamp": 1234567890000,
@@ -818,7 +854,11 @@ describe("Functions", () => {
                 "path",
                 "rest_with_subtree",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {},
               "prevValue": null,
               "timestamp": 1234567890000,
@@ -903,7 +943,11 @@ describe("Functions", () => {
                 "deep",
                 "path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {},
               "prevValue": null,
               "timestamp": 1234567890000,
@@ -978,7 +1022,11 @@ describe("Functions", () => {
                 "deep",
                 "path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {},
               "prevValue": null,
               "timestamp": 1234567890000,
@@ -1053,7 +1101,11 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "path"
               },
@@ -1128,7 +1180,11 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "other_path"
               },
@@ -1205,7 +1261,11 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "path"
               },
@@ -1280,7 +1340,11 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "other_path"
               },
@@ -1386,7 +1450,11 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestWithSubtree), value, prevValue, { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
+            tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         assert.deepEqual(triggerRes.func_results, {
           "0x30001": {
             "code": 0,
@@ -1500,7 +1568,11 @@ describe("Functions", () => {
                 "path",
                 "rest_with_subtree",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {},
               "prevValue": {  // non-null prevValue case only!
                 "deep": {
@@ -1596,7 +1668,11 @@ describe("Functions", () => {
                 "path",
                 "rest_with_subtree",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {},
               "prevValue": {  // non-null prevValue case only!
                 "deep": {
@@ -1694,7 +1770,11 @@ describe("Functions", () => {
                 "deep",
                 "path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {},
               "prevValue": {  // non-null prevValue case only!
                 "to": "PREVIOUS: deep path to value"
@@ -1771,7 +1851,11 @@ describe("Functions", () => {
                 "deep",
                 "path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {},
               "prevValue": {  // non-null prevValue case only!
                 "to": "PREVIOUS: deep path to value"
@@ -1848,7 +1932,11 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "existing_path"
               },
@@ -1927,7 +2015,11 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "path"
               },
@@ -2004,7 +2096,11 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "other_path"
               },
@@ -2081,7 +2177,11 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "existing_path"
               },
@@ -2160,7 +2260,11 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "path"
               },
@@ -2237,7 +2341,11 @@ describe("Functions", () => {
                 "deep",
                 "$var_path",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "other_path"
               },
@@ -2316,7 +2424,11 @@ describe("Functions", () => {
                 "to",
                 "$var_path2",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "existing_path",
                 "var_path2": "existing_path2",
@@ -2398,7 +2510,11 @@ describe("Functions", () => {
                 "to",
                 "$var_path2",
               ],
-              "options": {},
+              "options": {
+                "timestamp": 1234567890000,
+                "blockNumber": 1000,
+                "blockTime": 1234567890999,
+              },
               "params": {
                 "var_path": "existing_path",
                 "var_path2": "existing_path2",
@@ -2475,7 +2591,11 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestWithoutListener), value, "prev value", { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
+            tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -2505,7 +2625,11 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestNotWhitelisted), value, "prev value", { addr: 'abcd' },
-            1234567890000, tx, 1000, 1234567890999, blockchainParams, {});
+            tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -2546,8 +2670,11 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestNewlyWhitelisted),
-            value, "prev value", { addr: 'abcd' }, 1234567890000, tx, 1000, 1234567890999,
-            blockchainParams, {});
+            value, "prev value", { addr: 'abcd' }, tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -2580,8 +2707,11 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestNewlyWhitelisted),
-            value, "prev value", { addr: 'abcd' }, 1234567890000, tx, 1000, 1234567890999,
-            blockchainParams, {});
+            value, "prev value", { addr: 'abcd' }, tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -2611,8 +2741,11 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathNull),
-            value, "prev value", { addr: 'abcd' }, 1234567890000, tx, 1000, 1234567890999,
-            blockchainParams, {});
+            value, "prev value", { addr: 'abcd' }, tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         return triggerRes.func_promises.then((resp) => {
           assert.deepEqual(resp, {
             func_count: 1,
@@ -2670,8 +2803,11 @@ describe("Functions", () => {
         const tx = Transaction.fromTxBody(txBody, null);
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathTransfer), value, null,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322, tx,
-            1000, 1234567890999, blockchainParams, {});
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         assert.deepEqual(triggerRes.func_results, {
           "_transfer": {
             "op_results": {
@@ -2720,8 +2856,11 @@ describe("Functions", () => {
         const tx = Transaction.fromTxBody(txBody, null);
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathTransfer), value, null,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322, tx,
-            1000, 1234567890999, blockchainParams, {});
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         assert.deepEqual(triggerRes.func_results, {
           "_transfer": {
             "op_results": {
@@ -2774,8 +2913,11 @@ describe("Functions", () => {
         }
         const triggerRes = functions.matchAndTriggerFunctions(
             CommonUtil.parsePath(refPathRestGas), value, null,
-            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, 1566736760322, tx,
-            1000, 1234567890999, blockchainParams, {});
+            { addr: '0x09A0d53FDf1c36A131938eb379b98910e55EEfe1' }, tx, blockchainParams, {
+              timestamp: 1234567890000,
+              blockNumber: 1000,
+              blockTime: 1234567890999,
+            });
         assert.deepEqual(triggerRes.func_results, {
           "0x90001": {
             "code": 0,
