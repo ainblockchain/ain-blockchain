@@ -86,7 +86,7 @@ class RuleUtil {
   }
 
   // TODO(platfowner): Update related write rule and pass blockNumber as a parameter.
-  isServAcntName(name) {
+  isServAcntName(name, blockNumber = null) {
     const { isServiceAccountServiceType } = require('../common/constants');
     const { isValidServiceName } = require('./state-util');
 
@@ -97,7 +97,7 @@ class RuleUtil {
     if (parsed.length < 3) {
       return false;
     }
-    return isServiceAccountServiceType(parsed[0]) && isValidServiceName(parsed[1]);
+    return isServiceAccountServiceType(parsed[0]) && isValidServiceName(parsed[1], blockNumber);
   }
 
   isValShardProto(value) {

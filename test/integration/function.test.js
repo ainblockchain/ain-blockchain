@@ -1516,7 +1516,8 @@ describe('Native Function', () => {
       });
 
       it("when successful with valid app name", async () => {
-        const manageAppPath = '/manage_app/test_service_create_app0/create/1';
+        const appName = 'test_service_create_app0';
+        const manageAppPath = `/manage_app/${appName}/create/1`;
         const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: manageAppPath,
           value: {
@@ -1577,7 +1578,8 @@ describe('Native Function', () => {
       });
 
       it("when successful with null value", async () => {
-        const manageAppPath = '/manage_app/0test_service_create_app/create/1';
+        const invalidAppName = 'Test_Service_Create_App0';
+        const manageAppPath = `/manage_app/${invalidAppName}/create/1`;
         const body = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: manageAppPath,
           value: null,
@@ -1592,7 +1594,8 @@ describe('Native Function', () => {
       });
 
       it("when failed with invalid app name", async () => {
-        const manageAppPath = '/manage_app/0test_service_create_app/create/1';
+        const invalidAppName = 'Test_Service_Create_App0';
+        const manageAppPath = `/manage_app/${invalidAppName}/create/1`;
         const createAppRes = parseOrLog(syncRequest('POST', server2 + '/set_value', {json: {
           ref: manageAppPath,
           value: {
@@ -1623,7 +1626,7 @@ describe('Native Function', () => {
             },
             "gas_cost_total": 0
           },
-          "tx_hash": "0x60f6a71fedc8bbe457680ff6cf2e24b5c2097718f226c4f40fb4f9849d52f7fa"
+          "tx_hash": "0x991cb7e7f5173275bef273fbf37e9e25b9075672da2ddc717eede1591de36fd6"
         });
         if (!(await waitUntilTxFinalized(serverList, _.get(createAppRes, 'tx_hash')))) {
           console.error(`Failed to check finalization of tx.`);
@@ -1631,8 +1634,9 @@ describe('Native Function', () => {
       });
 
       it('create a public app', async () => {
+        const appName = 'test_service_create_app1';
         const appStakingPath =
-            `/staking/test_service_create_app1/${serviceAdmin}/0/stake/${Date.now()}/value`;
+            `/staking/${appName}/${serviceAdmin}/0/stake/${Date.now()}/value`;
         const appStakingRes = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: appStakingPath,
           value: 1
@@ -2200,11 +2204,14 @@ describe('Native Function', () => {
       });
 
       it('transfer: transfer with valid service account service type', async () => {
+        const serviceType = 'staking';
+        const serviceName = 'test_service';
+
         let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
-        const transferToService = `staking|test_service|${transferTo}|0`;
+        const transferToService = `${serviceType}|${serviceName}|${transferTo}|0`;
         const transferToServiceBalancePath =
-            `/service_accounts/staking/test_service/${transferTo}|0/balance`;
+            `/service_accounts/${serviceType}/${serviceName}/${transferTo}|0/balance`;
         const toServiceBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferToServiceBalancePath}`)
             .body.toString('utf-8')).result || 0;
@@ -2263,9 +2270,12 @@ describe('Native Function', () => {
       });
 
       it('transfer: transfer with invalid service account service type', async () => {
+        const invalidServiceType = 'invalid_service_type';
+        const serviceName = 'test_service';
+
         let fromBeforeBalance = parseOrLog(syncRequest('GET',
             server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
-        const transferToService = `invalid_service_type|test_service|${transferTo}|0`;
+        const transferToService = `${invalidServiceType}|${serviceName}|${transferTo}|0`;
         const transferServicePath = `/transfer/${transferFrom}/${transferToService}`;
         const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
           ref: transferServicePath + '/1/value',
@@ -2301,6 +2311,51 @@ describe('Native Function', () => {
         const fromAfterBalance = parseOrLog(syncRequest('GET',
             server1 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
         expect(fromAfterBalance).to.equal(fromBeforeBalance);
+      });
+
+      it('transfer: transfer with invalid service account service name', async () => {
+        const serviceType = 'staking';
+        const invalidServiceName = 'Test_Service';
+
+        let fromBeforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
+        const transferToService = `${serviceType}|${invalidServiceName}|${transferTo}|0`;
+        const transferToServiceBalancePath =
+            `/service_accounts/${serviceType}/${invalidServiceName}/${transferTo}|0/balance`;
+        const toServiceBeforeBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferToServiceBalancePath}`)
+            .body.toString('utf-8')).result;
+        const transferServicePath = `/transfer/${transferFrom}/${transferToService}`;
+        const body = parseOrLog(syncRequest('POST', server1 + '/set_value', {json: {
+          ref: transferServicePath + '/2/value',
+          value: transferAmount,
+          nonce: -1,
+          timestamp: 1234567890001,
+        }}).body.toString('utf-8'));
+        assert.deepEqual(eraseStateGas(_.get(body, 'result.result')), {
+          "bandwidth_gas_amount": 1,
+          "code": 12103,
+          "gas_amount_charged": "erased",
+          "gas_amount_total": {
+            "bandwidth": {
+              "service": 1
+            },
+            "state": {
+              "service": "erased"
+            }
+          },
+          "gas_cost_total": 0,
+          "message": "Write rule evaluated false: [(auth.addr === $from || auth.fid === '_stake' || auth.fid === '_unstake' || auth.fid === '_pay' || auth.fid === '_claim' || auth.fid === '_hold' || auth.fid === '_release' || auth.fid === '_collectFee' || auth.fid === '_claimReward' || auth.fid === '_openCheckout' || auth.fid === '_closeCheckout' || auth.fid === '_closeCheckin') && !getValue('transfer/' + $from + '/' + $to + '/' + $key) && (util.isServAcntName($from, blockNumber) || util.isCksumAddr($from)) && (util.isServAcntName($to, blockNumber) || util.isCksumAddr($to)) && $from !== $to && util.isNumber(newData) && util.getBalance($from, getValue) >= newData] at '/transfer/$from/$to/$key/value' for value path '/transfer/0x00ADEc28B6a845a085e03591bE7550dd68673C1C/staking|Test_Service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0/2/value' with path vars '{\"$key\":\"2\",\"$to\":\"staking|Test_Service|0x01A0980d2D4e418c7F27e1ef539d01A5b5E93204|0\",\"$from\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', data 'null', newData '33', auth '{\"addr\":\"0x00ADEc28B6a845a085e03591bE7550dd68673C1C\"}', timestamp '1234567890001'",
+        });
+        if (!(await waitUntilTxFinalized([server2], _.get(body, 'result.tx_hash')))) {
+          console.error(`Failed to check finalization of tx.`);
+        }
+        const fromAfterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferFromBalancePath}`).body.toString('utf-8')).result;
+        const toServiceAfterBalance = parseOrLog(syncRequest('GET',
+            server2 + `/get_value?ref=${transferToServiceBalancePath}`).body.toString('utf-8')).result;
+        expect(fromAfterBalance).to.equal(fromBeforeBalance);
+        expect(toServiceAfterBalance).to.equal(toServiceBeforeBalance);
       });
     })
 
