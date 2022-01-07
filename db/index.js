@@ -17,7 +17,7 @@ const {
   StateVersions,
   buildOwnerPermissions,
   BlockchainParams,
-  isTimerFlagEnabledAt,
+  TimerFlagEnabledBlockNumberMap,
 } = require('../common/constants');
 const { TxResultCode, JsonRpcApiResultCode } = require('../common/result-code');
 const CommonUtil = require('../common/common-util');
@@ -462,14 +462,14 @@ class DB {
     this.stateRoot = DB.writeToStateRoot(this.stateRoot, this.stateVersion, fullPath, stateObj);
   }
 
-  writeReplacements(replacementFile) {
-    const replacementFilePath = path.resolve(__dirname, `./replace-data/${replacementFile}.js`);
+  writeReplacements(timerFlagName) {
+    const replacementFilePath = path.resolve(__dirname, `./replace-data/${timerFlagName}.js`);
     if (!fs.existsSync(replacementFilePath)) {
-      throw Error(`Missing a replacement data file: ${replacementFile}`);
+      throw Error(`Missing a replacement data file: ${timerFlagName}`);
     }
     const replacementArr = require(replacementFilePath).data;
     if (!CommonUtil.isArray(replacementArr)) {
-      throw Error(`Invalid replacement data file: ${replacementFile}, ${JSON.stringify(replacementArr)}`);
+      throw Error(`Invalid replacement data file: ${timerFlagName}, ${JSON.stringify(replacementArr)}`);
     }
     for (const replacement of replacementArr) {
       this.writeDatabase(replacement.path, replacement.value);
@@ -478,11 +478,10 @@ class DB {
 
   replaceDbStates(blockNumber) {
     if (!CommonUtil.isNumber(blockNumber)) return;
-    if (isTimerFlagEnabledAt('create_app_config_sanitization', blockNumber)) {
-      this.writeReplacements('create_app_config_sanitization');
-    }
-    if (isTimerFlagEnabledAt('native_service_path_length_check', blockNumber)) {
-      this.writeReplacements('native_service_path_length_check');
+    if (!TimerFlagEnabledBlockNumberMap.has(blockNumber)) return;
+    const timerFlags = TimerFlagEnabledBlockNumberMap.get(blockNumber);
+    for (const flagName of timerFlags) {
+      this.writeReplacements(flagName);
     }
   }
 
