@@ -919,7 +919,11 @@ class Functions {
     const stakingKey = context.params.staking_key;
     const expirationPath = PathUtil.getStakingExpirationPath(serviceName, user, stakingKey);
     const currentExpiration = Number(this.db.getValue(expirationPath));
-    const lockup = Number(this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)));
+    // Use 0 as the default.
+    const lockup = this.db.getValue(PathUtil.getStakingLockupDurationPath(serviceName)) || 0;
+    if (!CommonUtil.isInteger(lockup) || lockup < 0) {
+      return this.returnFuncResult(context, FunctionResultCode.INVALID_LOCKUP_DURATION);
+    }
     const newExpiration = context.blockTime + lockup;
     const updateExpiration = newExpiration > currentExpiration;
     if (value === 0) {
