@@ -261,6 +261,15 @@ class CommonUtil {
     if (args.is_merge !== undefined) {
       options.isMerge = CommonUtil.toBool(args.is_merge);
     }
+    if (args.timestamp !== undefined) {
+      options.timestamp = CommonUtil.numberOrZero(args.timestamp);
+    }
+    if (args.block_number !== undefined) {
+      options.blockNumber = CommonUtil.numberOrZero(args.block_number);
+    }
+    if (args.block_time !== undefined) {
+      options.blockTime = CommonUtil.numberOrZero(args.block_time);
+    }
     if (fromApi) {
       options.fromApi = true;
     }
@@ -271,6 +280,9 @@ class CommonUtil {
     const options = {};
     if (args.is_global !== undefined) {
       options.isGlobal = CommonUtil.toBool(args.is_global);
+    }
+    if (args.timestamp !== undefined) {
+      options.timestamp = CommonUtil.numberOrZero(args.timestamp);
     }
     return options;
   }

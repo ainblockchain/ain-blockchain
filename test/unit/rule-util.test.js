@@ -530,6 +530,20 @@ describe("RuleUtil", () => {
       expect(util.isServAcntName(
           'staking|consensus|0x09A0d53FDf1c36A131938eb379b98910e55EEfe1|0')).to.equal(true);
     })
+
+    it("when valid-address but invalid service name input with blockNumber = 0", () => {
+      expect(util.isServAcntName(
+          'staking|Consensus|0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', 0)).to.equal(true);
+      expect(util.isServAcntName(
+          'staking|Consensus|0x09A0d53FDf1c36A131938eb379b98910e55EEfe1|0', 0)).to.equal(true);
+    })
+
+    it("when valid-address but invalid service name input with blockNumber = 1", () => {
+      expect(util.isServAcntName(
+          'staking|Consensus|0x09A0d53FDf1c36A131938eb379b98910e55EEfe1', 1)).to.equal(false);
+      expect(util.isServAcntName(
+          'staking|Consensus|0x09A0d53FDf1c36A131938eb379b98910e55EEfe1|0', 1)).to.equal(false);
+    })
   })
 
   describe("toBool", () => {
