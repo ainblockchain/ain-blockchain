@@ -4,5 +4,8 @@
   },
   "create_app_config_sanitization": {
     "enabled_block": 1
+  },
+  "native_service_path_length_check": {
+    "enabled_block": 1
   }
 }
