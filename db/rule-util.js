@@ -460,6 +460,10 @@ class RuleUtil {
     }
     return _.isEqual(sanitizedVal, newData);
   }
+
+  checkValuePathLen(parsedValuePath, expectedLen) {
+    return this.isArray(parsedValuePath) && this.length(parsedValuePath) === expectedLen;
+  }
 }
 
 module.exports = RuleUtil;
