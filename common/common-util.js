@@ -970,10 +970,10 @@ class CommonUtil {
     return enabledBlock;
   }
 
-  static createTimerFlagEnabledBlockNumberMap(timerFlags) {
+  static createTimerFlagEnabledBandageMap(timerFlags) {
     const map = new Map();
     for (const [flagName, flag] of Object.entries(timerFlags)) {
-      if (CommonUtil.isNumber(flag['enabled_block'])) {
+      if (CommonUtil.isNumber(flag['enabled_block']) && flag['has_bandage'] === true) {
         if (!map.has(flag['enabled_block'])) {
           map.set(flag['enabled_block'], []);
         }
