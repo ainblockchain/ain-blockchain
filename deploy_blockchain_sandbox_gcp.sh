@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 6 ]]; then
+if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
     printf "Usage: bash deploy_blockchain_sandbox_gcp.sh <GCP Username> <# start node> <# end node> [--setup] [--keep-code] [--keep-data] [--kill-only|--skip-kill]\n"
     printf "Example: bash deploy_blockchain_sandbox_gcp.sh lia 10 99 --setup\n"
     printf "\n"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ $# -lt 3 ]] || [[ $# -gt 7 ]]; then
+if [[ $# -lt 3 ]] || [[ $# -gt 8 ]]; then
     printf "Usage: bash deploy_blockchain_genesis_gcp.sh [dev|staging|sandbox|spring|summer|mainnet] <GCP Username> <# of Shards> [--setup] [--keystore|--mnemonic|--private-key] [--keep-code] [--keep-data] [--kill-only|--skip-kill]\n"
     printf "Example: bash deploy_blockchain_genesis_gcp.sh dev lia 0 --setup --keystore\n"
     printf "\n"
