@@ -33,6 +33,7 @@ const WRITE_RULE_ID_TOKEN_WHITELIST_BASE = [
   'lastBlockNumber',
   'newData',
   'util',
+  'parsedValuePath',
   // 2) from language
   'Number',  // type casting
   'String',  // type casting
